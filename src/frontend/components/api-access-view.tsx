@@ -96,6 +96,8 @@ const ENDPOINTS: { group: string; items: Endpoint[] }[] = [
       { method: "GET", path: "/factor-analysis/datasets/{id}/download", description: "The cleaned matrix as CSV." },
       { method: "POST", path: "/factor-analysis/datasets/{id}/analyze", description: "Bartlett, KMO/MSA, eigenvalues and rotated loadings for the given settings (JSON)." },
       { method: "POST", path: "/factor-analysis/datasets/{id}/export", description: "The loadings table as CSV or LaTeX; same body as analyze plus format." },
+      { method: "GET", path: "/factor-analysis/interpretation/status", description: "Whether factors can be interpreted by Claude, and with which model." },
+      { method: "POST", path: "/factor-analysis/datasets/{id}/interpret", description: "Names and short interpretations of the factors by Claude; same body as analyze plus language. Optional, needs an API key on the server." },
     ],
   },
   {
@@ -217,7 +219,8 @@ export function ApiAccessView() {
             <code className="font-mono text-[11px]">600/minute</code> on{" "}
             <code className="font-mono text-[11px]">GET /factor-analysis/datasets/&#123;id&#125;</code>,{" "}
             <code className="font-mono text-[11px]">300/hour</code> on{" "}
-            <code className="font-mono text-[11px]">/log-stats</code>; 120/minute everywhere else.
+            <code className="font-mono text-[11px]">/log-stats</code>; 120/minute everywhere else. Interpretations
+            that call Claude: 10/hour per session and 200/day for the server.
           </p>
           <p>
             • Upload limit: 100 MB per file. Allowed extensions:{" "}
