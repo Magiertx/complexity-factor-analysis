@@ -61,6 +61,19 @@ def clean_db(isolated_jobs_dir):
         pass
 
 
+@pytest.fixture(autouse=True)
+def no_anthropic_api(monkeypatch):
+    """No test reaches the Anthropic API: no key from the environment, and a client factory
+    that fails. Tests of the interpretation install a fake client on top."""
+    from interpretation import client
+
+    def refuse(key):
+        raise AssertionError("a test tried to reach the Anthropic API")
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr(client, "client_factory", refuse)
+
+
 @pytest.fixture
 def client(isolated_jobs_dir):
     from fastapi.testclient import TestClient
