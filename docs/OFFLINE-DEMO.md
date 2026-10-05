@@ -90,6 +90,12 @@ docker compose -f docker-compose.yml -f docker-compose.offline.yml up -d --no-bu
 
 Only the frontend is attached to a second network, so that its port can be published.
 
+Rate limits count per IP address, and on a demo laptop every browser tab is the same
+address. The dataset status that each open tab polls has its own limit of 600 requests per
+minute, but creating datasets is limited to 60 per hour, and choosing a bundled dataset
+counts too. For a demo with many visitors on one machine, raise it in `.env`, e.g.
+`RATE_LIMIT_DATASETS=600/hour`.
+
 ## Bundled data
 
 All of it works without uploads; sources and licences are in

@@ -105,11 +105,15 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 
-    # Size limit for log file uploads (must align with 100MB limit in algoservice)
-    client_max_body_size 100M;
+    # A factor analysis dataset request may carry 500 MB of logs or nets (100 MB per file),
+    # plus the multipart overhead.
+    client_max_body_size 520M;
 
     location / {
         proxy_pass http://127.0.0.1:3000;
+        # The frontend waits up to 120 s for the API, e.g. for the first fit of a large dataset.
+        proxy_read_timeout 130s;
+        proxy_send_timeout 130s;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';

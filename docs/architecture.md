@@ -132,8 +132,10 @@ storage.store_matrix: clean (core.clean_matrix), write the matrix, status "ready
 The **analysis** (`core.analyze`) is synchronous and runs in the API process on every
 parameter change:
 
-1. Cleaning: non-numeric, constant, incomplete and perfectly correlated measures are dropped
-   (the first of a duplicate pair is kept), as in ComFy for log measures.
+1. Cleaning, once when the dataset is stored: rows with more than half of their values
+   missing go first (an input on which every measure failed); then non-numeric, constant,
+   incomplete and perfectly correlated measures are dropped (the first of a duplicate pair is
+   kept), as in ComFy for log measures.
 2. Bartlett's test of sphericity, with log det R from the eigenvalues (the numerically stable
    variant of ComFy for log measures).
 3. KMO/MSA; with the filter on, every measure below the threshold is removed and the MSA is
@@ -142,12 +144,29 @@ parameter change:
 4. Eigenvalues of the correlation matrix for the scree plot; the suggestion is the Kaiser
    criterion (eigenvalue > 1).
 5. `factor_analyzer` with the chosen rotation, then each measure is assigned to the factor with
-   its largest absolute loading if that reaches the threshold.
+   its largest absolute loading if that reaches the loading threshold and its communality the
+   communality threshold (defaults per kind: ComFy's 0.35 and none for model measures,
+   ComFy for log measures' 0.5 and 0.5 for log measures).
+
+For oblique rotations factor_analyzer's own communalities sum the squared pattern loadings,
+which is wrong once the factors correlate; `core` computes them as `rowsum(P * S)` from the
+pattern and structure matrices, so they equal the unrotated ones, and returns the structure
+matrix and the factor correlations as well. Heywood cases are flagged at a communality of
+about 0.995, where minres stops (uniqueness bounded below by 0.005).
 
 A singular correlation matrix (common with log measures, e.g. `iqr = q3 - q1`) is analysed as
-upstream does and reported as a warning. Fits are cached by data, factor count and rotation;
-at most two run at once per API process. On the bundled Inductive-miner scores the result
-equals ComFy's own report to four decimals (`tests/test_factor_analysis_core.py`).
+upstream does and reported as a warning. KMO then rests on a pseudo-inverse and Bartlett's
+chi-square on clamped eigenvalues (`bartlett.regularised`), so measures with an MSA at the
+threshold can come out differently on different platforms. Fits are cached by data, factor
+count and rotation; at most two run at once per API process. On the bundled Inductive-miner
+scores the result equals ComFy's own report to four decimals
+(`tests/test_factor_analysis_core.py`); the bundled log measures equal the upstream code run
+in the same environment, but not necessarily its published output (see
+`datasets/PROVENANCE.md`).
+
+A dataset whose job is still running 70 minutes after it started outlived Celery's time limit
+(for example because the worker restarted); reading it marks the job and the dataset failed,
+and pruning removes such datasets with their inputs.
 
 Datasets are session-scoped: at most 30 per session (the oldest finished ones are pruned),
 and the datasets of sessions idle for seven days are removed.
@@ -263,9 +282,12 @@ Every endpoint that accepts a log enforces:
 
 - Extension whitelist: `.xes`, `.xes.gz`, `.xml`, `.json` for single runs; `.xes`, `.xes.gz`
   for dataset logs, `.pnml` for nets, `.csv` for tables.
-- Size cap: 100 MB per file (streamed; rejected mid-upload if exceeded); per dataset request
-  at most 50 logs or 200 nets and 500 MB in total, counted after decompression. A CSV may have
-  at most 100 000 rows and 1000 columns.
+- Size cap: 100 MB per file; per dataset request at most 50 logs or 200 nets and 500 MB in
+  total, counted after decompression. Starlette receives the whole multipart body before the
+  route runs, so these checks reject a request after the upload, not during it; the reverse
+  proxy's `client_max_body_size` is what stops a larger body early. A CSV may have at most
+  100 000 rows and 1000 columns; the header is checked first and at most one row more than
+  the limit is parsed.
 - A `.xes.gz` may expand to at most 1 GB.
 - XML hardening for `.xes` / `.xml` and secondary XML files: `lxml.etree.XMLParser(resolve_entities=False, no_network=True, dtd_validation=False)`, and any `DOCTYPE` declaration is rejected outright (blocks XXE / billion-laughs / external DTD).
 
@@ -273,7 +295,7 @@ Every endpoint that accepts a log enforces:
 
 `slowapi` middleware, configured in `config.py`. Counter storage is the Redis container when `REDIS_URL` is set (shared across processes), in-memory otherwise. The key comes from `config.rate_limit_key`, which wraps `get_remote_address`.
 
-Every limit is overridable from the environment (`RATE_LIMIT_DEFAULT`, `_LOG_STATS`, `_ANALYZE`, `_DATASETS`, `_FA_ANALYZE`), read through `env_config.rate_limit`. Defaults per client:
+Every limit is overridable from the environment (`RATE_LIMIT_DEFAULT`, `_LOG_STATS`, `_ANALYZE`, `_DATASETS`, `_DATASET_STATUS`, `_FA_ANALYZE`), read through `env_config.rate_limit`. Defaults per client:
 
 | Endpoint | Default |
 |---|---|
@@ -281,11 +303,12 @@ Every limit is overridable from the environment (`RATE_LIMIT_DEFAULT`, `_LOG_STA
 | `/log-stats` | `300/hour` |
 | `/algorithms/{id}/analyze` | `60/hour` |
 | `POST /factor-analysis/datasets` | `60/hour` |
+| `GET /factor-analysis/datasets/{id}` (polled while a dataset is computed) | `600/minute` |
 | `/factor-analysis/datasets/{id}/analyze`, `.../export` | `120/minute` |
 
 - Disabled when `RATE_LIMIT_DISABLED=1` or when `PYTEST_CURRENT_TEST` is set; `conftest.py` sets this before the app is imported.
 
-**Request limits are not the load limit.** They cap how often someone *starts* work; one dataset request can be 50 logs times several miners. What bounds the machine is `MAX_ACTIVE_JOBS_PER_SESSION` (`jobs_db`, default 12), which counts what is queued or running. That is the value to lower for a public demo.
+**Request limits are not the load limit.** They cap how often someone *starts* work; one dataset request can be 50 logs times several miners. What bounds the machine is `MAX_ACTIVE_JOBS_PER_SESSION` (`jobs_db`, default 12), which counts what is queued or running. That is the value to lower for a public demo. A client that drops the session cookie gets a new session with every request, so dataset jobs are also capped over all sessions by `MAX_ACTIVE_DATASET_JOBS` (default 4): the miners share one single-CPU `prom4py`, and ProM4Py calls cannot be interrupted, so this is what keeps one visitor from blocking the others for long.
 
 A malformed value in any of these stops the service at startup instead of falling back to the default, so a limit an operator believes they lowered cannot silently stay unapplied. Overrides in force are logged once at startup.
 

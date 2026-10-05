@@ -134,8 +134,8 @@ Details in [Factor analysis](#factor-analysis) below.
 
 ## Notes & limits
 
-- **Rate limits** (per source IP, tunable via `RATE_LIMIT_*` in `.env`): `60/hour` for `POST /algorithms/{id}/analyze`, `60/hour` for `POST /factor-analysis/datasets` (`RATE_LIMIT_DATASETS`), `120/minute` for factor-analysis `analyze` and `export` (`RATE_LIMIT_FA_ANALYZE`), `300/hour` for `POST /log-stats`, `120/minute` for everything else.
-- **Job quota:** at most 12 queued or running jobs per session (`MAX_ACTIVE_JOBS_PER_SESSION`).
+- **Rate limits** (per source IP, tunable via `RATE_LIMIT_*` in `.env`): `60/hour` for `POST /algorithms/{id}/analyze`, `60/hour` for `POST /factor-analysis/datasets` (`RATE_LIMIT_DATASETS`; choosing a bundled dataset counts too), `600/minute` for `GET /factor-analysis/datasets/{id}`, which the UI polls (`RATE_LIMIT_DATASET_STATUS`), `120/minute` for factor-analysis `analyze` and `export` (`RATE_LIMIT_FA_ANALYZE`), `300/hour` for `POST /log-stats`, `120/minute` for everything else. A 429 carries `detail` and `"code": "rate_limited"`.
+- **Job quota:** at most 12 queued or running jobs per session (`MAX_ACTIVE_JOBS_PER_SESSION`), and at most 4 dataset jobs over all sessions (`MAX_ACTIVE_DATASET_JOBS`); both answer 429.
 - **Upload size:** 100 MB per file. Factor-analysis datasets: at most 50 logs or 200 PNML
   files and 500 MB in total per request, `.xes.gz` counted decompressed.
 - **Allowed extensions:** `.xes`, `.xes.gz`, `.xml`, `.json` for single runs; `.xes`,
@@ -180,19 +180,26 @@ artifacts (30 per session; a session unused for a week is removed).
 `bundled` and `csv` answer `{"dataset_id", "status": "ready"}`. `logs` and `pnml` answer
 `{"dataset_id", "status": "computing", "job_id"}`; the job shows up in `/jobs` like any run.
 Poll `GET /factor-analysis/datasets/{id}` until `status` is `ready` or `failed`; while it
-computes, `progress` holds the job percentage.
+computes, `progress` holds the job percentage. `?rows=n` (0 to 2000, default 2000) limits the
+preview in `observations` and `values`. A job still running after 70 minutes, longer than the
+worker's time limit, is taken as lost and its dataset marked `failed`.
 
-A CSV may use `,`, `;` or tab as separator and decimal commas. A non-numeric or unnamed
-first column holds the row labels; otherwise the rows are numbered.
+A CSV may use `,`, `;` or tab as separator and decimal commas, with at most 100 000 rows and
+1000 columns. The first column holds the row labels if it is unnamed, not numeric, or named
+`observation`, `id`, `name` or `label` (so a downloaded dataset can be uploaded again);
+otherwise the rows are numbered.
 
-**Cleaning**, as in ComFy for log measures, runs once when the dataset is stored and is
-reported in `dropped`: measures with a non-numeric value (`non_numeric`), with any missing or
-infinite value (`missing`), without variance (`constant`), and measures perfectly correlated
-with an earlier one (`duplicate`, the first is kept).
+**Cleaning** runs once when the dataset is stored. First, rows with more than half of their
+values missing are dropped, e.g. a log on which every measure failed. Then, as in ComFy for log
+measures, measures are dropped and reported in `dropped`: with a non-numeric value
+(`non_numeric`), with any missing or infinite value left (`missing`), without variance
+(`constant`), and perfectly correlated with an earlier one (`duplicate`, the first is kept).
+Each entry has an English `detail` and its values in `params`.
 
 For `logs` and `pnml`, `failures` lists the inputs that gave no or incomplete values as
-`{"input", "error"}` (for example a miner that failed on one log); such a row is missing from
-the matrix.
+`{"input", "error"}`. An input whose discovery failed, or on which most measures failed, has
+no row; a measure that failed on a single input is dropped for the whole dataset as
+`missing`. A job whose inputs leave fewer than 2 measures with values fails.
 
 ### Analyse
 
@@ -200,8 +207,12 @@ the matrix.
 
 ```json
 { "excluded": [], "auto_msa_filter": true, "msa_threshold": 0.6, "bartlett_alpha": 0.05,
-  "n_factors": null, "rotation": "varimax", "loading_threshold": 0.35 }
+  "n_factors": null, "rotation": "varimax", "loading_threshold": null,
+  "communality_threshold": null }
 ```
+
+`loading_threshold` and `communality_threshold` default by kind, as in the two upstream
+tools: 0.35 and 0 for `model` (ComFy), 0.5 and 0.5 for `log` (ComFy for log measures).
 
 The steps match ComFy:
 
@@ -214,23 +225,44 @@ The steps match ComFy:
 4. `FactorAnalyzer` (minres) with `n_factors` (default: the suggestion) and the rotation
    (`varimax`, `promax`, `oblimin`, `quartimax`, `none`).
 5. Each measure goes to the factor with its largest absolute loading if that reaches
-   `loading_threshold`.
+   `loading_threshold` and its communality reaches `communality_threshold`; otherwise it is
+   `unassigned`.
 
-The response holds `bartlett`, `kmo` (overall and per measure), `msa_filter.removed`
-(`measure`, `msa`, `step`), `eigenvalues`, `suggested_n_factors`, `n_factors`, `loadings`
-(measure → one value per factor), `communalities`, `uniquenesses`, `variance`
-(`ss_loadings`, `proportion`, `cumulative`), `factors`, `unassigned` and `warnings`
-(Bartlett or MSA not passed, fewer than 5 observations per measure, singular correlation
-matrix, Heywood case).
+The response holds `bartlett` (with `regularised: true` when eigenvalues were clamped, so
+chi-square reflects the floor more than the data), `kmo` (overall and per measure),
+`msa_filter.removed` (`measure`, `msa`, `step`), `eigenvalues`, `suggested_n_factors`,
+`n_factors`, the thresholds used, `loadings` (measure → one value per factor),
+`communalities`, `uniquenesses`, `variance`, `factors`, `unassigned`, `warnings` and
+`warning_details`.
 
-Errors are 400 with a `detail`: fewer than 3 measures, fewer observations than measures + 1,
-a factor analysis that fails on a singular matrix, or more factors than measures − 1. A
-dataset that is not ready answers 409.
+- For orthogonal rotations `loadings` are the loadings and `variance` holds `ss_loadings`,
+  `proportion` and `cumulative`. For `promax` and `oblimin`, `loadings` is the pattern matrix,
+  `structure_loadings` the structure matrix and `factor_correlations` the factor correlation
+  matrix; `proportion` and `cumulative` are `null`, because the shares of correlated factors
+  do not add up. `variance.explained` (mean communality) is the share all factors explain
+  together, for every rotation. Communalities do not depend on the rotation.
+- `factors[].index` counts from 0, like the columns of `loadings`.
+- `warnings` are English sentences; `warning_details` gives each as `{code, message, params}`:
+  `bartlett_not_significant`, `kmo_low`, `small_sample` (fewer than 5 observations per
+  measure), `singular` (linearly dependent measures), `not_identified` (more factors than the
+  Ledermann bound allows), `fit_not_converged`, `single_factor_no_rotation` and `heywood`
+  (a communality at the optimizer's bound of 0.995, a possible Heywood case).
+
+Errors are 400 with a `detail`, a `code` and `params`: `too_few_measures` (fewer than 3),
+`too_few_observations` (fewer than measures + 1), `msa_filter_left` (the MSA filter left fewer
+than 3 measures), `n_factors_range` (more factors than measures − 1; a further factor would
+stay empty), `unknown_excluded`, `msa_singular`, `fit_failed` and `not_converged`. A dataset
+that is not ready answers 409.
+
+On a singular correlation matrix (common with log measures, e.g. `iqr = q3 - q1`) KMO uses a
+pseudo-inverse. Measures with an MSA right at the threshold can then be removed on one machine
+and kept on another; the bundled log measures show this for `trace_len_hist6`.
 
 `POST /factor-analysis/datasets/{id}/export` takes the same body plus
 `"format": "csv" | "latex"` and returns the loadings table as a file: one row per measure
-with its loadings and communality; in LaTeX a booktabs `tabular` with loadings at or above
-the threshold in bold.
+with its loadings (the pattern matrix for oblique rotations) and communality; in LaTeX a
+booktabs `tabular` with loadings at or above the threshold in bold, unless the communality is
+below `communality_threshold`.
 
 ### Example
 

@@ -25,7 +25,8 @@ Schalk do it, but interactively in the browser.
   (varimax, promax, oblimin, quartimax, none), a loading heatmap with communalities and
   explained variance, factor groups by loading threshold. Every change re-runs the analysis.
 - **Same numbers as upstream.** On the bundled Inductive-miner scores the analysis equals
-  ComFy's own report to four decimals; a test checks it.
+  ComFy's own report to four decimals; a test checks it. Oblique rotations report correct
+  communalities, the structure matrix and the factor correlations.
 - **Export.** Loadings as CSV or as a LaTeX `tabular` for the paper, the cleaned matrix as CSV.
 - **Single-log inspection.** "Inspect a single log" runs the chosen miners on one log and shows
   the measures next to the rendered nets.
@@ -118,8 +119,9 @@ Tests that need the ProM4Py service skip when it is not reachable; start it with
 `docker compose up -d prom4py` to include them. The Petri-net rendering test skips without
 Graphviz. The factor-analysis tests run offline: model datasets from logs use a stand-in
 miner, PNML and log datasets run for real (feeed 2.2 needs no Java). One test compares the
-analysis of the bundled Inductive-miner scores with the values in ComFy's own report. The HTTP layer is tested with a small stub tool registered by
-`tests/conftest.py`, so those tests need neither Java nor a database server.
+analysis of the bundled Inductive-miner scores with the values in ComFy's own report. The
+HTTP layer is tested with a small stub tool registered by `tests/conftest.py`, so those tests
+need neither Java nor a database server.
 
 Frontend checks, from `src/frontend`:
 
