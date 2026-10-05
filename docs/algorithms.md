@@ -30,6 +30,8 @@ download, and a `text` with per-cell errors if some computations failed. If no c
 computed at all (typically ProM4Py unreachable), the job fails instead of returning a table of
 errors.
 
-**Scope**: one log per run; Batch mode repeats the run over up to ten logs. The factor
-analysis (Bartlett, KMO, scree test, loadings) is vendored in `FactorAnalysis.py` but not yet
-exposed.
+**Scope**: one log per run, in the `/inspect` workbench. Many logs or nets go into a
+factor-analysis dataset instead (`POST /factor-analysis/datasets`, see
+[`architecture.md`](architecture.md#factor-analysis)), which reuses this adapter's discovery and
+measure helpers. The numerics of the vendored `FactorAnalysis.py` are reimplemented in
+`factor_analysis/core.py`.

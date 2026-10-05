@@ -156,7 +156,8 @@ CORS_ORIGINS=https://analysis.example.org
 # Job quota and request limits, see .env.example
 MAX_ACTIVE_JOBS_PER_SESSION=3
 # RATE_LIMIT_ANALYZE=60/hour
-# RATE_LIMIT_BATCH=20/hour
+# RATE_LIMIT_DATASETS=60/hour
+# RATE_LIMIT_FA_ANALYZE=120/minute
 
 # --- Docker network ---
 # Only needed if 172.28.0.0/16 collides with something on the host. Used as the compose
