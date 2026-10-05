@@ -81,17 +81,22 @@ export function EmptyStep({ icon, children }: { icon?: React.ReactNode; children
   );
 }
 
-/** A label with a "?" button that unfolds a short explanation below it. */
+/**
+ * A label with a "?" button that unfolds a short explanation below it. With `htmlFor` the
+ * label is a <label> of that control.
+ */
 export function HelpLabel({
   label,
   help,
-  as: Tag = "h3",
+  as = "h3",
+  htmlFor,
   className,
   extra,
 }: {
   label: string;
   help: string;
   as?: "h3" | "span";
+  htmlFor?: string;
   className?: string;
   extra?: React.ReactNode;
 }) {
@@ -101,7 +106,15 @@ export function HelpLabel({
   return (
     <div className={className}>
       <div className="flex items-center gap-1.5 flex-wrap">
-        <Tag className="text-sm font-semibold">{label}</Tag>
+        {htmlFor ? (
+          <label htmlFor={htmlFor} className="text-sm font-semibold">
+            {label}
+          </label>
+        ) : as === "span" ? (
+          <span className="text-sm font-semibold">{label}</span>
+        ) : (
+          <h3 className="text-sm font-semibold">{label}</h3>
+        )}
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}

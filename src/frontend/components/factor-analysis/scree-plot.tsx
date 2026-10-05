@@ -21,7 +21,10 @@ interface Props {
   onSelect: (n: number) => void;
 }
 
-/** Eigenvalues in descending order with the Kaiser line; a point click sets the factor count. */
+/**
+ * Eigenvalues in descending order with the Kaiser line; a point click sets the factor count.
+ * For the keyboard the plot is one slider: arrow keys, Home and End change the count.
+ */
 export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onSelect }: Props) {
   const t = useT();
   const ref = useRef<HTMLDivElement>(null);
@@ -56,6 +59,24 @@ export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onS
   const band = Math.min(selected, n);
   const above = eigenvalues.filter((v) => v > 1).length;
 
+  const pick = (k: number) => onSelect(Math.max(1, Math.min(maxSelectable, k)));
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    const next =
+      e.key === "ArrowRight" || e.key === "ArrowUp"
+        ? selected + 1
+        : e.key === "ArrowLeft" || e.key === "ArrowDown"
+          ? selected - 1
+          : e.key === "Home"
+            ? 1
+            : e.key === "End"
+              ? maxSelectable
+              : null;
+    if (next === null) return;
+    e.preventDefault();
+    pick(next);
+    setHover(Math.max(1, Math.min(maxSelectable, next)));
+  };
+
   const tip = hover !== null ? { i: hover, v: eigenvalues[hover - 1] } : null;
   const tipText = tip ? t("factor.factors.eigen_point", { i: tip.i, value: formatNumber(tip.v) }) : "";
   const tipW = tipText.length * 6.2 + 16;
@@ -66,10 +87,18 @@ export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onS
         width={width}
         height={HEIGHT}
         viewBox={`0 0 ${width} ${HEIGHT}`}
-        role="group"
+        role="slider"
+        tabIndex={0}
         aria-labelledby={titleId}
         aria-describedby={descId}
-        className="block max-w-full select-none"
+        aria-valuemin={1}
+        aria-valuemax={maxSelectable}
+        aria-valuenow={selected}
+        aria-valuetext={t("factor.factors.retained", { n: selected })}
+        onKeyDown={onKeyDown}
+        onFocus={() => setHover(Math.min(selected, n))}
+        onBlur={() => setHover(null)}
+        className="block max-w-full select-none rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       >
         <title id={titleId}>{t("factor.factors.scree_title")}</title>
         <desc id={descId}>
@@ -172,11 +201,10 @@ export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onS
           {t("factor.factors.axis_eigenvalue")}
         </text>
 
-        {/* hit targets, one column per factor */}
-        {eigenvalues.map((v, i) => {
+        {/* pointer targets, one column per factor; the keyboard uses the slider */}
+        {eigenvalues.map((_, i) => {
           const k = i + 1;
           const pickable = k <= maxSelectable;
-          const label = t("factor.factors.eigen_point", { i: k, value: formatNumber(v) });
           return (
             <rect
               key={k}
@@ -185,21 +213,10 @@ export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onS
               width={w / n}
               height={h}
               fill="transparent"
-              role={pickable ? "button" : undefined}
-              tabIndex={pickable ? 0 : undefined}
-              aria-label={pickable ? `${label}. ${t("factor.factors.use_n", { n: k })}` : label}
-              className={pickable ? "cursor-pointer outline-none" : undefined}
+              className={pickable ? "cursor-pointer" : undefined}
               onMouseEnter={() => setHover(k)}
               onMouseLeave={() => setHover(null)}
-              onFocus={() => setHover(k)}
-              onBlur={() => setHover(null)}
               onClick={() => pickable && onSelect(k)}
-              onKeyDown={(e) => {
-                if (pickable && (e.key === "Enter" || e.key === " ")) {
-                  e.preventDefault();
-                  onSelect(k);
-                }
-              }}
             />
           );
         })}
