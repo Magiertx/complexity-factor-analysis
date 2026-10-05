@@ -730,7 +730,7 @@
       "interpretation_unavailable": "Für die Interpretation braucht der Server einen Anthropic-API-Schlüssel, und es ist keiner eingerichtet.",
       "interpretation_refused": "Das Modell hat die Interpretation dieser Analyse abgelehnt. Die Faktorenanalyse selbst ist davon nicht betroffen.",
       "interpretation_auth": "Die Anthropic-API hat den API-Schlüssel des Servers abgelehnt. Der Betreiber muss ihn prüfen.",
-      "interpretation_upstream_limited": "Die Anthropic-API drosselt diesen Server, oder sein Ausgabenlimit ist erreicht. Versuche es später noch einmal.",
+      "interpretation_upstream_limited": "Die Anthropic-API drosselt diesen Server. Versuche es später noch einmal.",
       "interpretation_upstream_unavailable": "Die Anthropic-API ist nicht erreichbar oder überlastet. Versuche es später noch einmal.",
       "interpretation_unreachable": "Der Server hat die Anthropic-API nicht erreicht; vielleicht fehlt ihm die Internetverbindung.",
       "interpretation_timeout": "Die Anthropic-API hat nicht rechtzeitig geantwortet. Versuche es später noch einmal.",

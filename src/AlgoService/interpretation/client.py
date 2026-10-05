@@ -105,7 +105,7 @@ def _sdk_error(e: anthropic.AnthropicError) -> InterpretationError:
     if isinstance(e, anthropic.RateLimitError):
         return InterpretationError(
             429, "interpretation_upstream_limited",
-            "The Anthropic API is rate limiting this server, or its spending limit is reached. Try again later.",
+            "The Anthropic API is rate limiting this server. Try again later.",
         )
     if isinstance(e, anthropic.APIStatusError) and e.status_code >= 500:
         return InterpretationError(

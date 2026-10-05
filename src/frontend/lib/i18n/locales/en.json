@@ -730,7 +730,7 @@
       "interpretation_unavailable": "Interpreting factors needs an Anthropic API key on the server, and none is configured.",
       "interpretation_refused": "The model declined to interpret this analysis. The factor analysis itself is not affected.",
       "interpretation_auth": "The Anthropic API rejected the server's API key. The operator has to check it.",
-      "interpretation_upstream_limited": "The Anthropic API is rate limiting this server, or its spending limit is reached. Try again later.",
+      "interpretation_upstream_limited": "The Anthropic API is rate limiting this server. Try again later.",
       "interpretation_upstream_unavailable": "The Anthropic API is unavailable or overloaded. Try again later.",
       "interpretation_unreachable": "The server could not reach the Anthropic API; it may have no internet connection.",
       "interpretation_timeout": "The Anthropic API did not answer in time. Try again later.",
