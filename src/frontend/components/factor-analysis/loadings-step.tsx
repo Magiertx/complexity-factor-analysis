@@ -237,11 +237,12 @@ function FactorGroups({ analysis, measureName }: { analysis: FactorAnalysis; mea
       <HelpLabel label={t("factor.loadings.groups_heading")} help={t("factor.help.groups")} />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {analysis.factors.map((f) => {
-          const share = analysis.variance.proportion[f.index - 1];
+          // index counts from 0, like the loading columns.
+          const share = analysis.variance.proportion[f.index];
           return (
             <div key={f.index} className="rounded-lg bg-tile p-3.5 space-y-2.5 min-w-0">
               <div className="flex items-baseline justify-between gap-2">
-                <h4 className="text-sm font-semibold">{t("factor.loadings.factor_n", { i: f.index })}</h4>
+                <h4 className="text-sm font-semibold">{t("factor.loadings.factor_n", { i: f.index + 1 })}</h4>
                 {share !== undefined && (
                   <span className="text-[11px] text-muted">{t("factor.loadings.factor_variance", { pct: formatPercent(share) })}</span>
                 )}

@@ -400,6 +400,7 @@ export interface FactorAnalysis {
   communalities: Record<string, number>;
   uniquenesses: Record<string, number>;
   variance: { ss_loadings: number[]; proportion: number[]; cumulative: number[] };
+  /** `index` counts from 0, like the columns of `loadings`. */
   factors: { index: number; measures: { measure: string; loading: number }[] }[];
   unassigned: string[];
   warnings: string[];
