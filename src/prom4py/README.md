@@ -29,7 +29,17 @@ docker compose build prom4py
 docker compose up prom4py
 ```
 
-To use a local copy instead of the Zenodo download (for offline builds), pass `--build-arg PROM4PY_ZIP_URL=file:///path/to/prom4py.zip`.
+To use a local copy instead of the Zenodo download, serve it over HTTP and pass its URL; the
+download runs inside the build container, so a `file://` path on the host is not visible to
+it:
+
+```bash
+python -m http.server 8765 --directory /path/to/folder-with-prom4py.zip
+docker compose build --build-arg PROM4PY_ZIP_URL=http://host.docker.internal:8765/prom4py.zip prom4py
+```
+
+`host.docker.internal` works with Docker Desktop; on Linux use the host's address on the
+Docker bridge (usually `172.17.0.1`).
 
 ## Notes
 

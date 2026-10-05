@@ -1,28 +1,39 @@
 # Complexity Factor Analysis
 
-A web tool for analysing the complexity of process models. Upload an event log (`.xes`,
-`.xes.gz`, `.xml`, `.json`), pick one or more discovery algorithms, and the tool discovers a
-Petri net with each of them and computes structural complexity measures on every net: size,
-density, control-flow complexity, depth, diameter, cyclicity and more. Results come back as a
-miner × measure table plus the rendered nets.
+A web tool for finding out which complexity measures of process models and event logs
+describe the same underlying dimension. It collects measures over many models or logs, checks
+whether a factor analysis is meaningful, and groups the measures into a few factors, the way
+[ComFy](https://github.com/Pati-nets/ComFy) and
+[ComFy for log measures](https://github.com/Pati-nets/ComFy-for-Log-Measures) by Patrizia
+Schalk do it, but interactively in the browser.
 
-The measures and miners are [ComFy](https://github.com/Pati-nets/ComFy) by Patrizia Schalk.
+## Features
+
+- **Two tabs, one workflow.** *Model complexity* works on ComFy's Petri-net measures (size,
+  density, control-flow complexity, separability, ...); *Log complexity* on the event-log
+  measures of [feeed](https://github.com/andreamalhera/feeed), grouped as in ComFy for log
+  measures. Both walk through the same five steps: data, dataset, suitability, factors,
+  loadings.
+- **Data from anywhere.** Bundled datasets (the scores of the ComFy paper for seven miners,
+  and the measures of 2112 Process Discovery Contest logs), an own CSV, up to 50 event logs
+  (`.xes`, `.xes.gz`) that are mined with any of ComFy's nine ProM miners, or up to 200 PNML
+  models. Sample logs and nets are bundled, so the demo works without own files and offline.
+- **Suitability first.** Data cleaning with reasons, Bartlett's test of sphericity (the
+  numerically stable variant), KMO with ComFy's iterative MSA filter, and a per-measure MSA
+  table with manual exclusion.
+- **Factors and loadings.** Scree plot with the Kaiser suggestion, factor count and rotation
+  (varimax, promax, oblimin, quartimax, none), a loading heatmap with communalities and
+  explained variance, factor groups by loading threshold. Every change re-runs the analysis.
+- **Same numbers as upstream.** On the bundled Inductive-miner scores the analysis equals
+  ComFy's own report to four decimals; a test checks it.
+- **Export.** Loadings as CSV or as a LaTeX `tabular` for the paper, the cleaned matrix as CSV.
+- **Single-log inspection.** "Inspect a single log" runs the chosen miners on one log and shows
+  the measures next to the rendered nets.
+- **Scriptable.** Everything the UI does goes through a documented HTTP API
+  ([`docs/API.md`](docs/API.md#factor-analysis)); English and German UI.
+
 Discovery runs through [ProM4Py](https://doi.org/10.5281/zenodo.13853660), a bridge to the
 ProM plugins.
-
-The main feature is a **factor analysis** over many observations, in two variants:
-
-- **Model complexity** (ComFy): one row per discovered net (log × miner) or per uploaded PNML
-  model, one column per ComFy measure.
-- **Log complexity** ([ComFy for log measures](https://github.com/Pati-nets/ComFy-for-Log-Measures)):
-  one row per log, one column per [feeed](https://github.com/andreamalhera/feeed) measure.
-
-A dataset comes from bundled data (the scores of both ComFy papers), a CSV, uploaded logs or
-PNML files, or the bundled sample logs and nets, so the demo works without own files and
-offline. The analysis follows ComFy: data cleaning, Bartlett's test, KMO with the iterative
-MSA filter, a scree plot with the Kaiser suggestion, `factor_analyzer` with a choice of
-rotation, and factor groups by loading threshold. Loadings export as CSV or LaTeX. The API
-is described in [`docs/API.md`](docs/API.md#factor-analysis).
 
 ## Architecture
 
@@ -59,9 +70,14 @@ purpose. Then:
 docker compose up --build
 ```
 
-Everything is reached through the frontend on <http://localhost:3000>; the API is not
-published on the host, and the OpenAPI UI lives at <http://localhost:3000/api/docs>. The first
-start builds the ProM4Py image, which downloads the ProM bundle and takes a while.
+Everything is reached through the frontend on <http://localhost:3000>: the model tab at `/`,
+the log tab at `/log`. The API is not published on the host, and the OpenAPI UI lives at
+<http://localhost:3000/api/docs>. The first build downloads the ProM bundle (about 430 MB
+from Zenodo) and takes a while; after that, a start takes one to two minutes, most of it the
+Java bridge booting.
+
+To try it, pick a bundled dataset on either tab, or "Petri nets" and the bundled sample nets
+on the model tab. For a demo without network, see [`docs/OFFLINE-DEMO.md`](docs/OFFLINE-DEMO.md).
 
 > To reach the API directly during development, add a `docker-compose.override.yml` with a
 > port mapping for `algoservice` rather than editing `docker-compose.yml`. The closed port is
@@ -125,8 +141,12 @@ All of this is set in `docker-compose.yml`; reverse proxy, TLS, volumes and back
 - **Limits.** 100 MB per uploaded file; per factor-analysis dataset 50 logs or 200 PNML
   files and 500 MB in total; a per-session cap on queued jobs. Request rate limits and the
   job cap are tunable in `.env` (see `.env.example`).
-- **Analysis cost.** A factor fit over about a hundred measures takes several seconds of CPU
-  in the API process. At most two run at once per process; recent fits are cached.
+- **Analysis cost.** A factor fit over about a hundred measures takes a few seconds of CPU
+  in the API process. At most two run at once per process; recent fits are cached. BLAS runs
+  single-threaded (`OPENBLAS_NUM_THREADS=1`), which is many times faster for these matrices.
+- **Slow and broken miners.** Alpha++ and Alpha Robust are marked slow; Alpha++ can run for
+  many minutes on a mid-sized log and ProM4Py cannot interrupt it. The Hybrid ILP miner needs
+  the native lp_solve 5.5 library, which the `prom4py` image does not contain, so it fails.
 
 ## Project structure
 
