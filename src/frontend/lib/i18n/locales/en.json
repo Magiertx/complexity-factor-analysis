@@ -513,7 +513,7 @@
       "copy_citation": "Copy citation",
       "csv_drop_label": "Drop a CSV file here",
       "csv_drop_hint": "or click to browse · .csv",
-      "csv_format": "The first row holds the measure names. Columns that are non-numeric, constant, duplicate or have missing values are dropped.",
+      "csv_format": "The first row holds the measure names. A first column that is not numeric or is named observation, id, name or label holds the row labels. Columns that are non-numeric, constant, duplicate or have missing values are dropped.",
       "logs_drop_label": "Drop event logs here",
       "logs_drop_hint": "or click to browse · .xes, .xes.gz · up to {max} files",
       "pnml_drop_label": "Drop Petri nets here",

@@ -513,7 +513,7 @@
       "copy_citation": "Zitat kopieren",
       "csv_drop_label": "CSV-Datei hier ablegen",
       "csv_drop_hint": "oder klicken zum Auswählen · .csv",
-      "csv_format": "Die erste Zeile enthält die Namen der Maße. Nicht-numerische, konstante und doppelte Spalten sowie Spalten mit fehlenden Werten werden entfernt.",
+      "csv_format": "Die erste Zeile enthält die Namen der Maße. Eine erste Spalte, die nicht numerisch ist oder observation, id, name oder label heißt, enthält die Zeilennamen. Nicht-numerische, konstante und doppelte Spalten sowie Spalten mit fehlenden Werten werden entfernt.",
       "logs_drop_label": "Event-Logs hier ablegen",
       "logs_drop_hint": "oder klicken zum Auswählen · .xes, .xes.gz · bis zu {max} Dateien",
       "pnml_drop_label": "Petri-Netze hier ablegen",
