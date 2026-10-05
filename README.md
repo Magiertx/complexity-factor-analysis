@@ -8,8 +8,9 @@ miner × measure table plus the rendered nets.
 
 The measures and miners are [ComFy](https://github.com/Pati-nets/ComFy) by Patrizia Schalk.
 Discovery runs through [ProM4Py](https://doi.org/10.5281/zenodo.13853660), a bridge to the
-ProM plugins. Batch mode runs the same analysis over up to ten logs in one job. A factor
-analysis across the measures of many logs is the next step and not exposed yet.
+ProM plugins. Batch mode runs the same analysis over up to ten logs in one job and collects
+all scores in one long-format table (log, miner, measure, value), which can be downloaded as
+CSV. A factor analysis across the measures of many logs is the next step and not exposed yet.
 
 ## Architecture
 

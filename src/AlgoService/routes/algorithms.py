@@ -788,6 +788,23 @@ BATCH_MAX_LOGS = 10
 BATCH_MAX_TOTAL_BYTES = 200 * 1024 * 1024
 
 
+def _table_to_long_rows(filename: str, label: str, payload: dict[str, Any]) -> list[list[Any]]:
+    """Melt a table artifact into (log, table, row, column, value) rows.
+
+    The first column names the row. Only numeric cells are kept, so error markers and text
+    columns do not end up in the values.
+    """
+    columns = payload.get("columns") or []
+    out: list[list[Any]] = []
+    for row in payload.get("rows") or []:
+        if not row:
+            continue
+        for column, value in zip(columns[1:], row[1:]):
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                out.append([filename, label, row[0], column, value])
+    return out
+
+
 async def run_batch_task(
     job_id: str,
     log_entries: list[dict[str, str]],
@@ -796,8 +813,10 @@ async def run_batch_task(
 ):
     """Background task running one algorithm over many logs and aggregating stats.
 
-    Continues past per-log failures and emits two summary tables:
+    Continues past per-log failures and emits these summary tables:
       - "Batch summary": one row per log with each stat as a column.
+      - "Batch values (long format)": every numeric table cell of every log as one
+        (log, table, row, column, value) row, e.g. log x miner x measure for ComFy.
       - "Failed logs": filename + error per log that crashed.
     """
     from algorithms.base import RunContext, table as make_table
@@ -843,6 +862,7 @@ async def run_batch_task(
 
         aggregated_artifacts: list[dict[str, Any]] = []
         stats_by_log: list[tuple[str, dict[str, Any]]] = []
+        long_rows: list[list[Any]] = []
         failures: list[tuple[str, str]] = []
         summaries: list[str] = []
 
@@ -868,6 +888,8 @@ async def run_batch_task(
                 aggregated_artifacts.append(d)
                 if art.kind == "stat":
                     log_stats[art.label] = art.payload.get("value")
+                elif art.kind == "table":
+                    long_rows.extend(_table_to_long_rows(filename, art.label, art.payload))
             stats_by_log.append((filename, log_stats))
             if result.summary:
                 summaries.append(f"{filename}: {result.summary}")
@@ -889,6 +911,14 @@ async def run_batch_task(
                 rows.append(row)
             summary_artifacts.append(
                 make_table("Batch summary — statistics by log", columns, rows).to_dict()
+            )
+        if long_rows:
+            summary_artifacts.append(
+                make_table(
+                    "Batch values (long format)",
+                    ["log_filename", "table", "row", "column", "value"],
+                    long_rows,
+                ).to_dict()
             )
         if failures:
             summary_artifacts.append(

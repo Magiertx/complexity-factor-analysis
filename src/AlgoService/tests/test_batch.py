@@ -1,9 +1,8 @@
 """Batch endpoint tests.
 
 The batch endpoint runs one algorithm over N logs and aggregates per-log
-stats into a single table, while individual failures are captured in a
-"Failed logs" table without stopping the batch. Both behaviors need
-explicit coverage; they were unguarded before this file landed.
+stats and table values into summary tables, while individual failures are
+captured in a "Failed logs" table without stopping the batch.
 """
 
 from __future__ import annotations
@@ -82,6 +81,42 @@ def test_batch_runs_over_two_logs(client, stub_algorithm, two_logs):
     per_log_labels = [a.get("label", "") for a in artifacts if a["kind"] != "stat"]
     assert any("[log_a.xes]" in lbl for lbl in per_log_labels), "log_a artifacts unprefixed"
     assert any("[log_b.xes]" in lbl for lbl in per_log_labels), "log_b artifacts unprefixed"
+
+
+def test_batch_collects_table_values_in_long_format(client, stub_algorithm, two_logs):
+    """Every numeric table cell of every log ends up as one row of the long table."""
+    r = client.post(
+        f"/algorithms/{stub_algorithm}/batch",
+        files=[("files", (name, data, "application/xml")) for name, data in two_logs],
+    )
+    assert r.status_code == 200, r.text
+    job = _wait_for_job(client, r.json()["job_id"])
+    assert job["status"] == "completed", f"batch failed: {job.get('error')}"
+
+    long_tbl = next(
+        a for a in job["result"]["artifacts"]
+        if a["kind"] == "table" and a.get("label") == "Batch values (long format)"
+    )
+    assert long_tbl["columns"] == ["log_filename", "table", "row", "column", "value"]
+    # The stub emits one "Events per case" row per case: 6 cases in log_a, 4 in log_b.
+    assert len(long_tbl["rows"]) == 10
+    assert {row[0] for row in long_tbl["rows"]} == {"log_a.xes", "log_b.xes"}
+    assert all(row[1:4:2] == ["Events per case", "events"] for row in long_tbl["rows"])
+    assert all(row[4] == 3 for row in long_tbl["rows"])
+
+
+def test_table_to_long_rows_skips_non_numeric_cells():
+    from routes.algorithms import _table_to_long_rows
+
+    payload = {
+        "columns": ["Miner", "Size", "Depth"],
+        "rows": [["Alpha", 5, "ERR: ValueError"], ["Inductive", 7, 0.5]],
+    }
+    assert _table_to_long_rows("a.xes", "Complexity scores", payload) == [
+        ["a.xes", "Complexity scores", "Alpha", "Size", 5],
+        ["a.xes", "Complexity scores", "Inductive", "Size", 7],
+        ["a.xes", "Complexity scores", "Inductive", "Depth", 0.5],
+    ]
 
 
 def test_batch_rejects_empty_input(client, stub_algorithm):
