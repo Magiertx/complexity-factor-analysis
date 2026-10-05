@@ -197,7 +197,7 @@ export function NumberField({
       }}
       onBlur={() => setDraft(String(value))}
       className={cn(
-        "h-8 w-20 rounded-md bg-tile px-2 text-sm font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-accent/50 transition",
+        "h-8 w-20 rounded-md border border-border bg-bg px-2 text-sm font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-accent/50 transition",
         invalid && "ring-2 ring-danger/60",
         className,
       )}
