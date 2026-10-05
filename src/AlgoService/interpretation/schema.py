@@ -14,11 +14,12 @@ MAX_CAVEATS = 10
 
 class FactorInterpretation(BaseModel):
     index: int = Field(description="Number of the factor, starting at 1 as in 'Factor 1'.")
-    name: str = Field(description="Short name of the factor, a few words.")
-    summary: str = Field(description="Two or three sentences on what the factor captures and why.")
+    # Before the name, so the evidence is written before the label.
     driving_measures: list[str] = Field(
         description="Measures the interpretation rests on, exactly as named in the input, strongest first."
     )
+    name: str = Field(description="Short name of the factor, a few words.")
+    summary: str = Field(description="Two or three sentences on what the factor captures and why.")
     confidence: Literal["low", "medium", "high"]
 
 
@@ -38,9 +39,9 @@ def tidy(result: Interpretation, measures: list[str], n_factors: int) -> Interpr
             driving = list(dict.fromkeys(m for m in f.driving_measures if m in known))
             factors[f.index] = FactorInterpretation(
                 index=f.index,
+                driving_measures=driving,
                 name=f.name.strip()[:MAX_NAME],
                 summary=f.summary.strip()[:MAX_SUMMARY],
-                driving_measures=driving,
                 confidence=f.confidence,
             )
     return Interpretation(
