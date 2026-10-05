@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import time
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from typing import Any, Literal
+from typing import Any, AsyncIterator, Literal
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.concurrency import run_in_threadpool
@@ -21,8 +22,24 @@ from routes.factor_analysis import AnalyzeRequest, _AnalysisFailed, _analyze, _r
 
 router = APIRouter(prefix="/factor-analysis", tags=["factor analysis"])
 
-# One live call per cache key at a time; a second click waits for the first answer.
-_LOCKS: dict[str, asyncio.Lock] = {}
+# One live call per cache key at a time; a second click waits for the first answer. Each lock
+# counts the requests that hold it or wait for it and goes when the last one is done.
+_LOCKS: dict[str, tuple[asyncio.Lock, int]] = {}
+
+
+@asynccontextmanager
+async def _key_lock(key: str) -> AsyncIterator[None]:
+    lock, users = _LOCKS.get(key, (asyncio.Lock(), 0))
+    _LOCKS[key] = (lock, users + 1)
+    try:
+        async with lock:
+            yield
+    finally:
+        lock, users = _LOCKS[key]
+        if users == 1:
+            del _LOCKS[key]
+        else:
+            _LOCKS[key] = (lock, users - 1)
 
 
 class InterpretRequest(AnalyzeRequest):
@@ -112,9 +129,8 @@ async def interpret_dataset(
     except InterpretationError as e:
         return _error(e)
 
-    lock = _LOCKS.setdefault(key, asyncio.Lock())
     try:
-        async with lock:
+        async with _key_lock(key):
             cached = store.read_cached(session_id, meta, key)
             if cached:
                 return _response(cached, cached=True, precomputed=False)
@@ -139,7 +155,4 @@ async def interpret_dataset(
             await run_in_threadpool(store.write_cached, session_id, meta, key, entry)
     except InterpretationError as e:
         return _error(e)
-    finally:
-        if not lock.locked():
-            _LOCKS.pop(key, None)
     return _response(entry, cached=False, precomputed=False)

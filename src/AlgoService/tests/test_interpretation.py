@@ -594,6 +594,82 @@ def test_unknown_language(client, claude, csv_dataset):
     assert _interpret(client, csv_dataset[0], language="fr").status_code == 422
 
 
+# --- concurrency --------------------------------------------------------------------------
+
+
+def test_key_lock_stays_while_someone_waits():
+    """After a failed holder releases, a waiter and a newcomer share one lock, so two paid
+    calls for the same key never run at once; the entry goes with the last user."""
+    import asyncio
+
+    from routes import interpretation as route
+
+    async def scenario():
+        order: list[str] = []
+        a_inside = asyncio.Event()
+        release_a = asyncio.Event()
+
+        async def a():
+            try:
+                async with route._key_lock("k"):
+                    a_inside.set()
+                    await release_a.wait()
+                    raise RuntimeError("call failed")
+            except RuntimeError:
+                order.append("a failed")
+
+        async def user(name: str):
+            async with route._key_lock("k"):
+                order.append(f"{name} in")
+                await asyncio.sleep(0.01)
+                order.append(f"{name} out")
+
+        task_a = asyncio.create_task(a())
+        await a_inside.wait()
+        task_b = asyncio.create_task(user("b"))
+        await asyncio.sleep(0)
+        release_a.set()
+        await task_a
+        task_c = asyncio.create_task(user("c"))
+        await asyncio.gather(task_b, task_c)
+        assert order == ["a failed", "b in", "b out", "c in", "c out"]
+        assert route._LOCKS == {}
+
+    asyncio.run(scenario())
+
+
+def test_concurrent_requests_make_one_call(client, claude, csv_dataset):
+    """Two requests in the event loop of the app, as in the server: the second arrives while
+    the first waits for the model, waits for the lock and gets the stored answer."""
+    import asyncio
+
+    from srv_main import app
+
+    answer = _answer_for
+
+    async def slow(**kwargs):
+        claude.calls.append(kwargs)
+        in_call.set()
+        await asyncio.sleep(0.3)
+        return answer(kwargs)
+
+    async def both():
+        transport = httpx2.ASGITransport(app=app)
+        async with httpx2.AsyncClient(transport=transport, base_url="http://testserver", cookies=dict(client.cookies)) as c:
+            url = f"/factor-analysis/datasets/{csv_dataset[0]}/interpret"
+            first = asyncio.create_task(c.post(url, json={"auto_msa_filter": False}))
+            await in_call.wait()
+            second = await c.post(url, json={"auto_msa_filter": False})
+            return await first, second
+
+    in_call = asyncio.Event()
+    claude.create = slow
+    first, second = client.portal.call(both)
+    assert first.status_code == 200 and first.json()["cached"] is False
+    assert second.status_code == 200 and second.json()["cached"] is True
+    assert len(claude.calls) == 1
+
+
 # --- limits -------------------------------------------------------------------------------
 
 
