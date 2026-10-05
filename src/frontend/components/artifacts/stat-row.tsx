@@ -1,0 +1,41 @@
+"use client";
+
+import type { Artifact } from "@/lib/api";
+import { cn } from "@/lib/utils";
+
+type Stat = Extract<Artifact, { kind: "stat" }>;
+
+interface Props {
+  stats: Stat[];
+}
+
+const ACCENT: Record<NonNullable<Stat["accent"]>, string> = {
+  default: "text-fg",
+  success: "text-success",
+  warn: "text-warn",
+  danger: "text-danger",
+};
+
+export function StatRow({ stats }: Props) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      {stats.map((s, i) => {
+        const color = ACCENT[s.accent ?? "default"];
+        const value = formatValue(s);
+        return (
+          <div key={i}>
+            <div className="text-xs uppercase tracking-wide text-muted">{s.label}</div>
+            <div className={cn("mt-1 text-2xl font-semibold font-mono", color)}>{value}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function formatValue(s: Stat): string {
+  if (typeof s.value === "string") return s.value;
+  if (s.pct) return `${(s.value * 100).toFixed(1)}%`;
+  const formatted = Number.isInteger(s.value) ? s.value.toLocaleString() : s.value.toFixed(3);
+  return s.unit ? `${formatted} ${s.unit}` : formatted;
+}

@@ -1,0 +1,150 @@
+services:
+  prom4py:
+    build:
+      context: ./src/prom4py
+      dockerfile: Dockerfile
+    # Deliberately NOT published to the host. This service exposes an unauthenticated HTTP
+    # API whose /executor endpoint runs arbitrary Java expressions (see src/prom4py/README.md)
+    # — publishing it on a reachable host is remote code execution. algoservice talks to it
+    # over the compose network as http://prom4py:4040, which needs no port mapping.
+    expose:
+      - "4040"
+    environment:
+      - PROM4PY_PORT=4040
+      - JAVA_HEAP=2G
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      # Interpolated from .env — the literals that used to stand here meant a .env file had
+      # no effect at all, so a deployment that followed docs/DEPLOYMENT.md believed it had
+      # changed the password while still running with postgres/postgres.
+      - POSTGRES_DB=${POSTGRES_DB:-toolkit}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d toolkit"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  algoservice:
+    build:
+      context: ./src/AlgoService
+      dockerfile: Dockerfile
+    # Not published either: the browser reaches the API through the frontend's /api/* rewrite,
+    # so everything passes the reverse proxy, TLS and the security headers. Publishing this
+    # port hands out a second, unprotected front door to the same API. For local API work,
+    # add a port mapping in a docker-compose.override.yml instead of reopening it here.
+    expose:
+      - "8000"
+    environment:
+      - CORS_ORIGINS=http://localhost:3000
+      - PROM4PY_URL=http://prom4py:4040
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-toolkit}
+      - REDIS_URL=redis://redis:6379/0
+      - PYTHONPATH=/app
+      - SESSION_SECRET_KEY=${SESSION_SECRET_KEY:?generate one, see docs/DEPLOYMENT.md}
+      # Makes Swagger UI / ReDoc work when the API is reached through the
+      # Next.js /api/* rewrite (i.e. via the browser).
+      - FASTAPI_ROOT_PATH=/api
+      # Read by uvicorn itself. Requests arrive from the frontend container, never from
+      # 127.0.0.1, so with uvicorn's default the X-Forwarded-For header nginx sets is
+      # ignored and every user shares a single rate-limit counter. Same variable as the
+      # network subnet below on purpose: two places that must agree should have one source.
+      - FORWARDED_ALLOW_IPS=${COMPOSE_SUBNET:-172.28.0.0/16}
+    depends_on:
+      prom4py:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - uploaded_logs:/app/uploaded_logs
+      - artifacts_data:/app/artifacts
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  celery_worker:
+    build:
+      context: ./src/AlgoService
+      dockerfile: Dockerfile
+    command: celery -A celery_worker.celery_app worker --loglevel=info --concurrency=4
+    environment:
+      - PROM4PY_URL=http://prom4py:4040
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-toolkit}
+      - REDIS_URL=redis://redis:6379/0
+      - PYTHONPATH=/app
+      - SESSION_SECRET_KEY=${SESSION_SECRET_KEY:?generate one, see docs/DEPLOYMENT.md}
+    depends_on:
+      prom4py:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - uploaded_logs:/app/uploaded_logs
+      - artifacts_data:/app/artifacts
+
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A celery_worker.celery_app inspect ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - INTERNAL_API_URL=http://algoservice:8000
+    depends_on:
+      algoservice:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+networks:
+  # Declared with a fixed subnet so FORWARDED_ALLOW_IPS above can name it. Docker would
+  # otherwise assign one from its pool at creation time, and a trust list cannot reference an
+  # address that is not known until runtime. Override COMPOSE_SUBNET in .env if 172.28.0.0/16
+  # collides with something on the host — both places read the same variable.
+  default:
+    ipam:
+      config:
+        - subnet: ${COMPOSE_SUBNET:-172.28.0.0/16}
+
+volumes:
+  postgres_data:
+  uploaded_logs:
+  artifacts_data:
+
+

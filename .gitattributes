@@ -1,0 +1,7 @@
+# Shell scripts must keep LF line endings — they run inside Linux containers,
+# where CRLF breaks the shebang ("/bin/bash^M: bad interpreter").
+*.sh text eol=lf
+
+# Other line-ending-sensitive files that end up in Linux images.
+Dockerfile text eol=lf
+*.dockerfile text eol=lf

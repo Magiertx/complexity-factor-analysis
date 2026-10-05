@@ -1,0 +1,24 @@
+fastapi>=0.110
+uvicorn[standard]>=0.27
+python-multipart>=0.0.9
+pm4py>=2.7
+scipy>=1.11
+pandas>=2.0
+python-dateutil>=2.8
+# ComFy
+networkx>=3.0
+matplotlib>=3.7
+scikit-learn>=1.3
+factor_analyzer>=0.5
+tabulate>=0.9
+requests>=2.31
+jsons>=1.6
+sqlalchemy>=2.0.0
+asyncpg
+greenlet
+alembic
+aiosqlite
+celery
+redis
+itsdangerous
+slowapi>=0.1.9
