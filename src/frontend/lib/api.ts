@@ -2,7 +2,7 @@
 // Mirrors src/AlgoService/algorithms/base.py.
 
 export type ParameterType = "int" | "float" | "bool" | "enum" | "multi_enum" | "string";
-// Open string — the backend's `/algorithms` response carries the authoritative
+// Open string; the backend's `/algorithms` response carries the authoritative
 // `categories` list (id + label), and the frontend renders whichever ids show
 // up. Keeping this typed as a closed Literal would make every new category a
 // frontend change. Known id today: "complexity". TOOL_TYPE_LABEL covers it;
@@ -76,14 +76,9 @@ export interface AnalysisResult {
 }
 
 /**
- * Where the API lives, from wherever this code happens to run.
- *
- * In the browser this must stay a relative `/api`, which the Next.js rewrite forwards to the
- * backend. Anything absolute (`http://localhost:8000`) goes straight to the container port,
- * bypassing the reverse proxy, TLS and every security header — and it forces that port to be
- * published, which is exactly what we do not want in a deployment.
- *
- * Exported because several components used to hardcode their own fallback and drifted.
+ * Base URL of the API. In the browser this is the relative `/api`, which the Next.js rewrite
+ * forwards to the backend, so requests go through the reverse proxy and the backend port can
+ * stay unpublished. Use this instead of hardcoding a URL in components.
  */
 export const API_BASE = typeof window === "undefined"
   ? (process.env.INTERNAL_API_URL || "http://algoservice:8000")
@@ -331,7 +326,7 @@ export async function updateJobNotes(jobId: string, notes: string | null): Promi
 }
 
 // Fallback labels for tool_type ids the frontend ships with. The /algorithms
-// response also carries a `categories` array with the authoritative labels —
+// response also carries a `categories` array with the authoritative labels;
 // prefer that when available; this map only covers ids that aren't in the
 // response (defensive) and gives a stable default at top-level.
 export const TOOL_TYPE_LABEL: Record<string, string> = {

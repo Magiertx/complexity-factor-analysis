@@ -78,7 +78,7 @@ export function BatchBuilder() {
   }, []);
 
   // Deep-link support: `/batch?job=<id>` opens the past batch run. Depends on
-  // searchParams so it also fires on client-side navigation — i.e. clicking a
+  // searchParams so it also fires on client-side navigation, e.g. clicking a
   // job in the drawer while already on this page.
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -149,7 +149,7 @@ export function BatchBuilder() {
           /* automatic retry; fallback poll catches it if SSE never recovers */
         };
       } catch {
-        /* SSE not supported — fall back to polling only */
+        /* SSE not supported, poll only */
       }
 
       scheduleFallback();

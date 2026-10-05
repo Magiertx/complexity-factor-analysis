@@ -3,9 +3,6 @@
 // it work" layer: what happens internally, what the options are for, which
 // defaults make sense. Keyed by the manifest's `algorithm_id`; algorithms
 // without an entry fall back to the manifest's `description`.
-//
-// Kept short on purpose: a researcher who does not know the tool should be
-// able to read an entry in two minutes.
 
 import type { ReactNode } from "react";
 import type { Locale } from "@/lib/i18n";
@@ -48,7 +45,7 @@ const EXPLANATIONS_DE: Record<string, AlgorithmExplanation> = {
   },
 };
 
-// English translations of the entries above — same keys, same JSX structure.
+// English versions of the entries above, with the same keys and structure.
 const EXPLANATIONS_EN: Record<string, AlgorithmExplanation> = {
   comfy: {
     what: (

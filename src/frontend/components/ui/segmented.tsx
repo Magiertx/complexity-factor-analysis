@@ -28,7 +28,7 @@ export function Segmented<T extends string>({
   const idx = Math.max(0, options.findIndex((o) => o.value === value));
 
   // The sliding pill is positioned by measuring the active button instead of
-  // assuming equal segment widths — with `whitespace-nowrap` a long label
+  // assuming equal segment widths; with `whitespace-nowrap` a long label
   // (e.g. the German source-mode strings) makes its flex item wider than its
   // siblings, so a pure 1/n calculation drifts off the text.
   const containerRef = useRef<HTMLDivElement>(null);

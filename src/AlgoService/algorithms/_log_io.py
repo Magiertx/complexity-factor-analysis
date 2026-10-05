@@ -65,20 +65,16 @@ def _log_suffix(file_path: str) -> str:
     return os.path.splitext(lower)[1]
 
 
-# Cap on the *decompressed* size of a .xes.gz. The upload limit counts compressed bytes, so
-# without this a file well inside that limit expands without bound: a realistic, repetitive
-# XES compresses about 200:1, and one made of nulls over 1000:1 — a 100 MB upload becomes
-# tens of gigabytes in memory. Generous enough that no honest log hits it; the largest log in
-# the research repo is 6 MB.
+# Cap on the decompressed size of a .xes.gz. The upload limit counts compressed bytes, and
+# XES compresses 200:1 or more, so a 100 MB upload could expand to tens of gigabytes.
 MAX_DECOMPRESSED_BYTES = 1_000 * 1024 * 1024  # 1 GB
 
 
 def _decompress_to_temp(file_path: str) -> str:
     """Expand a .xes.gz to a temp file, refusing to write more than the cap.
 
-    Returns the temp file's path; the caller is responsible for deleting it. Decompressing
-    ourselves rather than letting pm4py stream the gzip is what makes the limit enforceable —
-    and it lets the plain-XES safety checks apply to the expanded content.
+    Returns the temp file's path; the caller deletes it. Decompressing here instead of in
+    pm4py enforces the limit and lets the plain-XES checks run on the expanded content.
     """
     import gzip
     import tempfile

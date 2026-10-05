@@ -16,7 +16,7 @@ import pytest
 @pytest.fixture
 def log_and_pnml(tmp_path):
     """A small two-variant log plus a PNML mined from it with pm4py's
-    (pure-Python) inductive miner — guaranteed to have markings."""
+    (pure-Python) inductive miner, which always has markings."""
     import pm4py
     from pm4py.objects.log.obj import Event, EventLog, Trace
 

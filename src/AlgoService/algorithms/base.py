@@ -16,7 +16,7 @@ from typing import Any, Literal, Optional
 
 
 ParameterType = Literal["int", "float", "bool", "enum", "multi_enum", "string"]
-# `ToolType` is intentionally an open string — TOOL_CATEGORIES below is the
+# `ToolType` is an open string; TOOL_CATEGORIES below is the
 # data-driven source of truth that the frontend consumes through /algorithms,
 # so adding a category requires zero type churn. Adapters still set
 # `tool_type` to a string matching one of the registered category ids.
@@ -39,7 +39,7 @@ class ParameterSpec:
     to sklearn constructors that accept it),
     and emit the effective seed value as a stat artifact so reruns are
     reproducible. The vendored research code may not honor every seed
-    perfectly — note that in the parameter help so users aren't surprised.
+    perfectly; mention that in the parameter help.
     """
     name: str
     label: str
@@ -107,7 +107,7 @@ class Artifact:
         return {"kind": self.kind, "label": self.label, **self.payload}
 
 
-# Constructor helpers — adapter code stays readable.
+# Constructor helpers for adapters.
 
 def stat(
     label: str,

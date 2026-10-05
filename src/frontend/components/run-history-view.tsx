@@ -39,8 +39,6 @@ const STATUS_BADGE: Record<Job["status"], string> = {
   aborted: "bg-warn/15 text-warn",
 };
 
-// STATUS_LABEL is now derived inside the component via useT() — see useStatusLabel()
-
 export function RunHistoryView() {
   const t = useT();
 

@@ -257,7 +257,7 @@ function CodeBlock({ label, icon, code }: { label: string; icon: React.ReactNode
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
     } catch {
-      /* clipboard blocked — ignore */
+      /* clipboard blocked */
     }
   };
 

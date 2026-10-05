@@ -122,7 +122,7 @@ def test_run_fails_loudly_without_prom4py():
         algo.analyze(_SAMPLE_LOG, algo.coerce_params(SMOKE_PARAMS))
 
 
-@pytest.mark.skipif(not PROM4PY_UP, reason="ProM4Py unreachable — start with `docker compose up prom4py`.")
+@pytest.mark.skipif(not PROM4PY_UP, reason="ProM4Py unreachable, start it with `docker compose up prom4py`.")
 def test_run_reports_real_values_not_error_cells():
     from algorithms.comfy import ComFyAlgorithm
 

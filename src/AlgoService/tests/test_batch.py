@@ -68,9 +68,7 @@ def test_batch_runs_over_two_logs(client, stub_algorithm, two_logs):
     assert job["status"] == "completed", f"batch failed: {job.get('error')}"
 
     artifacts = job["result"]["artifacts"]
-    # Summary table is mandatory — that's the whole point of batch mode.
-    # Label starts with "Batch summary"; the suffix has drifted ("— statistics by log")
-    # so we match by prefix to keep the test robust against further UX wording tweaks.
+    # Match the summary table by label prefix only.
     summary = next(
         (a for a in artifacts if a["kind"] == "table" and a.get("label", "").startswith("Batch summary")),
         None,

@@ -91,9 +91,8 @@ export function Workbench() {
   // Defaults to true since for most runs the user only changed 1-2 knobs and
   // wading through the full schema is noise.
   const [paramsDiffOnly, setParamsDiffOnly] = useState(true);
-  // Re-collapse when a different job is inspected — "show all" is a per-job
-  // escape hatch, not a sticky preference. Keyed on the id only so the jobs
-  // polling loop can't fight the user's toggle while they're looking at one job.
+  // Re-collapse when a different job is inspected. Keyed on the id only so job
+  // polling does not reset the toggle.
   useEffect(() => {
     setParamsDiffOnly(true);
   }, [selectedJobId]);
@@ -109,7 +108,7 @@ export function Workbench() {
   const [pageTourOpen, setPageTourOpen] = useState(false);
   const [explainerFor, setExplainerFor] = useState<AlgorithmManifest | null>(null);
 
-  // Onboarding tour — shown once on first visit (gated by localStorage flag).
+  // Onboarding tour, shown once on first visit (gated by a localStorage flag).
   // Other entry points (e.g. Settings) can write a `app.onboarding-replay`
   // sentinel to force-replay it.
   const [tourOpen, setTourOpen] = useState(false);
@@ -125,7 +124,7 @@ export function Workbench() {
       const completed = localStorage.getItem(ONBOARDING_KEY);
       if (!completed) setTourOpen(true);
     } catch {
-      /* localStorage blocked — skip tour silently */
+      /* localStorage blocked, skip the tour */
     }
   }, []);
 
@@ -247,7 +246,7 @@ export function Workbench() {
 
   // Honor a `?job=<id>` query param so deep links from the run-history view
   // (or anywhere else) open the past job directly. Depends on searchParams so
-  // it also fires on client-side navigation — i.e. clicking a job in the
+  // it also fires on client-side navigation, e.g. clicking a job in the
   // drawer while already on this page.
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -297,7 +296,7 @@ export function Workbench() {
       loadJobsList();
 
       // Same-origin SSE: goes through Next.js's /api/* rewrite (and any
-      // reverse proxy in front of it — backend already emits
+      // reverse proxy in front of it; the backend sends
       // X-Accel-Buffering: no for nginx). For local dev setups where the
       // rewrite buffers SSE, set NEXT_PUBLIC_SSE_URL to e.g.
       // "http://localhost:8000/jobs/events" to connect directly (requires
@@ -317,12 +316,12 @@ export function Workbench() {
           // below makes sure we keep working even if SSE never recovers.
         };
       } catch {
-        /* EventSource unsupported — rely entirely on the polling fallback */
+        /* EventSource unsupported, rely on polling */
       }
 
       // 5s polling as a fallback in case SSE events get buffered upstream
       // (Next.js standalone rewrites do this) or the EventSource silently
-      // dies. Cheap — `/jobs` is a quick session-scoped DB query.
+      // dies. `/jobs` is a cheap session-scoped query.
       pollTimer = setInterval(loadJobsList, 5000);
     };
 
@@ -404,14 +403,8 @@ export function Workbench() {
 
   // Load defaults or cached params when switching algorithms (only when configuring a new run)
   const selected = useMemo(() => {
-    // When viewing a past job, the algorithm card at the top (title, author,
-    // citation, parameter schema) must reflect THAT job's algorithm — not
-    // whatever is still highlighted in the sidebar. Otherwise opening a past
-    // run of one tool while another is selected would keep showing the other.
-    // Resolve from the loaded detail, falling back to the job summary (already
-    // in `jobs`) so the title is correct immediately — for completed jobs the
-    // detail is fetched async, and without this it briefly flashes the sidebar's
-    // algorithm before correcting.
+    // When viewing a past job, show that job's algorithm rather than the one selected in
+    // the sidebar. Fall back to the job summary while the detail is still loading.
     const viewedAlgoId =
       selectedJobDetail?.algorithm_id ??
       (selectedJobId ? jobs.find((j) => j.id === selectedJobId)?.algorithm_id : undefined);
@@ -458,9 +451,7 @@ export function Workbench() {
 
   // When viewing a past job, hydrate the parameter form with the values that
   // were actually submitted for that job (kept on the server in
-  // `Run.params_json`). Without this, the form falls back to localStorage —
-  // i.e. the values from the last run — and only "the most recent" archive
-  // entry happens to look right.
+  // `Run.params_json`) instead of the cached values from localStorage.
   useEffect(() => {
     if (selectedJobDetail?.params) {
       setParams(selectedJobDetail.params as Record<string, unknown>);
@@ -1119,7 +1110,7 @@ export function Workbench() {
               )}
             </div>
           )}
-              {/* Log overview — descriptive stats about the currently selected log. */}
+              {/* Log overview: descriptive stats about the selected log. */}
               {!selectedJobDetail && logStats && (
                 <LogOverviewCard
                   stats={logStats.stats}

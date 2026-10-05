@@ -19,8 +19,6 @@ async def health() -> dict[str, str]:
             await session.execute(text("SELECT 1"))
         return {"status": "ok", "database": "connected"}
     except Exception:
-        # The exception text is deliberately not returned: /health is unauthenticated and
-        # asyncpg messages carry host, port, database name and user. `logger.exception`
-        # records the full detail where it belongs — in the server log.
+        # Don't return the exception text: asyncpg messages contain host, database and user.
         logger.exception("Database connection failed during health check")
         raise HTTPException(status_code=500, detail="Database unavailable")

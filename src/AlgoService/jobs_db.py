@@ -59,14 +59,8 @@ async def get_or_create_session(session_id: str) -> str:
 
 
 
-# How many jobs one session may have queued or running at once. The rate limits cap requests
-# per hour, but a single request can enqueue many runs — a batch is up to 10 logs — so
-# without this one user can fill the queue and starve everyone else for hours. Celery runs 4 at a time and a run may take an hour, so the queue is the
-# contended resource, not the request rate.
-#
-# This is the limit that actually bounds load, so it is the one to lower for a demo
-# deployment: `MAX_ACTIVE_JOBS_PER_SESSION=3`. Request limits (RATE_LIMIT_*) cap how often
-# someone starts work, not how much of the machine they hold.
+# Jobs one session may have queued or running at once. A batch request enqueues up to 10
+# runs, so this is the setting that bounds load; lower it for a public demo.
 MAX_ACTIVE_JOBS_PER_SESSION = positive_int("MAX_ACTIVE_JOBS_PER_SESSION", 12)
 
 

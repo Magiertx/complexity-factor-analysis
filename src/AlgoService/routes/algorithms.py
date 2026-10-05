@@ -23,12 +23,7 @@ from algorithms.base import ParameterValidationError, TOOL_CATEGORIES
 router = APIRouter()
 
 async def _enforce_job_quota(session_id: str, requested: int = 1) -> None:
-    """Refuse the request when this session already has too much in flight.
-
-    Rate limits count requests per hour, but one request can enqueue many runs — a batch is
-    up to 10 logs. Celery runs four at a time and a run can take an hour,
-    so the queue, not the request rate, is what one user can monopolise.
-    """
+    """Refuse the request when this session already has too many jobs queued or running."""
     active = await jobs_db.count_active_jobs(session_id)
     if active + requested > jobs_db.MAX_ACTIVE_JOBS_PER_SESSION:
         raise HTTPException(
@@ -58,7 +53,7 @@ def _sanitize_filename(name: str) -> str:
     HTTPException(400) on invalid input.
     """
     # os.path.basename is platform-sensitive on Windows but the server runs in
-    # a Linux container — normalize Windows separators first so we strip them
+    # a Linux container, so normalize Windows separators first so we strip them
     # regardless.
     last = os.path.basename(name.replace("\\", "/"))
     if not last or last in (".", "..") or "\x00" in last:
@@ -87,8 +82,7 @@ def _make_status_cache(job_id: str, loop: asyncio.AbstractEventLoop, *, max_age_
             ).result(timeout=5.0)
             state["cached"] = not js or js.get("status") == "aborted"
         except Exception as e:
-            # Transient DB / loop error — trust the previously cached value
-            # instead of crashing the worker.
+            # Transient DB or loop error: keep the cached value.
             logger.warning(f"Status check for {job_id} failed; keeping cached value: {e}")
         return state["cached"]
 
@@ -125,16 +119,11 @@ SESSION_DIR_MAX_IDLE_S = 7 * 24 * 3600
 
 
 def cleanup_uploaded_logs(session_id: str):
-    """Keep the 10 most recent uploads of a session, and drop scratch files nobody owns.
+    """Keep the 10 most recent uploads of a session and drop old scratch files.
 
-    Two rules, because the two kinds of file fail differently. Ordinary uploads are capped by
-    count. Scratch files (``tempfile.NamedTemporaryFile``, written into this same directory)
-    are capped by *age*: they are normally removed in a ``finally``, but a hard-killed worker —
-    precisely what an OOM produces — leaves them behind. They stay excluded from the count rule
-    on purpose, since the newest file there is usually the one a running job is reading.
-
-    Before this, the ``tmp`` exclusion was the only rule that mentioned them at all, which made
-    a leaked scratch file permanently invisible to cleanup rather than merely uncollected.
+    Uploads are capped by count. Scratch files (``tempfile.NamedTemporaryFile`` in the same
+    directory) are left over when a worker is killed, so they are removed by age instead and
+    do not count towards the 10, since the newest one is usually in use by a running job.
     """
     try:
         user_dir = UPLOADED_LOGS_DIR / session_id
@@ -169,7 +158,7 @@ def cleanup_orphaned_session_dirs() -> int:
     """Delete upload directories of sessions that have not been touched in a week.
 
     ``cleanup_uploaded_logs`` only ever runs for the session currently uploading, so a session
-    that is abandoned keeps its files forever — nothing else iterates the parent directory.
+    that is abandoned would otherwise keep its files forever.
     Returns the number of directories removed, for logging.
     """
     removed = 0
@@ -511,7 +500,7 @@ async def run_analysis_task(job_id: str, t_path: str, coerced_params: dict[str, 
             except Exception as ex:
                 logger.exception(f"Failed to remove temp file: {ex}")
         # Secondary files (e.g. an uploaded reference PNML) are passed through
-        # params as "{name}_path" — clean them up alongside the main log.
+        # params as "{name}_path"; clean them up alongside the main log.
         for spec in algorithm.secondary_files:
             sec_path = coerced_params.get(f"{spec.name}_path")
             if isinstance(sec_path, str) and os.path.exists(sec_path):
@@ -540,7 +529,7 @@ async def analyze(
 
     form = await request.form()
     # Secondary-file fields (declared per adapter) carry UploadFile objects,
-    # not parameter strings — keep them out of raw_params.
+    # not parameter strings, so keep them out of raw_params.
     reserved_keys = {"file", "sample_log_id", "recent_log_id"}
     reserved_keys |= {f.name for f in algorithm.secondary_files}
     raw_params: dict[str, Any] = {}
@@ -752,7 +741,7 @@ async def analyze(
         except Exception as e:
             sec_tmp.close()
             await _fail_secondary(400, f"Failed to read '{spec.label}': {e}")
-        # PNML and friends are XML — apply the same XXE/DOCTYPE shield as the log.
+        # PNML is XML too, so apply the same XXE/DOCTYPE check as for the log.
         try:
             from lxml import etree
             parser = etree.XMLParser(resolve_entities=False, no_network=True, dtd_validation=False, collect_ids=False)
@@ -762,7 +751,7 @@ async def analyze(
         except Exception as e:
             await _fail_secondary(400, f"Security validation failed or invalid XML in '{spec.label}': {e}")
         params[f"{spec.name}_path"] = sec_tmp_path
-        # Original filename for display — the temp path's name is meaningless.
+        # Original filename for display; the temp path's name is meaningless.
         params[f"{spec.name}_filename"] = sec_name
 
     # Enqueue background task (use Celery worker pool if Redis is configured and not in testing mode)

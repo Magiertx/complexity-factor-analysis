@@ -53,7 +53,7 @@ export function AlgorithmList({
       try {
         localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
       } catch {
-        /* private mode / quota — keep in-memory state */
+        /* private mode or quota exceeded, keep in-memory state */
       }
       return next;
     });

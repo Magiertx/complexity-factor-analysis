@@ -37,7 +37,7 @@ function write(algorithmId: string, presets: Preset[]): void {
       localStorage.setItem(key(algorithmId), JSON.stringify(presets));
     }
   } catch {
-    /* localStorage quota — ignore, user gets no preset persistence */
+    /* localStorage full, presets are not persisted */
   }
 }
 

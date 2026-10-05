@@ -7,7 +7,7 @@ import { useT } from "@/lib/i18n";
 
 // Compact drop area in the Single-Run FileDrop look (circular icon, primary
 // label + muted hint, accent highlight while dragging). Used by the builders,
-// which keep their own selected-file tiles — this only covers the empty zone.
+// which keep their own selected-file tiles. This only covers the empty zone.
 
 interface Props {
   onFiles: (files: File[]) => void;

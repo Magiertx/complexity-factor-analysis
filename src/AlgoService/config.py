@@ -80,14 +80,9 @@ from fastapi import Request
 async def get_session_id(request: Request) -> str:
     """The caller's session id, guaranteed to be a well-formed UUID.
 
-    The value comes out of a signed cookie, but it is still attacker-controlled input the
-    moment the signing key leaks — and it is used as a *path component* for the per-session
-    upload directory (``UPLOADED_LOGS_DIR / session_id``). Without this check a session id of
-    ``../..`` escapes that directory: ``Path("/app/uploaded_logs") / "../.."`` resolves to
-    ``/``, and ``/recent-logs`` would happily list it.
-
-    Anything that does not parse as a UUID is replaced by a fresh one rather than rejected —
-    a tampered or merely corrupted cookie should start a new session, not return an error.
+    The id is used as a path component for the per-session upload directory, so a value like
+    ``../..`` must never get through. Anything that is not a UUID is replaced by a fresh one,
+    so a tampered or corrupted cookie starts a new session instead of returning an error.
     """
     session_id = request.session.get("session_id")
     if session_id is not None:
@@ -124,24 +119,12 @@ _proxy_misconfig_warned = False
 
 
 def rate_limit_key(request: Request) -> str:
-    """Per-client key for rate limiting, with a one-off warning when it is not per-client.
+    """Per-client key for rate limiting.
 
-    ``get_remote_address`` reads ``request.client.host``, which is the TCP peer unless
-    uvicorn's ``ProxyHeadersMiddleware`` has replaced it from ``X-Forwarded-For``. Our request
-    path is browser → nginx → Next.js rewrite → algoservice, so the peer is always the
-    frontend container: without that replacement *every user shares one counter*, and one
-    person exhausting the hourly limit exhausts it for the whole deployment.
-
-    The middleware runs by default (``proxy_headers=True``), but only trusts peers listed in
-    ``forwarded_allow_ips``, whose default is ``127.0.0.1`` — which the frontend container is
-    not. The fix is the ``FORWARDED_ALLOW_IPS`` environment variable (set in
-    ``docker-compose.yml``); this function only *detects* that it is missing.
-
-    Detection is by effect rather than by configuration: if a request carries an
-    ``X-Forwarded-For`` header but the resolved address is not one of the hops in it, the
-    header was ignored. Checking the effect rather than the env var is what makes this catch
-    a wrong value as well as a missing one — a silently ineffective setting is the failure
-    mode to avoid.
+    Requests reach algoservice through the frontend container, so the client address is only
+    per-user if uvicorn trusts ``X-Forwarded-For`` from that container (``FORWARDED_ALLOW_IPS``
+    in ``docker-compose.yml``). If a request carries the header but the resolved address is not
+    one of its hops, the header was ignored and a warning is logged once.
     """
     global _proxy_misconfig_warned
     client_host = get_remote_address(request)

@@ -38,7 +38,7 @@ def test_cleanup_old_jobs_skips_running_and_pending(client, tmp_path):
     _run(seed())
 
     # Force the cleanup to think the disk is nearly full (free 5% < 10%) so it
-    # actually tries to evict — otherwise the function returns early.
+    # actually tries to evict; otherwise the function returns early.
     fake_usage = shutil._ntuple_diskusage(100, 95, 5)
 
     # Create artifact folders matching each job so we can verify what gets

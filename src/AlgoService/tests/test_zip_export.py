@@ -1,9 +1,7 @@
-"""ZIP-export download regression tests.
+"""ZIP export tests.
 
-The /jobs/{job_id}/download endpoint historically broke silently when the
-result included a table artifact (any quoted cell). This test seeds a
-completed job directly in the DB, requests the ZIP, and asserts every kind
-of artifact survives the round-trip.
+Seeds a completed job directly in the DB, downloads /jobs/{job_id}/download and checks
+that every kind of artifact, including tables with quoted cells, survives the round trip.
 """
 
 from __future__ import annotations
@@ -23,7 +21,7 @@ def _session_id_from_client(client) -> str:
 
     The download route is session-scoped (via ``get_session_id``), so a job
     seeded directly in the DB must carry the same session_id the client
-    presents on subsequent requests — otherwise the route returns 404.
+    presents on subsequent requests; otherwise the route returns 404.
     """
     # Trigger session allocation. /jobs is cheap and uses get_session_id.
     client.get("/jobs")
@@ -106,7 +104,7 @@ def test_zip_download_includes_all_artifact_kinds(client):
     csv_text = files[csv_path].decode("utf-8")
     # Use the csv module so embedded newlines inside quoted fields don't
     # confuse the row count. The buggy version produced rows like
-    # ['<self-ref>', 'cell'] and crashed on join — just hitting status 200
+    # ['<self-ref>', 'cell'] and crashed on join; just hitting status 200
     # with the right header + row count is the main signal here.
     parsed = list(_csv.reader(io.StringIO(csv_text)))
     assert parsed[0] == ["Log", "Notes", "Quoted"]
@@ -126,7 +124,7 @@ def test_zip_download_includes_all_artifact_kinds(client):
 
 
 def test_zip_download_includes_manifest(client):
-    """The manifest is the reproducibility hook — answer 'what version was
+    """The manifest answers 'what version was
     this?' weeks later without re-deploying the codebase."""
     job_id = _seed_completed_job(_session_id_from_client(client))
 

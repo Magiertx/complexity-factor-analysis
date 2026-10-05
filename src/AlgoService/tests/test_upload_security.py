@@ -87,9 +87,7 @@ def test_upload_safe_xml_accepted(client, stub_algorithm):
 def test_gzip_bomb_is_refused_before_it_expands():
     """A .xes.gz well inside the 100 MB upload limit must not expand without bound.
 
-    The upload check counts compressed bytes. A realistic repetitive XES compresses ~200:1,
-    one made of nulls over 1000:1 — so a file that passes the limit can still become tens of
-    gigabytes in memory. Four Celery workers make that four at a time.
+    The upload check counts compressed bytes, and XES compresses 200:1 or more.
     """
     import gzip
     import tempfile
@@ -112,7 +110,7 @@ def test_gzip_bomb_is_refused_before_it_expands():
 
 
 def test_ordinary_gzipped_log_still_reads():
-    """Guard the fix above against over-correction."""
+    """A normal gzipped log is still accepted."""
     import gzip
     import shutil
     import tempfile
@@ -134,7 +132,7 @@ def test_ordinary_gzipped_log_still_reads():
 
 @pytest.mark.parametrize("hostile", ["../..", "../../etc", "..", "/etc", "not-a-uuid"])
 def test_malformed_session_id_is_replaced_not_used_as_a_path(hostile):
-    """The session id is a directory component — it must never leave its parent.
+    """The session id is a directory component and must never leave its parent.
 
     It arrives in a signed cookie, but a leaked signing key turns it into attacker input, and
     `UPLOADED_LOGS_DIR / "../.."` resolves to the filesystem root. Job ids were validated,
@@ -206,26 +204,20 @@ def _request_with(peer: str, forwarded: str | None):
 
 
 def test_rate_limit_key_warns_when_the_proxy_header_is_ignored(caplog):
-    """A shared counter is a denial of service that must not be silent.
-
-    Behind the reverse proxy the TCP peer is always the frontend container. If uvicorn does not
-    trust it (``FORWARDED_ALLOW_IPS`` unset or wrong), ``X-Forwarded-For`` is ignored, every
-    caller collapses onto one key, and one user exhausts the limits for the whole deployment.
-    Nothing about that is visible from the outside — hence the warning this test pins.
-    """
+    """Warn when X-Forwarded-For is ignored and all callers share one rate-limit key."""
     import config
 
     config._proxy_misconfig_warned = False
     with caplog.at_level("WARNING"):
         key = config.rate_limit_key(_request_with("172.28.0.10", "203.0.113.7"))
 
-    assert key == "172.28.0.10"  # the unfixed behaviour: everyone shares this
+    assert key == "172.28.0.10"  # everyone shares this key
     assert "not per-client" in caplog.text
     assert "FORWARDED_ALLOW_IPS" in caplog.text
 
 
 def test_rate_limit_key_is_quiet_when_the_proxy_header_was_applied(caplog):
-    """With uvicorn configured, client.host *is* the forwarded address — no warning."""
+    """With uvicorn configured, client.host is the forwarded address and nothing is logged."""
     import config
 
     config._proxy_misconfig_warned = False
@@ -321,8 +313,8 @@ def test_health_does_not_leak_database_details(client):
 def test_leaked_scratch_file_is_eventually_removed(tmp_path, monkeypatch):
     """A hard-killed worker leaves its tmp file behind; the count rule never sees it.
 
-    The `tmp` exclusion protects the file a running job is reading, so it cannot simply be
-    dropped — the age rule exists alongside it.
+    The `tmp` exclusion protects the file a running job is reading, so the age rule
+    handles leftovers.
     """
     from routes import algorithms as algo
 
@@ -395,11 +387,9 @@ def test_abandoned_session_directory_is_removed(tmp_path, monkeypatch):
 # --- one batch request must not add up to a gigabyte -----------------------------------
 
 def test_batch_enforces_a_total_size_budget(client, monkeypatch, stub_algorithm):
-    """Ten files, each individually under the 100 MB limit, used to mean 1 GB per request.
+    """Ten files under the per-file limit must not add up to 1 GB per request.
 
-    The per-file check happens inside `_resolve_log_to_tmp` and cannot see the other files of
-    the same request. The budget is patched down here so the test does not have to move
-    hundreds of megabytes to prove it.
+    The budget is patched down so the test does not need large uploads.
     """
     import jobs_db
     from routes import algorithms as algo
@@ -443,14 +433,13 @@ def test_batch_still_accepts_a_reasonable_request(client, monkeypatch, stub_algo
 # --- the baseline headers must not depend on the reverse proxy ------------------------
 
 def test_security_headers_are_set_by_the_application(client):
-    """They used to come only from the nginx template, so a deployment that skipped it
-    silently lost all of them."""
+    """The headers must not depend on the nginx template."""
     r = client.get("/health")
 
     assert r.headers["X-Content-Type-Options"] == "nosniff"
     assert r.headers["X-Frame-Options"] == "DENY"
     assert r.headers["Referrer-Policy"] == "no-referrer"
-    # API responses are JSON and downloads — they should never load anything at all.
+    # API responses are JSON and downloads and never load anything.
     assert "default-src 'none'" in r.headers["Content-Security-Policy"]
 
 
@@ -480,11 +469,9 @@ def test_rate_limit_falls_back_to_the_default_when_unset(monkeypatch):
 
 @pytest.mark.parametrize("bad", ["20", "20/fortnight", "many/hour", "", "  ", "-5/hour"])
 def test_malformed_rate_limit_stops_the_service(monkeypatch, bad):
-    """A limit that never matches a request is worse than no limit — it looks applied.
+    """A malformed limit raises instead of silently keeping the default.
 
-    Falling back to the default would be the worst outcome: an operator lowers a
-    limit for a demo, the old one stays in force, and nothing says so. Empty values are the
-    exception: an unset variable and one set to "" both mean "not configured".
+    Empty values count as "not configured".
     """
     import env_config
 
@@ -504,7 +491,7 @@ def test_rate_limit_accepts_the_verbose_slowapi_form(monkeypatch):
 
 
 def test_job_quota_is_tunable(monkeypatch):
-    """The limit that actually bounds load, and therefore the one to lower for a demo."""
+    """MAX_ACTIVE_JOBS_PER_SESSION can be set from the environment."""
     import env_config
 
     monkeypatch.setenv("MAX_ACTIVE_JOBS_PER_SESSION", "3")
@@ -523,8 +510,7 @@ def test_malformed_job_quota_stops_the_service(monkeypatch, bad):
 def test_configured_limit_reaches_the_endpoint(monkeypatch):
     """End-to-end: the decorators must read the variable, not just the helper.
 
-    Reimporting with the variable set is the only way to see this — the decorators are
-    evaluated at import time.
+    The decorators are evaluated at import time, so the modules are reimported.
     """
     import importlib
     import sys

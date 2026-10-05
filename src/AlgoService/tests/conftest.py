@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 import sys
 
-# Disable rate limiting before any AlgoService module imports happen — the
+# Disable rate limiting before any AlgoService module imports happen; the
 # Limiter snapshots this flag at construction time in config.py.
 os.environ.setdefault("RATE_LIMIT_DISABLED", "1")
 
@@ -29,7 +29,7 @@ import pytest
 def graphviz_available() -> bool:
     """Whether Petri-net rendering can produce images in this environment.
 
-    The ComFy adapter degrades gracefully without Graphviz — it returns its table and skips the
+    The ComFy adapter works without Graphviz: it returns its table and skips the
     image artifacts. Tests that assert on those images must therefore gate on this, or they
     fail on any machine without Graphviz even though nothing is broken. The algoservice
     image installs it (`src/AlgoService/Dockerfile`), a plain local checkout usually has not.

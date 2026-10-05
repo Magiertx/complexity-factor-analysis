@@ -39,7 +39,7 @@ from slowapi.middleware import SlowAPIMiddleware
 
 # `root_path` makes Swagger UI / ReDoc work correctly when the API is reached
 # through the Next.js `/api/*` rewrite (and any further reverse proxy in front
-# of it). When unset, FastAPI runs as if it owns the URL root — fine for
+# of it). When unset, FastAPI runs as if it owns the URL root, which is fine for
 # direct backend access during development.
 _fastapi_root_path = os.environ.get("FASTAPI_ROOT_PATH", "")
 
@@ -100,7 +100,7 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
-        # Shutdown — cancel the background listener so it doesn't leak on hot
+        # Shutdown: cancel the background listener so it doesn't leak on hot
         # reload or graceful shutdown.
         if redis_task is not None:
             redis_task.cancel()
@@ -140,11 +140,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# The session cookie is the only thing separating one user's jobs, uploads and results from
-# another's, so the signing key must not be guessable. A committed default is public by
-# definition: anyone reading the repository can forge any session. Fail to start instead —
-# a service that refuses to boot is a far smaller problem than one that silently runs with a
-# known key. Tests set it themselves.
+# The session cookie separates users' jobs and uploads, so there is no default signing key.
 _session_secret = os.environ.get("SESSION_SECRET_KEY")
 if not _session_secret:
     if os.environ.get("RATE_LIMIT_DISABLED") == "1":  # test harness, see tests/conftest.py
@@ -161,24 +157,17 @@ app.add_middleware(
     secret_key=_session_secret,
     session_cookie="session_id",
     same_site="lax",
-    # Cookies must not travel in the clear once there is TLS in front. Off by default so
-    # local http://localhost development keeps working; set SESSION_COOKIE_SECURE=1 in any
-    # deployment that terminates TLS.
+    # Set SESSION_COOKIE_SECURE=1 behind TLS; off by default for http://localhost.
     https_only=os.environ.get("SESSION_COOKIE_SECURE") == "1",
 )
 
 
 @app.middleware("http")
 async def security_headers(request, call_next):
-    """Set the baseline security headers in the application itself.
+    """Baseline security headers, independent of the reverse proxy.
 
-    They were previously supplied entirely by the nginx template in docs/DEPLOYMENT.md, so a
-    deployment that skipped or mistyped that template lost all of them without any sign. A
-    reverse proxy setting the same headers again is harmless — it overwrites these.
-
-    The CSP here is for API responses, which are JSON and file downloads: `default-src 'none'`
-    is the correct policy for a response that should never load anything. The frontend's own,
-    necessarily looser policy lives in next.config.mjs.
+    API responses are JSON and file downloads, hence `default-src 'none'`. The frontend's CSP
+    is in next.config.mjs.
     """
     response = await call_next(request)
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
@@ -187,9 +176,7 @@ async def security_headers(request, call_next):
     response.headers.setdefault(
         "Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
     )
-    # Only claim HTTPS-only when TLS is actually terminated in front of us — the same switch
-    # that decides whether the session cookie is Secure. Sending HSTS from a plain-http
-    # deployment would lock browsers out of it.
+    # HSTS only behind TLS, same switch as the Secure cookie.
     if os.environ.get("SESSION_COOKIE_SECURE") == "1":
         response.headers.setdefault(
             "Strict-Transport-Security", "max-age=31536000; includeSubDomains"

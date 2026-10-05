@@ -1,16 +1,8 @@
 /** @type {import('next').NextConfig} */
 
-// Content-Security-Policy for the frontend.
-//
-// `'unsafe-inline'` in script-src is not an oversight: the App Router emits inline bootstrap
-// and streaming-payload scripts, and suppressing them requires per-request nonces, which
-// `output: "standalone"` pages cannot use while they are statically rendered. A policy of
-// `default-src 'self'` alone blocks those scripts and leaves a blank page. The value here is
-// what actually loads.
-//
-// It still buys the thing it is meant to buy: no external origin can supply script, style,
-// font or image, nothing can be framed or frame us, and connections are same-origin (the API
-// is reached through the /api rewrite, so it is same-origin too).
+// Content-Security-Policy for the frontend. The App Router emits inline scripts, and
+// statically rendered pages cannot use nonces, so script-src needs 'unsafe-inline'.
+// Everything is still restricted to the own origin; the API is same-origin via /api.
 const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'" + (process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""),
@@ -36,8 +28,7 @@ const nextConfig = {
   experimental: {},
   output: "standalone",
   async headers() {
-    // Also set by the nginx template in docs/DEPLOYMENT.md. Duplicated on purpose: a
-    // deployment that does not use that template must not silently run without them.
+    // Also set by the nginx template in docs/DEPLOYMENT.md, but not every deployment uses it.
     return [{ source: "/:path*", headers: securityHeaders }];
   },
   async rewrites() {
