@@ -263,7 +263,7 @@ export function DataForm({ kind, catalog, submitting, submitError, onSubmit, onC
         <Checklist
           heading={t("factor.data.miners_heading")}
           hint={t("factor.data.miners_hint")}
-          items={catalog.miners.map((m) => ({ key: m.key, name: m.name }))}
+          items={catalog.miners.map((m) => ({ key: m.key, name: m.name, slow: m.slow }))}
           selected={miners}
           onChange={setMiners}
           defaults={catalog.defaults.miners ?? []}

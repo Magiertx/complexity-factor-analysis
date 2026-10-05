@@ -327,7 +327,7 @@ export interface SampleInput {
 export interface FactorCatalog {
   kind: FactorKind;
   measures: FactorMeasure[];
-  miners?: { key: string; name: string }[];
+  miners?: { key: string; name: string; slow?: boolean }[];
   groups?: { key: string; name: string; description: string }[];
   defaults: { measures: string[]; miners?: string[]; groups?: string[] };
   bundled: BundledDataset[];
