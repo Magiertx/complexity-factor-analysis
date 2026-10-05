@@ -504,7 +504,7 @@
       "copy_citation": "Zitat kopieren",
       "csv_drop_label": "CSV-Datei hier ablegen",
       "csv_drop_hint": "oder klicken zum Auswählen · .csv",
-      "csv_format": "Die erste Zeile enthält die Namen der Maße. Nicht-numerische, konstante und doppelte Spalten werden entfernt, ebenso Zeilen mit fehlenden Werten.",
+      "csv_format": "Die erste Zeile enthält die Namen der Maße. Nicht-numerische, konstante und doppelte Spalten sowie Spalten mit fehlenden Werten werden entfernt.",
       "logs_drop_label": "Event-Logs hier ablegen",
       "logs_drop_hint": "oder klicken zum Auswählen · .xes, .xes.gz · bis zu {max} Dateien",
       "pnml_drop_label": "Petri-Netze hier ablegen",
@@ -668,11 +668,11 @@
       "unassigned_hint": "Auf keinem Faktor über der Schwelle."
     },
     "help": {
-      "cleaning": "Vor der Analyse werden Spalten entfernt, die nicht numerisch sind, keine Varianz haben oder exakte Kopien einer früheren Spalte sind, ebenso Zeilen mit fehlenden Werten. Sie würden die Korrelationsmatrix singulär machen.",
+      "cleaning": "Vor der Analyse werden Spalten entfernt, die nicht numerisch sind, keine Varianz haben, fehlende Werte enthalten oder exakte Kopien einer früheren Spalte sind, wie in ComFy für Log-Maße. Solche Spalten würden die Korrelationsmatrix verzerren oder unbrauchbar machen.",
       "bartlett": "Der Test nach Bartlett prüft die Nullhypothese, dass die Korrelationsmatrix eine Einheitsmatrix ist, die Maße also unkorreliert sind. Ist p < α, gibt es Korrelationen, die gemeinsame Faktoren erklären können. Bei vielen Beobachtungen besteht der Test fast immer, lies ihn daher zusammen mit KMO.",
       "kmo": "Das Kaiser-Meyer-Olkin-Kriterium vergleicht die Korrelationen zwischen den Maßen mit ihren partiellen Korrelationen. Werte nahe 1 bedeuten, dass die Maße gemeinsame Varianz teilen; Werte nahe 0, dass die Korrelationen vor allem paarweise sind. Kaisers Skala: ab 0,9 ausgezeichnet, 0,8 sehr gut, 0,7 mittelmäßig, 0,6 mäßig, 0,5 schlecht, darunter inakzeptabel.",
       "msa": "Das Measure of Sampling Adequacy (MSA) ist der KMO-Wert eines einzelnen Maßes. Ein Maß mit niedrigem MSA hat wenig mit den anderen gemeinsam und passt zu keinem gemeinsamen Faktor; es zu entfernen hebt meist den KMO-Gesamtwert. Setze ein Häkchen, um ein Maß von Hand auszuschließen.",
-      "msa_filter": "Wie in ComFy wird das Maß mit dem niedrigsten MSA entfernt und alle MSA-Werte werden neu berechnet, bis jedes verbleibende Maß die Schwelle erreicht.",
+      "msa_filter": "Wie in ComFy werden alle Maße unter der Schwelle entfernt und die MSA-Werte neu berechnet, bis jedes verbleibende Maß die Schwelle erreicht.",
       "scree": "Der Screeplot zeigt die Eigenwerte der Korrelationsmatrix in absteigender Reihenfolge. Suche den Knick, ab dem die Kurve flach wird; Faktoren danach tragen wenig bei. Knick und die Regel Eigenwert über 1 können sich widersprechen, nimm beide als Ausgangspunkt.",
       "eigenvalue": "Ein Eigenwert ist die Varianz, die ein Faktor erklärt, gemessen in Einheiten eines standardisierten Maßes. Der Vorschlag behält jeden Faktor mit Eigenwert über 1 (Kaiser-Kriterium), also jeden Faktor, der mehr erklärt als ein einzelnes Maß.",
       "rotation": "Die Rotation dreht die Faktorlösung so, dass jedes Maß auf möglichst wenigen Faktoren hoch lädt; das macht die Faktoren leichter benennbar. Wie viel Varianz die Faktoren zusammen erklären, ändert sie nicht. Varimax und Quartimax halten die Faktoren unkorreliert; Promax und Oblimin erlauben Korrelationen, was für Komplexitätsmaße oft realistischer ist.",

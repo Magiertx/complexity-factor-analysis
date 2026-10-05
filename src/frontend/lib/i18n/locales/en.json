@@ -504,7 +504,7 @@
       "copy_citation": "Copy citation",
       "csv_drop_label": "Drop a CSV file here",
       "csv_drop_hint": "or click to browse · .csv",
-      "csv_format": "The first row holds the measure names. Non-numeric, constant and duplicate columns are dropped, and so are rows with missing values.",
+      "csv_format": "The first row holds the measure names. Columns that are non-numeric, constant, duplicate or have missing values are dropped.",
       "logs_drop_label": "Drop event logs here",
       "logs_drop_hint": "or click to browse · .xes, .xes.gz · up to {max} files",
       "pnml_drop_label": "Drop Petri nets here",
@@ -668,11 +668,11 @@
       "unassigned_hint": "Below the threshold on every factor."
     },
     "help": {
-      "cleaning": "Before the analysis, columns that are not numeric, that have no variance, or that are perfect copies of an earlier column are removed, as are rows with missing values. These would make the correlation matrix singular.",
+      "cleaning": "Before the analysis, columns that are not numeric, that have no variance, that have missing values, or that are perfect copies of an earlier column are removed, as in ComFy for log measures. Such columns would distort or break the correlation matrix.",
       "bartlett": "Bartlett's test checks the null hypothesis that the correlation matrix is an identity matrix, i.e. that the measures are uncorrelated. If p < α, there are correlations that common factors can explain. With many observations the test almost always passes, so read it together with KMO.",
       "kmo": "The Kaiser–Meyer–Olkin criterion compares the correlations between the measures with their partial correlations. Values near 1 mean the measures share common variance; values near 0 mean the correlations are mostly pairwise. Kaiser's scale: from 0.9 marvellous, 0.8 meritorious, 0.7 middling, 0.6 mediocre, 0.5 miserable, below that unacceptable.",
       "msa": "The measure of sampling adequacy (MSA) is the KMO value of a single measure. A measure with low MSA shares little with the others and fits no common factor well; removing it usually raises the overall KMO. Tick a measure to exclude it by hand.",
-      "msa_filter": "As in ComFy, the measure with the lowest MSA is removed and all MSA values are recomputed, until every remaining measure reaches the threshold.",
+      "msa_filter": "As in ComFy, all measures below the threshold are removed and the MSA values are recomputed, until every remaining measure reaches the threshold.",
       "scree": "The scree plot shows the eigenvalues of the correlation matrix in descending order. Look for the elbow where the curve flattens; factors after it add little. The elbow and the eigenvalue-above-1 rule can disagree, so treat both as starting points.",
       "eigenvalue": "An eigenvalue is the variance a factor explains, in units of one standardised measure. The suggestion keeps every factor with an eigenvalue above 1 (Kaiser criterion), i.e. every factor that explains more than a single measure.",
       "rotation": "Rotation turns the factor solution so that each measure loads strongly on as few factors as possible, which makes the factors easier to name. It does not change how much variance the factors explain together. Varimax and quartimax keep the factors uncorrelated; promax and oblimin let them correlate, which is often more realistic for complexity measures.",
