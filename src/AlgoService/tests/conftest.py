@@ -65,9 +65,11 @@ def isolated_jobs_dir(monkeypatch, tmp_path):
 def clean_db(isolated_jobs_dir):
     """Clear database jobs before each test and start it on a new connection.
 
-    aiosqlite guards a connection with an asyncio.Lock that binds to the first event loop
-    waiting on it. Every TestClient and every asyncio.run has its own loop, so a connection
-    shared across tests fails at random with "bound to a different event loop".
+    SQLAlchemy's aiosqlite adapter guards each connection with an asyncio.Lock that binds to
+    the first event loop waiting on it. Every TestClient and every asyncio.run has its own
+    loop, so a connection shared across tests fails at random with "bound to a different
+    event loop". With TEST_DATABASE_URL set to an in-memory SQLite database this drops the
+    tables before every test, so use a file.
     """
     import asyncio
     import database
