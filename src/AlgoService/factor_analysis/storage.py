@@ -76,6 +76,7 @@ def create(
         "observations": [],
         "dropped": [],
         "dropped_rows": 0,
+        "failures": [],
         "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
     _write_json(directory / "meta.json", meta)
@@ -103,8 +104,17 @@ def update_meta(session_id: str, dataset_id: str, **changes: Any) -> dict[str, A
     return meta
 
 
-def store_matrix(session_id: str, dataset_id: str, raw: pd.DataFrame) -> dict[str, Any]:
-    """Clean ``raw`` (rows = observations), save it and mark the dataset ready."""
+#: Failed inputs kept in the metadata; the job result lists all of them.
+MAX_FAILURES = 200
+
+
+def store_matrix(
+    session_id: str, dataset_id: str, raw: pd.DataFrame, failures: list[tuple[str, str]] | None = None
+) -> dict[str, Any]:
+    """Clean ``raw`` (rows = observations), save it and mark the dataset ready.
+
+    ``failures`` are (input, error) pairs of inputs that gave no or incomplete values.
+    """
     cleaned = clean_matrix(raw)
     data = cleaned.data
     directory = dataset_dir(session_id, dataset_id)
@@ -120,6 +130,7 @@ def store_matrix(session_id: str, dataset_id: str, raw: pd.DataFrame) -> dict[st
         observations=list(data.index),
         dropped=cleaned.dropped,
         dropped_rows=cleaned.dropped_rows,
+        failures=[{"input": i, "error": e} for i, e in (failures or [])[:MAX_FAILURES]],
     )
 
 

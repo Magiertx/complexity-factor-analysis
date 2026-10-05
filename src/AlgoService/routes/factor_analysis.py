@@ -292,7 +292,7 @@ async def run_dataset_task(job_id: str, session_id: str, dataset_id: str, spec: 
             first = result.failures[0][1] if result.failures else "no input produced values"
             raise RuntimeError(f"No observation could be computed. First error: {first}")
 
-        meta = await asyncio.to_thread(storage.store_matrix, session_id, dataset_id, result.table)
+        meta = await asyncio.to_thread(storage.store_matrix, session_id, dataset_id, result.table, result.failures)
 
         rows = [
             [label, *(None if pd.isna(v) else round(float(v), 6) for v in values)]
@@ -519,6 +519,7 @@ async def get_dataset(dataset_id: str, session_id: str = Depends(get_session_id)
         "truncated": False,
         "dropped": meta["dropped"],
         "dropped_rows": meta["dropped_rows"],
+        "failures": meta.get("failures", []),
         "created_at": meta["created_at"],
     }
     if meta.get("job_id"):

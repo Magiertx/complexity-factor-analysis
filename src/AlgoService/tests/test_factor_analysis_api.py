@@ -441,6 +441,35 @@ def test_failing_inputs_fail_the_dataset(client, monkeypatch, xes_files):
     assert client.post(f"/factor-analysis/datasets/{d['id']}/analyze", json={}).status_code == 409
 
 
+def test_failing_input_is_listed_on_the_dataset(client, fake_miner, monkeypatch, xes_files):
+    from algorithms import comfy
+
+    real = comfy.MINERS_BY_NAME[fake_miner]
+
+    class PickyMiner:
+        calls = 0
+
+        def __str__(self):
+            return fake_miner
+
+        def discover_for(self, event_log):
+            PickyMiner.calls += 1
+            if PickyMiner.calls == 1:
+                raise RuntimeError("no lpsolve55 in java.library.path")
+            return real.discover_for(event_log)
+
+    monkeypatch.setitem(comfy.MINERS_BY_NAME, fake_miner, PickyMiner())
+    files = [("files", (name, data, "application/xml")) for name, data in xes_files.items()]
+    r = _post(client, kind="model", source="logs", miners=[fake_miner], measures=["Size"], files=files)
+    d = _wait_ready(client, r.json()["dataset_id"])
+    assert d["status"] == "ready", d
+    failed = [f["input"] for f in d["failures"]]
+    assert len(failed) == 1 and failed[0].endswith(f"/ {fake_miner}")
+    assert d["n_observations"] == len(xes_files) - 1
+    assert not set(failed) & set(d["observations"])
+    assert "lpsolve55" in d["failures"][0]["error"]
+
+
 def test_model_dataset_from_logs(client, fake_miner, xes_files):
     files = [("files", (name, data, "application/xml")) for name, data in xes_files.items()]
     r = _post(client, kind="model", source="logs", miners=[fake_miner], measures=["Size", "Token split"], files=files)

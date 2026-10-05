@@ -190,6 +190,10 @@ reported in `dropped`: measures with a non-numeric value (`non_numeric`), with a
 infinite value (`missing`), without variance (`constant`), and measures perfectly correlated
 with an earlier one (`duplicate`, the first is kept).
 
+For `logs` and `pnml`, `failures` lists the inputs that gave no or incomplete values as
+`{"input", "error"}` (for example a miner that failed on one log); such a row is missing from
+the matrix.
+
 ### Analyse
 
 `POST /factor-analysis/datasets/{id}/analyze` with a JSON body; every field is optional:
