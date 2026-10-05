@@ -150,7 +150,8 @@ All of this is set in `docker-compose.yml`; reverse proxy, TLS, volumes and back
   single-threaded (`OPENBLAS_NUM_THREADS=1`), which is many times faster for these matrices.
 - **Slow and broken miners.** Alpha++ and Alpha Robust are marked slow; Alpha++ can run for
   many minutes on a mid-sized log and ProM4Py cannot interrupt it. The Hybrid ILP miner needs
-  the native lp_solve 5.5 library, which the `prom4py` image does not contain, so it fails.
+  the native lp_solve 5.5 libraries; the `prom4py` image installs them on x86-64 only (see
+  [`src/prom4py/README.md`](src/prom4py/README.md#lp_solve)), elsewhere it fails.
 
 ## Project structure
 

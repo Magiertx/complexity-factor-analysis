@@ -8,7 +8,7 @@ network.
 
 | Step | Needs the network for |
 |---|---|
-| `docker compose build` | Base images (Python, Node, Temurin, Postgres, Redis), apt, pip and npm packages, and the ProM bundle from Zenodo (about 430 MB) for `prom4py`. |
+| `docker compose build` | Base images (Python, Node, Temurin, Postgres, Redis), apt, pip and npm packages, and for `prom4py` the ProM bundle from Zenodo (about 430 MB) and the lp_solve Java wrapper from SourceForge (about 460 KB, for the Hybrid ILP miner). |
 | `docker compose up` | Nothing, once all six images are present locally. |
 | Running the tool | Nothing. |
 
@@ -71,6 +71,11 @@ docker compose build --build-arg PROM4PY_ZIP_URL=http://host.docker.internal:876
 Docker bridge instead. The other images still need their base images and packages, so this
 only removes the Zenodo download.
 
+The lp_solve Java wrapper (`lp_solve_5.5.2.5_java.zip`, checked against a pinned SHA-256)
+comes from SourceForge in the same build. Serve a local copy next to the ProM bundle and add
+`--build-arg LPSOLVE_JAVA_URL=http://host.docker.internal:8765/lp_solve_5.5.2.5_java.zip`
+(see [`src/prom4py/README.md`](../src/prom4py/README.md#lp_solve)).
+
 ## Running without network
 
 ```bash
@@ -127,11 +132,12 @@ Measured on Docker Desktop on Windows 11 (12 virtual CPUs), with the images alre
 | Sample nets: 32 PNML × 12 measures | 6 to 7 s |
 | Sample logs, model tab: 4 logs × Inductive miner × 12 measures | 11 to 20 s |
 | Sample logs, model tab: 4 logs × 6 fast miners × 12 measures | 52 s |
+| Sample logs, model tab: 4 logs × Hybrid ILP miner × 12 measures | 15 s |
 | Sample logs, log tab: 4 logs, default feature groups | 105 s |
 | Sample logs, log tab: 4 logs, simple statistics only | 3 s |
 
 Alpha++ did not finish within 15 minutes on the largest sample log; leave the miners marked
-"slow" out of a live demo. The Hybrid ILP miner fails in this image (see
+"slow" out of a live demo. The Hybrid ILP miner works on x86-64 only (see
 [README](../README.md#operating-it)).
 
 ## Memory and disk
