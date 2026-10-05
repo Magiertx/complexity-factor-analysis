@@ -135,3 +135,38 @@ def test_run_reports_real_values_not_error_cells():
     cells = [c for row in tables[0].payload["rows"] for c in row[1:]]
     assert cells, "ComFy table has no value cells"
     assert not any(isinstance(c, str) and c.startswith("ERR:") for c in cells), cells
+
+
+class _FlakyMiner:
+    """Fails like ProM4Py does now and then, ``failures`` times, then returns a net."""
+
+    def __init__(self, failures: int, message: str = "AcceptingPetriNetImpl cannot be cast to ProMFuture"):
+        self.failures = failures
+        self.message = message
+        self.calls = 0
+
+    def discover_for(self, event_log):
+        self.calls += 1
+        if self.calls <= self.failures:
+            raise Exception(self.message)
+        return ("net", "im", "fm")
+
+
+def test_discover_repeats_the_prom4py_cast_error():
+    from algorithms.comfy import DISCOVERY_ATTEMPTS, discover
+
+    miner = _FlakyMiner(failures=DISCOVERY_ATTEMPTS - 1)
+    assert discover(miner, None) == ("net", "im", "fm")
+    assert miner.calls == DISCOVERY_ATTEMPTS
+
+    with pytest.raises(Exception, match="ProMFuture"):
+        discover(_FlakyMiner(failures=DISCOVERY_ATTEMPTS), None)
+
+
+def test_discover_does_not_repeat_other_errors():
+    from algorithms.comfy import discover
+
+    miner = _FlakyMiner(failures=1, message="log has no traces")
+    with pytest.raises(Exception, match="no traces"):
+        discover(miner, None)
+    assert miner.calls == 1

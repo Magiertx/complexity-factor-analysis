@@ -34,10 +34,20 @@ SLOW_MEASURES = {"Cross-Connectivity", "Depth", "Diameter", "Cyclicity"}
 # Measures that need the initial and final marking.
 _MARKING_MEASURES = {"Depth", "Diameter"}
 
+# ProM4Py now and then fails a plugin call with "AcceptingPetriNetImpl cannot be cast to
+# ProMFuture" (about one call in seven in our runs); the same call works when repeated.
+DISCOVERY_ATTEMPTS = 3
+
 
 def discover(miner: Any, event_log: Any) -> tuple[Any, Any, Any]:
     """Run one ComFy miner; returns (net, initial marking, final marking)."""
-    net_obj = miner.discover_for(event_log)
+    for attempt in range(1, DISCOVERY_ATTEMPTS + 1):
+        try:
+            net_obj = miner.discover_for(event_log)
+            break
+        except Exception as e:
+            if attempt == DISCOVERY_ATTEMPTS or "ProMFuture" not in str(e):
+                raise
     # miners return either (net, im, fm) tuples or a single graph
     if isinstance(net_obj, tuple) and len(net_obj) == 3:
         return net_obj
