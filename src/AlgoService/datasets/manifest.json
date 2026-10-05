@@ -1,0 +1,165 @@
+{
+  "datasets": [
+    {
+      "id": "comfy-paper-inductive-miner",
+      "kind": "model",
+      "name": "ComFy paper scores: Inductive miner",
+      "description": "ComFy model measures of the nets the Inductive miner discovered from the 288 training logs of the Process Discovery Contest 2025, as used in the paper.",
+      "file": "model/complexity_scores-inductive-miner.csv",
+      "row_labels": "comfy_tuple",
+      "source_url": "https://github.com/Pati-nets/ComFy",
+      "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
+      "license": "No licence file upstream; permission of the author pending",
+      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy"
+    },
+    {
+      "id": "comfy-paper-alpha-miner",
+      "kind": "model",
+      "name": "ComFy paper scores: Alpha miner",
+      "description": "ComFy model measures of the nets the Alpha miner discovered from the 288 training logs of the Process Discovery Contest 2025, as used in the paper.",
+      "file": "model/complexity_scores-alpha-miner.csv",
+      "row_labels": "comfy_tuple",
+      "source_url": "https://github.com/Pati-nets/ComFy",
+      "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
+      "license": "No licence file upstream; permission of the author pending",
+      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy"
+    },
+    {
+      "id": "comfy-paper-alpha-plus-miner",
+      "kind": "model",
+      "name": "ComFy paper scores: Alpha Plus miner",
+      "description": "ComFy model measures of the nets the Alpha Plus miner discovered from the 288 training logs of the Process Discovery Contest 2025, as used in the paper.",
+      "file": "model/complexity_scores-alpha-plus-miner.csv",
+      "row_labels": "comfy_tuple",
+      "source_url": "https://github.com/Pati-nets/ComFy",
+      "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
+      "license": "No licence file upstream; permission of the author pending",
+      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy"
+    },
+    {
+      "id": "comfy-paper-alpha-dollar-miner",
+      "kind": "model",
+      "name": "ComFy paper scores: Alpha Dollar miner",
+      "description": "ComFy model measures of the nets the Alpha Dollar miner discovered from the 288 training logs of the Process Discovery Contest 2025, as used in the paper.",
+      "file": "model/complexity_scores-alpha-dollar-miner.csv",
+      "row_labels": "comfy_tuple",
+      "source_url": "https://github.com/Pati-nets/ComFy",
+      "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
+      "license": "No licence file upstream; permission of the author pending",
+      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy"
+    },
+    {
+      "id": "comfy-paper-heuristics-miner",
+      "kind": "model",
+      "name": "ComFy paper scores: Heuristics miner",
+      "description": "ComFy model measures of the nets the Heuristics miner discovered from the 288 training logs of the Process Discovery Contest 2025, as used in the paper.",
+      "file": "model/complexity_scores-heuristics-miner.csv",
+      "row_labels": "comfy_tuple",
+      "source_url": "https://github.com/Pati-nets/ComFy",
+      "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
+      "license": "No licence file upstream; permission of the author pending",
+      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy"
+    },
+    {
+      "id": "comfy-paper-hybrid-ilp-miner",
+      "kind": "model",
+      "name": "ComFy paper scores: Hybrid ILP miner",
+      "description": "ComFy model measures of the nets the Hybrid ILP miner discovered from the 288 training logs of the Process Discovery Contest 2025, as used in the paper.",
+      "file": "model/complexity_scores-hybrid-ilp-miner.csv",
+      "row_labels": "comfy_tuple",
+      "source_url": "https://github.com/Pati-nets/ComFy",
+      "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
+      "license": "No licence file upstream; permission of the author pending",
+      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy"
+    },
+    {
+      "id": "comfy-paper-directly-follows-miner",
+      "kind": "model",
+      "name": "ComFy paper scores: Directly Follows miner",
+      "description": "ComFy model measures of the nets the Directly Follows miner discovered from the 288 training logs of the Process Discovery Contest 2025, as used in the paper.",
+      "file": "model/complexity_scores-directly-follows-miner.csv",
+      "row_labels": "comfy_tuple",
+      "source_url": "https://github.com/Pati-nets/ComFy",
+      "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
+      "license": "No licence file upstream; permission of the author pending",
+      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy"
+    },
+    {
+      "id": "comfy-log-pdc-training-logs",
+      "kind": "log",
+      "name": "Log measures of the PDC training logs",
+      "description": "feeed measures of the 2112 training logs of the Process Discovery Contests 2020 to 2025, as used in the paper \"Cleaning Up the Measure Mess: A Factor Analysis on Event Log Measures\".",
+      "file": "log/log_measures_all_pdc_training_logs.csv",
+      "citation": "Data of the paper \"Cleaning Up the Measure Mess: A Factor Analysis on Event Log Measures\", computed with ComFy for log measures by Patrizia Schalk, https://github.com/Pati-nets/ComFy-for-Log-Measures",
+      "source_url": "https://github.com/Pati-nets/ComFy-for-Log-Measures",
+      "source_commit": "70837cec7f3aff9580f52e78162b433e9e21f473",
+      "license": "MIT"
+    }
+  ],
+  "samples": [
+    {
+      "id": "pdc-sample-logs",
+      "kinds": [
+        "model",
+        "log"
+      ],
+      "source": "logs",
+      "name": "Four PDC training logs",
+      "description": "Training logs of the Process Discovery Contests 2020, 2023, 2024 and 2025, 1000 traces each.",
+      "files": [
+        "samples/logs/pdc2023_00101000.xes",
+        "samples/logs/pdc2024_00001100.xes",
+        "samples/logs/pdc2025_02001100.xes",
+        "samples/logs/pdc_2020_1001010.xes"
+      ],
+      "citation": "Process Discovery Contest training logs, https://www.tf-pm.org/competitions-awards/discovery-contest; distributed with ComFy for log measures",
+      "license": "MIT (as distributed in ComFy for log measures)",
+      "source_url": "https://github.com/Pati-nets/ComFy-for-Log-Measures",
+      "source_commit": "70837cec7f3aff9580f52e78162b433e9e21f473"
+    },
+    {
+      "id": "pdc-sample-models",
+      "kinds": [
+        "model"
+      ],
+      "source": "pnml",
+      "name": "Petri nets of the four PDC logs",
+      "description": "32 nets mined from the four sample logs with pm4py's inductive miner at noise thresholds 0 to 0.8 (samples/make_sample_models.py).",
+      "files": [
+        "samples/models/pdc2023_00101000_im_noise00.pnml",
+        "samples/models/pdc2023_00101000_im_noise10.pnml",
+        "samples/models/pdc2023_00101000_im_noise20.pnml",
+        "samples/models/pdc2023_00101000_im_noise30.pnml",
+        "samples/models/pdc2023_00101000_im_noise40.pnml",
+        "samples/models/pdc2023_00101000_im_noise50.pnml",
+        "samples/models/pdc2023_00101000_im_noise60.pnml",
+        "samples/models/pdc2023_00101000_im_noise80.pnml",
+        "samples/models/pdc2024_00001100_im_noise00.pnml",
+        "samples/models/pdc2024_00001100_im_noise10.pnml",
+        "samples/models/pdc2024_00001100_im_noise20.pnml",
+        "samples/models/pdc2024_00001100_im_noise30.pnml",
+        "samples/models/pdc2024_00001100_im_noise40.pnml",
+        "samples/models/pdc2024_00001100_im_noise50.pnml",
+        "samples/models/pdc2024_00001100_im_noise60.pnml",
+        "samples/models/pdc2024_00001100_im_noise80.pnml",
+        "samples/models/pdc2025_02001100_im_noise00.pnml",
+        "samples/models/pdc2025_02001100_im_noise10.pnml",
+        "samples/models/pdc2025_02001100_im_noise20.pnml",
+        "samples/models/pdc2025_02001100_im_noise30.pnml",
+        "samples/models/pdc2025_02001100_im_noise40.pnml",
+        "samples/models/pdc2025_02001100_im_noise50.pnml",
+        "samples/models/pdc2025_02001100_im_noise60.pnml",
+        "samples/models/pdc2025_02001100_im_noise80.pnml",
+        "samples/models/pdc_2020_1001010_im_noise00.pnml",
+        "samples/models/pdc_2020_1001010_im_noise10.pnml",
+        "samples/models/pdc_2020_1001010_im_noise20.pnml",
+        "samples/models/pdc_2020_1001010_im_noise30.pnml",
+        "samples/models/pdc_2020_1001010_im_noise40.pnml",
+        "samples/models/pdc_2020_1001010_im_noise50.pnml",
+        "samples/models/pdc_2020_1001010_im_noise60.pnml",
+        "samples/models/pdc_2020_1001010_im_noise80.pnml"
+      ],
+      "license": "Derived from the sample logs (MIT)"
+    }
+  ]
+}
