@@ -42,6 +42,30 @@ RUN apt-get update \
     && apt-get purge -y zip && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
 
+# lp_solve 5.5 for the Hybrid ILP miner and the alignment plugin. ProM's LpSolve package
+# (lpsolve.LpSolve) calls System.loadLibrary("lpsolve55") and then ("lpsolve55j").
+# Ubuntu packages the solver itself (lp-solve, /usr/lib/lp_solve/liblpsolve55.so), but not
+# the JNI wrapper, so liblpsolve55j.so comes from the official lp_solve Java distribution on
+# SourceForge. Its prebuilt Linux library is x86-64 only; on other architectures the step is
+# skipped and the Hybrid ILP miner keeps failing. The zip is the same file for every 5.5.2.x
+# release; 5.5.2.5 matches the version of the Ubuntu package.
+ARG LPSOLVE_JAVA_URL=https://downloads.sourceforge.net/project/lpsolve/lpsolve/5.5.2.5/lp_solve_5.5.2.5_java.zip
+ARG LPSOLVE_JAVA_SHA256=0a4dcd21e0c494f51b5de4e5e7bcd608c71bbab957e37ac776cba19808a2d6c9
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends lp-solve \
+    && rm -rf /var/lib/apt/lists/* \
+    && if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
+         curl -fsSL --retry 5 -o /tmp/lpsolve-java.zip "$LPSOLVE_JAVA_URL" \
+         && echo "$LPSOLVE_JAVA_SHA256  /tmp/lpsolve-java.zip" | sha256sum -c - \
+         && unzip -j -q /tmp/lpsolve-java.zip 'lp_solve_5.5_java/lib/ux64/liblpsolve55j.so' -d /usr/lib/lp_solve \
+         && rm /tmp/lpsolve-java.zip; \
+       else \
+         echo "No prebuilt liblpsolve55j for $(dpkg --print-architecture), Hybrid ILP miner unavailable"; \
+       fi
+
+# liblpsolve55j.so links against liblpsolve55.so, which the dynamic linker has to find too.
+ENV LD_LIBRARY_PATH=/usr/lib/lp_solve
+
 # Portable launcher: no hardcoded Java path, headless mode, configurable port.
 COPY launch.sh /opt/prom4py/launch.sh
 RUN chmod +x /opt/prom4py/launch.sh
