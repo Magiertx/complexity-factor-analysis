@@ -29,7 +29,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import jobs_db
 from config import APP_NAME, JSONFormatter, limiter
-from routes import health, algorithms, jobs
+from routes import health, algorithms, jobs, factor_analysis
 
 from starlette.middleware.sessions import SessionMiddleware
 from slowapi import _rate_limit_exceeded_handler
@@ -113,9 +113,9 @@ app = FastAPI(
     title=APP_NAME,
     version="0.1.0",
     description=(
-        "Complexity measures of process models discovered from event logs, "
-        "computed with ComFy and served as background jobs. See /api-access in "
-        "the UI for quick-start examples."
+        "Complexity measures of process models and event logs, computed with ComFy and "
+        "feeed, and factor analyses over them. See /api-access in the UI for quick-start "
+        "examples."
     ),
     root_path=_fastapi_root_path,
     lifespan=lifespan,
@@ -187,3 +187,4 @@ async def security_headers(request, call_next):
 app.include_router(health.router)
 app.include_router(algorithms.router)
 app.include_router(jobs.router)
+app.include_router(factor_analysis.router)

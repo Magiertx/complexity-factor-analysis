@@ -48,6 +48,8 @@ services:
       - RATE_LIMIT_LOG_STATS=${RATE_LIMIT_LOG_STATS:-}
       - RATE_LIMIT_ANALYZE=${RATE_LIMIT_ANALYZE:-}
       - RATE_LIMIT_BATCH=${RATE_LIMIT_BATCH:-}
+      - RATE_LIMIT_DATASETS=${RATE_LIMIT_DATASETS:-}
+      - RATE_LIMIT_FA_ANALYZE=${RATE_LIMIT_FA_ANALYZE:-}
       - RATE_LIMIT_DISABLED=${RATE_LIMIT_DISABLED:-}
       # Swagger UI and ReDoc are served behind the frontend's /api/* rewrite.
       - FASTAPI_ROOT_PATH=/api

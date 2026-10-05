@@ -95,3 +95,23 @@ def run_batch(job_id: str, log_entries: list, coerced_params: dict, algorithm_id
     except Exception as e:
         logger.exception(f"Celery task run_batch for job {job_id} failed: {e}")
         raise
+
+
+@celery_app.task(name="celery_worker.build_dataset")
+def build_dataset(job_id: str, session_id: str, dataset_id: str, spec: dict):
+    """Wrapper task computing the measure values of a factor-analysis dataset."""
+    global _loop
+    from routes.factor_analysis import run_dataset_task
+    logger.info(f"Starting Celery task build_dataset for job {job_id} ({len(spec.get('inputs', []))} inputs)")
+    try:
+        if _loop is None:
+            try:
+                _loop = asyncio.get_event_loop()
+            except RuntimeError:
+                _loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(_loop)
+        _loop.run_until_complete(run_dataset_task(job_id, session_id, dataset_id, spec))
+        logger.info(f"Celery task build_dataset for job {job_id} completed successfully")
+    except Exception as e:
+        logger.exception(f"Celery task build_dataset for job {job_id} failed: {e}")
+        raise
