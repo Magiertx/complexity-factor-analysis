@@ -174,20 +174,22 @@ Optional, in `interpretation/` with the endpoints in `routes/interpretation.py`
 ([`API.md`](API.md#interpretation-by-claude)). `POST .../interpret` runs the analysis, then:
 
 1. A precomputed file in `datasets/interpretations/` for a bundled dataset is served if its
-   data hash and parameters match (no key needed).
+   data hash, parameters and prompt digest match (no key needed). A lookup with
+   `cached_only` and `n_factors` skips the analysis for steps 1 and 2.
 2. The cache: `artifacts/interpretations/` for bundled datasets, shared by all sessions, or
    `interpretations/` in the dataset directory for own data. The key hashes the cleaned
    matrix (values and measure names, not row labels), the parameters with the factor count
    used, the language, the model, the effort and `client.PROMPT_DIGEST`, a hash of the
-   prompt, the output schema and the payload format. A precomputed file is only served if it
-   was made with the current digest.
-3. Otherwise, with `ANTHROPIC_API_KEY` set and below the per-session and daily limits
-   (`interpretation/quota.py`, counters in Redis), `payload.build_payload` reduces the result
-   to the measure names, their catalog definitions and aggregates, and `client.interpret` calls
-   `client.beta.messages.create` with `output_config` (effort and a JSON schema from
-   `schema.Interpretation`) and `fallbacks: "default"`. It checks `stop_reason` before it
-   reads the answer, validates it and trims it to the factors and measures of the analysis.
-   One call per cache key runs at a time.
+   prompt, the output schema and the payload format.
+3. Otherwise, with `ANTHROPIC_API_KEY` set, `payload.build_payload` reduces the result to the
+   measure names, their catalog definitions and aggregates, and `client.check_size` refuses
+   it if it is too large. Then, one request per cache key at a time, the per-session and
+   daily limits are counted (`interpretation/quota.py`, counters in Redis) and
+   `client.interpret` calls `client.beta.messages.create` with `output_config` (effort and a
+   JSON schema from `schema.Interpretation`) and `fallbacks: "default"`, within the time the
+   analysis left of 170 s. It checks `stop_reason` before it reads the answer, validates it,
+   trims it to the factors and measures of the analysis and rejects it if a factor is
+   missing.
 
 Datasets are session-scoped: at most 30 per session (the oldest finished ones are pruned),
 and the datasets of sessions idle for seven days are removed.
