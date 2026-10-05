@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, HelpCircle, Loader2, Microscope, RotateCcw } from "lucide-react";
 import {
@@ -38,6 +38,8 @@ import {
 } from "./step-section";
 
 const POLL_MS = 1500;
+// Polling slows down while the browser tab is hidden.
+const HIDDEN_POLL_MS = 15000;
 const ANALYZE_DEBOUNCE_MS = 300;
 
 function messageOf(e: unknown, fallback: string) {
@@ -50,6 +52,11 @@ function messageOf(e: unknown, fallback: string) {
  */
 export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const t = useT();
+  // Effects read texts through a ref, so a language switch does not refetch anything.
+  const tRef = useRef(t);
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
   const storageKey = `app.factor-dataset-${kind}`;
 
   const [catalog, setCatalog] = useState<FactorCatalog | null>(null);
@@ -79,15 +86,17 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     fetchFactorCatalog(kind, ctrl.signal)
       .then(setCatalog)
       .catch((e) => {
-        if (!ctrl.signal.aborted) setCatalogError(messageOf(e, t("factor.data.catalog_failed")));
+        if (!ctrl.signal.aborted) setCatalogError(messageOf(e, tRef.current("factor.data.catalog_failed")));
       });
     return () => ctrl.abort();
-  }, [kind, catalogAttempt, t]);
+  }, [kind, catalogAttempt]);
 
   // Datasets live in the server session; remember the last one per tab. A link from the
-  // jobs list (?dataset=<id>) takes precedence.
+  // jobs list (?dataset=<id>) takes precedence once; it is removed from the address, so a
+  // reload shows the dataset chosen last.
   useEffect(() => {
     const linked = new URLSearchParams(window.location.search).get("dataset");
+    if (linked) window.history.replaceState(window.history.state, "", window.location.pathname);
     try {
       if (linked) localStorage.setItem(storageKey, linked);
       const saved = linked ?? localStorage.getItem(storageKey);
@@ -104,6 +113,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       setDatasetError(null);
       setAnalysis(null);
       setAnalysisError(null);
+      // A request for the old dataset is aborted and would not reset this itself.
+      setAnalyzing(false);
       // Keep rotation and thresholds, but exclusions and the factor count belong to the old data.
       setOptions((o) => ({ ...o, excluded: [], n_factors: null }));
       try {
@@ -121,6 +132,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     if (!datasetId) return;
     const ctrl = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
+    const interval = () => (document.hidden ? HIDDEN_POLL_MS : POLL_MS);
     const load = async () => {
       try {
         const d = await fetchDataset(datasetId, ctrl.signal);
@@ -130,7 +142,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         }
         setDataset(d);
         setDatasetError(null);
-        if (d.status === "computing") timer = setTimeout(load, POLL_MS);
+        if (d.status === "computing") timer = setTimeout(load, interval());
       } catch (e) {
         if (ctrl.signal.aborted) return;
         if (e instanceof HttpError && e.status === 404) {
@@ -138,8 +150,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           selectDataset(null);
           return;
         }
-        setDatasetError(messageOf(e, t("factor.data.load_failed")));
-        timer = setTimeout(load, POLL_MS * 4);
+        setDatasetError(messageOf(e, tRef.current("factor.data.load_failed")));
+        timer = setTimeout(load, interval() * 4);
       }
     };
     load();
@@ -147,7 +159,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       ctrl.abort();
       clearTimeout(timer);
     };
-  }, [datasetId, kind, selectDataset, t]);
+  }, [datasetId, kind, selectDataset]);
 
   const ready = !!dataset && dataset.status === "ready" && dataset.id === datasetId;
 
@@ -163,7 +175,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         setAnalysisError(null);
       } catch (e) {
         if (ctrl.signal.aborted) return;
-        setAnalysisError(messageOf(e, t("factor.analysis.failed")));
+        setAnalysisError(messageOf(e, tRef.current("factor.analysis.failed")));
       } finally {
         if (!ctrl.signal.aborted) setAnalyzing(false);
       }
@@ -172,7 +184,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       clearTimeout(timer);
       ctrl.abort();
     };
-  }, [ready, datasetId, options, t]);
+  }, [ready, datasetId, options]);
 
   const updateOptions = useCallback(
     (patch: Partial<AnalysisOptions>) => {
@@ -204,7 +216,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   };
 
   const cancelJob = async () => {
-    if (dataset?.job_id) await abortTask(dataset.job_id);
+    if (dataset?.job_id && !(await abortTask(dataset.job_id))) {
+      setDatasetError(t("factor.data.cancel_failed"));
+      return;
+    }
     selectDataset(null);
   };
 

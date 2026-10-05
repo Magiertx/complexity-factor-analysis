@@ -223,11 +223,13 @@ export async function analyze(
   return r.json();
 }
 
-export async function abortTask(taskId: string): Promise<void> {
+/** Asks the backend to abort a job; false if the request failed. */
+export async function abortTask(taskId: string): Promise<boolean> {
   try {
-    await fetch(`${BASE}/progress/${taskId}/abort`, { method: "POST" });
+    const r = await fetch(`${BASE}/progress/${taskId}/abort`, { method: "POST" });
+    return r.ok;
   } catch {
-    // Ignore error
+    return false;
   }
 }
 

@@ -554,7 +554,8 @@
       "change": "Choose other data",
       "catalog_failed": "The catalog could not be loaded.",
       "catalog_error": "Could not load the available datasets and measures: {error}",
-      "load_failed": "The dataset could not be loaded. Retrying…"
+      "load_failed": "The dataset could not be loaded. Retrying…",
+      "cancel_failed": "The job could not be cancelled. Try again or check the jobs panel."
     },
     "dataset": {
       "observations": "Observations",

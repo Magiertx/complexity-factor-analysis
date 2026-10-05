@@ -554,7 +554,8 @@
       "change": "Andere Daten wählen",
       "catalog_failed": "Der Katalog konnte nicht geladen werden.",
       "catalog_error": "Die verfügbaren Datensätze und Maße konnten nicht geladen werden: {error}",
-      "load_failed": "Der Datensatz konnte nicht geladen werden. Neuer Versuch…"
+      "load_failed": "Der Datensatz konnte nicht geladen werden. Neuer Versuch…",
+      "cancel_failed": "Der Job ließ sich nicht abbrechen. Versuche es noch einmal oder sieh in der Jobliste nach."
     },
     "dataset": {
       "observations": "Beobachtungen",
