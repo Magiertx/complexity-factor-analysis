@@ -55,9 +55,18 @@ def graphviz_available() -> bool:
 
 @pytest.fixture
 def isolated_jobs_dir(monkeypatch, tmp_path):
-    """Point ``jobs_db.ARTIFACTS_DIR`` at a per-test temp directory."""
+    """Point ``jobs_db.ARTIFACTS_DIR`` and the upload directory at per-test temp directories.
+
+    Both default to paths under ``/app``, which only exist in the container. Outside of it
+    the uploads either fail (no permission to create ``/app``) or land in ``C:\\app``.
+    """
     import jobs_db
+    from routes import algorithms
+
+    uploads = tmp_path / "uploaded_logs"
+    uploads.mkdir()
     monkeypatch.setattr(jobs_db, "ARTIFACTS_DIR", tmp_path)
+    monkeypatch.setattr(algorithms, "UPLOADED_LOGS_DIR", uploads)
     return tmp_path
 
 
