@@ -201,6 +201,30 @@ def test_payload_carries_aggregates_only(client, claude, csv_dataset):
     assert set(payload) >= {"removed_measures", "n_factors"}
 
 
+def test_own_column_names_are_sent_as_the_disclosure_says(client, claude):
+    """Column headers of an own CSV go out as measure names, without a definition; the
+    values and the row labels do not."""
+    own = ["Plant A throughput", "Plant A rework", "Plant A scrap", "Line 7 delay", "Line 7 queue", "Line 7 idle"]
+    table = _rng_table(LABELS)
+    table.columns = own
+    text = table.to_csv(index_label="observation", float_format="%.6f")
+    r = client.post(
+        "/factor-analysis/datasets",
+        data={"kind": "model", "source": "csv"},
+        files={"files": ("own.csv", io.BytesIO(text.encode()), "text/csv")},
+    )
+    assert _interpret(client, r.json()["dataset_id"], auto_msa_filter=False).status_code == 200
+
+    content = claude.calls[0]["messages"][0]["content"]
+    payload = json.loads(content[content.index("{"):])
+    assert set(payload["used_measures"]) == set(own)
+    assert payload["measure_definitions"] == dict.fromkeys(own)
+    for secret in LABELS:
+        assert secret not in content
+    raw_values = [cell for line in text.splitlines()[1:] for cell in line.split(",")[1:]]
+    assert not [v for v in raw_values if v in content]
+
+
 def test_payload_never_quotes_dropped_values():
     from factor_analysis.core import AnalysisParams
     from interpretation.payload import build_payload

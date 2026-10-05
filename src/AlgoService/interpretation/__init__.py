@@ -1,5 +1,6 @@
 """Names and short interpretations of the factors of an analysis, proposed by Claude.
 
-Only aggregated results and the catalog descriptions of the measures are sent to the
-Anthropic API; observation labels, file names and measure values stay on the server.
+Sent to the Anthropic API are the measure names (the column headers of an own CSV), their
+catalog descriptions and aggregated results; observation labels, file names and measure values
+stay on the server.
 """

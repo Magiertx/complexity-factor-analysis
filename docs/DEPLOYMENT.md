@@ -177,8 +177,8 @@ MAX_ACTIVE_JOBS_PER_SESSION=3
 
 ### Interpretation by Claude
 
-The optional interpretation step sends aggregated analysis results to the Anthropic API and
-needs an API key. Without one, the step only shows the precomputed interpretations of the
+The optional interpretation step sends the measure names (the column headers of an own CSV),
+their definitions and aggregated analysis results to the Anthropic API and needs an API key. Without one, the step only shows the precomputed interpretations of the
 bundled datasets.
 
 - **Key.** Create a key for this deployment in the Claude Console

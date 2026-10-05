@@ -92,7 +92,7 @@
       "suitability": "Bartlett und KMO zeigen, ob eine Faktorenanalyse überhaupt sinnvoll ist. Schließe hier Maße mit niedrigem MSA aus, von Hand oder per Filter.",
       "factors": "Der Screeplot schlägt vor, wie viele Faktoren du behältst. Ändere die Anzahl oder die Rotation; alles darunter aktualisiert sich sofort.",
       "loadings": "Die Heatmap zeigt, welche Maße auf welchem Faktor laden; fette Werte erreichen die Schwelle. Exportiere die Tabelle als CSV oder LaTeX für dein Paper.",
-      "interpretation": "Optional: Claude schlägt für jeden Faktor einen Namen und eine kurze Deutung vor. Gesendet werden nur aggregierte Ergebnisse, und jede Anfrage kostet Geld, daher läuft sie nur auf Knopfdruck. Gleiche sie immer mit den Ladungen ab."
+      "interpretation": "Optional: Claude schlägt für jeden Faktor einen Namen und eine kurze Deutung vor. Gesendet werden nur die Namen der Maße, ihre Definitionen und aggregierte Ergebnisse, und jede Anfrage kostet Geld, daher läuft sie nur auf Knopfdruck. Gleiche sie immer mit den Ladungen ab."
     }
   },
   "settings": {
@@ -750,7 +750,7 @@
       "heywood": "Kommunalität an der Grenze der Anpassung (Uniqueness höchstens 0,005) für {measures}; möglicher Heywood-Fall."
     },
     "interpretation": {
-      "intro": "Claude liest die Ladungen zusammen mit den Definitionen der Maße und schlägt für jeden Faktor einen Namen und eine kurze Interpretation vor. An Anthropic gehen nur aggregierte Ergebnisse: keine Messwerte, Zeilenbezeichnungen oder Dateinamen. Jede Anfrage kostet Geld, daher läuft sie nur, wenn du sie anforderst.",
+      "intro": "Claude liest die Ladungen zusammen mit den Definitionen der Maße und schlägt für jeden Faktor einen Namen und eine kurze Interpretation vor. An Anthropic gehen die Namen der Maße (Spalten), ihre Katalogdefinitionen und aggregierte Ergebnisse wie Ladungen und Teststatistiken; Messwerte, Zeilenbezeichnungen und Dateinamen werden nicht gesendet. Jede Anfrage kostet Geld, daher läuft sie nur, wenn du sie anforderst.",
       "button": "Faktoren interpretieren",
       "again": "Neu interpretieren",
       "running": "Claude interpretiert die Faktoren. Das kann eine Minute dauern.",

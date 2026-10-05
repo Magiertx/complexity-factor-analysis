@@ -282,8 +282,9 @@ precomputed interpretations exist.
 the analysis with these parameters and sends its aggregated result to Claude: the kind,
 the number of observations, used and removed measures, Bartlett, KMO with the MSA per measure,
 eigenvalues, factor count and rotation, loadings, communalities, explained variance, the
-factor groups with their thresholds, the analysis warnings and the catalog definitions of the
-measures. Observation labels, dataset and file names and measure values are never sent.
+factor groups with their thresholds, the analysis warnings, and the measure names with their
+catalog definitions. The measure names are the column headers of an own CSV, so they are sent
+as they are. Observation labels, dataset and file names and measure values are never sent.
 
 ```json
 { "factors": [ { "index": 1, "name": "Size", "summary": "Two or three sentences.",

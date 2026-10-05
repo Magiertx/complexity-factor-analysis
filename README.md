@@ -30,9 +30,9 @@ Schalk do it, but interactively in the browser.
 - **Export.** Loadings as CSV or as a LaTeX `tabular` for the paper, the cleaned matrix as CSV.
 - **Interpretation by Claude (optional).** A button after the loadings asks Claude (Anthropic)
   for a name and a short interpretation of each factor, with the measures it rests on, a
-  confidence and caveats such as cross-loadings or a failed Bartlett or KMO test. Only
-  aggregated results and the measure definitions are sent, never measure values, row labels
-  or file names. It needs `ANTHROPIC_API_KEY` on the server, is limited per session and per
+  confidence and caveats such as cross-loadings or a failed Bartlett or KMO test. Only the
+  measure (column) names, their definitions and aggregated results are sent, never measure
+  values, row labels or file names. It needs `ANTHROPIC_API_KEY` on the server, is limited per session and per
   day, and caches every answer; precomputed interpretations of the bundled datasets work
   without a key and offline. Details in [`docs/API.md`](docs/API.md#interpretation-by-claude)
   and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#interpretation-by-claude).

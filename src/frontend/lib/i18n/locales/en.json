@@ -92,7 +92,7 @@
       "suitability": "Bartlett and KMO tell you whether a factor analysis makes sense at all. Exclude measures with low MSA here, by hand or with the filter.",
       "factors": "The scree plot suggests how many factors to keep. Change the number or the rotation; everything below updates right away.",
       "loadings": "The heatmap shows which measures load on which factor; bold values reach the threshold. Export the table as CSV or LaTeX for your paper.",
-      "interpretation": "Optional: Claude proposes a name and a short reading for each factor. Only aggregated results are sent, and every request costs money, so it runs only when you press the button. Always check it against the loadings."
+      "interpretation": "Optional: Claude proposes a name and a short reading for each factor. Only the measure names, their definitions and aggregated results are sent, and every request costs money, so it runs only when you press the button. Always check it against the loadings."
     }
   },
   "settings": {
@@ -750,7 +750,7 @@
       "heywood": "Communality at the bound of the fit (uniqueness at most 0.005) for {measures}; possible Heywood case."
     },
     "interpretation": {
-      "intro": "Claude reads the loadings together with the definitions of the measures and proposes a name and a short interpretation for each factor. Only aggregated results go to Anthropic: no measure values, row labels or file names. Each request costs money, so it runs only when you ask for it.",
+      "intro": "Claude reads the loadings together with the definitions of the measures and proposes a name and a short interpretation for each factor. Sent to Anthropic are the measure (column) names, their catalog definitions and aggregated results such as loadings and test statistics; measure values, row labels and file names are not sent. Each request costs money, so it runs only when you ask for it.",
       "button": "Interpret factors",
       "again": "Interpret again",
       "running": "Claude is interpreting the factors. This can take a minute.",

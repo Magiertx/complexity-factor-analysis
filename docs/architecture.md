@@ -181,7 +181,7 @@ Optional, in `interpretation/` with the endpoints in `routes/interpretation.py`
    used, the language, the model and `PROMPT_VERSION`.
 3. Otherwise, with `ANTHROPIC_API_KEY` set and below the per-session and daily limits
    (`interpretation/quota.py`, counters in Redis), `payload.build_payload` reduces the result
-   to aggregates plus the catalog definitions, and `client.interpret` calls
+   to the measure names, their catalog definitions and aggregates, and `client.interpret` calls
    `client.beta.messages.create` with `output_config` (effort and a JSON schema from
    `schema.Interpretation`) and `fallbacks: "default"`. It checks `stop_reason` before it
    reads the answer, validates it and trims it to the factors and measures of the analysis.

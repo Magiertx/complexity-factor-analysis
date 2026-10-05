@@ -1,4 +1,4 @@
-"""What is sent to the model: aggregated analysis results and measure definitions.
+"""What is sent to the model: measure names, their definitions and aggregated analysis results.
 
 Built from the result of ``factor_analysis.core.analyze``, which describes measures only.
 Observation labels, dataset and file names and the measure values never go in here.
