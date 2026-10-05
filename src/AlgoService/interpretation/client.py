@@ -30,8 +30,9 @@ from .schema import Interpretation, tidy
 EFFORTS = ("low", "medium", "high", "xhigh", "max")
 
 MODEL = text("INTERPRETATION_MODEL", "claude-opus-5-5")
-# Claude Opus 5.5 defaults to medium; the interpretation is worth more thinking.
-EFFORT = choice("INTERPRETATION_EFFORT", "high", EFFORTS)
+# Claude Opus 5.5 thinks more per level than earlier models, and thinking counts towards
+# MAX_TOKENS; at high, an analysis with many factors can be cut off.
+EFFORT = choice("INTERPRETATION_EFFORT", "medium", EFFORTS)
 #: Live calls per session; served cache hits and precomputed results do not count.
 RATE_LIMIT = rate_limit_var("INTERPRETATION_RATE_LIMIT", "10/hour")
 #: Live calls per day over all sessions, a bound on the spending.
@@ -40,9 +41,11 @@ DAILY_CAP = positive_int("INTERPRETATION_DAILY_CAP", 200)
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 # Thinking counts towards max_tokens, so leave room beyond the answer of a few hundred words.
 MAX_TOKENS = 16000
-# The frontend's /api rewrite gives up after 180 s (proxyTimeout in next.config.mjs); retries
-# of the SDK have to fit into this budget as well.
+# The frontend's /api rewrite gives up after 180 s (proxyTimeout in next.config.mjs). The whole
+# request, the analysis before the call and the retries of the SDK included, has this budget.
 TIMEOUT_S = 170.0
+#: A call is not started with less time left than this.
+MIN_CALL_S = 30.0
 
 # Bounds on one request, so the daily cap also bounds the spending. The bundled log dataset
 # (122 measures, 15 factors) sends about 47,000 characters.
@@ -105,7 +108,7 @@ def check_size(payload: dict[str, Any], language: str) -> None:
         )
 
 
-def _timeout() -> InterpretationError:
+def timed_out() -> InterpretationError:
     return InterpretationError(504, "interpretation_timeout", "The Anthropic API did not answer in time. Try again later.")
 
 
@@ -117,7 +120,7 @@ def _sdk_error(e: anthropic.AnthropicError) -> InterpretationError:
         type(e).__name__, status, getattr(e, "request_id", None),
     )
     if isinstance(e, anthropic.APITimeoutError):
-        return _timeout()
+        return timed_out()
     if isinstance(e, anthropic.APIConnectionError):
         return InterpretationError(
             503, "interpretation_unreachable",
@@ -149,7 +152,9 @@ class Answer:
     model: str
 
 
-async def interpret(payload: dict[str, Any], language: str, key: str) -> Answer:
+async def interpret(payload: dict[str, Any], language: str, key: str, timeout: float | None = None) -> Answer:
+    """``timeout`` is the time left for the call; ``TIMEOUT_S`` without it."""
+    timeout = TIMEOUT_S if timeout is None else timeout
     try:
         async with client_factory(key) as client:
             response = await asyncio.wait_for(
@@ -165,13 +170,13 @@ async def interpret(payload: dict[str, Any], language: str, key: str) -> Answer:
                     fallbacks="default",
                     betas=[FALLBACK_BETA],
                 ),
-                TIMEOUT_S,
+                timeout,
             )
     except anthropic.AnthropicError as e:
         raise _sdk_error(e) from None
     except asyncio.TimeoutError:
-        logger.warning("Interpretation request took longer than %s s", TIMEOUT_S)
-        raise _timeout() from None
+        logger.warning("Interpretation request took longer than %.0f s", timeout)
+        raise timed_out() from None
 
     # A refusal means the requested model and the fallback both declined.
     if response.stop_reason == "refusal":

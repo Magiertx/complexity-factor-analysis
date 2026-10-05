@@ -198,12 +198,14 @@ bundled datasets.
   prices of Claude Opus 5.5, and the daily cap bounds a day. Cached and precomputed
   interpretations cost nothing.
 - **Model.** `INTERPRETATION_MODEL` (default `claude-opus-5-5`) and `INTERPRETATION_EFFORT`
-  (default `high`). Requests opt into Anthropic's server-side fallback (`fallbacks: "default"`),
+  (default `medium`; at `high` an analysis with many factors can run into the limit of 16,000
+  output tokens, which thinking counts towards). Requests opt into Anthropic's server-side fallback (`fallbacks: "default"`),
   so a request the model's safety classifiers decline is retried on the recommended fallback
   model; the footer of the result names the model that answered. Another model has to support
   that option and structured outputs.
 - **Network.** `algoservice` needs outbound HTTPS to `api.anthropic.com` for live calls; an
-  interpretation takes up to about a minute, at most 170 s.
+  interpretation takes up to about a minute, at most 170 s including the analysis before the
+  call.
 - **Precomputed results.** `src/AlgoService/scripts/precompute_interpretations.py` writes the
   interpretations of the bundled datasets for the default parameters to
   `src/AlgoService/datasets/interpretations/`; they are part of the image. Run it with a key

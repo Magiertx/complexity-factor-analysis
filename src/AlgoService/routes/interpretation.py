@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from datetime import datetime, timezone
 from typing import Any, Literal
 
@@ -74,6 +75,7 @@ async def interpret_dataset(
 
     With ``cached_only`` the answer is 204 when nothing is stored yet.
     """
+    started = time.monotonic()
     body = body or InterpretRequest()
     meta, data = await _ready_matrix(dataset_id, session_id)
     kind = meta["kind"]
@@ -116,8 +118,12 @@ async def interpret_dataset(
             cached = store.read_cached(session_id, meta, key)
             if cached:
                 return _response(cached, cached=True, precomputed=False)
+            # The analysis and the wait for the lock count against the time of the request.
+            time_left = client.TIMEOUT_S - (time.monotonic() - started)
+            if time_left < client.MIN_CALL_S:
+                raise client.timed_out()
             await run_in_threadpool(quota.claim, session_id)
-            answer = await client.interpret(payload, body.language, api_key)
+            answer = await client.interpret(payload, body.language, api_key, timeout=time_left)
             entry = {
                 "kind": kind,
                 "data_hash": digest,

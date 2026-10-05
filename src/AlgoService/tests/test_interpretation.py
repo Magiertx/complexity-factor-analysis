@@ -172,7 +172,7 @@ def test_request_shape(client, claude, csv_dataset):
     assert call["model"] == "claude-opus-5-5"
     assert call["fallbacks"] == "default"
     assert call["betas"] == ["server-side-fallback-2026-07-01"]
-    assert call["output_config"]["effort"] == "high"
+    assert call["output_config"]["effort"] == "medium"
     assert call["output_config"]["format"]["type"] == "json_schema"
     assert call["output_config"]["format"]["schema"]["required"] == ["factors", "overall", "caveats"]
     assert "thinking" not in call and "temperature" not in call
@@ -471,9 +471,20 @@ def test_slow_answer_times_out(client, claude, csv_dataset, monkeypatch):
         await asyncio.sleep(10)
 
     monkeypatch.setattr(claude_client, "TIMEOUT_S", 0.05)
+    monkeypatch.setattr(claude_client, "MIN_CALL_S", 0.0)
     claude.create = never
     r = _interpret(client, csv_dataset[0], auto_msa_filter=False)
     assert r.status_code == 504 and r.json()["code"] == "interpretation_timeout"
+
+
+def test_no_call_without_time_left(client, claude, csv_dataset, monkeypatch):
+    """The analysis ran first; a call that could not finish in the request is not started."""
+    from interpretation import client as claude_client
+
+    monkeypatch.setattr(claude_client, "MIN_CALL_S", claude_client.TIMEOUT_S + 1)
+    r = _interpret(client, csv_dataset[0], auto_msa_filter=False)
+    assert r.status_code == 504 and r.json()["code"] == "interpretation_timeout"
+    assert claude.calls == []
 
 
 @pytest.mark.parametrize("text", [None, '{"factors": [{"index": 1, "na'])
