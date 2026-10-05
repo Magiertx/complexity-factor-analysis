@@ -11,6 +11,32 @@
 #
 # Requires Java 8 (ProM only supports Java 8).
 
+# JNI wrapper for lp_solve 5.5, used by the Hybrid ILP miner (see the lp_solve step below).
+# Ubuntu does not package it, so it is compiled from the C source in the official lp_solve
+# Java distribution on SourceForge. That works on every architecture, unlike the prebuilt
+# x86-64 library in the same zip. The zip is the same for every 5.5.2.x release.
+FROM eclipse-temurin:8-jdk-jammy AS lpsolve-wrapper
+
+ARG LPSOLVE_JAVA_URL=https://downloads.sourceforge.net/project/lpsolve/lpsolve/5.5.2.5/lp_solve_5.5.2.5_java.zip
+ARG LPSOLVE_JAVA_SHA256=0a4dcd21e0c494f51b5de4e5e7bcd608c71bbab957e37ac776cba19808a2d6c9
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl unzip g++ lp-solve liblpsolve55-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+# -l:liblpsolve55.so links the shared solver; -llpsolve55 would pick the static archive from
+# liblpsolve55-dev, which is not built with -fPIC. The rpath lets the wrapper find the solver
+# in /usr/lib/lp_solve without LD_LIBRARY_PATH.
+RUN curl -fsSL --retry 5 --retry-all-errors -o lpsolve-java.zip "$LPSOLVE_JAVA_URL" \
+    && echo "$LPSOLVE_JAVA_SHA256  lpsolve-java.zip" | sha256sum -c - \
+    && unzip -j -q lpsolve-java.zip 'lp_solve_5.5_java/src/c/*' -d . \
+    && g++ -O2 -fPIC -shared \
+         -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" -I/usr/include/lpsolve \
+         lpsolve5j.cpp -o liblpsolve55j.so \
+         -L/usr/lib/lp_solve -l:liblpsolve55.so -Wl,-rpath,/usr/lib/lp_solve
+
 FROM eclipse-temurin:8-jre-jammy
 
 ARG PROM4PY_ZIP_URL=https://zenodo.org/records/13853660/files/prom4py.zip?download=1
@@ -43,28 +69,13 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # lp_solve 5.5 for the Hybrid ILP miner and the alignment plugin. ProM's LpSolve package
-# (lpsolve.LpSolve) calls System.loadLibrary("lpsolve55") and then ("lpsolve55j").
-# Ubuntu packages the solver itself (lp-solve, /usr/lib/lp_solve/liblpsolve55.so), but not
-# the JNI wrapper, so liblpsolve55j.so comes from the official lp_solve Java distribution on
-# SourceForge. Its prebuilt Linux library is x86-64 only; on other architectures the step is
-# skipped and the Hybrid ILP miner keeps failing. The zip is the same file for every 5.5.2.x
-# release; 5.5.2.5 matches the version of the Ubuntu package.
-ARG LPSOLVE_JAVA_URL=https://downloads.sourceforge.net/project/lpsolve/lpsolve/5.5.2.5/lp_solve_5.5.2.5_java.zip
-ARG LPSOLVE_JAVA_SHA256=0a4dcd21e0c494f51b5de4e5e7bcd608c71bbab957e37ac776cba19808a2d6c9
+# (lpsolve.LpSolve) calls System.loadLibrary("lpsolve55") and then ("lpsolve55j"). The solver
+# comes from the Ubuntu package lp-solve (/usr/lib/lp_solve/liblpsolve55.so), the JNI wrapper
+# from the stage above. launch.sh puts /usr/lib/lp_solve on java.library.path.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends lp-solve \
-    && rm -rf /var/lib/apt/lists/* \
-    && if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
-         curl -fsSL --retry 5 -o /tmp/lpsolve-java.zip "$LPSOLVE_JAVA_URL" \
-         && echo "$LPSOLVE_JAVA_SHA256  /tmp/lpsolve-java.zip" | sha256sum -c - \
-         && unzip -j -q /tmp/lpsolve-java.zip 'lp_solve_5.5_java/lib/ux64/liblpsolve55j.so' -d /usr/lib/lp_solve \
-         && rm /tmp/lpsolve-java.zip; \
-       else \
-         echo "No prebuilt liblpsolve55j for $(dpkg --print-architecture), Hybrid ILP miner unavailable"; \
-       fi
-
-# liblpsolve55j.so links against liblpsolve55.so, which the dynamic linker has to find too.
-ENV LD_LIBRARY_PATH=/usr/lib/lp_solve
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=lpsolve-wrapper /build/liblpsolve55j.so /usr/lib/lp_solve/
 
 # Portable launcher: no hardcoded Java path, headless mode, configurable port.
 COPY launch.sh /opt/prom4py/launch.sh
