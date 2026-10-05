@@ -430,7 +430,7 @@ export function Workbench() {
   useEffect(() => {
     if (!selected || selectedJobId) return;
 
-    const saved = localStorage.getItem(`algo-params-${selected.id}`);
+    const saved = localStorage.getItem(`app.params-${selected.id}`);
     if (saved) {
       try {
         setParams(JSON.parse(saved));
@@ -1129,7 +1129,7 @@ export function Workbench() {
                   onLoad={(loaded) => {
                     setParams(loaded);
                     try {
-                      localStorage.setItem(`algo-params-${selected.id}`, JSON.stringify(loaded));
+                      localStorage.setItem(`app.params-${selected.id}`, JSON.stringify(loaded));
                     } catch {
                       /* ignore quota */
                     }
@@ -1231,7 +1231,7 @@ export function Workbench() {
                 onChange={(name, value) => {
                   setParams((p) => {
                     const newParams = { ...p, [name]: value };
-                    localStorage.setItem(`algo-params-${selected.id}`, JSON.stringify(newParams));
+                    localStorage.setItem(`app.params-${selected.id}`, JSON.stringify(newParams));
                     return newParams;
                   });
                   setValidationErrors((prev) => {

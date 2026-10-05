@@ -168,7 +168,7 @@ export function BatchBuilder() {
   );
 
   // When the algorithm changes, hydrate parameters from the same per-algorithm
-  // cache the Workbench uses (`algo-params-<id>`) so a user that just ran an
+  // cache the Workbench uses (`app.params-<id>`) so a user that just ran an
   // algorithm in /workbench sees their last params here too. Fall back to
   // schema defaults if no cached entry exists.
   useEffect(() => {
@@ -179,7 +179,7 @@ export function BatchBuilder() {
     }
     setParamErrors({});
     if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(`algo-params-${algorithm.id}`);
+      const saved = localStorage.getItem(`app.params-${algorithm.id}`);
       if (saved) {
         try {
           setParams(JSON.parse(saved));
@@ -370,7 +370,7 @@ export function BatchBuilder() {
                   onLoad={(loaded) => {
                     setParams(loaded);
                     try {
-                      localStorage.setItem(`algo-params-${algorithm.id}`, JSON.stringify(loaded));
+                      localStorage.setItem(`app.params-${algorithm.id}`, JSON.stringify(loaded));
                     } catch {
                       /* ignore quota */
                     }
@@ -384,7 +384,7 @@ export function BatchBuilder() {
                     setParams((prev) => {
                       const next = { ...prev, [name]: value };
                       try {
-                        localStorage.setItem(`algo-params-${algorithm.id}`, JSON.stringify(next));
+                        localStorage.setItem(`app.params-${algorithm.id}`, JSON.stringify(next));
                       } catch {
                         /* ignore quota */
                       }

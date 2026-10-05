@@ -1,6 +1,6 @@
 "use client";
 
-const PREFIX = "algo-presets-";
+const PREFIX = "app.presets-";
 
 export type Preset = {
   name: string;

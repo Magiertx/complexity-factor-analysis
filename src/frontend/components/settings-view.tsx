@@ -41,7 +41,7 @@ import { useT } from "@/lib/i18n";
 import { LocaleSegmented } from "./locale-toggle";
 
 export const DEFAULT_ALGORITHM_KEY = "app.default-algorithm";
-const ALGO_PARAMS_PREFIX = "algo-params-";
+const ALGO_PARAMS_PREFIX = "app.params-";
 
 type ThemeChoice = "system" | "light" | "dark";
 
