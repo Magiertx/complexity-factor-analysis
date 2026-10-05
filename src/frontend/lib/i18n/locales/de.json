@@ -739,6 +739,7 @@
       "interpretation_daily_cap": "Der Server hat sein Tageskontingent an Interpretationen aufgebraucht. Versuche es morgen noch einmal.",
       "interpretation_fallback_unavailable": "Das Modell hat abgelehnt, und das Ersatzmodell konnte gerade nicht laufen. Versuche es später noch einmal.",
       "interpretation_rate_limited": "Diese Sitzung hat ihr Limit an Interpretationen erreicht ({limit}). Versuche es später noch einmal.",
+      "interpretation_limits_unavailable": "Der Server kann Interpretationen gerade nicht zählen. Versuche es später noch einmal.",
       "interpretation_too_large": "Diese Analyse ist zu groß für eine Interpretation: gesendet werden höchstens {measures} Maße, {factors} Faktoren und Maßnamen mit {name_length} Zeichen. Schließe Maße aus oder wähle weniger Faktoren."
     },
     "warnings": {

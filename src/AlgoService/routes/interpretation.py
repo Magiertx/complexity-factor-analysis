@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, Response
 
-from config import get_session_id, limiter
+from config import get_session_id, limiter, logger
 from env_config import rate_limit
 from interpretation import client, quota, store
 from interpretation.client import InterpretationError
@@ -158,7 +158,11 @@ async def interpret_dataset(
                 "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                 "interpretation": answer.interpretation.model_dump(),
             }
-            await run_in_threadpool(store.write_cached, session_id, meta, key, entry)
+            try:
+                await run_in_threadpool(store.write_cached, session_id, meta, key, entry)
+            except OSError as e:
+                # The answer is paid for; show it even if it cannot be kept.
+                logger.warning("Interpretation could not be cached: %s", e)
     except InterpretationError as e:
         return _error(e)
     return _response(entry, cached=False, precomputed=False)

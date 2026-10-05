@@ -712,6 +712,29 @@ def test_session_limit_counts_live_calls_only(client, claude, csv_dataset, monke
     assert len(claude.calls) == 1
 
 
+def test_no_call_without_the_counters(client, claude, csv_dataset, monkeypatch):
+    from interpretation import quota
+
+    def redis_down(*args):
+        raise ConnectionError("redis is down")
+
+    monkeypatch.setattr(quota._limiter, "hit", redis_down)
+    r = _interpret(client, csv_dataset[0], auto_msa_filter=False)
+    assert r.status_code == 503 and r.json()["code"] == "interpretation_limits_unavailable"
+    assert claude.calls == []
+
+
+def test_answer_is_shown_when_it_cannot_be_cached(client, claude, csv_dataset, monkeypatch):
+    from interpretation import store
+
+    def disk_full(*args):
+        raise OSError("No space left on device")
+
+    monkeypatch.setattr(store, "write_cached", disk_full)
+    r = _interpret(client, csv_dataset[0], auto_msa_filter=False)
+    assert r.status_code == 200 and r.json()["cached"] is False and r.json()["factors"]
+
+
 def test_daily_cap_over_all_sessions(isolated_jobs_dir, claude, monkeypatch):
     from fastapi.testclient import TestClient
     from limits import parse
