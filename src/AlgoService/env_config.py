@@ -32,7 +32,11 @@ def rate_limit(name: str, default: str) -> str:
     This limits how often work is started; ``MAX_ACTIVE_JOBS_PER_SESSION`` limits how much
     runs at once.
     """
-    var = f"RATE_LIMIT_{name.upper()}"
+    return rate_limit_var(f"RATE_LIMIT_{name.upper()}", default)
+
+
+def rate_limit_var(var: str, default: str) -> str:
+    """A rate limit in slowapi's format, read from ``var``."""
     raw = os.environ.get(var)
     if raw is None or not raw.strip():
         return default
@@ -64,4 +68,29 @@ def positive_int(var: str, default: int, *, minimum: int = 1) -> int:
         raise ConfigError(f"{var}={value} is below the minimum of {minimum}.")
 
     OVERRIDES[var] = str(value)
+    return value
+
+
+def choice(var: str, default: str, allowed: tuple[str, ...]) -> str:
+    """One of ``allowed``, overridable via its own name."""
+    raw = os.environ.get(var)
+    if raw is None or not raw.strip():
+        return default
+
+    value = raw.strip().lower()
+    if value not in allowed:
+        raise ConfigError(f"{var}={raw!r} is not one of {', '.join(allowed)} (default: {default}).")
+
+    OVERRIDES[var] = value
+    return value
+
+
+def text(var: str, default: str) -> str:
+    """A free-form setting such as a model id. Not for secrets: overrides are logged."""
+    raw = os.environ.get(var)
+    if raw is None or not raw.strip():
+        return default
+
+    value = raw.strip()
+    OVERRIDES[var] = value
     return value
