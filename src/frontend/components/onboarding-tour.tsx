@@ -4,10 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Sparkles,
   ListChecks,
-  Play,
+  Network,
   Layers,
   History,
   Code2,
+  Microscope,
   ChevronLeft,
   ChevronRight,
   X,
@@ -18,6 +19,28 @@ import { useT } from "@/lib/i18n";
 import { APP_NAME } from "@/lib/app-config";
 
 export const ONBOARDING_KEY = "app.onboarding-completed";
+const REPLAY_KEY = "app.onboarding-replay";
+
+/**
+ * Opens the onboarding once per browser. The settings page can force a replay by
+ * writing the replay key before it navigates here.
+ */
+export function useOnboarding() {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(REPLAY_KEY)) {
+        localStorage.removeItem(REPLAY_KEY);
+        setOpen(true);
+      } else if (!localStorage.getItem(ONBOARDING_KEY)) {
+        setOpen(true);
+      }
+    } catch {
+      /* storage blocked, skip the tour */
+    }
+  }, []);
+  return { open, close: () => setOpen(false) };
+}
 
 interface Step {
   icon: React.ReactNode;
@@ -48,7 +71,7 @@ export function OnboardingTour({
         ),
       },
       {
-        icon: <ListChecks className="h-5 w-5 text-accent" />,
+        icon: <Network className="h-5 w-5 text-accent" />,
         title: t("tours.onboarding.step1_title"),
         body: (
           <>
@@ -58,7 +81,7 @@ export function OnboardingTour({
         ),
       },
       {
-        icon: <Play className="h-5 w-5 text-accent" />,
+        icon: <ListChecks className="h-5 w-5 text-accent" />,
         title: t("tours.onboarding.step2_title"),
         body: (
           <>
@@ -73,8 +96,8 @@ export function OnboardingTour({
         body: (
           <ul className="space-y-2 text-sm">
             <li className="flex items-start gap-2">
-              <Layers className="h-3.5 w-3.5 text-muted mt-1 shrink-0" />
-              <span>{t("tours.onboarding.step3_batch")}</span>
+              <Microscope className="h-3.5 w-3.5 text-muted mt-1 shrink-0" />
+              <span>{t("tours.onboarding.step3_inspect")}</span>
             </li>
             <li className="flex items-start gap-2">
               <History className="h-3.5 w-3.5 text-muted mt-1 shrink-0" />
