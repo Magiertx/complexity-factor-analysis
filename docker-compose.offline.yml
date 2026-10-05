@@ -1,0 +1,14 @@
+# Optional override for demos: the backend containers get no route out of the compose network,
+# only the frontend is attached to a second network so that its port can be published.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.offline.yml up -d --no-build --pull never
+#
+# See docs/OFFLINE-DEMO.md.
+networks:
+  default:
+    internal: true
+  edge: {}
+
+services:
+  frontend:
+    networks: [default, edge]
