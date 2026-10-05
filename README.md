@@ -8,9 +8,21 @@ miner × measure table plus the rendered nets.
 
 The measures and miners are [ComFy](https://github.com/Pati-nets/ComFy) by Patrizia Schalk.
 Discovery runs through [ProM4Py](https://doi.org/10.5281/zenodo.13853660), a bridge to the
-ProM plugins. Batch mode runs the same analysis over up to ten logs in one job and collects
-all scores in one long-format table (log, miner, measure, value), which can be downloaded as
-CSV. A factor analysis across the measures of many logs is the next step and not exposed yet.
+ProM plugins.
+
+The main feature is a **factor analysis** over many observations, in two variants:
+
+- **Model complexity** (ComFy): one row per discovered net (log × miner) or per uploaded PNML
+  model, one column per ComFy measure.
+- **Log complexity** ([ComFy for log measures](https://github.com/Pati-nets/ComFy-for-Log-Measures)):
+  one row per log, one column per [feeed](https://github.com/andreamalhera/feeed) measure.
+
+A dataset comes from bundled data (the scores of both ComFy papers), a CSV, uploaded logs or
+PNML files, or the bundled sample logs and nets, so the demo works without own files and
+offline. The analysis follows ComFy: data cleaning, Bartlett's test, KMO with the iterative
+MSA filter, a scree plot with the Kaiser suggestion, `factor_analyzer` with a choice of
+rotation, and factor groups by loading threshold. Loadings export as CSV or LaTeX. The API
+is described in [`docs/API.md`](docs/API.md#factor-analysis).
 
 ## Architecture
 
@@ -88,7 +100,9 @@ python -m pytest
 
 Tests that need the ProM4Py service skip when it is not reachable; start it with
 `docker compose up -d prom4py` to include them. The Petri-net rendering test skips without
-Graphviz. The HTTP layer is tested with a small stub tool registered by
+Graphviz. The factor-analysis tests run offline: model datasets from logs use a stand-in
+miner, PNML and log datasets run for real (feeed 2.2 needs no Java). One test compares the
+analysis of the bundled Inductive-miner scores with the values in ComFy's own report. The HTTP layer is tested with a small stub tool registered by
 `tests/conftest.py`, so those tests need neither Java nor a database server.
 
 Frontend checks, from `src/frontend`:
@@ -108,8 +122,11 @@ All of this is set in `docker-compose.yml`; reverse proxy, TLS, volumes and back
   process holding its own copy of the log, so this multiplies memory.
 - **Java heap.** `prom4py` gets `JAVA_HEAP=2G`. Raise it if discovery fails on large logs; the
   symptom is an out-of-memory error from the Java side.
-- **Limits.** 100 MB per uploaded file, 10 logs per batch, and a per-session cap on queued
-  jobs. Request rate limits and the job cap are tunable in `.env` (see `.env.example`).
+- **Limits.** 100 MB per uploaded file; per factor-analysis dataset 50 logs or 200 PNML
+  files and 500 MB in total; a per-session cap on queued jobs. Request rate limits and the
+  job cap are tunable in `.env` (see `.env.example`).
+- **Analysis cost.** A factor fit over about a hundred measures takes several seconds of CPU
+  in the API process. At most two run at once per process; recent fits are cached.
 
 ## Project structure
 
@@ -119,7 +136,10 @@ All of this is set in `docker-compose.yml`; reverse proxy, TLS, volumes and back
 └── src/
     ├── AlgoService/           # FastAPI backend + Celery worker
     │   ├── algorithms/        #   tool adapters (ComFy)
+    │   ├── factor_analysis/   #   factor analysis: numerics, datasets, export
+    │   ├── datasets/          #   bundled scores and sample logs/nets, see PROVENANCE.md
     │   ├── vendored/comfy/    #   ComFy sources, see PROVENANCE.md
+    │   ├── vendored/comfy_log/ #  ComFy for log measures (constants), MIT
     │   └── tests/
     ├── prom4py/               # Java ProM bridge
     └── frontend/              # Next.js frontend
@@ -130,11 +150,20 @@ All of this is set in `docker-compose.yml`; reverse proxy, TLS, volumes and back
 - [ComFy](https://github.com/Pati-nets/ComFy) by Patrizia Schalk: complexity measures, miner
   wrappers and factor analysis. Related measure code is published under the MIT licence in the
   [Complexity Toolkit](https://github.com/Pati-nets/Complexity-Toolkit).
+- [ComFy for log measures](https://github.com/Pati-nets/ComFy-for-Log-Measures) by Patrizia
+  Schalk (MIT): the factor analysis over event-log measures, its feature groups and the
+  numerically stable Bartlett test.
+- [feeed](https://github.com/andreamalhera/feeed) by Andrea Maldonado (MIT): the event-log
+  measures.
 - [ProM4Py](https://doi.org/10.5281/zenodo.13853660): Python access to the ProM plugins.
 - [pm4py](https://processintelligence.solutions/pm4py) for reading logs and handling Petri nets.
 
 The bundled sample log `src/AlgoService/sample_logs/small_example.xes` is a small synthetic log
-(six traces over the activities a to e) made for testing.
+(six traces over the activities a to e) made for testing. The factor-analysis data in
+`src/AlgoService/datasets/` (ComFy paper scores, PDC log measures, four Process Discovery
+Contest logs and nets mined from them) is listed with sources and licences in
+`datasets/PROVENANCE.md`; redistribution of the ComFy paper scores awaits the author's
+permission.
 
 ## License
 

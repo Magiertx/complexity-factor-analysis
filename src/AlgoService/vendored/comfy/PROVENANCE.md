@@ -16,7 +16,7 @@
 
 - `main.py` and `LatexExporter.py` (command-line front end and LaTeX report).
 - `ComplexityCollector.py` (collects measures over a folder of logs; the
-  service runs logs through its batch mode instead).
+  service does this in the factor-analysis dataset job, `factor_analysis/compute.py`).
 - `logcomplexity/LogComplexityMeasures.py` and `logcomplexity/MoreLogComplexity.py`
   (log measures built on `logcomplexity/Complexity.py`, which upstream ships
   only as a placeholder).
