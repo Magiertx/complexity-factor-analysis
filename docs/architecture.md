@@ -57,6 +57,9 @@ needs no frontend change. Today there is one category, `complexity`, with one to
   analyses run there. Caveats:
   - The bundle is a frozen snapshot from `https://zenodo.org/records/13853660`; upgrading
     ProM means rebuilding the image against a new bundle.
+  - The Hybrid ILP miner needs the native lp_solve 5.5 libraries; the image installs the
+    solver from Ubuntu and compiles its JNI wrapper
+    ([`src/prom4py/README.md`](../src/prom4py/README.md#lp_solve)).
   - The `/executor` endpoint runs arbitrary Java expressions, which is why the container is
     never published on the host.
 

@@ -14,6 +14,17 @@ import sys
 # Limiter snapshots this flag at construction time in config.py.
 os.environ.setdefault("RATE_LIMIT_DISABLED", "1")
 
+# A file instead of SQLite's in-memory database, so that `clean_db` can drop the connection
+# between tests without losing the tables.
+if "TEST_DATABASE_URL" not in os.environ:
+    import atexit
+    import shutil
+    import tempfile
+
+    _DB_DIR = tempfile.mkdtemp(prefix="algoservice-tests-")
+    atexit.register(shutil.rmtree, _DB_DIR, True)
+    os.environ["TEST_DATABASE_URL"] = "sqlite+aiosqlite:///" + os.path.join(_DB_DIR, "jobs.db")
+
 # Put src/AlgoService on the path so ``from algorithms import ...`` and
 # ``from srv_main import app`` both work when pytest is invoked from any cwd.
 _HERE = os.path.dirname(__file__)
@@ -52,13 +63,36 @@ def isolated_jobs_dir(monkeypatch, tmp_path):
 
 @pytest.fixture(autouse=True)
 def clean_db(isolated_jobs_dir):
-    """Clear database jobs before each test."""
+    """Clear database jobs before each test and start it on a new connection.
+
+    SQLAlchemy's aiosqlite adapter guards each connection with an asyncio.Lock that binds to
+    the first event loop waiting on it. Every TestClient and every asyncio.run has its own
+    loop, so a connection shared across tests fails at random with "bound to a different
+    event loop". With TEST_DATABASE_URL set to an in-memory SQLite database this drops the
+    tables before every test, so use a file.
+    """
     import asyncio
+    import database
     import jobs_db
-    try:
-        asyncio.run(jobs_db.delete_all_jobs())
-    except Exception:
-        pass
+
+    async def reset() -> None:
+        try:
+            await jobs_db.delete_all_jobs()
+        except Exception:
+            pass
+        await database.engine.dispose()
+
+    asyncio.run(reset())
+
+
+@pytest.fixture(scope="session", autouse=True)
+def close_db():
+    """Close the last connection, so the database file can be removed on Windows too."""
+    yield
+    import asyncio
+    import database
+
+    asyncio.run(database.engine.dispose())
 
 
 @pytest.fixture(autouse=True)

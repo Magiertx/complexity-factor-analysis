@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# A new push to a pull request cancels its older run; every commit on main keeps its own.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: src/AlgoService
+    steps:
+      - uses: actions/checkout@v7
+
+      # Same Python as the algoservice image.
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            src/AlgoService/requirements.txt
+            src/AlgoService/requirements-dev.txt
+
+      # Graphviz for the Petri-net rendering test.
+      - name: Install Graphviz
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends graphviz
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      # Tests that need ProM4Py skip, as without docker locally.
+      - name: Run tests
+        run: python -m pytest -q -rs
+
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: src/frontend
+    env:
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v7
+
+      # Same Node as the frontend image.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      # Next.js build cache, keyed on the lock file and the sources (not node_modules).
+      - uses: actions/cache@v6
+        with:
+          path: src/frontend/.next/cache
+          key: next-${{ runner.os }}-${{ hashFiles('src/frontend/package-lock.json') }}-${{ hashFiles('src/frontend/app/**', 'src/frontend/components/**', 'src/frontend/lib/**', 'src/frontend/public/**') }}
+          restore-keys: |
+            next-${{ runner.os }}-${{ hashFiles('src/frontend/package-lock.json') }}-
+
+      - name: Build
+        run: npx next build
+
+  # Only the stage that compiles the lp_solve JNI wrapper; the full prom4py image downloads
+  # the 430 MB ProM bundle.
+  prom4py-lpsolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build the lp_solve wrapper
+        run: docker build --target lpsolve-wrapper -t lpsolve-wrapper src/prom4py
+
+      - name: Check that the wrapper finds its libraries
+        run: docker run --rm lpsolve-wrapper sh -c 'ldd liblpsolve55j.so && ! ldd liblpsolve55j.so | grep -q "not found"'

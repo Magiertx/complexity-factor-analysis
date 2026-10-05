@@ -17,7 +17,7 @@ exec java \
     -Djava.awt.headless=true \
     -da \
     -classpath "$CP" \
-    -Djava.library.path=./lib \
+    -Djava.library.path=./lib:/usr/lib/lp_solve \
     -Djava.system.class.loader=org.processmining.framework.util.ProMClassLoader \
     -Djava.util.Arrays.useLegacyMergeSort=true \
     org.processmining.contexts.prom4py.ProM4PY -p "$PORT"

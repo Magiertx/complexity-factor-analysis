@@ -1,5 +1,7 @@
 # Complexity Factor Analysis
 
+[![CI](https://github.com/Magiertx/complexity-factor-analysis/actions/workflows/ci.yml/badge.svg)](https://github.com/Magiertx/complexity-factor-analysis/actions/workflows/ci.yml)
+
 A web tool for finding out which complexity measures of process models and event logs
 describe the same underlying dimension. It collects measures over many models or logs, checks
 whether a factor analysis is meaningful, and groups the measures into a few factors, the way
@@ -154,9 +156,10 @@ All of this is set in `docker-compose.yml`; reverse proxy, TLS, volumes and back
 - **Analysis cost.** A factor fit over about a hundred measures takes a few seconds of CPU
   in the API process. At most two run at once per process; recent fits are cached. BLAS runs
   single-threaded (`OPENBLAS_NUM_THREADS=1`), which is many times faster for these matrices.
-- **Slow and broken miners.** Alpha++ and Alpha Robust are marked slow; Alpha++ can run for
-  many minutes on a mid-sized log and ProM4Py cannot interrupt it. The Hybrid ILP miner needs
-  the native lp_solve 5.5 library, which the `prom4py` image does not contain, so it fails.
+- **Slow miners.** Alpha++ and Alpha Robust are marked slow; Alpha++ can run for many
+  minutes on a mid-sized log and ProM4Py cannot interrupt it. The Hybrid ILP miner needs the
+  native lp_solve 5.5 libraries, which the `prom4py` image builds in (see
+  [`src/prom4py/README.md`](src/prom4py/README.md#lp_solve)).
 
 ## Project structure
 
