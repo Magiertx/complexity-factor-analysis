@@ -27,7 +27,8 @@ signal.signal = _safe_signal
 
 import config
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 import jobs_db
@@ -126,8 +127,19 @@ app = FastAPI(
 
 # Rate limiting wiring. The Limiter itself lives in config.py so routes can
 # import it without circular dependencies.
+def _rate_limited(request: Request, exc: RateLimitExceeded) -> Response:
+    # slowapi answers {"error": ...}; every other error of the API comes as {"detail": ...}.
+    response = _rate_limit_exceeded_handler(request, exc)
+    body = {"detail": f"Too many requests ({exc.detail}). Try again later.", "code": "rate_limited"}
+    limited = JSONResponse(body, status_code=429)
+    for name, value in response.headers.items():
+        if name.lower().startswith(("x-ratelimit", "retry-after")):
+            limited.headers[name] = value
+    return limited
+
+
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limited)
 app.add_middleware(SlowAPIMiddleware)
 
 # CORS middleware configurations
