@@ -1,35 +1,10 @@
 *.swp
 *.*~
-project.lock.json
 .DS_Store
-nupkg/
 
 # Editors
 .vscode/
 .idea/
-
-# Visual Studio (legacy from previous C# project — kept for safety)
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
-.vs/
-
-# Build results (legacy C# + general)
-[Dd]ebug/
-[Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
-x64/
-x86/
-build/
-bld/
-[Bb]in/
-[Oo]bj/
-[Oo]ut/
-msbuild.log
-msbuild.err
-msbuild.wrn
 
 # Python
 __pycache__/
@@ -41,6 +16,8 @@ venv/
 .mypy_cache/
 .ruff_cache/
 *.egg-info/
+build/
+dist/
 
 # Node / Next.js
 node_modules/
