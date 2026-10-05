@@ -125,10 +125,13 @@ All of this is set in `docker-compose.yml`; reverse proxy, TLS, volumes and back
 ## Credits
 
 - [ComFy](https://github.com/Pati-nets/ComFy) by Patrizia Schalk: complexity measures, miner
-  wrappers and factor analysis. The same measures are published in the
+  wrappers and factor analysis. Related measure code is published under the MIT licence in the
   [Complexity Toolkit](https://github.com/Pati-nets/Complexity-Toolkit).
 - [ProM4Py](https://doi.org/10.5281/zenodo.13853660): Python access to the ProM plugins.
 - [pm4py](https://processintelligence.solutions/pm4py) for reading logs and handling Petri nets.
+
+The bundled sample log `src/AlgoService/sample_logs/small_example.xes` is a small synthetic log
+(six traces over the activities a to e) made for testing.
 
 ## License
 
