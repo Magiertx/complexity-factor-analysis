@@ -1,4 +1,26 @@
 {
+  "collections": [
+    {
+      "id": "comfy-paper",
+      "kind": "model",
+      "name": "Important Factors: Complexity Dimensions for Petri Nets",
+      "venue": "ATAED 2026",
+      "description": "ComFy model measures of the nets each miner discovered from the 288 training logs of the Process Discovery Contest 2025.",
+      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
+      "license": "No licence file upstream; permission of the author pending",
+      "source_url": "https://github.com/Pati-nets/ComFy"
+    },
+    {
+      "id": "comfy-log-paper",
+      "kind": "log",
+      "name": "Cleaning Up the Measure Mess: A Factor Analysis on Event Log Measures",
+      "description": "feeed measures of the 2112 training logs of the Process Discovery Contests 2020 to 2025.",
+      "note": "Computed with an older feeed: simple_trace_diversity, distinct_activities_mean, distinct_activities_std, event_density and complexity_factor differ from datasets the service computes.",
+      "citation": "Data of the paper \"Cleaning Up the Measure Mess: A Factor Analysis on Event Log Measures\", computed with ComFy for log measures by Patrizia Schalk, https://github.com/Pati-nets/ComFy-for-Log-Measures",
+      "license": "MIT",
+      "source_url": "https://github.com/Pati-nets/ComFy-for-Log-Measures"
+    }
+  ],
   "datasets": [
     {
       "id": "comfy-paper-inductive-miner",
@@ -10,7 +32,9 @@
       "source_url": "https://github.com/Pati-nets/ComFy",
       "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
       "license": "No licence file upstream; permission of the author pending",
-      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy"
+      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
+      "collection": "comfy-paper",
+      "label": "Inductive miner"
     },
     {
       "id": "comfy-paper-alpha-miner",
@@ -22,7 +46,9 @@
       "source_url": "https://github.com/Pati-nets/ComFy",
       "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
       "license": "No licence file upstream; permission of the author pending",
-      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy"
+      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
+      "collection": "comfy-paper",
+      "label": "Alpha miner"
     },
     {
       "id": "comfy-paper-alpha-plus-miner",
@@ -34,7 +60,9 @@
       "source_url": "https://github.com/Pati-nets/ComFy",
       "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
       "license": "No licence file upstream; permission of the author pending",
-      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy"
+      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
+      "collection": "comfy-paper",
+      "label": "Alpha Plus miner"
     },
     {
       "id": "comfy-paper-alpha-dollar-miner",
@@ -46,7 +74,9 @@
       "source_url": "https://github.com/Pati-nets/ComFy",
       "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
       "license": "No licence file upstream; permission of the author pending",
-      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy"
+      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
+      "collection": "comfy-paper",
+      "label": "Alpha Dollar miner"
     },
     {
       "id": "comfy-paper-heuristics-miner",
@@ -58,7 +88,9 @@
       "source_url": "https://github.com/Pati-nets/ComFy",
       "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
       "license": "No licence file upstream; permission of the author pending",
-      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy"
+      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
+      "collection": "comfy-paper",
+      "label": "Heuristics miner"
     },
     {
       "id": "comfy-paper-hybrid-ilp-miner",
@@ -70,7 +102,9 @@
       "source_url": "https://github.com/Pati-nets/ComFy",
       "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
       "license": "No licence file upstream; permission of the author pending",
-      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy"
+      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
+      "collection": "comfy-paper",
+      "label": "Hybrid ILP miner"
     },
     {
       "id": "comfy-paper-directly-follows-miner",
@@ -82,7 +116,9 @@
       "source_url": "https://github.com/Pati-nets/ComFy",
       "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
       "license": "No licence file upstream; permission of the author pending",
-      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy"
+      "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
+      "collection": "comfy-paper",
+      "label": "Directly Follows miner"
     },
     {
       "id": "comfy-log-pdc-training-logs",
@@ -93,7 +129,9 @@
       "citation": "Data of the paper \"Cleaning Up the Measure Mess: A Factor Analysis on Event Log Measures\", computed with ComFy for log measures by Patrizia Schalk, https://github.com/Pati-nets/ComFy-for-Log-Measures",
       "source_url": "https://github.com/Pati-nets/ComFy-for-Log-Measures",
       "source_commit": "70837cec7f3aff9580f52e78162b433e9e21f473",
-      "license": "MIT"
+      "license": "MIT",
+      "collection": "comfy-log-paper",
+      "label": "PDC training logs 2020–2025"
     }
   ],
   "samples": [

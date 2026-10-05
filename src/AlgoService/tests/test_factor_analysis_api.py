@@ -96,6 +96,11 @@ def test_catalog_model(client):
     assert bundled["comfy-paper-inductive-miner"]["observations"] == 288
     assert bundled["comfy-paper-inductive-miner"]["measures"] == 13
     assert "pending" in bundled["comfy-paper-inductive-miner"]["license"]
+    # The seven paper datasets are grouped under their paper and carry a short label.
+    assert [c["id"] for c in cat["collections"]] == ["comfy-paper"]
+    assert {b["collection"] for b in bundled.values()} == {"comfy-paper"}
+    assert bundled["comfy-paper-inductive-miner"]["label"] == "Inductive miner"
+    assert "Process Discovery Contest 2025" in cat["collections"][0]["description"]
     samples = {s["id"]: s for s in cat["samples"]}
     assert samples["pdc-sample-models"]["source"] == "pnml"
     assert len(samples["pdc-sample-models"]["files"]) == 32
@@ -114,6 +119,9 @@ def test_catalog_log(client):
     assert measure["group"] == "simple_stats"
     assert [b["id"] for b in cat["bundled"]] == ["comfy-log-pdc-training-logs"]
     assert cat["bundled"][0]["license"] == "MIT"
+    assert cat["bundled"][0]["collection"] == "comfy-log-paper"
+    assert [c["id"] for c in cat["collections"]] == ["comfy-log-paper"]
+    assert "older feeed" in cat["collections"][0]["note"]
     assert [s["id"] for s in cat["samples"]] == ["pdc-sample-logs"]
 
 

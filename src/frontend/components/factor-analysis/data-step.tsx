@@ -3,20 +3,25 @@
 import { useMemo, useState } from "react";
 import {
   AlertCircle,
+  BookOpen,
   Check,
   Copy,
   Database,
+  ExternalLink,
   FileSpreadsheet,
   FileText,
   Loader2,
   Network,
+  Package,
   RotateCcw,
   X,
 } from "lucide-react";
 import {
   MAX_DATASET_FILES,
   MAX_DATASET_TOTAL_BYTES,
+  type BundledDataset,
   type CreateDatasetInput,
+  type DatasetCollection,
   type DatasetSource,
   type FactorCatalog,
   type FactorDataset,
@@ -27,6 +32,7 @@ import { MIN_MEASURES, progressPercent } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { Input } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
 import { UploadZone } from "@/components/upload-zone";
@@ -207,7 +213,7 @@ export function DataForm({ kind, catalog, submitting, submitError, onSubmit, onC
       </div>
 
       {source === "bundled" && (
-        <BundledList catalog={catalog} selected={bundledId} onSelect={setBundledId} />
+        <BundledList kind={kind} catalog={catalog} selected={bundledId} onSelect={setBundledId} />
       )}
 
       {source === "csv" && (
@@ -227,7 +233,7 @@ export function DataForm({ kind, catalog, submitting, submitError, onSubmit, onC
       )}
 
       {(source === "logs" || source === "pnml") && sample && (
-        <SampleCard sample={sample} onClear={() => chooseSample(null)} />
+        <SampleTile sample={sample} chosen onToggle={() => chooseSample(null)} />
       )}
 
       {(source === "logs" || source === "pnml") && !sample && (
@@ -251,16 +257,7 @@ export function DataForm({ kind, catalog, submitting, submitError, onSubmit, onC
             />
           )}
           {files.length === 0 &&
-            samples.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => chooseSample(s.id)}
-                className="text-xs text-accent-ink hover:underline text-left"
-              >
-                {t("factor.data.sample_use", { name: s.name, n: s.files.length })}
-              </button>
-            ))}
+            samples.map((s) => <SampleTile key={s.id} sample={s} chosen={false} onToggle={() => chooseSample(s.id)} />)}
         </div>
       )}
 
@@ -359,113 +356,178 @@ export function DataForm({ kind, catalog, submitting, submitError, onSubmit, onC
 }
 
 function BundledList({
+  kind,
   catalog,
   selected,
   onSelect,
 }: {
+  kind: FactorKind;
   catalog: FactorCatalog;
   selected: string | null;
   onSelect: (id: string) => void;
 }) {
   const t = useT();
-  const [copied, setCopied] = useState<string | null>(null);
   if (catalog.bundled.length === 0) {
     return <p className="text-sm text-muted">{t("factor.data.bundled_empty")}</p>;
   }
+  const collections = catalog.collections ?? [];
+  const grouped = collections
+    .map((c) => ({ collection: c, items: catalog.bundled.filter((b) => b.collection === c.id) }))
+    .filter((g) => g.items.length > 0);
+  const loose = catalog.bundled.filter((b) => !collections.some((c) => c.id === b.collection));
+  const tile = (b: BundledDataset, showSize: boolean) => (
+    <BundledTile
+      key={b.id}
+      name={`fa-bundled-${kind}`}
+      dataset={b}
+      chosen={b.id === selected}
+      showSize={showSize}
+      onSelect={() => onSelect(b.id)}
+    />
+  );
   return (
-    <div role="radiogroup" aria-label={t("factor.data.source.bundled")} className="grid gap-3 md:grid-cols-2">
-      {catalog.bundled.map((b) => {
-        const active = b.id === selected;
+    <div role="radiogroup" aria-label={t("factor.data.source.bundled")} className="space-y-3">
+      {grouped.map(({ collection, items }) => {
+        const sameSize = items.every(
+          (b) => b.observations === items[0].observations && b.measures === items[0].measures,
+        );
         return (
-          <div
-            key={b.id}
-            className={cn(
-              "rounded-lg p-3.5 flex flex-col gap-2 transition",
-              active ? "bg-accent/[0.14] ring-1 ring-accent/60" : "bg-tile",
-            )}
-          >
-            <button
-              type="button"
-              role="radio"
-              aria-checked={active}
-              onClick={() => onSelect(b.id)}
-              className="text-left flex items-start gap-2.5 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-            >
-              <span
-                aria-hidden
-                className={cn(
-                  "mt-0.5 h-4 w-4 shrink-0 rounded-full border grid place-items-center",
-                  active ? "border-accent bg-accent text-accent-fg" : "border-strong",
-                )}
-              >
-                {active && <Check className="h-2.5 w-2.5" />}
-              </span>
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold">{b.name}</span>
-                <span className="block text-xs text-muted mt-0.5 leading-relaxed">{b.description}</span>
-              </span>
-            </button>
-            <div className="pl-6 flex items-center gap-2 flex-wrap text-[11px] text-muted">
-              <span className="font-mono">
-                {t("factor.data.bundled_size", { rows: b.observations, cols: b.measures })}
-              </span>
-              {b.license && (
-                <span className="rounded bg-bg/70 px-1.5 py-0.5">{t("factor.data.license", { license: b.license })}</span>
-              )}
-            </div>
-            {b.citation && (
-              <div className="pl-6 flex items-start gap-2">
-                <p className="text-[11px] italic text-muted leading-relaxed flex-1 min-w-0 break-words">{b.citation}</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard?.writeText(b.citation ?? "").then(
-                      () => {
-                        setCopied(b.id);
-                        setTimeout(() => setCopied(null), 2000);
-                      },
-                      () => {},
-                    );
-                  }}
-                  title={t("factor.data.copy_citation")}
-                  aria-label={t("factor.data.copy_citation")}
-                  className="h-6 w-6 shrink-0 grid place-items-center rounded text-muted hover:text-fg hover:bg-bg/70 transition"
-                >
-                  {copied === b.id ? <Check className="h-3.5 w-3.5 text-success-ink" /> : <Copy className="h-3.5 w-3.5" />}
-                </button>
-              </div>
-            )}
-          </div>
+          <CollectionBlock key={collection.id} collection={collection} size={sameSize ? items[0] : null}>
+            {items.map((b) => tile(b, !sameSize))}
+          </CollectionBlock>
         );
       })}
+      {loose.length > 0 && <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{loose.map((b) => tile(b, true))}</div>}
     </div>
   );
 }
 
-function SampleCard({ sample, onClear }: { sample: SampleInput; onClear: () => void }) {
+/** One paper with its datasets: what they are and how to cite them, said once. */
+function CollectionBlock({
+  collection,
+  size,
+  children,
+}: {
+  collection: DatasetCollection;
+  /** Shown in the header when every dataset of the paper has the same shape. */
+  size: { observations: number; measures: number } | null;
+  children: React.ReactNode;
+}) {
+  const t = useT();
+  const [copied, setCopied] = useState(false);
+  const copy = () =>
+    navigator.clipboard?.writeText(collection.citation ?? "").then(
+      () => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      },
+      () => {},
+    );
+  const action =
+    "h-7 px-2 inline-flex items-center gap-1.5 rounded-md text-[11px] font-medium text-muted hover:text-fg hover:bg-accent/[0.08] transition";
+  return (
+    <section className="rounded-lg bg-tile/40 p-3.5 sm:p-4 space-y-3">
+      <div className="flex items-start gap-3">
+        <div className="h-8 w-8 rounded-md bg-accent/[0.12] text-accent-ink grid place-items-center shrink-0">
+          <BookOpen className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h4 className="text-sm font-semibold leading-snug">
+            {collection.name}
+            {collection.venue && <span className="ml-2 text-xs font-normal text-muted">{collection.venue}</span>}
+          </h4>
+          <p className="text-xs text-muted mt-0.5 max-w-prose">{collection.description}</p>
+          <div className="mt-1.5 flex items-center gap-x-3 gap-y-1 flex-wrap text-[11px] text-muted">
+            {size && <span>{t("factor.data.bundled_size", { rows: size.observations, cols: size.measures })}</span>}
+            {collection.license && <span>{t("factor.data.license", { license: collection.license })}</span>}
+          </div>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          {collection.citation && (
+            <button type="button" onClick={copy} title={collection.citation} className={action}>
+              {copied ? <Check className="h-3.5 w-3.5 text-success-ink" /> : <Copy className="h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{copied ? t("factor.data.copied") : t("factor.data.copy_citation")}</span>
+            </button>
+          )}
+          {collection.source_url && (
+            <a href={collection.source_url} target="_blank" rel="noreferrer" className={action}>
+              <ExternalLink className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{t("factor.data.source_link")}</span>
+            </a>
+          )}
+        </div>
+      </div>
+      {collection.note && (
+        <p className="text-[11px] text-warn-ink flex items-start gap-1.5">
+          <AlertCircle className="h-3.5 w-3.5 mt-px shrink-0" />
+          {collection.note}
+        </p>
+      )}
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
+    </section>
+  );
+}
+
+function BundledTile({
+  name,
+  dataset,
+  chosen,
+  showSize,
+  onSelect,
+}: {
+  name: string;
+  dataset: BundledDataset;
+  chosen: boolean;
+  showSize: boolean;
+  onSelect: () => void;
+}) {
   const t = useT();
   return (
-    <div className="rounded-lg p-3.5 bg-accent/[0.14] ring-1 ring-accent/60 space-y-2">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-sm font-semibold">{sample.name}</div>
-          <div className="text-xs text-muted mt-0.5 leading-relaxed">{sample.description}</div>
-        </div>
-        <Button variant="ghost" size="sm" onClick={onClear} className="shrink-0">
+    <label
+      title={dataset.description}
+      className={cn("flex items-center gap-2.5 rounded-md px-3 py-2.5", choiceTile(chosen))}
+    >
+      <input type="radio" name={name} className="sr-only" checked={chosen} onChange={onSelect} />
+      <ChoiceMark type="radio" checked={chosen} />
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-medium truncate">{dataset.label ?? dataset.name}</span>
+        {showSize && (
+          <span className="block text-[11px] text-muted">
+            {t("factor.data.bundled_size", { rows: dataset.observations, cols: dataset.measures })}
+          </span>
+        )}
+      </span>
+    </label>
+  );
+}
+
+/** Bundled input files for the logs or PNML source; chosen, they replace the upload. */
+function SampleTile({ sample, chosen, onToggle }: { sample: SampleInput; chosen: boolean; onToggle: () => void }) {
+  const t = useT();
+  const files = t(sample.files.length === 1 ? "factor.data.files_selected" : "factor.data.files_selected_plural", {
+    n: sample.files.length,
+  });
+  return (
+    <div className={cn("rounded-md px-3 py-2.5 flex items-center gap-3", choiceTile(chosen))}>
+      <label className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer" title={sample.citation}>
+        <input type="checkbox" className="sr-only" checked={chosen} onChange={onToggle} />
+        <ChoiceMark checked={chosen} />
+        <Package className="h-4 w-4 text-muted shrink-0" />
+        <span className="min-w-0">
+          <span className="block text-sm font-medium truncate">
+            {t("factor.data.sample_label")}: {sample.name}
+          </span>
+          <span className="block text-[11px] text-muted truncate">
+            {files}
+            {sample.description && ` · ${sample.description}`}
+          </span>
+        </span>
+      </label>
+      {chosen && (
+        <Button variant="ghost" size="sm" onClick={onToggle} className="shrink-0">
           {t("factor.data.sample_own")}
         </Button>
-      </div>
-      <div className="flex items-center gap-2 flex-wrap text-[11px] text-muted">
-        <span className="font-mono">
-          {t(sample.files.length === 1 ? "factor.data.files_selected" : "factor.data.files_selected_plural", {
-            n: sample.files.length,
-          })}
-        </span>
-        {sample.license && (
-          <span className="rounded bg-bg/70 px-1.5 py-0.5">{t("factor.data.license", { license: sample.license })}</span>
-        )}
-      </div>
-      {sample.citation && <p className="text-[11px] italic text-muted leading-relaxed break-words">{sample.citation}</p>}
+      )}
     </div>
   );
 }
@@ -584,17 +646,10 @@ function Checklist({
             <label
               key={item.key}
               title={item.description}
-              className={cn(
-                "flex items-start gap-2.5 rounded-md px-2.5 py-2 cursor-pointer transition text-xs",
-                on ? "bg-accent/[0.12]" : "bg-tile hover:bg-accent/[0.06]",
-              )}
+              className={cn("flex items-start gap-2.5 rounded-md px-2.5 py-2 text-xs", choiceTile(on))}
             >
-              <input
-                type="checkbox"
-                checked={on}
-                onChange={() => toggle(item.key)}
-                className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-accent"
-              />
+              <input type="checkbox" checked={on} onChange={() => toggle(item.key)} className="sr-only" />
+              <ChoiceMark checked={on} className="mt-px" />
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-1.5 flex-wrap">
                   <span className="font-medium">{item.name}</span>

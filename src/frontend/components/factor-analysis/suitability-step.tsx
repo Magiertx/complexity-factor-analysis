@@ -11,6 +11,7 @@ import {
 } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { useT, useTMaybe } from "@/lib/i18n";
+import { ChoiceMark } from "@/components/ui/choice";
 import { Switch } from "@/components/ui/switch";
 import { HelpLabel, NumberField, PassBadge } from "./step-section";
 
@@ -196,7 +197,7 @@ function Scale({ value, threshold, compact }: { value: number | null; threshold:
 function Value({ label, value, title }: { label: string; value: string; title?: string }) {
   return (
     <div className="rounded-md bg-bg/60 px-2.5 py-1.5 min-w-0" title={title}>
-      <dt className="text-[10px] uppercase tracking-wide text-muted">{label}</dt>
+      <dt className="text-[10px] text-muted">{label}</dt>
       <dd className="font-mono tabular-nums text-sm truncate">{value}</dd>
     </div>
   );
@@ -220,21 +221,21 @@ function MsaTable({ dataset, analysis, options, onOptions, measureName }: Props)
   return (
     <div className="space-y-2">
       <HelpLabel label={t("factor.suitability.msa_heading")} help={t("factor.help.msa")} />
-      <div className="rounded-md border border-border overflow-x-auto">
+      <div className="rounded-md bg-tile/40 overflow-x-auto">
         <table className="w-full text-xs">
           <caption className="sr-only">{t("factor.suitability.msa_heading")}</caption>
           <thead className="bg-bg">
             <tr className="text-muted">
-              <th scope="col" className="px-3 py-2 text-left font-medium uppercase tracking-wide border-b border-border">
+              <th scope="col" className="px-3 py-2 text-left font-medium border-b border-border">
                 {t("factor.suitability.col_measure")}
               </th>
-              <th scope="col" className="px-3 py-2 text-left font-medium uppercase tracking-wide border-b border-border">
+              <th scope="col" className="px-3 py-2 text-left font-medium border-b border-border">
                 MSA
               </th>
-              <th scope="col" className="px-3 py-2 text-left font-medium uppercase tracking-wide border-b border-border">
+              <th scope="col" className="px-3 py-2 text-left font-medium border-b border-border">
                 {t("factor.suitability.col_status")}
               </th>
-              <th scope="col" className="px-3 py-2 text-center font-medium uppercase tracking-wide border-b border-border">
+              <th scope="col" className="px-3 py-2 text-center font-medium border-b border-border">
                 {t("factor.suitability.col_exclude")}
               </th>
             </tr>
@@ -275,16 +276,24 @@ function MsaTable({ dataset, analysis, options, onOptions, measureName }: Props)
                     )}
                   </td>
                   <td className="px-3 py-2 text-center">
-                    <input
-                      id={id}
-                      type="checkbox"
-                      aria-label={t("factor.suitability.exclude_aria", { measure: measureName(m) })}
-                      checked={isExcluded}
-                      disabled={locked}
+                    <label
                       title={locked ? t("factor.suitability.min_measures", { n: MIN_MEASURES }) : undefined}
-                      onChange={() => toggle(m)}
-                      className="h-4 w-4 accent-accent disabled:opacity-40"
-                    />
+                      className={cn(
+                        "inline-grid place-items-center h-6 w-6 rounded has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/60",
+                        locked ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-accent/[0.08]",
+                      )}
+                    >
+                      <input
+                        id={id}
+                        type="checkbox"
+                        aria-label={t("factor.suitability.exclude_aria", { measure: measureName(m) })}
+                        checked={isExcluded}
+                        disabled={locked}
+                        onChange={() => toggle(m)}
+                        className="sr-only"
+                      />
+                      <ChoiceMark checked={isExcluded} />
+                    </label>
                   </td>
                 </tr>
               );

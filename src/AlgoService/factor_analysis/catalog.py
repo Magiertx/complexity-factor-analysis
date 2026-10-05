@@ -155,10 +155,15 @@ def format_row_label(label: str, style: str | None) -> str:
 
 def _public(entry: dict[str, Any], **extra: Any) -> dict[str, Any]:
     out = {"id": entry["id"], "name": entry["name"], "description": entry["description"], **extra}
-    for key in ("citation", "license"):
+    for key in ("citation", "license", "label", "collection", "venue", "note", "source_url"):
         if entry.get(key):
             out[key] = entry[key]
     return out
+
+
+def collections(kind: str) -> list[dict[str, Any]]:
+    """Papers the bundled datasets come from; the UI lists each paper's datasets together."""
+    return [_public(c) for c in manifest().get("collections", []) if c["kind"] == kind]
 
 
 def catalog(kind: str) -> dict[str, Any]:
@@ -182,6 +187,7 @@ def catalog(kind: str) -> dict[str, Any]:
             "miners": miners,
             "defaults": {"measures": default_measures, "miners": list(DEFAULT_MINERS)},
             "bundled": bundled,
+            "collections": collections(kind),
             "samples": samples,
             "sources": ["bundled", "csv", "logs", "pnml"],
         }
@@ -214,6 +220,7 @@ def catalog(kind: str) -> dict[str, Any]:
         "groups": groups,
         "defaults": {"measures": log_features(defaults), "groups": defaults},
         "bundled": bundled,
+        "collections": collections(kind),
         "samples": samples,
         "sources": ["bundled", "csv", "logs"],
     }

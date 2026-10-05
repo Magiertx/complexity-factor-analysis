@@ -315,6 +315,23 @@ export interface BundledDataset {
   measures: number;
   citation?: string;
   license?: string;
+  /** Short name within its collection, e.g. the miner. */
+  label?: string;
+  /** Id of the paper (collection) the dataset belongs to. */
+  collection?: string;
+}
+
+/** A paper whose bundled datasets the data step lists together. */
+export interface DatasetCollection {
+  id: string;
+  name: string;
+  venue?: string;
+  description: string;
+  /** A caveat that applies to all datasets of the paper. */
+  note?: string;
+  citation?: string;
+  license?: string;
+  source_url?: string;
 }
 
 /** Bundled input files for the logs or pnml source; sent as `bundled_id` without files. */
@@ -335,6 +352,7 @@ export interface FactorCatalog {
   groups?: { key: string; name: string; description: string; slow?: boolean }[];
   defaults: { measures: string[]; miners?: string[]; groups?: string[] };
   bundled: BundledDataset[];
+  collections?: DatasetCollection[];
   samples?: SampleInput[];
   sources: DatasetSource[];
 }

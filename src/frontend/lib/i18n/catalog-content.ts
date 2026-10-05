@@ -13,6 +13,10 @@ interface CatalogContent {
   logMeasure: string;
   /** Descriptions of bundled datasets and samples by id. */
   datasets: Record<string, string>;
+  /** Short labels of bundled datasets by id, where they are not names. */
+  labels: Record<string, string>;
+  /** Descriptions and notes of the dataset collections (papers) by id. */
+  collections: Record<string, { description: string; note?: string }>;
 }
 
 const PAPER_MINER = (miner: string) =>
@@ -78,6 +82,19 @@ const DE: CatalogContent = {
     "pdc-sample-models":
       "32 Netze, mit dem Inductive Miner von pm4py bei Rauschschwellen von 0 bis 0,8 aus den vier Beispiellogs entdeckt (samples/make_sample_models.py).",
   },
+  labels: {
+    "comfy-log-pdc-training-logs": "PDC-Trainingslogs 2020–2025",
+  },
+  collections: {
+    "comfy-paper": {
+      description:
+        "ComFy-Modellmaße der Netze, die jeder Miner aus den 288 Trainingslogs des Process Discovery Contest 2025 entdeckt hat.",
+    },
+    "comfy-log-paper": {
+      description: "feeed-Maße der 2112 Trainingslogs der Process Discovery Contests 2020 bis 2025.",
+      note: "Mit einem älteren feeed berechnet: simple_trace_diversity, distinct_activities_mean, distinct_activities_std, event_density und complexity_factor weichen von Datensätzen ab, die der Dienst berechnet.",
+    },
+  },
 };
 
 const CONTENT: Partial<Record<Locale, CatalogContent>> = { de: DE };
@@ -97,7 +114,12 @@ export function localizeCatalog(catalog: FactorCatalog, locale: Locale): FactorC
       return description ? { ...m, description } : m;
     }),
     groups: catalog.groups?.map((g) => ({ ...g, ...c.groups[g.key] })),
-    bundled: catalog.bundled.map((b) => ({ ...b, description: c.datasets[b.id] ?? b.description })),
+    bundled: catalog.bundled.map((b) => ({
+      ...b,
+      description: c.datasets[b.id] ?? b.description,
+      label: c.labels[b.id] ?? b.label,
+    })),
+    collections: catalog.collections?.map((col) => ({ ...col, ...c.collections[col.id] })),
     samples: catalog.samples?.map((s) => ({ ...s, description: c.datasets[s.id] ?? s.description })),
   };
 }
