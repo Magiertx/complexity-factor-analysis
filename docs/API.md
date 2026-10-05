@@ -291,7 +291,7 @@ as they are. Observation labels, dataset and file names and measure values are n
                  "driving_measures": ["Size", "Token split"], "confidence": "high" } ],
   "overall": "One short paragraph.", "caveats": ["One sentence each."],
   "model": "claude-opus-5-5", "created_at": "2026-10-05T20:56:17+00:00", "language": "en",
-  "prompt_version": "1", "cached": false, "precomputed": false }
+  "prompt_version": "2", "cached": false, "precomputed": false }
 ```
 
 - `factors[].index` counts from 1, as in "Factor 1" (the `factors` of `analyze` count from 0).
