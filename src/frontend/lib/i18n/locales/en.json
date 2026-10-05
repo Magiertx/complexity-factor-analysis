@@ -569,6 +569,8 @@
         "missing": "missing values",
         "duplicate": "duplicate"
       },
+      "failures_heading": "{n} inputs gave no or incomplete values",
+      "failures_hint": "A row is missing when its log could not be read or the miner failed; a measure that failed on one row is dropped as incomplete.",
       "dropped_rows_note": "{n} rows with missing values were dropped.",
       "preview_heading": "Preview",
       "observation": "Observation",

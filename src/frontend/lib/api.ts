@@ -354,6 +354,8 @@ export interface FactorDataset {
   truncated: boolean;
   dropped: { measure: string; reason: DropReason; detail?: string }[];
   dropped_rows: number;
+  /** Inputs that gave no or incomplete values, e.g. a miner that failed on a log. */
+  failures?: { input: string; error: string }[];
   created_at: string;
 }
 

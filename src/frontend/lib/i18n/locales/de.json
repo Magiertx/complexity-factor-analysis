@@ -569,6 +569,8 @@
         "missing": "fehlende Werte",
         "duplicate": "Duplikat"
       },
+      "failures_heading": "{n} Eingaben lieferten keine oder unvollständige Werte",
+      "failures_hint": "Eine Zeile fehlt, wenn ihr Log nicht lesbar war oder der Miner scheiterte; ein Maß, das für eine Zeile scheiterte, wird als unvollständig entfernt.",
       "dropped_rows_note": "{n} Zeilen mit fehlenden Werten wurden entfernt.",
       "preview_heading": "Vorschau",
       "observation": "Beobachtung",

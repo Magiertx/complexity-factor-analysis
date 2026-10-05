@@ -1,6 +1,6 @@
 "use client";
 
-import { Download } from "lucide-react";
+import { AlertCircle, Download } from "lucide-react";
 import { datasetDownloadUrl, type FactorDataset } from "@/lib/api";
 import { formatNumber } from "@/lib/factor-analysis";
 import { useT } from "@/lib/i18n";
@@ -17,6 +17,7 @@ export function DatasetView({
 }) {
   const t = useT();
   const preview = dataset.values.slice(0, PREVIEW_ROWS);
+  const failures = dataset.failures ?? [];
 
   return (
     <div className="space-y-5">
@@ -52,6 +53,24 @@ export function DatasetView({
           <p className="text-xs text-muted">{t("factor.dataset.dropped_rows_note", { n: dataset.dropped_rows })}</p>
         )}
       </div>
+
+      {failures.length > 0 && (
+        <details className="rounded-lg bg-warn/10 px-3.5 py-2.5 text-xs">
+          <summary className="cursor-pointer flex items-start gap-2 font-medium">
+            <AlertCircle className="h-4 w-4 text-warn shrink-0" />
+            {t("factor.dataset.failures_heading", { n: failures.length })}
+          </summary>
+          <p className="text-muted mt-2">{t("factor.dataset.failures_hint")}</p>
+          <ul className="mt-2 space-y-1 max-h-48 overflow-y-auto">
+            {failures.map((f, i) => (
+              <li key={i} className="break-words">
+                <span className="font-medium">{f.input}</span>
+                <span className="text-muted">: {f.error}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-3 flex-wrap">
