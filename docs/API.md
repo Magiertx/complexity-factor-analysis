@@ -317,7 +317,9 @@ measures or 20 factors, a measure name longer than 120 characters, or a message 
 characters; `params` names the limits; checked before any limit counts), 429 `rate_limited`
 (more than `INTERPRETATION_RATE_LIMIT`, default `10/hour`, live calls in this session) or
 `interpretation_daily_cap` (more than `INTERPRETATION_DAILY_CAP`, default 200, live calls today
-over all sessions), 422 `interpretation_refused` (the model and its fallback declined), 502
+over all sessions), 422 `interpretation_refused` (the model and its fallback declined, or the
+category is not retried on a fallback), 503 `interpretation_fallback_unavailable` (the model
+declined and the fallback could not run; a later try may succeed), 502
 `interpretation_auth` (key rejected), `interpretation_incomplete` (answer cut off) or
 `interpretation_failed`, 429 `interpretation_upstream_limited` (Anthropic rate
 limit), 503 `interpretation_upstream_unavailable` or `interpretation_unreachable`, 504

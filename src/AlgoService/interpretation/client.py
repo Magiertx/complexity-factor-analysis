@@ -190,10 +190,18 @@ async def interpret(payload: dict[str, Any], language: str, key: str, timeout: f
         logger.warning("Interpretation request took longer than %.0f s", timeout)
         raise timed_out() from None
 
-    # A refusal means the requested model and the fallback both declined.
+    # A refusal at this point: both models declined, the category is not retried on a fallback
+    # (reasoning_extraction), or the fallback could not run, e.g. because it was rate limited;
+    # then stop_details names a recommended model and a later try may succeed.
     if response.stop_reason == "refusal":
         category = getattr(response.stop_details, "category", None)
-        logger.warning("Interpretation refused (category %s)", category)
+        recommended = getattr(response.stop_details, "recommended_model", None)
+        logger.warning("Interpretation refused (category %s, recommended model %s)", category, recommended)
+        if recommended:
+            raise InterpretationError(
+                503, "interpretation_fallback_unavailable",
+                "The model declined, and the fallback model could not run right now. Try again later.",
+            )
         raise InterpretationError(
             422, "interpretation_refused",
             "The model declined to interpret this analysis. The factor analysis itself is not affected.",

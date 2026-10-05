@@ -532,6 +532,14 @@ def test_refusal(client, claude, csv_dataset, text):
     assert _interpret(client, csv_dataset[0], auto_msa_filter=False, cached_only=True).status_code == 204
 
 
+def test_refusal_when_the_fallback_could_not_run(client, claude, csv_dataset):
+    claude.outcome = _message(None, "refusal", stop_details={
+        "type": "refusal", "category": "cyber", "recommended_model": "claude-opus-5",
+    })
+    r = _interpret(client, csv_dataset[0], auto_msa_filter=False)
+    assert r.status_code == 503 and r.json()["code"] == "interpretation_fallback_unavailable"
+
+
 def test_answer_of_the_fallback_model(client, claude, csv_dataset):
     answer = _answer_for
     claude.outcome = lambda kwargs: answer(kwargs).model_copy(update={"model": "claude-opus-4-8"})
