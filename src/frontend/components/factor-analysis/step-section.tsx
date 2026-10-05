@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
-export type StepId = "data" | "dataset" | "suitability" | "factors" | "loadings";
+export type StepId = "data" | "dataset" | "suitability" | "factors" | "loadings" | "interpretation";
 export type StepState = "locked" | "active" | "done" | "warn" | "busy";
 
 export function stepAnchor(id: StepId) {

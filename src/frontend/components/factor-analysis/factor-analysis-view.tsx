@@ -11,11 +11,15 @@ import {
   exportLoadings,
   fetchDataset,
   fetchFactorCatalog,
+  fetchInterpretationStatus,
+  interpretDataset,
   type CreateDatasetInput,
   type FactorAnalysis,
   type FactorCatalog,
   type FactorDataset,
+  type FactorInterpretation,
   type FactorKind,
+  type InterpretationStatus,
 } from "@/lib/api";
 import { PREVIEW_ROWS, defaultOptions, downloadBlob, type AnalysisOptions } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
@@ -27,6 +31,7 @@ import { DatasetView } from "./dataset-step";
 import { SuitabilityView } from "./suitability-step";
 import { FactorsView } from "./factors-step";
 import { LoadingsView } from "./loadings-step";
+import { InterpretationView } from "./interpretation-step";
 import { FactorTour } from "./factor-tour";
 import {
   EmptyStep,
@@ -41,6 +46,11 @@ const POLL_MS = 1500;
 // Polling slows down while the browser tab is hidden.
 const HIDDEN_POLL_MS = 15000;
 const ANALYZE_DEBOUNCE_MS = 300;
+
+/** What an interpretation was requested for; a change of any part makes it stale. */
+function interpretationKey(datasetId: string, options: AnalysisOptions, locale: string) {
+  return JSON.stringify([datasetId, options, locale]);
+}
 
 function messageOf(e: unknown, fallback: string) {
   return e instanceof Error && e.message ? e.message : fallback;
@@ -57,8 +67,8 @@ function useErrorText() {
 }
 
 /**
- * The five-step factor analysis workflow (data, dataset, suitability, factors, loadings),
- * shared by the model and the log complexity tab.
+ * The factor analysis workflow (data, dataset, suitability, factors, loadings, and the optional
+ * interpretation), shared by the model and the log complexity tab.
  */
 export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const t = useT();
@@ -94,6 +104,30 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const [exportError, setExportError] = useState<string | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
   const onboarding = useOnboarding();
+  // The options of the analysis on screen; a stored interpretation is looked up for them.
+  const [analyzedOptions, setAnalyzedOptions] = useState<AnalysisOptions | null>(null);
+
+  const [interpStatus, setInterpStatus] = useState<InterpretationStatus | null>(null);
+  const [interpStatusFailed, setInterpStatusFailed] = useState(false);
+  const [interpretation, setInterpretation] = useState<{ key: string; result: FactorInterpretation } | null>(null);
+  const [interpreting, setInterpreting] = useState(false);
+  const [interpretError, setInterpretError] = useState<string | null>(null);
+  const interpretationRef = useRef(interpretation);
+  const datasetIdRef = useRef(datasetId);
+  useEffect(() => {
+    interpretationRef.current = interpretation;
+    datasetIdRef.current = datasetId;
+  }, [interpretation, datasetId]);
+
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetchInterpretationStatus(ctrl.signal)
+      .then(setInterpStatus)
+      .catch(() => {
+        if (!ctrl.signal.aborted) setInterpStatusFailed(true);
+      });
+    return () => ctrl.abort();
+  }, []);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -128,6 +162,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       setDatasetError(null);
       setAnalysis(null);
       setAnalysisError(null);
+      setAnalyzedOptions(null);
+      setInterpretation(null);
+      setInterpretError(null);
       // A request for the old dataset is aborted and would not reset this itself.
       setAnalyzing(false);
       // Keep rotation and thresholds, but exclusions and the factor count belong to the old data.
@@ -187,6 +224,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       try {
         const res = await analyzeDataset(datasetId, options, ctrl.signal);
         setAnalysis(res);
+        setAnalyzedOptions(options);
         setAnalysisError(null);
       } catch (e) {
         if (ctrl.signal.aborted) return;
@@ -200,6 +238,40 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       ctrl.abort();
     };
   }, [ready, datasetId, options]);
+
+  // Show a stored interpretation of the analysis on screen without asking for a new one:
+  // precomputed for a bundled dataset, or requested before. Never calls the model.
+  const lookupInterpretation = !!interpStatus && (interpStatus.available || interpStatus.precomputed_only);
+  useEffect(() => {
+    if (!ready || !datasetId || !analyzedOptions || !lookupInterpretation) return;
+    const key = interpretationKey(datasetId, analyzedOptions, locale);
+    if (interpretationRef.current?.key === key) return;
+    const ctrl = new AbortController();
+    interpretDataset(datasetId, analyzedOptions, locale, { cachedOnly: true, signal: ctrl.signal })
+      .then((res) => {
+        if (res) setInterpretation({ key, result: res });
+      })
+      .catch(() => {
+        // Nothing to show; asking for an interpretation reports errors.
+      });
+    return () => ctrl.abort();
+  }, [ready, datasetId, analyzedOptions, locale, lookupInterpretation]);
+
+  const runInterpretation = async () => {
+    if (!datasetId) return;
+    const forDataset = datasetId;
+    const key = interpretationKey(datasetId, options, locale);
+    setInterpreting(true);
+    setInterpretError(null);
+    try {
+      const res = await interpretDataset(datasetId, options, locale);
+      if (res && datasetIdRef.current === forDataset) setInterpretation({ key, result: res });
+    } catch (e) {
+      if (datasetIdRef.current === forDataset) setInterpretError(errorText(e, t("factor.interpretation.failed")));
+    } finally {
+      setInterpreting(false);
+    }
+  };
 
   const updateOptions = useCallback(
     (patch: Partial<AnalysisOptions>) => {
@@ -256,6 +328,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const measureName = useCallback((key: string) => names.get(key) ?? key, [names]);
 
   const suitable = analysis ? analysis.bartlett.passed && analysis.kmo.passed : false;
+  const interpretationStale =
+    !!interpretation && (!datasetId || interpretation.key !== interpretationKey(datasetId, options, locale));
   const pendingAnalysis = ready && !analysis && !analysisError;
   const resultState: StepState = !ready
     ? "locked"
@@ -276,6 +350,18 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     suitability: resultState === "done" ? (suitable ? "done" : "warn") : resultState,
     factors: resultState,
     loadings: resultState,
+    interpretation:
+      resultState !== "done"
+        ? "locked"
+        : interpreting
+          ? "busy"
+          : interpretation
+            ? interpretationStale
+              ? "warn"
+              : "done"
+            : interpStatus?.available
+              ? "active"
+              : "locked",
   };
 
   const updating = analyzing ? (
@@ -475,6 +561,32 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               resultPlaceholder
             )}
           </StepSection>
+
+          <StepSection
+            id="interpretation"
+            n={6}
+            state={states.interpretation}
+            title={t("factor.steps.interpretation")}
+            description={t("factor.step_desc.interpretation")}
+          >
+            {!ready ? (
+              lockedHint
+            ) : analysis ? (
+              <InterpretationView
+                status={interpStatus}
+                statusFailed={interpStatusFailed}
+                interpretation={interpretation?.result ?? null}
+                stale={interpretationStale}
+                running={interpreting}
+                error={interpretError}
+                canRun={!analyzing && !analysisError}
+                onInterpret={runInterpretation}
+                measureName={measureName}
+              />
+            ) : (
+              resultPlaceholder
+            )}
+          </StepSection>
         </div>
       </div>
     </div>
@@ -527,7 +639,7 @@ function AnalysisError({
   );
 }
 
-const STEP_IDS: StepId[] = ["data", "dataset", "suitability", "factors", "loadings"];
+const STEP_IDS: StepId[] = ["data", "dataset", "suitability", "factors", "loadings", "interpretation"];
 
 function StepRail({ states }: { states: Record<StepId, StepState> }) {
   const t = useT();

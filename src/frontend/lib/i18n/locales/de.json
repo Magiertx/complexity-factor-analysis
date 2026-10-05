@@ -77,7 +77,7 @@
       "step1_p1": "Modellkomplexität analysiert Maße von Petri-Netzen, die aus Event-Logs gefunden und mit ComFy vermessen werden. Log-Komplexität analysiert Maße der Event-Logs selbst, berechnet mit feeed.",
       "step1_p2": "Beide Reiter funktionieren gleich.",
       "step2_title": "Fünf Schritte, von oben nach unten",
-      "step2_p1": "Daten, Datensatz, Eignung, Faktoren, Ladungen. Jede Änderung einer Einstellung startet die Analyse sofort neu, und die Ladungen lassen sich als CSV oder LaTeX exportieren.",
+      "step2_p1": "Daten, Datensatz, Eignung, Faktoren, Ladungen. Jede Änderung einer Einstellung startet die Analyse sofort neu, und die Ladungen lassen sich als CSV oder LaTeX exportieren. In einem optionalen sechsten Schritt schlägt Claude Namen für die Faktoren vor.",
       "step2_p2": "Das ? neben einer Überschrift erklärt die Kennzahl; der Tour-Knopf führt durch die Seite.",
       "step3_title": "Mehr, wenn du es brauchst",
       "step3_api": "API: alles per Python oder curl steuern; siehe die API-Seite im Header.",
@@ -86,12 +86,13 @@
       "step3_inspect": "Einzelnes Log untersuchen: ComFy auf einem Log ausführen und die gefundenen Modelle ansehen."
     },
     "factor": {
-      "intro": "Fünf Schritte von den Rohmaßen zu den Faktoren. Jeder Schritt erklärt seine Zahlen; die ?-Knöpfe neben einer Überschrift sagen mehr. ESC oder Überspringen beendet die Tour jederzeit.",
+      "intro": "Fünf Schritte von den Rohmaßen zu den Faktoren und eine optionale Interpretation. Jeder Schritt erklärt seine Zahlen; die ?-Knöpfe neben einer Überschrift sagen mehr. ESC oder Überspringen beendet die Tour jederzeit.",
       "data": "Hier geht es los: Wähle einen mitgelieferten Datensatz, lade eine CSV hoch oder berechne die Maße aus eigenen Dateien. Große Berechnungen laufen als Hintergrundjobs.",
       "dataset": "Prüfe die Größe der Matrix und was die Bereinigung entfernt hat. Die bereinigten Daten kannst du als CSV herunterladen.",
       "suitability": "Bartlett und KMO zeigen, ob eine Faktorenanalyse überhaupt sinnvoll ist. Schließe hier Maße mit niedrigem MSA aus, von Hand oder per Filter.",
       "factors": "Der Screeplot schlägt vor, wie viele Faktoren du behältst. Ändere die Anzahl oder die Rotation; alles darunter aktualisiert sich sofort.",
-      "loadings": "Die Heatmap zeigt, welche Maße auf welchem Faktor laden; fette Werte erreichen die Schwelle. Exportiere die Tabelle als CSV oder LaTeX für dein Paper."
+      "loadings": "Die Heatmap zeigt, welche Maße auf welchem Faktor laden; fette Werte erreichen die Schwelle. Exportiere die Tabelle als CSV oder LaTeX für dein Paper.",
+      "interpretation": "Optional: Claude schlägt für jeden Faktor einen Namen und eine kurze Deutung vor. Gesendet werden nur aggregierte Ergebnisse, und jede Anfrage kostet Geld, daher läuft sie nur auf Knopfdruck. Gleiche sie immer mit den Ladungen ab."
     }
   },
   "settings": {
@@ -437,7 +438,7 @@
   "factor": {
     "help_aria": "Erklärung: {topic}",
     "tour_button": "Tour",
-    "tour_title": "Rundgang durch die fünf Schritte",
+    "tour_title": "Rundgang durch die Schritte",
     "model": {
       "title": "Modellkomplexität",
       "subtitle": "Finde heraus, welche Komplexitätsmaße von Prozessmodellen dieselbe zugrunde liegende Dimension beschreiben. Sammle Maße über viele Modelle, prüfe, ob eine Faktorenanalyse sinnvoll ist, und fasse die Maße zu wenigen Faktoren zusammen.",
@@ -454,7 +455,8 @@
       "dataset": "Datensatz",
       "suitability": "Eignung",
       "factors": "Faktoren",
-      "loadings": "Ladungen"
+      "loadings": "Ladungen",
+      "interpretation": "Interpretation"
     },
     "step_desc": {
       "data_model": "Nutze einen veröffentlichten Datensatz, lade eine Maßtabelle hoch oder berechne die Maße aus Event-Logs oder Petri-Netzen.",
@@ -462,14 +464,16 @@
       "dataset": "Was geladen wurde und was die Bereinigung entfernt hat.",
       "suitability": "Sind die Maße stark genug korreliert für eine Faktorenanalyse?",
       "factors": "Wie viele Faktoren behalten und wie rotieren?",
-      "loadings": "Welche Maße zu welchem Faktor gehören."
+      "loadings": "Welche Maße zu welchem Faktor gehören.",
+      "interpretation": "Namen und kurze Deutungen der Faktoren, vorgeschlagen von Claude. Optional."
     },
     "rail": {
       "data": "Eingabe wählen",
       "dataset": "Matrix prüfen",
       "suitability": "Bartlett, KMO, MSA",
       "factors": "Screeplot, Rotation",
-      "loadings": "Gruppen und Export"
+      "loadings": "Gruppen und Export",
+      "interpretation": "Optional, mit Claude"
     },
     "state": {
       "locked": "noch nicht verfügbar",
@@ -722,7 +726,17 @@
       "too_few_measures": "Für eine Faktoranalyse sind mindestens {min} Maße nötig; übrig sind {left}.",
       "too_few_observations": "{n} Beobachtungen sind zu wenige für {measures} Maße; nötig sind mindestens {needed}. Schließe Maße aus oder füge Beobachtungen hinzu.",
       "msa_filter_left": "Nach dem MSA-Filter sind {left} Maße übrig; nötig sind mindestens {min}. Schalte den Filter aus oder senke die MSA-Schwelle.",
-      "rate_limited": "Zu viele Anfragen. Warte kurz und versuche es noch einmal."
+      "rate_limited": "Zu viele Anfragen. Warte kurz und versuche es noch einmal.",
+      "interpretation_unavailable": "Für die Interpretation braucht der Server einen Anthropic-API-Schlüssel, und es ist keiner eingerichtet.",
+      "interpretation_refused": "Das Modell hat die Interpretation dieser Analyse abgelehnt. Die Faktorenanalyse selbst ist davon nicht betroffen.",
+      "interpretation_auth": "Die Anthropic-API hat den API-Schlüssel des Servers abgelehnt. Der Betreiber muss ihn prüfen.",
+      "interpretation_upstream_limited": "Die Anthropic-API drosselt diesen Server, oder sein Ausgabenlimit ist erreicht. Versuche es später noch einmal.",
+      "interpretation_upstream_unavailable": "Die Anthropic-API ist nicht erreichbar oder überlastet. Versuche es später noch einmal.",
+      "interpretation_unreachable": "Der Server hat die Anthropic-API nicht erreicht; vielleicht fehlt ihm die Internetverbindung.",
+      "interpretation_timeout": "Die Anthropic-API hat nicht rechtzeitig geantwortet. Versuche es später noch einmal.",
+      "interpretation_incomplete": "Die Antwort des Modells wurde abgeschnitten. Versuche es noch einmal oder mit weniger Maßen.",
+      "interpretation_failed": "Das Modell hat keine brauchbare Antwort geliefert. Versuche es später noch einmal.",
+      "interpretation_daily_cap": "Der Server hat sein Tageskontingent an Interpretationen aufgebraucht. Versuche es morgen noch einmal."
     },
     "warnings": {
       "bartlett_not_significant": "Der Test nach Bartlett ist nicht signifikant (p = {p} ≥ {alpha}); die Maße sind womöglich unkorreliert.",
@@ -733,6 +747,31 @@
       "fit_not_converged": "Die Anpassung der Faktoren ist nicht konvergiert: {message}",
       "single_factor_no_rotation": "Ein einzelner Faktor wird nicht rotiert.",
       "heywood": "Kommunalität an der Grenze der Anpassung (Uniqueness höchstens 0,005) für {measures}; möglicher Heywood-Fall."
+    },
+    "interpretation": {
+      "intro": "Claude liest die Ladungen zusammen mit den Definitionen der Maße und schlägt für jeden Faktor einen Namen und eine kurze Interpretation vor. An Anthropic gehen nur aggregierte Ergebnisse: keine Messwerte, Zeilenbezeichnungen oder Dateinamen. Jede Anfrage kostet Geld, daher läuft sie nur, wenn du sie anforderst.",
+      "button": "Faktoren interpretieren",
+      "again": "Neu interpretieren",
+      "running": "Claude interpretiert die Faktoren. Das kann eine Minute dauern.",
+      "needs_key": "Erfordert einen API-Schlüssel auf dem Server",
+      "precomputed_only": "Ohne API-Schlüssel auf dem Server werden nur die vorberechneten Interpretationen der mitgelieferten Datensätze mit den Standardeinstellungen angezeigt.",
+      "status_failed": "Ob die Interpretation verfügbar ist, ließ sich nicht prüfen.",
+      "precomputed": "vorberechnet",
+      "precomputed_title": "Für diesen Datensatz mit den Standardeinstellungen vorab berechnet",
+      "factor": "Faktor {n}",
+      "confidence": "Sicherheit: {level}",
+      "confidence_level": {
+        "low": "niedrig",
+        "medium": "mittel",
+        "high": "hoch"
+      },
+      "driving": "Tragende Maße",
+      "overall": "Gesamtbild",
+      "caveats": "Einschränkungen",
+      "footer": "Automatisch erzeugt von {model} (Anthropic). Bitte mit den Ladungen abgleichen.",
+      "stale": "Seit dieser Interpretation haben sich die Einstellungen oder die Sprache geändert; sie passt womöglich nicht mehr zu den Ergebnissen oben.",
+      "failed": "Die Interpretation ist fehlgeschlagen.",
+      "stale_again": "Interpretiere neu, um sie zu aktualisieren."
     }
   },
   "inspect": {

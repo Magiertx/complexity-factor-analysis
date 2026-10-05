@@ -544,3 +544,63 @@ export async function exportLoadings(
   const filename = match ? decodeURIComponent(match[1]) : `loadings.${format === "csv" ? "csv" : "tex"}`;
   return { blob: await r.blob(), filename };
 }
+
+// ----------------------- Interpretation by Claude -----------------------
+
+export interface InterpretationStatus {
+  /** A key is configured on the server, so factors can be interpreted live. */
+  available: boolean;
+  model: string | null;
+  /** No key, but precomputed interpretations of bundled datasets exist. */
+  precomputed_only: boolean;
+}
+
+export type InterpretationLanguage = "en" | "de";
+
+export interface FactorInterpretation {
+  /** Counts from 1, as in "Factor 1"; `factors[].index` of the analysis counts from 0. */
+  factors: {
+    index: number;
+    name: string;
+    summary: string;
+    driving_measures: string[];
+    confidence: "low" | "medium" | "high";
+  }[];
+  overall: string;
+  caveats: string[];
+  /** The model that wrote it. */
+  model: string;
+  created_at: string;
+  language: InterpretationLanguage;
+  prompt_version: string;
+  /** No model call was made for this request. */
+  cached: boolean;
+  precomputed: boolean;
+}
+
+export async function fetchInterpretationStatus(signal?: AbortSignal): Promise<InterpretationStatus> {
+  const r = await fetch(`${BASE}/factor-analysis/interpretation/status`, { cache: "no-store", signal });
+  if (!r.ok) throw await httpError(r, "Failed to check the interpretation");
+  return r.json();
+}
+
+/**
+ * Interpretation of the analysis with these options. With `cachedOnly` the server never calls
+ * the model and the result is null when nothing is stored for these options yet.
+ */
+export async function interpretDataset(
+  id: string,
+  options: AnalyzeOptions,
+  language: InterpretationLanguage,
+  { cachedOnly = false, signal }: { cachedOnly?: boolean; signal?: AbortSignal } = {},
+): Promise<FactorInterpretation | null> {
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/interpret`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...options, language, cached_only: cachedOnly }),
+    signal,
+  });
+  if (r.status === 204) return null;
+  if (!r.ok) throw await httpError(r, "Interpretation failed");
+  return r.json();
+}

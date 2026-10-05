@@ -77,7 +77,7 @@
       "step1_p1": "Model complexity analyses measures of Petri nets discovered from event logs, computed with ComFy. Log complexity analyses measures of the event logs themselves, computed with feeed.",
       "step1_p2": "Both tabs work the same way.",
       "step2_title": "Five steps, top to bottom",
-      "step2_p1": "Data, dataset, suitability, factors, loadings. Every change to a setting re-runs the analysis right away, and the loadings can be exported as CSV or LaTeX.",
+      "step2_p1": "Data, dataset, suitability, factors, loadings. Every change to a setting re-runs the analysis right away, and the loadings can be exported as CSV or LaTeX. An optional sixth step lets Claude propose names for the factors.",
       "step2_p2": "The ? next to a heading explains the statistic; the Tour button walks you through the page.",
       "step3_title": "More when you need it",
       "step3_api": "API: drive everything from Python or curl; see the API page in the header.",
@@ -86,12 +86,13 @@
       "step3_inspect": "Inspect a single log: run ComFy on one log and look at the discovered models."
     },
     "factor": {
-      "intro": "Five steps from raw measures to factors. Each step explains its numbers; the ? buttons next to a heading say more. ESC or Skip ends the tour at any time.",
+      "intro": "Five steps from raw measures to factors, and an optional interpretation. Each step explains its numbers; the ? buttons next to a heading say more. ESC or Skip ends the tour at any time.",
       "data": "Start here: pick a bundled dataset, upload a CSV, or compute the measures from your own files. Large computations run as background jobs.",
       "dataset": "Check the size of the matrix and what the cleaning removed. You can download the cleaned data as CSV.",
       "suitability": "Bartlett and KMO tell you whether a factor analysis makes sense at all. Exclude measures with low MSA here, by hand or with the filter.",
       "factors": "The scree plot suggests how many factors to keep. Change the number or the rotation; everything below updates right away.",
-      "loadings": "The heatmap shows which measures load on which factor; bold values reach the threshold. Export the table as CSV or LaTeX for your paper."
+      "loadings": "The heatmap shows which measures load on which factor; bold values reach the threshold. Export the table as CSV or LaTeX for your paper.",
+      "interpretation": "Optional: Claude proposes a name and a short reading for each factor. Only aggregated results are sent, and every request costs money, so it runs only when you press the button. Always check it against the loadings."
     }
   },
   "settings": {
@@ -437,7 +438,7 @@
   "factor": {
     "help_aria": "Explain: {topic}",
     "tour_button": "Tour",
-    "tour_title": "Walkthrough of the five steps",
+    "tour_title": "Walkthrough of the steps",
     "model": {
       "title": "Model complexity",
       "subtitle": "Find out which complexity measures of process models describe the same underlying dimension. Collect measures over many models, check whether a factor analysis is meaningful, and group the measures into a few factors.",
@@ -454,7 +455,8 @@
       "dataset": "Dataset",
       "suitability": "Suitability",
       "factors": "Factors",
-      "loadings": "Loadings"
+      "loadings": "Loadings",
+      "interpretation": "Interpretation"
     },
     "step_desc": {
       "data_model": "Use a published dataset, upload a measure table, or compute the measures from event logs or Petri nets.",
@@ -462,14 +464,16 @@
       "dataset": "What was loaded, and what the cleaning removed.",
       "suitability": "Are the measures correlated enough for a factor analysis?",
       "factors": "How many factors to keep, and how to rotate them.",
-      "loadings": "Which measures belong to which factor."
+      "loadings": "Which measures belong to which factor.",
+      "interpretation": "Names and short readings of the factors, proposed by Claude. Optional."
     },
     "rail": {
       "data": "Choose the input",
       "dataset": "Check the matrix",
       "suitability": "Bartlett, KMO, MSA",
       "factors": "Scree plot, rotation",
-      "loadings": "Groups and export"
+      "loadings": "Groups and export",
+      "interpretation": "Optional, by Claude"
     },
     "state": {
       "locked": "not available yet",
@@ -722,7 +726,17 @@
       "too_few_measures": "At least {min} measures are needed for a factor analysis; {left} are left.",
       "too_few_observations": "{n} observations are too few for {measures} measures; at least {needed} are needed. Exclude measures or add observations.",
       "msa_filter_left": "The MSA filter left {left} measures; at least {min} are needed. Turn the filter off or lower the MSA threshold.",
-      "rate_limited": "Too many requests. Wait a moment and try again."
+      "rate_limited": "Too many requests. Wait a moment and try again.",
+      "interpretation_unavailable": "Interpreting factors needs an Anthropic API key on the server, and none is configured.",
+      "interpretation_refused": "The model declined to interpret this analysis. The factor analysis itself is not affected.",
+      "interpretation_auth": "The Anthropic API rejected the server's API key. The operator has to check it.",
+      "interpretation_upstream_limited": "The Anthropic API is rate limiting this server, or its spending limit is reached. Try again later.",
+      "interpretation_upstream_unavailable": "The Anthropic API is unavailable or overloaded. Try again later.",
+      "interpretation_unreachable": "The server could not reach the Anthropic API; it may have no internet connection.",
+      "interpretation_timeout": "The Anthropic API did not answer in time. Try again later.",
+      "interpretation_incomplete": "The answer of the model was cut off. Try again, or with fewer measures.",
+      "interpretation_failed": "The model returned no usable answer. Try again later.",
+      "interpretation_daily_cap": "The server has used up today's interpretations. Try again tomorrow."
     },
     "warnings": {
       "bartlett_not_significant": "Bartlett's test is not significant (p = {p} ≥ {alpha}); the measures may be uncorrelated.",
@@ -733,6 +747,31 @@
       "fit_not_converged": "The factor fit did not converge: {message}",
       "single_factor_no_rotation": "No rotation is applied to a single factor.",
       "heywood": "Communality at the bound of the fit (uniqueness at most 0.005) for {measures}; possible Heywood case."
+    },
+    "interpretation": {
+      "intro": "Claude reads the loadings together with the definitions of the measures and proposes a name and a short interpretation for each factor. Only aggregated results go to Anthropic: no measure values, row labels or file names. Each request costs money, so it runs only when you ask for it.",
+      "button": "Interpret factors",
+      "again": "Interpret again",
+      "running": "Claude is interpreting the factors. This can take a minute.",
+      "needs_key": "Requires an API key on the server",
+      "precomputed_only": "Without an API key on the server, only the precomputed interpretations of the bundled datasets with the default settings are shown.",
+      "status_failed": "Could not check whether interpretation is available.",
+      "precomputed": "precomputed",
+      "precomputed_title": "Computed in advance for this dataset with the default settings",
+      "factor": "Factor {n}",
+      "confidence": "Confidence: {level}",
+      "confidence_level": {
+        "low": "low",
+        "medium": "medium",
+        "high": "high"
+      },
+      "driving": "Driving measures",
+      "overall": "Overall",
+      "caveats": "Caveats",
+      "footer": "Automatically generated by {model} (Anthropic). Check against the loadings.",
+      "stale": "The settings or the language changed since this interpretation; it may not fit the results above.",
+      "failed": "The interpretation failed.",
+      "stale_again": "Interpret again to update it."
     }
   },
   "inspect": {

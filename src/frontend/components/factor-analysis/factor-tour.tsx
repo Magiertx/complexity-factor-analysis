@@ -6,7 +6,7 @@ import { Tour } from "@/components/tour";
 import { useT } from "@/lib/i18n";
 import type { FactorKind } from "@/lib/api";
 
-const STEPS = ["data", "dataset", "suitability", "factors", "loadings"] as const;
+const STEPS = ["data", "dataset", "suitability", "factors", "loadings", "interpretation"] as const;
 
 export function FactorTour({ kind, run, onClose }: { kind: FactorKind; run: boolean; onClose: () => void }) {
   const t = useT();
