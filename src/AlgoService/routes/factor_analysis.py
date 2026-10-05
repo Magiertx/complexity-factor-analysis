@@ -292,7 +292,13 @@ async def run_dataset_task(job_id: str, session_id: str, dataset_id: str, spec: 
             first = result.failures[0][1] if result.failures else "no input produced values"
             raise RuntimeError(f"No observation could be computed. First error: {first}")
 
-        meta = await asyncio.to_thread(storage.store_matrix, session_id, dataset_id, result.table, result.failures)
+        try:
+            meta = await asyncio.to_thread(
+                storage.store_matrix, session_id, dataset_id, result.table, result.failures, min_measures=2
+            )
+        except storage.TooFewMeasures as e:
+            first = f" First error: {result.failures[0][1]}" if result.failures else ""
+            raise RuntimeError(f"{e}{first}") from None
 
         rows = [
             [label, *(None if pd.isna(v) else round(float(v), 6) for v in values)]

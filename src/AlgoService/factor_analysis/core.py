@@ -36,8 +36,12 @@ MIN_MEASURES = 3
 ROTATIONS = ("varimax", "promax", "oblimin", "quartimax", "none")
 MISSING_MARKERS = {"", "nan", "none", "null", "na", "n/a", "-"}
 
-# A measure with more than this share of missing values is dropped; rows with a missing value
-# in the remaining measures are dropped. 0 drops every measure with a gap, as ComFy for log
+# Rows with more than this share of missing values are dropped first, e.g. an input on which
+# every measure failed.
+MAX_ROW_MISSING_SHARE = 0.5
+
+# Then a measure with more than this share of missing values is dropped, and rows with a
+# missing value in the remaining measures. 0 drops every measure with a gap, as ComFy for log
 # measures does.
 MAX_MISSING_SHARE = 0.0
 
@@ -72,6 +76,8 @@ class CleanResult:
     data: pd.DataFrame
     dropped: list[dict[str, Any]] = field(default_factory=list)
     dropped_rows: int = 0
+    #: Rows dropped first because most of their values were missing.
+    empty_rows: list[str] = field(default_factory=list)
 
 
 def _is_missing_marker(value: Any) -> bool:
@@ -82,16 +88,22 @@ def _is_missing_marker(value: Any) -> bool:
     return isinstance(value, str) and value.strip().lower() in MISSING_MARKERS
 
 
+def _is_constant(values: pd.Series) -> bool:
+    # Relative to the magnitude, so a measure on a tiny scale is not taken for a constant.
+    return len(values) == 0 or values.std(ddof=0) <= 1e-12 * max(1.0, abs(values.mean()))
+
+
 def clean_matrix(raw: pd.DataFrame, *, max_missing_share: float = MAX_MISSING_SHARE) -> CleanResult:
     """Reduce a table to a numeric matrix that a factor analysis can use.
 
-    In this order: drop measures with non-numeric values, drop measures with more than
+    In this order: drop measures with non-numeric values, drop rows with more than
+    ``MAX_ROW_MISSING_SHARE`` missing values, drop measures with more than
     ``max_missing_share`` missing values, drop rows with a missing value in what is left, drop
     constant measures, drop measures perfectly correlated with an earlier one (the first one is
     kept). Infinite values count as missing.
     """
     dropped: list[dict[str, Any]] = []
-    numeric: dict[str, pd.Series] = {}
+    numeric: dict[str, np.ndarray] = {}
 
     for column in raw.columns:
         values = raw[column]
@@ -99,29 +111,39 @@ def clean_matrix(raw: pd.DataFrame, *, max_missing_share: float = MAX_MISSING_SH
         if not pd.api.types.is_numeric_dtype(values):
             bad = [v for v, c in zip(values, converted) if pd.isna(c) and not _is_missing_marker(v)]
             if bad:
+                value = str(bad[0])[:40]
                 dropped.append({
                     "measure": str(column),
                     "reason": "non_numeric",
-                    "detail": f"contains the value {str(bad[0])[:40]!r}",
+                    "detail": f"contains the value {value!r}",
+                    "params": {"value": value},
                 })
                 continue
-        converted = converted.astype(float).replace([np.inf, -np.inf], np.nan)
-        n_missing = int(converted.isna().sum())
-        if len(converted) and n_missing / len(converted) > max_missing_share:
-            dropped.append({
-                "measure": str(column),
-                "reason": "missing",
-                "detail": f"{n_missing} of {len(converted)} values missing",
-            })
-            continue
-        numeric[str(column)] = converted.to_numpy()
+        numeric[str(column)] = converted.astype(float).replace([np.inf, -np.inf], np.nan).to_numpy()
 
     data = pd.DataFrame(numeric, index=[str(i) for i in raw.index], dtype=float)
     before = len(data)
+    empty_rows: list[str] = []
+    if data.shape[1]:
+        empty = (data.isna().mean(axis=1) > MAX_ROW_MISSING_SHARE).to_numpy()
+        empty_rows = [str(i) for i in data.index[empty]]
+        data = data[~empty]
+
+    for column in list(data.columns):
+        n_missing = int(data[column].isna().sum())
+        if len(data) and n_missing / len(data) > max_missing_share:
+            dropped.append({
+                "measure": column,
+                "reason": "missing",
+                "detail": f"{n_missing} of {len(data)} values missing",
+                "params": {"missing": n_missing, "total": len(data)},
+            })
+            data = data.drop(columns=column)
+
     data = data.dropna(axis=0, how="any")
     dropped_rows = before - len(data)
 
-    constant = [c for c in data.columns if len(data) == 0 or np.isclose(data[c].std(ddof=0), 0.0)]
+    constant = [c for c in data.columns if _is_constant(data[c])]
     for column in constant:
         dropped.append({"measure": column, "reason": "constant"})
     data = data.drop(columns=constant)
@@ -141,10 +163,11 @@ def clean_matrix(raw: pd.DataFrame, *, max_missing_share: float = MAX_MISSING_SH
             "measure": column,
             "reason": "duplicate",
             "detail": f"perfectly correlated with {kept}",
+            "params": {"kept": kept},
         })
     data = data.drop(columns=list(duplicates))
 
-    return CleanResult(data=data, dropped=dropped, dropped_rows=dropped_rows)
+    return CleanResult(data=data, dropped=dropped, dropped_rows=dropped_rows, empty_rows=empty_rows)
 
 
 # --- suitability --------------------------------------------------------------------------

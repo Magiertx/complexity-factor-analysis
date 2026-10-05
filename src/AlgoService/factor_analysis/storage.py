@@ -108,15 +108,35 @@ def update_meta(session_id: str, dataset_id: str, **changes: Any) -> dict[str, A
 MAX_FAILURES = 200
 
 
+class TooFewMeasures(ValueError):
+    """Fewer measures gave values than a dataset needs."""
+
+
 def store_matrix(
-    session_id: str, dataset_id: str, raw: pd.DataFrame, failures: list[tuple[str, str]] | None = None
+    session_id: str,
+    dataset_id: str,
+    raw: pd.DataFrame,
+    failures: list[tuple[str, str]] | None = None,
+    *,
+    min_measures: int = 0,
 ) -> dict[str, Any]:
     """Clean ``raw`` (rows = observations), save it and mark the dataset ready.
 
-    ``failures`` are (input, error) pairs of inputs that gave no or incomplete values.
+    ``failures`` are (input, error) pairs of inputs that gave no or incomplete values; rows
+    dropped for missing most values are added to them.
     """
     cleaned = clean_matrix(raw)
     data = cleaned.data
+    # Constant and duplicate measures count: they gave values, the data just has no use for them.
+    with_values = 0 if data.empty else data.shape[1] + sum(
+        1 for d in cleaned.dropped if d["reason"] in ("constant", "duplicate")
+    )
+    if with_values < min_measures:
+        raise TooFewMeasures(
+            f"Only {with_values} measure(s) gave values for every kept input; at least {min_measures} are needed."
+        )
+    failures = list(failures or [])
+    failures += [(row, "most measure values are missing; the row was dropped") for row in cleaned.empty_rows]
     directory = dataset_dir(session_id, dataset_id)
     tmp = directory / "data.csv.tmp"
     data.to_csv(tmp, index_label="observation")
@@ -130,7 +150,7 @@ def store_matrix(
         observations=list(data.index),
         dropped=cleaned.dropped,
         dropped_rows=cleaned.dropped_rows,
-        failures=[{"input": i, "error": e} for i, e in (failures or [])[:MAX_FAILURES]],
+        failures=[{"input": i, "error": e} for i, e in failures[:MAX_FAILURES]],
     )
 
 

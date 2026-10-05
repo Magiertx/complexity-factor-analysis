@@ -185,7 +185,9 @@ def test_csv_upload_with_labels_semicolons_and_decimal_commas(client):
     assert d["observations"][:2] == ["log0", "log1"]
     assert d["measures"] == ["a", "b", "c"]
     assert d["values"][1] == [1.5, 1.0, 2.0]
-    assert d["dropped"] == [{"measure": "text", "reason": "non_numeric", "detail": "contains the value 'x'"}]
+    assert d["dropped"] == [{
+        "measure": "text", "reason": "non_numeric", "detail": "contains the value 'x'", "params": {"value": "x"},
+    }]
 
 
 def test_csv_without_label_column_uses_row_numbers(client):
@@ -460,7 +462,7 @@ def test_failing_input_is_listed_on_the_dataset(client, fake_miner, monkeypatch,
 
     monkeypatch.setitem(comfy.MINERS_BY_NAME, fake_miner, PickyMiner())
     files = [("files", (name, data, "application/xml")) for name, data in xes_files.items()]
-    r = _post(client, kind="model", source="logs", miners=[fake_miner], measures=["Size"], files=files)
+    r = _post(client, kind="model", source="logs", miners=[fake_miner], measures=["Size", "Token split"], files=files)
     d = _wait_ready(client, r.json()["dataset_id"])
     assert d["status"] == "ready", d
     failed = [f["input"] for f in d["failures"]]
@@ -468,6 +470,42 @@ def test_failing_input_is_listed_on_the_dataset(client, fake_miner, monkeypatch,
     assert d["n_observations"] == len(xes_files) - 1
     assert not set(failed) & set(d["observations"])
     assert "lpsolve55" in d["failures"][0]["error"]
+
+
+def test_input_without_any_value_drops_its_row(client, fake_miner, monkeypatch, xes_files):
+    from algorithms import comfy
+
+    real = comfy.measure_value
+    calls = {"n": 0}
+
+    def first_net_fails(measure, net, im, fm):
+        calls["n"] += 1
+        if calls["n"] <= 2:
+            raise RuntimeError("measure failed")
+        return real(measure, net, im, fm)
+
+    monkeypatch.setattr(comfy, "measure_value", first_net_fails)
+    files = [("files", (name, data, "application/xml")) for name, data in xes_files.items()]
+    r = _post(client, kind="model", source="logs", miners=[fake_miner], measures=["Size", "Token split"], files=files)
+    d = _wait_ready(client, r.json()["dataset_id"])
+    assert d["status"] == "ready", d
+    assert "Size" in d["measures"]
+    assert d["observations"] == [f"{name} / Fake miner" for name in list(xes_files)[1:]]
+    assert any("row was dropped" in f["error"] for f in d["failures"])
+
+
+def test_dataset_without_measures_left_fails(client, fake_miner, monkeypatch, xes_files):
+    from algorithms import comfy
+
+    def always_fails(measure, net, im, fm):
+        raise RuntimeError("measure failed")
+
+    monkeypatch.setattr(comfy, "measure_value", always_fails)
+    files = [("files", (name, data, "application/xml")) for name, data in xes_files.items()]
+    r = _post(client, kind="model", source="logs", miners=[fake_miner], measures=["Size", "Token split"], files=files)
+    d = _wait_ready(client, r.json()["dataset_id"])
+    assert d["status"] == "failed"
+    assert "measure(s) gave values" in d["error"] and "measure failed" in d["error"]
 
 
 def test_model_dataset_from_logs(client, fake_miner, xes_files):
@@ -482,7 +520,7 @@ def test_model_dataset_from_logs(client, fake_miner, xes_files):
 def test_logs_accept_gzip_and_reject_doctype(client, fake_miner, xes_files):
     gz = gzip.compress(xes_files["seq.xes"])
     files = [("files", ("seq.xes.gz", gz, "application/gzip")), ("files", ("loop.xes", xes_files["loop.xes"], "application/xml"))]
-    r = _post(client, kind="model", source="logs", miners=[fake_miner], measures=["Size"], files=files)
+    r = _post(client, kind="model", source="logs", miners=[fake_miner], measures=["Size", "Token split"], files=files)
     assert r.status_code == 200, r.text
     d = _wait_ready(client, r.json()["dataset_id"])
     assert d["status"] == "ready"

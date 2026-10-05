@@ -72,6 +72,25 @@ def test_clean_drops_measures_with_gaps_like_comfy_for_log_measures():
     assert next(d for d in result.dropped if d["measure"] == "gap")["detail"] == "1 of 4 values missing"
 
 
+def test_clean_drops_mostly_empty_rows_before_measures():
+    """An input on which every measure failed costs one row, not every measure."""
+    raw = pd.DataFrame({
+        "x": [1.0, 2.0, None, 5.0],
+        "y": [2.0, 1.0, None, 7.0],
+        "z": [1.0, 0.0, 4.0, 2.0],
+    }, index=["a", "b", "failed", "d"])
+    result = core.clean_matrix(raw)
+    assert list(result.data.columns) == ["x", "y", "z"]
+    assert result.empty_rows == ["failed"]
+    assert result.dropped_rows == 1 and result.dropped == []
+
+
+def test_clean_keeps_measures_on_a_tiny_scale():
+    raw = pd.DataFrame({"tiny": [1e-12, 3e-12, 2e-12, 5e-12], "x": [1.0, 2.0, 2.0, 4.0]})
+    result = core.clean_matrix(raw)
+    assert list(result.data.columns) == ["tiny", "x"]
+
+
 def test_clean_drops_rows_when_measures_may_have_gaps():
     raw = pd.DataFrame({"x": [1.0, 2.0, 3.0, 5.0], "y": [1.0, None, 2.0, 7.0]})
     result = core.clean_matrix(raw, max_missing_share=0.5)
