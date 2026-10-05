@@ -21,10 +21,10 @@ jobs:
       run:
         working-directory: src/AlgoService
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Same Python as the algoservice image.
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
@@ -52,10 +52,10 @@ jobs:
     env:
       NEXT_TELEMETRY_DISABLED: 1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Same Node as the frontend image.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -71,7 +71,7 @@ jobs:
         run: npm run lint
 
       # Next.js build cache, keyed on the lock file and the sources (not node_modules).
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: src/frontend/.next/cache
           key: next-${{ runner.os }}-${{ hashFiles('src/frontend/package-lock.json') }}-${{ hashFiles('src/frontend/app/**', 'src/frontend/components/**', 'src/frontend/lib/**', 'src/frontend/public/**') }}
