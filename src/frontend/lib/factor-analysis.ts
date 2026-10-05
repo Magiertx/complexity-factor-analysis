@@ -1,7 +1,7 @@
 // Helpers for the factor analysis view. Kept free of React so they stay easy to reuse.
 
 import type { CSSProperties } from "react";
-import type { FactorAnalysis, Rotation } from "./api";
+import type { FactorAnalysis, Job, Rotation } from "./api";
 
 export interface AnalysisOptions {
   excluded: string[];
@@ -117,4 +117,12 @@ export function downloadBlob(blob: Blob, filename: string) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+/** Dataset jobs are stored as "_dataset:<kind>"; this is the tab that shows their dataset. */
+export function datasetJobHref(job: Job): string | null {
+  if (!job.algorithm_id.startsWith("_dataset:")) return null;
+  const tab = job.algorithm_id.slice("_dataset:".length) === "log" ? "/log" : "/";
+  const id = job.params?.dataset_id;
+  return typeof id === "string" ? `${tab}?dataset=${encodeURIComponent(id)}` : tab;
 }

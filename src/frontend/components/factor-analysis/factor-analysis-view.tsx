@@ -84,13 +84,16 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     return () => ctrl.abort();
   }, [kind, catalogAttempt, t]);
 
-  // Datasets live in the server session; remember the last one per tab.
+  // Datasets live in the server session; remember the last one per tab. A link from the
+  // jobs list (?dataset=<id>) takes precedence.
   useEffect(() => {
+    const linked = new URLSearchParams(window.location.search).get("dataset");
     try {
-      const saved = localStorage.getItem(storageKey);
+      if (linked) localStorage.setItem(storageKey, linked);
+      const saved = linked ?? localStorage.getItem(storageKey);
       if (saved) setDatasetId(saved);
     } catch {
-      /* storage blocked */
+      if (linked) setDatasetId(linked);
     }
   }, [storageKey]);
 

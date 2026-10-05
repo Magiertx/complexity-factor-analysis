@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Play,
   Layers,
+  Database,
   BarChart3,
   History,
   CheckCircle2,
@@ -32,13 +33,14 @@ import {
   fetchAlgorithms,
   fetchJobs,
 } from "@/lib/api";
+import { datasetJobHref } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
-// How a job was started, derived from the `algorithm_id` prefix (see
-// routes/algorithms.py: batch runs are stored as "_batch:<algo>"). A single
-// run has no prefix.
-type RunMode = "single" | "batch";
+// How a job was started, derived from the `algorithm_id` prefix: runs of the
+// removed batch mode are stored as "_batch:<algo>", factor analysis datasets as
+// "_dataset:<kind>". A single run has no prefix.
+type RunMode = "single" | "batch" | "dataset";
 
 interface RunInfo {
   mode: RunMode;
@@ -48,6 +50,8 @@ interface RunInfo {
 
 function deriveRunInfo(job: Job): RunInfo {
   const aid = job.algorithm_id;
+  const datasetHref = datasetJobHref(job);
+  if (datasetHref) return { mode: "dataset", innerAlgoId: null, href: datasetHref };
   if (aid.startsWith("_batch:")) {
     return {
       mode: "batch",
@@ -61,6 +65,7 @@ function deriveRunInfo(job: Job): RunInfo {
 const MODE_META: Record<RunMode, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
   single: { label: "Single", icon: Play },
   batch: { label: "Batch", icon: Layers },
+  dataset: { label: "Dataset", icon: Database },
 };
 
 const TOOL_TYPE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -403,7 +408,7 @@ function JobCard({
   const ToolTypeIcon = toolType ? TOOL_TYPE_ICON[toolType] : null;
 
   const shortAlgo =
-    info.mode === "single"
+    info.mode !== "batch"
       ? job.algorithm_name.split(" — ")[0]
       : `${MODE_META[info.mode].label}: ${innerAlgo?.name.split(" — ")[0] ?? info.innerAlgoId}`;
 
