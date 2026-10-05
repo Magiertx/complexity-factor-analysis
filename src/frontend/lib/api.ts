@@ -332,3 +332,195 @@ export async function updateJobNotes(jobId: string, notes: string | null): Promi
 export const TOOL_TYPE_LABEL: Record<string, string> = {
   complexity: "Complexity analysis",
 };
+
+// ----------------------- Factor analysis -----------------------
+// Mirrors the /factor-analysis endpoints of the AlgoService.
+
+export type FactorKind = "model" | "log";
+export type DatasetSource = "bundled" | "csv" | "logs" | "pnml";
+export type Rotation = "varimax" | "promax" | "oblimin" | "quartimax" | "none";
+export const ROTATIONS: Rotation[] = ["varimax", "promax", "oblimin", "quartimax", "none"];
+
+/** Upload limits per source, as enforced by the backend. */
+export const MAX_DATASET_FILES: Partial<Record<DatasetSource, number>> = { logs: 50, pnml: 200 };
+
+export interface FactorMeasure {
+  key: string;
+  name: string;
+  description: string;
+  slow?: boolean;
+  group?: string;
+}
+
+export interface BundledDataset {
+  id: string;
+  name: string;
+  description: string;
+  observations: number;
+  measures: number;
+  citation?: string;
+  license?: string;
+}
+
+export interface FactorCatalog {
+  kind: FactorKind;
+  measures: FactorMeasure[];
+  miners?: { key: string; name: string }[];
+  groups?: { key: string; name: string; description: string }[];
+  defaults: { measures: string[]; miners?: string[]; groups?: string[] };
+  bundled: BundledDataset[];
+  sources: DatasetSource[];
+}
+
+export type DropReason = "non_numeric" | "constant" | "missing" | "duplicate";
+
+export interface FactorDataset {
+  id: string;
+  kind: FactorKind;
+  name: string;
+  source: string;
+  status: "computing" | "ready" | "failed";
+  job_id?: string;
+  error?: string;
+  progress?: number;
+  n_observations: number;
+  measures: string[];
+  observations: string[];
+  /** Row-major, first 2000 rows only. */
+  values: (number | null)[][];
+  truncated: boolean;
+  dropped: { measure: string; reason: DropReason; detail?: string }[];
+  dropped_rows: number;
+  created_at: string;
+}
+
+export interface CreateDatasetInput {
+  kind: FactorKind;
+  source: DatasetSource;
+  bundledId?: string;
+  measures?: string[];
+  miners?: string[];
+  groups?: string[];
+  name?: string;
+  files?: File[];
+}
+
+export type CreateDatasetResponse =
+  | { dataset_id: string; status: "ready" }
+  | { dataset_id: string; status: "computing"; job_id: string };
+
+export interface AnalyzeOptions {
+  excluded?: string[];
+  auto_msa_filter?: boolean;
+  msa_threshold?: number;
+  bartlett_alpha?: number;
+  /** null lets the backend use its suggestion. */
+  n_factors?: number | null;
+  rotation?: Rotation;
+  loading_threshold?: number;
+}
+
+export interface FactorAnalysis {
+  n_observations: number;
+  used_measures: string[];
+  bartlett: { chi_square: number; df: number; p_value: number; alpha: number; passed: boolean };
+  kmo: { overall: number; per_measure: Record<string, number>; threshold: number; passed: boolean };
+  msa_filter: { enabled: boolean; removed: { measure: string; msa: number; step: number }[] };
+  eigenvalues: number[];
+  suggested_n_factors: number;
+  n_factors: number;
+  rotation: string;
+  /** Measure -> one loading per factor. */
+  loadings: Record<string, number[]>;
+  communalities: Record<string, number>;
+  uniquenesses: Record<string, number>;
+  variance: { ss_loadings: number[]; proportion: number[]; cumulative: number[] };
+  factors: { index: number; measures: { measure: string; loading: number }[] }[];
+  unassigned: string[];
+  warnings: string[];
+}
+
+async function errorMessage(r: Response, fallback: string): Promise<string> {
+  try {
+    const j = await r.json();
+    if (j.detail) return typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail);
+  } catch {}
+  return `${fallback} (${r.status})`;
+}
+
+/** Error with the HTTP status, so callers can tell a missing dataset from a bad request. */
+export class HttpError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "HttpError";
+    this.status = status;
+  }
+}
+
+export async function fetchFactorCatalog(kind: FactorKind, signal?: AbortSignal): Promise<FactorCatalog> {
+  const r = await fetch(`${BASE}/factor-analysis/catalog?kind=${kind}`, { cache: "no-store", signal });
+  if (!r.ok) throw new HttpError(await errorMessage(r, "Failed to load the catalog"), r.status);
+  return r.json();
+}
+
+export async function createDataset(input: CreateDatasetInput): Promise<CreateDatasetResponse> {
+  const form = new FormData();
+  form.append("kind", input.kind);
+  form.append("source", input.source);
+  if (input.bundledId) form.append("bundled_id", input.bundledId);
+  if (input.measures) form.append("measures", JSON.stringify(input.measures));
+  if (input.miners) form.append("miners", JSON.stringify(input.miners));
+  if (input.groups) form.append("groups", JSON.stringify(input.groups));
+  if (input.name) form.append("name", input.name);
+  for (const f of input.files ?? []) form.append("files", f);
+  const r = await fetch(`${BASE}/factor-analysis/datasets`, { method: "POST", body: form });
+  if (!r.ok) throw new HttpError(await errorMessage(r, "Could not create the dataset"), r.status);
+  return r.json();
+}
+
+export async function fetchDataset(id: string, signal?: AbortSignal): Promise<FactorDataset> {
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}`, {
+    cache: "no-store",
+    signal,
+  });
+  if (!r.ok) throw new HttpError(await errorMessage(r, "Failed to load the dataset"), r.status);
+  return r.json();
+}
+
+export function datasetDownloadUrl(id: string): string {
+  return `${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/download`;
+}
+
+export async function analyzeDataset(
+  id: string,
+  options: AnalyzeOptions,
+  signal?: AbortSignal,
+): Promise<FactorAnalysis> {
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/analyze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(options),
+    signal,
+  });
+  if (!r.ok) throw new HttpError(await errorMessage(r, "Analysis failed"), r.status);
+  return r.json();
+}
+
+export async function exportLoadings(
+  id: string,
+  options: AnalyzeOptions,
+  format: "csv" | "latex",
+): Promise<{ blob: Blob; filename: string }> {
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/export`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...options, format }),
+  });
+  if (!r.ok) throw new HttpError(await errorMessage(r, "Export failed"), r.status);
+  const disposition = r.headers.get("Content-Disposition") ?? "";
+  const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition);
+  const filename = match ? decodeURIComponent(match[1]) : `loadings.${format === "csv" ? "csv" : "tex"}`;
+  return { blob: await r.blob(), filename };
+}
