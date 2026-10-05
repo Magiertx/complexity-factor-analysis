@@ -28,7 +28,7 @@ class ConfigError(RuntimeError):
 def rate_limit(name: str, default: str) -> str:
     """Rate limit for one endpoint, overridable via ``RATE_LIMIT_<NAME>``.
 
-    Format is slowapi's: ``"20/hour"``, ``"5 per minute"``, e.g. ``RATE_LIMIT_BATCH=3/hour``.
+    Format is slowapi's: ``"20/hour"``, ``"5 per minute"``, e.g. ``RATE_LIMIT_DATASETS=3/hour``.
     This limits how often work is started; ``MAX_ACTIVE_JOBS_PER_SESSION`` limits how much
     runs at once.
     """

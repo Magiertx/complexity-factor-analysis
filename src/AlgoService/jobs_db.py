@@ -59,8 +59,8 @@ async def get_or_create_session(session_id: str) -> str:
 
 
 
-# Jobs one session may have queued or running at once. A batch request enqueues up to 10
-# runs, so this is the setting that bounds load; lower it for a public demo.
+# Jobs one session may have queued or running at once. A dataset job runs up to 50 logs,
+# so this is the setting that bounds load; lower it for a public demo.
 MAX_ACTIVE_JOBS_PER_SESSION = positive_int("MAX_ACTIVE_JOBS_PER_SESSION", 12)
 
 
@@ -361,7 +361,8 @@ async def list_jobs(session_id: str | None = None) -> list[dict[str, Any]]:
 # --- Helper functions ---
 
 def _tool_type_of(algorithm_id: str) -> str | None:
-    """Category of the tool behind a run; batch runs are stored as ``_batch:<id>``."""
+    """Category of the tool behind a run; runs of the removed batch mode are stored as
+    ``_batch:<id>``, dataset jobs as ``_dataset:<kind>``."""
     from algorithms import get as get_algorithm
 
     algorithm = get_algorithm(algorithm_id.split(":", 1)[-1])

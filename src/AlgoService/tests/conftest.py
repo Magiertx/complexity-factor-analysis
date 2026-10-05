@@ -76,7 +76,7 @@ def stub_algorithm(monkeypatch) -> str:
     """Register a cheap test-only tool and return its id.
 
     The only real tool, ComFy, needs the ProM4Py Java service. The HTTP layer (uploads,
-    sessions, batch, exports) does not care which tool runs, so its tests use this stub,
+    sessions, exports) does not care which tool runs, so its tests use this stub,
     which only reads the log and counts cases and events.
     """
     import algorithms

@@ -155,9 +155,9 @@ def test_malformed_session_id_is_replaced_not_used_as_a_path(hostile):
 def test_job_quota_rejects_when_the_session_is_already_full(client, monkeypatch, stub_algorithm):
     """One session must not be able to fill the queue and starve everyone else.
 
-    Rate limits count requests per hour; this counts what is actually in flight. A batch
-    request is one job but up to 10 runs, and Celery processes four at a time, so the queue
-    is the contended resource.
+    Rate limits count requests per hour; this counts what is actually in flight. A dataset
+    job runs up to 50 logs, and Celery processes four jobs at a time, so the queue is the
+    contended resource.
     """
     import jobs_db
 
@@ -382,52 +382,6 @@ def test_abandoned_session_directory_is_removed(tmp_path, monkeypatch):
     assert active.exists(), "cleanup removed a session that was in use"
 
 
-# --- one batch request must not add up to a gigabyte -----------------------------------
-
-def test_batch_enforces_a_total_size_budget(client, monkeypatch, stub_algorithm):
-    """Ten files under the per-file limit must not add up to 1 GB per request.
-
-    The budget is patched down so the test does not need large uploads.
-    """
-    import jobs_db
-    from routes import algorithms as algo
-
-    async def _idle(_session_id):
-        return 0
-
-    monkeypatch.setattr(jobs_db, "count_active_jobs", _idle)
-    monkeypatch.setattr(algo, "BATCH_MAX_TOTAL_BYTES", len(SAMPLE_XES) + 10)
-
-    r = client.post(
-        f"/algorithms/{stub_algorithm}/batch",
-        files=[
-            ("files", ("a.xes", SAMPLE_XES, "application/xml")),
-            ("files", ("b.xes", SAMPLE_XES, "application/xml")),
-        ],
-    )
-    assert r.status_code == 400, r.text
-    assert "total limit" in r.json()["detail"]
-
-
-def test_batch_still_accepts_a_reasonable_request(client, monkeypatch, stub_algorithm):
-    """Guard against the budget being so tight that ordinary batches break."""
-    import jobs_db
-
-    async def _idle(_session_id):
-        return 0
-
-    monkeypatch.setattr(jobs_db, "count_active_jobs", _idle)
-
-    r = client.post(
-        f"/algorithms/{stub_algorithm}/batch",
-        files=[
-            ("files", ("a.xes", SAMPLE_XES, "application/xml")),
-            ("files", ("b.xes", SAMPLE_XES, "application/xml")),
-        ],
-    )
-    assert r.status_code == 200, r.text
-
-
 # --- the baseline headers must not depend on the reverse proxy ------------------------
 
 def test_security_headers_are_set_by_the_application(client):
@@ -453,16 +407,16 @@ def test_hsts_is_not_sent_without_tls(client, monkeypatch):
 def test_rate_limit_reads_the_environment(monkeypatch):
     import env_config
 
-    monkeypatch.setenv("RATE_LIMIT_BATCH", "3/hour")
-    assert env_config.rate_limit("batch", "20/hour") == "3/hour"
-    assert env_config.OVERRIDES["RATE_LIMIT_BATCH"] == "3/hour"
+    monkeypatch.setenv("RATE_LIMIT_DATASETS", "3/hour")
+    assert env_config.rate_limit("datasets", "60/hour") == "3/hour"
+    assert env_config.OVERRIDES["RATE_LIMIT_DATASETS"] == "3/hour"
 
 
 def test_rate_limit_falls_back_to_the_default_when_unset(monkeypatch):
     import env_config
 
-    monkeypatch.delenv("RATE_LIMIT_BATCH", raising=False)
-    assert env_config.rate_limit("batch", "20/hour") == "20/hour"
+    monkeypatch.delenv("RATE_LIMIT_DATASETS", raising=False)
+    assert env_config.rate_limit("datasets", "60/hour") == "60/hour"
 
 
 @pytest.mark.parametrize("bad", ["20", "20/fortnight", "many/hour", "", "  ", "-5/hour"])
@@ -473,12 +427,12 @@ def test_malformed_rate_limit_stops_the_service(monkeypatch, bad):
     """
     import env_config
 
-    monkeypatch.setenv("RATE_LIMIT_BATCH", bad)
+    monkeypatch.setenv("RATE_LIMIT_DATASETS", bad)
     if not bad.strip():
-        assert env_config.rate_limit("batch", "20/hour") == "20/hour"
+        assert env_config.rate_limit("datasets", "60/hour") == "60/hour"
         return
-    with pytest.raises(env_config.ConfigError, match="RATE_LIMIT_BATCH"):
-        env_config.rate_limit("batch", "20/hour")
+    with pytest.raises(env_config.ConfigError, match="RATE_LIMIT_DATASETS"):
+        env_config.rate_limit("datasets", "60/hour")
 
 
 def test_rate_limit_accepts_the_verbose_slowapi_form(monkeypatch):
