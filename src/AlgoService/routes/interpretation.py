@@ -110,19 +110,13 @@ async def interpret_dataset(
 
     effective = effective_params(params, n_factors)
     digest = await run_in_threadpool(data_hash, data)
-    precomputed = store.read_precomputed(meta.get("bundled_id"), body.language, digest, effective, client.PROMPT_DIGEST)
-    if precomputed:
-        return _response(precomputed, cached=True, precomputed=True)
-
-    key = store.cache_key(
-        kind=kind, data_hash=digest, params=effective, language=body.language,
-        model=client.MODEL, effort=client.EFFORT, prompt=client.PROMPT_DIGEST,
-    )
-    cached = store.read_cached(session_id, meta, key)
-    if cached:
-        return _response(cached, cached=True, precomputed=False)
+    stored = store.lookup(session_id, meta, digest, effective, body.language)
+    if stored:
+        entry, precomputed = stored
+        return _response(entry, cached=True, precomputed=precomputed)
     if body.cached_only:
         return Response(status_code=204)
+    key = store.key_for(meta, digest, effective, body.language)
 
     api_key = client.api_key()
     if api_key is None:
