@@ -2,6 +2,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { AlertCircle } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import { Button } from "./button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./card";
 
@@ -12,6 +13,33 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+}
+
+function ErrorFallback({ error, onRetry }: { error: Error | null; onRetry: () => void }) {
+  const t = useT();
+  return (
+    <Card className="max-w-[600px] mx-auto my-8 border-danger/40 bg-danger/5">
+      <CardHeader className="flex flex-row items-center gap-3">
+        <div className="h-10 w-10 rounded-full bg-danger/10 grid place-items-center text-danger shrink-0">
+          <AlertCircle className="h-5 w-5" />
+        </div>
+        <div>
+          <CardTitle className="text-lg font-bold text-danger">{t("common.error_title")}</CardTitle>
+          <CardDescription className="text-sm mt-1 text-muted/80">
+            {t("common.error_description")}
+          </CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="p-3 bg-bg border border-border rounded text-xs font-mono overflow-auto max-h-[200px] text-fg/80">
+          {error?.toString() || t("common.error_unknown")}
+        </div>
+        <div className="flex justify-end">
+          <Button onClick={onRetry}>{t("common.try_again")}</Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -25,7 +53,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Uncaught error inside Workbench:", error, errorInfo);
+    console.error("Uncaught error:", error, errorInfo);
   }
 
   private handleRetry = () => {
@@ -34,31 +62,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
-      return (
-        <Card className="max-w-[600px] mx-auto my-8 border-danger/40 bg-danger/5">
-          <CardHeader className="flex flex-row items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-danger/10 grid place-items-center text-danger shrink-0">
-              <AlertCircle className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle className="text-lg font-bold text-danger">Something went wrong</CardTitle>
-              <CardDescription className="text-sm mt-1 text-muted/80">
-                The Workbench application encountered an unexpected error.
-              </CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-3 bg-bg border border-border rounded text-xs font-mono overflow-auto max-h-[200px] text-fg/80">
-              {this.state.error?.toString() || "Unknown Error"}
-            </div>
-            <div className="flex justify-end">
-              <Button onClick={this.handleRetry}>
-                Try again
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      );
+      return <ErrorFallback error={this.state.error} onRetry={this.handleRetry} />;
     }
 
     return this.props.children;

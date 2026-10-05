@@ -10,7 +10,11 @@
     "done": "Done",
     "get_started": "Get started",
     "run_analysis": "Run analysis",
-    "api": "API"
+    "api": "API",
+    "error_title": "Something went wrong",
+    "error_description": "This page ran into an unexpected error.",
+    "error_unknown": "Unknown error",
+    "try_again": "Try again"
   },
   "header": {
     "tagline": "process mining · model complexity",

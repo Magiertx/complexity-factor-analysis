@@ -10,7 +10,11 @@
     "done": "Fertig",
     "get_started": "Los geht's",
     "run_analysis": "Analyse starten",
-    "api": "API"
+    "api": "API",
+    "error_title": "Etwas ist schiefgelaufen",
+    "error_description": "Auf dieser Seite ist ein unerwarteter Fehler aufgetreten.",
+    "error_unknown": "Unbekannter Fehler",
+    "try_again": "Erneut versuchen"
   },
   "header": {
     "tagline": "Process Mining · Modellkomplexität",
