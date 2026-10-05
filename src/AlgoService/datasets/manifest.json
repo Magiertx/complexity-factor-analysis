@@ -88,7 +88,7 @@
       "id": "comfy-log-pdc-training-logs",
       "kind": "log",
       "name": "Log measures of the PDC training logs",
-      "description": "feeed measures of the 2112 training logs of the Process Discovery Contests 2020 to 2025, as used in the paper \"Cleaning Up the Measure Mess: A Factor Analysis on Event Log Measures\".",
+      "description": "feeed measures of the 2112 training logs of the Process Discovery Contests 2020 to 2025, as used in the paper \"Cleaning Up the Measure Mess: A Factor Analysis on Event Log Measures\". Computed with an older feeed: simple_trace_diversity, distinct_activities_mean, distinct_activities_std, event_density and complexity_factor differ from datasets the service computes.",
       "file": "log/log_measures_all_pdc_training_logs.csv",
       "citation": "Data of the paper \"Cleaning Up the Measure Mess: A Factor Analysis on Event Log Measures\", computed with ComFy for log measures by Patrizia Schalk, https://github.com/Pati-nets/ComFy-for-Log-Measures",
       "source_url": "https://github.com/Pati-nets/ComFy-for-Log-Measures",

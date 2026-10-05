@@ -24,6 +24,19 @@ unless noted.
 - **Content:** 146 feeed measures of 2112 training logs of the Process Discovery Contests
   2020 to 2025, analysed in the paper *Cleaning Up the Measure Mess: A Factor Analysis on
   Event Log Measures*.
+- **feeed version:** the file predates feeed commit `b28fb49`, which removed a dummy `[0]`
+  appended to the distinct-activity statistics. Five features therefore differ from what the
+  service computes with the feeed it ships: `simple_trace_diversity`,
+  `distinct_activities_mean`, `distinct_activities_std`, `event_density` and
+  `complexity_factor` (e.g. `event_density` 0.999000999 here, 1.0 now: a mean over 1001
+  instead of 1000 entries). The other 141 features match. Do not compare loadings of these
+  five between this file and datasets computed by the service.
+- **Singular data:** after cleaning, 128 measures remain with exact linear dependencies
+  (e.g. `trace_len_q3 - trace_len_q1 = trace_len_iqr`). KMO then rests on a pseudo-inverse
+  and Bartlett's chi-square on clamped eigenvalues, so both depend slightly on the platform's
+  linear algebra: `trace_len_hist6` has an MSA of about 0.593, at the threshold of 0.6, and
+  is removed on some machines and kept on others. The service equals the upstream code run
+  in the same environment, not necessarily the published upstream output.
 - **Licence:** MIT (`vendored/comfy_log/LICENSE`).
 
 ## `samples/logs/` — sample event logs
