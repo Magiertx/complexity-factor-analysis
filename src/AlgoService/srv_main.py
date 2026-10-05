@@ -9,6 +9,9 @@ import threading
 import logging
 from contextlib import asynccontextmanager
 
+# Before numpy is imported: single-threaded BLAS, see the Dockerfile.
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+
 # Workaround for thread-signal binding issues in non-main threads
 _orig_signal = signal.signal
 

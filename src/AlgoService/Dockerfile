@@ -13,6 +13,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# One BLAS thread per process. The factor fits work on small matrices, where OpenBLAS threads
+# only contend with each other and with parallel requests; with the default of one thread per
+# core a fit over 120 log measures took 85 s instead of 6 s.
+ENV OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1
+
 # Make the entrypoint executable. Doing this before the USER switch so we
 # don't depend on appuser having write permission.
 RUN chmod +x /app/entrypoint.sh
