@@ -25,6 +25,8 @@ interface LocaleContextValue {
   locale: Locale;
   setLocale: (l: Locale) => void;
   t: (key: string, params?: TParams) => string;
+  /** Like `t`, but undefined for a missing key, for texts that have an untranslated fallback. */
+  tMaybe: (key: string, params?: TParams) => string | undefined;
 }
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
@@ -93,7 +95,15 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     [locale],
   );
 
-  const value = useMemo(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
+  const tMaybe = useCallback(
+    (key: string, params?: TParams) => {
+      const found = lookup(DICTIONARIES[locale], key) ?? lookup(DICTIONARIES[DEFAULT_LOCALE], key);
+      return found === undefined ? undefined : interpolate(found, params);
+    },
+    [locale],
+  );
+
+  const value = useMemo(() => ({ locale, setLocale, t, tMaybe }), [locale, setLocale, t, tMaybe]);
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }
@@ -106,4 +116,8 @@ export function useLocale(): LocaleContextValue {
 
 export function useT() {
   return useLocale().t;
+}
+
+export function useTMaybe() {
+  return useLocale().tMaybe;
 }

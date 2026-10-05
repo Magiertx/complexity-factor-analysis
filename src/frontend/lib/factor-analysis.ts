@@ -1,7 +1,7 @@
 // Helpers for the factor analysis view. Kept free of React so they stay easy to reuse.
 
 import type { CSSProperties } from "react";
-import type { FactorAnalysis, Job, Rotation } from "./api";
+import type { FactorAnalysis, FactorKind, Job, Rotation } from "./api";
 
 export interface AnalysisOptions {
   excluded: string[];
@@ -12,21 +12,29 @@ export interface AnalysisOptions {
   n_factors: number | null;
   rotation: Rotation;
   loading_threshold: number;
+  /** Measures below this communality stay unassigned. */
+  communality_threshold: number;
 }
 
-// Same defaults as the backend.
-export const DEFAULT_OPTIONS: AnalysisOptions = {
-  excluded: [],
-  auto_msa_filter: true,
-  msa_threshold: 0.6,
-  bartlett_alpha: 0.05,
-  n_factors: null,
-  rotation: "varimax",
-  loading_threshold: 0.35,
-};
+/** Same defaults as the backend: ComFy for model, ComFy for log measures for log measures. */
+export function defaultOptions(kind: FactorKind): AnalysisOptions {
+  return {
+    excluded: [],
+    auto_msa_filter: true,
+    msa_threshold: 0.6,
+    bartlett_alpha: 0.05,
+    n_factors: null,
+    rotation: "varimax",
+    loading_threshold: kind === "log" ? 0.5 : 0.35,
+    communality_threshold: kind === "log" ? 0.5 : 0,
+  };
+}
 
 /** Fewest measures the backend accepts for an analysis. */
 export const MIN_MEASURES = 3;
+
+/** Rows of a dataset the browser loads and shows as a preview. */
+export const PREVIEW_ROWS = 8;
 
 export const ORTHOGONAL: Rotation[] = ["varimax", "quartimax"];
 
@@ -117,6 +125,13 @@ export function downloadBlob(blob: Blob, filename: string) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+/** The name of a job in the UI language; the backend names dataset jobs in English. */
+export function jobDisplayName(job: Job, t: (key: string, params?: Record<string, string | number>) => string): string {
+  if (!job.algorithm_id.startsWith("_dataset:")) return job.algorithm_name;
+  const kind = job.algorithm_id.slice("_dataset:".length) === "log" ? "log" : "model";
+  return t(`jobs.dataset_name.${kind}`);
 }
 
 /** Dataset jobs are stored as "_dataset:<kind>"; this is the tab that shows their dataset. */

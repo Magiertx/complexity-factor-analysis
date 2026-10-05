@@ -10,7 +10,7 @@ import {
   type AnalysisOptions,
 } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
-import { useT } from "@/lib/i18n";
+import { useT, useTMaybe } from "@/lib/i18n";
 import { Switch } from "@/components/ui/switch";
 import { HelpLabel, NumberField, PassBadge } from "./step-section";
 
@@ -24,15 +24,22 @@ interface Props {
 
 export function SuitabilityView({ dataset, analysis, options, onOptions, measureName }: Props) {
   const t = useT();
+  const tMaybe = useTMaybe();
+  // Translated by code where the UI knows it; the English message otherwise.
+  const warnings = analysis
+    ? (analysis.warning_details ?? analysis.warnings.map((message) => ({ code: "", message, params: {} }))).map(
+        (w) => (w.code && tMaybe(`factor.warnings.${w.code}`, w.params)) || w.message,
+      )
+    : [];
   return (
     <div className="space-y-6">
-      {analysis && analysis.warnings.length > 0 && (
+      {warnings.length > 0 && (
         <div className="rounded-lg bg-warn/10 px-3.5 py-3 flex items-start gap-2.5 text-sm">
           <AlertTriangle className="h-4 w-4 text-warn-ink shrink-0 mt-0.5" />
           <div>
             <div className="font-medium">{t("factor.suitability.warnings_heading")}</div>
             <ul className="mt-1 text-xs text-muted space-y-0.5 list-disc pl-4">
-              {analysis.warnings.map((w) => (
+              {warnings.map((w) => (
                 <li key={w}>{w}</li>
               ))}
             </ul>
@@ -134,7 +141,11 @@ function BartlettCard({ analysis, alpha }: { analysis: FactorAnalysis | null; al
       />
       <p className="text-xs text-muted">{t("factor.suitability.bartlett_explain", { alpha: b?.alpha ?? alpha })}</p>
       <dl className="grid grid-cols-3 gap-2 text-xs">
-        <Value label="χ²" value={b ? formatNumber(b.chi_square, 1) : "–"} />
+        <Value
+          label={b?.regularised ? `χ² (${t("factor.suitability.regularised")})` : "χ²"}
+          value={b ? formatNumber(b.chi_square, 1) : "–"}
+          title={b?.regularised ? t("factor.suitability.regularised_title") : undefined}
+        />
         <Value label={t("factor.suitability.df")} value={b ? String(b.df) : "–"} />
         <Value label="p" value={b ? formatPValue(b.p_value) : "–"} />
       </dl>
@@ -182,9 +193,9 @@ function Scale({ value, threshold, compact }: { value: number | null; threshold:
   );
 }
 
-function Value({ label, value }: { label: string; value: string }) {
+function Value({ label, value, title }: { label: string; value: string; title?: string }) {
   return (
-    <div className="rounded-md bg-bg/60 px-2.5 py-1.5 min-w-0">
+    <div className="rounded-md bg-bg/60 px-2.5 py-1.5 min-w-0" title={title}>
       <dt className="text-[10px] uppercase tracking-wide text-muted">{label}</dt>
       <dd className="font-mono tabular-nums text-sm truncate">{value}</dd>
     </div>
@@ -202,6 +213,9 @@ function MsaTable({ dataset, analysis, options, onOptions, measureName }: Props)
     const next = excluded.has(m) ? options.excluded.filter((x) => x !== m) : [...options.excluded, m];
     onOptions({ excluded: next });
   };
+  // Tick the few measures to keep, then invert, instead of ticking all the others.
+  const canInvert = options.excluded.length >= MIN_MEASURES;
+  const invert = () => onOptions({ excluded: dataset.measures.filter((m) => !excluded.has(m)) });
 
   return (
     <div className="space-y-2">
@@ -264,6 +278,7 @@ function MsaTable({ dataset, analysis, options, onOptions, measureName }: Props)
                     <input
                       id={id}
                       type="checkbox"
+                      aria-label={t("factor.suitability.exclude_aria", { measure: measureName(m) })}
                       checked={isExcluded}
                       disabled={locked}
                       title={locked ? t("factor.suitability.min_measures", { n: MIN_MEASURES }) : undefined}
@@ -278,11 +293,22 @@ function MsaTable({ dataset, analysis, options, onOptions, measureName }: Props)
         </table>
       </div>
       {options.excluded.length > 0 && (
-        <div className="flex items-center justify-between gap-3 text-xs text-muted">
+        <div className="flex items-center justify-between gap-3 text-xs text-muted flex-wrap">
           <span>{t("factor.suitability.excluded_count", { n: options.excluded.length })}</span>
-          <button type="button" onClick={() => onOptions({ excluded: [] })} className="hover:text-fg transition">
-            {t("factor.suitability.include_all")}
-          </button>
+          <span className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={invert}
+              disabled={!canInvert}
+              title={canInvert ? t("factor.suitability.invert_title") : t("factor.suitability.min_measures", { n: MIN_MEASURES })}
+              className="hover:text-fg transition disabled:opacity-40 disabled:pointer-events-none"
+            >
+              {t("factor.suitability.invert")}
+            </button>
+            <button type="button" onClick={() => onOptions({ excluded: [] })} className="hover:text-fg transition">
+              {t("factor.suitability.include_all")}
+            </button>
+          </span>
         </div>
       )}
     </div>

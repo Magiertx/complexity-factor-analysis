@@ -296,6 +296,8 @@ export const ROTATIONS: Rotation[] = ["varimax", "promax", "oblimin", "quartimax
 
 /** Upload limits per source, as enforced by the backend. */
 export const MAX_DATASET_FILES: Partial<Record<DatasetSource, number>> = { logs: 50, pnml: 200 };
+/** Budget over all files of one dataset request. */
+export const MAX_DATASET_TOTAL_BYTES = 500 * 1024 * 1024;
 
 export interface FactorMeasure {
   key: string;
@@ -330,7 +332,7 @@ export interface FactorCatalog {
   kind: FactorKind;
   measures: FactorMeasure[];
   miners?: { key: string; name: string; slow?: boolean }[];
-  groups?: { key: string; name: string; description: string }[];
+  groups?: { key: string; name: string; description: string; slow?: boolean }[];
   defaults: { measures: string[]; miners?: string[]; groups?: string[] };
   bundled: BundledDataset[];
   samples?: SampleInput[];
@@ -351,10 +353,10 @@ export interface FactorDataset {
   n_observations: number;
   measures: string[];
   observations: string[];
-  /** Row-major, first 2000 rows only. */
+  /** Row-major, the first `rows` rows only (at most 2000). */
   values: (number | null)[][];
   truncated: boolean;
-  dropped: { measure: string; reason: DropReason; detail?: string }[];
+  dropped: { measure: string; reason: DropReason; detail?: string; params?: Record<string, string | number> }[];
   dropped_rows: number;
   /** Inputs that gave no or incomplete values, e.g. a miner that failed on a log. */
   failures?: { input: string; error: string }[];
@@ -384,59 +386,101 @@ export interface AnalyzeOptions {
   /** null lets the backend use its suggestion. */
   n_factors?: number | null;
   rotation?: Rotation;
-  loading_threshold?: number;
+  /** null uses the default of the kind: 0.35 for model, 0.5 for log measures. */
+  loading_threshold?: number | null;
+  /** null uses the default of the kind: 0 for model, 0.5 for log measures. */
+  communality_threshold?: number | null;
+}
+
+/** A message of the analysis; `code` and `params` select the translation. */
+export interface AnalysisNotice {
+  code: string;
+  message: string;
+  params: Record<string, string | number>;
 }
 
 export interface FactorAnalysis {
   n_observations: number;
   used_measures: string[];
-  bartlett: { chi_square: number; df: number; p_value: number; alpha: number; passed: boolean };
+  bartlett: {
+    chi_square: number;
+    df: number;
+    p_value: number;
+    alpha: number;
+    passed: boolean;
+    /** Eigenvalues near 0 were clamped, so chi-square reflects the floor more than the data. */
+    regularised?: boolean;
+  };
   kmo: { overall: number; per_measure: Record<string, number>; threshold: number; passed: boolean };
   msa_filter: { enabled: boolean; removed: { measure: string; msa: number; step: number }[] };
   eigenvalues: number[];
   suggested_n_factors: number;
   n_factors: number;
   rotation: string;
-  /** Measure -> one loading per factor. */
+  loading_threshold: number;
+  communality_threshold: number;
+  /** Measure -> one loading per factor; the pattern matrix for oblique rotations. */
   loadings: Record<string, number[]>;
+  /** Oblique rotations only: correlations between measures and factors. */
+  structure_loadings: Record<string, number[]> | null;
+  /** Oblique rotations only: correlations among the factors. */
+  factor_correlations: number[][] | null;
   communalities: Record<string, number>;
   uniquenesses: Record<string, number>;
-  variance: { ss_loadings: number[]; proportion: number[]; cumulative: number[] };
+  variance: {
+    ss_loadings: number[];
+    /** null for oblique rotations, where the shares of correlated factors do not add up. */
+    proportion: number[] | null;
+    cumulative: number[] | null;
+    /** Share of the total variance all factors explain together. */
+    explained: number;
+  };
   /** `index` counts from 0, like the columns of `loadings`. */
   factors: { index: number; measures: { measure: string; loading: number }[] }[];
   unassigned: string[];
   warnings: string[];
+  warning_details?: AnalysisNotice[];
 }
 
-async function errorMessage(r: Response, fallback: string): Promise<string> {
-  try {
-    const j = await r.json();
-    if (typeof j.detail === "string") return j.detail;
-    // FastAPI validation errors (422) come as a list of {loc, msg}.
-    if (Array.isArray(j.detail)) {
-      return j.detail
-        .map((d: { loc?: unknown[]; msg?: string }) => `${(d.loc ?? []).slice(1).join(".")}: ${d.msg ?? ""}`)
-        .join("; ");
-    }
-    if (j.detail) return JSON.stringify(j.detail);
-  } catch {}
-  return `${fallback} (${r.status})`;
-}
-
-/** Error with the HTTP status, so callers can tell a missing dataset from a bad request. */
+/**
+ * Error with the HTTP status, so callers can tell a missing dataset from a bad request.
+ * `code` and `params` come with errors the UI can translate, e.g. analysis errors.
+ */
 export class HttpError extends Error {
   status: number;
+  code?: string;
+  params?: Record<string, string | number>;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, code?: string, params?: Record<string, string | number>) {
     super(message);
     this.name = "HttpError";
     this.status = status;
+    this.code = code;
+    this.params = params;
   }
+}
+
+async function httpError(r: Response, fallback: string): Promise<HttpError> {
+  try {
+    const j = await r.json();
+    const code = typeof j.code === "string" ? j.code : undefined;
+    const params = j.params && typeof j.params === "object" ? j.params : undefined;
+    if (typeof j.detail === "string") return new HttpError(j.detail, r.status, code, params);
+    // FastAPI validation errors (422) come as a list of {loc, msg}.
+    if (Array.isArray(j.detail)) {
+      const text = j.detail
+        .map((d: { loc?: unknown[]; msg?: string }) => `${(d.loc ?? []).slice(1).join(".")}: ${d.msg ?? ""}`)
+        .join("; ");
+      return new HttpError(text, r.status);
+    }
+    if (j.detail) return new HttpError(JSON.stringify(j.detail), r.status, code, params);
+  } catch {}
+  return new HttpError(`${fallback} (${r.status})`, r.status, r.status === 429 ? "rate_limited" : undefined);
 }
 
 export async function fetchFactorCatalog(kind: FactorKind, signal?: AbortSignal): Promise<FactorCatalog> {
   const r = await fetch(`${BASE}/factor-analysis/catalog?kind=${kind}`, { cache: "no-store", signal });
-  if (!r.ok) throw new HttpError(await errorMessage(r, "Failed to load the catalog"), r.status);
+  if (!r.ok) throw await httpError(r, "Failed to load the catalog");
   return r.json();
 }
 
@@ -451,16 +495,17 @@ export async function createDataset(input: CreateDatasetInput): Promise<CreateDa
   if (input.name) form.append("name", input.name);
   for (const f of input.files ?? []) form.append("files", f);
   const r = await fetch(`${BASE}/factor-analysis/datasets`, { method: "POST", body: form });
-  if (!r.ok) throw new HttpError(await errorMessage(r, "Could not create the dataset"), r.status);
+  if (!r.ok) throw await httpError(r, "Could not create the dataset");
   return r.json();
 }
 
-export async function fetchDataset(id: string, signal?: AbortSignal): Promise<FactorDataset> {
-  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}`, {
+export async function fetchDataset(id: string, signal?: AbortSignal, rows?: number): Promise<FactorDataset> {
+  const query = rows === undefined ? "" : `?rows=${rows}`;
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}${query}`, {
     cache: "no-store",
     signal,
   });
-  if (!r.ok) throw new HttpError(await errorMessage(r, "Failed to load the dataset"), r.status);
+  if (!r.ok) throw await httpError(r, "Failed to load the dataset");
   return r.json();
 }
 
@@ -479,7 +524,7 @@ export async function analyzeDataset(
     body: JSON.stringify(options),
     signal,
   });
-  if (!r.ok) throw new HttpError(await errorMessage(r, "Analysis failed"), r.status);
+  if (!r.ok) throw await httpError(r, "Analysis failed");
   return r.json();
 }
 
@@ -493,7 +538,7 @@ export async function exportLoadings(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ...options, format }),
   });
-  if (!r.ok) throw new HttpError(await errorMessage(r, "Export failed"), r.status);
+  if (!r.ok) throw await httpError(r, "Export failed");
   const disposition = r.headers.get("Content-Disposition") ?? "";
   const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition);
   const filename = match ? decodeURIComponent(match[1]) : `loadings.${format === "csv" ? "csv" : "tex"}`;

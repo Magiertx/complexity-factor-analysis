@@ -30,11 +30,15 @@ interface Props {
 export function LoadingsView({ analysis, options, onOptions, measureName, onExport, exporting }: Props) {
   const t = useT();
   const [order, setOrder] = useState<"factor" | "original">("factor");
+  const [matrix, setMatrix] = useState<"pattern" | "structure">("pattern");
   const k = analysis.n_factors;
   const factorIdx = Array.from({ length: k }, (_, i) => i);
   const rows = orderMeasures(analysis, order);
   const threshold = options.loading_threshold;
   const oblique = analysis.rotation !== "none" && !(ORTHOGONAL as string[]).includes(analysis.rotation);
+  const structure = oblique && matrix === "structure" ? analysis.structure_loadings : null;
+  const shown = structure ?? analysis.loadings;
+  const { proportion, cumulative } = analysis.variance;
   const cellPad = "px-2.5 sm:px-3 py-1.5";
 
   return (
@@ -42,7 +46,11 @@ export function LoadingsView({ analysis, options, onOptions, measureName, onExpo
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div className="flex items-end gap-5 flex-wrap">
           <div className="space-y-1.5">
-            <HelpLabel as="span" label={t("factor.loadings.threshold_label")} help={t("factor.help.threshold")} />
+            <HelpLabel
+              htmlFor="fa-loading-threshold"
+              label={t("factor.loadings.threshold_label")}
+              help={t("factor.help.threshold")}
+            />
             <NumberField
               id="fa-loading-threshold"
               value={threshold}
@@ -52,6 +60,35 @@ export function LoadingsView({ analysis, options, onOptions, measureName, onExpo
               onChange={(v) => onOptions({ loading_threshold: v })}
             />
           </div>
+          <div className="space-y-1.5">
+            <HelpLabel
+              htmlFor="fa-communality-threshold"
+              label={t("factor.loadings.communality_threshold_label")}
+              help={t("factor.help.communality_threshold")}
+            />
+            <NumberField
+              id="fa-communality-threshold"
+              value={options.communality_threshold}
+              min={0}
+              max={1}
+              step={0.05}
+              onChange={(v) => onOptions({ communality_threshold: v })}
+            />
+          </div>
+          {oblique && analysis.structure_loadings && (
+            <div className="space-y-1.5">
+              <span className="block text-sm font-semibold">{t("factor.loadings.matrix_label")}</span>
+              <Segmented
+                size="sm"
+                value={matrix}
+                onChange={setMatrix}
+                options={[
+                  { value: "pattern", label: t("factor.loadings.matrix_pattern") },
+                  { value: "structure", label: t("factor.loadings.matrix_structure") },
+                ]}
+              />
+            </div>
+          )}
           <div className="space-y-1.5">
             <span className="block text-sm font-semibold">{t("factor.loadings.order_label")}</span>
             <Segmented
@@ -90,6 +127,7 @@ export function LoadingsView({ analysis, options, onOptions, measureName, onExpo
           <table className="w-full text-xs">
             <caption className="sr-only">
               {t("factor.loadings.caption", { n: k, rotation: analysis.rotation })}
+              {oblique && ` (${t(`factor.loadings.matrix_${structure ? "structure" : "pattern"}`)})`}
             </caption>
             <thead className="bg-bg">
               <tr className="text-muted">
@@ -120,7 +158,7 @@ export function LoadingsView({ analysis, options, onOptions, measureName, onExpo
             </thead>
             <tbody>
               {rows.map((m) => {
-                const values = analysis.loadings[m] ?? [];
+                const values = shown[m] ?? [];
                 const h2 = analysis.communalities[m];
                 return (
                   <tr key={m} className="border-b border-border last:border-0">
@@ -169,16 +207,22 @@ export function LoadingsView({ analysis, options, onOptions, measureName, onExpo
             </tbody>
             <tfoot className="bg-bg/60 text-muted">
               <VarianceRow label={t("factor.loadings.ss_loadings")} values={analysis.variance.ss_loadings} format={(v) => formatNumber(v)} pad={cellPad} />
-              <VarianceRow label={t("factor.loadings.proportion")} values={analysis.variance.proportion} format={(v) => formatPercent(v)} pad={cellPad} />
-              <VarianceRow label={t("factor.loadings.cumulative")} values={analysis.variance.cumulative} format={(v) => formatPercent(v)} pad={cellPad} />
+              {proportion && (
+                <VarianceRow label={t("factor.loadings.proportion")} values={proportion} format={(v) => formatPercent(v)} pad={cellPad} />
+              )}
+              {cumulative && (
+                <VarianceRow label={t("factor.loadings.cumulative")} values={cumulative} format={(v) => formatPercent(v)} pad={cellPad} />
+              )}
             </tfoot>
           </table>
         </div>
         <p className="text-[11px] text-muted max-w-prose">
           {t("factor.loadings.footer_note")}
-          {oblique && ` ${t("factor.loadings.oblique_note")}`}
+          {oblique && ` ${t("factor.loadings.oblique_note", { pct: formatPercent(analysis.variance.explained) })}`}
         </p>
       </div>
+
+      {analysis.factor_correlations && <FactorCorrelations values={analysis.factor_correlations} pad={cellPad} />}
 
       <FactorGroups analysis={analysis} measureName={measureName} />
     </div>
@@ -211,6 +255,48 @@ function VarianceRow({
   );
 }
 
+function FactorCorrelations({ values, pad }: { values: number[][]; pad: string }) {
+  const t = useT();
+  return (
+    <div className="space-y-2">
+      <HelpLabel label={t("factor.loadings.correlations_heading")} help={t("factor.help.factor_correlations")} />
+      <div className="rounded-md border border-border overflow-x-auto w-fit max-w-full">
+        <table className="text-xs">
+          <caption className="sr-only">{t("factor.loadings.correlations_heading")}</caption>
+          <thead className="bg-bg text-muted">
+            <tr>
+              <td className={cn(pad, "border-b border-border")} />
+              {values.map((_, j) => (
+                <th key={j} scope="col" className={cn(pad, "text-right font-medium border-b border-border")}>
+                  F{j + 1}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {values.map((row, i) => (
+              <tr key={i} className="border-b border-border last:border-0">
+                <th scope="row" className={cn(pad, "text-left font-medium text-muted")}>
+                  F{i + 1}
+                </th>
+                {row.map((v, j) => (
+                  <td
+                    key={j}
+                    style={i === j ? undefined : loadingStyle(v)}
+                    className={cn(pad, "text-right font-mono tabular-nums", i === j && "text-muted")}
+                  >
+                    {formatNumber(v)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function Legend({ threshold }: { threshold: number }) {
   const t = useT();
   return (
@@ -237,8 +323,8 @@ function FactorGroups({ analysis, measureName }: { analysis: FactorAnalysis; mea
       <HelpLabel label={t("factor.loadings.groups_heading")} help={t("factor.help.groups")} />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {analysis.factors.map((f) => {
-          // index counts from 0, like the loading columns.
-          const share = analysis.variance.proportion[f.index];
+          // index counts from 0; shares only exist for orthogonal rotations.
+          const share = analysis.variance.proportion?.[f.index];
           return (
             <div key={f.index} className="rounded-lg bg-tile p-3.5 space-y-2.5 min-w-0">
               <div className="flex items-baseline justify-between gap-2">

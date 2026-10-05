@@ -17,9 +17,9 @@ import {
   type FactorDataset,
   type FactorKind,
 } from "@/lib/api";
-import { DEFAULT_OPTIONS, downloadBlob, type AnalysisOptions } from "@/lib/factor-analysis";
+import { PREVIEW_ROWS, defaultOptions, downloadBlob, type AnalysisOptions } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
-import { useT } from "@/lib/i18n";
+import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
 import { DataForm, DataSummary } from "./data-step";
@@ -46,20 +46,35 @@ function messageOf(e: unknown, fallback: string) {
   return e instanceof Error && e.message ? e.message : fallback;
 }
 
+/** The message of an API error in the UI language if its code is known, else as sent. */
+function useErrorText() {
+  const tMaybe = useTMaybe();
+  return useCallback(
+    (e: unknown, fallback: string) =>
+      (e instanceof HttpError && e.code && tMaybe(`factor.errors.${e.code}`, e.params)) || messageOf(e, fallback),
+    [tMaybe],
+  );
+}
+
 /**
  * The five-step factor analysis workflow (data, dataset, suitability, factors, loadings),
  * shared by the model and the log complexity tab.
  */
 export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const t = useT();
-  // Effects read texts through a ref, so a language switch does not refetch anything.
+  const { locale } = useLocale();
+  const errorText = useErrorText();
+  // Effects read texts through refs, so a language switch does not refetch anything.
   const tRef = useRef(t);
+  const errorTextRef = useRef(errorText);
   useEffect(() => {
     tRef.current = t;
-  }, [t]);
+    errorTextRef.current = errorText;
+  }, [t, errorText]);
   const storageKey = `app.factor-dataset-${kind}`;
 
-  const [catalog, setCatalog] = useState<FactorCatalog | null>(null);
+  const [rawCatalog, setCatalog] = useState<FactorCatalog | null>(null);
+  const catalog = useMemo(() => rawCatalog && localizeCatalog(rawCatalog, locale), [rawCatalog, locale]);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [catalogAttempt, setCatalogAttempt] = useState(0);
 
@@ -70,7 +85,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const [options, setOptions] = useState<AnalysisOptions>(DEFAULT_OPTIONS);
+  const [options, setOptions] = useState<AnalysisOptions>(() => defaultOptions(kind));
   // The last successful result stays visible while a new one is computed or after an error.
   const [analysis, setAnalysis] = useState<FactorAnalysis | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
@@ -86,7 +101,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     fetchFactorCatalog(kind, ctrl.signal)
       .then(setCatalog)
       .catch((e) => {
-        if (!ctrl.signal.aborted) setCatalogError(messageOf(e, tRef.current("factor.data.catalog_failed")));
+        if (!ctrl.signal.aborted) setCatalogError(errorTextRef.current(e, tRef.current("factor.data.catalog_failed")));
       });
     return () => ctrl.abort();
   }, [kind, catalogAttempt]);
@@ -135,7 +150,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     const interval = () => (document.hidden ? HIDDEN_POLL_MS : POLL_MS);
     const load = async () => {
       try {
-        const d = await fetchDataset(datasetId, ctrl.signal);
+        const d = await fetchDataset(datasetId, ctrl.signal, PREVIEW_ROWS);
         if (d.kind !== kind) {
           selectDataset(null);
           return;
@@ -150,7 +165,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           selectDataset(null);
           return;
         }
-        setDatasetError(messageOf(e, tRef.current("factor.data.load_failed")));
+        setDatasetError(errorTextRef.current(e, tRef.current("factor.data.load_failed")));
         timer = setTimeout(load, interval() * 4);
       }
     };
@@ -175,7 +190,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         setAnalysisError(null);
       } catch (e) {
         if (ctrl.signal.aborted) return;
-        setAnalysisError(messageOf(e, tRef.current("factor.analysis.failed")));
+        setAnalysisError(errorTextRef.current(e, tRef.current("factor.analysis.failed")));
       } finally {
         if (!ctrl.signal.aborted) setAnalyzing(false);
       }
@@ -209,7 +224,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       selectDataset(res.dataset_id);
       setChoosing(false);
     } catch (e) {
-      setSubmitError(messageOf(e, t("factor.data.submit_failed")));
+      setSubmitError(errorText(e, t("factor.data.submit_failed")));
     } finally {
       setSubmitting(false);
     }
@@ -231,7 +246,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       const { blob, filename } = await exportLoadings(datasetId, options, format);
       downloadBlob(blob, filename);
     } catch (e) {
-      setExportError(messageOf(e, t("factor.loadings.export_failed")));
+      setExportError(errorText(e, t("factor.loadings.export_failed")));
     } finally {
       setExporting(null);
     }

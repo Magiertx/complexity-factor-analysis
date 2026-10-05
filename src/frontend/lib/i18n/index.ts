@@ -2,6 +2,7 @@ export {
   LocaleProvider,
   useLocale,
   useT,
+  useTMaybe,
   LOCALES,
   DEFAULT_LOCALE,
   type Locale,
@@ -12,3 +13,4 @@ export {
   type AlgoContentMap,
   type AlgoContentOverride,
 } from "./algo-content";
+export { localizeCatalog } from "./catalog-content";

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import {
   MAX_DATASET_FILES,
+  MAX_DATASET_TOTAL_BYTES,
   type CreateDatasetInput,
   type DatasetSource,
   type FactorCatalog,
@@ -103,7 +104,18 @@ export function DataForm({ kind, catalog, submitting, submitError, onSubmit, onC
       if (fresh.length > room) {
         messages.push(t("factor.data.too_many_files", { max: maxFiles, n: fresh.length - Math.max(room, 0) }));
       }
-      setFiles([...files, ...fresh.slice(0, Math.max(room, 0))]);
+      // The backend also counts decompressed .xes.gz files; this catches the obvious cases early.
+      let total = files.reduce((acc, f) => acc + f.size, 0);
+      const fitting: File[] = [];
+      for (const f of fresh.slice(0, Math.max(room, 0))) {
+        if (total + f.size > MAX_DATASET_TOTAL_BYTES) continue;
+        total += f.size;
+        fitting.push(f);
+      }
+      if (fitting.length < Math.min(fresh.length, Math.max(room, 0))) {
+        messages.push(t("factor.data.too_large_total", { mb: MAX_DATASET_TOTAL_BYTES / (1024 * 1024) }));
+      }
+      setFiles([...files, ...fitting]);
     }
     setNotice(messages.length > 0 ? messages.join(" ") : null);
   };
@@ -278,6 +290,7 @@ export function DataForm({ kind, catalog, submitting, submitError, onSubmit, onC
             key: g.key,
             name: g.name,
             description: g.description,
+            slow: g.slow,
             detail: t("factor.data.group_measures", {
               n: catalog.measures.filter((m) => m.group === g.key).length,
             }),

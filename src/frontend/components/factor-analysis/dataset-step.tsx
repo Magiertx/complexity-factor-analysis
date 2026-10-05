@@ -2,11 +2,9 @@
 
 import { AlertCircle, Download } from "lucide-react";
 import { datasetDownloadUrl, type FactorDataset } from "@/lib/api";
-import { formatNumber } from "@/lib/factor-analysis";
-import { useT } from "@/lib/i18n";
+import { PREVIEW_ROWS, formatNumber } from "@/lib/factor-analysis";
+import { useT, useTMaybe } from "@/lib/i18n";
 import { HelpLabel, StatTile } from "./step-section";
-
-const PREVIEW_ROWS = 8;
 
 export function DatasetView({
   dataset,
@@ -16,7 +14,11 @@ export function DatasetView({
   measureName: (key: string) => string;
 }) {
   const t = useT();
+  const tMaybe = useTMaybe();
   const preview = dataset.values.slice(0, PREVIEW_ROWS);
+  // Older datasets carry only the English detail.
+  const detailOf = (d: FactorDataset["dropped"][number]) =>
+    (d.params && tMaybe(`factor.dataset.detail.${d.reason}`, d.params)) || d.detail;
   const failures = dataset.failures ?? [];
 
   return (
@@ -38,13 +40,13 @@ export function DatasetView({
               <li
                 key={`${d.measure}:${d.reason}`}
                 className="inline-flex items-center gap-1.5 rounded-md bg-tile px-2 py-1 text-xs"
-                title={d.detail}
+                title={detailOf(d)}
               >
                 <span className="font-medium">{measureName(d.measure)}</span>
                 <span className="rounded bg-bg/70 px-1 text-[10px] text-muted">
                   {t(`factor.dataset.reason.${d.reason}`)}
                 </span>
-                {d.detail && <span className="text-[10px] text-muted">{d.detail}</span>}
+                {detailOf(d) && <span className="text-[10px] text-muted">{detailOf(d)}</span>}
               </li>
             ))}
           </ul>
@@ -132,7 +134,6 @@ export function DatasetView({
             n: Math.min(PREVIEW_ROWS, dataset.n_observations),
             total: dataset.n_observations.toLocaleString(),
           })}
-          {dataset.truncated && ` ${t("factor.dataset.truncated", { n: dataset.values.length.toLocaleString() })}`}
         </p>
       </div>
     </div>

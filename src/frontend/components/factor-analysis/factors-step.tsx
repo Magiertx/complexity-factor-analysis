@@ -20,7 +20,7 @@ export function FactorsView({ analysis, options, onOptions }: Props) {
   // The pending choice wins over the last result, so quick clicks add up before re-analysis.
   const current = Math.min(options.n_factors ?? analysis.n_factors, max);
   const setCount = (n: number) => onOptions({ n_factors: Math.max(1, Math.min(max, n)) });
-  const explained = current === analysis.n_factors ? analysis.variance.cumulative[current - 1] : undefined;
+  const explained = current === analysis.n_factors ? analysis.variance.explained : undefined;
   const rotationKind =
     options.rotation === "none" ? "none" : ORTHOGONAL.includes(options.rotation) ? "orthogonal" : "oblique";
 

@@ -24,7 +24,7 @@ import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Segmented } from "./ui/segmented";
 import { Input, Select } from "./ui/input";
-import { datasetJobHref } from "@/lib/factor-analysis";
+import { datasetJobHref, jobDisplayName } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
@@ -100,11 +100,11 @@ export function RunHistoryView() {
     for (const j of jobs) {
       if (seen.has(j.algorithm_id)) continue;
       seen.add(j.algorithm_id);
-      opts.push({ id: j.algorithm_id, name: j.algorithm_name });
+      opts.push({ id: j.algorithm_id, name: jobDisplayName(j, t) });
     }
     opts.sort((a, b) => a.name.localeCompare(b.name));
     return opts;
-  }, [jobs]);
+  }, [jobs, t]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -117,12 +117,12 @@ export function RunHistoryView() {
       }
       if (!q) return true;
       return (
-        j.algorithm_name.toLowerCase().includes(q) ||
+        jobDisplayName(j, t).toLowerCase().includes(q) ||
         j.filename.toLowerCase().includes(q) ||
         j.id.toLowerCase().includes(q)
       );
     });
-  }, [jobs, search, statusFilter, algoFilter]);
+  }, [jobs, search, statusFilter, algoFilter, t]);
 
   const counts = useMemo(() => {
     const out = { all: jobs.length, active: 0, completed: 0, failed: 0, aborted: 0 };
@@ -246,10 +246,10 @@ export function RunHistoryView() {
                     <div className="flex-1 min-w-[260px] space-y-1.5">
                       <div className="flex items-center gap-2">
                         {isBatch && (
-                          <Layers className="h-3.5 w-3.5 text-muted shrink-0" aria-label="Batch" />
+                          <Layers className="h-3.5 w-3.5 text-muted shrink-0" aria-label={t("jobs.mode.batch")} />
                         )}
-                        <span className="text-sm font-medium truncate" title={job.algorithm_name}>
-                          {job.algorithm_name}
+                        <span className="text-sm font-medium truncate" title={jobDisplayName(job, t)}>
+                          {jobDisplayName(job, t)}
                         </span>
                         <span
                           className={cn(

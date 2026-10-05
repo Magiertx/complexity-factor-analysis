@@ -315,7 +315,16 @@
     "status_aborted": "Aborted",
     "status_running": "Running {pct}%",
     "status_pending": "Pending…",
-    "clear_all_confirm": "Clear the entire jobs archive?"
+    "clear_all_confirm": "Clear the entire jobs archive?",
+    "mode": {
+      "single": "Single",
+      "batch": "Batch",
+      "dataset": "Dataset"
+    },
+    "dataset_name": {
+      "model": "Factor analysis dataset (model measures)",
+      "log": "Factor analysis dataset (log measures)"
+    }
   },
   "run_history": {
     "back_aria": "Back to model complexity",
@@ -555,7 +564,8 @@
       "catalog_failed": "The catalog could not be loaded.",
       "catalog_error": "Could not load the available datasets and measures: {error}",
       "load_failed": "The dataset could not be loaded. Retrying…",
-      "cancel_failed": "The job could not be cancelled. Try again or check the jobs panel."
+      "cancel_failed": "The job could not be cancelled. Try again or check the jobs panel.",
+      "too_large_total": "Some files were skipped: all files of one dataset may have at most {mb} MB together."
     },
     "dataset": {
       "observations": "Observations",
@@ -571,13 +581,17 @@
         "duplicate": "duplicate"
       },
       "failures_heading": "{n} inputs gave no or incomplete values",
-      "failures_hint": "A row is missing when its log could not be read or the miner failed; a measure that failed on one row is dropped as incomplete.",
+      "failures_hint": "A row is missing when its input could not be read, the miner failed, or most of its measures failed. A measure that failed on a single row is dropped as incomplete.",
       "dropped_rows_note": "{n} rows with missing values were dropped.",
       "preview_heading": "Preview",
       "observation": "Observation",
       "download_csv": "Download CSV",
       "preview_note": "First {n} of {total} observations.",
-      "truncated": "The server sends only the first {n} rows to the browser; the analysis uses all of them."
+      "detail": {
+        "non_numeric": "contains the value “{value}”",
+        "missing": "{missing} of {total} values missing",
+        "duplicate": "perfectly correlated with {kept}"
+      }
     },
     "suitability": {
       "passed": "passed",
@@ -610,7 +624,12 @@
       "status_excluded": "excluded",
       "min_measures": "At least {n} measures must remain.",
       "excluded_count": "{n} excluded by hand",
-      "include_all": "Include all measures"
+      "include_all": "Include all measures",
+      "regularised": "regularised",
+      "regularised_title": "Some eigenvalues of the correlation matrix are practically zero and were clamped, so χ² reflects that floor more than the data. Read the test together with KMO.",
+      "exclude_aria": "Exclude {measure}",
+      "invert": "Invert selection",
+      "invert_title": "Exclude the included measures and include the excluded ones"
     },
     "factors": {
       "scree_title": "Scree plot",
@@ -622,7 +641,6 @@
       "suggested_mark": "suggested",
       "retained": "{n} kept",
       "eigen_point": "Factor {i}: eigenvalue {value}",
-      "use_n": "Keep {n} factors",
       "count_label": "Number of factors",
       "decrease": "One factor fewer",
       "increase": "One factor more",
@@ -662,7 +680,7 @@
       "proportion": "Proportion",
       "cumulative": "Cumulative",
       "footer_note": "h² is the share of a measure's variance that the kept factors explain. The rows below the table give the variance per factor.",
-      "oblique_note": "With an oblique rotation the factors overlap, so their shares are only approximate.",
+      "oblique_note": "With an oblique rotation the factors correlate, so their shares do not add up; together they explain {pct} of the variance.",
       "legend_negative": "negative",
       "legend_positive": "positive",
       "legend_bold": "bold: |loading| ≥ {threshold}",
@@ -670,10 +688,15 @@
       "factor_variance": "{pct} of variance",
       "factor_empty": "No measure reaches the threshold on this factor.",
       "unassigned_heading": "Unassigned",
-      "unassigned_hint": "Below the threshold on every factor."
+      "unassigned_hint": "Below the loading threshold on every factor, or below the communality threshold.",
+      "communality_threshold_label": "Communality threshold",
+      "matrix_label": "Matrix",
+      "matrix_pattern": "Pattern",
+      "matrix_structure": "Structure",
+      "correlations_heading": "Factor correlations"
     },
     "help": {
-      "cleaning": "Before the analysis, columns that are not numeric, that have no variance, that have missing values, or that are perfect copies of an earlier column are removed, as in ComFy for log measures. Such columns would distort or break the correlation matrix.",
+      "cleaning": "Before the analysis, rows where most values are missing are dropped. Then columns that are not numeric, that have no variance, that have missing values, or that are perfect copies of an earlier column are removed, as in ComFy for log measures. Such columns would distort or break the correlation matrix.",
       "bartlett": "Bartlett's test checks the null hypothesis that the correlation matrix is an identity matrix, i.e. that the measures are uncorrelated. If p < α, there are correlations that common factors can explain. With many observations the test almost always passes, so read it together with KMO.",
       "kmo": "The Kaiser–Meyer–Olkin criterion compares the correlations between the measures with their partial correlations. Values near 1 mean the measures share common variance; values near 0 mean the correlations are mostly pairwise. Kaiser's scale: from 0.9 marvellous, 0.8 meritorious, 0.7 middling, 0.6 mediocre, 0.5 miserable, below that unacceptable.",
       "msa": "The measure of sampling adequacy (MSA) is the KMO value of a single measure. A measure with low MSA shares little with the others and fits no common factor well; removing it usually raises the overall KMO. Tick a measure to exclude it by hand.",
@@ -681,11 +704,35 @@
       "scree": "The scree plot shows the eigenvalues of the correlation matrix in descending order. Look for the elbow where the curve flattens; factors after it add little. The elbow and the eigenvalue-above-1 rule can disagree, so treat both as starting points.",
       "eigenvalue": "An eigenvalue is the variance a factor explains, in units of one standardised measure. The suggestion keeps every factor with an eigenvalue above 1 (Kaiser criterion), i.e. every factor that explains more than a single measure.",
       "rotation": "Rotation turns the factor solution so that each measure loads strongly on as few factors as possible, which makes the factors easier to name. It does not change how much variance the factors explain together. Varimax and quartimax keep the factors uncorrelated; promax and oblimin let them correlate, which is often more realistic for complexity measures.",
-      "threshold": "Loadings with an absolute value at or above this threshold count as substantial. Each measure is assigned to the factor where its absolute loading is highest, if that loading reaches the threshold. Common choices lie between 0.3 and 0.5.",
-      "loading": "A loading says how strongly a measure goes along with a factor. For orthogonal rotations it is the correlation between measure and factor. The sign gives the direction: measures with opposite signs on the same factor move in opposite directions.",
+      "threshold": "Loadings with an absolute value at or above this threshold count as substantial. Each measure is assigned to the factor where its absolute loading is highest, if that loading reaches the threshold. Common choices lie between 0.3 and 0.5; ComFy uses 0.35, ComFy for log measures 0.5.",
+      "loading": "A loading says how strongly a measure goes along with a factor. For orthogonal rotations it is the correlation between measure and factor. For oblique rotations the pattern matrix holds regression weights and the structure matrix the correlations. The sign gives the direction: measures with opposite signs on the same factor move in opposite directions.",
       "communality": "The communality h² is the share of a measure's variance that all kept factors explain together. A low value (below about 0.4) means the factors do not capture the measure well.",
       "variance": "SS loadings is the sum of squared loadings of a factor. Divided by the number of measures it gives the proportion of the total variance the factor explains; the cumulative row adds these up.",
-      "groups": "Each factor with the measures assigned to it, strongest loading first. Measures in one group capture a similar aspect of complexity; the name of the factor is up to your interpretation."
+      "groups": "Each factor with the measures assigned to it, strongest loading first. Measures in one group capture a similar aspect of complexity; the name of the factor is up to your interpretation.",
+      "communality_threshold": "Measures whose communality is below this value are left unassigned, because the factors explain too little of them. ComFy for log measures uses 0.5; 0 keeps every measure.",
+      "factor_correlations": "With an oblique rotation the factors may correlate. Values near 0 mean the factors are nearly independent; large values mean they measure related aspects."
+    },
+    "errors": {
+      "unknown_rotation": "Unknown rotation “{rotation}”.",
+      "n_factors_range": "{requested} factors requested, but with {measures} measures at most {max} are possible; a further factor would stay empty.",
+      "fit_failed": "The factor analysis failed: {error}",
+      "not_converged": "The factor analysis did not converge; the correlation matrix is singular. Exclude measures that are linear combinations of others.",
+      "msa_singular": "The MSA could not be computed; the correlation matrix is singular.",
+      "unknown_excluded": "Unknown measures to exclude: {measures}.",
+      "too_few_measures": "At least {min} measures are needed for a factor analysis; {left} are left.",
+      "too_few_observations": "{n} observations are too few for {measures} measures; at least {needed} are needed. Exclude measures or add observations.",
+      "msa_filter_left": "The MSA filter left {left} measures; at least {min} are needed. Turn the filter off or lower the MSA threshold.",
+      "rate_limited": "Too many requests. Wait a moment and try again."
+    },
+    "warnings": {
+      "bartlett_not_significant": "Bartlett's test is not significant (p = {p} ≥ {alpha}); the measures may be uncorrelated.",
+      "singular": "The correlation matrix is singular; these measures are linearly dependent: {groups}. Results rely on clamped eigenvalues and pseudo-inverses; consider excluding one measure of each group.",
+      "kmo_low": "The overall MSA {overall} is below {threshold}; a factor analysis is not recommended.",
+      "small_sample": "{n} observations for {measures} measures; at least 5 per measure ({recommended}) are recommended.",
+      "not_identified": "{factors} factors for {measures} measures exceed the Ledermann bound; the solution is not identified and the loadings are not unique. Use fewer factors.",
+      "fit_not_converged": "The factor fit did not converge: {message}",
+      "single_factor_no_rotation": "No rotation is applied to a single factor.",
+      "heywood": "Communality at the bound of the fit (uniqueness at most 0.005) for {measures}; possible Heywood case."
     }
   },
   "inspect": {

@@ -315,7 +315,16 @@
     "status_aborted": "Abgebrochen",
     "status_running": "Läuft {pct}%",
     "status_pending": "In Warteschlange…",
-    "clear_all_confirm": "Das gesamte Job-Archiv leeren?"
+    "clear_all_confirm": "Das gesamte Job-Archiv leeren?",
+    "mode": {
+      "single": "Einzeln",
+      "batch": "Batch",
+      "dataset": "Datensatz"
+    },
+    "dataset_name": {
+      "model": "Datensatz der Faktoranalyse (Modellmaße)",
+      "log": "Datensatz der Faktoranalyse (Log-Maße)"
+    }
   },
   "run_history": {
     "back_aria": "Zurück zur Modellkomplexität",
@@ -555,7 +564,8 @@
       "catalog_failed": "Der Katalog konnte nicht geladen werden.",
       "catalog_error": "Die verfügbaren Datensätze und Maße konnten nicht geladen werden: {error}",
       "load_failed": "Der Datensatz konnte nicht geladen werden. Neuer Versuch…",
-      "cancel_failed": "Der Job ließ sich nicht abbrechen. Versuche es noch einmal oder sieh in der Jobliste nach."
+      "cancel_failed": "Der Job ließ sich nicht abbrechen. Versuche es noch einmal oder sieh in der Jobliste nach.",
+      "too_large_total": "Einige Dateien wurden übersprungen: Alle Dateien eines Datensatzes dürfen zusammen höchstens {mb} MB groß sein."
     },
     "dataset": {
       "observations": "Beobachtungen",
@@ -571,13 +581,17 @@
         "duplicate": "Duplikat"
       },
       "failures_heading": "{n} Eingaben lieferten keine oder unvollständige Werte",
-      "failures_hint": "Eine Zeile fehlt, wenn ihr Log nicht lesbar war oder der Miner scheiterte; ein Maß, das für eine Zeile scheiterte, wird als unvollständig entfernt.",
+      "failures_hint": "Eine Zeile fehlt, wenn ihre Eingabe nicht lesbar war, der Miner scheiterte oder die meisten ihrer Maße scheiterten. Ein Maß, das nur für eine Zeile scheiterte, wird als unvollständig entfernt.",
       "dropped_rows_note": "{n} Zeilen mit fehlenden Werten wurden entfernt.",
       "preview_heading": "Vorschau",
       "observation": "Beobachtung",
       "download_csv": "CSV herunterladen",
       "preview_note": "Die ersten {n} von {total} Beobachtungen.",
-      "truncated": "Der Server schickt nur die ersten {n} Zeilen an den Browser; die Analyse nutzt alle."
+      "detail": {
+        "non_numeric": "enthält den Wert „{value}“",
+        "missing": "{missing} von {total} Werten fehlen",
+        "duplicate": "perfekt korreliert mit {kept}"
+      }
     },
     "suitability": {
       "passed": "bestanden",
@@ -610,7 +624,12 @@
       "status_excluded": "ausgeschlossen",
       "min_measures": "Mindestens {n} Maße müssen übrig bleiben.",
       "excluded_count": "{n} von Hand ausgeschlossen",
-      "include_all": "Alle Maße einbeziehen"
+      "include_all": "Alle Maße einbeziehen",
+      "regularised": "regularisiert",
+      "regularised_title": "Einige Eigenwerte der Korrelationsmatrix sind praktisch null und wurden nach unten begrenzt, daher spiegelt χ² eher diese Grenze als die Daten. Lies den Test zusammen mit KMO.",
+      "exclude_aria": "{measure} ausschließen",
+      "invert": "Auswahl umkehren",
+      "invert_title": "Die einbezogenen Maße ausschließen und die ausgeschlossenen einbeziehen"
     },
     "factors": {
       "scree_title": "Screeplot",
@@ -622,7 +641,6 @@
       "suggested_mark": "Vorschlag",
       "retained": "{n} behalten",
       "eigen_point": "Faktor {i}: Eigenwert {value}",
-      "use_n": "{n} Faktoren behalten",
       "count_label": "Anzahl der Faktoren",
       "decrease": "Ein Faktor weniger",
       "increase": "Ein Faktor mehr",
@@ -662,7 +680,7 @@
       "proportion": "Anteil",
       "cumulative": "Kumuliert",
       "footer_note": "h² ist der Anteil der Varianz eines Maßes, den die behaltenen Faktoren erklären. Die Zeilen unter der Tabelle zeigen die Varianz je Faktor.",
-      "oblique_note": "Bei obliquer Rotation überlappen die Faktoren, ihre Anteile sind daher nur Näherungen.",
+      "oblique_note": "Bei obliquer Rotation korrelieren die Faktoren, ihre Anteile lassen sich daher nicht addieren; zusammen erklären sie {pct} der Varianz.",
       "legend_negative": "negativ",
       "legend_positive": "positiv",
       "legend_bold": "fett: |Ladung| ≥ {threshold}",
@@ -670,10 +688,15 @@
       "factor_variance": "{pct} der Varianz",
       "factor_empty": "Kein Maß erreicht auf diesem Faktor die Schwelle.",
       "unassigned_heading": "Nicht zugeordnet",
-      "unassigned_hint": "Auf keinem Faktor über der Schwelle."
+      "unassigned_hint": "Auf keinem Faktor über der Ladungsschwelle oder unter der Kommunalitätsschwelle.",
+      "communality_threshold_label": "Kommunalitätsschwelle",
+      "matrix_label": "Matrix",
+      "matrix_pattern": "Muster",
+      "matrix_structure": "Struktur",
+      "correlations_heading": "Faktorkorrelationen"
     },
     "help": {
-      "cleaning": "Vor der Analyse werden Spalten entfernt, die nicht numerisch sind, keine Varianz haben, fehlende Werte enthalten oder exakte Kopien einer früheren Spalte sind, wie in ComFy für Log-Maße. Solche Spalten würden die Korrelationsmatrix verzerren oder unbrauchbar machen.",
+      "cleaning": "Vor der Analyse werden Zeilen entfernt, in denen die meisten Werte fehlen. Danach werden Spalten entfernt, die nicht numerisch sind, keine Varianz haben, fehlende Werte enthalten oder exakte Kopien einer früheren Spalte sind, wie in ComFy für Log-Maße. Solche Spalten würden die Korrelationsmatrix verzerren oder unbrauchbar machen.",
       "bartlett": "Der Test nach Bartlett prüft die Nullhypothese, dass die Korrelationsmatrix eine Einheitsmatrix ist, die Maße also unkorreliert sind. Ist p < α, gibt es Korrelationen, die gemeinsame Faktoren erklären können. Bei vielen Beobachtungen besteht der Test fast immer, lies ihn daher zusammen mit KMO.",
       "kmo": "Das Kaiser-Meyer-Olkin-Kriterium vergleicht die Korrelationen zwischen den Maßen mit ihren partiellen Korrelationen. Werte nahe 1 bedeuten, dass die Maße gemeinsame Varianz teilen; Werte nahe 0, dass die Korrelationen vor allem paarweise sind. Kaisers Skala: ab 0,9 ausgezeichnet, 0,8 sehr gut, 0,7 mittelmäßig, 0,6 mäßig, 0,5 schlecht, darunter inakzeptabel.",
       "msa": "Das Measure of Sampling Adequacy (MSA) ist der KMO-Wert eines einzelnen Maßes. Ein Maß mit niedrigem MSA hat wenig mit den anderen gemeinsam und passt zu keinem gemeinsamen Faktor; es zu entfernen hebt meist den KMO-Gesamtwert. Setze ein Häkchen, um ein Maß von Hand auszuschließen.",
@@ -681,11 +704,35 @@
       "scree": "Der Screeplot zeigt die Eigenwerte der Korrelationsmatrix in absteigender Reihenfolge. Suche den Knick, ab dem die Kurve flach wird; Faktoren danach tragen wenig bei. Knick und die Regel Eigenwert über 1 können sich widersprechen, nimm beide als Ausgangspunkt.",
       "eigenvalue": "Ein Eigenwert ist die Varianz, die ein Faktor erklärt, gemessen in Einheiten eines standardisierten Maßes. Der Vorschlag behält jeden Faktor mit Eigenwert über 1 (Kaiser-Kriterium), also jeden Faktor, der mehr erklärt als ein einzelnes Maß.",
       "rotation": "Die Rotation dreht die Faktorlösung so, dass jedes Maß auf möglichst wenigen Faktoren hoch lädt; das macht die Faktoren leichter benennbar. Wie viel Varianz die Faktoren zusammen erklären, ändert sie nicht. Varimax und Quartimax halten die Faktoren unkorreliert; Promax und Oblimin erlauben Korrelationen, was für Komplexitätsmaße oft realistischer ist.",
-      "threshold": "Ladungen, deren Betrag diese Schwelle erreicht, gelten als substanziell. Jedes Maß wird dem Faktor mit der betragsmäßig höchsten Ladung zugeordnet, wenn diese die Schwelle erreicht. Üblich sind Werte zwischen 0,3 und 0,5.",
-      "loading": "Eine Ladung gibt an, wie stark ein Maß mit einem Faktor zusammenhängt. Bei orthogonaler Rotation ist sie die Korrelation zwischen Maß und Faktor. Das Vorzeichen gibt die Richtung an: Maße mit entgegengesetzten Vorzeichen auf demselben Faktor verlaufen gegenläufig.",
+      "threshold": "Ladungen, deren Betrag diese Schwelle erreicht, gelten als substanziell. Jedes Maß wird dem Faktor mit der betragsmäßig höchsten Ladung zugeordnet, wenn diese die Schwelle erreicht. Üblich sind Werte zwischen 0,3 und 0,5; ComFy nutzt 0,35, ComFy für Log-Maße 0,5.",
+      "loading": "Eine Ladung gibt an, wie stark ein Maß mit einem Faktor zusammenhängt. Bei orthogonaler Rotation ist sie die Korrelation zwischen Maß und Faktor. Bei obliquer Rotation enthält die Mustermatrix Regressionsgewichte und die Strukturmatrix die Korrelationen. Das Vorzeichen gibt die Richtung an: Maße mit entgegengesetzten Vorzeichen auf demselben Faktor bewegen sich gegenläufig.",
       "communality": "Die Kommunalität h² ist der Anteil der Varianz eines Maßes, den alle behaltenen Faktoren zusammen erklären. Ein niedriger Wert (unter etwa 0,4) heißt, dass die Faktoren das Maß schlecht abbilden.",
       "variance": "SS-Ladungen sind die Summe der quadrierten Ladungen eines Faktors. Geteilt durch die Zahl der Maße ergibt sich der Anteil an der Gesamtvarianz, den der Faktor erklärt; die kumulierte Zeile summiert diese Anteile.",
-      "groups": "Jeder Faktor mit den ihm zugeordneten Maßen, stärkste Ladung zuerst. Maße einer Gruppe erfassen einen ähnlichen Aspekt von Komplexität; wie du den Faktor benennst, ist deine Interpretation."
+      "groups": "Jeder Faktor mit den ihm zugeordneten Maßen, stärkste Ladung zuerst. Maße einer Gruppe erfassen einen ähnlichen Aspekt von Komplexität; wie du den Faktor benennst, ist deine Interpretation.",
+      "communality_threshold": "Maße mit einer Kommunalität unter diesem Wert bleiben unzugeordnet, weil die Faktoren zu wenig von ihnen erklären. ComFy für Log-Maße nutzt 0,5; 0 behält jedes Maß.",
+      "factor_correlations": "Bei obliquer Rotation dürfen die Faktoren korrelieren. Werte nahe 0 heißen, dass die Faktoren fast unabhängig sind; große Werte heißen, dass sie verwandte Aspekte messen."
+    },
+    "errors": {
+      "unknown_rotation": "Unbekannte Rotation „{rotation}“.",
+      "n_factors_range": "{requested} Faktoren gewünscht, aber bei {measures} Maßen sind höchstens {max} möglich; ein weiterer Faktor bliebe leer.",
+      "fit_failed": "Die Faktoranalyse ist fehlgeschlagen: {error}",
+      "not_converged": "Die Faktoranalyse ist nicht konvergiert; die Korrelationsmatrix ist singulär. Schließe Maße aus, die Linearkombinationen anderer sind.",
+      "msa_singular": "Der MSA ließ sich nicht berechnen; die Korrelationsmatrix ist singulär.",
+      "unknown_excluded": "Unbekannte auszuschließende Maße: {measures}.",
+      "too_few_measures": "Für eine Faktoranalyse sind mindestens {min} Maße nötig; übrig sind {left}.",
+      "too_few_observations": "{n} Beobachtungen sind zu wenige für {measures} Maße; nötig sind mindestens {needed}. Schließe Maße aus oder füge Beobachtungen hinzu.",
+      "msa_filter_left": "Nach dem MSA-Filter sind {left} Maße übrig; nötig sind mindestens {min}. Schalte den Filter aus oder senke die MSA-Schwelle.",
+      "rate_limited": "Zu viele Anfragen. Warte kurz und versuche es noch einmal."
+    },
+    "warnings": {
+      "bartlett_not_significant": "Der Test nach Bartlett ist nicht signifikant (p = {p} ≥ {alpha}); die Maße sind womöglich unkorreliert.",
+      "singular": "Die Korrelationsmatrix ist singulär; diese Maße sind linear abhängig: {groups}. Die Ergebnisse beruhen auf begrenzten Eigenwerten und Pseudoinversen; schließe am besten aus jeder Gruppe ein Maß aus.",
+      "kmo_low": "Der Gesamt-MSA {overall} liegt unter {threshold}; eine Faktoranalyse ist nicht zu empfehlen.",
+      "small_sample": "{n} Beobachtungen für {measures} Maße; empfohlen sind mindestens 5 je Maß ({recommended}).",
+      "not_identified": "{factors} Faktoren für {measures} Maße überschreiten die Ledermann-Grenze; die Lösung ist nicht identifiziert und die Ladungen sind nicht eindeutig. Wähle weniger Faktoren.",
+      "fit_not_converged": "Die Anpassung der Faktoren ist nicht konvergiert: {message}",
+      "single_factor_no_rotation": "Ein einzelner Faktor wird nicht rotiert.",
+      "heywood": "Kommunalität an der Grenze der Anpassung (Uniqueness höchstens 0,005) für {measures}; möglicher Heywood-Fall."
     }
   },
   "inspect": {

@@ -33,7 +33,7 @@ import {
   fetchAlgorithms,
   fetchJobs,
 } from "@/lib/api";
-import { datasetJobHref } from "@/lib/factor-analysis";
+import { datasetJobHref, jobDisplayName } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
@@ -62,10 +62,11 @@ function deriveRunInfo(job: Job): RunInfo {
   return { mode: "single", innerAlgoId: aid, href: `/inspect?job=${job.id}` };
 }
 
+// label is an i18n key.
 const MODE_META: Record<RunMode, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
-  single: { label: "Single", icon: Play },
-  batch: { label: "Batch", icon: Layers },
-  dataset: { label: "Dataset", icon: Database },
+  single: { label: "jobs.mode.single", icon: Play },
+  batch: { label: "jobs.mode.batch", icon: Layers },
+  dataset: { label: "jobs.mode.dataset", icon: Database },
 };
 
 const TOOL_TYPE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -409,8 +410,8 @@ function JobCard({
 
   const shortAlgo =
     info.mode !== "batch"
-      ? job.algorithm_name.split(" — ")[0]
-      : `${MODE_META[info.mode].label}: ${innerAlgo?.name.split(" — ")[0] ?? info.innerAlgoId}`;
+      ? jobDisplayName(job, t).split(" — ")[0]
+      : `${t(MODE_META[info.mode].label)}: ${innerAlgo?.name.split(" — ")[0] ?? info.innerAlgoId}`;
 
   const dateStr = new Date(job.created_at * 1000).toLocaleString([], {
     month: "short",
@@ -434,7 +435,7 @@ function JobCard({
         <div className="flex items-center gap-1 shrink-0 mt-0.5">
           <span
             className="h-5 w-5 rounded grid place-items-center bg-accent/[0.18] text-accent-ink"
-            title={t("jobs.run_mode_title", { mode: MODE_META[info.mode].label })}
+            title={t("jobs.run_mode_title", { mode: t(MODE_META[info.mode].label) })}
           >
             <ModeIcon className="h-3 w-3" />
           </span>
