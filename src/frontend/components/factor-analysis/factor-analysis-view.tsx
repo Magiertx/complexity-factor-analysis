@@ -262,14 +262,19 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     return () => ctrl.abort();
   }, [ready, datasetId, analyzedOptions, analyzedFactors, locale, lookupInterpretation]);
 
+  // Only the analysis on screen can be interpreted: during the debounce after a change of the
+  // settings, `options` are already ahead of it.
+  const canInterpret = !!analyzedOptions && analyzedOptions === options && !analyzing;
+
   const runInterpretation = async () => {
-    if (!datasetId) return;
+    if (!datasetId || !analyzedOptions || !canInterpret) return;
     const forDataset = datasetId;
-    const key = interpretationKey(datasetId, options, locale);
+    const forOptions = analyzedOptions;
+    const key = interpretationKey(datasetId, forOptions, locale);
     setInterpreting(true);
     setInterpretError(null);
     try {
-      const res = await interpretDataset(datasetId, options, locale);
+      const res = await interpretDataset(datasetId, forOptions, locale);
       if (res && datasetIdRef.current === forDataset) setInterpretation({ key, result: res });
     } catch (e) {
       if (datasetIdRef.current === forDataset) setInterpretError(errorText(e, t("factor.interpretation.failed")));
@@ -584,7 +589,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                 stale={interpretationStale}
                 running={interpreting}
                 error={interpretError}
-                canRun={!analyzing && !analysisError}
+                canRun={canInterpret}
                 onInterpret={runInterpretation}
                 measureName={measureName}
               />
