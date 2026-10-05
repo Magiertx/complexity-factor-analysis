@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 import jobs_db
+from config import logger
 from factor_analysis import catalog as cat
 from factor_analysis import storage
 
@@ -26,7 +27,10 @@ PRECOMPUTED_DIR = cat.DATASETS_DIR / "interpretations"
 MAX_SHARED_ENTRIES = 500
 
 
-def cache_key(*, kind: str, data_hash: str, params: dict[str, Any], language: str, model: str, prompt_version: str) -> str:
+def cache_key(
+    *, kind: str, data_hash: str, params: dict[str, Any], language: str, model: str, effort: str, prompt: str
+) -> str:
+    """``prompt`` is ``client.PROMPT_DIGEST``."""
     material = json.dumps(
         {
             "kind": kind,
@@ -34,7 +38,8 @@ def cache_key(*, kind: str, data_hash: str, params: dict[str, Any], language: st
             "params": params,
             "language": language,
             "model": model,
-            "prompt": prompt_version,
+            "effort": effort,
+            "prompt": prompt,
         },
         sort_keys=True,
     )
@@ -90,14 +95,22 @@ def precomputed_path(bundled_id: str, language: str) -> Path:
     return PRECOMPUTED_DIR / f"{bundled_id}.{language}.json"
 
 
-def read_precomputed(bundled_id: str | None, language: str, data_hash: str, params: dict[str, Any]) -> dict[str, Any] | None:
-    """The precomputed entry if it was made for exactly this data and these parameters."""
+def read_precomputed(
+    bundled_id: str | None, language: str, data_hash: str, params: dict[str, Any], prompt: str
+) -> dict[str, Any] | None:
+    """The precomputed entry if it was made for exactly this data, these parameters and the
+    current prompt. The model and effort it was made with do not matter: it is served
+    without a key."""
     if not bundled_id:
         return None
-    entry = _read(precomputed_path(bundled_id, language))
-    if entry and entry.get("data_hash") == data_hash and entry.get("params") == params:
-        return entry
-    return None
+    path = precomputed_path(bundled_id, language)
+    entry = _read(path)
+    if not entry or entry.get("data_hash") != data_hash or entry.get("params") != params:
+        return None
+    if entry.get("prompt_digest") != prompt:
+        logger.warning("Precomputed interpretation %s was made for another prompt; rerun the script", path.name)
+        return None
+    return entry
 
 
 def write_precomputed(bundled_id: str, language: str, entry: dict[str, Any]) -> Path:

@@ -299,9 +299,9 @@ as they are. Observation labels, dataset and file names and measure values are n
   `high`. `model` is the model that wrote the answer, a fallback model if the requested one
   declined.
 - Results are cached by the cleaned data, the parameters (with the factor count the analysis
-  used), the language, the model and the prompt version. `cached: true` means no model call
-  was made for this request. Own datasets are cached in the session, bundled ones for all
-  sessions.
+  used), the language, the model, the effort and a hash of the prompt, the output schema and
+  the payload format. `cached: true` means no model call was made for this request. Own
+  datasets are cached in the session, bundled ones for all sessions.
 - `precomputed: true` marks an interpretation from
   `src/AlgoService/datasets/interpretations/`, made with
   `scripts/precompute_interpretations.py` for a bundled dataset with all measures and the

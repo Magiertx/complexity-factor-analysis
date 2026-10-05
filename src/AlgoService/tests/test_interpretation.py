@@ -300,16 +300,28 @@ def test_cache_hit_and_miss(client, claude, csv_dataset):
     assert len(list((session / dataset_id / "interpretations").glob("*.json"))) == 3
 
 
-def test_cache_key_follows_model_and_prompt_version(client, claude, csv_dataset, monkeypatch):
+def test_cache_key_follows_model_effort_and_prompt(client, claude, csv_dataset, monkeypatch):
     from interpretation import client as claude_client
-    from routes import interpretation as route
 
     _interpret(client, csv_dataset[0], auto_msa_filter=False)
-    monkeypatch.setattr(route, "PROMPT_VERSION", "test-next")
+    monkeypatch.setattr(claude_client, "PROMPT_DIGEST", "test-next")
     _interpret(client, csv_dataset[0], auto_msa_filter=False)
     monkeypatch.setattr(claude_client, "MODEL", "claude-other")
     _interpret(client, csv_dataset[0], auto_msa_filter=False)
-    assert len(claude.calls) == 3
+    monkeypatch.setattr(claude_client, "EFFORT", "low")
+    _interpret(client, csv_dataset[0], auto_msa_filter=False)
+    assert len(claude.calls) == 4
+
+
+def test_prompt_digest_covers_prompt_schema_and_payload_format():
+    from interpretation.client import OUTPUT_SCHEMA, PROMPT_DIGEST, prompt_digest
+    from interpretation.payload import PAYLOAD_FORMAT
+    from interpretation.prompt import SYSTEM_PROMPT
+
+    assert prompt_digest(SYSTEM_PROMPT, OUTPUT_SCHEMA, PAYLOAD_FORMAT) == PROMPT_DIGEST
+    assert prompt_digest(SYSTEM_PROMPT + " ", OUTPUT_SCHEMA, PAYLOAD_FORMAT) != PROMPT_DIGEST
+    assert prompt_digest(SYSTEM_PROMPT, {**OUTPUT_SCHEMA, "title": "x"}, PAYLOAD_FORMAT) != PROMPT_DIGEST
+    assert prompt_digest(SYSTEM_PROMPT, OUTPUT_SCHEMA, PAYLOAD_FORMAT + 1) != PROMPT_DIGEST
 
 
 def test_cached_only_never_calls(client, claude, csv_dataset):
@@ -381,6 +393,15 @@ def test_precomputed_without_key(client, claude, monkeypatch):
     r = _interpret(client, dataset_id, language="de")
     assert r.status_code == 503 and r.json()["code"] == "interpretation_unavailable"
     assert client.get("/factor-analysis/interpretation/status").json()["precomputed_only"] is True
+
+
+def test_precomputed_needs_the_current_prompt(client, claude, monkeypatch):
+    from interpretation import client as claude_client
+
+    _precompute(monkeypatch, claude)
+    dataset_id = _bundled(client)
+    monkeypatch.setattr(claude_client, "PROMPT_DIGEST", "another prompt")
+    assert _interpret(client, dataset_id, cached_only=True).status_code == 204
 
 
 def test_precomputed_needs_the_same_data(client, claude, monkeypatch):

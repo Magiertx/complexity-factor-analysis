@@ -17,6 +17,9 @@ import pandas as pd
 from factor_analysis import catalog as cat
 from factor_analysis.core import COMMUNALITY_THRESHOLDS, LOADING_THRESHOLDS, AnalysisParams
 
+#: Raise with every change of what build_payload sends; it is part of the cache key.
+PAYLOAD_FORMAT = 2
+
 KIND_DESCRIPTIONS = {
     "model": (
         "Complexity measures of process models (Petri nets), computed with ComFy. Each "

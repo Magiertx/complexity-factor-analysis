@@ -210,7 +210,8 @@ bundled datasets.
   interpretations of the bundled datasets for the default parameters to
   `src/AlgoService/datasets/interpretations/`; they are part of the image. Run it with a key
   from `src/AlgoService` and rebuild. Rerun it with `--force` after changing the prompt
-  (`PROMPT_VERSION` in `interpretation/prompt.py`).
+  (`interpretation/prompt.py`), the output schema or the payload; files made for another
+  prompt are no longer served, and the log says so.
 
 ---
 

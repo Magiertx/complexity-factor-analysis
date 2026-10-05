@@ -178,7 +178,9 @@ Optional, in `interpretation/` with the endpoints in `routes/interpretation.py`
 2. The cache: `artifacts/interpretations/` for bundled datasets, shared by all sessions, or
    `interpretations/` in the dataset directory for own data. The key hashes the cleaned
    matrix (values and measure names, not row labels), the parameters with the factor count
-   used, the language, the model and `PROMPT_VERSION`.
+   used, the language, the model, the effort and `client.PROMPT_DIGEST`, a hash of the
+   prompt, the output schema and the payload format. A precomputed file is only served if it
+   was made with the current digest.
 3. Otherwise, with `ANTHROPIC_API_KEY` set and below the per-session and daily limits
    (`interpretation/quota.py`, counters in Redis), `payload.build_payload` reduces the result
    to the measure names, their catalog definitions and aggregates, and `client.interpret` calls

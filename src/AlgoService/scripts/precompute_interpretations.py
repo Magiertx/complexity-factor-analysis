@@ -55,6 +55,8 @@ async def precompute(entry: dict[str, Any], language: str, key: str) -> dict[str
         "language": language,
         "model": answer.model,
         "prompt_version": PROMPT_VERSION,
+        "prompt_digest": client.PROMPT_DIGEST,
+        "effort": client.EFFORT,
         "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "interpretation": answer.interpretation.model_dump(),
     }

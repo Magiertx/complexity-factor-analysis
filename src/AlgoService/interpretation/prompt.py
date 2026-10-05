@@ -1,5 +1,9 @@
-"""The instructions for the model. Change ``PROMPT_VERSION`` with every change of the text:
-it is part of the cache key, so older interpretations are not served for the new prompt."""
+"""The instructions for the model.
+
+The cache key hashes this text together with the output schema and the payload format
+(``client.PROMPT_DIGEST``), so any change of them makes older interpretations stale by itself.
+``PROMPT_VERSION`` is shown with each result; raise it with every change of the text.
+"""
 
 from __future__ import annotations
 

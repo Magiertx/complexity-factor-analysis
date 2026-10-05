@@ -14,6 +14,8 @@ looked at. Hence ``create()`` with the schema in ``output_config.format``, a che
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
 import os
 from dataclasses import dataclass
 from typing import Any, Callable
@@ -24,6 +26,7 @@ from pydantic import ValidationError
 from config import logger
 from env_config import choice, positive_int, rate_limit_var, text
 
+from .payload import PAYLOAD_FORMAT
 from .prompt import SYSTEM_PROMPT, user_message
 from .schema import Interpretation, tidy
 
@@ -55,6 +58,15 @@ MAX_NAME_LENGTH = 120
 MAX_MESSAGE_CHARS = 80_000
 
 OUTPUT_SCHEMA = anthropic.transform_schema(Interpretation)
+
+
+def prompt_digest(system: str, schema: dict[str, Any], payload_format: int) -> str:
+    return hashlib.sha256(json.dumps([system, schema, payload_format], sort_keys=True).encode()).hexdigest()[:16]
+
+
+#: Changes with the instructions, the output schema and the payload format; part of the cache
+#: key and stored with every interpretation.
+PROMPT_DIGEST = prompt_digest(SYSTEM_PROMPT, OUTPUT_SCHEMA, PAYLOAD_FORMAT)
 
 
 def api_key() -> str | None:

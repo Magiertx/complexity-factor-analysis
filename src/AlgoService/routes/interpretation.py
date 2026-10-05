@@ -87,13 +87,13 @@ async def interpret_dataset(
 
     effective = effective_params(params, result["n_factors"])
     digest = await run_in_threadpool(data_hash, data)
-    precomputed = store.read_precomputed(meta.get("bundled_id"), body.language, digest, effective)
+    precomputed = store.read_precomputed(meta.get("bundled_id"), body.language, digest, effective, client.PROMPT_DIGEST)
     if precomputed:
         return _response(precomputed, cached=True, precomputed=True)
 
     key = store.cache_key(
         kind=kind, data_hash=digest, params=effective, language=body.language,
-        model=client.MODEL, prompt_version=PROMPT_VERSION,
+        model=client.MODEL, effort=client.EFFORT, prompt=client.PROMPT_DIGEST,
     )
     cached = store.read_cached(session_id, meta, key)
     if cached:
@@ -131,6 +131,8 @@ async def interpret_dataset(
                 "language": body.language,
                 "model": answer.model,
                 "prompt_version": PROMPT_VERSION,
+                "prompt_digest": client.PROMPT_DIGEST,
+                "effort": client.EFFORT,
                 "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                 "interpretation": answer.interpretation.model_dump(),
             }
