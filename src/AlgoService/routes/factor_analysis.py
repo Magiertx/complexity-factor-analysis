@@ -17,7 +17,7 @@ from typing import Any, Literal
 import pandas as pd
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 
 import jobs_db
@@ -26,7 +26,14 @@ from config import MAX_FILE_SIZE, broadcast_jobs_update, get_session_id, limiter
 from env_config import rate_limit
 from factor_analysis import catalog as cat
 from factor_analysis import compute, storage
-from factor_analysis.core import MISSING_MARKERS, AnalysisError, AnalysisParams, analyze as run_analysis
+from factor_analysis.core import (
+    COMMUNALITY_THRESHOLDS,
+    LOADING_THRESHOLDS,
+    MISSING_MARKERS,
+    AnalysisError,
+    AnalysisParams,
+    analyze as run_analysis,
+)
 from factor_analysis.export import loadings_csv, loadings_latex, matrix_csv
 from routes.algorithms import (
     _enforce_job_quota,
@@ -588,17 +595,29 @@ class AnalyzeRequest(BaseModel):
     bartlett_alpha: float = Field(0.05, gt=0.0, lt=1.0)
     n_factors: int | None = Field(None, ge=1)
     rotation: Literal["varimax", "promax", "oblimin", "quartimax", "none"] = "varimax"
-    loading_threshold: float = Field(0.35, ge=0.0, le=1.0)
+    #: Defaults depend on the kind: 0.35 and 0 for model, 0.5 and 0.5 for log measures.
+    loading_threshold: float | None = Field(None, ge=0.0, le=1.0)
+    communality_threshold: float | None = Field(None, ge=0.0, le=1.0)
 
-    def params(self) -> AnalysisParams:
-        return AnalysisParams(**self.model_dump())
+    def params(self, kind: str) -> AnalysisParams:
+        values = self.model_dump(exclude={"format"})
+        if values["loading_threshold"] is None:
+            values["loading_threshold"] = LOADING_THRESHOLDS[kind]
+        if values["communality_threshold"] is None:
+            values["communality_threshold"] = COMMUNALITY_THRESHOLDS[kind]
+        return AnalysisParams(**values)
 
 
 class ExportRequest(AnalyzeRequest):
     format: Literal["csv", "latex"] = "csv"
 
-    def params(self) -> AnalysisParams:
-        return AnalysisParams(**self.model_dump(exclude={"format"}))
+
+class _AnalysisFailed(Exception):
+    def __init__(self, error: AnalysisError) -> None:
+        self.response = JSONResponse(
+            status_code=400,
+            content={"detail": str(error), "code": error.code, "params": error.params},
+        )
 
 
 async def _analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
@@ -606,7 +625,7 @@ async def _analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]
         async with _ANALYSIS_SLOTS:
             return await run_in_threadpool(run_analysis, data, params)
     except AnalysisError as e:
-        raise _bad(str(e))
+        raise _AnalysisFailed(e) from None
 
 
 @router.post("/datasets/{dataset_id}/analyze")
@@ -617,9 +636,15 @@ async def analyze_dataset(
     body: AnalyzeRequest | None = None,
     session_id: str = Depends(get_session_id),
 ) -> dict[str, Any]:
-    """Bartlett, KMO with the MSA filter, eigenvalues, the factor analysis and factor groups."""
-    _, data = await _ready_matrix(dataset_id, session_id)
-    return await _analyze(data, (body or AnalyzeRequest()).params())
+    """Bartlett, KMO with the MSA filter, eigenvalues, the factor analysis and factor groups.
+
+    A 400 for data that cannot be analysed carries ``code`` and ``params`` next to ``detail``.
+    """
+    meta, data = await _ready_matrix(dataset_id, session_id)
+    try:
+        return await _analyze(data, (body or AnalyzeRequest()).params(meta["kind"]))
+    except _AnalysisFailed as e:
+        return e.response
 
 
 @router.post("/datasets/{dataset_id}/export")
@@ -633,8 +658,11 @@ async def export_loadings(
     """The loadings table of the analysis as CSV or LaTeX."""
     body = body or ExportRequest()
     meta, data = await _ready_matrix(dataset_id, session_id)
-    result = await _analyze(data, body.params())
+    try:
+        result = await _analyze(data, body.params(meta["kind"]))
+    except _AnalysisFailed as e:
+        return e.response
     stem = f"{_slug(meta['name'])}-loadings"
     if body.format == "latex":
-        return _attachment(loadings_latex(result, body.loading_threshold), f"{stem}.tex", "application/x-latex; charset=utf-8")
+        return _attachment(loadings_latex(result), f"{stem}.tex", "application/x-latex; charset=utf-8")
     return _attachment(loadings_csv(result), f"{stem}.csv", "text/csv; charset=utf-8")

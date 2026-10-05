@@ -266,6 +266,8 @@ def test_analyze_defaults(client, inductive):
     assert all(len(v) == 2 for v in a["loadings"].values())
     assert set(a["communalities"]) == set(a["uniquenesses"]) == set(a["used_measures"])
     assert len(a["variance"]["cumulative"]) == 2
+    assert a["loading_threshold"] == 0.35 and a["communality_threshold"] == 0.0
+    assert a["structure_loadings"] is None and a["factor_correlations"] is None
     assigned = [m["measure"] for f in a["factors"] for m in f["measures"]]
     assert sorted(assigned + a["unassigned"]) == sorted(a["used_measures"])
     assert isinstance(a["warnings"], list)
@@ -296,6 +298,24 @@ def test_analyze_errors(client, inductive, body, needle):
     r = client.post(f"/factor-analysis/datasets/{inductive}/analyze", json=body)
     assert r.status_code == 400
     assert needle in r.json()["detail"]
+    assert r.json()["code"] in ("n_factors_range", "too_few_measures")
+
+
+def test_analyze_oblique_returns_structure_and_factor_correlations(client, inductive):
+    r = client.post(f"/factor-analysis/datasets/{inductive}/analyze", json={"n_factors": 3, "rotation": "oblimin"})
+    a = r.json()
+    assert set(a["structure_loadings"]) == set(a["loadings"])
+    assert len(a["factor_correlations"]) == 3
+    assert a["variance"]["proportion"] is None and 0 < a["variance"]["explained"] < 1
+    varimax = client.post(f"/factor-analysis/datasets/{inductive}/analyze", json={"n_factors": 3}).json()
+    assert a["communalities"] == pytest.approx(varimax["communalities"])
+
+
+def test_log_datasets_default_to_the_thresholds_of_comfy_for_log_measures(client):
+    rows = ["name,a,b,c,d"] + [f"log{i},{i},{i * i % 7},{(i * 3) % 5},{i % 4 + i}" for i in range(30)]
+    r = _post(client, kind="log", source="csv", files=[("files", ("l.csv", "\n".join(rows).encode(), "text/csv"))])
+    a = client.post(f"/factor-analysis/datasets/{r.json()['dataset_id']}/analyze", json={"auto_msa_filter": False}).json()
+    assert a["loading_threshold"] == 0.5 and a["communality_threshold"] == 0.5
 
 
 def test_analyze_rejects_invalid_parameters(client, inductive):
@@ -309,6 +329,7 @@ def test_analyze_too_few_observations(client):
     r = client.post(f"/factor-analysis/datasets/{r.json()['dataset_id']}/analyze", json={})
     assert r.status_code == 400
     assert "too few" in r.json()["detail"]
+    assert r.json()["code"] == "too_few_observations" and r.json()["params"]["needed"] == 5
 
 
 def test_export_csv_and_latex(client, inductive):
