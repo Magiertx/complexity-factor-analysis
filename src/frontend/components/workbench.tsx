@@ -50,7 +50,6 @@ import { PresetBar } from "./preset-bar";
 import { LogOverviewCard } from "./log-overview-card";
 import { JobNotesField } from "./job-notes-field";
 import { ResultPanel } from "./result-panel";
-import { OnboardingTour, ONBOARDING_KEY } from "./onboarding-tour";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Segmented } from "./ui/segmented";
@@ -103,30 +102,9 @@ export function Workbench() {
   const sidebarRef = useRef<HTMLElement | null>(null);
 
   // On-demand page tour and algorithm explainer state (see
-  // single-run-tour.tsx / algorithm-explainer-modal.tsx). Separate from the
-  // welcome onboarding tour below.
+  // single-run-tour.tsx / algorithm-explainer-modal.tsx).
   const [pageTourOpen, setPageTourOpen] = useState(false);
   const [explainerFor, setExplainerFor] = useState<AlgorithmManifest | null>(null);
-
-  // Onboarding tour, shown once on first visit (gated by a localStorage flag).
-  // Other entry points (e.g. Settings) can write a `app.onboarding-replay`
-  // sentinel to force-replay it.
-  const [tourOpen, setTourOpen] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const replay = localStorage.getItem("app.onboarding-replay");
-      if (replay) {
-        localStorage.removeItem("app.onboarding-replay");
-        setTourOpen(true);
-        return;
-      }
-      const completed = localStorage.getItem(ONBOARDING_KEY);
-      if (!completed) setTourOpen(true);
-    } catch {
-      /* localStorage blocked, skip the tour */
-    }
-  }, []);
 
   // Derived/Local UI States
   const [error, setError] = useState<string | null>(null);
@@ -259,7 +237,7 @@ export function Workbench() {
   // Without this, re-clicking the same job in the drawer is a same-URL
   // navigation and the effect above never fires again.
   const clearJobParam = useCallback(() => {
-    if (searchParams.get("job")) router.replace("/", { scroll: false });
+    if (searchParams.get("job")) router.replace("/inspect", { scroll: false });
   }, [searchParams, router]);
 
   // Synchronize jobs list & recent uploads in real-time via Server-Sent Events (SSE)
@@ -565,7 +543,7 @@ export function Workbench() {
       // Switch view immediately to the newly spawned job; keep the URL in
       // sync so the drawer highlights it.
       setSelectedJobId(response.job_id);
-      router.replace(`/?job=${response.job_id}`, { scroll: false });
+      router.replace(`/inspect?job=${response.job_id}`, { scroll: false });
 
       // Instantly refresh jobs list
       const list = await fetchJobs();
@@ -608,7 +586,6 @@ export function Workbench() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 w-full items-start">
-      <OnboardingTour open={tourOpen} onClose={() => setTourOpen(false)} />
       <SingleRunTour run={pageTourOpen} onClose={() => setPageTourOpen(false)} />
       <AlgorithmExplainerModal
         algo={explainerFor}

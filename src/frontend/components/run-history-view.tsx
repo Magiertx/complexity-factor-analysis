@@ -239,7 +239,7 @@ export function RunHistoryView() {
               {filtered.map((job) => {
                 const date = new Date(job.created_at * 1000);
                 const isBatch = job.algorithm_id.startsWith("_batch");
-                const detailHref = `/?job=${job.id}`;
+                const detailHref = `/inspect?job=${job.id}`;
                 return (
                   <li key={job.id} className="p-4 flex items-start gap-4 flex-wrap hover:bg-surface/40 transition">
                     <div className="flex-1 min-w-[260px] space-y-1.5">

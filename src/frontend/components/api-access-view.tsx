@@ -89,6 +89,17 @@ const ENDPOINTS: { group: string; items: Endpoint[] }[] = [
     ],
   },
   {
+    group: "Factor analysis",
+    items: [
+      { method: "GET", path: "/factor-analysis/catalog?kind=model|log", description: "Measures, miners or feature groups, bundled datasets and the accepted sources." },
+      { method: "POST", path: "/factor-analysis/datasets", description: "Create a dataset from a bundled one, a CSV, event logs or PNML files (multipart). Logs and PNML run as a job." },
+      { method: "GET", path: "/factor-analysis/datasets/{id}", description: "Status, progress and the cleaned measure matrix (first 2000 rows)." },
+      { method: "GET", path: "/factor-analysis/datasets/{id}/download", description: "The cleaned matrix as CSV." },
+      { method: "POST", path: "/factor-analysis/datasets/{id}/analyze", description: "Bartlett, KMO/MSA, eigenvalues and rotated loadings for the given settings (JSON)." },
+      { method: "POST", path: "/factor-analysis/datasets/{id}/export", description: "The loadings table as CSV or LaTeX; same body as analyze plus format." },
+    ],
+  },
+  {
     group: "Job lifecycle",
     items: [
       { method: "GET", path: "/jobs", description: "All jobs visible to your session." },

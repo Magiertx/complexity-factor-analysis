@@ -52,10 +52,10 @@ function deriveRunInfo(job: Job): RunInfo {
     return {
       mode: "batch",
       innerAlgoId: aid.slice("_batch:".length),
-      href: `/?job=${job.id}`,
+      href: `/inspect?job=${job.id}`,
     };
   }
-  return { mode: "single", innerAlgoId: aid, href: `/?job=${job.id}` };
+  return { mode: "single", innerAlgoId: aid, href: `/inspect?job=${job.id}` };
 }
 
 const MODE_META: Record<RunMode, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
@@ -87,10 +87,9 @@ export function useJobsDrawer() {
   return ctx;
 }
 
-// Builder routes on which the jobs panel is shown as a layout column. Same as
-// MODE_HREFS in mode-bar.tsx, duplicated to avoid a circular import between
-// mode-bar and jobs-drawer.
-const PANEL_ROUTES = new Set(["/"]);
+// Routes on which the jobs panel is shown as a layout column. Only the single-log
+// workbench starts jobs that are worth browsing next to the page.
+export const PANEL_ROUTES = new Set(["/inspect"]);
 
 export function JobsDrawerProvider({ children }: { children: React.ReactNode }) {
   // Default `false` for SSR consistency; the effect below switches to `true`
@@ -152,8 +151,7 @@ export function JobsDrawer() {
   const [loading, setLoading] = useState(true);
   const panelRef = useRef<HTMLDivElement | null>(null);
 
-  // Only shown on builder pages (mode-bar routes). On /runs, /settings and
-  // /api-access the page itself manages jobs, so the panel would be redundant.
+  // Only shown next to the workbench. Elsewhere the run history page lists the jobs.
   const isBuilderRoute = PANEL_ROUTES.has(pathname);
 
   const algoById = useMemo(() => {

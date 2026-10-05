@@ -17,7 +17,7 @@
     "try_again": "Try again"
   },
   "header": {
-    "tagline": "process mining · model complexity",
+    "tagline": "process mining · complexity factor analysis",
     "settings_label": "Settings",
     "settings_title": "Settings",
     "api_title": "Use {app} programmatically",
@@ -43,12 +43,16 @@
     "remove_aria": "Remove file"
   },
   "mode_bar": {
-    "aria_label": "Run mode",
-    "single_run_label": "Single run",
-    "single_run_desc": "One algorithm on one log",
+    "aria_label": "Analysis",
     "jobs_label": "Jobs",
-    "jobs_desc": "History & results",
-    "jobs_title": "Show jobs archive"
+    "jobs_desc": "Recent jobs",
+    "jobs_title": "Show jobs archive",
+    "model_label": "Model complexity",
+    "model_desc": "Measures of discovered process models",
+    "log_label": "Log complexity",
+    "log_desc": "Measures of event logs",
+    "runs_label": "Runs",
+    "runs_desc": "All jobs of this session"
   },
   "tours": {
     "single_run": {
@@ -67,18 +71,19 @@
     },
     "onboarding": {
       "step0_title": "Welcome to {app}",
-      "step0_p1": "Discover process models from event logs and measure how complex they are, right in the browser. No install, no command line — drop in a log and run.",
+      "step0_p1": "Find out which complexity measures of process models and event logs capture the same thing. Load or compute a table of measures, check whether it suits a factor analysis, and read off groups of related measures.",
       "step0_p2": "This quick tour shows the four things you'll use most.",
-      "step1_title": "Pick an algorithm and a log",
-      "step1_p1": "Choose a tool from the left sidebar. Then either upload your own event log or pick a sample log or a recently uploaded one.",
-      "step1_p2": "Tip: once a log is selected, an overview of its traces, variants and activities appears above the parameters.",
-      "step2_title": "Run, watch, download",
-      "step2_p1": "Hit 'Run analysis'. Progress streams live; when the run finishes you get every artifact inline — stats, tables, process models, downloadable logs — plus a one-click 'Download All (ZIP)'.",
-      "step2_p2": "Past runs stay in the jobs archive on the right, so you can re-open them anytime.",
-      "step3_title": "Power features when you need them",
-      "step3_api": "API — drive everything from Python or curl; see the API page in the header for examples.",
+      "step1_title": "Two tabs: models and logs",
+      "step1_p1": "Model complexity analyses measures of Petri nets discovered from event logs, computed with ComFy. Log complexity analyses measures of the event logs themselves, computed with feeed.",
+      "step1_p2": "Both tabs work the same way.",
+      "step2_title": "Five steps, top to bottom",
+      "step2_p1": "Data, dataset, suitability, factors, loadings. Every change to a setting re-runs the analysis right away, and the loadings can be exported as CSV or LaTeX.",
+      "step2_p2": "The ? next to a heading explains the statistic; the Tour button walks you through the page.",
+      "step3_title": "More when you need it",
+      "step3_api": "API: drive everything from Python or curl; see the API page in the header.",
       "progress_aria": "Progress",
-      "step3_history": "History — every run of your session stays available in the jobs panel and on the runs page."
+      "step3_history": "Runs: every job of your session, including dataset computations.",
+      "step3_inspect": "Inspect a single log: run ComFy on one log and look at the discovered models."
     },
     "factor": {
       "intro": "Five steps from raw measures to factors. Each step explains its numbers; the ? buttons next to a heading say more. ESC or Skip ends the tour at any time.",
@@ -103,7 +108,7 @@
     },
     "page_title": "Settings",
     "page_subtitle": "Local preferences — stored in your browser, no account required.",
-    "back_aria": "Back to workbench",
+    "back_aria": "Back to model complexity",
     "load_error": "Could not load algorithm list: {error}",
     "toast_theme_updated": "Theme updated",
     "toast_default_algo_saved": "Default algorithm saved",
@@ -116,16 +121,16 @@
     "toast_job_history_failed": "Failed to clear job history",
     "defaults": {
       "title": "Defaults",
-      "description": "Preselect what shows up when the Workbench opens.",
+      "description": "Preselect what shows up when you inspect a single log.",
       "default_algo_label": "Default algorithm",
-      "default_algo_hint": "Opens automatically on the Workbench. Leave empty to use the first algorithm in the list.",
+      "default_algo_hint": "Opens automatically when you inspect a single log. Leave empty to use the first algorithm in the list.",
       "none_option": "— None (use first in list) —",
       "clear_button": "Clear"
     },
     "presets": {
       "title": "Parameter presets",
-      "description": "Named parameter sets you saved from the Workbench. Stored locally on this device.",
-      "empty_hint_before": "No presets yet. In the Workbench, configure an algorithm and click",
+      "description": "Named parameter sets you saved while inspecting a single log. Stored locally on this device.",
+      "empty_hint_before": "No presets yet. Under Inspect a single log, configure an algorithm and click",
       "empty_hint_action": "Save preset",
       "empty_hint_after": "above the parameter form.",
       "preset_count": "{n} preset",
@@ -177,11 +182,11 @@
       "algorithms_loaded_label": "Algorithms loaded",
       "source_label": "Source",
       "documentation_label": "Documentation",
-      "back_to_workbench": "Back to Workbench"
+      "back_to_workbench": "Back to model complexity"
     }
   },
   "api_access": {
-    "back_aria": "Back to workbench",
+    "back_aria": "Back to model complexity",
     "heading": "API access",
     "subtitle": "Submit jobs and read results without using the web UI. All endpoints are unauthenticated; you are scoped to your browser session via cookie.",
     "interactive_ref_title": "Interactive reference",
@@ -313,7 +318,7 @@
     "clear_all_confirm": "Clear the entire jobs archive?"
   },
   "run_history": {
-    "back_aria": "Back to workbench",
+    "back_aria": "Back to model complexity",
     "heading": "Run history",
     "subtitle": "All runs in this session.",
     "refresh_button": "Refresh",
@@ -332,7 +337,7 @@
     "status_label_failed": "Failed",
     "status_label_aborted": "Aborted",
     "loading_runs": "Loading runs…",
-    "no_runs_empty": "No runs in this session yet — start one from the Workbench or Batch.",
+    "no_runs_empty": "No runs in this session yet. Computed datasets and single-log runs appear here.",
     "no_runs_filter": "No runs match the current filters.",
     "open_button": "Open",
     "open_title": "Open in the originating view",
@@ -677,5 +682,10 @@
       "variance": "SS loadings is the sum of squared loadings of a factor. Divided by the number of measures it gives the proportion of the total variance the factor explains; the cumulative row adds these up.",
       "groups": "Each factor with the measures assigned to it, strongest loading first. Measures in one group capture a similar aspect of complexity; the name of the factor is up to your interpretation."
     }
+  },
+  "inspect": {
+    "title": "Inspect a single log",
+    "subtitle": "Run ComFy on one event log and look at the discovered models and their complexity measures.",
+    "back_aria": "Back to model complexity"
   }
 }

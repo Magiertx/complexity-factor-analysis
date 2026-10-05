@@ -21,6 +21,7 @@ import { DEFAULT_OPTIONS, downloadBlob, type AnalysisOptions } from "@/lib/facto
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
 import { DataForm, DataSummary } from "./data-step";
 import { DatasetView } from "./dataset-step";
 import { SuitabilityView } from "./suitability-step";
@@ -70,6 +71,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const [exporting, setExporting] = useState<"csv" | "latex" | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
+  const onboarding = useOnboarding();
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -119,6 +121,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     const load = async () => {
       try {
         const d = await fetchDataset(datasetId, ctrl.signal);
+        if (d.kind !== kind) {
+          selectDataset(null);
+          return;
+        }
         setDataset(d);
         setDatasetError(null);
         if (d.status === "computing") timer = setTimeout(load, POLL_MS);
@@ -138,7 +144,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       ctrl.abort();
       clearTimeout(timer);
     };
-  }, [datasetId, selectDataset, t]);
+  }, [datasetId, kind, selectDataset, t]);
 
   const ready = !!dataset && dataset.status === "ready" && dataset.id === datasetId;
 
@@ -261,6 +267,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
 
   return (
     <div className="space-y-6">
+      <OnboardingTour open={onboarding.open} onClose={onboarding.close} />
       <FactorTour kind={kind} run={tourOpen} onClose={() => setTourOpen(false)} />
 
       <header className="flex flex-wrap items-start justify-between gap-4">
@@ -497,7 +504,7 @@ function StepRail({ states }: { states: Record<StepId, StepState> }) {
         {STEP_IDS.map((id, i) => {
           const state = states[id];
           return (
-            <li key={id} className="shrink-0 lg:relative">
+            <li key={id} className="relative shrink-0">
               {i < STEP_IDS.length - 1 && (
                 <span aria-hidden className="hidden lg:block absolute left-[22px] top-10 bottom-[-0.5rem] w-px bg-border" />
               )}

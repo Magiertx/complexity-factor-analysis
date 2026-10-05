@@ -17,7 +17,7 @@
     "try_again": "Erneut versuchen"
   },
   "header": {
-    "tagline": "Process Mining · Modellkomplexität",
+    "tagline": "Process Mining · Faktorenanalyse von Komplexität",
     "settings_label": "Einstellungen",
     "settings_title": "Einstellungen",
     "api_title": "{app} programmatisch nutzen",
@@ -43,12 +43,16 @@
     "remove_aria": "Datei entfernen"
   },
   "mode_bar": {
-    "aria_label": "Run-Modus",
-    "single_run_label": "Single Run",
-    "single_run_desc": "Ein Algorithmus auf einem Log",
+    "aria_label": "Analyse",
     "jobs_label": "Jobs",
-    "jobs_desc": "Verlauf & Ergebnisse",
-    "jobs_title": "Job-Archiv anzeigen"
+    "jobs_desc": "Letzte Jobs",
+    "jobs_title": "Job-Archiv anzeigen",
+    "model_label": "Modellkomplexität",
+    "model_desc": "Maße gefundener Prozessmodelle",
+    "log_label": "Log-Komplexität",
+    "log_desc": "Maße von Event-Logs",
+    "runs_label": "Runs",
+    "runs_desc": "Alle Jobs dieser Sitzung"
   },
   "tours": {
     "single_run": {
@@ -67,18 +71,19 @@
     },
     "onboarding": {
       "step0_title": "Willkommen bei {app}",
-      "step0_p1": "Prozessmodelle aus Event-Logs entdecken und ihre Komplexität messen, direkt im Browser. Keine Installation, keine Kommandozeile — Log reinziehen und loslegen.",
-      "step0_p2": "Diese Kurz-Tour zeigt die vier Dinge, die du am häufigsten nutzen wirst.",
-      "step1_title": "Algorithmus und Log wählen",
-      "step1_p1": "Wähle ein Tool aus der linken Sidebar. Lade danach entweder dein eigenes Event-Log hoch oder wähle ein Sample-Log oder ein kürzlich hochgeladenes.",
-      "step1_p2": "Tipp: Sobald ein Log ausgewählt ist, erscheint über den Parametern eine Übersicht über seine Traces, Varianten und Aktivitäten.",
-      "step2_title": "Run starten, beobachten, herunterladen",
-      "step2_p1": "Klicke auf 'Analyse starten'. Der Fortschritt streamt live; sobald der Run durch ist, erscheinen alle Artefakte inline — Stats, Tabellen, Prozessmodelle, herunterladbare Logs — plus ein 'Alle herunterladen (ZIP)' per Klick.",
-      "step2_p2": "Vergangene Runs bleiben im Job-Archiv rechts — du kannst sie jederzeit wieder öffnen.",
-      "step3_title": "Power Features, wenn du sie brauchst",
-      "step3_api": "API — alles per Python oder curl steuern; siehe die API-Seite im Header für Beispiele.",
+      "step0_p1": "Finde heraus, welche Komplexitätsmaße von Prozessmodellen und Event-Logs dasselbe erfassen. Lade oder berechne eine Tabelle von Maßen, prüfe, ob sie sich für eine Faktorenanalyse eignet, und lies Gruppen verwandter Maße ab.",
+      "step0_p2": "Diese kurze Tour zeigt die vier Dinge, die du am häufigsten brauchst.",
+      "step1_title": "Zwei Reiter: Modelle und Logs",
+      "step1_p1": "Modellkomplexität analysiert Maße von Petri-Netzen, die aus Event-Logs gefunden und mit ComFy vermessen werden. Log-Komplexität analysiert Maße der Event-Logs selbst, berechnet mit feeed.",
+      "step1_p2": "Beide Reiter funktionieren gleich.",
+      "step2_title": "Fünf Schritte, von oben nach unten",
+      "step2_p1": "Daten, Datensatz, Eignung, Faktoren, Ladungen. Jede Änderung einer Einstellung startet die Analyse sofort neu, und die Ladungen lassen sich als CSV oder LaTeX exportieren.",
+      "step2_p2": "Das ? neben einer Überschrift erklärt die Kennzahl; der Tour-Knopf führt durch die Seite.",
+      "step3_title": "Mehr, wenn du es brauchst",
+      "step3_api": "API: alles per Python oder curl steuern; siehe die API-Seite im Header.",
       "progress_aria": "Fortschritt",
-      "step3_history": "Verlauf — jeder Run deiner Sitzung bleibt im Jobs-Panel und auf der Runs-Seite verfügbar."
+      "step3_history": "Runs: alle Jobs deiner Sitzung, auch Datensatz-Berechnungen.",
+      "step3_inspect": "Einzelnes Log untersuchen: ComFy auf einem Log ausführen und die gefundenen Modelle ansehen."
     },
     "factor": {
       "intro": "Fünf Schritte von den Rohmaßen zu den Faktoren. Jeder Schritt erklärt seine Zahlen; die ?-Knöpfe neben einer Überschrift sagen mehr. ESC oder Überspringen beendet die Tour jederzeit.",
@@ -103,7 +108,7 @@
     },
     "page_title": "Einstellungen",
     "page_subtitle": "Lokale Einstellungen — im Browser gespeichert, kein Konto erforderlich.",
-    "back_aria": "Zurück zur Workbench",
+    "back_aria": "Zurück zur Modellkomplexität",
     "load_error": "Algorithmus-Liste konnte nicht geladen werden: {error}",
     "toast_theme_updated": "Theme aktualisiert",
     "toast_default_algo_saved": "Standard-Algorithmus gespeichert",
@@ -116,16 +121,16 @@
     "toast_job_history_failed": "Job-Verlauf konnte nicht geleert werden",
     "defaults": {
       "title": "Standardwerte",
-      "description": "Vorauswahl beim Öffnen der Workbench.",
+      "description": "Vorauswahl beim Untersuchen eines einzelnen Logs.",
       "default_algo_label": "Standard-Algorithmus",
-      "default_algo_hint": "Öffnet automatisch auf der Workbench. Leer lassen, um den ersten Algorithmus der Liste zu verwenden.",
+      "default_algo_hint": "Öffnet automatisch beim Untersuchen eines einzelnen Logs. Leer lassen, um den ersten Algorithmus der Liste zu verwenden.",
       "none_option": "— Keiner (ersten in der Liste verwenden) —",
       "clear_button": "Zurücksetzen"
     },
     "presets": {
       "title": "Parameter-Presets",
-      "description": "Benannte Parameter-Sets, die du aus der Workbench gespeichert hast. Lokal auf diesem Gerät gespeichert.",
-      "empty_hint_before": "Noch keine Presets. Konfiguriere in der Workbench einen Algorithmus und klicke auf",
+      "description": "Benannte Parameter-Sets, die du beim Untersuchen eines einzelnen Logs gespeichert hast. Lokal auf diesem Gerät gespeichert.",
+      "empty_hint_before": "Noch keine Presets. Konfiguriere unter Einzelnes Log untersuchen einen Algorithmus und klicke auf",
       "empty_hint_action": "Preset speichern",
       "empty_hint_after": "über dem Parameter-Formular.",
       "preset_count": "{n} Preset",
@@ -177,11 +182,11 @@
       "algorithms_loaded_label": "Geladene Algorithmen",
       "source_label": "Quellcode",
       "documentation_label": "Dokumentation",
-      "back_to_workbench": "Zurück zur Workbench"
+      "back_to_workbench": "Zurück zur Modellkomplexität"
     }
   },
   "api_access": {
-    "back_aria": "Zurück zur Workbench",
+    "back_aria": "Zurück zur Modellkomplexität",
     "heading": "API-Zugang",
     "subtitle": "Jobs übermitteln und Ergebnisse abrufen ohne die Web-Oberfläche. Alle Endpoints sind nicht authentifiziert; du bist per Cookie auf deine Browser-Session beschränkt.",
     "interactive_ref_title": "Interaktive Referenz",
@@ -313,7 +318,7 @@
     "clear_all_confirm": "Das gesamte Job-Archiv leeren?"
   },
   "run_history": {
-    "back_aria": "Zurück zur Workbench",
+    "back_aria": "Zurück zur Modellkomplexität",
     "heading": "Run history",
     "subtitle": "Alle Runs dieser Sitzung.",
     "refresh_button": "Aktualisieren",
@@ -332,7 +337,7 @@
     "status_label_failed": "Fehlgeschlagen",
     "status_label_aborted": "Abgebrochen",
     "loading_runs": "Runs werden geladen…",
-    "no_runs_empty": "Noch keine Runs in dieser Sitzung — starte einen von der Workbench oder Batch.",
+    "no_runs_empty": "Noch keine Runs in dieser Sitzung. Berechnete Datensätze und Einzel-Log-Runs erscheinen hier.",
     "no_runs_filter": "Keine Runs stimmen mit den aktuellen Filtern überein.",
     "open_button": "Öffnen",
     "open_title": "In der Ursprungsansicht öffnen",
@@ -677,5 +682,10 @@
       "variance": "SS-Ladungen sind die Summe der quadrierten Ladungen eines Faktors. Geteilt durch die Zahl der Maße ergibt sich der Anteil an der Gesamtvarianz, den der Faktor erklärt; die kumulierte Zeile summiert diese Anteile.",
       "groups": "Jeder Faktor mit den ihm zugeordneten Maßen, stärkste Ladung zuerst. Maße einer Gruppe erfassen einen ähnlichen Aspekt von Komplexität; wie du den Faktor benennst, ist deine Interpretation."
     }
+  },
+  "inspect": {
+    "title": "Einzelnes Log untersuchen",
+    "subtitle": "Führe ComFy auf einem Event-Log aus und sieh dir die gefundenen Modelle und ihre Komplexitätsmaße an.",
+    "back_aria": "Zurück zur Modellkomplexität"
   }
 }

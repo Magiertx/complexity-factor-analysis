@@ -1,14 +1,11 @@
-import { Suspense } from "react";
-import { Workbench } from "@/components/workbench";
+import { FactorAnalysisView } from "@/components/factor-analysis/factor-analysis-view";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 
-export default function Home() {
+export default function ModelComplexityPage() {
   return (
-    <div className="mx-auto max-w-[1920px] px-6 py-8">
+    <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-8">
       <ErrorBoundary>
-        <Suspense fallback={<div className="text-sm text-muted">Loading…</div>}>
-          <Workbench />
-        </Suspense>
+        <FactorAnalysisView kind="model" />
       </ErrorBoundary>
     </div>
   );

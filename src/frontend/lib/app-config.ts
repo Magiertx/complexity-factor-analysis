@@ -11,7 +11,7 @@ export const APP_INITIALS = APP_NAME.split(/\s+/)
   .toUpperCase();
 
 export const APP_DESCRIPTION =
-  "Complexity measures of process models discovered from event logs, in your browser.";
+  "Factor analysis of complexity measures for process models and event logs, in your browser.";
 
 /** Public source repository. Leave empty to hide the link in the settings. */
 export const REPO_URL = "";
