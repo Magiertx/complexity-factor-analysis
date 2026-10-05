@@ -71,8 +71,8 @@ def log_group_of(feature: str) -> str | None:
     return None
 
 
-def _model_parts() -> tuple[list[dict[str, Any]], list[dict[str, str]], list[str]]:
-    from algorithms.comfy import MEASURES_BY_NAME, MINERS_BY_NAME, SLOW_MEASURES
+def _model_parts() -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[str]]:
+    from algorithms.comfy import MEASURES_BY_NAME, MINERS_BY_NAME, SLOW_MEASURES, SLOW_MINERS
 
     measures = []
     for name in MEASURES_BY_NAME:
@@ -84,7 +84,10 @@ def _model_parts() -> tuple[list[dict[str, Any]], list[dict[str, str]], list[str
         if name in SLOW_MEASURES:
             entry["slow"] = True
         measures.append(entry)
-    miners = [{"key": name, "name": name} for name in MINERS_BY_NAME]
+    miners = [
+        {"key": name, "name": name, **({"slow": True} if name in SLOW_MINERS else {})}
+        for name in MINERS_BY_NAME
+    ]
     defaults = [m for m in MEASURES_BY_NAME if m not in SLOW_MEASURES]
     return measures, miners, defaults
 

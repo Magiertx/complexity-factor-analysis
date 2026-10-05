@@ -31,6 +31,11 @@ MINERS_BY_NAME = {str(m): m for m in _DA.analyzed_discovery_algorithms}
 # Not selected by default: they enumerate paths or cycles and can take minutes on large nets.
 SLOW_MEASURES = {"Cross-Connectivity", "Depth", "Diameter", "Cyclicity"}
 
+# Miners that can run for many minutes on mid-sized logs: Alpha++ was still running after 15
+# minutes on a 1000-trace PDC log that the other miners finish in seconds. ProM4Py cannot be
+# interrupted, so a dataset job waits for them. The ComFy paper leaves both out as well.
+SLOW_MINERS = {"Alpha Plus Plus miner", "Alpha Robust miner"}
+
 # Measures that need the initial and final marking.
 _MARKING_MEASURES = {"Depth", "Diameter"}
 

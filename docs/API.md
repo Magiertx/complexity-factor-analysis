@@ -105,7 +105,7 @@ Details in [Factor analysis](#factor-analysis) below.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/factor-analysis/catalog?kind=model` or `kind=log` | Measures, miners (model) or feature groups (log), defaults, bundled datasets and sample inputs. |
+| GET | `/factor-analysis/catalog?kind=model` or `kind=log` | Measures, miners (model) or feature groups (log), each with `slow: true` where it can take long, defaults, bundled datasets and sample inputs. |
 | POST | `/factor-analysis/datasets` | Create a dataset from bundled data or a CSV (ready at once), or from logs or PNML files (background job). |
 | GET | `/factor-analysis/datasets/{id}` | Status, progress, measures, dropped measures and the first 2000 rows. |
 | GET | `/factor-analysis/datasets/{id}/download` | The cleaned matrix as CSV. |
