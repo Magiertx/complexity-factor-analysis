@@ -419,6 +419,7 @@ async def create_dataset(
             entry = cat.bundled_entry(bundled_id or "")
             if entry is None or entry["kind"] != kind:
                 raise _bad(f"Unknown bundled dataset '{bundled_id}' for kind '{kind}'.")
+            bundled_id = entry["id"]
             table = await run_in_threadpool(
                 lambda: _relabel(pd.read_csv(cat.DATASETS_DIR / entry["file"], index_col=0), entry.get("row_labels"))
             )
@@ -437,8 +438,12 @@ async def create_dataset(
             finally:
                 os.remove(tmp_name)
             display = name or filename
+            bundled_id = None
         table = _select_columns(table, measure_list)
-        meta = storage.create(session_id, kind=kind, name=display, source=source, status="computing")
+        meta = storage.create(
+            session_id, kind=kind, name=display, source=source, status="computing",
+            bundled_id=bundled_id,
+        )
         try:
             meta = await run_in_threadpool(storage.store_matrix, session_id, meta["id"], table)
         except Exception:

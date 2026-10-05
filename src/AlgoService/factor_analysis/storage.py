@@ -64,6 +64,7 @@ def create(
     source: str,
     status: str,
     params: dict[str, Any] | None = None,
+    bundled_id: str | None = None,
 ) -> dict[str, Any]:
     dataset_id = str(uuid.uuid4())
     directory = dataset_dir(session_id, dataset_id)
@@ -83,6 +84,8 @@ def create(
         "failures": [],
         "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
+    if bundled_id:
+        meta["bundled_id"] = bundled_id
     _write_json(directory / "meta.json", meta)
     return meta
 
