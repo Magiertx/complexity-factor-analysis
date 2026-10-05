@@ -314,7 +314,7 @@ as they are. Observation labels, dataset and file names and measure values are n
 Errors carry `detail` and `code`. Analysis errors come first, as for `analyze`. Then: 503
 `interpretation_unavailable` (no key), 422 `interpretation_too_large` (more than 150 used
 measures or 20 factors, a measure name longer than 120 characters, or a message over 80,000
-characters; `params` names the limits; checked before any limit counts), 429 `rate_limited`
+characters; `params` names the limits; checked before any limit counts), 429 `interpretation_rate_limited`
 (more than `INTERPRETATION_RATE_LIMIT`, default `10/hour`, live calls in this session) or
 `interpretation_daily_cap` (more than `INTERPRETATION_DAILY_CAP`, default 200, live calls today
 over all sessions), 422 `interpretation_refused` (the model and its fallback declined, or the

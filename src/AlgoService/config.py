@@ -112,7 +112,7 @@ from env_config import rate_limit
 
 # Disabled entirely in pytest so the test suite can hammer endpoints without
 # hitting limits. Honors `RATE_LIMIT_DISABLED=1` for the same reason in dev.
-_RATE_LIMIT_DISABLED = os.environ.get("PYTEST_CURRENT_TEST") is not None \
+RATE_LIMIT_DISABLED = os.environ.get("PYTEST_CURRENT_TEST") is not None \
     or os.environ.get("RATE_LIMIT_DISABLED") == "1"
 
 _proxy_misconfig_warned = False
@@ -149,6 +149,6 @@ def rate_limit_key(request: Request) -> str:
 limiter = Limiter(
     key_func=rate_limit_key,
     storage_uri=REDIS_URL if REDIS_URL else "memory://",
-    enabled=not _RATE_LIMIT_DISABLED,
+    enabled=not RATE_LIMIT_DISABLED,
     default_limits=[rate_limit("default", "120/minute")],
 )

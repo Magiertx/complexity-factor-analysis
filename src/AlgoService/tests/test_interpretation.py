@@ -707,7 +707,8 @@ def test_session_limit_counts_live_calls_only(client, claude, csv_dataset, monke
     assert _interpret(client, dataset_id, auto_msa_filter=False).status_code == 200
     assert _interpret(client, dataset_id, auto_msa_filter=False).json()["cached"] is True
     r = _interpret(client, dataset_id, auto_msa_filter=False, language="de")
-    assert r.status_code == 429 and r.json()["code"] == "rate_limited"
+    assert r.status_code == 429 and r.json()["code"] == "interpretation_rate_limited"
+    assert r.json()["params"] == {"limit": quota.RATE_LIMIT}
     assert len(claude.calls) == 1
 
 

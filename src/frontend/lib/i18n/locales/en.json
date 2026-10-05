@@ -738,6 +738,7 @@
       "interpretation_failed": "The model returned no usable answer. Try again later.",
       "interpretation_daily_cap": "The server has used up today's interpretations. Try again tomorrow.",
       "interpretation_fallback_unavailable": "The model declined, and the fallback model could not run right now. Try again later.",
+      "interpretation_rate_limited": "This session has reached its limit of interpretations ({limit}). Try again later.",
       "interpretation_too_large": "This analysis is too large to interpret: at most {measures} measures, {factors} factors and measure names of {name_length} characters can be sent. Exclude measures or choose fewer factors."
     },
     "warnings": {
