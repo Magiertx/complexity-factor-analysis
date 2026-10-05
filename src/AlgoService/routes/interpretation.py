@@ -97,12 +97,18 @@ async def interpret_dataset(
     meta, data = await _ready_matrix(dataset_id, session_id)
     kind = meta["kind"]
     params = body.params(kind)
-    try:
-        result = await _analyze(data, params)
-    except _AnalysisFailed as e:
-        return e.response
+    if body.cached_only and body.n_factors is not None:
+        # A lookup needs only the data and the parameters; the analysis runs for a live call.
+        result = None
+        n_factors = body.n_factors
+    else:
+        try:
+            result = await _analyze(data, params)
+        except _AnalysisFailed as e:
+            return e.response
+        n_factors = result["n_factors"]
 
-    effective = effective_params(params, result["n_factors"])
+    effective = effective_params(params, n_factors)
     digest = await run_in_threadpool(data_hash, data)
     precomputed = store.read_precomputed(meta.get("bundled_id"), body.language, digest, effective, client.PROMPT_DIGEST)
     if precomputed:

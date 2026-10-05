@@ -332,6 +332,21 @@ def test_cached_only_never_calls(client, claude, csv_dataset):
     assert r.status_code == 200 and r.json()["cached"] is True and len(claude.calls) == 1
 
 
+def test_lookup_with_a_factor_count_skips_the_analysis(client, claude, csv_dataset, monkeypatch):
+    from routes import interpretation as route
+
+    _interpret(client, csv_dataset[0], auto_msa_filter=False)
+
+    async def no_analysis(*args):
+        raise AssertionError("analysis ran for a lookup")
+
+    monkeypatch.setattr(route, "_analyze", no_analysis)
+    r = _interpret(client, csv_dataset[0], auto_msa_filter=False, n_factors=2, cached_only=True)
+    assert r.status_code == 200 and r.json()["cached"] is True
+    r = _interpret(client, csv_dataset[0], auto_msa_filter=False, n_factors=3, cached_only=True)
+    assert r.status_code == 204 and len(claude.calls) == 1
+
+
 def test_bundled_datasets_share_the_cache(isolated_jobs_dir, claude):
     from fastapi.testclient import TestClient
     from interpretation import store

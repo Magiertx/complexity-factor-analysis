@@ -307,7 +307,9 @@ as they are. Observation labels, dataset and file names and measure values are n
   `scripts/precompute_interpretations.py` for a bundled dataset with all measures and the
   default parameters. It is served without a key.
 - With `cached_only: true` the server never calls Claude and answers 204 when nothing is
-  stored; the UI uses it to show stored interpretations without spending anything.
+  stored; the UI uses it to show stored interpretations without spending anything. Given
+  `n_factors` as well (the UI sends the count of the analysis on screen), it skips the
+  analysis and only looks the parameters up.
 
 Errors carry `detail` and `code`. Analysis errors come first, as for `analyze`. Then: 503
 `interpretation_unavailable` (no key), 422 `interpretation_too_large` (more than 150 used
