@@ -10,7 +10,7 @@ network.
 |---|---|
 | `docker compose build` | Base images (Python, Node, Temurin, Postgres, Redis), apt, pip and npm packages, and the ProM bundle from Zenodo (about 430 MB) for `prom4py`. |
 | `docker compose up` | Nothing, once all six images are present locally. |
-| Running the tool | Nothing. |
+| Running the tool | Nothing, except a new interpretation of factors by Claude, which calls the Anthropic API. |
 
 At runtime the containers only talk to each other: the frontend proxies `/api/*` to
 `algoservice`, which reaches `postgres`, `redis` and `prom4py` by service name. Next.js
@@ -18,6 +18,15 @@ telemetry is disabled in the frontend image, the UI loads no external fonts or s
 CSP allows only its own origin), and feeed computes the log measures in Python without
 downloads. This was checked in the code and by running the stack without a route out (see
 [What was verified](#what-was-verified)).
+
+The optional interpretation step is the one exception. Precomputed interpretations of the
+bundled datasets with all measures and the default settings ship with the image
+(`src/AlgoService/datasets/interpretations/`, written by
+`scripts/precompute_interpretations.py`) and are shown offline, with or without an API key.
+Any other interpretation needs the Anthropic API and therefore internet; offline, with a key
+set, the request fails with "could not reach the Anthropic API" and the rest of the tool is
+unaffected. Without a key the button stays disabled. Interpretations requested before, while
+online, stay cached and are shown offline as well.
 
 ## Preparing the laptop
 

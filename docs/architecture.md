@@ -168,6 +168,25 @@ A dataset whose job is still running 70 minutes after it started outlived Celery
 (for example because the worker restarted); reading it marks the job and the dataset failed,
 and pruning removes such datasets with their inputs.
 
+### Interpretation by Claude
+
+Optional, in `interpretation/` with the endpoints in `routes/interpretation.py`
+([`API.md`](API.md#interpretation-by-claude)). `POST .../interpret` runs the analysis, then:
+
+1. A precomputed file in `datasets/interpretations/` for a bundled dataset is served if its
+   data hash and parameters match (no key needed).
+2. The cache: `artifacts/interpretations/` for bundled datasets, shared by all sessions, or
+   `interpretations/` in the dataset directory for own data. The key hashes the cleaned
+   matrix (values and measure names, not row labels), the parameters with the factor count
+   used, the language, the model and `PROMPT_VERSION`.
+3. Otherwise, with `ANTHROPIC_API_KEY` set and below the per-session and daily limits
+   (`interpretation/quota.py`, counters in Redis), `payload.build_payload` reduces the result
+   to aggregates plus the catalog definitions, and `client.interpret` calls
+   `client.beta.messages.create` with `output_config` (effort and a JSON schema from
+   `schema.Interpretation`) and `fallbacks: "default"`. It checks `stop_reason` before it
+   reads the answer, validates it and trims it to the factors and measures of the analysis.
+   One call per cache key runs at a time.
+
 Datasets are session-scoped: at most 30 per session (the oldest finished ones are pruned),
 and the datasets of sessions idle for seven days are removed.
 
@@ -339,6 +358,7 @@ A malformed value in any of these stops the service at startup instead of fallin
     │   │   ├── health.py        # /health
     │   │   ├── algorithms.py    # /algorithms, /sample-logs, /recent-logs, /log-stats, /analyze
     │   │   ├── factor_analysis.py # /factor-analysis: catalog, datasets, analyze, export
+    │   │   ├── interpretation.py  # /factor-analysis/.../interpret and interpretation/status
     │   │   └── jobs.py          # /jobs, /jobs/events (SSE), /progress, /download, /notes
     │   ├── algorithms/
     │   │   ├── base.py          # AlgorithmBase, ParameterSpec, Artifact, AnalysisResult, RunContext
@@ -353,6 +373,8 @@ A malformed value in any of these stops the service at startup instead of fallin
     │   │   ├── catalog.py       # measures, miners, feature groups, bundled data, samples
     │   │   ├── storage.py       # session-scoped datasets on disk
     │   │   └── export.py        # loadings as CSV / LaTeX, matrix as CSV
+    │   ├── interpretation/      # factor names by Claude: payload, prompt, client, cache, limits
+    │   ├── scripts/             # precompute_interpretations.py
     │   ├── datasets/            # bundled scores and sample logs/nets, see PROVENANCE.md
     │   ├── vendored/comfy/      # ComFy sources, see PROVENANCE.md
     │   ├── vendored/comfy_log/  # ComFy for log measures constants, MIT

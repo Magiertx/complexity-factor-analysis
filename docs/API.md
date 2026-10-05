@@ -111,6 +111,8 @@ Details in [Factor analysis](#factor-analysis) below.
 | GET | `/factor-analysis/datasets/{id}/download` | The cleaned matrix as CSV. |
 | POST | `/factor-analysis/datasets/{id}/analyze` | Bartlett, KMO with the MSA filter, eigenvalues, factor analysis and factor groups. |
 | POST | `/factor-analysis/datasets/{id}/export` | The loadings table as CSV or LaTeX. |
+| GET | `/factor-analysis/interpretation/status` | Whether factors can be interpreted by Claude, and with which model. |
+| POST | `/factor-analysis/datasets/{id}/interpret` | Names and short interpretations of the factors by Claude (optional, needs an API key on the server). |
 
 ### Job lifecycle
 
@@ -134,7 +136,7 @@ Details in [Factor analysis](#factor-analysis) below.
 
 ## Notes & limits
 
-- **Rate limits** (per source IP, tunable via `RATE_LIMIT_*` in `.env`): `60/hour` for `POST /algorithms/{id}/analyze`, `60/hour` for `POST /factor-analysis/datasets` (`RATE_LIMIT_DATASETS`; choosing a bundled dataset counts too), `600/minute` for `GET /factor-analysis/datasets/{id}`, which the UI polls (`RATE_LIMIT_DATASET_STATUS`), `120/minute` for factor-analysis `analyze` and `export` (`RATE_LIMIT_FA_ANALYZE`), `300/hour` for `POST /log-stats`, `120/minute` for everything else. A 429 carries `detail` and `"code": "rate_limited"`.
+- **Rate limits** (per source IP, tunable via `RATE_LIMIT_*` in `.env`): `60/hour` for `POST /algorithms/{id}/analyze`, `60/hour` for `POST /factor-analysis/datasets` (`RATE_LIMIT_DATASETS`; choosing a bundled dataset counts too), `600/minute` for `GET /factor-analysis/datasets/{id}`, which the UI polls (`RATE_LIMIT_DATASET_STATUS`), `120/minute` for factor-analysis `analyze`, `export` and `interpret` (`RATE_LIMIT_FA_ANALYZE`), `300/hour` for `POST /log-stats`, `120/minute` for everything else. A 429 carries `detail` and `"code": "rate_limited"`. Interpretations that call Claude are limited further, see [Interpretation by Claude](#interpretation-by-claude).
 - **Job quota:** at most 12 queued or running jobs per session (`MAX_ACTIVE_JOBS_PER_SESSION`), and at most 4 dataset jobs over all sessions (`MAX_ACTIVE_DATASET_JOBS`); both answer 429.
 - **Upload size:** 100 MB per file. Factor-analysis datasets: at most 50 logs or 200 PNML
   files and 500 MB in total per request, `.xes.gz` counted decompressed.
@@ -263,6 +265,59 @@ and kept on another; the bundled log measures show this for `trace_len_hist6`.
 with its loadings (the pattern matrix for oblique rotations) and communality; in LaTeX a
 booktabs `tabular` with loadings at or above the threshold in bold, unless the communality is
 below `communality_threshold`.
+
+### Interpretation by Claude
+
+Optional. With `ANTHROPIC_API_KEY` set on the server, Claude (Anthropic) proposes a name and a
+short interpretation for each factor. Without a key, only the precomputed interpretations of
+the bundled datasets are served (see below).
+
+`GET /factor-analysis/interpretation/status` answers
+`{"available": bool, "model": str | null, "precomputed_only": bool}`: `available` when a key
+is configured, `model` the configured model id, `precomputed_only` when there is no key but
+precomputed interpretations exist.
+
+`POST /factor-analysis/datasets/{id}/interpret` takes the body of `analyze` plus
+`"language": "en" | "de"` (default `en`) and `"cached_only": bool` (default `false`). It runs
+the analysis with these parameters and sends its aggregated result to Claude: the kind,
+the number of observations, used and removed measures, Bartlett, KMO with the MSA per measure,
+eigenvalues, factor count and rotation, loadings, communalities, explained variance, the
+factor groups with their thresholds, the analysis warnings and the catalog definitions of the
+measures. Observation labels, dataset and file names and measure values are never sent.
+
+```json
+{ "factors": [ { "index": 1, "name": "Size", "summary": "Two or three sentences.",
+                 "driving_measures": ["Size", "Token split"], "confidence": "high" } ],
+  "overall": "One short paragraph.", "caveats": ["One sentence each."],
+  "model": "claude-opus-5-5", "created_at": "2026-10-05T20:56:17+00:00", "language": "en",
+  "prompt_version": "1", "cached": false, "precomputed": false }
+```
+
+- `factors[].index` counts from 1, as in "Factor 1" (the `factors` of `analyze` count from 0).
+  `driving_measures` only names measures of the analysis; `confidence` is `low`, `medium` or
+  `high`. `model` is the model that wrote the answer, a fallback model if the requested one
+  declined.
+- Results are cached by the cleaned data, the parameters (with the factor count the analysis
+  used), the language, the model and the prompt version. `cached: true` means no model call
+  was made for this request. Own datasets are cached in the session, bundled ones for all
+  sessions.
+- `precomputed: true` marks an interpretation from
+  `src/AlgoService/datasets/interpretations/`, made with
+  `scripts/precompute_interpretations.py` for a bundled dataset with all measures and the
+  default parameters. It is served without a key.
+- With `cached_only: true` the server never calls Claude and answers 204 when nothing is
+  stored; the UI uses it to show stored interpretations without spending anything.
+
+Errors carry `detail` and `code`. Analysis errors come first, as for `analyze`. Then: 503
+`interpretation_unavailable` (no key), 429 `rate_limited` (more than
+`INTERPRETATION_RATE_LIMIT`, default `10/hour`, live calls in this session) or
+`interpretation_daily_cap` (more than `INTERPRETATION_DAILY_CAP`, default 200, live calls today
+over all sessions), 422 `interpretation_refused` (the model and its fallback declined), 502
+`interpretation_auth` (key rejected), `interpretation_incomplete` (answer cut off) or
+`interpretation_failed`, 429 `interpretation_upstream_limited` (Anthropic rate
+limit), 503 `interpretation_upstream_unavailable` or `interpretation_unreachable`, 504
+`interpretation_timeout`. Cache hits and precomputed answers do not count towards the two
+limits.
 
 ### Example
 

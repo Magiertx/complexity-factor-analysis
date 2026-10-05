@@ -111,9 +111,10 @@ server {
 
     location / {
         proxy_pass http://127.0.0.1:3000;
-        # The frontend waits up to 120 s for the API, e.g. for the first fit of a large dataset.
-        proxy_read_timeout 130s;
-        proxy_send_timeout 130s;
+        # The frontend waits up to 180 s for the API, e.g. for the first fit of a large dataset
+        # or an interpretation by Claude.
+        proxy_read_timeout 190s;
+        proxy_send_timeout 190s;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -163,11 +164,46 @@ MAX_ACTIVE_JOBS_PER_SESSION=3
 # RATE_LIMIT_DATASETS=60/hour
 # RATE_LIMIT_FA_ANALYZE=120/minute
 
+# --- Interpretation by Claude (optional), see "Interpretation by Claude" below ---
+# ANTHROPIC_API_KEY=
+# INTERPRETATION_RATE_LIMIT=10/hour
+# INTERPRETATION_DAILY_CAP=200
+
 # --- Docker network ---
 # Only needed if 172.28.0.0/16 collides with something on the host. Used as the compose
 # network subnet and as the range algoservice trusts for X-Forwarded-For.
 # COMPOSE_SUBNET=172.28.0.0/16
 ```
+
+### Interpretation by Claude
+
+The optional interpretation step sends aggregated analysis results to the Anthropic API and
+needs an API key. Without one, the step only shows the precomputed interpretations of the
+bundled datasets.
+
+- **Key.** Create a key for this deployment in the Claude Console
+  (<https://platform.claude.com>), ideally in a workspace of its own, and put it into `.env` as
+  `ANTHROPIC_API_KEY`. Compose passes it to `algoservice` only. The service reads it from the
+  environment, never logs it and never returns it; the browser only learns whether a key is
+  set and which model is configured. Rotate it in the Console if it leaks.
+- **Spending.** Set a monthly spending limit for the workspace or organisation in the Claude
+  Console; once it is reached, interpretations fail with an error until it is raised. On the server,
+  `INTERPRETATION_RATE_LIMIT` (default `10/hour` per session) and `INTERPRETATION_DAILY_CAP`
+  (default 200 per day over all sessions) bound the number of live calls; the counters live in
+  Redis. One call sends a few thousand input tokens and may use up to 16,000 output tokens
+  including thinking. Cached and precomputed interpretations cost nothing.
+- **Model.** `INTERPRETATION_MODEL` (default `claude-opus-5-5`) and `INTERPRETATION_EFFORT`
+  (default `high`). Requests opt into Anthropic's server-side fallback (`fallbacks: "default"`),
+  so a request the model's safety classifiers decline is retried on the recommended fallback
+  model; the footer of the result names the model that answered. Another model has to support
+  that option and structured outputs.
+- **Network.** `algoservice` needs outbound HTTPS to `api.anthropic.com` for live calls; an
+  interpretation takes up to about a minute, at most 170 s.
+- **Precomputed results.** `src/AlgoService/scripts/precompute_interpretations.py` writes the
+  interpretations of the bundled datasets for the default parameters to
+  `src/AlgoService/datasets/interpretations/`; they are part of the image. Run it with a key
+  from `src/AlgoService` and rebuild. Rerun it with `--force` after changing the prompt
+  (`PROMPT_VERSION` in `interpretation/prompt.py`).
 
 ---
 

@@ -13,7 +13,7 @@ Schalk do it, but interactively in the browser.
   density, control-flow complexity, separability, ...); *Log complexity* on the event-log
   measures of [feeed](https://github.com/andreamalhera/feeed), grouped as in ComFy for log
   measures. Both walk through the same five steps: data, dataset, suitability, factors,
-  loadings.
+  loadings, followed by an optional interpretation.
 - **Data from anywhere.** Bundled datasets (the scores of the ComFy paper for seven miners,
   and the measures of 2112 Process Discovery Contest logs), an own CSV, up to 50 event logs
   (`.xes`, `.xes.gz`) that are mined with any of ComFy's nine ProM miners, or up to 200 PNML
@@ -28,6 +28,14 @@ Schalk do it, but interactively in the browser.
   ComFy's own report to four decimals; a test checks it. Oblique rotations report correct
   communalities, the structure matrix and the factor correlations.
 - **Export.** Loadings as CSV or as a LaTeX `tabular` for the paper, the cleaned matrix as CSV.
+- **Interpretation by Claude (optional).** A button after the loadings asks Claude (Anthropic)
+  for a name and a short interpretation of each factor, with the measures it rests on, a
+  confidence and caveats such as cross-loadings or a failed Bartlett or KMO test. Only
+  aggregated results and the measure definitions are sent, never measure values, row labels
+  or file names. It needs `ANTHROPIC_API_KEY` on the server, is limited per session and per
+  day, and caches every answer; precomputed interpretations of the bundled datasets work
+  without a key and offline. Details in [`docs/API.md`](docs/API.md#interpretation-by-claude)
+  and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#interpretation-by-claude).
 - **Single-log inspection.** "Inspect a single log" runs the chosen miners on one log and shows
   the measures next to the rendered nets.
 - **Scriptable.** Everything the UI does goes through a documented HTTP API
@@ -159,6 +167,8 @@ All of this is set in `docker-compose.yml`; reverse proxy, TLS, volumes and back
     ├── AlgoService/           # FastAPI backend + Celery worker
     │   ├── algorithms/        #   tool adapters (ComFy)
     │   ├── factor_analysis/   #   factor analysis: numerics, datasets, export
+    │   ├── interpretation/    #   interpretation of the factors by Claude
+    │   ├── scripts/           #   precompute_interpretations.py
     │   ├── datasets/          #   bundled scores and sample logs/nets, see PROVENANCE.md
     │   ├── vendored/comfy/    #   ComFy sources, see PROVENANCE.md
     │   ├── vendored/comfy_log/ #  ComFy for log measures (constants), MIT
