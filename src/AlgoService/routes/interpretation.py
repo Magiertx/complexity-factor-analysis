@@ -16,7 +16,6 @@ from interpretation import client, quota, store
 from interpretation.client import InterpretationError
 from interpretation.payload import build_payload, data_hash, effective_params
 from interpretation.prompt import PROMPT_VERSION
-from interpretation.schema import tidy
 from routes.factor_analysis import AnalyzeRequest, _AnalysisFailed, _analyze, _ready_matrix
 
 router = APIRouter(prefix="/factor-analysis", tags=["factor analysis"])
@@ -127,9 +126,7 @@ async def interpret_dataset(
                 "model": answer.model,
                 "prompt_version": PROMPT_VERSION,
                 "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                "interpretation": tidy(
-                    answer.interpretation, result["used_measures"], result["n_factors"]
-                ).model_dump(),
+                "interpretation": answer.interpretation.model_dump(),
             }
             await run_in_threadpool(store.write_cached, session_id, meta, key, entry)
     except InterpretationError as e:

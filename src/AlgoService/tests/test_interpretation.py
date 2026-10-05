@@ -474,12 +474,25 @@ def test_answer_of_the_fallback_model(client, claude, csv_dataset):
         (lambda: _message("not json"), "interpretation_failed"),
         (lambda: _message(None), "interpretation_failed"),
         (lambda: _message('{"factors": []}'), "interpretation_failed"),
+        (lambda: _message('{"factors": [], "overall": "Nothing.", "caveats": []}'), "interpretation_failed"),
     ],
 )
 def test_unusable_answers(client, claude, csv_dataset, message, code):
     claude.outcome = message()
     r = _interpret(client, csv_dataset[0], auto_msa_filter=False)
     assert r.status_code == 502 and r.json()["code"] == code
+
+
+def test_incomplete_answer_is_not_cached(client, claude, csv_dataset):
+    def first_factor_only(kwargs):
+        answer = json.loads(_answer_for(kwargs).content[0].text)
+        answer["factors"] = answer["factors"][:1]
+        return _message(json.dumps(answer))
+
+    claude.outcome = first_factor_only
+    r = _interpret(client, csv_dataset[0], auto_msa_filter=False)
+    assert r.status_code == 502 and r.json()["code"] == "interpretation_failed"
+    assert _interpret(client, csv_dataset[0], auto_msa_filter=False, cached_only=True).status_code == 204
 
 
 @pytest.mark.parametrize("limit, value", [("MAX_FACTORS", 1), ("MAX_MEASURES", 5), ("MAX_MESSAGE_CHARS", 1000)])

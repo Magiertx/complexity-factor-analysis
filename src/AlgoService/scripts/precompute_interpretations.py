@@ -30,7 +30,6 @@ from interpretation import client, store  # noqa: E402
 from interpretation.client import InterpretationError  # noqa: E402
 from interpretation.payload import build_payload, data_hash, default_params, effective_params  # noqa: E402
 from interpretation.prompt import LANGUAGES, PROMPT_VERSION  # noqa: E402
-from interpretation.schema import tidy  # noqa: E402
 
 
 def bundled_matrix(entry: dict[str, Any]) -> tuple[pd.DataFrame, list[dict[str, Any]]]:
@@ -57,7 +56,7 @@ async def precompute(entry: dict[str, Any], language: str, key: str) -> dict[str
         "model": answer.model,
         "prompt_version": PROMPT_VERSION,
         "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "interpretation": tidy(answer.interpretation, result["used_measures"], result["n_factors"]).model_dump(),
+        "interpretation": answer.interpretation.model_dump(),
     }
 
 

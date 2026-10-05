@@ -25,7 +25,7 @@ from config import logger
 from env_config import choice, positive_int, rate_limit_var, text
 
 from .prompt import SYSTEM_PROMPT, user_message
-from .schema import Interpretation
+from .schema import Interpretation, tidy
 
 EFFORTS = ("low", "medium", "high", "xhigh", "max")
 
@@ -143,6 +143,7 @@ def _sdk_error(e: anthropic.AnthropicError) -> InterpretationError:
 
 @dataclass
 class Answer:
+    #: Tidied: one entry per factor, only measures of the analysis.
     interpretation: Interpretation
     #: The model that wrote the answer; a fallback model if the requested one declined.
     model: str
@@ -196,4 +197,9 @@ async def interpret(payload: dict[str, Any], language: str, key: str) -> Answer:
     except (ValidationError, ValueError):
         logger.warning("Interpretation did not match the schema")
         raise InterpretationError(502, "interpretation_failed", "The model returned no usable answer.") from None
+    result = tidy(result, payload["used_measures"], payload["n_factors"])
+    # A valid answer can still leave factors out; it is neither shown nor cached.
+    if len(result.factors) != payload["n_factors"]:
+        logger.warning("Interpretation covers %s of %s factors", len(result.factors), payload["n_factors"])
+        raise InterpretationError(502, "interpretation_failed", "The model returned no usable answer.")
     return Answer(interpretation=result, model=response.model)
