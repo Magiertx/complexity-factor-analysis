@@ -90,13 +90,13 @@ def test_sample_logs_endpoint(client):
     assert r.status_code == 200
     logs = r.json()
     assert isinstance(logs, list)
-    assert [log["id"] for log in logs] == ["sepsis_cases_mini"]
+    assert [log["id"] for log in logs] == ["small_example"]
     for log in logs:
         assert {"id", "name", "description", "filename", "size_bytes"} <= set(log)
 
 
 def test_log_stats_for_sample_log(client):
-    r = client.post("/log-stats", data={"sample_log_id": "sepsis_cases_mini"})
+    r = client.post("/log-stats", data={"sample_log_id": "small_example"})
     assert r.status_code == 200, r.text
     stats = r.json()["stats"]
     assert stats["num_traces"] > 0
@@ -104,11 +104,11 @@ def test_log_stats_for_sample_log(client):
 
 
 def test_analyze_with_sample_log(client, stub_algorithm):
-    r = client.post(f"/algorithms/{stub_algorithm}/analyze", data={"sample_log_id": "sepsis_cases_mini"})
+    r = client.post(f"/algorithms/{stub_algorithm}/analyze", data={"sample_log_id": "small_example"})
     assert r.status_code == 200, r.text
     submission = r.json()
     assert submission["algorithm"] == stub_algorithm
-    assert submission["filename"] == "sepsis_cases_mini.xes"
+    assert submission["filename"] == "small_example.xes"
     assert submission["status"] == "pending"
 
 

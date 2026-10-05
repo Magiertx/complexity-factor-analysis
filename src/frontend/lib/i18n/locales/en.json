@@ -57,7 +57,7 @@
       "algo_help_title": "Algorithm explanation",
       "algo_help_content": "Next to every algorithm sits a ? icon. Clicking it opens a panel with a detailed explanation — what the algorithm does, how it works, when to use it.",
       "logsource_title": "Pick an event log",
-      "logsource_content": "Two sources for the log: 'Upload File' for your own XES or JSON files (recent uploads are listed below), or 'Use Sample' for the bundled test logs.",
+      "logsource_content": "Two sources for the log: 'Upload File' for your own XES or JSON files (recent uploads are listed below), or 'Use Sample' for the bundled example log.",
       "params_title": "Parameters",
       "params_content": "Every tool has its own parameters with sensible defaults. The preset bar above lets you save and reuse configurations — also in Batch.",
       "run_title": "Start the run",

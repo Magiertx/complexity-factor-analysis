@@ -289,11 +289,10 @@ async def _resolve_log_to_tmp(
 
 SAMPLE_LOGS = [
     {
-        "id": "sepsis_cases_mini",
-        "name": "Sepsis Cases Mini",
-        "description": "A small subset of the sepsis cases log, enough to discover a model and compute its complexity.",
-        "filename": "sepsis_cases_mini.xes",
-        "size_bytes": 4837,
+        "id": "small_example",
+        "name": "Small example log",
+        "description": "Six synthetic traces over the activities a to e, enough to discover a model and compute its complexity.",
+        "filename": "small_example.xes",
     }
 ]
 
@@ -310,7 +309,11 @@ def list_algorithms() -> dict[str, Any]:
 @router.get("/sample-logs")
 def list_sample_logs() -> list[dict[str, Any]]:
     """List all available sample event logs."""
-    return SAMPLE_LOGS
+    sample_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "sample_logs")
+    return [
+        {**s, "size_bytes": os.path.getsize(os.path.join(sample_dir, s["filename"]))}
+        for s in SAMPLE_LOGS
+    ]
 
 
 @router.post("/log-stats")

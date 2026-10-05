@@ -13,11 +13,11 @@ from pathlib import Path
 
 import pytest
 
-SAMPLE = Path(__file__).resolve().parent.parent / "sample_logs" / "sepsis_cases_mini.xes"
+SAMPLE = Path(__file__).resolve().parent.parent / "sample_logs" / "small_example.xes"
 
 
 def _build_json_log_bytes() -> bytes:
-    """Convert the sepsis sample log to the JSON shape the reader expects."""
+    """Convert the sample log to the JSON shape the reader expects."""
     import pm4py
 
     log = pm4py.read_xes(str(SAMPLE), return_legacy_log_object=True)
@@ -81,11 +81,11 @@ def _wait_for_job(client, job_id: str, timeout: float = 30.0) -> dict:
 def test_json_upload_runs_end_to_end(client, stub_algorithm, json_log_bytes):
     r = client.post(
         f"/algorithms/{stub_algorithm}/analyze",
-        files={"file": ("sepsis.json", json_log_bytes, "application/json")},
+        files={"file": ("sample.json", json_log_bytes, "application/json")},
     )
     assert r.status_code == 200, r.text
     submission = r.json()
-    assert submission["filename"] == "sepsis.json"
+    assert submission["filename"] == "sample.json"
 
     job = _wait_for_job(client, submission["job_id"])
     assert job["status"] == "completed", f"job failed: {job.get('error')}"

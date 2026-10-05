@@ -117,7 +117,7 @@ def test_ordinary_gzipped_log_still_reads():
 
     from algorithms._log_io import read_event_log
 
-    source = os.path.join(os.path.dirname(__file__), "..", "sample_logs", "sepsis_cases_mini.xes")
+    source = os.path.join(os.path.dirname(__file__), "..", "sample_logs", "small_example.xes")
     with tempfile.NamedTemporaryFile(suffix=".xes.gz", delete=False) as fh:
         path = fh.name
     try:

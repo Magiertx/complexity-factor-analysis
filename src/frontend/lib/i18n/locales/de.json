@@ -57,7 +57,7 @@
       "algo_help_title": "Algorithmus-Erklärung",
       "algo_help_content": "Neben jedem Algorithmus sitzt ein ?-Symbol. Klick öffnet ein Fenster mit ausführlicher Erklärung — was er macht, wie er funktioniert, wann er sinnvoll ist.",
       "logsource_title": "Event-Log auswählen",
-      "logsource_content": "Zwei Quellen für den Log: 'Datei hochladen' für eigene XES- oder JSON-Dateien (kürzlich hochgeladene stehen darunter), oder 'Sample verwenden' für mitgelieferte Test-Logs.",
+      "logsource_content": "Zwei Quellen für den Log: 'Datei hochladen' für eigene XES- oder JSON-Dateien (kürzlich hochgeladene stehen darunter), oder 'Sample verwenden' für den mitgelieferten Beispiel-Log.",
       "params_title": "Parameter",
       "params_content": "Jedes Tool hat eigene Parameter mit sinnvollen Defaults. Über die Preset-Leiste oben kannst du Konfigurationen speichern und wiederverwenden — auch im Batch.",
       "run_title": "Run starten",

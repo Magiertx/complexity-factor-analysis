@@ -16,7 +16,7 @@ import pytest
 
 SMOKE_PARAMS = {"discovery_algorithms": ["Inductive miner"], "complexity_measures": ["Size"]}
 
-_SAMPLE_LOG = os.path.join(os.path.dirname(__file__), "..", "sample_logs", "sepsis_cases_mini.xes")
+_SAMPLE_LOG = os.path.join(os.path.dirname(__file__), "..", "sample_logs", "small_example.xes")
 
 
 def _prom4py_alive() -> bool:
