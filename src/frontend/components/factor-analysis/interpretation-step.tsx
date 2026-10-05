@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useId, useRef, useState } from "react";
 import { AlertTriangle, Loader2, Sparkles } from "lucide-react";
 import type { FactorInterpretation, InterpretationStatus } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,19 @@ export function InterpretationView({
   const t = useT();
   const available = !!status?.available;
   const fresh = !!interpretation && !stale;
+  const hintId = useId();
+
+  // Tell screen readers when a requested interpretation has arrived.
+  const [announcement, setAnnouncement] = useState("");
+  const wasRunning = useRef(running);
+  useEffect(() => {
+    if (wasRunning.current && !running && interpretation && !error) {
+      setAnnouncement(t("factor.interpretation.ready", { n: interpretation.factors.length }));
+    } else if (running) {
+      setAnnouncement("");
+    }
+    wasRunning.current = running;
+  }, [running, interpretation, error, t]);
 
   return (
     <div className="space-y-4">
@@ -61,6 +75,7 @@ export function InterpretationView({
             onClick={onInterpret}
             disabled={!available || !canRun || running}
             title={available ? undefined : t("factor.interpretation.needs_key")}
+            aria-describedby={!available && !running ? hintId : undefined}
           >
             {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             {interpretation ? t("factor.interpretation.again") : t("factor.interpretation.button")}
@@ -71,7 +86,7 @@ export function InterpretationView({
             </span>
           ) : (
             !available && (
-              <span className="text-xs text-muted">
+              <span id={hintId} className="text-xs text-muted">
                 {statusFailed ? t("factor.interpretation.status_failed") : t("factor.interpretation.needs_key")}
               </span>
             )
@@ -81,6 +96,9 @@ export function InterpretationView({
       {status?.precomputed_only && !interpretation && (
         <p className="text-xs text-muted max-w-3xl">{t("factor.interpretation.precomputed_only")}</p>
       )}
+      <p role="status" className="sr-only">
+        {announcement}
+      </p>
       {error && (
         <p role="alert" className="text-xs text-danger-ink">
           {error}

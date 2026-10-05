@@ -373,6 +373,11 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               ? "active"
               : "locked",
   };
+  // Locked for want of a key, not because an earlier step is missing.
+  const stateLabels: Partial<Record<StepId, string>> =
+    resultState === "done" && interpStatus && !interpStatus.available && !interpretation
+      ? { interpretation: t("factor.interpretation.state_needs_key") }
+      : {};
 
   const updating = analyzing ? (
     <span className="inline-flex items-center gap-1.5 text-xs text-muted" role="status">
@@ -423,7 +428,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       </header>
 
       <div className="lg:grid lg:grid-cols-[12.5rem_minmax(0,1fr)] lg:gap-8 lg:items-start">
-        <StepRail states={states} />
+        <StepRail states={states} stateLabels={stateLabels} />
 
         <div className="space-y-6 min-w-0">
           <StepSection
@@ -651,7 +656,14 @@ function AnalysisError({
 
 const STEP_IDS: StepId[] = ["data", "dataset", "suitability", "factors", "loadings", "interpretation"];
 
-function StepRail({ states }: { states: Record<StepId, StepState> }) {
+function StepRail({
+  states,
+  stateLabels,
+}: {
+  states: Record<StepId, StepState>;
+  /** Replaces the generic text of a state for screen readers, e.g. why a step is locked. */
+  stateLabels: Partial<Record<StepId, string>>;
+}) {
   const t = useT();
   return (
     <nav aria-label={t("factor.steps.aria")} className="mb-6 lg:mb-0 lg:sticky lg:top-6">
@@ -676,7 +688,7 @@ function StepRail({ states }: { states: Record<StepId, StepState> }) {
                   <span className="hidden lg:block text-[11px] text-muted leading-snug">
                     {t(`factor.rail.${id}`)}
                   </span>
-                  <span className="sr-only"> ({t(`factor.state.${state}`)})</span>
+                  <span className="sr-only"> ({stateLabels[id] ?? t(`factor.state.${state}`)})</span>
                 </span>
               </a>
             </li>

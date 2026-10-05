@@ -76,7 +76,7 @@
       "step1_title": "Zwei Reiter: Modelle und Logs",
       "step1_p1": "Modellkomplexität analysiert Maße von Petri-Netzen, die aus Event-Logs gefunden und mit ComFy vermessen werden. Log-Komplexität analysiert Maße der Event-Logs selbst, berechnet mit feeed.",
       "step1_p2": "Beide Reiter funktionieren gleich.",
-      "step2_title": "Fünf Schritte, von oben nach unten",
+      "step2_title": "Schritt für Schritt, von oben nach unten",
       "step2_p1": "Daten, Datensatz, Eignung, Faktoren, Ladungen. Jede Änderung einer Einstellung startet die Analyse sofort neu, und die Ladungen lassen sich als CSV oder LaTeX exportieren. In einem optionalen sechsten Schritt schlägt Claude Namen für die Faktoren vor.",
       "step2_p2": "Das ? neben einer Überschrift erklärt die Kennzahl; der Tour-Knopf führt durch die Seite.",
       "step3_title": "Mehr, wenn du es brauchst",
@@ -756,14 +756,14 @@
       "intro": "Claude liest die Ladungen zusammen mit den Definitionen der Maße und schlägt für jeden Faktor einen Namen und eine kurze Interpretation vor. An Anthropic gehen die Namen der Maße (Spalten), ihre Katalogdefinitionen und aggregierte Ergebnisse wie Ladungen und Teststatistiken; Messwerte, Zeilenbezeichnungen und Dateinamen werden nicht gesendet. Jede Anfrage kostet Geld, daher läuft sie nur, wenn du sie anforderst.",
       "button": "Faktoren interpretieren",
       "again": "Neu interpretieren",
-      "running": "Claude interpretiert die Faktoren. Das kann eine Minute dauern.",
+      "running": "Claude interpretiert die Faktoren. Das kann bis zu drei Minuten dauern.",
       "needs_key": "Erfordert einen API-Schlüssel auf dem Server",
       "precomputed_only": "Ohne API-Schlüssel auf dem Server werden nur die vorberechneten Interpretationen der mitgelieferten Datensätze mit den Standardeinstellungen angezeigt.",
       "status_failed": "Ob die Interpretation verfügbar ist, ließ sich nicht prüfen.",
       "precomputed": "vorberechnet",
       "precomputed_title": "Für diesen Datensatz mit den Standardeinstellungen vorab berechnet",
       "factor": "Faktor {n}",
-      "confidence": "Sicherheit: {level}",
+      "confidence": "Konfidenz: {level}",
       "confidence_level": {
         "low": "niedrig",
         "medium": "mittel",
@@ -775,7 +775,9 @@
       "footer": "Automatisch erzeugt von {model} (Anthropic). Bitte mit den Ladungen abgleichen.",
       "stale": "Seit dieser Interpretation haben sich die Einstellungen oder die Sprache geändert; sie passt womöglich nicht mehr zu den Ergebnissen oben.",
       "failed": "Die Interpretation ist fehlgeschlagen.",
-      "stale_again": "Interpretiere neu, um sie zu aktualisieren."
+      "stale_again": "Interpretiere neu, um sie zu aktualisieren.",
+      "ready": "Die Interpretation von {n} Faktoren ist fertig.",
+      "state_needs_key": "braucht einen API-Schlüssel"
     }
   },
   "inspect": {
