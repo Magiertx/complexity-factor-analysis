@@ -15,7 +15,7 @@ Six containerised services. The frontend is the only thing a user ever talks to;
 │                  FastAPI AlgoService                       │
 │                  (src/AlgoService)                         │
 │                                                            │
-│   routes/  algorithms/  jobs_db.py  config.py              │
+│   routes/  algorithms/  factor_analysis/  jobs_db.py       │
 └──┬──────────────┬───────────────┬───────────────┬──────────┘
    │              │               │               │
    │ imports      │ HTTP /plugin  │ asyncpg       │ Celery
@@ -29,9 +29,9 @@ vendored/comfy  prom4py        postgres          redis ──▶ celery_worker
 
 | Container        | Role                                                                                                  |
 |------------------|-------------------------------------------------------------------------------------------------------|
-| `frontend`       | Next.js (App Router, TS). UI, file upload, parameter form, artifact rendering. No analysis logic.     |
-| `algoservice`    | FastAPI app. Tool registry, job orchestration, SSE, ZIP export, input validation.                     |
-| `celery_worker`  | Same image as `algoservice`, runs analyses in a separate process so the API stays responsive.         |
+| `frontend`       | Next.js (App Router, TS). UI, file upload, parameter forms, charts, artifact rendering. No analysis logic. |
+| `algoservice`    | FastAPI app. Tool registry, factor analysis, job orchestration, SSE, ZIP export, input validation.    |
+| `celery_worker`  | Same image as `algoservice`; runs single-log analyses and dataset jobs in a separate process.         |
 | `prom4py`        | Java 8 HTTP server (`launch.sh`) wrapping a frozen ProM bundle from Zenodo. Runs all ComFy miners.    |
 | `postgres`       | Persistent state: `Run`, `Artifact`, `Session`, `User`, `Preset` (see `models.py`).                    |
 | `redis`          | Celery broker + result backend, and pub/sub channel `jobs_updates` that drives the SSE stream.        |
@@ -39,7 +39,7 @@ vendored/comfy  prom4py        postgres          redis ──▶ celery_worker
 Shared volumes:
 
 - `uploaded_logs` (mounted at `/app/uploaded_logs` in `algoservice` and `celery_worker`): uploaded logs, scoped per session, at most the 10 most recent files per session.
-- `artifacts_data` (mounted at `/app/artifacts`): large artifact files such as images and downloads.
+- `artifacts_data` (mounted at `/app/artifacts`): large artifact files such as images and downloads, and the factor-analysis datasets under `artifacts/datasets/<session_id>/<dataset_id>/`.
 - `postgres_data`: Postgres data directory.
 
 ## Tool categories
@@ -85,21 +85,79 @@ celery_worker.run_analysis → routes.algorithms.run_analysis_task
    │    - publish final update
 ```
 
-`POST /algorithms/{id}/batch` works the same way with `celery_worker.run_batch`: one job
-runs the tool over up to 10 logs in sequence, prefixes every artifact with its log's file
-name, and puts a summary table of the per-log stats and a table of failed logs on top. A
-failing log does not stop the batch. Batch runs are stored with `algorithm_id =
-"_batch:<tool id>"`.
+Dataset jobs of the factor analysis (`POST /factor-analysis/datasets` with `source=logs` or
+`pnml`) use the same machinery with `celery_worker.build_dataset`; see below. Older runs of the
+removed batch mode keep their `algorithm_id = "_batch:<tool id>"` and still show in the history.
 
 The frontend subscribes to `GET /jobs/events` (Server-Sent Events). `srv_main.py` runs a `redis_listener()` background task that bridges the Redis pub/sub channel into the in-process `SSEConnectionManager` (`config.py`), which fans out to all open browser connections.
 
 Cooperative cancellation: `POST /progress/{task_id}/abort` flips `Run.status` to `aborted`; the tool's progress callback raises on the next tick.
+
+## Factor analysis
+
+The main feature. Code in `factor_analysis/`, endpoints in `routes/factor_analysis.py`, the
+API in [`API.md`](API.md#factor-analysis).
+
+A **dataset** is a numeric matrix, rows = observations, columns = measures, of one *kind*:
+
+- `model`: ComFy measures of Petri nets. Rows are "log / miner" (logs discovered with the
+  ProM4Py miners) or one row per PNML file (read with pm4py).
+- `log`: event-log measures computed with [feeed](https://github.com/andreamalhera/feeed),
+  grouped as in ComFy for log measures (`vendored/comfy_log/Constants.py`). One row per log.
+
+Sources:
+
+| Source | Ready | Where the values come from |
+|---|---|---|
+| `bundled` | at once | `datasets/manifest.json`: the scores of the ComFy paper (7 miners × 288 PDC 2025 logs) and the PDC log measures of ComFy for log measures (2112 logs). |
+| `csv` | at once | One uploaded CSV; a non-numeric first column holds the row labels. |
+| `logs` | job | Up to 50 XES files, or the bundled sample `pdc-sample-logs` (4 PDC logs). |
+| `pnml` | job | Up to 200 PNML files, or the bundled sample `pdc-sample-models` (32 nets). |
+
+```
+POST /factor-analysis/datasets (logs | pnml)
+   │ 1. Validate kind, source, measures/miners/groups; save, decompress and XXE-check the files
+   │ 2. Write artifacts/datasets/<session>/<id>/meta.json (status "computing")
+   │ 3. Insert Run row with algorithm_id "_dataset:<kind>"; enqueue celery_worker.build_dataset
+   ▼
+routes.factor_analysis.run_dataset_task → factor_analysis.compute
+   │  model/logs: per log and miner: discover via ProM4Py, then each ComFy measure
+   │  model/pnml: per net: read with pm4py, then each ComFy measure
+   │  log/logs:   per log: feeed features of the chosen groups
+   │  progress and abort as for single runs; failed inputs are listed, not fatal
+   ▼
+storage.store_matrix: clean (core.clean_matrix), write the matrix, status "ready"
+```
+
+The **analysis** (`core.analyze`) is synchronous and runs in the API process on every
+parameter change:
+
+1. Cleaning: non-numeric, constant, incomplete and perfectly correlated measures are dropped
+   (the first of a duplicate pair is kept), as in ComFy for log measures.
+2. Bartlett's test of sphericity, with log det R from the eigenvalues (the numerically stable
+   variant of ComFy for log measures).
+3. KMO/MSA; with the filter on, every measure below the threshold is removed and the MSA is
+   recomputed until all remaining measures pass, as ComFy's
+   `repeat_calculate_measure_of_sampling_adequacy` does.
+4. Eigenvalues of the correlation matrix for the scree plot; the suggestion is the Kaiser
+   criterion (eigenvalue > 1).
+5. `factor_analyzer` with the chosen rotation, then each measure is assigned to the factor with
+   its largest absolute loading if that reaches the threshold.
+
+A singular correlation matrix (common with log measures, e.g. `iqr = q3 - q1`) is analysed as
+upstream does and reported as a warning. Fits are cached by data, factor count and rotation;
+at most two run at once per API process. On the bundled Inductive-miner scores the result
+equals ComFy's own report to four decimals (`tests/test_factor_analysis_core.py`).
+
+Datasets are session-scoped: at most 30 per session (the oldest finished ones are pruned),
+and the datasets of sessions idle for seven days are removed.
 
 ## Sessions
 
 Every browser gets an anonymous session via `SessionMiddleware` (cookie `session_id`). The session id scopes:
 
 - `uploaded_logs/<session_id>/`: recent uploads, retrieved via `GET /recent-logs`.
+- `artifacts/datasets/<session_id>/`: factor-analysis datasets.
 - `Run.owner_session_id`: `GET /jobs`, `GET /jobs/{id}`, `DELETE /jobs[/{id}]` all filter by session.
 
 `User` and `Preset` tables exist in the schema for future authenticated use; no login flow is wired up.
@@ -160,11 +218,33 @@ Adapters use the constructor helpers from `algorithms.base`: `stat`, `table`, `i
 
 ## REST API
 
-The full list is in [`API.md`](API.md). In short: `GET /algorithms`, `GET /sample-logs`,
-`GET /recent-logs`, `POST /log-stats`, `POST /algorithms/{id}/analyze`,
-`POST /algorithms/{id}/batch`, and the job endpoints under `/jobs` and `/progress`.
+The full list is in [`API.md`](API.md). In short: the factor analysis under
+`/factor-analysis` (`catalog`, `datasets`, `datasets/{id}`, `.../download`, `.../analyze`,
+`.../export`), the single-log endpoints `GET /algorithms`, `GET /sample-logs`,
+`GET /recent-logs`, `POST /log-stats`, `POST /algorithms/{id}/analyze`, and the job endpoints
+under `/jobs` and `/progress`.
 
 ## Frontend flow
+
+The two main tabs, **Model complexity** (`/`) and **Log complexity** (`/log`), are the same
+five-step view (`components/factor-analysis/`) for the two kinds:
+
+1. **Data**: the sources of the catalog (`GET /factor-analysis/catalog?kind=...`): bundled
+   datasets, CSV, logs (or the sample logs) and, on the model tab, PNML (or the sample nets);
+   miners and measures or feature groups for the computed sources. Submitting calls
+   `POST /factor-analysis/datasets`; a job is polled through `GET /datasets/{id}` and can be
+   cancelled with the abort endpoint.
+2. **Dataset**: size, dropped measures with reasons, a preview, the CSV download.
+3. **Suitability**: Bartlett and KMO, the MSA filter and a per-measure MSA table with manual
+   exclusion.
+4. **Factors**: hand-written SVG scree plot, factor count and rotation.
+5. **Loadings**: heatmap table, communalities, variance, factor groups, CSV/LaTeX export.
+
+Every parameter change re-runs `POST /datasets/{id}/analyze`, debounced by 300 ms. The id of
+the last dataset is kept per tab in `localStorage`; dataset jobs in the run history link to
+their tab with `?dataset=<id>`.
+
+The single-log ComFy workbench lives at `/inspect` ("Inspect a single log" on the model tab):
 
 1. On load: `GET /algorithms` → sidebar grouped by `tool_type`; `GET /sample-logs`, `GET /recent-logs` for the log-source picker.
 2. The user selects a tool → the parameter form is rendered from its `parameters_schema`.
@@ -174,15 +254,18 @@ The full list is in [`API.md`](API.md). In short: `GET /algorithms`, `GET /sampl
 6. When `status="completed"`, `<ResultPanel>` renders the artifacts; `<Artifacts>` dispatches to one component per artifact `kind`.
 7. Optional: ZIP download via `/jobs/{job_id}/download`.
 
-The `/batch` page does the same for several logs at once. `/runs` lists the session's history,
-`/settings` holds local preferences and presets, `/api-access` shows scripting examples.
+`/runs` lists the session's history, `/settings` holds local preferences and presets,
+`/api-access` shows scripting examples.
 
 ## Input safety
 
 Every endpoint that accepts a log enforces:
 
-- Extension whitelist: `.xes`, `.xes.gz`, `.xml`, `.json`.
-- Size cap: 100 MB per file (streamed; rejected mid-upload if exceeded), 200 MB per batch.
+- Extension whitelist: `.xes`, `.xes.gz`, `.xml`, `.json` for single runs; `.xes`, `.xes.gz`
+  for dataset logs, `.pnml` for nets, `.csv` for tables.
+- Size cap: 100 MB per file (streamed; rejected mid-upload if exceeded); per dataset request
+  at most 50 logs or 200 nets and 500 MB in total, counted after decompression. A CSV may have
+  at most 100 000 rows and 1000 columns.
 - A `.xes.gz` may expand to at most 1 GB.
 - XML hardening for `.xes` / `.xml` and secondary XML files: `lxml.etree.XMLParser(resolve_entities=False, no_network=True, dtd_validation=False)`, and any `DOCTYPE` declaration is rejected outright (blocks XXE / billion-laughs / external DTD).
 
@@ -190,18 +273,19 @@ Every endpoint that accepts a log enforces:
 
 `slowapi` middleware, configured in `config.py`. Counter storage is the Redis container when `REDIS_URL` is set (shared across processes), in-memory otherwise. The key comes from `config.rate_limit_key`, which wraps `get_remote_address`.
 
-Every limit is overridable from the environment (`RATE_LIMIT_DEFAULT`, `_LOG_STATS`, `_ANALYZE`, `_BATCH`), read through `env_config.rate_limit`. Defaults per client:
+Every limit is overridable from the environment (`RATE_LIMIT_DEFAULT`, `_LOG_STATS`, `_ANALYZE`, `_DATASETS`, `_FA_ANALYZE`), read through `env_config.rate_limit`. Defaults per client:
 
 | Endpoint | Default |
 |---|---|
 | any | `120/minute` |
 | `/log-stats` | `300/hour` |
 | `/algorithms/{id}/analyze` | `60/hour` |
-| `/algorithms/{id}/batch` | `20/hour` |
+| `POST /factor-analysis/datasets` | `60/hour` |
+| `/factor-analysis/datasets/{id}/analyze`, `.../export` | `120/minute` |
 
 - Disabled when `RATE_LIMIT_DISABLED=1` or when `PYTEST_CURRENT_TEST` is set; `conftest.py` sets this before the app is imported.
 
-**Request limits are not the load limit.** They cap how often someone *starts* work; one batch request is up to 10 runs. What bounds the machine is `MAX_ACTIVE_JOBS_PER_SESSION` (`jobs_db`, default 12), which counts what is queued or running. That is the value to lower for a public demo.
+**Request limits are not the load limit.** They cap how often someone *starts* work; one dataset request can be 50 logs times several miners. What bounds the machine is `MAX_ACTIVE_JOBS_PER_SESSION` (`jobs_db`, default 12), which counts what is queued or running. That is the value to lower for a public demo.
 
 A malformed value in any of these stops the service at startup instead of falling back to the default, so a limit an operator believes they lowered cannot silently stay unapplied. Overrides in force are logged once at startup.
 
@@ -224,13 +308,14 @@ A malformed value in any of these stops the service at startup instead of fallin
     │   ├── database.py          # SQLAlchemy async engine, AsyncSessionLocal, Base
     │   ├── models.py            # User, Session, Run, Artifact, Preset
     │   ├── jobs_db.py           # repository: CRUD on Runs / Artifacts
-    │   ├── celery_worker.py     # Celery app + run_analysis / run_batch task wrappers
+    │   ├── celery_worker.py     # Celery app + run_analysis / build_dataset task wrappers
     │   ├── zip_export.py        # /jobs/{id}/download
     │   ├── log_stats.py         # descriptive stats behind /log-stats
     │   ├── alembic.ini, alembic/  # schema migrations
     │   ├── routes/
     │   │   ├── health.py        # /health
-    │   │   ├── algorithms.py    # /algorithms, /sample-logs, /recent-logs, /log-stats, /analyze, /batch
+    │   │   ├── algorithms.py    # /algorithms, /sample-logs, /recent-logs, /log-stats, /analyze
+    │   │   ├── factor_analysis.py # /factor-analysis: catalog, datasets, analyze, export
     │   │   └── jobs.py          # /jobs, /jobs/events (SSE), /progress, /download, /notes
     │   ├── algorithms/
     │   │   ├── base.py          # AlgorithmBase, ParameterSpec, Artifact, AnalysisResult, RunContext
@@ -239,16 +324,25 @@ A malformed value in any of these stops the service at startup instead of fallin
     │   │   ├── _prom4py.py      # shared ProM4Py client
     │   │   ├── _petrinet.py     # Petri net → base64 PNG
     │   │   └── comfy.py         # ComFy adapter
+    │   ├── factor_analysis/
+    │   │   ├── core.py          # cleaning, Bartlett, KMO/MSA filter, factor fit, assignment
+    │   │   ├── compute.py       # measure values from logs (ProM4Py miners, feeed) or PNML
+    │   │   ├── catalog.py       # measures, miners, feature groups, bundled data, samples
+    │   │   ├── storage.py       # session-scoped datasets on disk
+    │   │   └── export.py        # loadings as CSV / LaTeX, matrix as CSV
+    │   ├── datasets/            # bundled scores and sample logs/nets, see PROVENANCE.md
     │   ├── vendored/comfy/      # ComFy sources, see PROVENANCE.md
+    │   ├── vendored/comfy_log/  # ComFy for log measures constants, MIT
     │   ├── sample_logs/         # bundled XES samples
     │   ├── tests/
     │   ├── Dockerfile
     │   └── requirements.txt
     └── frontend/
-        ├── app/                 # Next.js App Router: /, /batch, /runs, /settings, /api-access
-        ├── components/          # workbench, batch builder, jobs drawer, artifact viewers, ui/
+        ├── app/                 # Next.js App Router: /, /log, /inspect, /runs, /settings, /api-access
+        ├── components/          # factor-analysis/, workbench, jobs drawer, artifact viewers, ui/
         ├── lib/
         │   ├── api.ts           # typed AlgoService client
+        │   ├── factor-analysis.ts # formatting and defaults of the factor analysis view
         │   ├── app-config.ts    # APP_NAME, REPO_URL
         │   └── i18n/            # en/de strings
         ├── Dockerfile
