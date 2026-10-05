@@ -59,7 +59,8 @@ const DE: CatalogContent = {
     Cyclicity: "Anteil der Knoten, die auf einem Zyklus liegen.",
     "Coefficient of network connectivity": "Kanten je Knoten.",
     Density: "Kanten geteilt durch die größtmögliche Zahl der Kanten, 2·|T|·|P|.",
-    "Number of duplicate tasks": "Wiederholungen von Transitionsbeschriftungen.",
+    "Number of duplicate tasks":
+      "Wiederholungen von Transitionsbeschriftungen; stille Transitionen zählen als Wiederholungen einer Beschriftung.",
     "Number of empty sequence flows": "Stellen zwischen einem parallelen Split und einem parallelen Join.",
   },
   logMeasure: "{group} (feeed).",

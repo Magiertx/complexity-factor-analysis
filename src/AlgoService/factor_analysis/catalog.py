@@ -30,7 +30,7 @@ MODEL_MEASURE_DESCRIPTIONS = {
     "Cyclicity": "Share of nodes that lie on a cycle.",
     "Coefficient of network connectivity": "Arcs per node.",
     "Density": "Arcs divided by the largest possible number of arcs, 2·|T|·|P|.",
-    "Number of duplicate tasks": "Repetitions of transition labels.",
+    "Number of duplicate tasks": "Repetitions of transition labels; silent transitions count as repetitions of one label.",
     "Number of empty sequence flows": "Places between a parallel split and a parallel join.",
 }
 
