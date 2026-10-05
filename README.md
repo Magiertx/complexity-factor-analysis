@@ -1,5 +1,7 @@
 # Complexity Factor Analysis
 
+[![CI](https://github.com/Magiertx/complexity-factor-analysis/actions/workflows/ci.yml/badge.svg)](https://github.com/Magiertx/complexity-factor-analysis/actions/workflows/ci.yml)
+
 A web tool for finding out which complexity measures of process models and event logs
 describe the same underlying dimension. It collects measures over many models or logs, checks
 whether a factor analysis is meaningful, and groups the measures into a few factors, the way
