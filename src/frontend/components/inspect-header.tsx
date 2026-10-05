@@ -10,7 +10,7 @@ export function InspectHeader() {
     <header className="flex items-center gap-3">
       <Link
         href="/"
-        className="h-9 w-9 grid place-items-center rounded-md border border-border hover:bg-surface transition text-muted hover:text-fg shrink-0"
+        className="h-9 w-9 grid place-items-center rounded-md bg-tile hover:bg-accent/[0.08] transition text-muted hover:text-fg shrink-0"
         aria-label={t("inspect.back_aria")}
         title={t("inspect.back_aria")}
       >

@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
 import type { ParameterSpec } from "@/lib/api";
-import { Input, Select } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useT, useLocale, localizedParamHelp } from "@/lib/i18n";
@@ -134,15 +135,12 @@ function Field({
           <Select
             id={id}
             value={String(value ?? "")}
-            onChange={(e) => onChange(e.target.value)}
+            onValueChange={(v) => onChange(v)}
             disabled={disabled}
             aria-labelledby={labelId}
             aria-describedby={hintId}
-          >
-            {(spec.options ?? []).map((o) => (
-              <option key={o} value={o}>{o}</option>
-            ))}
-          </Select>
+            options={(spec.options ?? []).map((o) => ({ value: o, label: o }))}
+          />
         </div>
         {hint}
         {error && <span className="block text-[11px] text-danger-ink mt-1.5 font-medium">{error}</span>}

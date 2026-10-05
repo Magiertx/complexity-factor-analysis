@@ -43,7 +43,7 @@ export function AlgorithmExplainerModal({
     >
       <div className="absolute inset-0" onClick={onClose} aria-hidden />
 
-      <div className="relative w-full max-w-2xl max-h-[85vh] rounded-lg border border-border bg-surface shadow-2xl overflow-hidden flex flex-col">
+      <div className="relative w-full max-w-2xl max-h-[85vh] rounded-lg bg-surface shadow-2xl ring-1 ring-border/70 overflow-hidden flex flex-col">
         <div className="flex items-start justify-between px-6 py-4 border-b border-border shrink-0">
           <div className="flex items-start gap-3 min-w-0">
             <div className="h-10 w-10 rounded-md bg-accent/10 grid place-items-center shrink-0">

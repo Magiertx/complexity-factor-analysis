@@ -26,7 +26,7 @@ import {
 } from "@/lib/api";
 import { APP_NAME, REPO_URL } from "@/lib/app-config";
 import { Button } from "./ui/button";
-import { Select } from "./ui/input";
+import { Select } from "./ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Segmented } from "./ui/segmented";
 import {
@@ -223,7 +223,7 @@ export function SettingsView() {
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="h-9 w-9 grid place-items-center rounded-md border border-border hover:bg-surface transition text-muted hover:text-fg"
+            className="h-9 w-9 grid place-items-center rounded-md bg-tile hover:bg-accent/[0.08] transition text-muted hover:text-fg"
             aria-label={t("settings.back_aria")}
           >
             <ArrowLeft className="h-4 w-4" />
@@ -236,7 +236,7 @@ export function SettingsView() {
           </div>
         </div>
         {savedToast && (
-          <div className="flex items-center gap-2 text-xs text-muted bg-tile rounded-md px-3 py-2 border border-border">
+          <div className="flex items-center gap-2 text-xs text-muted bg-tile rounded-md px-3 py-2">
             <Check className="h-3.5 w-3.5 text-accent-ink" />
             {savedToast}
           </div>
@@ -291,32 +291,20 @@ export function SettingsView() {
             <div className="flex items-center gap-3">
               <Select
                 value={defaultAlgo}
-                onChange={(e) => handleDefaultAlgoChange(e.target.value)}
+                onValueChange={handleDefaultAlgoChange}
                 className="min-w-[280px] w-auto"
-              >
-                <option value="">{t("settings.defaults.none_option")}</option>
-                {categories.map((cat) => {
-                  const items = grouped[cat.id] || [];
-                  if (items.length === 0) return null;
-                  return (
-                    <optgroup key={cat.id} label={cat.label}>
-                      {items.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  );
-                })}
-                {/* Algorithms without a known category (defensive). */}
-                {algorithms
-                  .filter((a) => !categories.some((c) => c.id === a.tool_type))
-                  .map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name} ({TOOL_TYPE_LABEL[a.tool_type] || a.tool_type})
-                    </option>
-                  ))}
-              </Select>
+                aria-label={t("settings.defaults.default_algo_label")}
+                options={[
+                  { value: "", label: t("settings.defaults.none_option") },
+                  ...categories.flatMap((cat) =>
+                    (grouped[cat.id] || []).map((a) => ({ value: a.id, label: a.name, group: cat.label })),
+                  ),
+                  // Algorithms without a known category (defensive).
+                  ...algorithms
+                    .filter((a) => !categories.some((c) => c.id === a.tool_type))
+                    .map((a) => ({ value: a.id, label: `${a.name} (${TOOL_TYPE_LABEL[a.tool_type] || a.tool_type})` })),
+                ]}
+              />
               {defaultAlgo && (
                 <button
                   type="button"
@@ -374,7 +362,7 @@ export function SettingsView() {
             </div>
           </SettingRow>
           {presetImportError && (
-            <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger-ink">
+            <div className="flex items-start gap-2 rounded-md bg-danger/10 px-3 py-2 text-xs text-danger-ink">
               <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
               <span className="leading-relaxed">{presetImportError}</span>
             </div>
@@ -517,7 +505,7 @@ export function SettingsView() {
           >
             <Link
               href="/runs"
-              className="h-8 px-3 inline-flex items-center gap-1.5 rounded-md border border-border hover:bg-surface transition text-xs font-medium text-fg"
+              className="h-8 px-3 inline-flex items-center gap-1.5 rounded-md bg-tile hover:bg-accent/[0.08] transition text-xs font-medium text-fg"
             >
               <ExternalLink className="h-3.5 w-3.5" />
               {t("settings.storage.open_run_history")}

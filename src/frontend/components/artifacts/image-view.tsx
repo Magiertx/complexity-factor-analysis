@@ -122,7 +122,7 @@ export function ImageView({ artifact, runId, fixedHeight = false }: { artifact: 
 
   return (
     <>
-      <figure className="rounded-md border border-border overflow-hidden bg-white group relative">
+      <figure className="rounded-md bg-tile/40 overflow-hidden bg-white group relative">
         {/* Direct download button visible on hover */}
         <button
           onClick={(e) => {

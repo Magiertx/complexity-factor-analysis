@@ -12,7 +12,7 @@ export function LogDownload({ artifact }: { artifact: L }) {
   const t = useT();
   const sizeKb = Math.max(1, Math.round((artifact.data_base64.length * 0.75) / 1024));
   return (
-    <div className="rounded-md border border-border/60 bg-surface px-4 py-3 flex items-center justify-between gap-3">
+    <div className="rounded-md bg-tile/40 px-4 py-3 flex items-center justify-between gap-3">
       <div className="flex items-center gap-3 min-w-0">
         <div className="h-9 w-9 rounded-md bg-accent/10 grid place-items-center shrink-0">
           <FileCode2 className="h-4 w-4 text-accent-ink" />

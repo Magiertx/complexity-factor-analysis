@@ -22,7 +22,7 @@ export function LocaleToggle({ className }: { className?: string }) {
       title={label}
       onClick={() => setLocale(next)}
       className={cn(
-        "h-9 px-2.5 inline-flex items-center gap-1.5 rounded-md border border-border hover:bg-surface transition text-xs font-medium text-muted hover:text-fg",
+        "h-9 px-2.5 inline-flex items-center gap-1.5 rounded-md bg-tile hover:bg-accent/[0.08] transition text-xs font-medium text-muted hover:text-fg",
         className,
       )}
     >
@@ -39,7 +39,7 @@ export function LocaleSegmented({ className }: { className?: string }) {
       role="group"
       aria-label={t("header.locale_label")}
       className={cn(
-        "inline-flex rounded-md border border-border overflow-hidden text-xs font-medium",
+        "inline-flex rounded-md bg-tile/40 overflow-hidden text-xs font-medium",
         className,
       )}
     >

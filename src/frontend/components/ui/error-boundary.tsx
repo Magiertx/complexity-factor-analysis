@@ -31,7 +31,7 @@ function ErrorFallback({ error, onRetry }: { error: Error | null; onRetry: () =>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="p-3 bg-bg border border-border rounded text-xs font-mono overflow-auto max-h-[200px] text-fg/80">
+        <div className="p-3 bg-bg rounded text-xs font-mono overflow-auto max-h-[200px] text-fg/80">
           {error?.toString() || t("common.error_unknown")}
         </div>
         <div className="flex justify-end">

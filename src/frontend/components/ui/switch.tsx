@@ -31,8 +31,8 @@ export function Switch({
       disabled={disabled}
       onClick={() => onCheckedChange(!checked)}
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border border-border transition disabled:opacity-50",
-        checked ? "bg-accent" : "bg-tile",
+        "relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition disabled:opacity-50",
+        checked ? "bg-accent" : "bg-strong",
       )}
     >
       <span

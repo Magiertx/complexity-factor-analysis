@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
 const linkButtonClass =
-  "inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-border bg-tile hover:bg-surface text-fg text-sm font-medium transition";
+  "inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-tile hover:bg-accent/[0.08] text-fg text-sm font-medium transition";
 
 const PYTHON_EXAMPLE = `import time
 import requests
@@ -128,7 +128,7 @@ export function ApiAccessView() {
       <header className="flex items-center gap-3">
         <Link
           href="/"
-          className="h-9 w-9 grid place-items-center rounded-md border border-border hover:bg-surface transition text-muted hover:text-fg"
+          className="h-9 w-9 grid place-items-center rounded-md bg-tile hover:bg-accent/[0.08] transition text-muted hover:text-fg"
           aria-label={t("api_access.back_aria")}
         >
           <ArrowLeft className="h-4 w-4" />
@@ -189,7 +189,7 @@ export function ApiAccessView() {
               <div className="text-[10px] font-semibold uppercase tracking-wider text-muted/80">
                 {g.group}
               </div>
-              <ul className="rounded-md border border-border overflow-hidden">
+              <ul className="rounded-md bg-tile/40 overflow-hidden">
                 {g.items.map((e) => (
                   <li
                     key={`${e.method} ${e.path}`}
@@ -277,7 +277,7 @@ function CodeBlock({ label, icon, code }: { label: string; icon: React.ReactNode
   };
 
   return (
-    <div className="rounded-md border border-border overflow-hidden">
+    <div className="rounded-md bg-tile/40 overflow-hidden">
       <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border bg-tile/40">
         <div className="text-[11px] font-medium text-muted flex items-center gap-1.5">
           {icon}
@@ -286,7 +286,7 @@ function CodeBlock({ label, icon, code }: { label: string; icon: React.ReactNode
         <button
           type="button"
           onClick={handleCopy}
-          className="h-7 px-2.5 rounded border border-border bg-tile hover:bg-surface text-fg text-[11px] transition flex items-center gap-1.5"
+          className="h-7 px-2.5 rounded bg-tile hover:bg-accent/[0.08] text-fg text-[11px] transition flex items-center gap-1.5"
         >
           {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
           {copied ? t("api_access.copied") : t("api_access.copy")}

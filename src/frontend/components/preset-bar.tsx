@@ -109,7 +109,7 @@ export function PresetBar({ algorithmId, currentParams, onLoad, defaults, disabl
           {open && hasPresets && (
             <div
               role="listbox"
-              className="absolute left-0 top-full mt-1 z-20 min-w-[240px] max-w-[320px] rounded-md border border-border bg-surface shadow-lg p-1"
+              className="absolute left-0 top-full mt-1 z-20 min-w-[240px] max-w-[320px] rounded-md bg-surface shadow-xl ring-1 ring-border/70 p-1"
             >
               {presets.map((p) => (
                 <div key={p.name} className="flex items-stretch gap-1 group">

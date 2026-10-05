@@ -123,7 +123,7 @@ export function LoadingsView({ analysis, options, onOptions, measureName, onExpo
           </div>
           <Legend threshold={threshold} />
         </div>
-        <div className="rounded-md border border-border overflow-x-auto">
+        <div className="rounded-md bg-tile/40 overflow-x-auto">
           <table className="w-full text-xs">
             <caption className="sr-only">
               {t("factor.loadings.caption", { n: k, rotation: analysis.rotation })}
@@ -133,7 +133,7 @@ export function LoadingsView({ analysis, options, onOptions, measureName, onExpo
               <tr className="text-muted">
                 <th
                   scope="col"
-                  className={cn(cellPad, "py-2 sticky left-0 z-10 bg-bg text-left font-medium uppercase tracking-wide border-b border-border")}
+                  className={cn(cellPad, "py-2 sticky left-0 z-10 bg-bg text-left font-medium border-b border-border")}
                 >
                   {t("factor.loadings.col_measure")}
                 </th>
@@ -260,7 +260,7 @@ function FactorCorrelations({ values, pad }: { values: number[][]; pad: string }
   return (
     <div className="space-y-2">
       <HelpLabel label={t("factor.loadings.correlations_heading")} help={t("factor.help.factor_correlations")} />
-      <div className="rounded-md border border-border overflow-x-auto w-fit max-w-full">
+      <div className="rounded-md bg-tile/40 overflow-x-auto w-fit max-w-full">
         <table className="text-xs">
           <caption className="sr-only">{t("factor.loadings.correlations_heading")}</caption>
           <thead className="bg-bg text-muted">

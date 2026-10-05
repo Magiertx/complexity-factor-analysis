@@ -80,20 +80,20 @@ export function DatasetView({
           <a
             href={datasetDownloadUrl(dataset.id)}
             download
-            className="h-8 px-3 inline-flex items-center gap-1.5 rounded-md border border-border hover:bg-tile transition text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="h-8 px-3 inline-flex items-center gap-1.5 rounded-md bg-tile hover:bg-accent/[0.08] transition text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <Download className="h-3.5 w-3.5" />
             {t("factor.dataset.download_csv")}
           </a>
         </div>
-        <div className="rounded-md border border-border overflow-x-auto">
+        <div className="rounded-md bg-tile/40 overflow-x-auto">
           <table className="w-full text-xs">
             <caption className="sr-only">{t("factor.dataset.preview_heading")}</caption>
             <thead className="bg-bg">
               <tr>
                 <th
                   scope="col"
-                  className="sticky left-0 z-10 bg-bg px-3 py-2 text-left font-medium text-muted uppercase tracking-wide border-b border-border"
+                  className="sticky left-0 z-10 bg-bg px-3 py-2 text-left font-medium text-muted border-b border-border"
                 >
                   {t("factor.dataset.observation")}
                 </th>
@@ -121,7 +121,7 @@ export function DatasetView({
                   </th>
                   {row.map((v, j) => (
                     <td key={j} className="px-3 py-1.5 text-right font-mono tabular-nums whitespace-nowrap">
-                      {v === null ? <span className="text-muted">—</span> : formatNumber(v, 3)}
+                      {v === null ? <span className="text-muted">—</span> : formatNumber(v, Number.isInteger(v) ? 0 : 3)}
                     </td>
                   ))}
                 </tr>

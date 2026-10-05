@@ -23,7 +23,8 @@ import { JobNotesField } from "./job-notes-field";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Segmented } from "./ui/segmented";
-import { Input, Select } from "./ui/input";
+import { Input } from "./ui/input";
+import { Select } from "./ui/select";
 import { datasetJobHref, jobDisplayName } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
@@ -141,7 +142,7 @@ export function RunHistoryView() {
         <div className="flex items-center gap-3 min-w-0">
           <Link
             href="/"
-            className="h-9 w-9 grid place-items-center rounded-md border border-border hover:bg-surface transition text-muted hover:text-fg shrink-0"
+            className="h-9 w-9 grid place-items-center rounded-md bg-tile hover:bg-accent/[0.08] transition text-muted hover:text-fg shrink-0"
             aria-label={t("run_history.back_aria")}
           >
             <ArrowLeft className="h-4 w-4" />
@@ -159,7 +160,7 @@ export function RunHistoryView() {
             {t("run_history.refresh_button")}
           </Button>
           {toast && (
-            <span className="flex items-center gap-1.5 text-xs text-muted bg-tile rounded-md px-3 py-2 border border-border">
+            <span className="flex items-center gap-1.5 text-xs text-muted bg-tile rounded-md px-3 py-2">
               <Check className="h-3.5 w-3.5 text-accent-ink" />
               {toast}
             </span>
@@ -194,17 +195,14 @@ export function RunHistoryView() {
               <Filter className="h-3.5 w-3.5 text-muted" aria-hidden />
               <Select
                 value={algoFilter}
-                onChange={(e) => setAlgoFilter(e.target.value)}
+                onValueChange={setAlgoFilter}
                 className="min-w-[180px] w-auto"
                 aria-label={t("run_history.filter_algo_aria")}
-              >
-                <option value="">{t("run_history.filter_all_algorithms")}</option>
-                {algorithmOptions.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </Select>
+                options={[
+                  { value: "", label: t("run_history.filter_all_algorithms") },
+                  ...algorithmOptions.map((a) => ({ value: a.id, label: a.name })),
+                ]}
+              />
             </div>
           </div>
 
@@ -293,7 +291,7 @@ export function RunHistoryView() {
                     <div className="flex items-center gap-2 shrink-0">
                       <Link
                         href={detailHref}
-                        className="h-8 px-3 inline-flex items-center gap-1.5 rounded-md border border-border hover:bg-surface transition text-xs font-medium text-muted hover:text-fg"
+                        className="h-8 px-3 inline-flex items-center gap-1.5 rounded-md bg-tile hover:bg-accent/[0.08] transition text-xs font-medium text-muted hover:text-fg"
                         title={t("run_history.open_title")}
                       >
                         <ExternalLink className="h-3.5 w-3.5" />

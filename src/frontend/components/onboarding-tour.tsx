@@ -152,7 +152,7 @@ export function OnboardingTour({
     >
       <div className="absolute inset-0" onClick={finish} aria-hidden />
 
-      <div className="relative w-full max-w-md rounded-lg border border-border bg-surface shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-md rounded-lg bg-surface shadow-2xl ring-1 ring-border/70 overflow-hidden">
         <button
           type="button"
           onClick={finish}

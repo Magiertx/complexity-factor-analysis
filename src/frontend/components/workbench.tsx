@@ -1169,7 +1169,7 @@ export function Workbench() {
                               "flex items-center gap-2 rounded-md border border-dashed border-border px-2.5 py-2 text-[11px] text-muted transition",
                               selectedJobId
                                 ? "opacity-50 cursor-not-allowed"
-                                : "cursor-pointer hover:border-accent/50 hover:text-foreground",
+                                : "cursor-pointer hover:border-accent/50 hover:text-fg",
                             )}
                           >
                             <FileUp className="h-3.5 w-3.5 shrink-0" />

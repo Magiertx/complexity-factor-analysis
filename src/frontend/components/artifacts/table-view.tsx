@@ -40,13 +40,13 @@ export function TableView({ artifact, runId }: { artifact: T; runId?: string | n
   };
 
   return (
-    <div className="rounded-md border border-border overflow-hidden bg-surface">
+    <div className="rounded-md bg-tile/40 overflow-hidden bg-surface">
       <div className="px-3 py-2 border-b border-border bg-bg/50 flex items-center justify-between gap-3">
         <span className="text-xs text-muted font-medium">{t("artifacts.table.table_data_label")}</span>
         <button
           onClick={downloadCSV}
           title={t("artifacts.table.download_csv_title")}
-          className="h-7 px-2.5 rounded border border-border bg-tile hover:bg-surface text-fg transition flex items-center gap-1.5"
+          className="h-7 px-2.5 rounded bg-tile hover:bg-accent/[0.08] text-fg transition flex items-center gap-1.5"
         >
           <Download className="h-3.5 w-3.5" />
           <span className="text-xs">{t("artifacts.table.download_csv_button")}</span>

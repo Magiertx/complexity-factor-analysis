@@ -26,7 +26,7 @@ export function SiteHeader() {
           <LocaleToggle />
           <Link
             href="/api-access"
-            className="h-9 px-3 inline-flex items-center gap-1.5 rounded-md border border-border hover:bg-surface transition text-xs font-medium whitespace-nowrap text-muted hover:text-fg"
+            className="h-9 px-3 inline-flex items-center gap-1.5 rounded-md bg-tile hover:bg-accent/[0.08] transition text-xs font-medium whitespace-nowrap text-muted hover:text-fg"
             title={t("header.api_title", { app: APP_NAME })}
           >
             <Code2 className="h-3.5 w-3.5 shrink-0" />
@@ -36,7 +36,7 @@ export function SiteHeader() {
             href="/settings"
             aria-label={t("header.settings_label")}
             title={t("header.settings_title")}
-            className="h-9 w-9 grid place-items-center rounded-md border border-border hover:bg-surface transition text-muted hover:text-fg"
+            className="h-9 w-9 grid place-items-center rounded-md bg-tile hover:bg-accent/[0.08] transition text-muted hover:text-fg"
           >
             <SettingsIcon className="h-4 w-4" />
           </Link>

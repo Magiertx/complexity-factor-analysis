@@ -4,7 +4,7 @@ import { Minus, Plus, Sparkles } from "lucide-react";
 import { ROTATIONS, type FactorAnalysis, type Rotation } from "@/lib/api";
 import { ORTHOGONAL, formatPercent, type AnalysisOptions } from "@/lib/factor-analysis";
 import { useT } from "@/lib/i18n";
-import { Select } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { HelpLabel } from "./step-section";
 import { ScreePlot } from "./scree-plot";
 
@@ -25,7 +25,7 @@ export function FactorsView({ analysis, options, onOptions }: Props) {
     options.rotation === "none" ? "none" : ORTHOGONAL.includes(options.rotation) ? "orthogonal" : "oblique";
 
   const stepButton =
-    "h-9 w-9 grid place-items-center rounded-md border border-border hover:bg-tile transition disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+    "h-9 w-9 grid place-items-center rounded-md bg-tile hover:bg-accent/[0.08] transition disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_17rem]">
@@ -97,14 +97,9 @@ export function FactorsView({ analysis, options, onOptions }: Props) {
           <Select
             aria-label={t("factor.factors.rotation_label")}
             value={options.rotation}
-            onChange={(e) => onOptions({ rotation: e.target.value as Rotation })}
-          >
-            {ROTATIONS.map((r) => (
-              <option key={r} value={r}>
-                {t(`factor.factors.rotation.${r}`)}
-              </option>
-            ))}
-          </Select>
+            onValueChange={(v) => onOptions({ rotation: v as Rotation })}
+            options={ROTATIONS.map((r) => ({ value: r, label: t(`factor.factors.rotation.${r}`) }))}
+          />
           <p className="text-xs text-muted">{t(`factor.factors.rotation_hint.${rotationKind}`)}</p>
         </div>
       </div>

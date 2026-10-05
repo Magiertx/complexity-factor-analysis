@@ -6,8 +6,9 @@ type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
   primary: "bg-accent text-accent-fg hover:opacity-90",
-  secondary: "border border-border bg-tile hover:bg-surface text-fg",
-  outline: "border border-border hover:bg-surface text-fg",
+  // No borders: secondary actions sit on a tile, like every other control.
+  secondary: "bg-tile hover:bg-accent/[0.08] text-fg",
+  outline: "bg-tile hover:bg-accent/[0.08] text-fg",
   ghost: "hover:bg-surface text-fg",
 };
 const sizes: Record<Size, string> = {
