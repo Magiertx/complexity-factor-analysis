@@ -240,14 +240,19 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   }, [ready, datasetId, options]);
 
   // Show a stored interpretation of the analysis on screen without asking for a new one:
-  // precomputed for a bundled dataset, or requested before. Never calls the model.
-  const lookupInterpretation = !!interpStatus && (interpStatus.available || interpStatus.precomputed_only);
+  // precomputed for a bundled dataset, or requested before. Never calls the model. Without a
+  // key only bundled datasets can have one. The factor count of the analysis lets the server
+  // look it up without running the analysis again.
+  const lookupInterpretation =
+    !!interpStatus && (interpStatus.available || (interpStatus.precomputed_only && dataset?.source === "bundled"));
+  const analyzedFactors = analysis?.n_factors ?? null;
   useEffect(() => {
-    if (!ready || !datasetId || !analyzedOptions || !lookupInterpretation) return;
+    if (!ready || !datasetId || !analyzedOptions || analyzedFactors === null || !lookupInterpretation) return;
     const key = interpretationKey(datasetId, analyzedOptions, locale);
     if (interpretationRef.current?.key === key) return;
     const ctrl = new AbortController();
-    interpretDataset(datasetId, analyzedOptions, locale, { cachedOnly: true, signal: ctrl.signal })
+    const lookup = { ...analyzedOptions, n_factors: analyzedFactors };
+    interpretDataset(datasetId, lookup, locale, { cachedOnly: true, signal: ctrl.signal })
       .then((res) => {
         if (res) setInterpretation({ key, result: res });
       })
@@ -255,7 +260,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         // Nothing to show; asking for an interpretation reports errors.
       });
     return () => ctrl.abort();
-  }, [ready, datasetId, analyzedOptions, locale, lookupInterpretation]);
+  }, [ready, datasetId, analyzedOptions, analyzedFactors, locale, lookupInterpretation]);
 
   const runInterpretation = async () => {
     if (!datasetId) return;
