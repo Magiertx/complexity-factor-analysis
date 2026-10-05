@@ -26,9 +26,9 @@ const securityHeaders = [
 
 const nextConfig = {
   experimental: {
-    // Requests through the /api rewrite are cut after 30 s by default; dataset uploads and
-    // factor fits over many measures can take longer.
-    proxyTimeout: 120_000,
+    // Requests through the /api rewrite are cut after 30 s by default; dataset uploads, factor
+    // fits over many measures and an interpretation by Claude can take longer.
+    proxyTimeout: 180_000,
   },
   output: "standalone",
   async headers() {
