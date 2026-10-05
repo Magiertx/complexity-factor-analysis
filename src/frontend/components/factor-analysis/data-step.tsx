@@ -244,7 +244,7 @@ export function DataForm({ kind, catalog, submitting, submitError, onSubmit, onC
                 key={s.id}
                 type="button"
                 onClick={() => chooseSample(s.id)}
-                className="text-xs text-accent hover:underline text-left"
+                className="text-xs text-accent-ink hover:underline text-left"
               >
                 {t("factor.data.sample_use", { name: s.name, n: s.files.length })}
               </button>
@@ -253,7 +253,7 @@ export function DataForm({ kind, catalog, submitting, submitError, onSubmit, onC
       )}
 
       {notice && (
-        <p role="status" className="text-xs text-warn flex items-start gap-1.5">
+        <p role="status" className="text-xs text-warn-ink flex items-start gap-1.5">
           <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
           {notice}
         </p>
@@ -324,7 +324,7 @@ export function DataForm({ kind, catalog, submitting, submitError, onSubmit, onC
 
       {submitError && (
         <div role="alert" className="rounded-lg bg-danger/10 px-3.5 py-2.5 flex items-start gap-2.5 text-sm">
-          <AlertCircle className="h-4 w-4 text-danger shrink-0 mt-0.5" />
+          <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
           <span>{submitError}</span>
         </div>
       )}
@@ -418,7 +418,7 @@ function BundledList({
                   aria-label={t("factor.data.copy_citation")}
                   className="h-6 w-6 shrink-0 grid place-items-center rounded text-muted hover:text-fg hover:bg-bg/70 transition"
                 >
-                  {copied === b.id ? <Check className="h-3.5 w-3.5 text-success" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copied === b.id ? <Check className="h-3.5 w-3.5 text-success-ink" /> : <Copy className="h-3.5 w-3.5" />}
                 </button>
               </div>
             )}
@@ -495,7 +495,7 @@ function FileList({
               type="button"
               onClick={() => onRemove(i)}
               aria-label={t("factor.data.remove_file_aria", { name: f.name })}
-              className="h-5 w-5 grid place-items-center rounded text-muted hover:text-danger transition shrink-0"
+              className="h-5 w-5 grid place-items-center rounded text-muted hover:text-danger-ink transition shrink-0"
             >
               <X className="h-3 w-3" />
             </button>
@@ -587,7 +587,7 @@ function Checklist({
                   <span className="font-medium">{item.name}</span>
                   {item.slow && (
                     <span
-                      className="rounded bg-warn/15 text-warn px-1 text-[10px] font-medium"
+                      className="rounded bg-warn/15 text-warn-ink px-1 text-[10px] font-medium"
                       title={t("factor.data.slow_title")}
                     >
                       {t("factor.data.slow_badge")}
@@ -619,9 +619,9 @@ function Estimate({ rows, cols }: { rows: number; cols: number }) {
       )}
     >
       {tooFew || thin ? (
-        <AlertCircle className={cn("h-4 w-4 shrink-0", tooFew ? "text-danger" : "text-warn")} />
+        <AlertCircle className={cn("h-4 w-4 shrink-0", tooFew ? "text-danger-ink" : "text-warn-ink")} />
       ) : (
-        <Check className="h-4 w-4 shrink-0 text-success" />
+        <Check className="h-4 w-4 shrink-0 text-success-ink" />
       )}
       <div className="space-y-0.5">
         <div>{t("factor.data.estimate", { rows, cols })}</div>
@@ -652,7 +652,7 @@ export function DataSummary({
       <div className="space-y-3" role="status" aria-live="polite">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2 text-sm font-medium">
-            <Loader2 className="h-4 w-4 animate-spin text-accent" />
+            <Loader2 className="h-4 w-4 animate-spin text-accent-ink" />
             {t("factor.data.computing_title", { name: dataset.name })}
           </div>
           <Button variant="outline" size="sm" onClick={onCancelJob}>
@@ -685,7 +685,7 @@ export function DataSummary({
     return (
       <div className="space-y-3">
         <div role="alert" className="rounded-lg bg-danger/10 px-3.5 py-3 flex items-start gap-2.5">
-          <AlertCircle className="h-4 w-4 text-danger shrink-0 mt-0.5" />
+          <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
           <div className="text-sm">
             <div className="font-medium">{t("factor.data.failed_title")}</div>
             {dataset.error && <div className="text-muted mt-1 break-words">{dataset.error}</div>}
@@ -700,7 +700,7 @@ export function DataSummary({
     <div className="flex items-center justify-between gap-3 flex-wrap">
       <div className="flex items-center gap-3 min-w-0">
         <div className="h-9 w-9 rounded-md bg-success/10 grid place-items-center shrink-0">
-          <Check className="h-4 w-4 text-success" />
+          <Check className="h-4 w-4 text-success-ink" />
         </div>
         <div className="min-w-0">
           <div className="text-sm font-medium truncate">{dataset.name}</div>

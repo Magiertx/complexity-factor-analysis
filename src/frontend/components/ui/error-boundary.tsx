@@ -20,11 +20,11 @@ function ErrorFallback({ error, onRetry }: { error: Error | null; onRetry: () =>
   return (
     <Card className="max-w-[600px] mx-auto my-8 border-danger/40 bg-danger/5">
       <CardHeader className="flex flex-row items-center gap-3">
-        <div className="h-10 w-10 rounded-full bg-danger/10 grid place-items-center text-danger shrink-0">
+        <div className="h-10 w-10 rounded-full bg-danger/10 grid place-items-center text-danger-ink shrink-0">
           <AlertCircle className="h-5 w-5" />
         </div>
         <div>
-          <CardTitle className="text-lg font-bold text-danger">{t("common.error_title")}</CardTitle>
+          <CardTitle className="text-lg font-bold text-danger-ink">{t("common.error_title")}</CardTitle>
           <CardDescription className="text-sm mt-1 text-muted/80">
             {t("common.error_description")}
           </CardDescription>

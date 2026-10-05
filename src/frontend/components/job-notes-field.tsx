@@ -108,7 +108,7 @@ export function JobNotesField({ jobId, initialNotes, variant = "panel", onSaved 
                 <Check className="h-3 w-3" /> {t("common.save")}
               </Button>
             </div>
-            {error && <div className="text-[10px] text-danger">{error}</div>}
+            {error && <div className="text-[10px] text-danger-ink">{error}</div>}
           </div>
         )}
       </div>
@@ -166,7 +166,7 @@ export function JobNotesField({ jobId, initialNotes, variant = "panel", onSaved 
               </Button>
             </div>
           </div>
-          {error && <div className="text-xs text-danger">{error}</div>}
+          {error && <div className="text-xs text-danger-ink">{error}</div>}
         </div>
       )}
     </div>

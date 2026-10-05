@@ -47,7 +47,7 @@ export function AlgorithmExplainerModal({
         <div className="flex items-start justify-between px-6 py-4 border-b border-border shrink-0">
           <div className="flex items-start gap-3 min-w-0">
             <div className="h-10 w-10 rounded-md bg-accent/10 grid place-items-center shrink-0">
-              <HelpCircle className="h-5 w-5 text-accent" />
+              <HelpCircle className="h-5 w-5 text-accent-ink" />
             </div>
             <div className="min-w-0">
               <h2 id="explainer-title" className="text-base font-semibold tracking-tight truncate">
@@ -102,7 +102,7 @@ export function AlgorithmExplainerModal({
                   href={algo.paper_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-accent hover:underline"
+                  className="inline-flex items-center gap-1 text-accent-ink hover:underline"
                 >
                   {t("algorithm_explainer.paper_link")} <ExternalLink className="h-3 w-3" />
                 </a>
@@ -127,7 +127,7 @@ function Section({
   return (
     <section className="space-y-1.5">
       <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
-        <span className="text-accent">{icon}</span>
+        <span className="text-accent-ink">{icon}</span>
         {title}
       </h3>
       <div className="text-fg">{children}</div>

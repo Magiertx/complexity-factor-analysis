@@ -157,13 +157,13 @@ function Stat({
       className="inline-flex items-baseline gap-1.5 whitespace-nowrap rounded-md bg-tile/60 px-2.5 py-1"
       title={title}
     >
-      <span className={cn("self-center", accent === "warn" ? "text-warn" : "text-muted")}>
+      <span className={cn("self-center", accent === "warn" ? "text-warn-ink" : "text-muted")}>
         {icon}
       </span>
       <span
         className={cn(
           "font-semibold text-sm",
-          accent === "warn" ? "text-warn" : "text-fg",
+          accent === "warn" ? "text-warn-ink" : "text-fg",
         )}
       >
         {value}

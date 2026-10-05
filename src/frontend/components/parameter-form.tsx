@@ -145,7 +145,7 @@ function Field({
           </Select>
         </div>
         {hint}
-        {error && <span className="block text-[11px] text-danger mt-1.5 font-medium">{error}</span>}
+        {error && <span className="block text-[11px] text-danger-ink mt-1.5 font-medium">{error}</span>}
       </div>
     );
   }
@@ -223,7 +223,7 @@ function Field({
           })}
         </div>
         {hint}
-        {error && <span className="block text-[11px] text-danger mt-1.5 font-medium">{error}</span>}
+        {error && <span className="block text-[11px] text-danger-ink mt-1.5 font-medium">{error}</span>}
       </div>
     );
   }
@@ -244,7 +244,7 @@ function Field({
           />
         </div>
         {hint}
-        {error && <span className="block text-[11px] text-danger mt-1.5 font-medium">{error}</span>}
+        {error && <span className="block text-[11px] text-danger-ink mt-1.5 font-medium">{error}</span>}
       </div>
     );
   }
@@ -268,7 +268,7 @@ function Field({
         />
       </div>
       {hint}
-      {error && <span className="block text-[11px] text-danger mt-1.5 font-medium">{error}</span>}
+      {error && <span className="block text-[11px] text-danger-ink mt-1.5 font-medium">{error}</span>}
     </div>
   );
 }

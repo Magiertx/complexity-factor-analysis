@@ -61,7 +61,7 @@ export function OnboardingTour({
   const STEPS: Step[] = useMemo(
     () => [
       {
-        icon: <Sparkles className="h-5 w-5 text-accent" />,
+        icon: <Sparkles className="h-5 w-5 text-accent-ink" />,
         title: t("tours.onboarding.step0_title", { app: APP_NAME }),
         body: (
           <>
@@ -71,7 +71,7 @@ export function OnboardingTour({
         ),
       },
       {
-        icon: <Network className="h-5 w-5 text-accent" />,
+        icon: <Network className="h-5 w-5 text-accent-ink" />,
         title: t("tours.onboarding.step1_title"),
         body: (
           <>
@@ -81,7 +81,7 @@ export function OnboardingTour({
         ),
       },
       {
-        icon: <ListChecks className="h-5 w-5 text-accent" />,
+        icon: <ListChecks className="h-5 w-5 text-accent-ink" />,
         title: t("tours.onboarding.step2_title"),
         body: (
           <>
@@ -91,7 +91,7 @@ export function OnboardingTour({
         ),
       },
       {
-        icon: <Layers className="h-5 w-5 text-accent" />,
+        icon: <Layers className="h-5 w-5 text-accent-ink" />,
         title: t("tours.onboarding.step3_title"),
         body: (
           <ul className="space-y-2 text-sm">

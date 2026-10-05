@@ -24,7 +24,7 @@ const tabClass = (active: boolean) =>
   );
 
 const iconClass = (active: boolean) =>
-  cn("h-4 w-4 shrink-0", active ? "text-accent" : "text-muted/70 group-hover:text-muted");
+  cn("h-4 w-4 shrink-0", active ? "text-accent-ink" : "text-muted/70 group-hover:text-muted");
 
 const descClass = (active: boolean) =>
   cn("hidden sm:block text-[10px] font-normal", active ? "text-muted" : "text-muted/60");

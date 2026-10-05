@@ -33,9 +33,9 @@ type StatusFilter = "all" | "active" | "completed" | "failed" | "aborted";
 const STATUS_BADGE: Record<Job["status"], string> = {
   pending: "bg-muted/15 text-muted",
   running: "bg-accent/[0.45] text-fg",
-  completed: "bg-success/15 text-success",
-  failed: "bg-danger/15 text-danger",
-  aborted: "bg-warn/15 text-warn",
+  completed: "bg-success/15 text-success-ink",
+  failed: "bg-danger/15 text-danger-ink",
+  aborted: "bg-warn/15 text-warn-ink",
 };
 
 export function RunHistoryView() {
@@ -160,7 +160,7 @@ export function RunHistoryView() {
           </Button>
           {toast && (
             <span className="flex items-center gap-1.5 text-xs text-muted bg-tile rounded-md px-3 py-2 border border-border">
-              <Check className="h-3.5 w-3.5 text-accent" />
+              <Check className="h-3.5 w-3.5 text-accent-ink" />
               {toast}
             </span>
           )}
@@ -169,7 +169,7 @@ export function RunHistoryView() {
 
       {loadError && (
         <Card className="border-danger/40">
-          <CardContent className="flex items-start gap-2 text-sm text-danger">
+          <CardContent className="flex items-start gap-2 text-sm text-danger-ink">
             <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
             <span>{t("run_history.load_error", { error: loadError })}</span>
           </CardContent>
@@ -271,7 +271,7 @@ export function RunHistoryView() {
                         {job.error && (
                           <>
                             <span>·</span>
-                            <span className="text-danger truncate max-w-[300px]" title={job.error}>
+                            <span className="text-danger-ink truncate max-w-[300px]" title={job.error}>
                               {job.error}
                             </span>
                           </>
@@ -317,7 +317,7 @@ export function RunHistoryView() {
                         <button
                           type="button"
                           onClick={() => setConfirmingDelete(job.id)}
-                          className="h-8 w-8 grid place-items-center rounded-md text-muted hover:text-danger hover:bg-surface transition"
+                          className="h-8 w-8 grid place-items-center rounded-md text-muted hover:text-danger-ink hover:bg-surface transition"
                           aria-label={t("run_history.delete_run_aria", { id: job.id })}
                           title={t("run_history.delete_run_title")}
                         >

@@ -237,7 +237,7 @@ export function SettingsView() {
         </div>
         {savedToast && (
           <div className="flex items-center gap-2 text-xs text-muted bg-tile rounded-md px-3 py-2 border border-border">
-            <Check className="h-3.5 w-3.5 text-accent" />
+            <Check className="h-3.5 w-3.5 text-accent-ink" />
             {savedToast}
           </div>
         )}
@@ -245,7 +245,7 @@ export function SettingsView() {
 
       {loadError && (
         <Card className="border-danger/40">
-          <CardContent className="flex items-start gap-2 text-sm text-danger">
+          <CardContent className="flex items-start gap-2 text-sm text-danger-ink">
             <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
             <span>{t("settings.load_error", { error: loadError })}</span>
           </CardContent>
@@ -374,7 +374,7 @@ export function SettingsView() {
             </div>
           </SettingRow>
           {presetImportError && (
-            <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger">
+            <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger-ink">
               <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
               <span className="leading-relaxed">{presetImportError}</span>
             </div>
@@ -412,7 +412,7 @@ export function SettingsView() {
                               type="button"
                               onClick={() => handleDeletePreset(group.algorithmId, preset.name)}
                               aria-label={t("settings.presets.delete_preset_aria", { name: preset.name })}
-                              className="ml-0.5 h-5 w-5 grid place-items-center rounded text-muted hover:text-danger hover:bg-bg transition"
+                              className="ml-0.5 h-5 w-5 grid place-items-center rounded text-muted hover:text-danger-ink hover:bg-bg transition"
                               title={t("settings.presets.delete_preset_title")}
                             >
                               <Trash2 className="h-3 w-3" />
@@ -569,7 +569,7 @@ export function SettingsView() {
                 href={REPO_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 hover:text-accent"
+                className="inline-flex items-center gap-1.5 hover:text-accent-ink"
               >
                 <Github className="h-3.5 w-3.5" />
                 {new URL(REPO_URL).host}
@@ -579,7 +579,7 @@ export function SettingsView() {
           )}
           <div className="flex items-center justify-between">
             <span className="text-muted">{t("settings.about.documentation_label")}</span>
-            <Link href="/" className="hover:text-accent inline-flex items-center gap-1.5">
+            <Link href="/" className="hover:text-accent-ink inline-flex items-center gap-1.5">
               {t("settings.about.back_to_workbench")}
             </Link>
           </div>

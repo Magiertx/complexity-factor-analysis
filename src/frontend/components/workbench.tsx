@@ -571,7 +571,7 @@ export function Workbench() {
     return (
       <Card>
         <CardContent className="flex items-start gap-3 py-6">
-          <AlertCircle className="h-5 w-5 text-danger shrink-0 mt-0.5" />
+          <AlertCircle className="h-5 w-5 text-danger-ink shrink-0 mt-0.5" />
           <div>
             <div className="font-medium">{t("workbench.load_error.title")}</div>
             <div className="text-sm text-muted mt-1">{loadError}</div>
@@ -696,16 +696,16 @@ export function Workbench() {
                 className={
                   "text-[10px] font-mono px-2 py-0.5 rounded-full uppercase shrink-0 " +
                   (selectedJobDetail.status === "completed"
-                    ? "bg-success/15 text-success "
+                    ? "bg-success/15 text-success-ink "
                     : "") +
                   (selectedJobDetail.status === "failed"
-                    ? "bg-danger/15 text-danger "
+                    ? "bg-danger/15 text-danger-ink "
                     : "") +
                   (selectedJobDetail.status === "aborted"
                     ? "bg-muted/15 text-muted "
                     : "") +
                   (selectedJobDetail.status === "running" || selectedJobDetail.status === "pending"
-                    ? "bg-accent/15 text-accent animate-pulse "
+                    ? "bg-accent/15 text-accent-ink animate-pulse "
                     : "")
                 }
               >
@@ -760,12 +760,12 @@ export function Workbench() {
                             setCopiedCitation(true);
                             setTimeout(() => setCopiedCitation(false), 2000);
                           }}
-                          className="flex items-center gap-1 text-[10px] text-muted hover:text-accent font-semibold transition"
+                          className="flex items-center gap-1 text-[10px] text-muted hover:text-accent-ink font-semibold transition"
                         >
                           {copiedCitation ? (
                             <>
-                              <Check className="h-3 w-3 text-success" />
-                              <span className="text-success">{t("workbench.algo_card.copied_bibtex")}</span>
+                              <Check className="h-3 w-3 text-success-ink" />
+                              <span className="text-success-ink">{t("workbench.algo_card.copied_bibtex")}</span>
                             </>
                           ) : (
                             <>
@@ -787,7 +787,7 @@ export function Workbench() {
                             document.body.removeChild(a);
                             URL.revokeObjectURL(url);
                           }}
-                          className="flex items-center gap-1 text-[10px] text-muted hover:text-accent font-semibold transition"
+                          className="flex items-center gap-1 text-[10px] text-muted hover:text-accent-ink font-semibold transition"
                           title={t("workbench.algo_card.download_bib_title")}
                         >
                           <Download className="h-3 w-3" />
@@ -808,7 +808,7 @@ export function Workbench() {
                   <div className="rounded-lg bg-tile p-4 flex items-center justify-between opacity-80">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="h-9 w-9 rounded-md bg-accent/10 grid place-items-center">
-                        <FileCheck2 className="h-4 w-4 text-accent" />
+                        <FileCheck2 className="h-4 w-4 text-accent-ink" />
                       </div>
                       <div className="min-w-0">
                         <div className="text-sm font-medium truncate">{selectedJobDetail.filename}</div>
@@ -851,7 +851,7 @@ export function Workbench() {
                         <div className="rounded-lg bg-tile p-4 flex items-center justify-between">
                           <div className="flex items-center gap-3 min-w-0">
                             <div className="h-9 w-9 rounded-md bg-success/10 grid place-items-center">
-                              <FileCheck2 className="h-4 w-4 text-success" />
+                              <FileCheck2 className="h-4 w-4 text-success-ink" />
                             </div>
                             <div className="min-w-0">
                               <div className="text-sm font-medium truncate">{uploadDisplayMeta.name}</div>
@@ -1122,7 +1122,7 @@ export function Workbench() {
                   <button
                     type="button"
                     onClick={() => setParamsDiffOnly((v) => !v)}
-                    className="text-[11px] font-medium text-accent hover:underline focus:outline-none focus-visible:ring-1 focus-visible:ring-accent/40 rounded px-1"
+                    className="text-[11px] font-medium text-accent-ink hover:underline focus:outline-none focus-visible:ring-1 focus-visible:ring-accent/40 rounded px-1"
                   >
                     {paramsDiffOnly ? t("workbench.params.show_all") : t("workbench.params.show_only_modified")}
                   </button>
@@ -1144,7 +1144,7 @@ export function Workbench() {
                         </div>
                         {chosen ? (
                           <div className="bg-tile rounded-md px-2.5 py-2 flex items-center gap-2 text-[11px]">
-                            <FileCheck2 className="h-3.5 w-3.5 text-accent shrink-0" />
+                            <FileCheck2 className="h-3.5 w-3.5 text-accent-ink shrink-0" />
                             <span className="truncate flex-1">{chosen.name}</span>
                             <button
                               type="button"
@@ -1158,7 +1158,7 @@ export function Workbench() {
                               disabled={!!selectedJobId}
                               title={t("file_drop.remove_aria")}
                               aria-label={t("file_drop.remove_aria")}
-                              className="text-muted hover:text-danger transition shrink-0 disabled:opacity-50"
+                              className="text-muted hover:text-danger-ink transition shrink-0 disabled:opacity-50"
                             >
                               <X className="h-3.5 w-3.5" />
                             </button>
@@ -1225,7 +1225,7 @@ export function Workbench() {
                 <div className="w-full space-y-2 mb-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-medium text-muted truncate max-w-[80%]">{progress.status}</span>
-                    <span className="font-bold text-accent shrink-0">{progress.percentage}%</span>
+                    <span className="font-bold text-accent-ink shrink-0">{progress.percentage}%</span>
                   </div>
                   <div className="w-full bg-border rounded-full h-2 overflow-hidden">
                     <div
@@ -1251,7 +1251,7 @@ export function Workbench() {
                           onClick={handleAbort}
                           variant="outline"
                           size="md"
-                          className="bg-danger/10 text-danger hover:bg-danger/20 hover:text-danger"
+                          className="bg-danger/10 text-danger-ink hover:bg-danger/20 hover:text-danger-ink"
                         >
                           {t("workbench.run_bar.abort")}
                         </Button>
@@ -1294,7 +1294,7 @@ export function Workbench() {
 
         {error && (
           <div className="rounded-lg bg-danger/10 px-4 py-3 flex items-start gap-3">
-            <AlertCircle className="h-4 w-4 text-danger shrink-0 mt-0.5" />
+            <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
             <div className="text-sm">{error}</div>
           </div>
         )}

@@ -261,7 +261,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     </EmptyStep>
   );
   const resultPlaceholder = (
-    <EmptyStep icon={pendingAnalysis ? <Loader2 className="h-5 w-5 animate-spin text-accent" /> : undefined}>
+    <EmptyStep icon={pendingAnalysis ? <Loader2 className="h-5 w-5 animate-spin text-accent-ink" /> : undefined}>
       {pendingAnalysis ? t("factor.empty.analyzing") : t("factor.empty.after_error")}
     </EmptyStep>
   );
@@ -309,7 +309,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           >
             {catalogError ? (
               <div role="alert" className="rounded-lg bg-danger/10 px-3.5 py-3 flex items-start gap-2.5 text-sm">
-                <AlertCircle className="h-4 w-4 text-danger shrink-0 mt-0.5" />
+                <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
                 <div className="space-y-2">
                   <div>{t("factor.data.catalog_error", { error: catalogError })}</div>
                   <Button size="sm" variant="outline" onClick={() => setCatalogAttempt((n) => n + 1)}>
@@ -345,7 +345,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               </div>
             )}
             {datasetError && (
-              <p role="alert" className="mt-3 text-xs text-danger">
+              <p role="alert" className="mt-3 text-xs text-danger-ink">
                 {datasetError}
               </p>
             )}
@@ -426,7 +426,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             ) : analysis ? (
               <div className="space-y-3">
                 {exportError && (
-                  <p role="alert" className="text-xs text-danger">
+                  <p role="alert" className="text-xs text-danger-ink">
                     {exportError}
                   </p>
                 )}
@@ -465,7 +465,7 @@ function AnalysisError({
   const t = useT();
   return (
     <div role="alert" className="rounded-lg bg-danger/10 px-3.5 py-3 flex items-start gap-2.5 text-sm">
-      <AlertCircle className="h-4 w-4 text-danger shrink-0 mt-0.5" />
+      <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
       <div className="space-y-2 min-w-0">
         <div>
           <div className="font-medium">{t("factor.analysis.failed_title")}</div>

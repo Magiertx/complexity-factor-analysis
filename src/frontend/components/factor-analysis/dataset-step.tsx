@@ -57,7 +57,7 @@ export function DatasetView({
       {failures.length > 0 && (
         <details className="rounded-lg bg-warn/10 px-3.5 py-2.5 text-xs">
           <summary className="cursor-pointer flex items-start gap-2 font-medium">
-            <AlertCircle className="h-4 w-4 text-warn shrink-0" />
+            <AlertCircle className="h-4 w-4 text-warn-ink shrink-0" />
             {t("factor.dataset.failures_heading", { n: failures.length })}
           </summary>
           <p className="text-muted mt-2">{t("factor.dataset.failures_hint")}</p>

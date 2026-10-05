@@ -19,9 +19,9 @@ export function StepBadge({ n, state, className }: { n: number; state: StepState
       aria-hidden
       className={cn(
         "h-7 w-7 shrink-0 rounded-full grid place-items-center text-xs font-semibold",
-        state === "done" && "bg-success/15 text-success",
-        state === "warn" && "bg-warn/15 text-warn",
-        state === "busy" && "bg-accent/15 text-accent",
+        state === "done" && "bg-success/15 text-success-ink",
+        state === "warn" && "bg-warn/15 text-warn-ink",
+        state === "busy" && "bg-accent/15 text-accent-ink",
         state === "active" && "bg-accent text-accent-fg",
         state === "locked" && "bg-tile text-muted",
         className,
@@ -111,7 +111,7 @@ export function HelpLabel({
           title={t("factor.help_aria", { topic: label })}
           className={cn(
             "h-6 w-6 rounded-full grid place-items-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-            open ? "text-accent bg-accent/10" : "text-muted hover:text-fg hover:bg-tile",
+            open ? "text-accent-ink bg-accent/10" : "text-muted hover:text-fg hover:bg-tile",
           )}
         >
           <HelpCircle className="h-3.5 w-3.5" />
@@ -136,7 +136,7 @@ export function PassBadge({ passed }: { passed: boolean }) {
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
-        passed ? "bg-success/15 text-success" : "bg-danger/15 text-danger",
+        passed ? "bg-success/15 text-success-ink" : "bg-danger/15 text-danger-ink",
       )}
     >
       {passed ? <Check className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}

@@ -326,7 +326,7 @@ export function JobsDrawer() {
                     type="button"
                     onClick={handleClearAll}
                     title={t("jobs.clear_all_title")}
-                    className="h-6 px-1.5 inline-flex items-center gap-1 rounded text-[10px] font-medium text-muted hover:text-danger hover:bg-danger/10 transition appearance-none"
+                    className="h-6 px-1.5 inline-flex items-center gap-1 rounded text-[10px] font-medium text-muted hover:text-danger-ink hover:bg-danger/10 transition appearance-none"
                   >
                     <Trash2 className="h-3 w-3" />
                     <span>{t("jobs.clear_button")}</span>
@@ -372,13 +372,13 @@ export function JobsDrawer() {
                 page is easy to find. */}
             <Link
               href="/runs"
-              className="shrink-0 border-t border-border px-4 py-3 flex items-center justify-between text-sm font-medium text-fg hover:bg-accent/[0.08] hover:text-accent transition group"
+              className="shrink-0 border-t border-border px-4 py-3 flex items-center justify-between text-sm font-medium text-fg hover:bg-accent/[0.08] hover:text-accent-ink transition group"
             >
               <span className="flex items-center gap-2">
                 <History className="h-4 w-4" />
                 {t("jobs.view_all")}
               </span>
-              <ChevronRight className="h-4 w-4 text-muted group-hover:text-accent group-hover:translate-x-0.5 transition-transform" />
+              <ChevronRight className="h-4 w-4 text-muted group-hover:text-accent-ink group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
         </div>
@@ -433,7 +433,7 @@ function JobCard({
       <div className="flex items-start gap-2">
         <div className="flex items-center gap-1 shrink-0 mt-0.5">
           <span
-            className="h-5 w-5 rounded grid place-items-center bg-accent/[0.18] text-accent"
+            className="h-5 w-5 rounded grid place-items-center bg-accent/[0.18] text-accent-ink"
             title={t("jobs.run_mode_title", { mode: MODE_META[info.mode].label })}
           >
             <ModeIcon className="h-3 w-3" />
@@ -459,7 +459,7 @@ function JobCard({
             onDelete();
           }}
           aria-label={t("jobs.delete_job_aria")}
-          className="shrink-0 text-muted opacity-0 group-hover:opacity-100 hover:text-danger transition p-0.5 rounded hover:bg-danger/10"
+          className="shrink-0 text-muted opacity-0 group-hover:opacity-100 hover:text-danger-ink transition p-0.5 rounded hover:bg-danger/10"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
@@ -476,14 +476,14 @@ function StatusBadge({ job }: { job: Job }) {
   const t = useT();
   if (job.status === "completed")
     return (
-      <span className="flex items-center gap-1 text-success">
+      <span className="flex items-center gap-1 text-success-ink">
         <CheckCircle2 className="h-3 w-3" />
         {t("jobs.status_completed")}
       </span>
     );
   if (job.status === "failed")
     return (
-      <span className="flex items-center gap-1 text-danger">
+      <span className="flex items-center gap-1 text-danger-ink">
         <XCircle className="h-3 w-3" />
         {t("jobs.status_failed")}
       </span>
@@ -496,7 +496,7 @@ function StatusBadge({ job }: { job: Job }) {
       </span>
     );
   return (
-    <span className="flex items-center gap-1 text-accent">
+    <span className="flex items-center gap-1 text-accent-ink">
       <Loader2 className="h-3 w-3 animate-spin" />
       {job.status === "running"
         ? t("jobs.status_running", { pct: job.percentage })

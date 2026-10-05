@@ -144,8 +144,8 @@ export function AlgorithmList({
             "absolute top-2 h-6 w-6 grid place-items-center rounded transition appearance-none",
             onShowExplainer ? "right-9" : "right-2",
             isFavorite
-              ? "text-accent hover:text-muted"
-              : "text-muted hover:text-accent hover:bg-accent/[0.10] opacity-0 group-hover/algo:opacity-100 focus:opacity-100",
+              ? "text-accent-ink hover:text-muted"
+              : "text-muted hover:text-accent-ink hover:bg-accent/[0.10] opacity-0 group-hover/algo:opacity-100 focus:opacity-100",
           )}
         >
           <Star className={cn("h-3.5 w-3.5", isFavorite && "fill-current")} />
@@ -160,7 +160,7 @@ export function AlgorithmList({
             data-tour={isFirst ? "single-algo-help" : undefined}
             aria-label={t("algorithm_list.what_is_aria", { name: shortName })}
             title={t("algorithm_list.what_does_title")}
-            className="absolute top-2 right-2 h-6 w-6 grid place-items-center rounded text-muted hover:text-accent hover:bg-accent/[0.10] transition appearance-none opacity-50 group-hover/algo:opacity-100 focus:opacity-100"
+            className="absolute top-2 right-2 h-6 w-6 grid place-items-center rounded text-muted hover:text-accent-ink hover:bg-accent/[0.10] transition appearance-none opacity-50 group-hover/algo:opacity-100 focus:opacity-100"
           >
             <HelpCircle className="h-3.5 w-3.5" />
           </button>
@@ -174,7 +174,7 @@ export function AlgorithmList({
       {favoriteAlgos.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <div className="text-[10px] font-semibold uppercase tracking-wider text-muted px-1 flex items-center gap-1.5">
-            <Star className="h-3 w-3 fill-current text-accent" />
+            <Star className="h-3 w-3 fill-current text-accent-ink" />
             {t("algorithm_list.favorites_heading")}
           </div>
           {favoriteAlgos.map(renderAlgo)}

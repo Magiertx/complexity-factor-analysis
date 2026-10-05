@@ -16,6 +16,11 @@
     --success: 22 163 74;
     --warn: 217 119 6;
     --danger: 220 38 38;
+    /* Text in these colours; darker, so small text reaches 4.5:1 on tiles and tinted badges. */
+    --accent-ink: 190 18 60;
+    --success-ink: 22 101 52;
+    --warn-ink: 146 64 14;
+    --danger-ink: 185 28 28;
     --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
     --font-mono: ui-monospace, "SFMono-Regular", "Menlo", "Consolas", monospace;
   }
@@ -25,13 +30,17 @@
     --tile: 36 36 42;
     --border: 45 45 50;
     --border-strong: 58 58 64;
-    --muted: 113 113 122;
+    --muted: 150 150 160;
     --fg: 244 244 245;
     --accent: 244 63 94;
     --accent-fg: 255 255 255;
     --success: 34 197 94;
     --warn: 234 179 8;
     --danger: 239 68 68;
+    --accent-ink: 251 113 133;
+    --success-ink: 34 197 94;
+    --warn-ink: 234 179 8;
+    --danger-ink: 248 113 113;
   }
   html, body { @apply bg-bg text-fg; }
   body { @apply font-sans antialiased; }

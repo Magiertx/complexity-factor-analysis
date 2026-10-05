@@ -11,9 +11,9 @@ interface Props {
 
 const ACCENT: Record<NonNullable<Stat["accent"]>, string> = {
   default: "text-fg",
-  success: "text-success",
-  warn: "text-warn",
-  danger: "text-danger",
+  success: "text-success-ink",
+  warn: "text-warn-ink",
+  danger: "text-danger-ink",
 };
 
 export function StatRow({ stats }: Props) {

@@ -74,14 +74,14 @@ export function FactorsView({ analysis, options, onOptions }: Props) {
           <div className="text-xs text-muted">
             {options.n_factors === null ? (
               <span className="inline-flex items-center gap-1">
-                <Sparkles className="h-3.5 w-3.5 text-accent" />
+                <Sparkles className="h-3.5 w-3.5 text-accent-ink" />
                 {t("factor.factors.following_suggestion")}
               </span>
             ) : (
               <button
                 type="button"
                 onClick={() => onOptions({ n_factors: null })}
-                className="text-accent hover:underline"
+                className="text-accent-ink hover:underline"
               >
                 {t("factor.factors.use_suggestion", { n: analysis.suggested_n_factors })}
               </button>

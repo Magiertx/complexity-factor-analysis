@@ -28,7 +28,7 @@ export function FileDrop({ file, onChange, accept = ".xes,.json" }: Props) {
       <div className="rounded-lg bg-tile p-4 flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
           <div className="h-9 w-9 rounded-md bg-success/10 grid place-items-center">
-            <FileCheck2 className="h-4 w-4 text-success" />
+            <FileCheck2 className="h-4 w-4 text-success-ink" />
           </div>
           <div className="min-w-0">
             <div className="text-sm font-medium truncate">{file.name}</div>

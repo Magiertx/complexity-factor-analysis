@@ -15,7 +15,7 @@ export function LogDownload({ artifact }: { artifact: L }) {
     <div className="rounded-md border border-border/60 bg-surface px-4 py-3 flex items-center justify-between gap-3">
       <div className="flex items-center gap-3 min-w-0">
         <div className="h-9 w-9 rounded-md bg-accent/10 grid place-items-center shrink-0">
-          <FileCode2 className="h-4 w-4 text-accent" />
+          <FileCode2 className="h-4 w-4 text-accent-ink" />
         </div>
         <div className="min-w-0">
           <div className="text-sm font-medium truncate">{artifact.filename}</div>

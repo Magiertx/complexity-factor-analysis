@@ -18,6 +18,10 @@ const config: Config = {
         success: "rgb(var(--success) / <alpha-value>)",
         warn: "rgb(var(--warn) / <alpha-value>)",
         danger: "rgb(var(--danger) / <alpha-value>)",
+        "accent-ink": "rgb(var(--accent-ink) / <alpha-value>)",
+        "success-ink": "rgb(var(--success-ink) / <alpha-value>)",
+        "warn-ink": "rgb(var(--warn-ink) / <alpha-value>)",
+        "danger-ink": "rgb(var(--danger-ink) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],

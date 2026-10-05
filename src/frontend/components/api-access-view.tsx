@@ -241,9 +241,9 @@ export function ApiAccessView() {
 
 function MethodBadge({ method }: { method: "GET" | "POST" | "DELETE" }) {
   const styles = {
-    GET: "bg-success/15 text-success",
-    POST: "bg-accent/15 text-accent",
-    DELETE: "bg-danger/15 text-danger",
+    GET: "bg-success/15 text-success-ink",
+    POST: "bg-accent/15 text-accent-ink",
+    DELETE: "bg-danger/15 text-danger-ink",
   }[method];
   return (
     <span

@@ -28,7 +28,7 @@ export function SuitabilityView({ dataset, analysis, options, onOptions, measure
     <div className="space-y-6">
       {analysis && analysis.warnings.length > 0 && (
         <div className="rounded-lg bg-warn/10 px-3.5 py-3 flex items-start gap-2.5 text-sm">
-          <AlertTriangle className="h-4 w-4 text-warn shrink-0 mt-0.5" />
+          <AlertTriangle className="h-4 w-4 text-warn-ink shrink-0 mt-0.5" />
           <div>
             <div className="font-medium">{t("factor.suitability.warnings_heading")}</div>
             <ul className="mt-1 text-xs text-muted space-y-0.5 list-disc pl-4">
@@ -253,9 +253,9 @@ function MsaTable({ dataset, analysis, options, onOptions, measureName }: Props)
                     {isExcluded ? (
                       t("factor.suitability.status_excluded")
                     ) : filtered ? (
-                      <span className="text-warn">{t("factor.suitability.status_removed", { step: filtered.step })}</span>
+                      <span className="text-warn-ink">{t("factor.suitability.status_removed", { step: filtered.step })}</span>
                     ) : analysis ? (
-                      <span className="text-success">{t("factor.suitability.status_used")}</span>
+                      <span className="text-success-ink">{t("factor.suitability.status_used")}</span>
                     ) : (
                       <span className="text-muted">–</span>
                     )}

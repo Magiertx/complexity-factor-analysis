@@ -126,13 +126,13 @@ export function PresetBar({ algorithmId, currentParams, onLoad, defaults, disabl
                   >
                     <Bookmark className="h-3 w-3 shrink-0 text-muted" />
                     <span className="truncate flex-1">{p.name}</span>
-                    {activeName === p.name && <Check className="h-3 w-3 text-accent shrink-0" />}
+                    {activeName === p.name && <Check className="h-3 w-3 text-accent-ink shrink-0" />}
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDelete(p.name)}
                     aria-label={t("preset_bar.delete_preset_aria", { name: p.name })}
-                    className="h-auto px-2 rounded text-muted hover:text-danger hover:bg-tile transition opacity-0 group-hover:opacity-100"
+                    className="h-auto px-2 rounded text-muted hover:text-danger-ink hover:bg-tile transition opacity-0 group-hover:opacity-100"
                     title={t("preset_bar.delete_preset_title")}
                   >
                     <Trash2 className="h-3 w-3" />
@@ -217,7 +217,7 @@ export function PresetBar({ algorithmId, currentParams, onLoad, defaults, disabl
 
       {toast && (
         <span className="flex items-center gap-1 text-[11px] text-muted">
-          <Check className="h-3 w-3 text-accent" />
+          <Check className="h-3 w-3 text-accent-ink" />
           {toast}
         </span>
       )}
