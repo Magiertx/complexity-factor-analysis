@@ -15,7 +15,7 @@ IS_TESTING = "pytest" in sys.modules or os.environ.get("TESTING") == "1"
 if IS_TESTING:
     DATABASE_URL = os.environ.get("TEST_DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 else:
-    DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@postgres:5432/toolkit")
+    DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@postgres:5432/complexity")
 
 # Create engine. For SQLite in-memory, we use StaticPool to maintain a single connection.
 connect_args = {}

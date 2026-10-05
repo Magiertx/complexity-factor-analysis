@@ -304,7 +304,7 @@ def test_health_does_not_leak_database_details(client):
     from unittest.mock import MagicMock, patch
 
     leak = 'connection to server at "db.internal" (10.0.0.5), port 5432 failed: ' \
-           'password authentication failed for user "toolkit_admin"'
+           'password authentication failed for user "complexity_admin"'
 
     with patch("routes.health.AsyncSessionLocal", MagicMock(side_effect=RuntimeError(leak))):
         r = client.get("/health")
@@ -312,7 +312,7 @@ def test_health_does_not_leak_database_details(client):
     assert r.status_code == 500
     body = r.text
     assert r.json()["detail"] == "Database unavailable"
-    for secret in ("db.internal", "10.0.0.5", "5432", "toolkit_admin"):
+    for secret in ("db.internal", "10.0.0.5", "5432", "complexity_admin"):
         assert secret not in body, f"/health leaked {secret!r}"
 
 

@@ -126,31 +126,23 @@ server {
 
 ## 3. Environment Variables Configuration
 
-Create a `.env` file in the project root directory (same directory as `docker-compose.yml`).
+Create a `.env` file in the project root directory (same directory as `docker-compose.yml`),
+starting from `.env.example`. `docker-compose.yml` reads the variables below from it; the
+connection strings between the containers are set in the compose file itself.
 
 > [!IMPORTANT]
 > Never commit the `.env` file containing production credentials to version control.
 
 ```ini
-# --- PostgreSQL Settings ---
-POSTGRES_DB=toolkit
-POSTGRES_USER=toolkit_admin
+# --- PostgreSQL ---
+POSTGRES_DB=complexity
+POSTGRES_USER=complexity_admin
 # Replace with a strong random password:
 POSTGRES_PASSWORD=secure_random_db_password_here
 
-# --- AlgoService Backend ---
-# The database connection string (async pg driver)
-DATABASE_URL=postgresql+asyncpg://toolkit_admin:secure_random_db_password_here@postgres:5432/toolkit
-
-# List of allowed origins for CORS (comma separated)
-CORS_ORIGINS=https://analysis.example.org,http://localhost:3000
-
-# Connection URL to the ProM4Py execution server
-PROM4PY_URL=http://prom4py:4040
-
-# Signing key for the session cookie. REQUIRED — the service refuses to start without it,
-# because the cookie is the only thing separating one user's jobs, uploads and results from
-# another's. Generate a fresh one per deployment:
+# --- AlgoService ---
+# Signing key for the session cookie. Required; the service refuses to start without it.
+# Generate a fresh one per deployment:
 #   python -c "import secrets; print(secrets.token_urlsafe(48))"
 SESSION_SECRET_KEY=paste_the_generated_value_here
 
@@ -158,16 +150,17 @@ SESSION_SECRET_KEY=paste_the_generated_value_here
 # Marks the session cookie Secure and enables HSTS. Leave unset for plain-http local runs.
 SESSION_COOKIE_SECURE=1
 
-# --- Frontend Next.js Settings ---
-# URL where Next.js can resolve algoservice internally over the docker network
-INTERNAL_API_URL=http://algoservice:8000
+# Allowed origins for CORS (comma separated)
+CORS_ORIGINS=https://analysis.example.org
+
+# Job quota and request limits, see .env.example
+MAX_ACTIVE_JOBS_PER_SESSION=3
+# RATE_LIMIT_ANALYZE=60/hour
+# RATE_LIMIT_BATCH=20/hour
 
 # --- Docker network ---
-# Only needed if 172.28.0.0/16 collides with something on the host. docker-compose.yml uses
-# this value twice: as the compose network subnet, and as the range algoservice trusts to
-# have set X-Forwarded-For (FORWARDED_ALLOW_IPS). Requests arrive from the frontend
-# container, so without a matching value uvicorn ignores the header and every user of the
-# deployment shares a single rate-limit counter. Change it in one place, not two.
+# Only needed if 172.28.0.0/16 collides with something on the host. Used as the compose
+# network subnet and as the range algoservice trusts for X-Forwarded-For.
 # COMPOSE_SUBNET=172.28.0.0/16
 ```
 
@@ -220,30 +213,30 @@ docker compose logs -f algoservice
 Since all run logs and configuration settings are stored in the PostgreSQL database, backing up this database is critical.
 
 ### Automated Backup Script
-Create a script `/opt/toolkit/backup.sh` on the host:
+Create a script `/opt/complexity/backup.sh` on the host:
 
 ```bash
 #!/bin/bash
-BACKUP_DIR="/opt/toolkit/backups"
+BACKUP_DIR="/opt/complexity/backups"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_FILE="${BACKUP_DIR}/toolkit_db_${TIMESTAMP}.sql.gz"
+BACKUP_FILE="${BACKUP_DIR}/complexity_db_${TIMESTAMP}.sql.gz"
 
 # Create backup directory if it does not exist
 mkdir -p "$BACKUP_DIR"
 
 # Run pg_dump inside the docker container and compress the output
 docker compose -f /path/to/project/docker-compose.yml exec -t postgres \
-  pg_dump -U toolkit_admin -d toolkit | gzip > "$BACKUP_FILE"
+  pg_dump -U complexity_admin -d complexity | gzip > "$BACKUP_FILE"
 
 # Delete backups older than 30 days to free disk space
-find "$BACKUP_DIR" -type f -name "toolkit_db_*.sql.gz" -mtime +30 -delete
+find "$BACKUP_DIR" -type f -name "complexity_db_*.sql.gz" -mtime +30 -delete
 
 echo "Backup created: $BACKUP_FILE"
 ```
 
 Make the script executable:
 ```bash
-chmod +x /opt/toolkit/backup.sh
+chmod +x /opt/complexity/backup.sh
 ```
 
 ### Cron Job Setup
@@ -254,7 +247,7 @@ sudo crontab -e
 ```
 Add the following line:
 ```cron
-0 2 * * * /opt/toolkit/backup.sh >> /var/log/toolkit_backup.log 2>&1
+0 2 * * * /opt/complexity/backup.sh >> /var/log/complexity_backup.log 2>&1
 ```
 
 ### Database Restore Procedure
@@ -265,12 +258,12 @@ To restore a backup file to a running PostgreSQL container:
 docker compose stop algoservice frontend
 
 # 2. Re-create the database (optional/precautionary)
-docker compose exec -it postgres dropdb -U toolkit_admin toolkit
-docker compose exec -it postgres createdb -U toolkit_admin toolkit
+docker compose exec -it postgres dropdb -U complexity_admin complexity
+docker compose exec -it postgres createdb -U complexity_admin complexity
 
 # 3. Restore the SQL backup
-gunzip -c /opt/toolkit/backups/toolkit_db_2026xxxx_xxxxxx.sql.gz | \
-  docker compose exec -T postgres psql -U toolkit_admin -d toolkit
+gunzip -c /opt/complexity/backups/complexity_db_2026xxxx_xxxxxx.sql.gz | \
+  docker compose exec -T postgres psql -U complexity_admin -d complexity
 
 # 4. Start the application services again
 docker compose start
