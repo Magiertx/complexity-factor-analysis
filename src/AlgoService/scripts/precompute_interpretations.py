@@ -25,7 +25,7 @@ import pandas as pd  # noqa: E402
 
 from factor_analysis import catalog as cat  # noqa: E402
 from factor_analysis import storage  # noqa: E402
-from factor_analysis.core import analyze, clean_matrix  # noqa: E402
+from factor_analysis.core import AnalysisError, analyze, clean_matrix  # noqa: E402
 from interpretation import client, store  # noqa: E402
 from interpretation.client import InterpretationError  # noqa: E402
 from interpretation.payload import build_payload, data_hash, default_params, effective_params  # noqa: E402
@@ -75,6 +75,10 @@ async def run(datasets: list[dict[str, Any]], languages: list[str], force: bool,
             except InterpretationError as e:
                 failed += 1
                 print(f"FAIL  {path.name}: {e.detail}", file=sys.stderr)
+                continue
+            except AnalysisError as e:
+                failed += 1
+                print(f"FAIL  {path.name}: {e}", file=sys.stderr)
                 continue
             print(f"wrote {path.name}")
     return failed

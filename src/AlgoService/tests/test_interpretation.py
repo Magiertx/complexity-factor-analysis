@@ -225,6 +225,16 @@ def test_own_column_names_are_sent_as_the_disclosure_says(client, claude):
     assert not [v for v in raw_values if v in content]
 
 
+def test_payload_of_an_oblique_rotation(client, claude, csv_dataset):
+    assert _interpret(client, csv_dataset[0], auto_msa_filter=False, rotation="promax").status_code == 200
+    content = claude.calls[0]["messages"][0]["content"]
+    payload = json.loads(content[content.index("{"):])
+    assert payload["rotation"] == "promax" and "pattern matrix" in payload["loadings_note"]
+    assert payload["structure_loadings"].keys() == payload["loadings"].keys()
+    assert all(len(row) == 2 for row in payload["structure_loadings"].values())
+    assert len(payload["factor_correlations"]) == 2
+
+
 def test_payload_never_quotes_dropped_values():
     from factor_analysis.core import AnalysisParams
     from interpretation.payload import build_payload
@@ -443,6 +453,30 @@ def test_script_matrix_equals_the_stored_one(client):
     assert data_hash(data) == data_hash(storage.load_matrix(session, dataset_id))
 
 
+def test_script_goes_on_after_an_analysis_error(claude, monkeypatch, no_precomputed, capsys):
+    import asyncio
+
+    from factor_analysis import catalog as cat
+    from factor_analysis.core import AnalysisError
+    from scripts import precompute_interpretations as script
+
+    analyze = script.analyze
+    seen: list[str] = []
+
+    def first_fails(data, params):
+        seen.append("x")
+        if len(seen) == 1:
+            raise AnalysisError("Too few measures.", "too_few_measures")
+        return analyze(data, params)
+
+    monkeypatch.setattr(script, "analyze", first_fails)
+    entry = cat.bundled_entry(BUNDLED)
+    failed = asyncio.run(script.run([entry, {**entry, "id": "copy"}], ["en"], False, KEY))
+    assert failed == 1 and len(claude.calls) == 1
+    assert "FAIL" in capsys.readouterr().err
+    assert (no_precomputed / "copy.en.json").is_file()
+
+
 def test_script_skips_existing_files(claude, monkeypatch, no_precomputed, capsys):
     from scripts import precompute_interpretations as script
 
@@ -496,6 +530,35 @@ def test_sdk_errors_are_mapped(client, claude, csv_dataset, error, status, code)
     # Nothing is cached, so the next try calls again.
     claude.outcome = _answer_for
     assert _interpret(client, csv_dataset[0], auto_msa_filter=False).json()["cached"] is False
+
+
+def test_logs_carry_neither_the_key_nor_upstream_detail(client, claude, csv_dataset):
+    import logging
+
+    from config import logger
+
+    records: list[str] = []
+
+    class Collect(logging.Handler):
+        def emit(self, record):
+            records.append(record.getMessage())
+
+    handler = Collect(logging.DEBUG)
+    logger.addHandler(handler)
+    try:
+        for error in (
+            _status_error(anthropic.AuthenticationError, 401),
+            _status_error(anthropic.BadRequestError, 400),
+            anthropic.APIConnectionError(message=SDK_SECRET, request=_request()),
+        ):
+            claude.outcome = error
+            _interpret(client, csv_dataset[0], auto_msa_filter=False)
+        claude.outcome = _message(None, "refusal", stop_details={"type": "refusal", "category": "cyber"})
+        _interpret(client, csv_dataset[0], auto_msa_filter=False)
+    finally:
+        logger.removeHandler(handler)
+    assert records
+    assert not [r for r in records if KEY in r or SDK_SECRET in r]
 
 
 def test_slow_answer_times_out(client, claude, csv_dataset, monkeypatch):
