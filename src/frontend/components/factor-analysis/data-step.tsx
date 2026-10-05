@@ -20,6 +20,7 @@ import {
   type FactorCatalog,
   type FactorDataset,
   type FactorKind,
+  type SampleInput,
 } from "@/lib/api";
 import { MIN_MEASURES, progressPercent } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
@@ -67,10 +68,17 @@ export function DataForm({ kind, catalog, submitting, submitError, onSubmit, onC
   const [groups, setGroups] = useState<string[]>(catalog.defaults.groups ?? []);
   const [name, setName] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
+  // Chosen sample per source; a sample replaces the uploaded files.
+  const [sampleIds, setSampleIds] = useState<Partial<Record<DatasetSource, string>>>({});
 
   const files = source === "logs" ? logFiles : pnmlFiles;
   const setFiles = source === "logs" ? setLogFiles : setPnmlFiles;
   const maxFiles = MAX_DATASET_FILES[source] ?? 1;
+  const samples = (catalog.samples ?? []).filter((s) => s.source === source);
+  const sample = samples.find((s) => s.id === sampleIds[source]) ?? null;
+  const nInputs = sample ? sample.files.length : files.length;
+  const chooseSample = (id: string | null) =>
+    setSampleIds((ids) => ({ ...ids, [source]: id ?? undefined }));
 
   const addFiles = (incoming: File[]) => {
     if (source === "bundled") return;
@@ -107,16 +115,16 @@ export function DataForm({ kind, catalog, submitting, submitError, onSubmit, onC
   );
 
   const estimate = useMemo(() => {
-    if (source === "logs" && kind === "model") return { rows: logFiles.length * miners.length, cols: measures.length };
-    if (source === "logs") return { rows: logFiles.length, cols: groupMeasureCount };
-    if (source === "pnml") return { rows: pnmlFiles.length, cols: measures.length };
+    if (source === "logs" && kind === "model") return { rows: nInputs * miners.length, cols: measures.length };
+    if (source === "logs") return { rows: nInputs, cols: groupMeasureCount };
+    if (source === "pnml") return { rows: nInputs, cols: measures.length };
     return null;
-  }, [source, kind, logFiles.length, miners.length, measures.length, groupMeasureCount, pnmlFiles.length]);
+  }, [source, kind, nInputs, miners.length, measures.length, groupMeasureCount]);
 
   const blocker: string | null = (() => {
     if (source === "bundled") return bundledId ? null : t("factor.data.need_bundled");
     if (source === "csv") return csvFile ? null : t("factor.data.need_csv");
-    if (files.length === 0) return t("factor.data.need_files");
+    if (nInputs === 0) return t("factor.data.need_files");
     if (source === "logs" && kind === "model" && miners.length === 0) return t("factor.data.need_miner");
     if (source === "logs" && kind === "log") return groups.length === 0 ? t("factor.data.need_group") : null;
     if (measures.length < MIN_MEASURES) return t("factor.data.need_measures", { n: MIN_MEASURES });
@@ -130,6 +138,10 @@ export function DataForm({ kind, catalog, submitting, submitError, onSubmit, onC
     if (source === "csv" && csvFile) input.files = [csvFile];
     if (source === "logs") {
       input.files = logFiles;
+      if (sample) {
+        input.files = undefined;
+        input.bundledId = sample.id;
+      }
       if (kind === "model") {
         input.miners = miners;
         input.measures = measures;
@@ -138,7 +150,8 @@ export function DataForm({ kind, catalog, submitting, submitError, onSubmit, onC
       }
     }
     if (source === "pnml") {
-      input.files = pnmlFiles;
+      input.files = sample ? undefined : pnmlFiles;
+      if (sample) input.bundledId = sample.id;
       input.measures = measures;
     }
     onSubmit(input);
@@ -201,7 +214,11 @@ export function DataForm({ kind, catalog, submitting, submitError, onSubmit, onC
         </div>
       )}
 
-      {(source === "logs" || source === "pnml") && (
+      {(source === "logs" || source === "pnml") && sample && (
+        <SampleCard sample={sample} onClear={() => chooseSample(null)} />
+      )}
+
+      {(source === "logs" || source === "pnml") && !sample && (
         <div className="space-y-2">
           {files.length < maxFiles && (
             <UploadZone
@@ -221,6 +238,17 @@ export function DataForm({ kind, catalog, submitting, submitError, onSubmit, onC
               onClear={() => setFiles([])}
             />
           )}
+          {files.length === 0 &&
+            samples.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => chooseSample(s.id)}
+                className="text-xs text-accent hover:underline text-left"
+              >
+                {t("factor.data.sample_use", { name: s.name, n: s.files.length })}
+              </button>
+            ))}
         </div>
       )}
 
@@ -397,6 +425,34 @@ function BundledList({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function SampleCard({ sample, onClear }: { sample: SampleInput; onClear: () => void }) {
+  const t = useT();
+  return (
+    <div className="rounded-lg p-3.5 bg-accent/[0.14] ring-1 ring-accent/60 space-y-2">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold">{sample.name}</div>
+          <div className="text-xs text-muted mt-0.5 leading-relaxed">{sample.description}</div>
+        </div>
+        <Button variant="ghost" size="sm" onClick={onClear} className="shrink-0">
+          {t("factor.data.sample_own")}
+        </Button>
+      </div>
+      <div className="flex items-center gap-2 flex-wrap text-[11px] text-muted">
+        <span className="font-mono">
+          {t(sample.files.length === 1 ? "factor.data.files_selected" : "factor.data.files_selected_plural", {
+            n: sample.files.length,
+          })}
+        </span>
+        {sample.license && (
+          <span className="rounded bg-bg/70 px-1.5 py-0.5">{t("factor.data.license", { license: sample.license })}</span>
+        )}
+      </div>
+      {sample.citation && <p className="text-[11px] italic text-muted leading-relaxed break-words">{sample.citation}</p>}
     </div>
   );
 }

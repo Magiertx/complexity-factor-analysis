@@ -511,6 +511,8 @@
       "pnml_drop_hint": "or click to browse · .pnml · up to {max} files",
       "files_selected": "{n} file",
       "files_selected_plural": "{n} files",
+      "sample_use": "Or use the bundled sample: {name} ({n} files)",
+      "sample_own": "Upload own files instead",
       "clear_files": "Remove all",
       "remove_file_aria": "Remove {name}",
       "wrong_type": "{name} is not a {ext} file and was skipped.",

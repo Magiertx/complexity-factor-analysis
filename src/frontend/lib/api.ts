@@ -313,6 +313,17 @@ export interface BundledDataset {
   license?: string;
 }
 
+/** Bundled input files for the logs or pnml source; sent as `bundled_id` without files. */
+export interface SampleInput {
+  id: string;
+  name: string;
+  description: string;
+  source: "logs" | "pnml";
+  files: string[];
+  license?: string;
+  citation?: string;
+}
+
 export interface FactorCatalog {
   kind: FactorKind;
   measures: FactorMeasure[];
@@ -320,6 +331,7 @@ export interface FactorCatalog {
   groups?: { key: string; name: string; description: string }[];
   defaults: { measures: string[]; miners?: string[]; groups?: string[] };
   bundled: BundledDataset[];
+  samples?: SampleInput[];
   sources: DatasetSource[];
 }
 

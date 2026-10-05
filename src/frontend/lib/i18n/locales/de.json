@@ -511,6 +511,8 @@
       "pnml_drop_hint": "oder klicken zum Auswählen · .pnml · bis zu {max} Dateien",
       "files_selected": "{n} Datei",
       "files_selected_plural": "{n} Dateien",
+      "sample_use": "Oder das mitgelieferte Beispiel nutzen: {name} ({n} Dateien)",
+      "sample_own": "Stattdessen eigene Dateien hochladen",
       "clear_files": "Alle entfernen",
       "remove_file_aria": "{name} entfernen",
       "wrong_type": "{name} ist keine {ext}-Datei und wurde übersprungen.",
