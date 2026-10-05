@@ -59,7 +59,8 @@ start builds the ProM4Py image, which downloads the ProM bundle and takes a whil
 Backend, from `src/AlgoService`:
 
 ```bash
-python -m venv .venv && .venv/Scripts/activate
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements-dev.txt
 SESSION_SECRET_KEY=dev-only-not-a-deployment uvicorn srv_main:app --reload --port 8000
 ```
@@ -92,6 +93,7 @@ Graphviz. The HTTP layer is tested with a small stub tool registered by
 Frontend checks, from `src/frontend`:
 
 ```bash
+npm run lint
 npx tsc --noEmit
 npx next build
 ```
