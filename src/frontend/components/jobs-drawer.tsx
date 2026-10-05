@@ -52,7 +52,7 @@ function deriveRunInfo(job: Job): RunInfo {
     return {
       mode: "batch",
       innerAlgoId: aid.slice("_batch:".length),
-      href: `/batch?job=${job.id}`,
+      href: `/?job=${job.id}`,
     };
   }
   return { mode: "single", innerAlgoId: aid, href: `/?job=${job.id}` };
@@ -90,7 +90,7 @@ export function useJobsDrawer() {
 // Builder routes on which the jobs panel is shown as a layout column. Same as
 // MODE_HREFS in mode-bar.tsx, duplicated to avoid a circular import between
 // mode-bar and jobs-drawer.
-const PANEL_ROUTES = new Set(["/", "/batch"]);
+const PANEL_ROUTES = new Set(["/"]);
 
 export function JobsDrawerProvider({ children }: { children: React.ReactNode }) {
   // Default `false` for SSR consistency; the effect below switches to `true`

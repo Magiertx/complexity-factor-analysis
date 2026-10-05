@@ -223,55 +223,6 @@ export async function analyze(
   return r.json();
 }
 
-export interface BatchRunResponse {
-  job_id: string;
-  algorithm: string;
-  log_count: number;
-  status: string;
-}
-
-export async function runBatch(
-  algorithmId: string,
-  params: Record<string, unknown>,
-  files: File[],
-  sampleLogIds: string[],
-  recentLogIds: string[],
-  signal?: AbortSignal,
-): Promise<BatchRunResponse> {
-  const form = new FormData();
-  for (const f of files) form.append("files", f);
-  if (sampleLogIds.length > 0) form.append("sample_log_ids", JSON.stringify(sampleLogIds));
-  if (recentLogIds.length > 0) form.append("recent_log_ids", JSON.stringify(recentLogIds));
-  for (const [k, v] of Object.entries(params)) {
-    if (Array.isArray(v)) {
-      for (const item of v) form.append(k, String(item));
-    } else {
-      form.append(k, typeof v === "boolean" ? String(v) : (v as string));
-    }
-  }
-  const r = await fetch(`${BASE}/algorithms/${algorithmId}/batch`, {
-    method: "POST",
-    body: form,
-    signal,
-  });
-  if (!r.ok) {
-    let msg = `Batch failed (${r.status})`;
-    try {
-      const j = await r.json();
-      if (j.detail) {
-        if (typeof j.detail === "object" && j.detail !== null && j.detail.type === "validation_error") {
-          throw new ValidationError("Please fix parameter errors.", j.detail.errors || {});
-        }
-        msg = typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail);
-      }
-    } catch (e) {
-      if (e instanceof ValidationError) throw e;
-    }
-    throw new Error(msg);
-  }
-  return r.json();
-}
-
 export async function abortTask(taskId: string): Promise<void> {
   try {
     await fetch(`${BASE}/progress/${taskId}/abort`, { method: "POST" });

@@ -46,8 +46,6 @@
     "aria_label": "Run mode",
     "single_run_label": "Single run",
     "single_run_desc": "One algorithm on one log",
-    "batch_label": "Batch",
-    "batch_desc": "One algorithm × many logs",
     "jobs_label": "Jobs",
     "jobs_desc": "History & results",
     "jobs_title": "Show jobs archive"
@@ -63,21 +61,9 @@
       "logsource_title": "Pick an event log",
       "logsource_content": "Two sources for the log: 'Upload File' for your own XES or JSON files (recent uploads are listed below), or 'Use Sample' for the bundled example log.",
       "params_title": "Parameters",
-      "params_content": "Every tool has its own parameters with sensible defaults. The preset bar above lets you save and reuse configurations — also in Batch.",
+      "params_content": "Every tool has its own parameters with sensible defaults. The preset bar above lets you save and reuse configurations.",
       "run_title": "Start the run",
       "run_content": "Once algorithm + log + parameters fit, run via Ctrl/Cmd+Enter or click. The result appears inline with stats, tables, plots and downloads. Past runs land in the jobs panel on the right."
-    },
-    "batch": {
-      "intro_title": "Batch tour",
-      "intro_content": "In Batch mode ONE algorithm runs over up to 10 logs at once. Errors on individual logs don't stop the rest. This walkthrough highlights the key spots; ESC or Skip exits at any time.",
-      "algo_title": "Pick an algorithm",
-      "algo_content": "Pick the algorithm that will run across all logs. Next to it sits a ? icon for a detailed explanation.",
-      "logs_title": "Pick logs",
-      "logs_content": "Mix up to 10 logs from your own uploads, recent uploads and sample logs. Selected logs appear in the Selected section.",
-      "params_title": "Parameters",
-      "params_content": "The tool runs with the same parameters across every selected log, so the results are comparable.",
-      "run_title": "Start the batch",
-      "run_content": "Run via Ctrl/Cmd+Enter or click. Progress streams live per log; on errors the other runs keep going. The result is a table with status + stats per log."
     },
     "onboarding": {
       "step0_title": "Welcome to {app}",
@@ -90,7 +76,6 @@
       "step2_p1": "Hit 'Run analysis'. Progress streams live; when the run finishes you get every artifact inline — stats, tables, process models, downloadable logs — plus a one-click 'Download All (ZIP)'.",
       "step2_p2": "Past runs stay in the jobs archive on the right, so you can re-open them anytime.",
       "step3_title": "Power features when you need them",
-      "step3_batch": "Batch — run one algorithm over up to 10 logs at once; failures don't stop the rest.",
       "step3_api": "API — drive everything from Python or curl; see the API page in the header for examples.",
       "progress_aria": "Progress",
       "step3_history": "History — every run of your session stays available in the jobs panel and on the runs page."
@@ -300,38 +285,6 @@
       "download_csv_button": "Download CSV"
     }
   },
-  "builders": {
-    "batch": {
-      "heading": "Batch Run",
-      "subtitle": "Run one algorithm over up to {max} logs and download a single CSV of the aggregated statistics.",
-      "tour_title": "Walkthrough — how batch works",
-      "tour_button": "Tour",
-      "algorithm_heading": "Algorithm",
-      "pick_algorithm": "Pick an algorithm…",
-      "algo_explain_title": "What does this algorithm do?",
-      "logs_heading": "Logs",
-      "logs_selected": "{selected}/{max} selected",
-      "upload_label": "Upload",
-      "drop_label": "Drop event logs here",
-      "drop_hint_remaining": "or click to browse · up to {remaining} more",
-      "sample_logs_group": "Sample logs",
-      "recently_uploaded_group": "Recently uploaded",
-      "validation_pick_algo": "Pick an algorithm.",
-      "validation_select_log": "Select at least one log.",
-      "validation_max_logs": "At most {max} logs per batch.",
-      "run_title": "Run batch (Ctrl+Enter)",
-      "run_button": "Run batch",
-      "run_button_n": "Run batch ({n} log)",
-      "run_button_n_plural": "Run batch ({n} logs)",
-      "submitting": "Submitting…",
-      "submission_failed": "Batch submission failed.",
-      "waiting": "Submitted, waiting for worker…",
-      "new_batch": "New batch",
-      "job_id": "Job ID: {id}",
-      "result_heading": "Batch result",
-      "download_all": "Download All (ZIP)"
-    }
-  },
   "jobs": {
     "archive_aria": "Jobs archive",
     "heading": "Jobs",
@@ -354,7 +307,7 @@
   "run_history": {
     "back_aria": "Back to workbench",
     "heading": "Run history",
-    "subtitle": "All runs in this session — Workbench and Batch combined.",
+    "subtitle": "All runs in this session.",
     "refresh_button": "Refresh",
     "search_placeholder": "Search algorithm, filename or run id…",
     "search_aria": "Search runs",

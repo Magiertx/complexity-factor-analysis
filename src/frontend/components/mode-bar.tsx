@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
-import { Play, Layers, History } from "lucide-react";
+import { Play, History } from "lucide-react";
 import { useJobsDrawer } from "./jobs-drawer";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
@@ -15,7 +15,7 @@ type Mode = {
   icon: React.ComponentType<{ className?: string }>;
 };
 
-const MODE_HREFS = new Set(["/", "/batch"]);
+const MODE_HREFS = new Set(["/"]);
 
 export function ModeBar() {
   const pathname = usePathname();
@@ -25,7 +25,6 @@ export function ModeBar() {
   const MODES: Mode[] = useMemo(
     () => [
       { href: "/", label: t("mode_bar.single_run_label"), description: t("mode_bar.single_run_desc"), icon: Play },
-      { href: "/batch", label: t("mode_bar.batch_label"), description: t("mode_bar.batch_desc"), icon: Layers },
     ],
     [t],
   );
