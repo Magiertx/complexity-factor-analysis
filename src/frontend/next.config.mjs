@@ -29,6 +29,10 @@ const nextConfig = {
     // Requests through the /api rewrite are cut after 30 s by default; dataset uploads, factor
     // fits over many measures and an interpretation by Claude can take longer.
     proxyTimeout: 180_000,
+    // Next.js keeps a copy of each request body for the rewrite and cuts it at 10 MB by
+    // default; larger uploads then never reach the backend and the request hangs. Same
+    // ceiling as the nginx example in docs/DEPLOYMENT.md (500 MB per dataset plus overhead).
+    middlewareClientMaxBodySize: "520mb",
   },
   output: "standalone",
   async headers() {
