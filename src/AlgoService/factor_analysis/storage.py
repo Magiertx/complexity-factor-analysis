@@ -6,6 +6,7 @@ Layout: ``<ARTIFACTS_DIR>/datasets/<session id>/<dataset id>/`` with ``meta.json
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import shutil
@@ -170,12 +171,27 @@ def load_matrix(session_id: str, dataset_id: str) -> pd.DataFrame:
     if hit and hit[0] == mtime:
         return hit[1]
     meta = read_meta(session_id, dataset_id) or {}
-    data = pd.read_csv(path, index_col=0, keep_default_na=False).astype(float)
+    data = _read_matrix(path)
     data.index = meta.get("observations") or [str(i) for i in data.index]
     if len(_cache) > 16:
         _cache.clear()
     _cache[key] = (mtime, data)
     return data
+
+
+def _read_matrix(source: Any) -> pd.DataFrame:
+    return pd.read_csv(source, index_col=0, keep_default_na=False).astype(float)
+
+
+def as_stored(data: pd.DataFrame) -> pd.DataFrame:
+    """``data`` as ``load_matrix`` returns it once stored: the CSV round trip can change the
+    last bit of a value."""
+    buffer = io.StringIO()
+    data.to_csv(buffer, index_label="observation")
+    buffer.seek(0)
+    out = _read_matrix(buffer)
+    out.index = list(data.index)
+    return out
 
 
 def matrix_path(session_id: str, dataset_id: str) -> Path:

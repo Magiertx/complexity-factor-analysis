@@ -665,7 +665,7 @@ class AnalyzeRequest(BaseModel):
     communality_threshold: float | None = Field(None, ge=0.0, le=1.0)
 
     def params(self, kind: str) -> AnalysisParams:
-        values = self.model_dump(exclude={"format"})
+        values = self.model_dump(include=set(AnalysisParams.__dataclass_fields__))
         if values["loading_threshold"] is None:
             values["loading_threshold"] = LOADING_THRESHOLDS[kind]
         if values["communality_threshold"] is None:
