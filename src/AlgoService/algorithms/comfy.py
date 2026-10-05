@@ -1,9 +1,9 @@
 """Adapter for ComFy (complexity measures of discovered Petri nets).
 
-Single-file MVP: the user uploads one XES log, picks discovery algorithms and
-complexity measures, and gets a table of (miner × measure) scores. Factor
-analysis itself (Bartlett/KMO/scree/loadings) needs many logs and isn't
-exposed yet.
+The user uploads one XES log, picks discovery algorithms and complexity
+measures, and gets a table of (miner × measure) scores. The factor analysis
+over many logs is in ``factor_analysis/`` and reuses ``discover`` and
+``measure_value`` from here.
 
 Talks to the ProM4Py Java server over HTTP (``PROM4PY_URL``).
 
@@ -24,6 +24,31 @@ from ._prom4py import get_prom4py
 from .base import AlgorithmBase, AnalysisResult, ParameterSpec, stat, table, text, image, log_file, RunContext
 from ._petrinet import render_petri_net_to_base64_png
 
+
+MEASURES_BY_NAME = {str(m): m for m in _MCM.all_model_complexity_measures}
+MINERS_BY_NAME = {str(m): m for m in _DA.analyzed_discovery_algorithms}
+
+# Not selected by default: they enumerate paths or cycles and can take minutes on large nets.
+SLOW_MEASURES = {"Cross-Connectivity", "Depth", "Diameter", "Cyclicity"}
+
+# Measures that need the initial and final marking.
+_MARKING_MEASURES = {"Depth", "Diameter"}
+
+
+def discover(miner: Any, event_log: Any) -> tuple[Any, Any, Any]:
+    """Run one ComFy miner; returns (net, initial marking, final marking)."""
+    net_obj = miner.discover_for(event_log)
+    # miners return either (net, im, fm) tuples or a single graph
+    if isinstance(net_obj, tuple) and len(net_obj) == 3:
+        return net_obj
+    return net_obj, None, None
+
+
+def measure_value(measure: Any, net: Any, im: Any = None, fm: Any = None) -> Any:
+    """One ComFy measure on one net."""
+    if str(measure) in _MARKING_MEASURES:
+        return measure.calculate_for(net, im, fm)
+    return measure.calculate_for(net)
 
 
 class ComFyAlgorithm(AlgorithmBase):
@@ -53,15 +78,13 @@ class ComFyAlgorithm(AlgorithmBase):
     parameters_schema: list[ParameterSpec] = []
 
     def __init__(self) -> None:
-        self._measures_by_name = {str(m): m for m in _MCM.all_model_complexity_measures}
-        self._miners_by_name = {str(m): m for m in _DA.analyzed_discovery_algorithms}
+        self._measures_by_name = MEASURES_BY_NAME
+        self._miners_by_name = MINERS_BY_NAME
 
         measure_names = list(self._measures_by_name)
         miner_names = list(self._miners_by_name)
 
-        # The slow measures are not selected by default.
-        slow = {"Cross-Connectivity", "Depth", "Diameter", "Cyclicity"}
-        default_measures = [m for m in measure_names if m not in slow]
+        default_measures = [m for m in measure_names if m not in SLOW_MEASURES]
 
         self.parameters_schema = [
             ParameterSpec(
@@ -104,9 +127,6 @@ class ComFyAlgorithm(AlgorithmBase):
         get_prom4py()
         event_log = read_event_log(file_path)
 
-        depth_diameter = {_MCM.Depth(), _MCM.Diameter()}
-        depth_diameter_keys = {str(m) for m in depth_diameter}
-
         # Compute one row per miner.
         notes: list[str] = []
         columns = ["Miner"] + [str(m) for m in measures]
@@ -120,12 +140,7 @@ class ComFyAlgorithm(AlgorithmBase):
 
             row: list[Any] = [str(miner)]
             try:
-                net_obj = miner.discover_for(event_log)
-                # miners return either (net, im, fm) tuples or a single graph
-                if isinstance(net_obj, tuple) and len(net_obj) == 3:
-                    net, im, fm = net_obj
-                else:
-                    net, im, fm = net_obj, None, None
+                net, im, fm = discover(miner, event_log)
 
                 # Render Petri Net visualization if available
                 if net is not None:
@@ -150,11 +165,7 @@ class ComFyAlgorithm(AlgorithmBase):
             for measure in measures:
                 ctx.check_aborted()
                 try:
-                    if str(measure) in depth_diameter_keys:
-                        value = measure.calculate_for(net, im, fm)
-                    else:
-                        value = measure.calculate_for(net)
-                    row.append(_round(value))
+                    row.append(_round(measure_value(measure, net, im, fm)))
                 except Exception as e:
                     row.append(f"ERR: {type(e).__name__}")
                     notes.append(f"{miner} × {measure}: {e}")
