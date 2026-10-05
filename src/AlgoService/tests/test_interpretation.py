@@ -195,7 +195,7 @@ def test_payload_carries_aggregates_only(client, claude, csv_dataset):
     assert payload["kind"] == "model" and payload["n_observations"] == len(LABELS)
     assert set(payload["used_measures"]) == {"Size", "Density", "Diameter", "Cyclicity", "Separability", "Sequentiality"}
     assert payload["measure_definitions"]["Size"] == "Number of places and transitions."
-    assert payload["loadings"]["Size"].keys() == {"Factor 1", "Factor 2"}
+    assert payload["factors"] == ["Factor 1", "Factor 2"] and len(payload["loadings"]["Size"]) == 2
     for key in ("bartlett", "kmo", "eigenvalues", "communalities", "variance", "assignment", "rotation"):
         assert key in payload
     assert set(payload) >= {"removed_measures", "n_factors"}
@@ -222,6 +222,18 @@ def test_payload_never_quotes_dropped_values():
     payload = build_payload("model", result, AnalysisParams(), dropped)
     assert "PATIENT-7" not in json.dumps(payload)
     assert payload["removed_measures"]["dataset_cleaning"] == [{"measure": "d", "reason": "non_numeric"}]
+
+
+def test_log_groups_are_sent_once():
+    from factor_analysis import catalog as cat
+    from interpretation.payload import measure_definitions
+
+    group, names = next((g, n) for g, n in cat._LogConstants.all_measures.items() if len(n) > 1)
+    definitions, groups = measure_definitions("log", [*names, "own column"])
+    title, text = cat.LOG_GROUPS[group]
+    assert groups == {title: text}
+    assert all(definitions[n] == f"group: {title}" for n in names)
+    assert definitions["own column"] is None
 
 
 def test_response_is_tidied(client, claude, csv_dataset):
@@ -468,6 +480,39 @@ def test_unusable_answers(client, claude, csv_dataset, message, code):
     claude.outcome = message()
     r = _interpret(client, csv_dataset[0], auto_msa_filter=False)
     assert r.status_code == 502 and r.json()["code"] == code
+
+
+@pytest.mark.parametrize("limit, value", [("MAX_FACTORS", 1), ("MAX_MEASURES", 5), ("MAX_MESSAGE_CHARS", 1000)])
+def test_oversized_analysis_never_reaches_the_api(client, claude, csv_dataset, monkeypatch, limit, value):
+    from limits import parse
+
+    from interpretation import client as claude_client
+    from interpretation import quota
+
+    default = getattr(claude_client, limit)
+    monkeypatch.setattr(claude_client, limit, value)
+    monkeypatch.setattr(quota, "session_limit_enabled", True)
+    monkeypatch.setattr(quota, "SESSION_LIMIT", parse("1/hour"))
+    r = _interpret(client, csv_dataset[0], auto_msa_filter=False)
+    assert r.status_code == 422 and r.json()["code"] == "interpretation_too_large"
+    assert r.json()["params"]["factors"] == claude_client.MAX_FACTORS
+    assert claude.calls == []
+    # No quota was used.
+    monkeypatch.setattr(claude_client, limit, default)
+    assert _interpret(client, csv_dataset[0], auto_msa_filter=False).status_code == 200
+
+
+def test_long_measure_names_are_refused(client, claude):
+    long_name = "x" * 121
+    table = _rng_table(LABELS).rename(columns={"Size": long_name})
+    r = client.post(
+        "/factor-analysis/datasets",
+        data={"kind": "model", "source": "csv"},
+        files={"files": ("t.csv", io.BytesIO(table.to_csv(index_label="observation").encode()), "text/csv")},
+    )
+    r = _interpret(client, r.json()["dataset_id"], auto_msa_filter=False)
+    assert r.status_code == 422 and r.json()["code"] == "interpretation_too_large"
+    assert claude.calls == []
 
 
 def test_analysis_errors_come_first(client, claude, csv_dataset):

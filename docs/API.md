@@ -309,8 +309,10 @@ measures. Observation labels, dataset and file names and measure values are neve
   stored; the UI uses it to show stored interpretations without spending anything.
 
 Errors carry `detail` and `code`. Analysis errors come first, as for `analyze`. Then: 503
-`interpretation_unavailable` (no key), 429 `rate_limited` (more than
-`INTERPRETATION_RATE_LIMIT`, default `10/hour`, live calls in this session) or
+`interpretation_unavailable` (no key), 422 `interpretation_too_large` (more than 150 used
+measures or 20 factors, a measure name longer than 120 characters, or a message over 80,000
+characters; `params` names the limits; checked before any limit counts), 429 `rate_limited`
+(more than `INTERPRETATION_RATE_LIMIT`, default `10/hour`, live calls in this session) or
 `interpretation_daily_cap` (more than `INTERPRETATION_DAILY_CAP`, default 200, live calls today
 over all sessions), 422 `interpretation_refused` (the model and its fallback declined), 502
 `interpretation_auth` (key rejected), `interpretation_incomplete` (answer cut off) or

@@ -46,8 +46,5 @@ given.
 
 
 def user_message(payload: dict[str, Any], language: str) -> str:
-    return (
-        f"Write the interpretation in {LANGUAGES[language]}.\n\n"
-        "Result of the factor analysis:\n"
-        f"{json.dumps(payload, ensure_ascii=False, indent=1)}"
-    )
+    data = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    return f"Write the interpretation in {LANGUAGES[language]}.\n\nResult of the factor analysis:\n{data}"

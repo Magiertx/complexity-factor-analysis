@@ -45,7 +45,9 @@ async def precompute(entry: dict[str, Any], language: str, key: str) -> dict[str
     data, dropped = bundled_matrix(entry)
     params = default_params(kind)
     result = analyze(data, params)
-    answer = await client.interpret(build_payload(kind, result, params, dropped), language, key)
+    payload = build_payload(kind, result, params, dropped)
+    client.check_size(payload, language)
+    answer = await client.interpret(payload, language, key)
     return {
         "dataset_id": entry["id"],
         "kind": kind,

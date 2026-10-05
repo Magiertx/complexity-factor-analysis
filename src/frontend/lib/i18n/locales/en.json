@@ -736,7 +736,8 @@
       "interpretation_timeout": "The Anthropic API did not answer in time. Try again later.",
       "interpretation_incomplete": "The answer of the model was cut off. Try again, or with fewer measures.",
       "interpretation_failed": "The model returned no usable answer. Try again later.",
-      "interpretation_daily_cap": "The server has used up today's interpretations. Try again tomorrow."
+      "interpretation_daily_cap": "The server has used up today's interpretations. Try again tomorrow.",
+      "interpretation_too_large": "This analysis is too large to interpret: at most {measures} measures, {factors} factors and measure names of {name_length} characters can be sent. Exclude measures or choose fewer factors."
     },
     "warnings": {
       "bartlett_not_significant": "Bartlett's test is not significant (p = {p} ≥ {alpha}); the measures may be uncorrelated.",

@@ -44,6 +44,13 @@ MAX_TOKENS = 16000
 # of the SDK have to fit into this budget as well.
 TIMEOUT_S = 170.0
 
+# Bounds on one request, so the daily cap also bounds the spending. The bundled log dataset
+# (122 measures, 15 factors) sends about 47,000 characters.
+MAX_MEASURES = 150
+MAX_FACTORS = 20
+MAX_NAME_LENGTH = 120
+MAX_MESSAGE_CHARS = 80_000
+
 OUTPUT_SCHEMA = anthropic.transform_schema(Interpretation)
 
 
@@ -63,11 +70,12 @@ client_factory: Callable[[str], Any] = make_client
 class InterpretationError(Exception):
     """A failure with the HTTP status, a stable code for the UI and a readable detail."""
 
-    def __init__(self, status: int, code: str, detail: str) -> None:
+    def __init__(self, status: int, code: str, detail: str, params: dict[str, Any] | None = None) -> None:
         super().__init__(detail)
         self.status = status
         self.code = code
         self.detail = detail
+        self.params = params
 
 
 def unavailable() -> InterpretationError:
@@ -77,6 +85,24 @@ def unavailable() -> InterpretationError:
         "Interpreting factors needs an Anthropic API key on the server (ANTHROPIC_API_KEY), and "
         "none is configured.",
     )
+
+
+def check_size(payload: dict[str, Any], language: str) -> None:
+    """Refuse an analysis too large to send: many measures or factors, long names."""
+    names = payload["measure_definitions"]
+    if (
+        len(payload["used_measures"]) > MAX_MEASURES
+        or payload["n_factors"] > MAX_FACTORS
+        or max((len(m) for m in names), default=0) > MAX_NAME_LENGTH
+        or len(user_message(payload, language)) > MAX_MESSAGE_CHARS
+    ):
+        raise InterpretationError(
+            422, "interpretation_too_large",
+            f"This analysis is too large to interpret. At most {MAX_MEASURES} measures, {MAX_FACTORS} "
+            f"factors and measure names of {MAX_NAME_LENGTH} characters can be sent; exclude measures "
+            "or choose fewer factors.",
+            {"measures": MAX_MEASURES, "factors": MAX_FACTORS, "name_length": MAX_NAME_LENGTH},
+        )
 
 
 def _timeout() -> InterpretationError:

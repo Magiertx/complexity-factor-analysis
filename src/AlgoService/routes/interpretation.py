@@ -32,7 +32,10 @@ class InterpretRequest(AnalyzeRequest):
 
 
 def _error(e: InterpretationError) -> JSONResponse:
-    return JSONResponse(status_code=e.status, content={"detail": e.detail, "code": e.code})
+    content: dict[str, Any] = {"detail": e.detail, "code": e.code}
+    if e.params:
+        content["params"] = e.params
+    return JSONResponse(status_code=e.status, content=content)
 
 
 def _response(entry: dict[str, Any], *, cached: bool, precomputed: bool) -> dict[str, Any]:
@@ -101,6 +104,13 @@ async def interpret_dataset(
     if api_key is None:
         return _error(client.unavailable())
 
+    payload = build_payload(kind, result, params, meta.get("dropped"))
+    try:
+        # Before any quota is used: the size of the request bounds what one call costs.
+        client.check_size(payload, body.language)
+    except InterpretationError as e:
+        return _error(e)
+
     lock = _LOCKS.setdefault(key, asyncio.Lock())
     try:
         async with lock:
@@ -108,7 +118,6 @@ async def interpret_dataset(
             if cached:
                 return _response(cached, cached=True, precomputed=False)
             await run_in_threadpool(quota.claim, session_id)
-            payload = build_payload(kind, result, params, meta.get("dropped"))
             answer = await client.interpret(payload, body.language, api_key)
             entry = {
                 "kind": kind,

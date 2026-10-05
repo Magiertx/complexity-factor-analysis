@@ -41,16 +41,25 @@ def _num(value: Any) -> Any:
     return value
 
 
-def measure_descriptions(kind: str, measures: list[str]) -> dict[str, str | None]:
-    """The catalog text of each measure; None for columns of an own CSV the catalog lacks."""
-    out: dict[str, str | None] = {}
+def measure_definitions(kind: str, measures: list[str]) -> tuple[dict[str, str | None], dict[str, str] | None]:
+    """The catalog text of each measure; None for columns of an own CSV the catalog lacks.
+
+    Log measures share the text of their group, so for them each measure names its group and
+    the second value holds the text of each group once.
+    """
+    if kind == "model":
+        return {m: cat.MODEL_MEASURE_DESCRIPTIONS.get(m) for m in measures}, None
+    definitions: dict[str, str | None] = {}
+    groups: dict[str, str] = {}
     for m in measures:
-        if kind == "model":
-            out[m] = cat.MODEL_MEASURE_DESCRIPTIONS.get(m)
-        else:
-            group = cat.log_group_of(m)
-            out[m] = f"{cat.LOG_GROUPS[group][0]}: {cat.LOG_GROUPS[group][1]}" if group else None
-    return out
+        group = cat.log_group_of(m)
+        if group is None:
+            definitions[m] = None
+            continue
+        name, text = cat.LOG_GROUPS[group]
+        definitions[m] = f"group: {name}"
+        groups[name] = text
+    return definitions, groups
 
 
 def _factor_label(i: int) -> str:
@@ -74,18 +83,15 @@ def build_payload(
     removed_msa = [m["measure"] for m in result["msa_filter"]["removed"]]
     cleaning = [{"measure": d["measure"], "reason": d["reason"]} for d in (dropped or [])]
     involved = used + removed_msa + list(params.excluded) + [d["measure"] for d in cleaning]
-
-    def by_factor(rows: dict[str, list[float]] | None) -> dict[str, dict[str, float]] | None:
-        if rows is None:
-            return None
-        return {m: dict(zip(labels, values)) for m, values in rows.items()}
+    definitions, groups = measure_definitions(kind, list(dict.fromkeys(involved)))
 
     variance = result["variance"]
     payload: dict[str, Any] = {
         "kind": kind,
         "kind_description": KIND_DESCRIPTIONS[kind],
         "n_observations": result["n_observations"],
-        "measure_definitions": measure_descriptions(kind, list(dict.fromkeys(involved))),
+        "measure_definitions": definitions,
+        **({"measure_groups": groups} if groups is not None else {}),
         "used_measures": used,
         "removed_measures": {
             "excluded_by_user": list(params.excluded),
@@ -111,7 +117,8 @@ def build_payload(
         "n_factors": k,
         "factors": labels,
         "rotation": result["rotation"],
-        "loadings": by_factor(result["loadings"]),
+        "loadings_note": "Per measure, one value per factor in the order of 'factors'.",
+        "loadings": result["loadings"],
         "communalities": result["communalities"],
         "variance": {
             "ss_loadings": dict(zip(labels, variance["ss_loadings"])),
@@ -130,8 +137,8 @@ def build_payload(
         "warnings": [w["message"] for w in result.get("warning_details", [])],
     }
     if result.get("structure_loadings") is not None:
-        payload["loadings_note"] = "Oblique rotation: 'loadings' is the pattern matrix."
-        payload["structure_loadings"] = by_factor(result["structure_loadings"])
+        payload["loadings_note"] += " Oblique rotation: 'loadings' is the pattern matrix."
+        payload["structure_loadings"] = result["structure_loadings"]
         payload["factor_correlations"] = result["factor_correlations"]
     return _num(payload)
 

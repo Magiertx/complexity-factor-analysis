@@ -736,7 +736,8 @@
       "interpretation_timeout": "Die Anthropic-API hat nicht rechtzeitig geantwortet. Versuche es später noch einmal.",
       "interpretation_incomplete": "Die Antwort des Modells wurde abgeschnitten. Versuche es noch einmal oder mit weniger Maßen.",
       "interpretation_failed": "Das Modell hat keine brauchbare Antwort geliefert. Versuche es später noch einmal.",
-      "interpretation_daily_cap": "Der Server hat sein Tageskontingent an Interpretationen aufgebraucht. Versuche es morgen noch einmal."
+      "interpretation_daily_cap": "Der Server hat sein Tageskontingent an Interpretationen aufgebraucht. Versuche es morgen noch einmal.",
+      "interpretation_too_large": "Diese Analyse ist zu groß für eine Interpretation: gesendet werden höchstens {measures} Maße, {factors} Faktoren und Maßnamen mit {name_length} Zeichen. Schließe Maße aus oder wähle weniger Faktoren."
     },
     "warnings": {
       "bartlett_not_significant": "Der Test nach Bartlett ist nicht signifikant (p = {p} ≥ {alpha}); die Maße sind womöglich unkorreliert.",

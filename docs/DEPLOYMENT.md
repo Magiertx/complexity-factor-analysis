@@ -190,8 +190,13 @@ bundled datasets.
   Console; once it is reached, interpretations fail with an error until it is raised. On the server,
   `INTERPRETATION_RATE_LIMIT` (default `10/hour` per session) and `INTERPRETATION_DAILY_CAP`
   (default 200 per day over all sessions) bound the number of live calls; the counters live in
-  Redis. One call sends a few thousand input tokens and may use up to 16,000 output tokens
-  including thinking. Cached and precomputed interpretations cost nothing.
+  Redis. One call sends about 2,000 input tokens for the bundled model datasets and roughly
+  15,000 to 20,000 for the bundled log dataset (122 measures, 15 factors), and may use up to
+  16,000 output tokens including thinking. Larger analyses are refused before any call: more
+  than 150 measures or 20 factors, measure names longer than 120 characters, or a message
+  over 80,000 characters (about 30,000 tokens). So one call costs at most about $0.45 at the
+  prices of Claude Opus 5.5, and the daily cap bounds a day. Cached and precomputed
+  interpretations cost nothing.
 - **Model.** `INTERPRETATION_MODEL` (default `claude-opus-5-5`) and `INTERPRETATION_EFFORT`
   (default `high`). Requests opt into Anthropic's server-side fallback (`fallbacks: "default"`),
   so a request the model's safety classifiers decline is retried on the recommended fallback
