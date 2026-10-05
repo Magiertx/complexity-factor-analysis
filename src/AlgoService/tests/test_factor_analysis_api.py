@@ -109,6 +109,7 @@ def test_catalog_log(client):
     groups = [g["key"] for g in cat["groups"]]
     assert groups[0] == "simple_stats" and "dfg_based" in groups
     assert "comparison_based" not in cat["defaults"]["groups"]
+    assert {g["key"] for g in cat["groups"] if g.get("slow")} == {"distinct_activities", "comparison_based"}
     measure = next(m for m in cat["measures"] if m["key"] == "n_variants")
     assert measure["group"] == "simple_stats"
     assert [b["id"] for b in cat["bundled"]] == ["comfy-log-pdc-training-logs"]

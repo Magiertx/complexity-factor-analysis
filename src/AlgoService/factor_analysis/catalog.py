@@ -18,16 +18,16 @@ MODEL_MEASURE_DESCRIPTIONS = {
     "Size": "Number of places and transitions.",
     "Connector Mismatch": "Imbalance between opening and closing parallel and choice connectors.",
     "Connector Heterogeneity": "Entropy of the connector types (parallel or choice); undefined without connectors.",
-    "Cross-Connectivity": "How strongly pairs of nodes are connected over their paths. Slow.",
+    "Cross-Connectivity": "How strongly pairs of nodes are connected over their paths.",
     "Token split": "Arcs leaving transitions minus the number of transitions.",
     "Control flow complexity": "Parallel splits plus the arcs leaving choice splits.",
     "Separability": "Share of nodes that are not articulation points of the undirected net.",
     "Average connector degree": "Mean number of arcs at a connector.",
     "Maximum connector degree": "Largest number of arcs at a connector.",
     "Sequentiality": "Share of arcs between two nodes that are not connectors.",
-    "Depth": "Largest nesting depth of splits and joins; needs the markings. Slow.",
-    "Diameter": "Longest acyclic path from an initially to a finally marked place. Slow.",
-    "Cyclicity": "Share of nodes that lie on a cycle. Slow.",
+    "Depth": "Largest nesting depth of splits and joins; needs the markings.",
+    "Diameter": "Longest acyclic path from an initially to a finally marked place.",
+    "Cyclicity": "Share of nodes that lie on a cycle.",
     "Coefficient of network connectivity": "Arcs per node.",
     "Density": "Arcs divided by the largest possible number of arcs, 2·|T|·|P|.",
     "Number of duplicate tasks": "Repetitions of transition labels.",
@@ -44,9 +44,9 @@ LOG_GROUPS: dict[str, tuple[str, str]] = {
     "eventropies": ("Entropies", "Entropy measures of the traces, prefixes and k-blocks."),
     "epa_based": ("Extended prefix automaton", "Variant and sequence entropy on the extended prefix automaton."),
     "trace_diversity": ("Trace diversity", "Simple and advanced trace diversity."),
-    "distinct_activities": ("Distinct activities", "Distinct activities per trace, event density, complexity factor. Slow."),
+    "distinct_activities": ("Distinct activities", "Distinct activities per trace, event density, complexity factor."),
     "repetitions": ("Repetitions", "Loops and repeated activities within traces."),
-    "comparison_based": ("Trace comparison", "Measures that compare traces pairwise, e.g. edit distance. Slow."),
+    "comparison_based": ("Trace comparison", "Measures that compare traces pairwise, e.g. edit distance."),
     "dfg_based": ("Directly-follows graph", "Structure of the directly-follows graph of the log."),
 }
 
@@ -199,7 +199,12 @@ def catalog(kind: str) -> dict[str, Any]:
                 entry["slow"] = True
             measures.append(entry)
     groups = [
-        {"key": g, "name": LOG_GROUPS[g][0], "description": LOG_GROUPS[g][1]}
+        {
+            "key": g,
+            "name": LOG_GROUPS[g][0],
+            "description": LOG_GROUPS[g][1],
+            **({"slow": True} if g in SLOW_LOG_GROUPS else {}),
+        }
         for g in _LogConstants.all_measures
     ]
     defaults = default_log_groups()
