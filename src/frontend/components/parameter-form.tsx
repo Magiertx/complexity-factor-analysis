@@ -163,7 +163,7 @@ function Field({
       // Escape special regex characters to make user search safe and ReDoS-immune
       const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       regex = escaped ? new RegExp(escaped, "i") : null;
-    } catch (e) {
+    } catch {
       // Ignore invalid regex
     }
 

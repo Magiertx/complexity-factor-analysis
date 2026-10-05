@@ -275,7 +275,7 @@ export async function runBatch(
 export async function abortTask(taskId: string): Promise<void> {
   try {
     await fetch(`${BASE}/progress/${taskId}/abort`, { method: "POST" });
-  } catch (e) {
+  } catch {
     // Ignore error
   }
 }

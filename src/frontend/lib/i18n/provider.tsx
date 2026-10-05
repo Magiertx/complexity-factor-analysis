@@ -86,7 +86,6 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
       const fromFallback = lookup(DICTIONARIES[DEFAULT_LOCALE], key);
       if (fromFallback !== undefined) return interpolate(fromFallback, params);
       if (process.env.NODE_ENV !== "production") {
-        // eslint-disable-next-line no-console
         console.warn(`[i18n] missing key: ${key}`);
       }
       return key;

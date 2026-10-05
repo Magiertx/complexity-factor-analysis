@@ -279,8 +279,8 @@ export function Workbench() {
 
         const recents = await fetchRecentLogs();
         if (active) setRecentLogs(recents);
-      } catch (e) {
-        // Silent catch for network hiccups
+      } catch {
+        // Ignore network hiccups
       }
     };
 
@@ -437,8 +437,8 @@ export function Workbench() {
         setResult(null);
         setError(null);
         return;
-      } catch (e) {
-        // Fallback to defaults on parse error
+      } catch {
+        // Fall back to defaults on parse error
       }
     }
 

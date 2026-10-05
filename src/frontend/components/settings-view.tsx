@@ -198,7 +198,7 @@ export function SettingsView() {
       await deleteAllJobs();
       setConfirmClearJobs(false);
       showToast(t("settings.toast_job_history_cleared"));
-    } catch (e) {
+    } catch {
       showToast(t("settings.toast_job_history_failed"));
     }
   };

@@ -15,10 +15,8 @@ import {
   Filter,
 } from "lucide-react";
 import {
-  AlgorithmManifest,
   Job,
   deleteJob,
-  fetchAlgorithms,
   fetchJobs,
 } from "@/lib/api";
 import { JobNotesField } from "./job-notes-field";
@@ -51,7 +49,6 @@ export function RunHistoryView() {
   };
 
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [algorithms, setAlgorithms] = useState<AlgorithmManifest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -78,11 +75,6 @@ export function RunHistoryView() {
 
   useEffect(() => {
     load();
-    fetchAlgorithms()
-      .then((res) => setAlgorithms(res.algorithms))
-      .catch(() => {
-        /* algorithm filter will be empty; not fatal */
-      });
   }, []);
 
   const showToast = (msg: string) => {

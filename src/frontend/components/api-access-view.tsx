@@ -216,7 +216,7 @@ export function ApiAccessView() {
           </p>
           <p>
             • Session: a signed cookie scopes every endpoint. Reuse the same cookie across requests
-            (Python's <code className="font-mono text-[11px]">requests.Session()</code>) to keep job history visible.
+            (Python&apos;s <code className="font-mono text-[11px]">requests.Session()</code>) to keep job history visible.
           </p>
           <p>
             • Parameter schemas come from{" "}
