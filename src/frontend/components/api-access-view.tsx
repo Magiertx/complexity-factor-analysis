@@ -84,14 +84,13 @@ const ENDPOINTS: { group: string; items: Endpoint[] }[] = [
     group: "Run jobs",
     items: [
       { method: "POST", path: "/algorithms/{id}/analyze", description: "Submit one log to one algorithm. Returns a job_id." },
-      { method: "POST", path: "/algorithms/{id}/batch", description: "Run one algorithm over up to 10 logs (multipart, accepts files[] + sample_log_ids/recent_log_ids JSON arrays)." },
       { method: "POST", path: "/log-stats", description: "Cheap descriptive statistics of a log (traces, events, variants, time range)." },
     ],
   },
   {
     group: "Factor analysis",
     items: [
-      { method: "GET", path: "/factor-analysis/catalog?kind=model|log", description: "Measures, miners or feature groups, bundled datasets and the accepted sources." },
+      { method: "GET", path: "/factor-analysis/catalog?kind=model|log", description: "Measures, miners or feature groups, bundled datasets, sample inputs and the accepted sources." },
       { method: "POST", path: "/factor-analysis/datasets", description: "Create a dataset from a bundled one, a CSV, event logs or PNML files (multipart). Logs and PNML run as a job." },
       { method: "GET", path: "/factor-analysis/datasets/{id}", description: "Status, progress and the cleaned measure matrix (first 2000 rows)." },
       { method: "GET", path: "/factor-analysis/datasets/{id}/download", description: "The cleaned matrix as CSV." },
@@ -213,8 +212,8 @@ export function ApiAccessView() {
           <p>
             • Rate limits (per IP): <code className="font-mono text-[11px]">60/hour</code> on{" "}
             <code className="font-mono text-[11px]">/algorithms/&#123;id&#125;/analyze</code>,{" "}
-            <code className="font-mono text-[11px]">20/hour</code> on{" "}
-            <code className="font-mono text-[11px]">/algorithms/&#123;id&#125;/batch</code>,{" "}
+            <code className="font-mono text-[11px]">60/hour</code> on{" "}
+            <code className="font-mono text-[11px]">POST /factor-analysis/datasets</code>,{" "}
             <code className="font-mono text-[11px]">300/hour</code> on{" "}
             <code className="font-mono text-[11px]">/log-stats</code>; 120/minute everywhere else.
           </p>
