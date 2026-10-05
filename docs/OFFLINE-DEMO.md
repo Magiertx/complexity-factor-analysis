@@ -137,8 +137,7 @@ Measured on Docker Desktop on Windows 11 (12 virtual CPUs), with the images alre
 | Sample logs, log tab: 4 logs, simple statistics only | 3 s |
 
 Alpha++ did not finish within 15 minutes on the largest sample log; leave the miners marked
-"slow" out of a live demo. The Hybrid ILP miner works on x86-64 only (see
-[README](../README.md#operating-it)).
+"slow" out of a live demo (see [README](../README.md#operating-it)).
 
 ## Memory and disk
 

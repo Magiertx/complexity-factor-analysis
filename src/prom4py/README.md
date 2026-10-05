@@ -50,21 +50,18 @@ class `lpsolve.LpSolve` loads two native libraries, and without them discovery f
 | Library | What it is | Where it comes from |
 |---------|------------|---------------------|
 | `liblpsolve55.so` | the solver | Ubuntu package `lp-solve` (5.5.2.5), installed to `/usr/lib/lp_solve` |
-| `liblpsolve55j.so` | the JNI wrapper for `lpsolve.LpSolve` | not packaged by Ubuntu; `lib/ux64/` of the official [lp_solve Java distribution](https://sourceforge.net/projects/lpsolve/files/lpsolve/5.5.2.5/), copied to `/usr/lib/lp_solve` |
+| `liblpsolve55j.so` | the JNI wrapper for `lpsolve.LpSolve` | not packaged by Ubuntu; compiled from `src/c/` of the official [lp_solve Java distribution](https://sourceforge.net/projects/lpsolve/files/lpsolve/5.5.2.5/) in the `lpsolve-wrapper` build stage, copied to `/usr/lib/lp_solve` |
 
-The build downloads `lp_solve_5.5.2.5_java.zip` (about 460 KB) from SourceForge and checks its
-SHA-256 (`LPSOLVE_JAVA_SHA256` in the Dockerfile). `launch.sh` puts `/usr/lib/lp_solve` on
-`java.library.path`, and `LD_LIBRARY_PATH` points there as well, because the wrapper links
-against `liblpsolve55.so`. For a build without SourceForge, pass a local copy the same way as
-the ProM bundle:
+The build downloads `lp_solve_5.5.2.5_java.zip` (about 460 KB) from SourceForge, checks its
+SHA-256 (`LPSOLVE_JAVA_SHA256` in the Dockerfile) and compiles the wrapper against the Ubuntu
+solver, so it works on x86-64 and arm64 (e.g. Apple silicon) alike. The wrapper finds
+`liblpsolve55.so` through its rpath; `launch.sh` puts `/usr/lib/lp_solve` on
+`java.library.path`. For a build without SourceForge, pass a local copy the same way as the
+ProM bundle:
 
 ```bash
 docker compose build --build-arg LPSOLVE_JAVA_URL=http://host.docker.internal:8765/lp_solve_5.5.2.5_java.zip prom4py
 ```
-
-The prebuilt wrapper exists for x86-64 only. On other architectures (e.g. Apple silicon
-without emulation) the build skips it, and the Hybrid ILP miner fails as before; every other
-miner works.
 
 To check an image: `docker compose logs prom4py` prints `LpSolve Libraries Loaded` on the
 first Hybrid ILP run.
