@@ -25,7 +25,11 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
-  experimental: {},
+  experimental: {
+    // Requests through the /api rewrite are cut after 30 s by default; dataset uploads and
+    // factor fits over many measures can take longer.
+    proxyTimeout: 120_000,
+  },
   output: "standalone",
   async headers() {
     // Also set by the nginx template in docs/DEPLOYMENT.md, but not every deployment uses it.
