@@ -179,7 +179,26 @@ def test_fit_factors_derived_quantities():
     assert fit.ss_loadings == pytest.approx((loadings ** 2).sum(axis=0))
     assert fit.proportion == pytest.approx(np.array(fit.ss_loadings) / 6)
     assert fit.cumulative == pytest.approx(np.cumsum(fit.proportion))
+    assert fit.explained == pytest.approx(fit.cumulative[-1])
     assert fit.rotation == "varimax"
+    assert fit.structure is None and fit.factor_correlations is None
+
+
+@pytest.mark.parametrize("rotation", ["promax", "oblimin"])
+def test_oblique_rotations_keep_the_communalities(rotation):
+    """Rotation does not change communalities; factor_analyzer's own sum over the pattern
+    matrix would give values above 1 here."""
+    data = _inductive().drop(columns=["Sequentiality", "Control flow complexity"])
+    varimax = core.fit_factors(data, 4, "varimax")
+    oblique = core.fit_factors(data, 4, rotation)
+    measures = list(data.columns)
+    assert [oblique.communalities[m] for m in measures] == pytest.approx([varimax.communalities[m] for m in measures])
+    assert max(oblique.communalities.values()) < 1
+    assert oblique.proportion is None and oblique.cumulative is None
+    assert oblique.explained == pytest.approx(varimax.explained)
+    phi = np.array(oblique.factor_correlations)
+    assert np.diag(phi) == pytest.approx(np.ones(4))
+    assert oblique.structure.to_numpy() == pytest.approx(oblique.loadings.to_numpy() @ phi, abs=1e-8)
 
 
 def test_fit_factors_cache_returns_the_same_fit():
@@ -193,8 +212,9 @@ def test_single_factor_is_not_rotated():
 
 @pytest.mark.parametrize("n_factors", [0, 6])
 def test_fit_factors_rejects_impossible_factor_counts(n_factors):
-    with pytest.raises(core.AnalysisError):
+    with pytest.raises(core.AnalysisError, match="stay empty") as e:
         core.fit_factors(_correlated(), n_factors)
+    assert e.value.code == "n_factors_range" and e.value.params["max"] == 5
 
 
 def test_assign_factors_by_largest_absolute_loading():
@@ -209,6 +229,10 @@ def test_assign_factors_by_largest_absolute_loading():
     ]
     assert unassigned == ["d"]
 
+    factors, unassigned = core.assign_factors(loadings, 0.35, {"a": 0.9, "b": 0.4, "c": 0.5, "d": 0.2}, 0.5)
+    assert [m["measure"] for f in factors for m in f["measures"]] == ["a", "c"]
+    assert unassigned == ["b", "d"]
+
 
 # --- the whole analysis -------------------------------------------------------------------
 
@@ -220,7 +244,8 @@ def test_analyze_finds_the_two_latent_factors():
     assert sorted(map(sorted, groups)) == [["a"], ["b"]]
     assert result["unassigned"] == []
     assert result["bartlett"]["passed"] and result["kmo"]["passed"]
-    assert result["warnings"] == []
+    assert not result["bartlett"]["regularised"]
+    assert result["warnings"] == [] and result["warning_details"] == []
 
 
 def test_analyze_errors():
@@ -231,6 +256,30 @@ def test_analyze_errors():
         core.analyze(data.iloc[:5], core.AnalysisParams())
     with pytest.raises(core.AnalysisError, match="at most 5"):
         core.analyze(data, core.AnalysisParams(n_factors=6))
+    with pytest.raises(core.AnalysisError, match="Unknown measure") as e:
+        core.analyze(data, core.AnalysisParams(excluded=["nope"]))
+    assert e.value.code == "unknown_excluded"
+
+
+def test_analyze_warns_about_unidentified_solutions():
+    result = core.analyze(_correlated(), core.AnalysisParams(n_factors=4, auto_msa_filter=False))
+    assert "not_identified" in [w["code"] for w in result["warning_details"]]
+
+
+def test_analyze_flags_communalities_at_the_uniqueness_bound():
+    """minres stops at a uniqueness of 0.005; Maximum connector degree ends there."""
+    result = core.analyze(_inductive(), core.AnalysisParams(n_factors=4))
+    heywood = next(w for w in result["warning_details"] if w["code"] == "heywood")
+    assert "Maximum connector degree" in heywood["params"]["measures"]
+    assert "Size" not in heywood["params"]["measures"]
+
+
+def test_analyze_marks_a_regularised_bartlett_test():
+    data = _correlated()
+    data["sum"] = data["a1"] + data["b1"]
+    result = core.analyze(data, core.AnalysisParams(auto_msa_filter=False))
+    assert result["bartlett"]["regularised"]
+    assert "singular" in [w["code"] for w in result["warning_details"]]
 
 
 def test_analyze_warns_about_small_samples_and_failed_bartlett():
@@ -340,7 +389,7 @@ def test_matches_comfy_for_log_measures_cleaning_and_bartlett():
 
 def _small_result() -> dict:
     return {
-        "n_factors": 2, "n_observations": 50, "rotation": "varimax",
+        "n_factors": 2, "n_observations": 50, "rotation": "varimax", "loading_threshold": 0.5,
         "loadings": {"Size_a & b": [0.91234, -0.1], "=cmd": [0.2, -0.5]},
         "communalities": {"Size_a & b": 0.84, "=cmd": 0.29},
     }
@@ -355,11 +404,17 @@ def test_loadings_csv():
 
 
 def test_loadings_latex_bolds_loadings_at_the_threshold():
-    tex = loadings_latex(_small_result(), 0.5)
+    tex = loadings_latex(_small_result())
     assert "\\begin{tabular}{lrrr}" in tex
     assert "Measure & Factor 1 & Factor 2 & Communality \\\\" in tex
     assert "Size\\_a \\& b & $\\mathbf{0.9123}$ & $-0.1000$ & $0.8400$ \\\\" in tex
     assert "=cmd & $0.2000$ & $\\mathbf{-0.5000}$ & $0.2900$ \\\\" in tex
+
+
+def test_loadings_latex_does_not_bold_measures_below_the_communality_threshold():
+    tex = loadings_latex({**_small_result(), "communality_threshold": 0.5})
+    assert "=cmd & $0.2000$ & $-0.5000$ & $0.2900$ \\\\" in tex
+    assert "communality >= 0.5" in tex
 
 
 def test_latex_escape():

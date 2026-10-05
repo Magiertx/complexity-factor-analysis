@@ -17,6 +17,7 @@ from __future__ import annotations
 import hashlib
 import inspect
 import math
+import threading
 import warnings
 from collections import OrderedDict
 from dataclasses import dataclass, field
@@ -45,8 +46,9 @@ MAX_ROW_MISSING_SHARE = 0.5
 # measures does.
 MAX_MISSING_SHARE = 0.0
 
-# Communalities at or above this are reported as a Heywood case.
-HEYWOOD_COMMUNALITY = 0.999
+# Default loading and communality thresholds per kind, as in ComFy and ComFy for log measures.
+LOADING_THRESHOLDS = {"model": 0.35, "log": _C.ignore_threshold}
+COMMUNALITY_THRESHOLDS = {"model": 0.0, "log": _C.communality_threshold}
 
 
 def _check_array_compat(x, force_all_finite=None, **kwargs):
@@ -63,9 +65,21 @@ def _check_array_compat(x, force_all_finite=None, **kwargs):
 
 _fa_module.check_array = _check_array_compat
 
+# minres bounds every uniqueness below by 0.005, so a Heywood case ends at a communality of
+# about 0.995 rather than 1.
+HEYWOOD_COMMUNALITY = 1 - FactorAnalyzer().bounds[0] - 1e-4
+
 
 class AnalysisError(ValueError):
-    """The data cannot be analysed with the given settings; the message says why."""
+    """The data cannot be analysed with the given settings; the message says why.
+
+    ``code`` and ``params`` let the UI show the message in its own language.
+    """
+
+    def __init__(self, message: str, code: str = "analysis_failed", **params: Any) -> None:
+        super().__init__(message)
+        self.code = code
+        self.params = params
 
 
 # --- cleaning ----------------------------------------------------------------------------
@@ -182,13 +196,20 @@ def bartlett_sphericity(data: pd.DataFrame) -> dict[str, float]:
 
     ``factor_analyzer.calculate_bartlett_sphericity`` takes ``log(det(R))``, which is NaN once
     the determinant underflows. Eigenvalues below ``Constants.eigenvalue_floor`` are clamped to
-    it, as in ComFy for log measures.
+    it, as in ComFy for log measures; ``clamped`` counts them. With any clamped, chi-square
+    depends on the floor rather than on the data.
     """
     n, p = data.shape
-    eigenvalues = np.clip(np.linalg.eigvalsh(correlation_matrix(data)), _C.eigenvalue_floor, None)
+    raw = np.linalg.eigvalsh(correlation_matrix(data))
+    eigenvalues = np.clip(raw, _C.eigenvalue_floor, None)
     chi_square = -float(np.sum(np.log(eigenvalues))) * (n - 1 - (2 * p + 5) / 6)
     df = p * (p - 1) / 2
-    return {"chi_square": chi_square, "df": df, "p_value": float(chi2.sf(chi_square, df))}
+    return {
+        "chi_square": chi_square,
+        "df": df,
+        "p_value": float(chi2.sf(chi_square, df)),
+        "clamped": int(np.sum(raw < _C.eigenvalue_floor)),
+    }
 
 
 def singular_measures(data: pd.DataFrame) -> list[list[str]]:
@@ -211,11 +232,14 @@ def singular_measures(data: pd.DataFrame) -> list[list[str]]:
 
 def kmo(data: pd.DataFrame) -> tuple[dict[str, float], float]:
     """Kaiser-Meyer-Olkin measure of sampling adequacy, per measure and overall."""
+    # factor_analyzer warns about a pseudo-inverse whenever det(cov) is tiny, which depends on
+    # the scale of the measures and fires on regular data too; singular_measures reports
+    # actual singularity.
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         per_measure, overall = calculate_kmo(np.asarray(data, dtype=float))
     if not np.all(np.isfinite(per_measure)) or not math.isfinite(overall):
-        raise AnalysisError("The MSA could not be computed; the correlation matrix is singular.")
+        raise AnalysisError("The MSA could not be computed; the correlation matrix is singular.", "msa_singular")
     return {c: float(v) for c, v in zip(data.columns, per_measure)}, float(overall)
 
 
@@ -265,17 +289,27 @@ def kaiser_criterion(values: list[float]) -> int:
 
 @dataclass
 class FactorFit:
+    #: Orthogonal rotations: the loadings. Oblique rotations: the pattern matrix.
     loadings: pd.DataFrame
     communalities: dict[str, float]
     uniquenesses: dict[str, float]
     ss_loadings: list[float]
-    proportion: list[float]
-    cumulative: list[float]
+    #: Shares of variance per factor; None for oblique rotations, where they do not add up.
+    proportion: list[float] | None
+    cumulative: list[float] | None
+    #: Share of the total variance the factors explain together, mean communality.
+    explained: float
     rotation: str
+    #: Oblique rotations only: correlations of measures and factors, and among the factors.
+    structure: pd.DataFrame | None = None
+    factor_correlations: list[list[float]] | None = None
+    #: Warnings of the fit, e.g. that the optimizer did not converge.
+    notes: list[str] = field(default_factory=list)
 
 
 _FIT_CACHE: OrderedDict[tuple, FactorFit] = OrderedDict()
 _FIT_CACHE_SIZE = 32
+_FIT_CACHE_LOCK = threading.Lock()
 
 
 def _fit_key(data: pd.DataFrame, n_factors: int, rotation: str) -> tuple:
@@ -288,63 +322,105 @@ def fit_factors(data: pd.DataFrame, n_factors: int, rotation: str = "varimax") -
     """``FactorAnalyzer`` with its defaults. The minres fit takes seconds for a hundred
     measures, so recent fits are cached; a new loading threshold does not refit."""
     key = _fit_key(data, n_factors, rotation)
-    if key in _FIT_CACHE:
-        _FIT_CACHE.move_to_end(key)
-        return _FIT_CACHE[key]
+    with _FIT_CACHE_LOCK:
+        if key in _FIT_CACHE:
+            _FIT_CACHE.move_to_end(key)
+            return _FIT_CACHE[key]
     fit = _fit_factors(data, n_factors, rotation)
-    _FIT_CACHE[key] = fit
-    if len(_FIT_CACHE) > _FIT_CACHE_SIZE:
-        _FIT_CACHE.popitem(last=False)
+    with _FIT_CACHE_LOCK:
+        _FIT_CACHE[key] = fit
+        if len(_FIT_CACHE) > _FIT_CACHE_SIZE:
+            _FIT_CACHE.popitem(last=False)
     return fit
+
+
+def max_factors(p: int) -> int:
+    """With p measures, a p-th factor would carry no variance; at most p - 1 are fitted."""
+    return p - 1
 
 
 def _fit_factors(data: pd.DataFrame, n_factors: int, rotation: str) -> FactorFit:
     if rotation not in ROTATIONS:
-        raise AnalysisError(f"Unknown rotation '{rotation}'.")
+        raise AnalysisError(f"Unknown rotation '{rotation}'.", "unknown_rotation", rotation=rotation)
     p = data.shape[1]
-    if n_factors < 1 or n_factors > p - 1:
-        raise AnalysisError(
-            f"The number of factors must be between 1 and {p - 1} (number of measures - 1)."
-        )
+    if n_factors < 1 or n_factors > max_factors(p):
+        raise _factor_count_error(n_factors, p)
     # factor_analyzer skips the rotation for a single factor; say so in the result.
     used_rotation = "none" if rotation == "none" or n_factors == 1 else rotation
 
     fa = FactorAnalyzer(n_factors=n_factors, rotation=None if used_rotation == "none" else used_rotation)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
         try:
             fa.fit(np.asarray(data, dtype=float))
         except (np.linalg.LinAlgError, ValueError) as e:
-            raise AnalysisError(f"The factor analysis failed: {e}") from None
+            raise AnalysisError(f"The factor analysis failed: {e}", "fit_failed", error=str(e)) from None
+    notes = sorted({str(w.message) for w in caught if str(w.message).startswith("Failed to converge")})
 
     if not np.all(np.isfinite(fa.loadings_)):
         raise AnalysisError(
             "The factor analysis did not converge; the correlation matrix is singular. "
-            "Exclude measures that are linear combinations of others."
+            "Exclude measures that are linear combinations of others.",
+            "not_converged",
         )
     columns = [f"Factor {i + 1}" for i in range(n_factors)]
-    loadings = pd.DataFrame(fa.loadings_, index=list(data.columns), columns=columns)
-    ss, proportion, cumulative = fa.get_factor_variance()
+    pattern = np.asarray(fa.loadings_)
+    structure = None if fa.structure_ is None else np.asarray(fa.structure_)
+    # factor_analyzer sums the squared pattern loadings, which is wrong for oblique rotations;
+    # there the communality is diag(P Phi P') = rowsum(P * S), the same as without rotation.
+    communalities = (pattern * structure).sum(axis=1) if structure is not None else (pattern ** 2).sum(axis=1)
+    ss = (pattern ** 2).sum(axis=0)
+    proportion = cumulative = None
+    correlations = None
+    if structure is None:
+        proportion = ss / p
+        cumulative = np.cumsum(proportion)
+    else:
+        # fa.phi_ is not reordered with the factors; S = P Phi gives it in their order.
+        phi = np.linalg.lstsq(pattern, structure, rcond=None)[0]
+        correlations = [[float(v) for v in row] for row in (phi + phi.T) / 2]
     return FactorFit(
-        loadings=loadings,
-        communalities=dict(zip(data.columns, map(float, fa.get_communalities()))),
-        uniquenesses=dict(zip(data.columns, map(float, fa.get_uniquenesses()))),
+        loadings=pd.DataFrame(pattern, index=list(data.columns), columns=columns),
+        communalities=dict(zip(data.columns, map(float, communalities))),
+        uniquenesses=dict(zip(data.columns, map(float, 1 - communalities))),
         ss_loadings=[float(v) for v in ss],
-        proportion=[float(v) for v in proportion],
-        cumulative=[float(v) for v in cumulative],
+        proportion=None if proportion is None else [float(v) for v in proportion],
+        cumulative=None if cumulative is None else [float(v) for v in cumulative],
+        explained=float(communalities.sum() / p),
         rotation=used_rotation,
+        structure=None if structure is None else pd.DataFrame(structure, index=list(data.columns), columns=columns),
+        factor_correlations=correlations,
+        notes=notes,
     )
 
 
-def assign_factors(loadings: pd.DataFrame, threshold: float) -> tuple[list[dict[str, Any]], list[str]]:
+def _factor_count_error(n_factors: int, p: int) -> AnalysisError:
+    return AnalysisError(
+        f"{n_factors} factors requested, but with {p} measures at most {max_factors(p)} are possible; "
+        "a further factor would stay empty.",
+        "n_factors_range",
+        requested=n_factors,
+        measures=p,
+        max=max_factors(p),
+    )
+
+
+def assign_factors(
+    loadings: pd.DataFrame,
+    threshold: float,
+    communalities: dict[str, float] | None = None,
+    communality_threshold: float = 0.0,
+) -> tuple[list[dict[str, Any]], list[str]]:
     """Put each measure on the factor with its largest absolute loading, if that reaches the
-    threshold. Within a factor, measures are sorted by absolute loading, largest first."""
+    threshold and its communality reaches ``communality_threshold``. Within a factor, measures
+    are sorted by absolute loading, largest first. ``index`` counts the factors from 0."""
     groups: list[list[tuple[str, float]]] = [[] for _ in loadings.columns]
     unassigned: list[str] = []
     for measure, row in loadings.iterrows():
         values = row.to_numpy()
         best = int(np.argmax(np.abs(values)))
-        if abs(values[best]) >= threshold:
+        weak = communalities is not None and communalities[str(measure)] < communality_threshold
+        if abs(values[best]) >= threshold and not weak:
             groups[best].append((str(measure), float(values[best])))
         else:
             unassigned.append(str(measure))
@@ -371,11 +447,22 @@ class AnalysisParams:
     bartlett_alpha: float = _C.bartlett_p_value_threshold
     n_factors: int | None = None
     rotation: str = "varimax"
-    loading_threshold: float = 0.35
+    loading_threshold: float = LOADING_THRESHOLDS["model"]
+    communality_threshold: float = COMMUNALITY_THRESHOLDS["model"]
 
 
 def _finite(value: float) -> float | None:
     return value if math.isfinite(value) else None
+
+
+class _Warnings:
+    """English messages for API clients, plus a code and parameters for the UI to translate."""
+
+    def __init__(self) -> None:
+        self.items: list[dict[str, Any]] = []
+
+    def add(self, code: str, message: str, **params: Any) -> None:
+        self.items.append({"code": code, "message": message, "params": params})
 
 
 def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
@@ -386,24 +473,41 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
     is analysed like ComFy for log measures does (clamped eigenvalues, pseudo-inverse in the
     MSA) and reported as a warning; it is an error only if the factor analysis then fails.
     """
-    data = data.drop(columns=[c for c in params.excluded if c in data.columns])
+    unknown = [c for c in params.excluded if c not in data.columns]
+    if unknown:
+        raise AnalysisError(
+            f"Unknown measure(s) to exclude: {', '.join(unknown[:5])}.",
+            "unknown_excluded",
+            measures=", ".join(unknown[:5]),
+        )
+    data = data.drop(columns=list(params.excluded))
     n, p = data.shape
     if p < MIN_MEASURES:
         raise AnalysisError(
-            f"At least {MIN_MEASURES} measures are needed for a factor analysis; {p} are left."
+            f"At least {MIN_MEASURES} measures are needed for a factor analysis; {p} are left.",
+            "too_few_measures",
+            min=MIN_MEASURES,
+            left=p,
         )
     if n < p + 1:
         raise AnalysisError(
             f"{n} observations are too few for {p} measures; at least {p + 1} are needed. "
-            "Exclude measures or add observations."
+            "Exclude measures or add observations.",
+            "too_few_observations",
+            n=n,
+            measures=p,
+            needed=p + 1,
         )
-    warnings_out: list[str] = []
+    out = _Warnings()
     bartlett = bartlett_sphericity(data)
     bartlett_passed = bartlett["p_value"] < params.bartlett_alpha
     if not bartlett_passed:
-        warnings_out.append(
+        out.add(
+            "bartlett_not_significant",
             f"Bartlett's test is not significant (p = {bartlett['p_value']:.3g} ≥ "
-            f"{params.bartlett_alpha}); the measures may be uncorrelated."
+            f"{params.bartlett_alpha}); the measures may be uncorrelated.",
+            p=f"{bartlett['p_value']:.3g}",
+            alpha=params.bartlett_alpha,
         )
     if params.auto_msa_filter:
         filtered = msa_filter(data, params.msa_threshold)
@@ -412,7 +516,10 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
         if data.shape[1] < MIN_MEASURES:
             raise AnalysisError(
                 f"The MSA filter left {data.shape[1]} measure(s); at least {MIN_MEASURES} are "
-                "needed. Turn the filter off or lower the MSA threshold."
+                "needed. Turn the filter off or lower the MSA threshold.",
+                "msa_filter_left",
+                left=data.shape[1],
+                min=MIN_MEASURES,
             )
     else:
         per_measure, overall = kmo(data)
@@ -420,38 +527,69 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
     dependent = singular_measures(data)
     if dependent:
         groups = "; ".join(", ".join(g) for g in dependent)
-        warnings_out.append(
+        out.add(
+            "singular",
             "The correlation matrix is singular; these measures are linearly dependent: "
             f"{groups}. Results rely on clamped eigenvalues and pseudo-inverses; consider "
-            "excluding one measure of each group."
+            "excluding one measure of each group.",
+            groups=groups,
         )
     kmo_passed = overall >= params.msa_threshold
     if not kmo_passed:
-        warnings_out.append(
+        out.add(
+            "kmo_low",
             f"The overall MSA {overall:.3f} is below {params.msa_threshold}; "
-            "a factor analysis is not recommended."
+            "a factor analysis is not recommended.",
+            overall=f"{overall:.3f}",
+            threshold=params.msa_threshold,
         )
 
     n, p = data.shape
     if n < 5 * p:
-        warnings_out.append(f"{n} observations for {p} measures; at least 5 per measure ({5 * p}) are recommended.")
+        out.add(
+            "small_sample",
+            f"{n} observations for {p} measures; at least 5 per measure ({5 * p}) are recommended.",
+            n=n,
+            measures=p,
+            recommended=5 * p,
+        )
 
     values = eigenvalues(data)
-    suggested = min(kaiser_criterion(values), p - 1)
+    suggested = min(kaiser_criterion(values), max_factors(p))
     n_factors = suggested if params.n_factors is None else int(params.n_factors)
-    if n_factors < 1 or n_factors > p - 1:
-        raise AnalysisError(
-            f"{n_factors} factors requested, but with {p} measures at most {p - 1} are possible."
+    if n_factors < 1 or n_factors > max_factors(p):
+        raise _factor_count_error(n_factors, p)
+    if (p - n_factors) ** 2 < p + n_factors:
+        out.add(
+            "not_identified",
+            f"{n_factors} factors for {p} measures exceed the Ledermann bound; the solution is "
+            "not identified and the loadings are not unique. Use fewer factors.",
+            factors=n_factors,
+            measures=p,
         )
 
     fit = fit_factors(data, n_factors, params.rotation)
+    for note in fit.notes:
+        out.add("fit_not_converged", f"The factor fit: {note}", message=note)
     if fit.rotation != params.rotation:
-        warnings_out.append("No rotation is applied to a single factor.")
+        out.add("single_factor_no_rotation", "No rotation is applied to a single factor.")
     heywood = [m for m, c in fit.communalities.items() if c >= HEYWOOD_COMMUNALITY]
     if heywood:
-        warnings_out.append(f"Heywood case: communality of about 1 for {', '.join(heywood)}.")
+        names = ", ".join(heywood)
+        out.add(
+            "heywood",
+            f"Communality at the bound of the fit (uniqueness at most {FactorAnalyzer().bounds[0]}) "
+            f"for {names}; possible Heywood case.",
+            measures=names,
+        )
 
-    factors, unassigned = assign_factors(fit.loadings, params.loading_threshold)
+    factors, unassigned = assign_factors(
+        fit.loadings, params.loading_threshold, fit.communalities, params.communality_threshold
+    )
+
+    def by_measure(frame: pd.DataFrame) -> dict[str, list[float]]:
+        return {m: [float(v) for v in row] for m, row in zip(frame.index, frame.to_numpy())}
+
     return {
         "n_observations": int(n),
         "used_measures": list(data.columns),
@@ -461,6 +599,7 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
             "p_value": bartlett["p_value"],
             "alpha": params.bartlett_alpha,
             "passed": bool(bartlett_passed),
+            "regularised": bartlett["clamped"] > 0,
         },
         "kmo": {
             "overall": overall,
@@ -473,15 +612,21 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
         "suggested_n_factors": suggested,
         "n_factors": n_factors,
         "rotation": fit.rotation,
-        "loadings": {m: [float(v) for v in row] for m, row in zip(fit.loadings.index, fit.loadings.to_numpy())},
+        "loading_threshold": params.loading_threshold,
+        "communality_threshold": params.communality_threshold,
+        "loadings": by_measure(fit.loadings),
+        "structure_loadings": None if fit.structure is None else by_measure(fit.structure),
+        "factor_correlations": fit.factor_correlations,
         "communalities": fit.communalities,
         "uniquenesses": fit.uniquenesses,
         "variance": {
             "ss_loadings": fit.ss_loadings,
             "proportion": fit.proportion,
             "cumulative": fit.cumulative,
+            "explained": fit.explained,
         },
         "factors": factors,
         "unassigned": unassigned,
-        "warnings": warnings_out,
+        "warnings": [w["message"] for w in out.items],
+        "warning_details": out.items,
     }

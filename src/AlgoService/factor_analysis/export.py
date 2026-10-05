@@ -36,7 +36,8 @@ def _csv_line(cells: list[Any]) -> str:
 
 
 def loadings_csv(result: dict[str, Any]) -> str:
-    """One row per measure: the loading on each factor, then the communality."""
+    """One row per measure: the loading on each factor, then the communality. For oblique
+    rotations the loadings are the pattern matrix."""
     lines = [_csv_line(["measure", *_factor_names(result), "communality"])]
     for measure, row in result["loadings"].items():
         lines.append(_csv_line([measure, *row, result["communalities"][measure]]))
@@ -51,10 +52,14 @@ def matrix_csv(data: pd.DataFrame) -> str:
     return "".join(lines)
 
 
-def loadings_latex(result: dict[str, Any], threshold: float) -> str:
-    """A booktabs ``tabular``; loadings whose absolute value reaches the threshold are bold."""
+def loadings_latex(result: dict[str, Any]) -> str:
+    """A booktabs ``tabular``; loadings whose absolute value reaches the loading threshold are
+    bold, unless the communality of the measure is below the communality threshold."""
     decimals = _C.number_of_decimals
     names = _factor_names(result)
+    threshold = result["loading_threshold"]
+    min_communality = result.get("communality_threshold", 0.0)
+    matrix = "pattern loadings" if result.get("structure_loadings") else "loadings"
 
     def cell(value: float, bold: bool = False) -> str:
         number = f"{value:.{decimals}f}"
@@ -62,16 +67,18 @@ def loadings_latex(result: dict[str, Any], threshold: float) -> str:
 
     lines = [
         "% Requires \\usepackage{booktabs}.",
-        f"% {result['rotation']} rotation, {result['n_factors']} factor(s), "
-        f"{result['n_observations']} observations; bold: |loading| >= {threshold}.",
+        f"% {result['rotation']} rotation, {matrix}, {result['n_factors']} factor(s), "
+        f"{result['n_observations']} observations; bold: |loading| >= {threshold}"
+        + (f" and communality >= {min_communality}." if min_communality else "."),
         "\\begin{tabular}{l" + "r" * len(names) + "r}",
         "\\toprule",
         "Measure & " + " & ".join(names) + " & Communality \\\\",
         "\\midrule",
     ]
     for measure, row in result["loadings"].items():
-        cells = [cell(v, abs(v) >= threshold) for v in row]
-        cells.append(cell(result["communalities"][measure]))
+        communality = result["communalities"][measure]
+        cells = [cell(v, abs(v) >= threshold and communality >= min_communality) for v in row]
+        cells.append(cell(communality))
         lines.append(latex_escape(measure) + " & " + " & ".join(cells) + " \\\\")
     lines += ["\\bottomrule", "\\end{tabular}", ""]
     return "\n".join(lines)
