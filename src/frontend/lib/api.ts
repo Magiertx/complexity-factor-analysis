@@ -406,7 +406,14 @@ export interface FactorAnalysis {
 async function errorMessage(r: Response, fallback: string): Promise<string> {
   try {
     const j = await r.json();
-    if (j.detail) return typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail);
+    if (typeof j.detail === "string") return j.detail;
+    // FastAPI validation errors (422) come as a list of {loc, msg}.
+    if (Array.isArray(j.detail)) {
+      return j.detail
+        .map((d: { loc?: unknown[]; msg?: string }) => `${(d.loc ?? []).slice(1).join(".")}: ${d.msg ?? ""}`)
+        .join("; ");
+    }
+    if (j.detail) return JSON.stringify(j.detail);
   } catch {}
   return `${fallback} (${r.status})`;
 }
