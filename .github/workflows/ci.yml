@@ -82,3 +82,17 @@ jobs:
 
       - name: Build
         run: npx next build
+
+  # Only the stage that compiles the lp_solve JNI wrapper; the full prom4py image downloads
+  # the 430 MB ProM bundle.
+  prom4py-lpsolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build the lp_solve wrapper
+        run: docker build --target lpsolve-wrapper -t lpsolve-wrapper src/prom4py
+
+      - name: Check that the wrapper finds its libraries
+        run: docker run --rm lpsolve-wrapper sh -c 'ldd liblpsolve55j.so && ! ldd liblpsolve55j.so | grep -q "not found"'
