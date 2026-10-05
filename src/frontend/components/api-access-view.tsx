@@ -214,6 +214,8 @@ export function ApiAccessView() {
             <code className="font-mono text-[11px]">/algorithms/&#123;id&#125;/analyze</code>,{" "}
             <code className="font-mono text-[11px]">60/hour</code> on{" "}
             <code className="font-mono text-[11px]">POST /factor-analysis/datasets</code>,{" "}
+            <code className="font-mono text-[11px]">600/minute</code> on{" "}
+            <code className="font-mono text-[11px]">GET /factor-analysis/datasets/&#123;id&#125;</code>,{" "}
             <code className="font-mono text-[11px]">300/hour</code> on{" "}
             <code className="font-mono text-[11px]">/log-stats</code>; 120/minute everywhere else.
           </p>
