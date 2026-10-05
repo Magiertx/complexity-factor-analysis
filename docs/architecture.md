@@ -21,7 +21,7 @@ Six containerised services. The frontend is the only thing a user ever talks to;
    │ imports      │ HTTP /plugin  │ asyncpg       │ Celery
    ▼              ▼               ▼               ▼
 vendored/comfy  prom4py        postgres          redis ──▶ celery_worker
-(read-only)     (Java 8)       (Runs,            (broker   (re-uses the same
+(local patch)   (Java 8)       (Runs,            (broker   (re-uses the same
                 ProM bundle    Artifacts,        +         AlgoService image,
                 from Zenodo    Sessions,         backend,  runs analyses in
                                Users, Presets)   pub/sub)  a separate process)

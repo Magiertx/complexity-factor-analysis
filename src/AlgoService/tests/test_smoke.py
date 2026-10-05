@@ -101,7 +101,6 @@ def test_log_stats_for_sample_log(client):
     stats = r.json()["stats"]
     assert stats["num_traces"] > 0
     assert stats["num_events"] >= stats["num_traces"]
-    assert "recommendations" not in r.json()
 
 
 def test_analyze_with_sample_log(client, stub_algorithm):

@@ -73,9 +73,7 @@ class Run(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow_naive)
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    # Free-text user note. Editable from the past-job view; surfaced in
-    # Run History and Compare. Optional, capped server-side at 2000 chars
-    # to keep DB rows lean.
+    # Free-text user note, editable from the past-job view and shown in the run history.
     notes: Mapped[str | None] = mapped_column(String(2000), nullable=True)
 
     owner_user = relationship("User", back_populates="runs")

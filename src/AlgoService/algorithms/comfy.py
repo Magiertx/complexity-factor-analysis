@@ -5,15 +5,15 @@ complexity measures, and gets a table of (miner × measure) scores. Factor
 analysis itself (Bartlett/KMO/scree/loadings) needs many logs and isn't
 exposed yet.
 
-Talks to the ProM4Py Java server over HTTP — URL via env var ``PROM4PY_URL``.
+Talks to the ProM4Py Java server over HTTP (``PROM4PY_URL``).
 
 Original code: https://github.com/Pati-nets/ComFy
-Vendored under ``src/AlgoService/vendored/comfy/`` (read-only).
+Vendored under ``src/AlgoService/vendored/comfy/``; local changes are listed in
+``PROVENANCE.md`` there.
 """
 
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from vendored.comfy.modelcomplexity import ModelComplexityMeasures as _MCM
@@ -49,8 +49,7 @@ class ComFyAlgorithm(AlgorithmBase):
         "GitHub Repository, https://github.com/Pati-nets/ComFy"
     )
 
-    # Options are populated lazily so module import doesn't depend on vendor sys.path
-    # being set up. ``parameters_schema`` is filled in ``__init__``.
+    # Filled in ``__init__`` from the vendored measure and miner lists.
     parameters_schema: list[ParameterSpec] = []
 
     def __init__(self) -> None:
@@ -60,7 +59,7 @@ class ComFyAlgorithm(AlgorithmBase):
         measure_names = list(self._measures_by_name)
         miner_names = list(self._miners_by_name)
 
-        # Sensible defaults — exclude the very-slow measures from the default selection.
+        # The slow measures are not selected by default.
         slow = {"Cross-Connectivity", "Depth", "Diameter", "Cyclicity"}
         default_measures = [m for m in measure_names if m not in slow]
 
@@ -89,9 +88,6 @@ class ComFyAlgorithm(AlgorithmBase):
         ctx.check_aborted()
         ctx.progress(5.0, "Reading event log...")
 
-        import pm4py
-        MCM = _MCM
-
         miner_names: list[str] = params["discovery_algorithms"]
         measure_names: list[str] = params["complexity_measures"]
         if not miner_names:
@@ -108,7 +104,7 @@ class ComFyAlgorithm(AlgorithmBase):
         get_prom4py()
         event_log = read_event_log(file_path)
 
-        depth_diameter = {MCM.Depth(), MCM.Diameter()}
+        depth_diameter = {_MCM.Depth(), _MCM.Diameter()}
         depth_diameter_keys = {str(m) for m in depth_diameter}
 
         # Compute one row per miner.
@@ -136,7 +132,7 @@ class ComFyAlgorithm(AlgorithmBase):
                     img_base64 = render_petri_net_to_base64_png(net, im, fm)
                     if img_base64:
                         pn_images.append(image(f"Petri net ({miner})", img_base64, caption=f"Discovered by {miner}"))
-                    # High-DPI publication download, parallel to the screen-DPI inline image.
+                    # 300 dpi download for print, next to the inline image.
                     hires_base64 = render_petri_net_to_base64_png(net, im, fm, dpi=300)
                     if hires_base64:
                         pn_images.append(log_file(
@@ -147,7 +143,7 @@ class ComFyAlgorithm(AlgorithmBase):
                         ))
             except Exception as e:
                 row.extend([f"ERR: {type(e).__name__}"] * len(measures))
-                notes.append(f"{miner}: discovery failed — {e}")
+                notes.append(f"{miner}: discovery failed: {e}")
                 rows.append(row)
                 continue
 
@@ -164,10 +160,8 @@ class ComFyAlgorithm(AlgorithmBase):
                     notes.append(f"{miner} × {measure}: {e}")
             rows.append(row)
 
-        # Individual failures degrade to an ERR cell so one broken miner does not lose the
-        # rest of the table. But if *nothing* computed, reporting a completed job with a
-        # table full of error strings misrepresents the run — fail loudly instead. The most
-        # common cause by far is ProM4Py being unreachable.
+        # Single failures become ERR cells; if nothing computed at all (usually ProM4Py
+        # being down), fail the job instead of returning a table of errors.
         computed = sum(
             1 for row in rows for cell in row[1:]
             if not (isinstance(cell, str) and cell.startswith("ERR:"))

