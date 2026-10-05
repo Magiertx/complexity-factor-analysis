@@ -238,6 +238,11 @@ def test_dataset_id_validation(client):
     assert client.get("/factor-analysis/datasets/00000000-0000-4000-8000-000000000000").status_code == 404
 
 
+def test_other_uuid_spellings_reach_the_same_dataset(client, inductive):
+    r = client.get(f"/factor-analysis/datasets/{{{inductive.upper()}}}")
+    assert r.status_code == 200 and r.json()["id"] == inductive
+
+
 def test_download(client, inductive):
     r = client.get(f"/factor-analysis/datasets/{inductive}/download")
     assert r.status_code == 200
@@ -246,6 +251,31 @@ def test_download(client, inductive):
     lines = r.text.splitlines()
     assert lines[0].startswith("observation,Size,Connector Mismatch")
     assert len(lines) == 289
+
+
+def test_download_uploaded_again_keeps_its_measures(client):
+    csv_text = "a,b,c\n1,2,0\n2,5,1\n3,1,1\n4,4,0\n"
+    first = _post(client, kind="model", source="csv", files=[("files", ("m.csv", csv_text.encode(), "text/csv"))])
+    download = client.get(f"/factor-analysis/datasets/{first.json()['dataset_id']}/download").text
+    assert download.startswith("observation,a,b,c")
+    again = _post(client, kind="model", source="csv", files=[("files", ("m.csv", download.encode(), "text/csv"))])
+    d = client.get(f"/factor-analysis/datasets/{again.json()['dataset_id']}").json()
+    assert d["measures"] == ["a", "b", "c"]
+    assert d["observations"] == ["1", "2", "3", "4"]
+
+
+def test_csv_row_and_column_limits(client, monkeypatch):
+    from routes import factor_analysis as fa
+
+    monkeypatch.setattr(fa, "MAX_CSV_ROWS", 3)
+    csv_text = "a,b\n" + "".join(f"{i},{i * i}\n" for i in range(5))
+    r = _post(client, kind="model", source="csv", files=[("files", ("m.csv", csv_text.encode(), "text/csv"))])
+    assert r.status_code == 400 and "too large" in r.json()["detail"]
+
+    monkeypatch.setattr(fa, "MAX_CSV_COLUMNS", 2)
+    csv_text = "name,a,b,c\nx,1,2,3\ny,2,1,0\n"
+    r = _post(client, kind="model", source="csv", files=[("files", ("m.csv", csv_text.encode(), "text/csv"))])
+    assert r.status_code == 400 and "too large" in r.json()["detail"]
 
 
 # --- analyze and export -------------------------------------------------------------------

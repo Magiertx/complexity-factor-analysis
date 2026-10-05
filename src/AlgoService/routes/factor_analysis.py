@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import csv
 import gzip
+import io
 import json
 import os
 import re
@@ -198,23 +199,38 @@ def _sniff_separator(sample: str) -> str:
         return ","
 
 
+#: First-column names that mark row labels even if the labels are numbers, e.g. our own download.
+LABEL_COLUMNS = {"observation", "id", "name", "label"}
+
+
+def _too_large() -> HTTPException:
+    return _bad(f"The CSV file is too large; at most {MAX_CSV_ROWS} rows and {MAX_CSV_COLUMNS} columns.")
+
+
 def _read_csv_table(path: Path) -> pd.DataFrame:
-    """Parse an uploaded CSV. A non-numeric or unnamed first column holds the row labels."""
+    """Parse an uploaded CSV. The first column holds the row labels if it is unnamed, not
+    numeric or named like a label column."""
     raw: pd.DataFrame | None = None
     for encoding in ("utf-8-sig", "latin-1"):
         try:
             with open(path, encoding=encoding) as f:
-                sep = _sniff_separator(f.read(64 * 1024))
-            raw = pd.read_csv(path, sep=sep, encoding=encoding, dtype=str, keep_default_na=False)
+                sample = f.read(64 * 1024)
+            sep = _sniff_separator(sample)
+            header = next(csv.reader(io.StringIO(sample), delimiter=sep), [])
+            if len(header) > MAX_CSV_COLUMNS + 1:
+                raise _too_large()
+            raw = pd.read_csv(
+                path, sep=sep, encoding=encoding, dtype=str, keep_default_na=False, nrows=MAX_CSV_ROWS + 1
+            )
             break
         except UnicodeDecodeError:
             continue
-        except (pd.errors.ParserError, pd.errors.EmptyDataError, ValueError) as e:
+        except (pd.errors.ParserError, pd.errors.EmptyDataError, ValueError, csv.Error) as e:
             raise _bad(f"The CSV file could not be parsed: {e}")
     if raw is None or raw.empty or raw.shape[1] == 0:
         raise _bad("The CSV file could not be parsed or is empty.")
-    if len(raw) > MAX_CSV_ROWS or raw.shape[1] > MAX_CSV_COLUMNS:
-        raise _bad(f"The CSV file is too large; at most {MAX_CSV_ROWS} rows and {MAX_CSV_COLUMNS} columns.")
+    if len(raw) > MAX_CSV_ROWS or raw.shape[1] > MAX_CSV_COLUMNS + 1:
+        raise _too_large()
 
     def numeric(col: pd.Series) -> pd.Series | None:
         values = col.str.strip()
@@ -225,12 +241,19 @@ def _read_csv_table(path: Path) -> pd.DataFrame:
         return None
 
     first = raw.columns[0]
-    if str(first).strip() == "" or str(first).startswith("Unnamed") or numeric(raw[first]) is None:
+    if (
+        str(first).strip() == ""
+        or str(first).startswith("Unnamed")
+        or str(first).strip().lower() in LABEL_COLUMNS
+        or numeric(raw[first]) is None
+    ):
         raw = raw.set_index(first)
         raw.index = [str(i) for i in raw.index]
     else:
         raw.index = [str(i + 1) for i in range(len(raw))]
 
+    if raw.shape[1] > MAX_CSV_COLUMNS:
+        raise _too_large()
     table = {}
     for column in raw.columns:
         parsed = numeric(raw[column])
@@ -500,15 +523,16 @@ async def create_dataset(
     return {"dataset_id": dataset_id, "status": "computing", "job_id": job_id}
 
 
-def _validate_dataset_id(dataset_id: str) -> None:
+def _validate_dataset_id(dataset_id: str) -> str:
+    """The canonical form of the id; other spellings of the same UUID map to it."""
     try:
-        uuid.UUID(dataset_id)
+        return str(uuid.UUID(dataset_id))
     except ValueError:
         raise _bad("Invalid dataset ID format.")
 
 
 async def _meta_or_404(dataset_id: str, session_id: str) -> dict[str, Any]:
-    _validate_dataset_id(dataset_id)
+    dataset_id = _validate_dataset_id(dataset_id)
     meta = storage.read_meta(session_id, dataset_id)
     if meta is None:
         raise HTTPException(status_code=404, detail="Dataset not found.")
@@ -550,7 +574,7 @@ async def get_dataset(dataset_id: str, session_id: str = Depends(get_session_id)
         else:
             out["progress"] = job.get("percentage", 0.0)
     elif meta["status"] == "ready":
-        data = await run_in_threadpool(storage.load_matrix, session_id, dataset_id)
+        data = await run_in_threadpool(storage.load_matrix, session_id, meta["id"])
         head = data.iloc[:PREVIEW_ROWS]
         out["observations"] = list(head.index)
         out["values"] = head.to_numpy().tolist()
@@ -566,7 +590,7 @@ async def _ready_matrix(dataset_id: str, session_id: str) -> tuple[dict[str, Any
     meta = await _meta_or_404(dataset_id, session_id)
     if meta["status"] != "ready":
         raise HTTPException(status_code=409, detail=f"The dataset is {meta['status']}, not ready.")
-    return meta, await run_in_threadpool(storage.load_matrix, session_id, dataset_id)
+    return meta, await run_in_threadpool(storage.load_matrix, session_id, meta["id"])
 
 
 def _attachment(content: str, filename: str, media_type: str) -> Response:
