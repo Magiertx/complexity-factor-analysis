@@ -28,9 +28,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import jobs_db
-from config import APP_NAME, JSONFormatter, MAX_FILE_SIZE, limiter
+from config import APP_NAME, JSONFormatter, limiter
 from routes import health, algorithms, jobs
-from routes.algorithms import cleanup_old_jobs
 
 from starlette.middleware.sessions import SessionMiddleware
 from slowapi import _rate_limit_exceeded_handler

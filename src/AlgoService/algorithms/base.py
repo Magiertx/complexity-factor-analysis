@@ -11,7 +11,7 @@ vendored research code in ``src/AlgoService/vendored/``.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Literal, Optional
 
 
@@ -137,7 +137,7 @@ def text(label: str, markdown: str) -> Artifact:
 
 
 import logging
-from typing import Any, Literal, Optional, Callable
+from typing import Callable
 
 
 @dataclass

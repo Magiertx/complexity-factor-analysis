@@ -765,7 +765,7 @@ async def analyze(
             from celery_worker import celery_app
             celery_app.send_task("celery_worker.run_analysis", args=[task_id, tmp_path, params, algorithm_id])
             logger.info(f"Enqueued Celery task for job {task_id}")
-        except Exception as e:
+        except Exception:
             logger.exception("Failed to enqueue task via Celery, falling back to local background task")
             background_tasks.add_task(run_analysis_task, task_id, tmp_path, params, algorithm_id)
     else:

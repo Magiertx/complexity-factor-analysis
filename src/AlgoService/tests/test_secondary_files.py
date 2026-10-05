@@ -6,7 +6,6 @@ and hands the adapter a temp path. Exercised through the test-only stub tool.
 """
 from __future__ import annotations
 
-import io
 import time
 from datetime import datetime, timedelta
 

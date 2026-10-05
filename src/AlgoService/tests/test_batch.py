@@ -8,7 +8,6 @@ explicit coverage; they were unguarded before this file landed.
 
 from __future__ import annotations
 
-import json
 import time
 from datetime import datetime, timedelta
 

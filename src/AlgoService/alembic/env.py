@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from database import Base, DATABASE_URL
-import models  # Ensure all models are registered on Base
+import models  # noqa: F401  registers all models on Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

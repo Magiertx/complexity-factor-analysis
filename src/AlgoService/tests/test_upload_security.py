@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import io
 import os
 import time
 from unittest.mock import patch
 import pytest
-from fastapi.testclient import TestClient
 
 SAMPLE_XES = (
     b'<?xml version="1.0" encoding="UTF-8"?>'
