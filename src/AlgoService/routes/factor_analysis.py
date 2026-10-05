@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import pandas as pd
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
@@ -24,7 +24,7 @@ from pydantic import BaseModel, Field
 import jobs_db
 from algorithms._log_io import MAX_DECOMPRESSED_BYTES
 from config import MAX_FILE_SIZE, broadcast_jobs_update, get_session_id, limiter, logger
-from env_config import rate_limit
+from env_config import positive_int, rate_limit
 from factor_analysis import catalog as cat
 from factor_analysis import compute, storage
 from factor_analysis.core import (
@@ -57,6 +57,10 @@ PREVIEW_ROWS = 2000
 
 # Factor fits of large datasets take seconds of CPU; at most this many run at once per process.
 _ANALYSIS_SLOTS = asyncio.Semaphore(2)
+
+# Dataset jobs queued or running over all sessions. The session quota alone does not bound
+# the load: a client without the session cookie gets a new session with every request.
+MAX_ACTIVE_DATASET_JOBS = positive_int("MAX_ACTIVE_DATASET_JOBS", 4)
 
 
 def _bad(detail: str) -> HTTPException:
@@ -476,6 +480,15 @@ async def create_dataset(
         raise _bad("Upload at least one file or choose a sample.")
 
     await _enforce_job_quota(session_id)
+    active = await jobs_db.count_active_jobs_by_prefix("_dataset:")
+    if active >= MAX_ACTIVE_DATASET_JOBS:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"The server is computing {active} datasets already, the most it runs at once. "
+                "Try again in a few minutes."
+            ),
+        )
 
     n_inputs = len(sample["files"]) if sample else len(uploads)
     noun = "log(s)" if source == "logs" else "net(s)"
@@ -539,9 +552,29 @@ async def _meta_or_404(dataset_id: str, session_id: str) -> dict[str, Any]:
     return meta
 
 
+async def _fail_stale_job(meta: dict[str, Any], session_id: str, job: dict[str, Any]) -> bool:
+    """Mark a dataset failed whose job outlived the time limit; True if it did."""
+    # created_at is a naive UTC time turned into a timestamp; compare like with like.
+    now = jobs_db._utcnow_naive().timestamp()
+    if now - float(job.get("created_at") or now) < storage.STALE_COMPUTING_S:
+        return False
+    error = "The job did not finish within the time limit; the worker may have restarted."
+    await jobs_db.set_job_failed(meta["job_id"], error)
+    storage.update_meta(session_id, meta["id"], status="failed", error=error)
+    storage.remove_inputs(session_id, meta["id"])
+    return True
+
+
 @router.get("/datasets/{dataset_id}")
-async def get_dataset(dataset_id: str, session_id: str = Depends(get_session_id)) -> dict[str, Any]:
-    """Status, measures and a preview of the cleaned matrix."""
+@limiter.limit(rate_limit("dataset_status", "600/minute"))
+async def get_dataset(
+    request: Request,
+    dataset_id: str,
+    rows: int = Query(PREVIEW_ROWS, ge=0, le=PREVIEW_ROWS),
+    session_id: str = Depends(get_session_id),
+) -> dict[str, Any]:
+    """Status, measures and the first ``rows`` rows of the cleaned matrix. Polled while the
+    dataset is computed, hence its own, higher rate limit."""
     meta = await _meta_or_404(dataset_id, session_id)
     out: dict[str, Any] = {
         "id": meta["id"],
@@ -571,14 +604,17 @@ async def get_dataset(dataset_id: str, session_id: str = Depends(get_session_id)
         elif job["status"] in ("failed", "aborted"):
             out["status"] = "failed"
             out["error"] = job.get("error") or "Aborted by user"
+        elif await _fail_stale_job(meta, session_id, job):
+            out["status"], out["error"] = "failed", storage.read_meta(session_id, meta["id"])["error"]
+            await broadcast_jobs_update()
         else:
             out["progress"] = job.get("percentage", 0.0)
     elif meta["status"] == "ready":
         data = await run_in_threadpool(storage.load_matrix, session_id, meta["id"])
-        head = data.iloc[:PREVIEW_ROWS]
+        head = data.iloc[:rows]
         out["observations"] = list(head.index)
         out["values"] = head.to_numpy().tolist()
-        out["truncated"] = len(data) > PREVIEW_ROWS
+        out["truncated"] = len(data) > rows
     return out
 
 

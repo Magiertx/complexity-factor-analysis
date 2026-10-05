@@ -27,6 +27,10 @@ MAX_DATASETS_PER_SESSION = 30
 #: A session directory untouched for this long is removed.
 SESSION_MAX_IDLE_S = 7 * 24 * 3600
 
+#: A dataset still computing after this long outlived Celery's time limit of an hour, e.g.
+#: because the worker restarted.
+STALE_COMPUTING_S = 3600 + 600
+
 _cache: dict[str, tuple[float, pd.DataFrame]] = {}
 
 
@@ -186,7 +190,8 @@ def remove_inputs(session_id: str, dataset_id: str) -> None:
 
 
 def prune_session(session_id: str, keep: int = MAX_DATASETS_PER_SESSION) -> None:
-    """Drop the oldest finished datasets beyond ``keep``; computing ones are left alone."""
+    """Drop the oldest finished datasets beyond ``keep``; computing ones are left alone
+    unless they are stale."""
     session_root = root() / session_id
     if not session_root.is_dir():
         return
@@ -202,8 +207,9 @@ def prune_session(session_id: str, keep: int = MAX_DATASETS_PER_SESSION) -> None
             status = None
         entries.append((meta_path.stat().st_mtime, directory, status))
     entries.sort(reverse=True)
-    for _, directory, status in entries[keep:]:
-        if status != "computing":
+    stale = time.time() - STALE_COMPUTING_S
+    for i, (mtime, directory, status) in enumerate(entries):
+        if (i >= keep and status != "computing") or (status == "computing" and mtime < stale):
             shutil.rmtree(directory, ignore_errors=True)
 
 

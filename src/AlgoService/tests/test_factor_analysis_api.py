@@ -627,6 +627,71 @@ def test_dataset_jobs_respect_the_session_quota(client, monkeypatch):
     assert r.status_code == 429
 
 
+def test_dataset_jobs_respect_the_global_cap(client, monkeypatch):
+    import jobs_db
+    from routes import factor_analysis as fa
+
+    async def _busy(_prefix):
+        return fa.MAX_ACTIVE_DATASET_JOBS
+
+    monkeypatch.setattr(jobs_db, "count_active_jobs_by_prefix", _busy)
+    r = _post(client, kind="model", source="pnml", bundled_id="pdc-sample-models")
+    assert r.status_code == 429 and "at once" in r.json()["detail"]
+
+
+def _session_of(dataset_id: str) -> str:
+    from factor_analysis import storage
+
+    return next(d.name for d in storage.root().iterdir() if (d / dataset_id).is_dir())
+
+
+def test_stale_computing_dataset_fails(client, monkeypatch):
+    import asyncio
+    import uuid
+
+    import jobs_db
+    from factor_analysis import storage
+
+    r = _post(client, kind="model", source="pnml", bundled_id="pdc-sample-models")
+    dataset_id = r.json()["dataset_id"]
+    session_id = _session_of(dataset_id)
+    job_id = str(uuid.uuid4())
+    asyncio.run(jobs_db.create_job(job_id, "_dataset:model", "x", "x", {}, session_id=session_id))
+    storage.update_meta(session_id, dataset_id, status="computing", job_id=job_id)
+
+    assert client.get(f"/factor-analysis/datasets/{dataset_id}").json()["status"] == "computing"
+    monkeypatch.setattr(storage, "STALE_COMPUTING_S", 0)
+    d = client.get(f"/factor-analysis/datasets/{dataset_id}").json()
+    assert d["status"] == "failed" and "time limit" in d["error"]
+    assert client.get(f"/jobs/{job_id}").json()["status"] == "failed"
+
+
+def test_preview_rows(client, inductive):
+    d = client.get(f"/factor-analysis/datasets/{inductive}?rows=3").json()
+    assert len(d["values"]) == len(d["observations"]) == 3 and d["truncated"] is True
+    assert client.get(f"/factor-analysis/datasets/{inductive}?rows=5000").status_code == 422
+
+
+def test_rate_limited_answers_with_detail():
+    from types import SimpleNamespace
+
+    import srv_main
+    from fastapi.responses import JSONResponse
+
+    def slowapi_handler(request, exc):
+        return JSONResponse({"error": "x"}, status_code=429, headers={"Retry-After": "30"})
+
+    original = srv_main._rate_limit_exceeded_handler
+    srv_main._rate_limit_exceeded_handler = slowapi_handler
+    try:
+        response = srv_main._rate_limited(None, SimpleNamespace(detail="60 per 1 hour"))
+    finally:
+        srv_main._rate_limit_exceeded_handler = original
+    assert response.status_code == 429 and response.headers["retry-after"] == "30"
+    body = json.loads(response.body)
+    assert body["code"] == "rate_limited" and "60 per 1 hour" in body["detail"]
+
+
 def test_aborted_job_fails_the_dataset(client, monkeypatch):
     """Deleting or aborting the job shows up as a failed dataset."""
     import jobs_db

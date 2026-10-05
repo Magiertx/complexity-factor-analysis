@@ -64,6 +64,20 @@ async def get_or_create_session(session_id: str) -> str:
 MAX_ACTIVE_JOBS_PER_SESSION = positive_int("MAX_ACTIVE_JOBS_PER_SESSION", 12)
 
 
+async def count_active_jobs_by_prefix(prefix: str) -> int:
+    """Jobs of all sessions whose algorithm id starts with ``prefix``, queued or running."""
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(func.count())
+            .select_from(models.Run)
+            .where(
+                models.Run.algorithm_id.startswith(prefix, autoescape=True),
+                models.Run.status.in_(("pending", "running")),
+            )
+        )
+        return int(result.scalar() or 0)
+
+
 async def count_active_jobs(session_id: str) -> int:
     """Jobs of this session that are queued or still running."""
     async with AsyncSessionLocal() as session:
