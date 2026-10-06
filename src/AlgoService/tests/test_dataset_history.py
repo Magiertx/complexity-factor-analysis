@@ -1,4 +1,4 @@
-"""The datasets of a session: list, saved options and deletion with their jobs."""
+"""The datasets of a session: list, saved options, deletion with their jobs, ZIP export."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import asyncio
 import io
 import json
 import uuid
+import zipfile
 
 import numpy as np
 import pandas as pd
@@ -127,6 +128,7 @@ def test_other_sessions_see_nothing(client, other):
     assert other.put(f"/factor-analysis/datasets/{dataset_id}/options", json={}).status_code == 404
     assert other.delete(f"/factor-analysis/datasets/{dataset_id}").status_code == 404
     assert other.delete("/factor-analysis/datasets").json() == {"deleted": 0}
+    assert other.post(f"/factor-analysis/datasets/{dataset_id}/export/zip", json={}).status_code == 404
     assert [d["id"] for d in _list(client)] == [dataset_id]
 
 
@@ -316,3 +318,188 @@ def test_clearing_the_job_history_deletes_the_computed_datasets_only(client, oth
     assert client.get(f"/factor-analysis/datasets/{computed}").status_code == 404
     assert [d["id"] for d in _list(other)] == [theirs]
 
+
+# --- ZIP export ---------------------------------------------------------------------------
+
+
+def _read_csv(archive: zipfile.ZipFile, name: str, **kwargs) -> pd.DataFrame:
+    # The default parser of pandas can be off in the last digit.
+    return pd.read_csv(io.BytesIO(archive.read(name)), float_precision="round_trip", **kwargs)
+
+
+def _zip(client, dataset_id: str, **body) -> zipfile.ZipFile:
+    r = client.post(f"/factor-analysis/datasets/{dataset_id}/export/zip", json=body)
+    assert r.status_code == 200, r.text
+    assert r.headers["content-type"] == "application/zip"
+    return zipfile.ZipFile(io.BytesIO(r.content))
+
+
+def test_zip_of_a_bundled_dataset(client):
+    from config import APP_NAME
+    from factor_analysis import catalog as cat
+
+    dataset_id = _bundled(client)
+    url = f"/factor-analysis/datasets/{dataset_id}"
+    body = {"n_factors": 3, "excluded": ["Density"]}
+    r = client.post(f"{url}/export/zip", json=body)
+    assert 'filename="ComFy-paper-scores-Inductive-miner-factor-analysis.zip"' in r.headers["content-disposition"]
+    archive = zipfile.ZipFile(io.BytesIO(r.content))
+
+    names = archive.namelist()
+    assert set(names) == {
+        "manifest.json", "README.txt", "analysis.json", "dataset.csv", "loadings.csv", "loadings.tex",
+        "eigenvalues.csv", "msa.csv",
+    }
+    analysis = client.post(f"{url}/analyze", json=body).json()
+    assert json.loads(archive.read("analysis.json")) == analysis
+    assert archive.read("dataset.csv") == client.get(f"{url}/download").content
+    assert archive.read("loadings.csv") == client.post(f"{url}/export", json={**body, "format": "csv"}).content
+    assert archive.read("loadings.tex") == client.post(f"{url}/export", json={**body, "format": "latex"}).content
+
+    manifest = json.loads(archive.read("manifest.json"))
+    entry = cat.bundled_entry(BUNDLED)
+    detail = client.get(url).json()
+    assert manifest["app"] == APP_NAME and manifest["created_at"].endswith("+00:00")
+    assert manifest["dataset"] == {
+        "id": dataset_id,
+        "name": "ComFy paper scores: Inductive miner",
+        "kind": "model",
+        "source": "bundled",
+        "bundled_id": BUNDLED,
+        "collection": "comfy-paper",
+        "citation": entry["citation"],
+        "license": entry["license"],
+        "inputs": {"files": 0},
+        "n_observations": 288,
+        "measures": detail["measures"],
+        "dropped": [{"name": "Number of empty sequence flows", "reason": "constant"}],
+    }
+    assert manifest["analysis_params"] == {
+        "excluded": ["Density"], "auto_msa_filter": True, "msa_threshold": 0.6, "bartlett_alpha": 0.05,
+        "n_factors": 3, "rotation": "varimax", "loading_threshold": 0.35, "communality_threshold": 0.0,
+    }
+    assert set(manifest["libraries"]) >= {"factor_analyzer", "numpy", "pandas", "scipy"}
+    assert all(manifest["libraries"].values())
+    assert [f["name"] for f in manifest["files"]] == names
+    readme = archive.read("README.txt").decode()
+    assert all(name in readme for name in names)
+
+    eigenvalues = _read_csv(archive, "eigenvalues.csv")
+    assert list(eigenvalues.columns) == ["factor", "eigenvalue"]
+    assert eigenvalues["eigenvalue"].tolist() == analysis["eigenvalues"]
+    msa = _read_csv(archive, "msa.csv", keep_default_na=False).set_index("measure")
+    assert list(msa.index) == detail["measures"]
+    assert msa.loc["Density", "status"] == "excluded" and msa.loc["Density", "msa"] == ""
+    removed = {m["measure"]: m for m in analysis["msa_filter"]["removed"]}
+    assert removed
+    for measure, step in removed.items():
+        assert msa.loc[measure, "status"] == f"removed in step {step['step']}"
+        assert float(msa.loc[measure, "msa"]) == step["msa"]
+    for measure in analysis["used_measures"]:
+        assert msa.loc[measure, "status"] == "used"
+        assert float(msa.loc[measure, "msa"]) == analysis["kmo"]["per_measure"][measure]
+
+
+def test_zip_of_an_oblique_rotation(client):
+    dataset_id = _csv(client)
+    body = {"rotation": "oblimin", "n_factors": 2, "auto_msa_filter": False}
+    archive = _zip(client, dataset_id, **body)
+    assert {"structure.csv", "factor-correlations.csv"} <= set(archive.namelist())
+    analysis = json.loads(archive.read("analysis.json"))
+
+    structure = _read_csv(archive, "structure.csv", index_col=0)
+    assert list(structure.columns) == ["Factor 1", "Factor 2"]
+    assert structure.to_numpy().tolist() == list(analysis["structure_loadings"].values())
+    correlations = _read_csv(archive, "factor-correlations.csv", index_col=0)
+    assert correlations.to_numpy().tolist() == analysis["factor_correlations"]
+    assert "get_communalities" in archive.read("README.txt").decode()
+
+    assert "structure.csv" not in _zip(client, dataset_id, n_factors=2).namelist()
+
+
+def test_readme_reproduces_the_loadings(client, tmp_path, monkeypatch):
+    import factor_analyzer.factor_analyzer as fa_module
+
+    archive = _zip(client, _csv(client), n_factors=2, excluded=["Diameter"])
+    archive.extractall(tmp_path)
+    readme = archive.read("README.txt").decode().splitlines()
+    start = next(i for i, line in enumerate(readme) if line.startswith("  In Python"))
+    code = "\n".join(line[4:] for line in readme[start:] if line.startswith("    ") or not line.strip())
+
+    # The snippet patches factor_analyzer the way core.py does; undo it after the test.
+    monkeypatch.setattr(fa_module, "check_array", fa_module.check_array)
+    monkeypatch.chdir(tmp_path)
+    scope: dict = {}
+    exec(code, scope)
+    loadings = pd.read_csv(tmp_path / "loadings.csv", index_col=0).drop(columns="communality")
+    assert list(scope["data"].columns) == list(loadings.index)
+    assert np.allclose(scope["fa"].loadings_, loadings.to_numpy())
+
+
+def test_zip_includes_a_stored_interpretation_only(client):
+    from factor_analysis import storage
+    from interpretation import store
+    from interpretation.payload import data_hash, effective_params
+    from routes.factor_analysis import AnalyzeRequest
+
+    dataset_id = _csv(client)
+    body = {"n_factors": 2, "auto_msa_filter": False}
+    assert not any(n.startswith("interpretation") for n in _zip(client, dataset_id, **body).namelist())
+
+    session_id = _session_of(dataset_id)
+    meta = storage.read_meta(session_id, dataset_id)
+    digest = data_hash(storage.load_matrix(session_id, dataset_id))
+    params = effective_params(AnalyzeRequest(**body).params("model"), 2)
+    entry = {
+        "kind": "model", "data_hash": digest, "params": params, "language": "de", "model": "test-model",
+        "prompt_version": "2", "created_at": "2026-10-06T10:00:00+00:00",
+        "interpretation": {"factors": [], "overall": "Zwei Faktoren.", "caveats": []},
+    }
+    store.write_cached(session_id, meta, store.key_for(meta, digest, params, "de"), entry)
+    # The interpret endpoint finds the same entry without calling the API.
+    url = f"/factor-analysis/datasets/{dataset_id}/interpret"
+    assert client.post(url, json={**body, "language": "de", "cached_only": True}).status_code == 200
+
+    archive = _zip(client, dataset_id, **body, language="de")
+    assert json.loads(archive.read("interpretation.de.json")) == entry
+    assert "interpretation.de.json" in [f["name"] for f in json.loads(archive.read("manifest.json"))["files"]]
+    assert "interpretation.en.json" not in _zip(client, dataset_id, **body).namelist()
+    other = _zip(client, dataset_id, **body, language="de", rotation="promax").namelist()
+    assert not any(n.startswith("interpretation") for n in other)
+
+
+def test_zip_includes_a_precomputed_interpretation(client, monkeypatch, tmp_path):
+    from factor_analysis import storage
+    from interpretation import client as claude_client
+    from interpretation import store
+    from interpretation.payload import data_hash, default_params, effective_params
+
+    monkeypatch.setattr(store, "PRECOMPUTED_DIR", tmp_path / "precomputed")
+    dataset_id = _bundled(client)
+    session_id = _session_of(dataset_id)
+    analysis = client.post(f"/factor-analysis/datasets/{dataset_id}/analyze", json={}).json()
+    entry = {
+        "dataset_id": BUNDLED, "kind": "model",
+        "data_hash": data_hash(storage.load_matrix(session_id, dataset_id)),
+        "params": effective_params(default_params("model"), analysis["n_factors"]),
+        "language": "en", "model": "test-model", "prompt_version": "2",
+        "prompt_digest": claude_client.PROMPT_DIGEST, "created_at": "2026-10-06T10:00:00+00:00",
+        "interpretation": {"factors": [], "overall": "Two factors.", "caveats": []},
+    }
+    store.write_precomputed(BUNDLED, "en", entry)
+    assert json.loads(_zip(client, dataset_id).read("interpretation.en.json")) == entry
+
+
+def test_zip_errors_match_the_analysis(client):
+    dataset_id = _bundled(client)
+    url = f"/factor-analysis/datasets/{dataset_id}"
+    r = client.post(f"{url}/export/zip", json={"n_factors": 12})
+    assert r.status_code == 400
+    assert r.json() == client.post(f"{url}/analyze", json={"n_factors": 12}).json()
+    assert r.json()["code"] == "n_factors_range"
+    assert client.post(f"{url}/export/zip", json={"language": "fr"}).status_code == 422
+    missing = "00000000-0000-4000-8000-000000000000"
+    assert client.post(f"/factor-analysis/datasets/{missing}/export/zip", json={}).status_code == 404
+
+    computing, _ = _computing_with_job(client)
+    assert client.post(f"/factor-analysis/datasets/{computing}/export/zip", json={}).status_code == 409

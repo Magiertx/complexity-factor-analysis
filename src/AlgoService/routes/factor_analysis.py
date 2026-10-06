@@ -36,7 +36,9 @@ from factor_analysis.core import (
     analyze as run_analysis,
     check_excluded,
 )
-from factor_analysis.export import loadings_csv, loadings_latex, matrix_csv
+from factor_analysis.export import analysis_zip, loadings_csv, loadings_latex, matrix_csv
+from interpretation import store
+from interpretation.payload import data_hash, effective_params
 from routes.algorithms import (
     _enforce_job_quota,
     _make_status_cache,
@@ -747,7 +749,7 @@ async def _ready_matrix(dataset_id: str, session_id: str) -> tuple[dict[str, Any
     return meta, await run_in_threadpool(storage.load_matrix, session_id, meta["id"])
 
 
-def _attachment(content: str, filename: str, media_type: str) -> Response:
+def _attachment(content: str | bytes, filename: str, media_type: str) -> Response:
     return Response(
         content=content,
         media_type=media_type,
@@ -867,3 +869,59 @@ async def export_loadings(
         return _attachment(loadings_latex(result), f"{stem}.tex", "application/x-latex; charset=utf-8")
     return _attachment(loadings_csv(result), f"{stem}.csv", "text/csv; charset=utf-8")
 
+
+class ArchiveRequest(AnalyzeRequest):
+    #: Language of the stored interpretation to include.
+    language: Literal["en", "de"] = "en"
+
+
+def _dataset_record(meta: dict[str, Any]) -> dict[str, Any]:
+    """The dataset as the manifest of an archive describes it."""
+    entry = (cat.bundled_entry(meta["bundled_id"]) if meta.get("bundled_id") else None) or {}
+    return {
+        "id": meta["id"],
+        "name": meta["name"],
+        "kind": meta["kind"],
+        "source": meta["source"],
+        "bundled_id": meta.get("bundled_id"),
+        "collection": entry.get("collection"),
+        "citation": entry.get("citation"),
+        "license": entry.get("license"),
+        "inputs": _inputs(meta),
+        "n_observations": meta["n_observations"],
+        "measures": meta["measures"],
+        "dropped": [{"name": d["measure"], "reason": d["reason"]} for d in meta["dropped"]],
+    }
+
+
+@router.post("/datasets/{dataset_id}/export/zip")
+@limiter.limit(rate_limit("fa_analyze", "120/minute"))
+async def export_archive(
+    request: Request,
+    dataset_id: str,
+    body: ArchiveRequest | None = None,
+    session_id: str = Depends(get_session_id),
+) -> Response:
+    """The analysis as a ZIP archive: result, matrix, tables, parameters and library versions,
+    with an interpretation of exactly this analysis if one is stored. Never calls the API for
+    an interpretation."""
+    body = body or ArchiveRequest()
+    meta, data = await _ready_matrix(dataset_id, session_id)
+    params = body.params(meta["kind"])
+    try:
+        result = await _analyze(data, params)
+    except _AnalysisFailed as e:
+        return e.response
+    used = effective_params(params, result["n_factors"])
+    digest = await run_in_threadpool(data_hash, data)
+    stored = store.lookup(session_id, meta, digest, used, body.language)
+    archive = await run_in_threadpool(
+        lambda: analysis_zip(
+            dataset=_dataset_record(meta),
+            params=used,
+            result=result,
+            matrix=matrix_csv(data),
+            interpretation=(body.language, stored[0]) if stored else None,
+        )
+    )
+    return _attachment(archive, f"{_slug(meta['name'])}-factor-analysis.zip", "application/zip")
