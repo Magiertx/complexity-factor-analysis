@@ -218,7 +218,10 @@ temporary file that is then renamed into place.
   does not run again.
 - **Delete.** `DELETE /datasets/{id}` marks a still running job `aborted`, as
   `POST /progress/{id}/abort` does, so its worker stops at the next progress tick; then it
-  deletes the Run row with its artifact directory and the dataset directory. Interpretations
+  deletes the Run row with its artifact directory and the dataset directory. The ticks come
+  between inputs (for logs mined into nets also between miners and measures), so for every
+  source a slow input keeps its worker process busy until it is done, at most for Celery's
+  time limit of an hour, while the job no longer counts against the limits. Interpretations
   of bundled datasets are in the shared directory and stay. `DELETE /datasets` does this for
   every dataset of the session or of one kind.
 - **Hooks.** A dataset job carries `dataset_id` in its params, and `dataset_name` when the
