@@ -873,7 +873,7 @@
     "warnings": {
       "bartlett_not_significant": "Der Test nach Bartlett ist nicht signifikant (p = {p} ≥ {alpha}); die Maße sind womöglich unkorreliert.",
       "singular": "Die Korrelationsmatrix ist singulär; diese Maße sind linear abhängig: {groups}. Die Ergebnisse beruhen auf begrenzten Eigenwerten und Pseudoinversen; schließe am besten aus jeder Gruppe ein Maß aus.",
-      "kmo_low": "Der Gesamt-MSA {overall} liegt unter {threshold}; eine Faktorenanalyse ist nicht zu empfehlen.",
+      "kmo_low": "Der KMO-Gesamtwert {overall} liegt unter {threshold}; eine Faktorenanalyse ist nicht zu empfehlen.",
       "small_sample": "{n} Beobachtungen für {measures} Maße; empfohlen sind mindestens 5 je Maß ({recommended}).",
       "not_identified": "{factors} Faktoren für {measures} Maße überschreiten die Ledermann-Grenze; die Lösung ist nicht identifiziert und die Ladungen sind nicht eindeutig. Wähle weniger Faktoren.",
       "fit_not_converged": "Die Anpassung der Faktoren ist nicht konvergiert: {message}",

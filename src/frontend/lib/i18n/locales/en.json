@@ -873,7 +873,7 @@
     "warnings": {
       "bartlett_not_significant": "Bartlett's test is not significant (p = {p} ≥ {alpha}); the measures may be uncorrelated.",
       "singular": "The correlation matrix is singular; these measures are linearly dependent: {groups}. Results rely on clamped eigenvalues and pseudo-inverses; consider excluding one measure of each group.",
-      "kmo_low": "The overall MSA {overall} is below {threshold}; a factor analysis is not recommended.",
+      "kmo_low": "The overall KMO {overall} is below {threshold}; a factor analysis is not recommended.",
       "small_sample": "{n} observations for {measures} measures; at least 5 per measure ({recommended}) are recommended.",
       "not_identified": "{factors} factors for {measures} measures exceed the Ledermann bound; the solution is not identified and the loadings are not unique. Use fewer factors.",
       "fit_not_converged": "The factor fit did not converge: {message}",
