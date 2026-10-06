@@ -23,11 +23,19 @@ const tabClass = (active: boolean) =>
     active ? "border-accent text-fg" : "border-transparent text-muted hover:text-fg hover:bg-surface/40",
   );
 
-const iconClass = (active: boolean) =>
-  cn("h-4 w-4 shrink-0", active ? "text-accent-ink" : "text-muted/70 group-hover:text-muted");
+// The drawer button opens a panel instead of a page, so it is never underlined like the tab of
+// the page; while the drawer is open it is tinted instead.
+const toggleClass = (open: boolean) =>
+  cn(
+    "group relative inline-flex items-center gap-2.5 px-4 py-3 text-sm font-medium border-b-2 border-transparent transition whitespace-nowrap shrink-0 appearance-none focus-visible:outline-none focus-visible:bg-surface",
+    open ? "bg-accent/[0.08] text-fg" : "text-muted hover:text-fg hover:bg-surface/40",
+  );
 
-const descClass = (active: boolean) =>
-  cn("hidden sm:block text-[10px] font-normal", active ? "text-muted" : "text-muted/60");
+const iconClass = (active: boolean) =>
+  cn("h-4 w-4 shrink-0", active ? "text-accent-ink" : "text-muted group-hover:text-fg");
+
+// Full muted colour: at 10 px a lighter shade falls below a readable contrast.
+const descClass = "hidden sm:block text-[10px] font-normal text-muted";
 
 export function ModeBar() {
   const pathname = usePathname();
@@ -67,7 +75,7 @@ export function ModeBar() {
                 <Icon className={iconClass(isActive)} />
                 <div className="flex flex-col items-start leading-tight">
                   <span>{mode.label}</span>
-                  <span className={descClass(isActive)}>{mode.description}</span>
+                  <span className={descClass}>{mode.description}</span>
                 </div>
               </Link>
             );
@@ -79,7 +87,7 @@ export function ModeBar() {
                 onClick={toggle}
                 aria-expanded={open}
                 aria-controls="jobs-drawer"
-                className={tabClass(open)}
+                className={toggleClass(open)}
                 title={t("mode_bar.jobs_title")}
               >
                 <History className={iconClass(open)} />
@@ -88,7 +96,7 @@ export function ModeBar() {
                     {t("mode_bar.jobs_label")}
                     {count > 0 && <span className="text-[10px] font-mono text-muted">({count})</span>}
                   </span>
-                  <span className={descClass(open)}>{t("mode_bar.jobs_desc")}</span>
+                  <span className={descClass}>{t("mode_bar.jobs_desc")}</span>
                 </div>
               </button>
             )}
@@ -100,7 +108,7 @@ export function ModeBar() {
               <ListChecks className={iconClass(pathname === "/runs")} />
               <div className="flex flex-col items-start leading-tight">
                 <span>{t("mode_bar.runs_label")}</span>
-                <span className={descClass(pathname === "/runs")}>{t("mode_bar.runs_desc")}</span>
+                <span className={descClass}>{t("mode_bar.runs_desc")}</span>
               </div>
             </Link>
           </div>
