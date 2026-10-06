@@ -573,9 +573,11 @@
       "failed": "Die Analyse ist fehlgeschlagen.",
       "failed_title": "Mit diesen Einstellungen lässt sich die Analyse nicht ausführen",
       "failed_hint": "Ändere die Einstellungen oder nutze eine dieser Korrekturen:",
+      "failed_hint_no_fix": "Ändere die Einstellungen, damit sie läuft.",
       "stale_note": "Die Ergebnisse unten stammen aus der letzten erfolgreichen Analyse.",
       "reset_factors": "Vorgeschlagene Faktorenzahl verwenden",
-      "enable_filter": "MSA-Filter einschalten"
+      "enable_filter": "MSA-Filter einschalten",
+      "default_threshold": "Standard-MSA-Schwelle von {value} verwenden"
     },
     "data": {
       "source": {

@@ -737,6 +737,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               <div className="space-y-4">
                 {analysisError && (
                   <AnalysisError
+                    kind={kind}
                     message={analysisError}
                     stale={!!analysis}
                     options={options}
@@ -861,17 +862,28 @@ function DatasetLink({ onLink }: { onLink: (id: string) => void }) {
 }
 
 function AnalysisError({
+  kind,
   message,
   stale,
   options,
   onOptions,
 }: {
+  kind: FactorKind;
   message: string;
   stale: boolean;
   options: AnalysisOptions;
   onOptions: (patch: Partial<AnalysisOptions>) => void;
 }) {
   const t = useT();
+  const defaultThreshold = defaultOptions(kind).msa_threshold;
+  const fixes = {
+    factors: options.n_factors !== null,
+    excluded: options.excluded.length > 0,
+    filter: !options.auto_msa_filter,
+    // A threshold above the default can leave too few measures for the analysis.
+    threshold: options.auto_msa_filter && options.msa_threshold > defaultThreshold,
+  };
+  const anyFix = Object.values(fixes).some(Boolean);
   return (
     <div role="alert" className="rounded-lg bg-danger/10 px-3.5 py-3 flex items-start gap-2.5 text-sm">
       <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
@@ -882,25 +894,32 @@ function AnalysisError({
         </div>
         <p className="text-xs text-muted">
           {stale && `${t("factor.analysis.stale_note")} `}
-          {t("factor.analysis.failed_hint")}
+          {t(anyFix ? "factor.analysis.failed_hint" : "factor.analysis.failed_hint_no_fix")}
         </p>
-        <div className="flex gap-2 flex-wrap">
-          {options.n_factors !== null && (
-            <Button size="sm" variant="outline" onClick={() => onOptions({ n_factors: null })}>
-              {t("factor.analysis.reset_factors")}
-            </Button>
-          )}
-          {options.excluded.length > 0 && (
-            <Button size="sm" variant="outline" onClick={() => onOptions({ excluded: [] })}>
-              {t("factor.suitability.include_all")}
-            </Button>
-          )}
-          {!options.auto_msa_filter && (
-            <Button size="sm" variant="outline" onClick={() => onOptions({ auto_msa_filter: true })}>
-              {t("factor.analysis.enable_filter")}
-            </Button>
-          )}
-        </div>
+        {anyFix && (
+          <div className="flex gap-2 flex-wrap">
+            {fixes.factors && (
+              <Button size="sm" variant="outline" onClick={() => onOptions({ n_factors: null })}>
+                {t("factor.analysis.reset_factors")}
+              </Button>
+            )}
+            {fixes.excluded && (
+              <Button size="sm" variant="outline" onClick={() => onOptions({ excluded: [] })}>
+                {t("factor.suitability.include_all")}
+              </Button>
+            )}
+            {fixes.filter && (
+              <Button size="sm" variant="outline" onClick={() => onOptions({ auto_msa_filter: true })}>
+                {t("factor.analysis.enable_filter")}
+              </Button>
+            )}
+            {fixes.threshold && (
+              <Button size="sm" variant="outline" onClick={() => onOptions({ msa_threshold: defaultThreshold })}>
+                {t("factor.analysis.default_threshold", { value: defaultThreshold })}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
