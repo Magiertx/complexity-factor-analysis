@@ -596,7 +596,7 @@
       "copy_citation": "Copy citation",
       "copied": "Copied",
       "source_link": "Source",
-      "sample_label": "Bundled sample",
+      "sample_label": "Bundled example",
       "own_files": "Own files",
       "csv_drop_label": "Drop a CSV file here",
       "csv_drop_hint": "or click to browse · .csv",
