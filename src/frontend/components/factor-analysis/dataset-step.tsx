@@ -20,6 +20,10 @@ export function DatasetView({
   const tMaybe = useTMaybe();
   const { locale } = useLocale();
   const preview = dataset.values.slice(0, PREVIEW_ROWS);
+  // Decimals per column, not per cell, so a column lines up at the decimal separator.
+  const digits = dataset.measures.map((_, j) =>
+    preview.every((row) => row[j] === null || Number.isInteger(row[j])) ? 0 : 3,
+  );
   // Older datasets carry only the English detail.
   const detailOf = (d: FactorDataset["dropped"][number]) =>
     (d.params && tMaybe(`factor.dataset.detail.${d.reason}`, d.params)) || d.detail;
@@ -126,7 +130,7 @@ export function DatasetView({
                   </th>
                   {row.map((v, j) => (
                     <td key={j} className="px-3 py-1.5 text-right font-mono tabular-nums whitespace-nowrap">
-                      {v === null ? <span className="text-muted">{NO_VALUE}</span> : formatNumber(v, locale, Number.isInteger(v) ? 0 : 3)}
+                      {v === null ? <span className="text-muted">{NO_VALUE}</span> : formatNumber(v, locale, digits[j])}
                     </td>
                   ))}
                 </tr>
