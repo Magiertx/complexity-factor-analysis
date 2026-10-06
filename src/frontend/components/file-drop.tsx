@@ -4,7 +4,7 @@ import { Upload, FileCheck2, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/lib/i18n";
-import { formatKilobytes } from "@/lib/i18n/local-format";
+import { formatFileSize } from "@/lib/format";
 
 interface Props {
   file: File | null;
@@ -37,7 +37,7 @@ export function FileDrop({ file, onChange, accept = LOG_ACCEPT }: Props) {
           </div>
           <div className="min-w-0">
             <div className="text-sm font-medium truncate">{file.name}</div>
-            <div className="text-xs text-muted">{formatKilobytes(file.size, locale)}</div>
+            <div className="text-xs text-muted">{formatFileSize(file.size, locale)}</div>
           </div>
         </div>
         <button

@@ -3,7 +3,7 @@
 import type { Artifact } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { localizedAlgoText, useLocale, type Locale } from "@/lib/i18n";
-import { formatNumber, formatPercent } from "@/lib/i18n/local-format";
+import { formatNumber, formatPercent } from "@/lib/format";
 
 type Stat = Extract<Artifact, { kind: "stat" }>;
 

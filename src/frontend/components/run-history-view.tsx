@@ -28,7 +28,7 @@ import { Select } from "./ui/select";
 import { datasetJobHref, datasetJobSubtitle, jobDisplayName, jobTitle } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { localizedAlgoName, useLocale } from "@/lib/i18n";
-import { formatDateTime, formatPercent } from "@/lib/i18n/local-format";
+import { formatDateTime, formatPercent } from "@/lib/format";
 
 type StatusFilter = "all" | "active" | "completed" | "failed" | "aborted";
 
@@ -272,7 +272,7 @@ export function RunHistoryView() {
                         >
                           {STATUS_LABEL[job.status]}
                           {(job.status === "running" || job.status === "pending") &&
-                            ` ${formatPercent(job.percentage / 100, locale)}`}
+                            ` ${formatPercent(job.percentage / 100, locale, 0)}`}
                         </span>
                       </div>
                       <div className="text-[11px] text-muted flex items-center gap-2 flex-wrap font-mono">

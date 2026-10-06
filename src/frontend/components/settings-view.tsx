@@ -42,7 +42,7 @@ import {
   PresetError,
 } from "@/lib/presets";
 import { useLocale, useT } from "@/lib/i18n";
-import { formatDateTime } from "@/lib/i18n/local-format";
+import { formatDateTime } from "@/lib/format";
 import { LocaleSegmented } from "./locale-toggle";
 import { PageHeader } from "./page-header";
 

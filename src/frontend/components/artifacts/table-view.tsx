@@ -3,7 +3,7 @@
 import { Download } from "lucide-react";
 import type { Artifact } from "@/lib/api";
 import { localizedAlgoText, useLocale } from "@/lib/i18n";
-import { formatNumber } from "@/lib/i18n/local-format";
+import { NO_VALUE, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type T = Extract<Artifact, { kind: "table" }>;
@@ -88,7 +88,7 @@ export function TableView({ artifact, runId }: { artifact: T; runId?: string | n
             {artifact.rows.map((row, i) => (
               <tr key={i} className="border-b border-border last:border-0">
                 {row.map((cell, j) => {
-                  const content = cell === null ? <span className="text-muted">—</span> : cellText(cell);
+                  const content = cell === null ? <span className="text-muted">{NO_VALUE}</span> : cellText(cell);
                   return j === 0 ? (
                     <th
                       key={j}

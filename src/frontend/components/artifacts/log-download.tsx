@@ -5,7 +5,7 @@ import type { Artifact } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { downloadBase64 } from "@/lib/utils";
 import { useLocale } from "@/lib/i18n";
-import { formatKilobytes } from "@/lib/i18n/local-format";
+import { formatFileSize } from "@/lib/format";
 
 type L = Extract<Artifact, { kind: "log" }>;
 
@@ -19,7 +19,7 @@ export function LogDownload({ artifact }: { artifact: L }) {
         </div>
         <div className="min-w-0">
           <div className="text-sm font-medium truncate">{artifact.filename}</div>
-          <div className="text-xs text-muted">{formatKilobytes(artifact.data_base64.length * 0.75, locale)}</div>
+          <div className="text-xs text-muted">{formatFileSize(artifact.data_base64.length * 0.75, locale)}</div>
         </div>
       </div>
       <Button

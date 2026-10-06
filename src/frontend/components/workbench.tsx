@@ -65,7 +65,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Segmented } from "./ui/segmented";
 import { ChoiceMark, choiceTile } from "./ui/choice";
 import { cn } from "@/lib/utils";
-import { formatDateTime, formatKilobytes, formatPercent } from "@/lib/i18n/local-format";
+import { formatDateTime, formatFileSize, formatPercent } from "@/lib/format";
 
 export function Workbench() {
   const t = useT();
@@ -890,7 +890,7 @@ export function Workbench() {
                             </div>
                             <div className="min-w-0">
                               <div className="text-sm font-medium truncate">{uploadDisplayMeta.name}</div>
-                              <div className="text-xs text-muted">{formatKilobytes(uploadDisplayMeta.size, locale)}</div>
+                              <div className="text-xs text-muted">{formatFileSize(uploadDisplayMeta.size, locale)}</div>
                             </div>
                           </div>
                           <button
@@ -1011,7 +1011,7 @@ export function Workbench() {
                                           recentLayout === "grid" ? "mt-0.5" : "shrink-0",
                                         )}
                                       >
-                                        <span className="shrink-0">{formatKilobytes(log.size_bytes, locale)}</span>
+                                        <span className="shrink-0">{formatFileSize(log.size_bytes, locale)}</span>
                                         <span className={cn("truncate", recentLayout === "list" && "hidden sm:inline")}>
                                           {formatDateTime(log.mtime * 1000, locale)}
                                         </span>
@@ -1083,7 +1083,7 @@ export function Workbench() {
                                 </span>
                                 <span className="mt-1 flex items-center justify-between gap-3 text-[11px] text-muted">
                                   <span className="font-mono truncate">{log.filename}</span>
-                                  <span className="shrink-0">{formatKilobytes(log.size_bytes, locale)}</span>
+                                  <span className="shrink-0">{formatFileSize(log.size_bytes, locale)}</span>
                                 </span>
                               </span>
                             </label>
@@ -1233,7 +1233,7 @@ export function Workbench() {
                 <div className="w-full space-y-2 mb-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-medium text-muted truncate max-w-[80%]">{localizedAlgoText(progress.status, t)}</span>
-                    <span className="font-bold text-accent-ink shrink-0">{formatPercent(progress.percentage / 100, locale)}</span>
+                    <span className="font-bold text-accent-ink shrink-0">{formatPercent(progress.percentage / 100, locale, 0)}</span>
                   </div>
                   <div
                     role="progressbar"

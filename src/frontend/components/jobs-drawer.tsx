@@ -37,7 +37,7 @@ import {
 import { datasetJobHref, datasetJobSubtitle, jobDisplayName, jobTitle } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
-import { formatDateTime, formatPercent } from "@/lib/i18n/local-format";
+import { formatDateTime, formatPercent } from "@/lib/format";
 import { Button } from "./ui/button";
 
 // How a job was started, derived from the `algorithm_id` prefix: runs of the
@@ -662,7 +662,7 @@ function StatusBadge({ job }: { job: Job }) {
     <span className="flex items-center gap-1 text-accent-ink">
       <Loader2 className="h-3 w-3 animate-spin" />
       {job.status === "running"
-        ? t("jobs.status_running", { pct: formatPercent(job.percentage / 100, locale) })
+        ? t("jobs.status_running", { pct: formatPercent(job.percentage / 100, locale, 0) })
         : t("jobs.status_pending")}
     </span>
   );

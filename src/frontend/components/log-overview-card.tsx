@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocale, type Locale } from "@/lib/i18n";
-import { formatDay, formatNumber, formatPercent } from "@/lib/i18n/local-format";
+import { formatDate, formatNumber, formatPercent } from "@/lib/format";
 
 type Props = {
   stats: LogStats;
@@ -24,8 +24,8 @@ type Translate = (key: string, params?: Record<string, string | number>) => stri
 
 function formatDateRange(start: string | null, end: string | null, locale: Locale): string | null {
   if (!start || !end) return null;
-  const s = formatDay(start, locale);
-  const e = formatDay(end, locale);
+  const s = formatDate(start, locale);
+  const e = formatDate(end, locale);
   if (!s || !e) return null;
   return s === e ? s : `${s} → ${e}`;
 }
@@ -48,9 +48,9 @@ export function LogOverviewCard({ stats, filename }: Props) {
   const { t, locale } = useLocale();
   const dateRange = formatDateRange(stats.time_range_start, stats.time_range_end, locale);
   const duration = formatDuration(stats.time_range_start, stats.time_range_end, t, locale);
-  const variantPct = formatPercent(stats.variant_to_trace_ratio, locale);
+  const variantPct = formatPercent(stats.variant_to_trace_ratio, locale, 0);
   const noisyVariants = stats.variant_to_trace_ratio > 0.5;
-  const count = (n: number) => formatNumber(n, locale);
+  const count = (n: number) => formatNumber(n, locale, 0);
 
   return (
     <section className="rounded-lg bg-surface px-4 py-3 space-y-2.5">
