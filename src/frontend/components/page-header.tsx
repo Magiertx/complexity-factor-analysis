@@ -23,7 +23,16 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   useEffect(() => {
-    document.title = `${title} · ${APP_NAME}`;
+    const text = `${title} · ${APP_NAME}`;
+    const apply = () => {
+      if (document.title !== text) document.title = text;
+    };
+    apply();
+    // Next writes the English title of the route's metadata into the head when it hydrates,
+    // which can come after this effect; the observer puts the title of the UI language back.
+    const observer = new MutationObserver(apply);
+    observer.observe(document.head, { subtree: true, childList: true, characterData: true });
+    return () => observer.disconnect();
   }, [title]);
 
   return (
