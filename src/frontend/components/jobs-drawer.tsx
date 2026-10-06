@@ -210,8 +210,10 @@ export function JobsDrawer() {
     let timer: ReturnType<typeof setInterval> | null = null;
     let es: EventSource | null = null;
 
-    const refresh = async () => {
-      if (document.hidden) return;
+    // Only the updates wait while the tab is hidden; the first load does not, or a page opened
+    // in a background tab would show nothing until it is looked at.
+    const refresh = async (always = false) => {
+      if (document.hidden && !always) return;
       try {
         const list = await fetchJobs();
         if (!active) return;
@@ -223,13 +225,13 @@ export function JobsDrawer() {
       }
     };
 
-    refresh();
+    refresh(true);
 
     const sseUrl = process.env.NEXT_PUBLIC_SSE_URL || "/api/jobs/events";
     try {
       es = new EventSource(sseUrl);
       es.onmessage = (e) => {
-        if (e.data === "update" || e.data === "initial") refresh();
+        if (e.data === "update" || e.data === "initial") void refresh();
       };
       es.onerror = () => {
         /* polling deckt's ab */
@@ -238,10 +240,10 @@ export function JobsDrawer() {
       /* SSE not supported */
     }
 
-    timer = setInterval(refresh, 10000);
+    timer = setInterval(() => void refresh(), 10000);
 
     const onVisible = () => {
-      if (!document.hidden) refresh();
+      if (!document.hidden) void refresh();
     };
     document.addEventListener("visibilitychange", onVisible);
 

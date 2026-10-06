@@ -237,8 +237,10 @@ export function Workbench() {
     let eventSource: EventSource | null = null;
     let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-    const loadJobsList = async () => {
-      if (document.hidden) return;
+    // Skipped while the tab is hidden, except for the first load: a deep link opened in a
+    // background tab would otherwise show nothing until it is looked at.
+    const loadJobsList = async (always = false) => {
+      if (document.hidden && !always) return;
       try {
         const list = await fetchJobs();
         if (active) setJobs(list);
@@ -250,7 +252,7 @@ export function Workbench() {
       }
     };
 
-    const startStreaming = () => {
+    const startStreaming = (first = false) => {
       if (eventSource) {
         eventSource.close();
       }
@@ -259,7 +261,7 @@ export function Workbench() {
       }
 
       // Initial fetch to load historical state
-      loadJobsList();
+      void loadJobsList(first);
 
       // Same-origin SSE: goes through Next.js's /api/* rewrite (and any
       // reverse proxy in front of it; the backend sends
@@ -274,7 +276,7 @@ export function Workbench() {
         eventSource.onmessage = (event) => {
           // Trigger fetch whenever backend announces an update
           if (event.data === "update" || event.data === "initial") {
-            loadJobsList();
+            void loadJobsList();
           }
         };
         eventSource.onerror = () => {
@@ -288,7 +290,7 @@ export function Workbench() {
       // 5s polling as a fallback in case SSE events get buffered upstream
       // (Next.js standalone rewrites do this) or the EventSource silently
       // dies. `/jobs` is a cheap session-scoped query.
-      pollTimer = setInterval(loadJobsList, 5000);
+      pollTimer = setInterval(() => void loadJobsList(), 5000);
     };
 
     const stopStreaming = () => {
@@ -303,7 +305,7 @@ export function Workbench() {
     };
 
     // Initialize stream
-    startStreaming();
+    startStreaming(true);
 
     // Pause/Resume based on document visibility
     const handleVisibility = () => {
