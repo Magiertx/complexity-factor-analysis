@@ -476,17 +476,8 @@ def check_excluded(measures: list[str], excluded: list[str]) -> None:
         )
 
 
-def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
-    """Run all steps on a cleaned matrix and return the result as plain JSON values.
-
-    Bartlett's test runs on the measures before the MSA filter, as in ComFy; the KMO values
-    and everything after describe the measures that are left. A singular correlation matrix
-    is analysed like ComFy for log measures does (clamped eigenvalues, pseudo-inverse in the
-    MSA) and reported as a warning; it is an error only if the factor analysis then fails.
-    """
-    check_excluded(list(data.columns), params.excluded)
-    data = data.drop(columns=list(params.excluded))
-    n, p = data.shape
+def _check_size(n: int, p: int) -> None:
+    """Enough measures for a factor analysis, and more observations than measures."""
     if p < MIN_MEASURES:
         raise AnalysisError(
             f"At least {MIN_MEASURES} measures are needed for a factor analysis; {p} are left.",
@@ -503,6 +494,30 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
             measures=p,
             needed=p + 1,
         )
+
+
+def check_params(measures: list[str], n_observations: int, params: AnalysisParams) -> None:
+    """The checks of ``analyze`` that need no fit, with the same errors. The MSA filter can
+    still leave too few measures, or too few for the factor count; only the analysis tells."""
+    check_excluded(measures, params.excluded)
+    p = len(measures) - len(set(params.excluded))
+    _check_size(n_observations, p)
+    if params.n_factors is not None and not 1 <= params.n_factors <= max_factors(p):
+        raise _factor_count_error(params.n_factors, p)
+
+
+def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
+    """Run all steps on a cleaned matrix and return the result as plain JSON values.
+
+    Bartlett's test runs on the measures before the MSA filter, as in ComFy; the KMO values
+    and everything after describe the measures that are left. A singular correlation matrix
+    is analysed like ComFy for log measures does (clamped eigenvalues, pseudo-inverse in the
+    MSA) and reported as a warning; it is an error only if the factor analysis then fails.
+    """
+    check_excluded(list(data.columns), params.excluded)
+    data = data.drop(columns=list(params.excluded))
+    n, p = data.shape
+    _check_size(n, p)
     out = _Warnings()
     bartlett = bartlett_sphericity(data)
     bartlett_passed = bartlett["p_value"] < params.bartlett_alpha

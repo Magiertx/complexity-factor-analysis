@@ -212,8 +212,9 @@ renamed into place.
   their files from their observations and failures.
 - **Options.** After a successful analysis the UI stores its parameters with
   `PUT .../options` (`options` in `meta.json`) and starts from them when the dataset is
-  reopened. Only the excluded measures are checked against the dataset; the analysis does
-  not run again.
+  reopened. They are checked with `core.check_params`, the checks of the analysis that need
+  no fit (known exclusions, enough measures and observations, the factor count); the analysis
+  does not run again.
 - **Delete.** `DELETE /datasets/{id}` marks a still running job `aborted`, as
   `POST /progress/{id}/abort` does, so its worker stops at the next progress tick; then it
   deletes the Run row with its artifact directory and the dataset directory. Interpretations

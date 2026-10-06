@@ -212,9 +212,19 @@ def test_options_are_checked_like_an_analysis(client):
     assert r.json() == client.post(f"{url}/analyze", json=body).json()
     assert r.json()["code"] == "unknown_excluded"
 
+    for body, code in [
+        ({"n_factors": 50, "auto_msa_filter": False}, "n_factors_range"),
+        ({"excluded": ["Size", "Density", "Diameter", "Cyclicity"]}, "too_few_measures"),
+    ]:
+        r = client.put(f"{url}/options", json=body)
+        assert r.status_code == 400 and r.json()["code"] == code
+        assert r.json() == client.post(f"{url}/analyze", json=body).json()
+
     assert client.put(f"{url}/options", json={"rotation": "spin"}).status_code == 422
     assert client.put(f"{url}/options", json={"msa_threshold": 2}).status_code == 422
     assert client.get(url).json()["options"] is None
+    # What the MSA filter leaves is known only once the analysis ran.
+    assert client.put(f"{url}/options", json={"msa_threshold": 1.0}).status_code == 204
 
     missing = "00000000-0000-4000-8000-000000000000"
     assert client.put(f"/factor-analysis/datasets/{missing}/options", json={}).status_code == 404

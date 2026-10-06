@@ -234,9 +234,11 @@ limit is marked `failed` here too.
 `PUT /factor-analysis/datasets/{id}/options` takes the body of `analyze` and keeps it with the
 dataset, every field filled in, so that a client reopening the dataset can start from its last
 analysis; the UI saves the parameters after each analysis. The body is checked as `analyze`
-checks it, without running the analysis: 422 for an invalid value, 400 with `code`
-`unknown_excluded` for an excluded measure the dataset does not have. The answer is 204, or 409
-if the dataset is not ready.
+checks it, as far as that needs no analysis: 422 for an invalid value, 400 with the `code` of
+`analyze` for an excluded measure the dataset does not have (`unknown_excluded`), too few
+measures or observations left (`too_few_measures`, `too_few_observations`) or more factors than
+the measures left allow (`n_factors_range`). Whether the MSA filter leaves enough measures only
+the analysis tells. The answer is 204, or 409 if the dataset is not ready.
 
 ```python
 s.put(f"{BASE}/factor-analysis/datasets/{dataset_id}/options",

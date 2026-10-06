@@ -34,7 +34,7 @@ from factor_analysis.core import (
     AnalysisError,
     AnalysisParams,
     analyze as run_analysis,
-    check_excluded,
+    check_params,
 )
 from factor_analysis.export import analysis_zip, loadings_csv, loadings_latex, matrix_csv
 from interpretation import store
@@ -837,12 +837,13 @@ async def save_options(
 ) -> Response:
     """Keep the parameters of an analysis with the dataset, so reopening it starts from them.
 
-    Checked like ``analyze`` checks them, without running the analysis: an excluded measure
-    the dataset lacks is a 400 with ``code`` and ``params``.
+    Checked like ``analyze`` checks them as far as that needs no fit: unknown excluded
+    measures, too few measures or observations left, or more factors than they allow are a
+    400 with ``code`` and ``params``.
     """
     meta = await _ready_meta(dataset_id, session_id)
     try:
-        check_excluded(meta["measures"], body.excluded)
+        check_params(meta["measures"], meta["n_observations"], body.params(meta["kind"]))
     except AnalysisError as e:
         return _AnalysisFailed(e).response
     storage.update_meta(session_id, meta["id"], options=body.model_dump())
