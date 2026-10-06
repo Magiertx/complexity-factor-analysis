@@ -192,7 +192,7 @@ function KmoCard({ analysis, threshold }: { analysis: FactorAnalysis | null; thr
 function Scale({ value, threshold, compact }: { value: number | null; threshold: number; compact?: boolean }) {
   const pass = value !== null && value >= threshold;
   return (
-    <div className={cn("relative rounded-full bg-bg/80", compact ? "h-1.5 w-20" : "h-2 w-full")} aria-hidden>
+    <div className={cn("relative rounded-full bg-bg/80", compact ? "hidden sm:block h-1.5 w-20" : "h-2 w-full")} aria-hidden>
       {value !== null && (
         <div
           className={cn("absolute inset-y-0 left-0 rounded-full", pass ? "bg-success" : "bg-warn")}
@@ -240,6 +240,10 @@ function MsaTable({ dataset, analysis, options, onOptions, measureName, measureT
           <caption className="sr-only">{t("factor.suitability.msa_heading")}</caption>
           <thead className="bg-bg">
             <tr className="text-muted">
+              {/* First, so a phone reaches it without scrolling the table sideways; w-px keeps it narrow. */}
+              <th scope="col" className="w-px px-3 py-2 text-center font-medium border-b border-border">
+                {t("factor.suitability.col_exclude")}
+              </th>
               <th scope="col" className="px-3 py-2 text-left font-medium border-b border-border">
                 {t("factor.suitability.col_measure")}
               </th>
@@ -248,9 +252,6 @@ function MsaTable({ dataset, analysis, options, onOptions, measureName, measureT
               </th>
               <th scope="col" className="px-3 py-2 text-left font-medium border-b border-border">
                 {t("factor.suitability.col_status")}
-              </th>
-              <th scope="col" className="px-3 py-2 text-center font-medium border-b border-border">
-                {t("factor.suitability.col_exclude")}
               </th>
             </tr>
           </thead>
@@ -263,6 +264,28 @@ function MsaTable({ dataset, analysis, options, onOptions, measureName, measureT
               const id = `fa-exclude-${i}`;
               return (
                 <tr key={m} className={cn("border-b border-border last:border-0", isExcluded && "text-muted")}>
+                  <td className="px-3 py-2 text-center">
+                    <label
+                      title={locked ? t("factor.suitability.min_measures", { n: MIN_MEASURES }) : undefined}
+                      className={cn(
+                        // relative: the sr-only input stays inside the scrolling table instead of
+                        // widening the page on a phone.
+                        "relative inline-grid place-items-center h-6 w-6 rounded has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/60",
+                        locked ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-accent/[0.08]",
+                      )}
+                    >
+                      <input
+                        id={id}
+                        type="checkbox"
+                        aria-label={t("factor.suitability.exclude_aria", { measure: measureName(m) })}
+                        checked={isExcluded}
+                        disabled={locked}
+                        onChange={() => toggle(m)}
+                        className="sr-only"
+                      />
+                      <ChoiceMark checked={isExcluded} />
+                    </label>
+                  </td>
                   <th scope="row" className="px-3 py-2 text-left font-medium">
                     <label htmlFor={id} className="cursor-pointer" title={measureTitle(m)}>
                       {measureName(m)}
@@ -288,28 +311,6 @@ function MsaTable({ dataset, analysis, options, onOptions, measureName, measureT
                     ) : (
                       <span className="text-muted">{NO_VALUE}</span>
                     )}
-                  </td>
-                  <td className="px-3 py-2 text-center">
-                    <label
-                      title={locked ? t("factor.suitability.min_measures", { n: MIN_MEASURES }) : undefined}
-                      className={cn(
-                        // relative: the sr-only input stays inside the scrolling table instead of
-                        // widening the page on a phone.
-                        "relative inline-grid place-items-center h-6 w-6 rounded has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/60",
-                        locked ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-accent/[0.08]",
-                      )}
-                    >
-                      <input
-                        id={id}
-                        type="checkbox"
-                        aria-label={t("factor.suitability.exclude_aria", { measure: measureName(m) })}
-                        checked={isExcluded}
-                        disabled={locked}
-                        onChange={() => toggle(m)}
-                        className="sr-only"
-                      />
-                      <ChoiceMark checked={isExcluded} />
-                    </label>
                   </td>
                 </tr>
               );
