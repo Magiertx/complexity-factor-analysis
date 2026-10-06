@@ -273,12 +273,15 @@ export function SettingsView() {
             </p>
           </div>
         </div>
-        {savedToast && (
-          <div className="flex items-center gap-2 text-xs text-muted bg-tile rounded-md px-3 py-2">
-            <Check className="h-3.5 w-3.5 text-accent-ink" />
-            {savedToast}
-          </div>
-        )}
+        {/* Always rendered, so screen readers announce each toast that appears in it. */}
+        <div role="status">
+          {savedToast && (
+            <div className="flex items-center gap-2 text-xs text-muted bg-tile rounded-md px-3 py-2">
+              <Check className="h-3.5 w-3.5 text-accent-ink" />
+              {savedToast}
+            </div>
+          )}
+        </div>
       </header>
 
       {loadError && (
@@ -585,7 +588,14 @@ export function SettingsView() {
           >
             {confirmClearDatasets ? (
               <div className="flex items-center gap-2">
-                <Button size="sm" variant="primary" className="bg-danger hover:bg-danger/90" onClick={handleClearDatasets}>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  className="bg-danger hover:bg-danger/90"
+                  onClick={handleClearDatasets}
+                  // It replaces the focused button, which would leave the focus nowhere.
+                  autoFocus
+                >
                   {t("settings.storage.confirm_delete")}
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => setConfirmClearDatasets(false)}>
