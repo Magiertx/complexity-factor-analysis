@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import { ZoomIn, ZoomOut, Download, X, RotateCcw, Maximize2, SunMoon } from "lucide-react";
 import type { Artifact } from "@/lib/api";
-import { localizedAlgoText, useT } from "@/lib/i18n";
+import { localizedAlgoText, useLocale } from "@/lib/i18n";
+import { formatPercent } from "@/lib/format";
 
 type I = Extract<Artifact, { kind: "image" }>;
 
 export function ImageView({ artifact, runId, fixedHeight = false }: { artifact: I; runId?: string | null; fixedHeight?: boolean }) {
-  const t = useT();
+  const { t, locale } = useLocale();
   const [isOpen, setIsOpen] = useState(false);
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -190,7 +191,7 @@ export function ImageView({ artifact, runId, fixedHeight = false }: { artifact: 
               <ZoomOut className="h-4 w-4" />
             </button>
             <span className="text-xs font-mono text-zinc-400 min-w-[45px] text-center">
-              {Math.round(scale * 100)}%
+              {formatPercent(scale, locale, 0)}
             </span>
             <button
               onClick={zoomIn}
