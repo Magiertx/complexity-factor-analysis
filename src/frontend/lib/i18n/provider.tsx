@@ -8,6 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { formatNumber } from "../format";
 import en from "./locales/en.json";
 import de from "./locales/de.json";
 
@@ -44,11 +45,14 @@ function lookup(dict: Dict, key: string): string | undefined {
   return typeof cur === "string" ? cur : undefined;
 }
 
-function interpolate(template: string, params?: TParams): string {
+/** Fills in the params; numbers in the format of the UI language ("0,05" in German). */
+function interpolate(template: string, locale: Locale, params?: TParams): string {
   if (!params) return template;
-  return template.replace(/\{(\w+)\}/g, (m, k) =>
-    Object.prototype.hasOwnProperty.call(params, k) ? String(params[k]) : m,
-  );
+  return template.replace(/\{(\w+)\}/g, (m, k) => {
+    if (!Object.prototype.hasOwnProperty.call(params, k)) return m;
+    const v = params[k];
+    return typeof v === "number" ? formatNumber(v, locale) : String(v);
+  });
 }
 
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
@@ -84,9 +88,9 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const t = useCallback(
     (key: string, params?: TParams) => {
       const fromActive = lookup(DICTIONARIES[locale], key);
-      if (fromActive !== undefined) return interpolate(fromActive, params);
+      if (fromActive !== undefined) return interpolate(fromActive, locale, params);
       const fromFallback = lookup(DICTIONARIES[DEFAULT_LOCALE], key);
-      if (fromFallback !== undefined) return interpolate(fromFallback, params);
+      if (fromFallback !== undefined) return interpolate(fromFallback, locale, params);
       if (process.env.NODE_ENV !== "production") {
         console.warn(`[i18n] missing key: ${key}`);
       }
@@ -98,7 +102,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const tMaybe = useCallback(
     (key: string, params?: TParams) => {
       const found = lookup(DICTIONARIES[locale], key) ?? lookup(DICTIONARIES[DEFAULT_LOCALE], key);
-      return found === undefined ? undefined : interpolate(found, params);
+      return found === undefined ? undefined : interpolate(found, locale, params);
     },
     [locale],
   );
