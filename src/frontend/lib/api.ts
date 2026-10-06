@@ -1,6 +1,8 @@
 // Typed client for the AlgoService backend.
 // Mirrors src/AlgoService/algorithms/base.py.
 
+import { downloadBlob } from "./factor-analysis";
+
 export type ParameterType = "int" | "float" | "bool" | "enum" | "multi_enum" | "string";
 // Open string; the backend's `/algorithms` response carries the authoritative
 // `categories` list (id + label), and the frontend renders whichever ids show
@@ -379,6 +381,36 @@ export interface FactorDataset {
   /** Inputs that gave no or incomplete values, e.g. a miner that failed on a log. */
   failures?: { input: string; error: string }[];
   created_at: string;
+  inputs?: InputsSummary;
+  /** The options of the last analysis, saved with the dataset; null before the first one. */
+  options?: AnalyzeOptions | null;
+}
+
+/** What a dataset was built from. */
+export interface InputsSummary {
+  /** Input files, uploaded or of a sample; 1 for a CSV, 0 for a bundled dataset. */
+  files: number;
+  miners?: string[];
+  measures?: string[];
+  groups?: string[];
+  sample_id?: string;
+}
+
+/** A dataset of the session as listed by GET /factor-analysis/datasets. */
+export interface DatasetSummary {
+  id: string;
+  kind: FactorKind;
+  name: string;
+  source: DatasetSource;
+  status: FactorDataset["status"];
+  created_at: string;
+  /** null while the dataset is computed or after it failed. */
+  n_observations: number | null;
+  n_measures: number | null;
+  bundled_id: string | null;
+  job_id: string | null;
+  inputs: InputsSummary;
+  has_options: boolean;
 }
 
 export interface CreateDatasetInput {
@@ -527,6 +559,38 @@ export async function fetchDataset(id: string, signal?: AbortSignal, rows?: numb
   return r.json();
 }
 
+/** The datasets of the session, newest first; all kinds without `kind`. */
+export async function listDatasets(kind?: FactorKind, signal?: AbortSignal): Promise<DatasetSummary[]> {
+  const query = kind ? `?kind=${kind}` : "";
+  const r = await fetch(`${BASE}/factor-analysis/datasets${query}`, { cache: "no-store", signal });
+  if (!r.ok) throw await httpError(r, "Failed to load the datasets");
+  return (await r.json()).datasets;
+}
+
+/** Remembers the options of an analysis with the dataset, so reopening it starts from them. */
+export async function saveDatasetOptions(id: string, options: AnalyzeOptions): Promise<void> {
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/options`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(options),
+  });
+  if (!r.ok) throw await httpError(r, "Could not save the options");
+}
+
+/** Deletes a dataset; a computing one has its job aborted and removed as well. */
+export async function deleteDataset(id: string): Promise<void> {
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}`, { method: "DELETE" });
+  if (!r.ok) throw await httpError(r, "Could not delete the dataset");
+}
+
+/** Deletes every dataset of the session, or those of one kind; returns how many. */
+export async function deleteAllDatasets(kind?: FactorKind): Promise<number> {
+  const query = kind ? `?kind=${kind}` : "";
+  const r = await fetch(`${BASE}/factor-analysis/datasets${query}`, { method: "DELETE" });
+  if (!r.ok) throw await httpError(r, "Could not delete the datasets");
+  return (await r.json()).deleted;
+}
+
 export function datasetDownloadUrl(id: string): string {
   return `${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/download`;
 }
@@ -557,10 +621,32 @@ export async function exportLoadings(
     body: JSON.stringify({ ...options, format }),
   });
   if (!r.ok) throw await httpError(r, "Export failed");
+  return attachment(r, `loadings.${format === "csv" ? "csv" : "tex"}`);
+}
+
+/**
+ * Downloads the whole analysis as a ZIP: the dataset, every result table, the interpretation
+ * if one is stored for these options and language, and a manifest to reproduce it.
+ */
+export async function downloadAnalysisZip(
+  id: string,
+  options: AnalyzeOptions,
+  language: InterpretationLanguage,
+): Promise<void> {
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/export/zip`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...options, language }),
+  });
+  if (!r.ok) throw await httpError(r, "Export failed");
+  const { blob, filename } = await attachment(r, "factor-analysis.zip");
+  downloadBlob(blob, filename);
+}
+
+async function attachment(r: Response, fallback: string): Promise<{ blob: Blob; filename: string }> {
   const disposition = r.headers.get("Content-Disposition") ?? "";
   const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition);
-  const filename = match ? decodeURIComponent(match[1]) : `loadings.${format === "csv" ? "csv" : "tex"}`;
-  return { blob: await r.blob(), filename };
+  return { blob: await r.blob(), filename: match ? decodeURIComponent(match[1]) : fallback };
 }
 
 // ----------------------- Interpretation by Claude -----------------------
