@@ -33,7 +33,7 @@ import {
   fetchAlgorithms,
   fetchJobs,
 } from "@/lib/api";
-import { datasetJobHref, jobDisplayName } from "@/lib/factor-analysis";
+import { datasetJobHref, datasetJobSubtitle, jobDisplayName, jobTitle } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
@@ -409,9 +409,12 @@ function JobCard({
   const ToolTypeIcon = toolType ? TOOL_TYPE_ICON[toolType] : null;
 
   const shortAlgo =
-    info.mode !== "batch"
-      ? jobDisplayName(job, t).split(" — ")[0]
-      : `${t(MODE_META[info.mode].label)}: ${innerAlgo?.name.split(" — ")[0] ?? info.innerAlgoId}`;
+    info.mode === "batch"
+      ? `${t(MODE_META[info.mode].label)}: ${innerAlgo?.name.split(" — ")[0] ?? info.innerAlgoId}`
+      : info.mode === "dataset"
+        ? jobTitle(job, t)
+        : jobDisplayName(job, t).split(" — ")[0];
+  const subtitle = datasetJobSubtitle(job, t) ?? job.filename;
 
   const dateStr = new Date(job.created_at * 1000).toLocaleString([], {
     month: "short",
@@ -449,8 +452,12 @@ function JobCard({
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-xs font-semibold text-fg truncate">{shortAlgo}</div>
-          <div className="text-[11px] text-muted truncate">{job.filename}</div>
+          <div className="text-xs font-semibold text-fg truncate" title={shortAlgo}>
+            {shortAlgo}
+          </div>
+          <div className="text-[11px] text-muted truncate" title={subtitle}>
+            {subtitle}
+          </div>
         </div>
         <button
           type="button"

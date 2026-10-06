@@ -574,6 +574,18 @@
       "cancel_failed": "Der Job ließ sich nicht abbrechen. Versuche es noch einmal oder sieh in der Jobliste nach.",
       "too_large_total": "Einige Dateien wurden übersprungen: Alle Dateien eines Datensatzes dürfen zusammen höchstens {mb} MB groß sein."
     },
+    "inputs": {
+      "logs": "{n} Log",
+      "logs_plural": "{n} Logs",
+      "nets": "{n} Netz",
+      "nets_plural": "{n} Netze",
+      "miners": "{n} Miner",
+      "miners_plural": "{n} Miner",
+      "groups": "{n} Feature-Gruppe",
+      "groups_plural": "{n} Feature-Gruppen",
+      "measures": "{n} Maß",
+      "measures_plural": "{n} Maße"
+    },
     "dataset": {
       "observations": "Beobachtungen",
       "measures": "Maße",

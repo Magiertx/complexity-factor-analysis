@@ -574,6 +574,18 @@
       "cancel_failed": "The job could not be cancelled. Try again or check the jobs panel.",
       "too_large_total": "Some files were skipped: all files of one dataset may have at most {mb} MB together."
     },
+    "inputs": {
+      "logs": "{n} log",
+      "logs_plural": "{n} logs",
+      "nets": "{n} net",
+      "nets_plural": "{n} nets",
+      "miners": "{n} miner",
+      "miners_plural": "{n} miners",
+      "groups": "{n} feature group",
+      "groups_plural": "{n} feature groups",
+      "measures": "{n} measure",
+      "measures_plural": "{n} measures"
+    },
     "dataset": {
       "observations": "Observations",
       "measures": "Measures",
