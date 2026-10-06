@@ -50,13 +50,17 @@ cancel it; `/exit` waits behind the call as well. Alpha++, for example, ran for 
 15 minutes on one 1000-trace PDC log. `launch.sh` therefore does not `exec` Java but keeps it
 as a child process and watches it:
 
-- If Java exits, it is started again after 2 s.
+- If Java exits, the watchdog notices at the end of its current probe or pause, at the
+  latest 10 s later, and starts Java again 2 s after that.
 - While ProM answers, `/isRunning` is probed every 10 s. A busy ProM does not answer, so the
   next probe waits for it. When no probe has been answered for `PROM4PY_CALL_TIMEOUT` + 30 s
   (default 330 s), Java gets `TERM` (`KILL` if it still runs 5 s later) and is started
-  again. The backend gives
-  up on a call after `PROM4PY_CALL_TIMEOUT`, so this never cuts off a call that a job still
-  waits for. Discoveries take turns on ProM, which keeps calls from queueing behind each other.
+  again. The backend gives up on a call after `PROM4PY_CALL_TIMEOUT`, so this never cuts off
+  a call that a job still waits for. Discoveries take turns on ProM, which keeps calls from
+  queueing behind each other.
+- The watchdog measures this on the wall clock, which jumps forward when the machine wakes
+  from sleep. If the time ran out while no probe was waiting, it first sends one short probe
+  (5 s), so an idle ProM is not restarted.
 - A start that does not answer within 600 s is restarted as well.
 
 Every action is logged with a `[watchdog]` prefix:

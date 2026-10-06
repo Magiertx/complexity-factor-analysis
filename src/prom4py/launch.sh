@@ -135,9 +135,12 @@ while true; do
     fi
 
     # One probe that waits as long as the watchdog allows, instead of one every few seconds
-    # that would pile up in the backlog of a busy server.
+    # that would pile up in the backlog of a busy server. The budget comes from the wall
+    # clock, which jumps forward when the machine wakes from sleep; one used up while no
+    # probe was waiting still gets a short probe, so that an idle ProM is not taken for stuck.
     budget=$((STUCK_AFTER - (now - last_ok)))
-    if [ "$budget" -gt 0 ] && in_background curl -fs -o /dev/null -m "$budget" "$URL"; then
+    [ "$budget" -lt 5 ] && budget=5
+    if in_background curl -fs -o /dev/null -m "$budget" "$URL"; then
         last_ok=$(date +%s)
         touch "$HEARTBEAT"
         in_background sleep "$PROBE_INTERVAL"
