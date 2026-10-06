@@ -1002,9 +1002,13 @@ export function DataSummary({
             </div>
             <InputChips dataset={dataset} catalog={catalog} />
           </div>
-          <Button variant="outline" size="sm" onClick={onCancelJob}>
-            {t("factor.data.cancel")}
-          </Button>
+          {/* Deleting aborts the job as well; cancelling keeps the dataset, as failed. */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <DeleteDataset onDelete={onDelete} />
+            <Button variant="outline" size="sm" onClick={onCancelJob}>
+              {t("factor.data.cancel")}
+            </Button>
+          </div>
         </div>
         <div
           className="w-full bg-tile rounded-full h-2 overflow-hidden"

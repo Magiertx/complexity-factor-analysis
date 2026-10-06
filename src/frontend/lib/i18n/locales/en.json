@@ -583,7 +583,7 @@
       "submit_failed": "The dataset could not be created.",
       "computing_title": "Computing {name}",
       "computing_hint": "This runs as a background job. You can leave the page; the dataset is kept for your session.",
-      "cancel": "Cancel",
+      "cancel": "Stop computing",
       "failed_title": "The dataset could not be built",
       "change": "Choose other data",
       "catalog_failed": "The catalog could not be loaded.",

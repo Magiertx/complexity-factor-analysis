@@ -583,7 +583,7 @@
       "submit_failed": "Der Datensatz konnte nicht angelegt werden.",
       "computing_title": "{name} wird berechnet",
       "computing_hint": "Das läuft als Hintergrundjob. Du kannst die Seite verlassen; der Datensatz bleibt für deine Sitzung erhalten.",
-      "cancel": "Abbrechen",
+      "cancel": "Berechnung abbrechen",
       "failed_title": "Der Datensatz konnte nicht erstellt werden",
       "change": "Andere Daten wählen",
       "catalog_failed": "Der Katalog konnte nicht geladen werden.",
