@@ -195,7 +195,7 @@
       "algorithms_loaded_label": "Geladene Algorithmen",
       "source_label": "Quellcode",
       "documentation_label": "Dokumentation",
-      "back_to_workbench": "Zurück zur Modellkomplexität"
+      "api_link": "API-Zugang und Beispiele"
     }
   },
   "api_access": {

@@ -195,7 +195,7 @@
       "algorithms_loaded_label": "Algorithms loaded",
       "source_label": "Source",
       "documentation_label": "Documentation",
-      "back_to_workbench": "Back to model complexity"
+      "api_link": "API access and examples"
     }
   },
   "api_access": {

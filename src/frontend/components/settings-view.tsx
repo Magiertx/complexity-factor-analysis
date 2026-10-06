@@ -18,6 +18,7 @@ import {
   Download,
   Upload,
   Loader2,
+  Code2,
 } from "lucide-react";
 import {
   AlgorithmManifest,
@@ -682,8 +683,9 @@ export function SettingsView() {
           )}
           <div className="flex items-center justify-between">
             <span className="text-muted">{t("settings.about.documentation_label")}</span>
-            <Link href="/" className="hover:text-accent-ink inline-flex items-center gap-1.5">
-              {t("settings.about.back_to_workbench")}
+            <Link href="/api-access" className="hover:text-accent-ink inline-flex items-center gap-1.5">
+              <Code2 className="h-3.5 w-3.5" />
+              {t("settings.about.api_link")}
             </Link>
           </div>
         </CardContent>
