@@ -160,8 +160,12 @@ discovery, one miner on one log, is therefore limited to `PROM4PY_CALL_TIMEOUT` 
   pdc2025_02001100.xes": in a dataset job it is listed under the failed inputs and the job
   goes on, in a single run its cells read `ERR: ProMTimeout`.
 - ProM itself goes on with the call. The watchdog in the `prom4py` container restarts it
-  usually about half a minute after the timeout; the restart takes about 5 s. Meanwhile the next
-  discovery shows "waiting for ProM to restart" and then runs normally.
+  usually about half a minute after the timeout; the restart takes about 5 s. Meanwhile the
+  next discovery shows "waiting for ProM to restart" and then runs normally.
+- Each such input costs its job about `PROM4PY_CALL_TIMEOUT` + 40 s, and a job is killed
+  after an hour, losing all its rows. At the default of 300 s about ten hanging inputs do
+  that, e.g. Alpha++ over a set of PDC logs: keep the slow miners out of large dataset jobs,
+  or lower the limit as below.
 - Aborting a job does not stop a running ProM call either; the worker is free once the call
   returns or times out.
 - `docker compose up` does not wait for `prom4py` to be healthy, so a stuck or starting ProM

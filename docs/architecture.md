@@ -106,6 +106,12 @@ One discovery, one miner on one log with all of its requests, may take
 A worker blocked in a ProM call is free again at the latest after `PROM4PY_CALL_TIMEOUT`, also
 when its job was aborted, and ProM usually about half a minute later.
 
+Each input that times out costs its job about `PROM4PY_CALL_TIMEOUT` + 40 s, the timeout and
+the wait for the restart. Celery kills a job after an hour (`task_time_limit` in
+`celery_worker.py`), and a dataset job keeps its rows in memory until the end, so at the default
+of 300 s about ten hanging inputs lose the whole dataset (it is marked failed by the 70-minute
+rule below). Keep the slow miners out of large dataset jobs, or lower `PROM4PY_CALL_TIMEOUT`.
+
 ## Job flow
 
 Request → response is asynchronous. The HTTP request that uploads a log returns immediately with a `job_id`; the analysis runs in the background and pushes progress updates over SSE.
