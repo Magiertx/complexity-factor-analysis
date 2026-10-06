@@ -1,4 +1,4 @@
-"""The datasets of a session: the list and saved options."""
+"""The datasets of a session: list, saved options and deletion with their jobs."""
 
 from __future__ import annotations
 
@@ -125,6 +125,8 @@ def test_other_sessions_see_nothing(client, other):
     assert _list(other) == []
     assert other.get(f"/factor-analysis/datasets/{dataset_id}").status_code == 404
     assert other.put(f"/factor-analysis/datasets/{dataset_id}/options", json={}).status_code == 404
+    assert other.delete(f"/factor-analysis/datasets/{dataset_id}").status_code == 404
+    assert other.delete("/factor-analysis/datasets").json() == {"deleted": 0}
     assert [d["id"] for d in _list(client)] == [dataset_id]
 
 
@@ -221,4 +223,96 @@ def test_options_need_a_ready_dataset(client):
     dataset_id, _ = _computing_with_job(client)
     r = client.put(f"/factor-analysis/datasets/{dataset_id}/options", json={})
     assert r.status_code == 409
+
+
+# --- delete -------------------------------------------------------------------------------
+
+
+def test_delete_removes_the_dataset_its_job_and_its_interpretations(client, isolated_jobs_dir):
+    from factor_analysis import storage
+    from interpretation import store
+
+    body = _sample(client)
+    dataset_id, job_id = body["dataset_id"], body["job_id"]
+    session_id = _session_of(dataset_id)
+    meta = storage.read_meta(session_id, dataset_id)
+    store.write_cached(session_id, meta, "0" * 32, {"interpretation": {}})
+    cached = storage.dataset_dir(session_id, dataset_id) / "interpretations" / f"{'0' * 32}.json"
+    assert cached.is_file()
+    (isolated_jobs_dir / job_id).mkdir()
+    (isolated_jobs_dir / job_id / "artifact.bin").write_bytes(b"x")
+
+    assert client.delete(f"/factor-analysis/datasets/{dataset_id}").status_code == 204
+    assert not storage.dataset_dir(session_id, dataset_id).exists() and not cached.exists()
+    assert not (isolated_jobs_dir / job_id).exists()
+    assert client.get(f"/jobs/{job_id}").status_code == 404
+    assert client.get(f"/factor-analysis/datasets/{dataset_id}").status_code == 404
+    assert client.delete(f"/factor-analysis/datasets/{dataset_id}").status_code == 404
+    assert _list(client) == []
+
+
+def test_deleting_a_computing_dataset_aborts_its_job(client, monkeypatch):
+    import jobs_db
+
+    dataset_id, job_id = _computing_with_job(client)
+    updates = []
+    real = jobs_db.update_job_progress
+
+    async def spy(job, pct, msg, status="running"):
+        updates.append((job, status))
+        await real(job, pct, msg, status=status)
+
+    monkeypatch.setattr(jobs_db, "update_job_progress", spy)
+    assert client.delete(f"/factor-analysis/datasets/{dataset_id}").status_code == 204
+    assert updates == [(job_id, "aborted")]
+    assert client.get(f"/jobs/{job_id}").status_code == 404
+
+
+def test_finished_jobs_are_not_aborted(client, monkeypatch):
+    import jobs_db
+
+    dataset_id, job_id = _computing_with_job(client, status="failed")
+    updates = []
+
+    async def spy(*args, **kwargs):
+        updates.append(args)
+
+    monkeypatch.setattr(jobs_db, "update_job_progress", spy)
+    assert client.delete(f"/factor-analysis/datasets/{dataset_id}").status_code == 204
+    assert updates == [] and client.get(f"/jobs/{job_id}").status_code == 404
+
+
+def test_delete_all_counts_and_filters_by_kind(client, other):
+    kept = _csv(other)
+    _csv(client, "model")
+    _csv(client, "log")
+    _bundled(client)
+
+    assert client.delete("/factor-analysis/datasets?kind=process").status_code == 400
+    assert client.delete("/factor-analysis/datasets?kind=log").json() == {"deleted": 1}
+    assert [d["kind"] for d in _list(client)] == ["model", "model"]
+    assert client.delete("/factor-analysis/datasets").json() == {"deleted": 2}
+    assert _list(client) == []
+    assert [d["id"] for d in _list(other)] == [kept]
+
+
+def test_deleting_the_job_deletes_its_dataset(client):
+    from factor_analysis import storage
+
+    body = _sample(client)
+    session_id = _session_of(body["dataset_id"])
+    assert client.delete(f"/jobs/{body['job_id']}").status_code == 200
+    assert client.get(f"/factor-analysis/datasets/{body['dataset_id']}").status_code == 404
+    assert not storage.dataset_dir(session_id, body["dataset_id"]).exists()
+
+
+def test_clearing_the_job_history_deletes_the_computed_datasets_only(client, other):
+    computed = _sample(client)["dataset_id"]
+    own = _csv(client)
+    theirs = _sample(other)["dataset_id"]
+
+    assert client.delete("/jobs").status_code == 200
+    assert [d["id"] for d in _list(client)] == [own]
+    assert client.get(f"/factor-analysis/datasets/{computed}").status_code == 404
+    assert [d["id"] for d in _list(other)] == [theirs]
 

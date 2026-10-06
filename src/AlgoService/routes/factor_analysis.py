@@ -688,6 +688,49 @@ async def get_dataset(
     return out
 
 
+async def _delete_dataset(meta: dict[str, Any], session_id: str) -> bool:
+    """Delete a dataset and the job that computed it, aborting the job if it still runs.
+    True if there was a job."""
+    if meta.get("job_id"):
+        job = await jobs_db.read_job(meta["job_id"], session_id)
+        if job and job["status"] in ("pending", "running"):
+            await jobs_db.update_job_progress(
+                job["id"], job.get("percentage", 0.0), "Aborted by user", status="aborted"
+            )
+        await jobs_db.delete_job_file(meta["job_id"], session_id)
+    await run_in_threadpool(storage.delete, session_id, meta["id"])
+    return bool(meta.get("job_id"))
+
+
+@router.delete("/datasets/{dataset_id}", status_code=204)
+@limiter.limit(rate_limit("dataset_status", "600/minute"))
+async def delete_dataset(
+    request: Request,
+    dataset_id: str,
+    session_id: str = Depends(get_session_id),
+) -> Response:
+    """Delete a dataset with its matrix, cached interpretations and job."""
+    meta = await _meta_or_404(dataset_id, session_id)
+    if await _delete_dataset(meta, session_id):
+        await broadcast_jobs_update()
+    return Response(status_code=204)
+
+
+@router.delete("/datasets")
+@limiter.limit(rate_limit("dataset_status", "600/minute"))
+async def delete_datasets(
+    request: Request,
+    kind: str | None = None,
+    session_id: str = Depends(get_session_id),
+) -> dict[str, int]:
+    """Delete every dataset of the session, optionally of one kind, each with its job."""
+    metas = await run_in_threadpool(_session_metas, session_id, kind)
+    had_jobs = [await _delete_dataset(meta, session_id) for meta in metas]
+    if any(had_jobs):
+        await broadcast_jobs_update()
+    return {"deleted": len(metas)}
+
+
 def _slug(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "-", name).strip("-")[:80] or "dataset"
 

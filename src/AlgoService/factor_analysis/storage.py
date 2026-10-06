@@ -127,6 +127,16 @@ def list_metas(session_id: str) -> list[dict[str, Any]]:
     return sorted(metas, key=lambda m: datetime.fromisoformat(m["created_at"]), reverse=True)
 
 
+def delete(session_id: str, dataset_id: str) -> bool:
+    """Remove a dataset with its matrix, inputs and own interpretations; False if there was none."""
+    directory = dataset_dir(session_id, dataset_id)
+    if not directory.is_dir():
+        return False
+    shutil.rmtree(directory, ignore_errors=True)
+    _cache.pop(str(directory / "data.csv"), None)
+    return True
+
+
 #: Failed inputs kept in the metadata; the job result lists all of them.
 MAX_FAILURES = 200
 
