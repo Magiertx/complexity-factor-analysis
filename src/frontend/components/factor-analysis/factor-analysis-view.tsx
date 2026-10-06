@@ -17,6 +17,7 @@ import {
   fetchInterpretationStatus,
   interpretDataset,
   listDatasets,
+  saveDatasetOptions,
   type CreateDatasetInput,
   type DatasetSummary,
   type FactorAnalysis,
@@ -26,7 +27,15 @@ import {
   type FactorKind,
   type InterpretationStatus,
 } from "@/lib/api";
-import { PREVIEW_ROWS, defaultOptions, downloadBlob, type AnalysisOptions, type ExportFormat } from "@/lib/factor-analysis";
+import {
+  PREVIEW_ROWS,
+  defaultOptions,
+  downloadBlob,
+  initialOptions,
+  optionsFromSaved,
+  type AnalysisOptions,
+  type ExportFormat,
+} from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -52,6 +61,7 @@ const POLL_MS = 1500;
 // Polling slows down while the browser tab is hidden.
 const HIDDEN_POLL_MS = 15000;
 const ANALYZE_DEBOUNCE_MS = 300;
+const SAVE_OPTIONS_DEBOUNCE_MS = 1000;
 
 /** What an interpretation was requested for; a change of any part makes it stale. */
 function interpretationKey(datasetId: string, options: AnalysisOptions, locale: string) {
@@ -109,6 +119,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const { count: jobCount } = useJobsDrawer();
 
   const [options, setOptions] = useState<AnalysisOptions>(() => defaultOptions(kind));
+  // The dataset whose saved options were applied, and the options the server has for it.
+  const optionsAppliedFor = useRef<string | null>(null);
+  const savedOptions = useRef<{ id: string; json: string | null } | null>(null);
   // The last successful result stays visible while a new one is computed or after an error.
   const [analysis, setAnalysis] = useState<FactorAnalysis | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
@@ -178,8 +191,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       setInterpretError(null);
       // A request for the old dataset is aborted and would not reset this itself.
       setAnalyzing(false);
-      // Keep rotation and thresholds, but exclusions and the factor count belong to the old data.
-      setOptions((o) => ({ ...o, excluded: [], n_factors: null }));
+      // Every dataset has its own options; those saved with it are applied once it has loaded.
+      setOptions(defaultOptions(kind));
+      optionsAppliedFor.current = null;
       try {
         if (id) localStorage.setItem(storageKey, id);
         else localStorage.removeItem(storageKey);
@@ -187,7 +201,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         /* storage blocked */
       }
     },
-    [storageKey],
+    [storageKey, kind],
   );
 
   // Opens a dataset of the session: from the list in the data step or from a link.
@@ -218,6 +232,14 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         if (d.kind !== kind) {
           selectDataset(null);
           return;
+        }
+        // Once per opening, start from the options saved with the dataset. Set together with
+        // the dataset, so that the first analysis already uses them.
+        if (d.status === "ready" && optionsAppliedFor.current !== d.id) {
+          optionsAppliedFor.current = d.id;
+          const saved = d.options ? JSON.stringify(optionsFromSaved(kind, d.options)) : null;
+          savedOptions.current = { id: d.id, json: saved };
+          setOptions(initialOptions(kind, d.options, d.measures));
         }
         setDataset(d);
         setDatasetError(null);
@@ -283,6 +305,24 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       ctrl.abort();
     };
   }, [ready, datasetId, options, datasetGone]);
+
+  // Remember the options of every new analysis with its dataset, so that reopening the dataset
+  // starts from them. Nothing depends on the answer; a failure only costs that convenience.
+  useEffect(() => {
+    if (!datasetId || !analyzedOptions) return;
+    const json = JSON.stringify(analyzedOptions);
+    const saved = savedOptions.current;
+    if (saved?.id === datasetId && saved.json === json) return;
+    const timer = setTimeout(() => {
+      saveDatasetOptions(datasetId, analyzedOptions).then(
+        () => {
+          if (datasetIdRef.current === datasetId) savedOptions.current = { id: datasetId, json };
+        },
+        (e) => console.error("Could not save the analysis options", e),
+      );
+    }, SAVE_OPTIONS_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [datasetId, analyzedOptions]);
 
   // Show a stored interpretation of the analysis on screen without asking for a new one:
   // precomputed for a bundled dataset, or requested before. Never calls the model. Without a

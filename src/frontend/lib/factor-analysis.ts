@@ -1,7 +1,7 @@
 // Helpers for the factor analysis view. Kept free of React so they stay easy to reuse.
 
 import type { CSSProperties } from "react";
-import type { FactorAnalysis, FactorKind, Job, Rotation } from "./api";
+import type { AnalyzeOptions, FactorAnalysis, FactorKind, Job, Rotation } from "./api";
 
 type Translate = (key: string, params?: Record<string, string | number>) => string;
 
@@ -30,6 +30,38 @@ export function defaultOptions(kind: FactorKind): AnalysisOptions {
     loading_threshold: kind === "log" ? 0.5 : 0.35,
     communality_threshold: kind === "log" ? 0.5 : 0,
   };
+}
+
+/**
+ * Options saved with a dataset, completed with the defaults. Same key order as the defaults,
+ * so options compare equal as JSON however they were made.
+ */
+export function optionsFromSaved(kind: FactorKind, saved: AnalyzeOptions): AnalysisOptions {
+  const defaults = defaultOptions(kind);
+  return {
+    excluded: saved.excluded ?? [],
+    auto_msa_filter: saved.auto_msa_filter ?? defaults.auto_msa_filter,
+    msa_threshold: saved.msa_threshold ?? defaults.msa_threshold,
+    bartlett_alpha: saved.bartlett_alpha ?? defaults.bartlett_alpha,
+    n_factors: saved.n_factors ?? null,
+    rotation: saved.rotation ?? defaults.rotation,
+    loading_threshold: saved.loading_threshold ?? defaults.loading_threshold,
+    communality_threshold: saved.communality_threshold ?? defaults.communality_threshold,
+  };
+}
+
+/**
+ * The options a dataset opens with: those saved with it, else the defaults. Exclusions of
+ * measures the dataset no longer has are dropped.
+ */
+export function initialOptions(
+  kind: FactorKind,
+  saved: AnalyzeOptions | null | undefined,
+  measures: string[],
+): AnalysisOptions {
+  if (!saved) return defaultOptions(kind);
+  const options = optionsFromSaved(kind, saved);
+  return { ...options, excluded: options.excluded.filter((m) => measures.includes(m)) };
 }
 
 /** Fewest measures the backend accepts for an analysis. */
