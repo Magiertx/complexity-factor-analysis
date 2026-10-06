@@ -93,7 +93,8 @@ docker compose up -d --no-build --pull never
 
 `--no-build --pull never` makes compose fail at once if an image is missing, instead of trying
 to download or build it. Open <http://localhost:3000> when `docker compose ps` shows every
-service as healthy.
+service as healthy. The first start of a new `prom4py` container takes about a minute; jobs
+started earlier wait for it.
 
 To make sure nothing in the backend can reach the outside even when the laptop is online, add
 the override that puts the backend on an internal network:
@@ -146,7 +147,54 @@ Measured on Docker Desktop on Windows 11 (12 virtual CPUs), with the images alre
 | Sample logs, log tab: 4 logs, simple statistics only | 3 s |
 
 Alpha++ did not finish within 15 minutes on the largest sample log; leave the miners marked
-"slow" out of a live demo (see [README](../README.md#operating-it)).
+"slow" out of a live demo (see [README](../README.md#operating-it)). If one is chosen anyway,
+that input fails after `PROM4PY_CALL_TIMEOUT` instead of blocking, see below.
+
+## When a miner hangs
+
+Some miners run for very long on some logs, and ProM cannot cancel a running call. Every
+discovery, one miner on one log, is therefore limited to `PROM4PY_CALL_TIMEOUT` seconds
+(default 300). Nothing has to be done by hand:
+
+- That input fails with "ProM took longer than 300 s for Alpha Plus Plus miner on
+  pdc2025_02001100.xes": in a dataset job it is listed under the failed inputs and the job
+  goes on, in a single run its cells read `ERR: ProMTimeout`.
+- ProM itself goes on with the call. The watchdog in the `prom4py` container restarts it
+  about half a minute after the timeout; the restart takes about 5 s. Meanwhile the next
+  discovery shows "waiting for ProM to restart" and then runs normally.
+- Aborting a job does not stop a running ProM call either; the worker is free once the call
+  returns or times out.
+- `docker compose up` does not wait for `prom4py` to be healthy, so a stuck or starting ProM
+  cannot hold up the stack. Jobs started before ProM is up wait for it.
+
+`docker compose logs prom4py | grep watchdog` shows each restart. To get a hung miner out of
+the way sooner, lower the limit in `.env` and run `docker compose up -d` again (it recreates
+`prom4py`, `algoservice` and `celery_worker`):
+
+```bash
+PROM4PY_CALL_TIMEOUT=60
+```
+
+60 s is enough for the bundled sample logs: with all miners except the two slow ones, the
+longest discovery took 19 s (Hybrid ILP on `pdc2025_02001100.xes`). Uploaded logs can need
+more, which is why the default is higher.
+
+Measured with `PROM4PY_CALL_TIMEOUT=60` (the watchdog then restarts after 90 s without an
+answer), Alpha++ on `pdc2025_02001100.xes`:
+
+| Time | What happened |
+|---|---|
+| 0 s | Single run with Alpha++ starts its discovery |
+| 60 s | The run fails: "ProM took longer than 60 s for Alpha Plus Plus miner on pdc2025_02001100.xes" |
+| 61 s | A run with the Inductive miner on the same log starts and waits for ProM |
+| 90 s | Watchdog: "ProM has not answered for 90 s, a call is stuck; restarting it" |
+| 96 s | ProM answers again |
+| 106 s | The Inductive run completes with the same values as before the hang |
+
+A dataset job with Alpha++ and the Inductive miner over the four sample logs took 111 s:
+Alpha++ finished on three logs within seconds and failed on `pdc2025_02001100.xes`, all
+other seven observations were computed. A job aborted while Alpha++ was stuck freed its
+worker 60 s after the discovery started, and ProM was answering again 33 s later.
 
 ## Memory and disk
 
@@ -175,6 +223,10 @@ because `algoservice` and `celery_worker` share their layers; the `docker save` 
 - `docker save` and `docker load` of the six images, and the start with
   `--no-build --pull never`.
 - `PROM4PY_ZIP_URL` with an HTTP server on the host (with a stand-in archive).
+- A hanging miner with `PROM4PY_CALL_TIMEOUT=60` (timeline in
+  [When a miner hangs](#when-a-miner-hangs)), and recreating `algoservice` and
+  `celery_worker` while `prom4py` was unhealthy: `docker compose up -d` returned after 5 s and
+  both were healthy after 22 s.
 
 Not verified: a machine with the network adapter switched off, the `docker load` on a
 different machine, and `PROM4PY_ZIP_URL` on Linux.

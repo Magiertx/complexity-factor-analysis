@@ -377,7 +377,8 @@ async def run_analysis_task(job_id: str, t_path: str, coerced_params: dict[str, 
             run_id=job_id,
             _progress_callback=progress_cb,
             _check_aborted_callback=check_aborted,
-            logger=logger
+            logger=logger,
+            log_name=job_state.get("filename"),
         )
         
         # Run the blocking algorithm

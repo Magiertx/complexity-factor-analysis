@@ -28,7 +28,9 @@ Parameters:
 miner, one column per measure), per miner an `image` of the discovered net and a 300 dpi PNG
 download, and a `text` with per-cell errors if some computations failed. If no cell could be
 computed at all (typically ProM4Py unreachable), the job fails instead of returning a table of
-errors.
+errors. A miner that takes longer than `PROM4PY_CALL_TIMEOUT` (default 300 s) on the log gets
+`ERR: ProMTimeout` cells and the note "ProM took longer than 300 s for <miner> on <log>" (see
+[`architecture.md`](architecture.md#bounded-prom-calls)).
 
 **Scope**: one log per run, in the `/inspect` workbench. Many logs or nets go into a
 factor-analysis dataset instead (`POST /factor-analysis/datasets`, see

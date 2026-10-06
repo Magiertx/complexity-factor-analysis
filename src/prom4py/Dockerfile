@@ -7,7 +7,7 @@
 #
 # Listens on port 4040 with an HTTP API (/plugin, /executor, /cache, /align,
 # /isRunning, /exit). Talk to it from the AlgoService through the Python
-# client at src/AlgoService/prom4py/.
+# client at src/AlgoService/vendored/comfy/prom4py/.
 #
 # Requires Java 8 (ProM only supports Java 8).
 
@@ -77,7 +77,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=lpsolve-wrapper /build/liblpsolve55j.so /usr/lib/lp_solve/
 
-# Portable launcher: no hardcoded Java path, headless mode, configurable port.
+# Portable launcher: no hardcoded Java path, headless mode, configurable port. It also
+# restarts ProM when it exits or a call stays stuck (see the comments in launch.sh).
 COPY launch.sh /opt/prom4py/launch.sh
 RUN chmod +x /opt/prom4py/launch.sh
 
@@ -92,7 +93,9 @@ RUN groupadd -g 10002 promgroup && \
 
 USER promuser
 
-HEALTHCHECK --start-period=180s --interval=10s --timeout=5s --retries=12 \
-    CMD curl -fs "http://localhost:${PROM4PY_PORT}/isRunning" || exit 1
+# Not /isRunning itself: ProM answers it only between calls, so a long discovery would turn the
+# container unhealthy. The watchdog in launch.sh probes it and keeps a heartbeat instead.
+HEALTHCHECK --start-period=180s --interval=10s --timeout=5s --retries=3 \
+    CMD ["/opt/prom4py/launch.sh", "health"]
 
 CMD ["/opt/prom4py/launch.sh"]

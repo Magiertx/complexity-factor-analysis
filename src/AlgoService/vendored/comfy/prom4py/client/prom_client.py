@@ -54,6 +54,9 @@ class ConnectionConfiguration:
 
 class ProMClient:
     keys = []
+    # Local change: requests go through ``http``, which the shared client in
+    # ``_shared_prom4py.py`` replaces with one that puts a timeout on every request.
+    http = requests
 
     def __init__(self, path_to_prom: Path, port=8000, dev_mode=False):
         atexit.register(self.exit_handler)
@@ -81,14 +84,14 @@ class ProMClient:
             print('ProM instance was started')
 
     def extract(self, key):
-        res = requests.get(self.config.get_url() + CACHE_ENDPOINT + "?key=" + key)
+        res = self.http.get(self.config.get_url() + CACHE_ENDPOINT + "?key=" + key)
         if res.status_code == 200:
             return res.text
         else:
             raise Exception(res.text)
 
     def post(self, serialized_object, class_name):
-        res = requests.post(self.config.get_url() + CACHE_ENDPOINT + "?classname=" + class_name, data=serialized_object)
+        res = self.http.post(self.config.get_url() + CACHE_ENDPOINT + "?classname=" + class_name, data=serialized_object)
         if res.status_code == 200:
             self.keys.append(res.text)
             return res.text
@@ -96,18 +99,18 @@ class ProMClient:
             raise Exception(res.text)
 
     def delete_result(self, key):
-        res = requests.delete(self.config.get_url() + CACHE_ENDPOINT + "?key=" + key)
+        res = self.http.delete(self.config.get_url() + CACHE_ENDPOINT + "?key=" + key)
         if res.status_code == 200:
             return res.text
         else:
             raise Exception(res.text)
 
     def get_result_from_array(self, key, index):
-        res = requests.get(self.config.get_url() + ARRAY_ENDPOINT + "?key=" + key + "&index=" + str(index))
+        res = self.http.get(self.config.get_url() + ARRAY_ENDPOINT + "?key=" + key + "&index=" + str(index))
         return res.text
 
     def call_plugin(self, plugin_signature: PluginInvocation):
-        res = requests.post(self.config.get_url() + PLUGIN_ENDPOINT,
+        res = self.http.post(self.config.get_url() + PLUGIN_ENDPOINT,
                             data=json.dumps(jsons.dump(plugin_signature)))
         if res.status_code == 200:
             self.keys.append(res.text)
@@ -116,7 +119,7 @@ class ProMClient:
             raise Exception(res.text)
 
     def call_alignment(self, alignment_parameters: AlignmentParameters):
-        res = requests.post(self.config.get_url() + ALIGNMENT_ENDPOINT,
+        res = self.http.post(self.config.get_url() + ALIGNMENT_ENDPOINT,
                             data=json.dumps(jsons.dump(alignment_parameters)))
         if res.status_code == 200:
             self.keys.append(res.text)
@@ -125,7 +128,7 @@ class ProMClient:
             raise Exception(res.text)
 
     def call_executor(self, command):
-        res = requests.post(self.config.get_url() + EXECUTOR_ENDPOINT, data=command)
+        res = self.http.post(self.config.get_url() + EXECUTOR_ENDPOINT, data=command)
         if res.status_code == 200:
             self.keys.append(res.text)
             return res.text
@@ -133,14 +136,14 @@ class ProMClient:
             raise Exception(res.text)
 
     def export_log(self, key, path):
-        res = requests.get(self.config.get_url() + EXPORT_LOG_ENDPOINT + "?key=" + key + "&path=" + path)
+        res = self.http.get(self.config.get_url() + EXPORT_LOG_ENDPOINT + "?key=" + key + "&path=" + path)
         if res.status_code == 200:
             return res.text
         else:
             raise Exception(res.text)
 
     def create_array_object(self, key):
-        res = requests.post(self.config.get_url() + CREATE_ARRAY_OBJECT_ENDPOINT + "?key=" + key)
+        res = self.http.post(self.config.get_url() + CREATE_ARRAY_OBJECT_ENDPOINT + "?key=" + key)
         if res.status_code == 200:
             self.keys.append(res.text)
             return res.text
@@ -148,7 +151,7 @@ class ProMClient:
             raise Exception(res.text)
 
     def get_type(self, key):
-        res = requests.get(self.config.get_url() + TYPE_ENDPOINT + "?key=" + key)
+        res = self.http.get(self.config.get_url() + TYPE_ENDPOINT + "?key=" + key)
         if res.status_code == 200:
             return res.text
         else:
@@ -156,11 +159,11 @@ class ProMClient:
 
     def terminate(self):
         self.exit_handler()
-        requests.post(self.config.get_url() + EXIT_ENDPOINT)
+        self.http.post(self.config.get_url() + EXIT_ENDPOINT)
 
     def is_running(self) -> bool:
         try:
-            res = requests.get(self.config.get_url() + IS_RUNNING_ENDPOINT)
+            res = self.http.get(self.config.get_url() + IS_RUNNING_ENDPOINT)
             if res.status_code == 200 and res.text == 'ProM is running':
                 return True
             else:

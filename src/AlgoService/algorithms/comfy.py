@@ -19,7 +19,16 @@ from typing import Any
 from vendored.comfy.modelcomplexity import ModelComplexityMeasures as _MCM
 from vendored.comfy.discovery import DiscoveryAlgorithms as _DA
 from ._log_io import read_event_log
-from ._prom4py import get_prom4py
+from ._prom4py import (
+    CALL_TIMEOUT_S,
+    ProMTimeout,
+    ProMUnavailable,
+    WaitFn,
+    call_deadline,
+    get_prom4py,
+    prom4py_turn,
+    wait_for_prom4py,
+)
 
 from .base import AlgorithmBase, AnalysisResult, ParameterSpec, stat, table, text, image, log_file, RunContext
 from ._petrinet import render_petri_net_to_base64_png
@@ -32,24 +41,44 @@ MINERS_BY_NAME = {str(m): m for m in _DA.analyzed_discovery_algorithms}
 SLOW_MEASURES = {"Cross-Connectivity", "Depth", "Diameter", "Cyclicity"}
 
 # Miners that can run for many minutes on mid-sized logs: Alpha++ was still running after 15
-# minutes on a 1000-trace PDC log that the other miners finish in seconds. ProM4Py cannot be
-# interrupted, so a dataset job waits for them. The ComFy paper leaves both out as well.
+# minutes on a 1000-trace PDC log that the other miners finish in seconds. Such a discovery
+# fails for its input after PROM4PY_CALL_TIMEOUT. The ComFy paper leaves both out as well.
 SLOW_MINERS = {"Alpha Plus Plus miner", "Alpha Robust miner"}
 
 # Measures that need the initial and final marking.
 _MARKING_MEASURES = {"Depth", "Diameter"}
 
 # ProM4Py now and then fails a plugin call with "AcceptingPetriNetImpl cannot be cast to
-# ProMFuture" (about one call in seven in our runs); the same call works when repeated.
+# ProMFuture" (about one call in seven in our runs); the same call works when repeated. A
+# discovery is also repeated when ProM went away during it, e.g. restarted by its watchdog.
 DISCOVERY_ATTEMPTS = 3
 
 
-def discover(miner: Any, event_log: Any) -> tuple[Any, Any, Any]:
-    """Run one ComFy miner; returns (net, initial marking, final marking)."""
+def discover(
+    miner: Any, event_log: Any, log_name: str | None = None, on_wait: WaitFn | None = None
+) -> tuple[Any, Any, Any]:
+    """Run one ComFy miner; returns (net, initial marking, final marking).
+
+    The discovery has ProM4Py to itself and may take ``CALL_TIMEOUT_S`` seconds there, after
+    which it raises :class:`ProMTimeout` naming the miner and ``log_name``. ``on_wait`` is
+    called while it waits for ProM and may raise to abort.
+    """
     for attempt in range(1, DISCOVERY_ATTEMPTS + 1):
         try:
-            net_obj = miner.discover_for(event_log)
+            with prom4py_turn(on_wait), call_deadline(CALL_TIMEOUT_S):
+                net_obj = miner.discover_for(event_log)
             break
+        except ProMTimeout:
+            # Not repeated: the miner would most likely time out again. ProM goes on with the
+            # call until its watchdog restarts it; the next turn waits for that.
+            on = f" on {log_name}" if log_name else ""
+            raise ProMTimeout(f"ProM took longer than {CALL_TIMEOUT_S} s for {miner}{on}") from None
+        except ProMUnavailable:
+            # Starting or restarted, which also empties ProM's object cache, so the discovery
+            # starts over once ProM answers again.
+            if attempt == DISCOVERY_ATTEMPTS:
+                raise
+            wait_for_prom4py(on_wait)
         except Exception as e:
             if attempt == DISCOVERY_ATTEMPTS or "ProMFuture" not in str(e):
                 raise
@@ -155,7 +184,10 @@ class ComFyAlgorithm(AlgorithmBase):
 
             row: list[Any] = [str(miner)]
             try:
-                net, im, fm = discover(miner, event_log)
+                net, im, fm = discover(
+                    miner, event_log, ctx.log_name,
+                    on_wait=lambda msg: ctx.progress(pct, f"{miner}: {msg}"),
+                )
 
                 # Render Petri Net visualization if available
                 if net is not None:

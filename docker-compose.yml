@@ -10,6 +10,8 @@ services:
     environment:
       - PROM4PY_PORT=4040
       - JAVA_HEAP=2G
+      # Its watchdog restarts ProM after 30 s more than this without an answer (see .env.example).
+      - PROM4PY_CALL_TIMEOUT=${PROM4PY_CALL_TIMEOUT:-}
     restart: unless-stopped
 
   postgres:
@@ -38,6 +40,7 @@ services:
     environment:
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
       - PROM4PY_URL=http://prom4py:4040
+      - PROM4PY_CALL_TIMEOUT=${PROM4PY_CALL_TIMEOUT:-}
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-complexity}
       - REDIS_URL=redis://redis:6379/0
       - PYTHONPATH=/app
@@ -64,8 +67,10 @@ services:
       # from the compose network for per-client rate limits.
       - FORWARDED_ALLOW_IPS=${COMPOSE_SUBNET:-172.28.0.0/16}
     depends_on:
+      # Started, not healthy: a stuck or restarting ProM must not keep the stack from coming
+      # up. The ProM client waits for ProM per discovery and fails only that input.
       prom4py:
-        condition: service_healthy
+        condition: service_started
       postgres:
         condition: service_healthy
       redis:
@@ -97,13 +102,15 @@ services:
     command: celery -A celery_worker.celery_app worker --loglevel=info --concurrency=4
     environment:
       - PROM4PY_URL=http://prom4py:4040
+      - PROM4PY_CALL_TIMEOUT=${PROM4PY_CALL_TIMEOUT:-}
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-complexity}
       - REDIS_URL=redis://redis:6379/0
       - PYTHONPATH=/app
       - SESSION_SECRET_KEY=${SESSION_SECRET_KEY:?generate one, see docs/DEPLOYMENT.md}
     depends_on:
+      # See algoservice.
       prom4py:
-        condition: service_healthy
+        condition: service_started
       postgres:
         condition: service_healthy
       redis:

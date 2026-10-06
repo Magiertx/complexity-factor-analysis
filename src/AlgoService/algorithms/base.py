@@ -149,6 +149,8 @@ class RunContext:
     _progress_callback: Optional[Callable[[float, str], None]] = None
     _check_aborted_callback: Optional[Callable[[], bool]] = None
     logger: Optional[logging.Logger] = None
+    # Name of the input log for messages; the file the adapter reads has a temporary name.
+    log_name: Optional[str] = None
 
     def __post_init__(self) -> None:
         if self.logger is None:
