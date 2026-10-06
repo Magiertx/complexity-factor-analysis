@@ -41,7 +41,7 @@ import {
   listAllPresets,
   PresetError,
 } from "@/lib/presets";
-import { useLocale, useT } from "@/lib/i18n";
+import { localizedAlgoName, useLocale, useT } from "@/lib/i18n";
 import { formatDateTime } from "@/lib/format";
 import { LocaleSegmented } from "./locale-toggle";
 import { PageHeader } from "./page-header";
@@ -345,7 +345,7 @@ export function SettingsView() {
                 return (
                   <div key={group.algorithmId}>
                     <div className="flex items-center justify-between mb-2">
-                      <div className="text-sm font-medium">{algo?.name ?? group.algorithmId}</div>
+                      <div className="text-sm font-medium">{algo ? localizedAlgoName(algo, locale) : group.algorithmId}</div>
                       <span className="text-[11px] text-muted">
                         {group.presets.length === 1
                           ? t("settings.presets.preset_count", { n: group.presets.length })
