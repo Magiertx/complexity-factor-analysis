@@ -42,9 +42,10 @@ export function getJoyrideOptions(isDark: boolean): Partial<Options> {
     buttons: ["back", "close", "primary", "skip"],
 
     // The close button in the corner ends the tour (the default 'close' would
-    // advance to the next step); so does Escape.
+    // advance to the next step). Escape has no 'skip' action here, so the Tour
+    // component handles it.
     closeButtonAction: "skip",
-    dismissKeyAction: "close",
+    dismissKeyAction: false,
 
     primaryColor: ACCENT,
     textColor: t.fg,
