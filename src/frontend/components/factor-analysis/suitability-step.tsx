@@ -279,7 +279,9 @@ function MsaTable({ dataset, analysis, options, onOptions, measureName }: Props)
                     <label
                       title={locked ? t("factor.suitability.min_measures", { n: MIN_MEASURES }) : undefined}
                       className={cn(
-                        "inline-grid place-items-center h-6 w-6 rounded has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/60",
+                        // relative: the sr-only input stays inside the scrolling table instead of
+                        // widening the page on a phone.
+                        "relative inline-grid place-items-center h-6 w-6 rounded has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/60",
                         locked ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-accent/[0.08]",
                       )}
                     >
