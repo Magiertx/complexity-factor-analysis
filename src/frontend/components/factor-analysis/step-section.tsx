@@ -3,8 +3,9 @@
 import { useId, useState } from "react";
 import { AlertTriangle, Check, HelpCircle, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { formatInputNumber, parseInputNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { useT } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n";
 
 export type StepId = "data" | "dataset" | "suitability" | "factors" | "loadings" | "interpretation";
 export type StepState = "locked" | "active" | "done" | "warn" | "busy";
@@ -142,14 +143,17 @@ export function HelpLabel({
   );
 }
 
-/** Pass/fail chip with an icon, so the state never depends on colour alone. */
+/**
+ * Pass/fail chip with an icon, so the state never depends on colour alone. A failed test is a
+ * warning: the analysis still runs.
+ */
 export function PassBadge({ passed }: { passed: boolean }) {
   const t = useT();
   return (
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
-        passed ? "bg-success/15 text-success-ink" : "bg-danger/15 text-danger-ink",
+        passed ? "bg-success/15 text-success-ink" : "bg-warn/15 text-warn-ink",
       )}
     >
       {passed ? <Check className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
@@ -167,7 +171,11 @@ export function StatTile({ label, value, hint }: { label: string; value: React.R
   );
 }
 
-/** Number input that only reports valid values within its range. */
+/**
+ * Number field in the format of the UI language ("0,35" in German), whatever the browser's
+ * locale. A text input, since type="number" formats by the browser; the arrow keys step like
+ * a spin button. Only valid values within the range are reported.
+ */
 export function NumberField({
   id,
   value,
@@ -185,35 +193,115 @@ export function NumberField({
   step: number;
   className?: string;
 }) {
-  const [draft, setDraft] = useState(String(value));
-  const [lastValue, setLastValue] = useState(value);
-  if (value !== lastValue) {
-    setLastValue(value);
-    setDraft(String(value));
+  const { locale } = useLocale();
+  const shown = formatInputNumber(value, locale);
+  const [draft, setDraft] = useState(shown);
+  // The value the draft stands for. A value from outside or a language switch replaces the
+  // draft; a value just typed does not, so "0," on the way to "0,4" is not cut to "0".
+  const [synced, setSynced] = useState({ value, locale });
+  if (value !== synced.value || locale !== synced.locale) {
+    setSynced({ value, locale });
+    setDraft(shown);
   }
-  const parsed = Number(draft);
-  const invalid = draft.trim() === "" || !Number.isFinite(parsed) || parsed < min || parsed > max;
+  const parsed = parseInputNumber(draft);
+  const invalid = parsed === null || parsed < min || parsed > max;
+  const report = (v: number) => {
+    setSynced({ value: v, locale });
+    // "0,30" after "0,3" is no change, and would only run the analysis again.
+    if (v !== value) onChange(v);
+  };
+  const stepBy = (direction: 1 | -1) => {
+    // Rounded to the decimals of the step, so 0.35 + 0.05 is 0.4 and not 0.39999999999999997.
+    const decimals = (String(step).split(".")[1] ?? "").length;
+    const from = invalid || parsed === null ? value : parsed;
+    const next = Math.min(max, Math.max(min, Number((from + direction * step).toFixed(decimals))));
+    setDraft(formatInputNumber(next, locale));
+    report(next);
+  };
   return (
     <input
       id={id}
-      type="number"
+      type="text"
       inputMode="decimal"
-      min={min}
-      max={max}
-      step={step}
+      autoComplete="off"
+      spellCheck={false}
+      role="spinbutton"
+      aria-valuemin={min}
+      aria-valuemax={max}
+      aria-valuenow={value}
+      aria-valuetext={shown}
       value={draft}
       aria-invalid={invalid || undefined}
       onChange={(e) => {
         setDraft(e.target.value);
-        const v = Number(e.target.value);
-        if (e.target.value.trim() !== "" && Number.isFinite(v) && v >= min && v <= max) onChange(v);
+        const v = parseInputNumber(e.target.value);
+        if (v !== null && v >= min && v <= max) report(v);
       }}
-      onBlur={() => setDraft(String(value))}
+      onKeyDown={(e) => {
+        if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+        e.preventDefault();
+        stepBy(e.key === "ArrowUp" ? 1 : -1);
+      }}
+      onBlur={() => setDraft(shown)}
       className={cn(
         "h-8 w-20 rounded-md bg-bg px-2 text-sm font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-accent/50 transition",
         invalid && "ring-2 ring-danger/60",
         className,
       )}
     />
+  );
+}
+
+/** A threshold or level with its label and explanation above the field, alike in every step. */
+export function ThresholdField({
+  id,
+  label,
+  help,
+  ...field
+}: {
+  id: string;
+  label: string;
+  help: string;
+  value: number;
+  onChange: (v: number) => void;
+  min: number;
+  max: number;
+  step: number;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <HelpLabel htmlFor={id} label={label} help={help} />
+      <NumberField id={id} {...field} />
+    </div>
+  );
+}
+
+/**
+ * The label of a control without an explanation, as tall as a HelpLabel, so controls in one
+ * row line up.
+ */
+export function FieldLabel({ id, children }: { id?: string; children: React.ReactNode }) {
+  return (
+    <span id={id} className="flex items-center h-6 text-sm font-semibold">
+      {children}
+    </span>
+  );
+}
+
+/** The notes of the analysis that concern a step, e.g. a failed test or too many factors. */
+export function NoticeList({ heading, notes }: { heading: string; notes: string[] }) {
+  if (notes.length === 0) return null;
+  return (
+    <div className="rounded-lg bg-warn/10 px-3.5 py-3 flex items-start gap-2.5 text-sm">
+      <AlertTriangle className="h-4 w-4 text-warn-ink shrink-0 mt-0.5" />
+      <div className="min-w-0">
+        <div className="font-medium">{heading}</div>
+        <ul className="mt-1 text-xs text-muted space-y-0.5 list-disc pl-4">
+          {notes.map((note) => (
+            <li key={note}>{note}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
   );
 }

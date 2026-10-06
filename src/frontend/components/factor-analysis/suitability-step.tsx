@@ -1,19 +1,21 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
 import type { FactorAnalysis, FactorDataset } from "@/lib/api";
 import {
   MIN_MEASURES,
-  formatNumber,
-  formatPValue,
+  analysisNotices,
+  countText,
+  isSolutionNotice,
   kmoGrade,
+  noticeText,
   type AnalysisOptions,
 } from "@/lib/factor-analysis";
+import { NO_VALUE, formatNumber, formatPValue } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { useT, useTMaybe } from "@/lib/i18n";
+import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { ChoiceMark } from "@/components/ui/choice";
 import { Switch } from "@/components/ui/switch";
-import { HelpLabel, NumberField, PassBadge } from "./step-section";
+import { HelpLabel, NoticeList, PassBadge, ThresholdField } from "./step-section";
 
 interface Props {
   dataset: FactorDataset;
@@ -21,32 +23,23 @@ interface Props {
   options: AnalysisOptions;
   onOptions: (patch: Partial<AnalysisOptions>) => void;
   measureName: (key: string) => string;
+  /** Name and description of a measure, for its tooltip. */
+  measureTitle: (key: string) => string;
 }
 
-export function SuitabilityView({ dataset, analysis, options, onOptions, measureName }: Props) {
+export function SuitabilityView({ dataset, analysis, options, onOptions, measureName, measureTitle }: Props) {
   const t = useT();
   const tMaybe = useTMaybe();
-  // Translated by code where the UI knows it; the English message otherwise.
-  const warnings = analysis
-    ? (analysis.warning_details ?? analysis.warnings.map((message) => ({ code: "", message, params: {} }))).map(
-        (w) => (w.code && tMaybe(`factor.warnings.${w.code}`, w.params)) || w.message,
-      )
+  const { locale } = useLocale();
+  // Notes on the factor solution are shown in step 4.
+  const notes = analysis
+    ? analysisNotices(analysis)
+        .filter((n) => !isSolutionNotice(n))
+        .map((n) => noticeText(n, tMaybe))
     : [];
   return (
     <div className="space-y-6">
-      {warnings.length > 0 && (
-        <div className="rounded-lg bg-warn/10 px-3.5 py-3 flex items-start gap-2.5 text-sm">
-          <AlertTriangle className="h-4 w-4 text-warn-ink shrink-0 mt-0.5" />
-          <div>
-            <div className="font-medium">{t("factor.suitability.warnings_heading")}</div>
-            <ul className="mt-1 text-xs text-muted space-y-0.5 list-disc pl-4">
-              {warnings.map((w) => (
-                <li key={w}>{w}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
+      <NoticeList heading={t("factor.suitability.warnings_heading")} notes={notes} />
 
       <div className="grid gap-3 md:grid-cols-2">
         <BartlettCard analysis={analysis} alpha={options.bartlett_alpha} />
@@ -71,29 +64,27 @@ export function SuitabilityView({ dataset, analysis, options, onOptions, measure
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-x-5 gap-y-2 flex-wrap pl-12">
-          <label className="flex items-center gap-2 text-xs text-muted">
-            <span>{t("factor.suitability.msa_threshold")}</span>
-            <NumberField
-              id="fa-msa-threshold"
-              value={options.msa_threshold}
-              min={0}
-              max={1}
-              step={0.05}
-              onChange={(v) => onOptions({ msa_threshold: v })}
-            />
-          </label>
-          <label className="flex items-center gap-2 text-xs text-muted">
-            <span>{t("factor.suitability.bartlett_alpha")}</span>
-            <NumberField
-              id="fa-bartlett-alpha"
-              value={options.bartlett_alpha}
-              min={0.0001}
-              max={0.5}
-              step={0.01}
-              onChange={(v) => onOptions({ bartlett_alpha: v })}
-            />
-          </label>
+        <div className="flex items-start gap-x-6 gap-y-3 flex-wrap pl-12">
+          <ThresholdField
+            id="fa-msa-threshold"
+            label={t("factor.suitability.msa_threshold")}
+            help={t("factor.help.msa_threshold")}
+            value={options.msa_threshold}
+            min={0}
+            max={1}
+            step={0.05}
+            onChange={(v) => onOptions({ msa_threshold: v })}
+          />
+          <ThresholdField
+            id="fa-bartlett-alpha"
+            label={t("factor.suitability.bartlett_alpha")}
+            help={t("factor.help.bartlett_alpha")}
+            value={options.bartlett_alpha}
+            min={0.0001}
+            max={0.5}
+            step={0.01}
+            onChange={(v) => onOptions({ bartlett_alpha: v })}
+          />
         </div>
         {analysis && options.auto_msa_filter && (
           <div className="pl-12 text-xs">
@@ -102,14 +93,24 @@ export function SuitabilityView({ dataset, analysis, options, onOptions, measure
             ) : (
               <div className="space-y-1.5">
                 <div className="text-muted">
-                  {t("factor.suitability.removed_heading", { n: analysis.msa_filter.removed.length })}
+                  {countText(t, "factor.suitability.removed_heading", analysis.msa_filter.removed.length)}
                 </div>
-                <ol className="flex flex-wrap gap-1.5">
-                  {analysis.msa_filter.removed.map((r) => (
-                    <li key={r.measure} className="rounded-md bg-bg/70 px-2 py-1">
-                      <span className="text-muted font-mono mr-1">{r.step}.</span>
-                      <span className="font-medium">{measureName(r.measure)}</span>{" "}
-                      <span className="font-mono text-muted">{formatNumber(r.msa)}</span>
+                {/* One line per round: all measures below the threshold go at once, then the MSA
+                    values are computed again for the measures that are left. */}
+                <ol className="space-y-1.5">
+                  {removedRounds(analysis.msa_filter.removed).map(([round, measures]) => (
+                    <li key={round} className="flex items-start gap-2">
+                      <span className="text-muted shrink-0 min-w-[4rem] py-1">
+                        {t("factor.suitability.round", { step: round })}
+                      </span>
+                      <ul className="flex flex-wrap gap-1.5 min-w-0">
+                        {measures.map((r) => (
+                          <li key={r.measure} className="rounded-md bg-bg/70 px-2 py-1" title={measureTitle(r.measure)}>
+                            <span className="font-medium">{measureName(r.measure)}</span>{" "}
+                            <span className="font-mono text-muted">{formatNumber(r.msa, locale, 2)}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </li>
                   ))}
                 </ol>
@@ -125,13 +126,24 @@ export function SuitabilityView({ dataset, analysis, options, onOptions, measure
         options={options}
         onOptions={onOptions}
         measureName={measureName}
+        measureTitle={measureTitle}
       />
     </div>
   );
 }
 
+type Removed = FactorAnalysis["msa_filter"]["removed"];
+
+/** The removed measures by the round of the filter that removed them, first round first. */
+function removedRounds(removed: Removed): [number, Removed][] {
+  const rounds = new Map<number, Removed>();
+  for (const r of removed) rounds.set(r.step, [...(rounds.get(r.step) ?? []), r]);
+  return [...rounds.entries()].sort(([a], [b]) => a - b);
+}
+
 function BartlettCard({ analysis, alpha }: { analysis: FactorAnalysis | null; alpha: number }) {
   const t = useT();
+  const { locale } = useLocale();
   const b = analysis?.bartlett;
   return (
     <div className="rounded-lg bg-tile p-4 space-y-3">
@@ -141,14 +153,24 @@ function BartlettCard({ analysis, alpha }: { analysis: FactorAnalysis | null; al
         extra={b && <PassBadge passed={b.passed} />}
       />
       <p className="text-xs text-muted">{t("factor.suitability.bartlett_explain", { alpha: b?.alpha ?? alpha })}</p>
+      {/* As in ComFy, the test sees the measures before the MSA filter, so its df can stand for
+          more measures than KMO and the later steps use. */}
+      {analysis && analysis.msa_filter.removed.length > 0 && (
+        <p className="text-xs text-muted">
+          {t("factor.suitability.bartlett_before_filter", {
+            n: analysis.used_measures.length + analysis.msa_filter.removed.length,
+            left: analysis.used_measures.length,
+          })}
+        </p>
+      )}
       <dl className="grid grid-cols-3 gap-2 text-xs">
         <Value
           label={b?.regularised ? `χ² (${t("factor.suitability.regularised")})` : "χ²"}
-          value={b ? formatNumber(b.chi_square, 1) : "–"}
+          value={b ? formatNumber(b.chi_square, locale, 1) : NO_VALUE}
           title={b?.regularised ? t("factor.suitability.regularised_title") : undefined}
         />
-        <Value label={t("factor.suitability.df")} value={b ? String(b.df) : "–"} />
-        <Value label="p" value={b ? formatPValue(b.p_value) : "–"} />
+        <Value label={t("factor.suitability.df")} value={b ? formatNumber(b.df, locale) : NO_VALUE} />
+        <Value label="p" value={b ? formatPValue(b.p_value, locale) : NO_VALUE} />
       </dl>
     </div>
   );
@@ -156,6 +178,7 @@ function BartlettCard({ analysis, alpha }: { analysis: FactorAnalysis | null; al
 
 function KmoCard({ analysis, threshold }: { analysis: FactorAnalysis | null; threshold: number }) {
   const t = useT();
+  const { locale } = useLocale();
   const k = analysis?.kmo;
   const limit = k?.threshold ?? threshold;
   return (
@@ -167,7 +190,7 @@ function KmoCard({ analysis, threshold }: { analysis: FactorAnalysis | null; thr
       />
       <p className="text-xs text-muted">{t("factor.suitability.kmo_explain", { threshold: limit })}</p>
       <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-semibold font-mono tabular-nums">{k ? formatNumber(k.overall) : "–"}</span>
+        <span className="text-2xl font-semibold font-mono tabular-nums">{k ? formatNumber(k.overall, locale, 2) : NO_VALUE}</span>
         {k && <span className="text-xs text-muted">{t(`factor.suitability.grade.${kmoGrade(k.overall)}`)}</span>}
       </div>
       <Scale value={k?.overall ?? null} threshold={limit} />
@@ -175,14 +198,14 @@ function KmoCard({ analysis, threshold }: { analysis: FactorAnalysis | null; thr
   );
 }
 
-/** 0..1 bar with the threshold as a tick. */
+/** 0..1 bar with the threshold as a tick; a value below it is a warning, not an error. */
 function Scale({ value, threshold, compact }: { value: number | null; threshold: number; compact?: boolean }) {
   const pass = value !== null && value >= threshold;
   return (
-    <div className={cn("relative rounded-full bg-bg/80", compact ? "h-1.5 w-20" : "h-2 w-full")} aria-hidden>
+    <div className={cn("relative rounded-full bg-bg/80", compact ? "hidden sm:block h-1.5 w-20" : "h-2 w-full")} aria-hidden>
       {value !== null && (
         <div
-          className={cn("absolute inset-y-0 left-0 rounded-full", pass ? "bg-success" : "bg-danger")}
+          className={cn("absolute inset-y-0 left-0 rounded-full", pass ? "bg-success" : "bg-warn")}
           style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%` }}
         />
       )}
@@ -203,8 +226,9 @@ function Value({ label, value, title }: { label: string; value: string; title?: 
   );
 }
 
-function MsaTable({ dataset, analysis, options, onOptions, measureName }: Props) {
+function MsaTable({ dataset, analysis, options, onOptions, measureName, measureTitle }: Props) {
   const t = useT();
+  const { locale } = useLocale();
   const excluded = new Set(options.excluded);
   const removed = new Map((analysis?.msa_filter.removed ?? []).map((r) => [r.measure, r]));
   const included = dataset.measures.length - excluded.size;
@@ -226,6 +250,10 @@ function MsaTable({ dataset, analysis, options, onOptions, measureName }: Props)
           <caption className="sr-only">{t("factor.suitability.msa_heading")}</caption>
           <thead className="bg-bg">
             <tr className="text-muted">
+              {/* First, so a phone reaches it without scrolling the table sideways; w-px keeps it narrow. */}
+              <th scope="col" className="w-px px-3 py-2 text-center font-medium border-b border-border">
+                {t("factor.suitability.col_exclude")}
+              </th>
               <th scope="col" className="px-3 py-2 text-left font-medium border-b border-border">
                 {t("factor.suitability.col_measure")}
               </th>
@@ -234,9 +262,6 @@ function MsaTable({ dataset, analysis, options, onOptions, measureName }: Props)
               </th>
               <th scope="col" className="px-3 py-2 text-left font-medium border-b border-border">
                 {t("factor.suitability.col_status")}
-              </th>
-              <th scope="col" className="px-3 py-2 text-center font-medium border-b border-border">
-                {t("factor.suitability.col_exclude")}
               </th>
             </tr>
           </thead>
@@ -249,32 +274,6 @@ function MsaTable({ dataset, analysis, options, onOptions, measureName }: Props)
               const id = `fa-exclude-${i}`;
               return (
                 <tr key={m} className={cn("border-b border-border last:border-0", isExcluded && "text-muted")}>
-                  <th scope="row" className="px-3 py-2 text-left font-medium">
-                    <label htmlFor={id} className="cursor-pointer">
-                      {measureName(m)}
-                    </label>
-                  </th>
-                  <td className="px-3 py-2">
-                    {msa === null || isExcluded ? (
-                      <span className="text-muted">–</span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <span className="font-mono tabular-nums w-10">{formatNumber(msa)}</span>
-                        <Scale value={msa} threshold={threshold} compact />
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 whitespace-nowrap">
-                    {isExcluded ? (
-                      t("factor.suitability.status_excluded")
-                    ) : filtered ? (
-                      <span className="text-warn-ink">{t("factor.suitability.status_removed", { step: filtered.step })}</span>
-                    ) : analysis ? (
-                      <span className="text-success-ink">{t("factor.suitability.status_used")}</span>
-                    ) : (
-                      <span className="text-muted">–</span>
-                    )}
-                  </td>
                   <td className="px-3 py-2 text-center">
                     <label
                       title={locked ? t("factor.suitability.min_measures", { n: MIN_MEASURES }) : undefined}
@@ -296,6 +295,32 @@ function MsaTable({ dataset, analysis, options, onOptions, measureName }: Props)
                       />
                       <ChoiceMark checked={isExcluded} />
                     </label>
+                  </td>
+                  <th scope="row" className="px-3 py-2 text-left font-medium">
+                    <label htmlFor={id} className="cursor-pointer" title={measureTitle(m)}>
+                      {measureName(m)}
+                    </label>
+                  </th>
+                  <td className="px-3 py-2">
+                    {msa === null || isExcluded ? (
+                      <span className="text-muted">{NO_VALUE}</span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <span className="font-mono tabular-nums w-10">{formatNumber(msa, locale, 2)}</span>
+                        <Scale value={msa} threshold={threshold} compact />
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    {isExcluded ? (
+                      t("factor.suitability.status_excluded")
+                    ) : filtered ? (
+                      <span className="text-warn-ink">{t("factor.suitability.status_removed", { step: filtered.step })}</span>
+                    ) : analysis ? (
+                      <span className="text-success-ink">{t("factor.suitability.status_used")}</span>
+                    ) : (
+                      <span className="text-muted">{NO_VALUE}</span>
+                    )}
                   </td>
                 </tr>
               );

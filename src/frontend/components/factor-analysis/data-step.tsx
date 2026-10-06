@@ -32,7 +32,8 @@ import {
   type InputsSummary,
   type SampleInput,
 } from "@/lib/api";
-import { MIN_MEASURES, countText, datasetName, progressPercent, relativeTime } from "@/lib/factor-analysis";
+import { MIN_MEASURES, countText, datasetName, progressPercent } from "@/lib/factor-analysis";
+import { formatDateTime, formatFileSize, formatNumber, formatPercent, formatRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -265,6 +266,7 @@ export function DataForm({
         {tabs}
         <DatasetPicker
           kind={kind}
+          catalog={catalog}
           datasets={datasets}
           openId={openId}
           onOpen={onOpen}
@@ -571,6 +573,7 @@ function BundledTile({
 /** The datasets of the session as choice tiles: one to reopen, any to delete. */
 function DatasetPicker({
   kind,
+  catalog,
   datasets,
   openId,
   onOpen,
@@ -578,6 +581,7 @@ function DatasetPicker({
   onCancel,
 }: {
   kind: FactorKind;
+  catalog: FactorCatalog;
   datasets: DatasetSummary[];
   openId: string | null;
   onOpen: (id: string) => void;
@@ -619,6 +623,7 @@ function DatasetPicker({
             key={d.id}
             name={`fa-mine-${kind}`}
             dataset={d}
+            catalog={catalog}
             chosen={d.id === chosen}
             open={d.id === openId}
             onSelect={() => setSelected(d.id)}
@@ -644,6 +649,7 @@ function DatasetPicker({
 function DatasetTile({
   name,
   dataset,
+  catalog,
   chosen,
   open,
   onSelect,
@@ -651,6 +657,7 @@ function DatasetTile({
 }: {
   name: string;
   dataset: DatasetSummary;
+  catalog: FactorCatalog;
   chosen: boolean;
   /** The dataset is the one open on the tab. */
   open: boolean;
@@ -663,7 +670,7 @@ function DatasetTile({
   const askRef = useRef<HTMLButtonElement>(null);
   const Icon = SOURCE_ICON[dataset.source];
   const { n_observations: rows, n_measures: cols } = dataset;
-  const title = datasetName(dataset, t);
+  const title = datasetName(dataset, t, catalog);
   // A computed dataset goes with the run that computed it.
   const withRun = !!dataset.job_id;
   return (
@@ -692,15 +699,15 @@ function DatasetTile({
               {rows !== null && cols !== null && (
                 <span className="inline-flex items-center gap-1.5">
                   <span aria-hidden>·</span>
-                  <span title={t("factor.data.bundled_size", { rows, cols })}>
-                    {rows} × {cols}
+                  <span title={t("factor.data.cleaned_size", { rows, cols })}>
+                    {formatNumber(rows, locale)} × {formatNumber(cols, locale)}
                   </span>
                 </span>
               )}
               <span className="inline-flex items-center gap-1.5">
                 <span aria-hidden>·</span>
-                <time dateTime={dataset.created_at} title={new Date(dataset.created_at).toLocaleString(locale)}>
-                  {relativeTime(dataset.created_at, locale)}
+                <time dateTime={dataset.created_at} title={formatDateTime(dataset.created_at, locale)}>
+                  {formatRelative(dataset.created_at, locale)}
                 </time>
               </span>
               {dataset.status !== "ready" && (
@@ -829,6 +836,7 @@ function FileList({
   onClear?: () => void;
 }) {
   const t = useT();
+  const { locale } = useLocale();
   const total = files.reduce((acc, f) => acc + f.size, 0);
   return (
     <div className="rounded-lg bg-tile">
@@ -837,7 +845,7 @@ function FileList({
           {t(files.length === 1 ? "factor.data.files_selected" : "factor.data.files_selected_plural", {
             n: files.length,
           })}{" "}
-          · {(total / 1024 / 1024).toFixed(1)} MB
+          · {formatFileSize(total, locale)}
         </span>
         {onClear && files.length > 1 && (
           <button type="button" onClick={onClear} className="hover:text-fg transition">
@@ -852,7 +860,7 @@ function FileList({
             <span className="truncate flex-1" title={f.name}>
               {f.name}
             </span>
-            <span className="text-[10px] text-muted shrink-0">{(f.size / 1024).toFixed(0)} KB</span>
+            <span className="text-[10px] text-muted shrink-0">{formatFileSize(f.size, locale)}</span>
             <button
               type="button"
               onClick={() => onRemove(i)}
@@ -990,6 +998,7 @@ function Estimate({ rows, cols }: { rows: number; cols: number }) {
 /** The data step once a dataset exists: what is loaded, or the progress while it is computed. */
 export function DataSummary({
   dataset,
+  bundledId,
   catalog,
   titleRef,
   onChange,
@@ -997,6 +1006,8 @@ export function DataSummary({
   onDelete,
 }: {
   dataset: FactorDataset;
+  /** The bundled dataset it was loaded from, as the list of datasets says; names it in the UI language. */
+  bundledId?: string | null;
   catalog: FactorCatalog;
   /** The title of the summary, which takes the focus when the summary replaces the form. */
   titleRef?: React.Ref<HTMLDivElement>;
@@ -1005,7 +1016,8 @@ export function DataSummary({
   onDelete: () => Promise<boolean>;
 }) {
   const t = useT();
-  const name = datasetName(dataset, t);
+  const { locale } = useLocale();
+  const name = datasetName({ ...dataset, bundled_id: bundledId }, t, catalog);
   const withRun = !!dataset.job_id;
   const title =
     "rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
@@ -1045,7 +1057,7 @@ export function DataSummary({
           )}
         </div>
         <p className="text-xs text-muted">
-          {pct !== null && <span className="font-mono mr-2">{pct}%</span>}
+          {pct !== null && <span className="font-mono mr-2">{formatPercent(pct / 100, locale, 0)}</span>}
           {t("factor.data.computing_hint")}
         </p>
       </div>
@@ -1064,9 +1076,12 @@ export function DataSummary({
             {dataset.error && <div className="text-muted mt-1 break-words">{dataset.error}</div>}
           </div>
         </div>
+        {/* The same buttons, in the same order, as for a ready dataset. */}
         <div className="flex items-center gap-2 flex-wrap">
-          <Button onClick={onChange}>{t("factor.data.change")}</Button>
           <DeleteDataset withRun={withRun} onDelete={onDelete} />
+          <Button variant="outline" size="sm" onClick={onChange}>
+            {t("factor.data.change")}
+          </Button>
         </div>
       </div>
     );
@@ -1129,9 +1144,10 @@ function InputChips({ dataset, catalog }: { dataset: FactorDataset; catalog: Fac
     });
   }
   if (dataset.status === "ready") {
+    // After the cleaning, so it can be smaller than the size of a bundled dataset in the list.
     chips.push({
       key: "size",
-      text: t("factor.data.bundled_size", { rows: dataset.n_observations, cols: dataset.measures.length }),
+      text: t("factor.data.cleaned_size", { rows: dataset.n_observations, cols: dataset.measures.length }),
     });
   } else if (dataset.kind === "model" && inputs.measures?.length) {
     // Until the matrix exists, the measures asked for.

@@ -33,6 +33,7 @@ import {
   downloadBlob,
   initialOptions,
   optionsFromSaved,
+  solutionNeedsAttention,
   type AnalysisOptions,
   type ExportFormat,
 } from "@/lib/factor-analysis";
@@ -512,6 +513,13 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
 
   const names = useMemo(() => new Map((catalog?.measures ?? []).map((m) => [m.key, m.name])), [catalog]);
   const measureName = useCallback((key: string) => names.get(key) ?? key, [names]);
+  // The tooltip of a measure: its full name, which a cell may cut off, and what it measures.
+  const titles = useMemo(
+    () =>
+      new Map((catalog?.measures ?? []).map((m) => [m.key, m.description ? `${m.name}\n${m.description}` : m.name])),
+    [catalog],
+  );
+  const measureTitle = useCallback((key: string) => titles.get(key) ?? key, [titles]);
 
   const suitable = analysis ? analysis.bartlett.passed && analysis.kmo.passed : false;
   const interpretationStale =
@@ -534,7 +542,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           : "done",
     dataset: ready ? "done" : dataset?.status === "computing" ? "busy" : "locked",
     suitability: resultState === "done" ? (suitable ? "done" : "warn") : resultState,
-    factors: resultState,
+    factors: resultState === "done" && analysis && solutionNeedsAttention(analysis) ? "warn" : resultState,
     loadings: resultState,
     interpretation:
       resultState !== "done"
@@ -670,6 +678,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             ) : dataset ? (
               <DataSummary
                 dataset={dataset}
+                bundledId={datasets?.find((d) => d.id === dataset.id)?.bundled_id}
                 catalog={catalog}
                 titleRef={summaryTitle}
                 onChange={() => setChoosing(true)}
@@ -705,7 +714,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             title={t("factor.steps.dataset")}
             description={t("factor.step_desc.dataset")}
           >
-            {ready && dataset ? <DatasetView dataset={dataset} measureName={measureName} /> : lockedHint}
+            {ready && dataset ? <DatasetView dataset={dataset} measureName={measureName} measureTitle={measureTitle} /> : lockedHint}
           </StepSection>
 
           <StepSection
@@ -735,6 +744,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                     options={options}
                     onOptions={updateOptions}
                     measureName={measureName}
+                    measureTitle={measureTitle}
                   />
                 </div>
               </div>
@@ -783,6 +793,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                     options={options}
                     onOptions={updateOptions}
                     measureName={measureName}
+                    measureTitle={measureTitle}
                     onExport={runExport}
                     exporting={exporting}
                     zipReady={analysisCurrent}
@@ -814,6 +825,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                 canRun={analysisCurrent}
                 onInterpret={runInterpretation}
                 measureName={measureName}
+                measureTitle={measureTitle}
               />
             ) : (
               resultPlaceholder

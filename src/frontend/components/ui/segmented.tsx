@@ -16,6 +16,8 @@ interface Props<T extends string> {
   onChange: (value: T) => void;
   size?: "sm" | "md";
   className?: string;
+  /** The label of the group, e.g. the id of a FieldLabel above it. */
+  "aria-labelledby"?: string;
 }
 
 export function Segmented<T extends string>({
@@ -24,6 +26,7 @@ export function Segmented<T extends string>({
   onChange,
   size = "md",
   className,
+  "aria-labelledby": labelledBy,
 }: Props<T>) {
   const idx = Math.max(0, options.findIndex((o) => o.value === value));
 
@@ -54,9 +57,12 @@ export function Segmented<T extends string>({
   return (
     <div
       ref={containerRef}
+      role="group"
+      aria-labelledby={labelledBy}
       className={cn(
+        // As tall as the fields next to it (h-8 small, h-9 like inputs and selects), so a row lines up.
         "relative flex bg-tile rounded-md gap-1",
-        size === "sm" ? "p-0.5" : "p-1",
+        size === "sm" ? "h-8 p-0.5" : "h-9 p-1",
         className,
       )}
     >
@@ -77,11 +83,10 @@ export function Segmented<T extends string>({
           onClick={() => onChange(o.value)}
           disabled={o.disabled}
           title={o.title}
+          aria-pressed={value === o.value}
           className={cn(
-            "relative z-10 flex-1 font-medium transition-colors duration-200 whitespace-nowrap flex items-center justify-center gap-1",
-            size === "sm"
-              ? "text-[10px] py-1 px-2.5 rounded"
-              : "text-[11px] py-1.5 px-3 rounded-md",
+            "relative z-10 flex-1 font-medium transition-colors duration-200 whitespace-nowrap flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+            size === "sm" ? "text-xs px-2.5 rounded" : "text-[13px] px-3 rounded-md",
             value === o.value ? "text-fg" : "text-muted hover:text-fg",
             o.disabled && "opacity-60 cursor-not-allowed hover:text-muted",
           )}

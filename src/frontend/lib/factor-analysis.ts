@@ -1,9 +1,19 @@
 // Helpers for the factor analysis view. Kept free of React so they stay easy to reuse.
 
 import type { CSSProperties } from "react";
-import type { AnalyzeOptions, FactorAnalysis, FactorKind, InputsSummary, Job, Rotation } from "./api";
+import type {
+  AnalysisNotice,
+  AnalyzeOptions,
+  FactorAnalysis,
+  FactorCatalog,
+  FactorKind,
+  InputsSummary,
+  Job,
+  Rotation,
+} from "./api";
 
 type Translate = (key: string, params?: Record<string, string | number>) => string;
+type TranslateMaybe = (key: string, params?: Record<string, string | number>) => string | undefined;
 
 export interface AnalysisOptions {
   excluded: string[];
@@ -75,21 +85,42 @@ export const PREVIEW_ROWS = 8;
 
 export const ORTHOGONAL: Rotation[] = ["varimax", "quartimax"];
 
-/** Fixed digits with a typographic minus, so columns of signed values line up. */
-export function formatNumber(value: number, digits = 2): string {
-  if (!Number.isFinite(value)) return "–";
-  const s = value.toFixed(digits);
-  return s.startsWith("-") ? `−${s.slice(1)}` : s;
+// Params of analysis notices that the backend sends as text with digits of its choosing.
+const NUMERIC_TEXT_PARAMS = ["overall", "p"];
+
+/** The params of an analysis notice with its numbers as numbers, so the text shows them in the UI language. */
+function noticeParams(params: Record<string, string | number>): Record<string, string | number> {
+  const out = { ...params };
+  for (const key of NUMERIC_TEXT_PARAMS) {
+    const v = out[key];
+    if (typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) out[key] = Number(v);
+  }
+  return out;
 }
 
-export function formatPValue(p: number): string {
-  if (!Number.isFinite(p)) return "–";
-  if (p < 0.001) return "< 0.001";
-  return p.toFixed(3);
+/** The notices of an analysis; older results carry only the English messages. */
+export function analysisNotices(analysis: FactorAnalysis): AnalysisNotice[] {
+  return analysis.warning_details ?? analysis.warnings.map((message) => ({ code: "", message, params: {} }));
 }
 
-export function formatPercent(share: number, digits = 1): string {
-  return `${(share * 100).toFixed(digits)}%`;
+/** A notice in the UI language where its code is known, else the English message. */
+export function noticeText(notice: AnalysisNotice, tMaybe: TranslateMaybe): string {
+  return (notice.code && tMaybe(`factor.warnings.${notice.code}`, noticeParams(notice.params))) || notice.message;
+}
+
+// Notices on the factor solution rather than the data: step 4 shows them next to the factor
+// count and the rotation, which they ask to change, instead of step 3 with the tests.
+const SOLUTION_NOTICES = ["not_identified", "heywood", "fit_not_converged", "single_factor_no_rotation"];
+// Only says what happened; the solution itself is fine.
+const INFO_NOTICES = ["single_factor_no_rotation"];
+
+export function isSolutionNotice(notice: AnalysisNotice): boolean {
+  return SOLUTION_NOTICES.includes(notice.code);
+}
+
+/** The factor solution needs attention, e.g. too many factors for the measures. */
+export function solutionNeedsAttention(analysis: FactorAnalysis): boolean {
+  return analysisNotices(analysis).some((n) => isSolutionNotice(n) && !INFO_NOTICES.includes(n.code));
 }
 
 export type KmoGrade =
@@ -100,29 +131,32 @@ export type KmoGrade =
   | "miserable"
   | "unacceptable";
 
-/** Kaiser's (1974) verbal scale for KMO and MSA values. */
+/**
+ * Kaiser's (1974) verbal scale for KMO and MSA values. Graded with the two decimals the UI
+ * shows, so 0.698, shown as 0.70, is middling like the scale says.
+ */
 export function kmoGrade(value: number): KmoGrade {
-  if (value >= 0.9) return "marvelous";
-  if (value >= 0.8) return "meritorious";
-  if (value >= 0.7) return "middling";
-  if (value >= 0.6) return "mediocre";
-  if (value >= 0.5) return "miserable";
+  const shown = Math.round(value * 100) / 100;
+  if (shown >= 0.9) return "marvelous";
+  if (shown >= 0.8) return "meritorious";
+  if (shown >= 0.7) return "middling";
+  if (shown >= 0.6) return "mediocre";
+  if (shown >= 0.5) return "miserable";
   return "unacceptable";
 }
 
-// Diverging blue/red pair over the surface colour; the surface itself is the neutral midpoint.
-const POSITIVE = "37 99 235";
-const NEGATIVE = "220 38 38";
+// Diverging blue/orange pair over the surface colour (tokens in globals.css); the surface
+// itself is the neutral midpoint.
+const signToken = (value: number) => (value >= 0 ? "var(--positive)" : "var(--negative)");
 
 /** Background of a loading cell: hue by sign, opacity by magnitude. */
 export function loadingStyle(value: number): CSSProperties {
   const alpha = Math.min(Math.abs(value), 1) * 0.55;
-  const rgb = value >= 0 ? POSITIVE : NEGATIVE;
-  return { backgroundColor: `rgb(${rgb} / ${alpha.toFixed(3)})` };
+  return { backgroundColor: `rgb(${signToken(value)} / ${alpha.toFixed(3)})` };
 }
 
 export function signColor(value: number): string {
-  return `rgb(${value >= 0 ? POSITIVE : NEGATIVE})`;
+  return `rgb(${signToken(value)})`;
 }
 
 /**
@@ -203,12 +237,19 @@ function inputsName(t: Translate, nets: boolean, n: number): string {
   return countText(t, `factor.data.auto_name.${nets ? "nets" : "logs"}`, n);
 }
 
-/** The name of a dataset; one the server made up from the inputs is said in the UI language. */
+/**
+ * The name of a dataset in the UI language where the server's is English: one it made up from
+ * the inputs, or that of a bundled dataset, which the (localized) catalog has.
+ */
 export function datasetName(
-  dataset: { name: string; name_auto?: boolean; source: string; inputs?: InputsSummary },
+  dataset: { name: string; name_auto?: boolean; source: string; inputs?: InputsSummary; bundled_id?: string | null },
   t: Translate,
+  catalog?: FactorCatalog | null,
 ): string {
-  return dataset.name_auto ? inputsName(t, dataset.source === "pnml", dataset.inputs?.files ?? 0) : dataset.name;
+  if (dataset.name_auto) return inputsName(t, dataset.source === "pnml", dataset.inputs?.files ?? 0);
+  // The server names a bundled dataset after its catalog entry; the UI gives it no other name.
+  const bundled = dataset.bundled_id ? catalog?.bundled.find((b) => b.id === dataset.bundled_id) : undefined;
+  return bundled?.name ?? dataset.name;
 }
 
 /** What a dataset job computes, e.g. "Model complexity · 4 logs × 2 miners"; null for other jobs. */
@@ -239,24 +280,4 @@ export function datasetJobHref(job: Job): string | null {
   const tab = kind === "log" ? "/log" : "/";
   const id = job.params?.dataset_id;
   return typeof id === "string" ? `${tab}?dataset=${encodeURIComponent(id)}` : tab;
-}
-
-const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
-  ["year", 365 * 24 * 3600],
-  ["month", 30 * 24 * 3600],
-  ["week", 7 * 24 * 3600],
-  ["day", 24 * 3600],
-  ["hour", 3600],
-  ["minute", 60],
-];
-
-/** "3 hours ago" in the given locale; an empty string for a date that cannot be read. */
-export function relativeTime(iso: string, locale: string, now = Date.now()): string {
-  const seconds = (new Date(iso).getTime() - now) / 1000;
-  if (!Number.isFinite(seconds)) return "";
-  const format = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
-  for (const [unit, size] of RELATIVE_UNITS) {
-    if (Math.abs(seconds) >= size) return format.format(Math.round(seconds / size), unit);
-  }
-  return format.format(0, "second");
 }
