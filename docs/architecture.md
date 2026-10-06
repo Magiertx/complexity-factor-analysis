@@ -199,10 +199,11 @@ Optional, in `interpretation/` with the endpoints in `routes/interpretation.py`
 A dataset lives in `artifacts/datasets/<session>/<id>/`: `meta.json` (kind, name, source,
 status, `inputs`, the results of the cleaning, the saved `options`), `data.csv` once it is
 ready, `inputs/` while a job waits for its uploads, and `interpretations/` with the cached
-interpretations of an own dataset. Datasets are session-scoped: at most 30 per session (the
-oldest finished ones are pruned when a new one is created), and the datasets of sessions idle
-for seven days are removed. Every write of `meta.json` goes to a temporary file that is then
-renamed into place.
+interpretations of an own dataset. Datasets are session-scoped: at most 30 per session (when a
+new one is created, the finished ones whose `meta.json` was written longest ago are pruned;
+saving options rewrites it), and the datasets of sessions idle for seven days are removed. Both
+delete the jobs of the removed datasets as a delete does. Every write of `meta.json` goes to a
+temporary file that is then renamed into place.
 
 - **List and reopen.** `GET /factor-analysis/datasets` reads the `meta.json` files of the
   session (`storage.list_metas`), newest first by `created_at`. A computing dataset takes its

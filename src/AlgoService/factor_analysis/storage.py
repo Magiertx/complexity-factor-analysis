@@ -233,45 +233,52 @@ def remove_inputs(session_id: str, dataset_id: str) -> None:
     shutil.rmtree(dataset_dir(session_id, dataset_id) / "inputs", ignore_errors=True)
 
 
-def prune_session(session_id: str, keep: int = MAX_DATASETS_PER_SESSION) -> None:
+def _meta_file(path: Path) -> dict[str, Any]:
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def prune_session(session_id: str, keep: int = MAX_DATASETS_PER_SESSION) -> list[str]:
     """Drop the oldest finished datasets beyond ``keep``; computing ones are left alone
-    unless they are stale."""
+    unless they are stale. Returns the ids of the jobs that computed the dropped ones."""
     session_root = root() / session_id
     if not session_root.is_dir():
-        return
+        return []
     entries = []
     for directory in session_root.iterdir():
         meta_path = directory / "meta.json"
         if not meta_path.is_file():
             continue
-        try:
-            with open(meta_path, encoding="utf-8") as f:
-                status = json.load(f).get("status")
-        except (OSError, json.JSONDecodeError):
-            status = None
-        entries.append((meta_path.stat().st_mtime, directory, status))
-    entries.sort(reverse=True)
+        entries.append((meta_path.stat().st_mtime, directory, _meta_file(meta_path)))
+    entries.sort(key=lambda e: e[0], reverse=True)
     stale = time.time() - STALE_COMPUTING_S
-    for i, (mtime, directory, status) in enumerate(entries):
+    jobs = []
+    for i, (mtime, directory, meta) in enumerate(entries):
+        status = meta.get("status")
         if (i >= keep and status != "computing") or (status == "computing" and mtime < stale):
             shutil.rmtree(directory, ignore_errors=True)
+            if meta.get("job_id"):
+                jobs.append(meta["job_id"])
+    return jobs
 
 
-def cleanup_idle_sessions(max_idle_s: float = SESSION_MAX_IDLE_S) -> int:
-    """Remove dataset directories of sessions nobody touched for ``max_idle_s``."""
+def cleanup_idle_sessions(max_idle_s: float = SESSION_MAX_IDLE_S) -> list[str]:
+    """Remove dataset directories of sessions nobody touched for ``max_idle_s``. Returns the
+    ids of the jobs that computed the removed datasets."""
     base = root()
     if not base.is_dir():
-        return 0
+        return []
     cutoff = time.time() - max_idle_s
-    removed = 0
+    jobs = []
     for session_root in base.iterdir():
         if not session_root.is_dir():
             continue
-        newest = max(
-            (p.stat().st_mtime for p in session_root.rglob("meta.json")),
-            default=session_root.stat().st_mtime,
-        )
+        metas = list(session_root.rglob("meta.json"))
+        newest = max((p.stat().st_mtime for p in metas), default=session_root.stat().st_mtime)
         if newest < cutoff:
+            jobs += [job for p in metas if (job := _meta_file(p).get("job_id"))]
             shutil.rmtree(session_root, ignore_errors=True)
-            removed += 1
-    return removed
+    return jobs

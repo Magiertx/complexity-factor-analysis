@@ -414,8 +414,15 @@ async def create_dataset(
     uploads = [f for f in (files or []) if f is not None and (f.filename or "").strip()]
     name = (name or "").strip()[:200] or None
 
-    await run_in_threadpool(storage.prune_session, session_id)
-    await run_in_threadpool(storage.cleanup_idle_sessions)
+    # Datasets over the limit and those of idle sessions go with their jobs, as on a delete.
+    pruned = await run_in_threadpool(storage.prune_session, session_id)
+    expired = await run_in_threadpool(storage.cleanup_idle_sessions)
+    for job_id in pruned:
+        await _delete_job(job_id, session_id)
+    for job_id in expired:
+        await _delete_job(job_id, None)
+    if pruned or expired:
+        await broadcast_jobs_update()
 
     if source in ("bundled", "csv"):
         if source == "bundled":
@@ -690,16 +697,21 @@ async def get_dataset(
     return out
 
 
+async def _delete_job(job_id: str, session_id: str | None) -> None:
+    """Delete the job that computed a dataset with its artifacts, aborting it if it still runs."""
+    job = await jobs_db.read_job(job_id, session_id)
+    if job and job["status"] in ("pending", "running"):
+        await jobs_db.update_job_progress(
+            job["id"], job.get("percentage", 0.0), "Aborted by user", status="aborted"
+        )
+    await jobs_db.delete_job_file(job_id, session_id)
+
+
 async def _delete_dataset(meta: dict[str, Any], session_id: str) -> bool:
     """Delete a dataset and the job that computed it, aborting the job if it still runs.
     True if there was a job."""
     if meta.get("job_id"):
-        job = await jobs_db.read_job(meta["job_id"], session_id)
-        if job and job["status"] in ("pending", "running"):
-            await jobs_db.update_job_progress(
-                job["id"], job.get("percentage", 0.0), "Aborted by user", status="aborted"
-            )
-        await jobs_db.delete_job_file(meta["job_id"], session_id)
+        await _delete_job(meta["job_id"], session_id)
     await run_in_threadpool(storage.delete, session_id, meta["id"])
     return bool(meta.get("job_id"))
 

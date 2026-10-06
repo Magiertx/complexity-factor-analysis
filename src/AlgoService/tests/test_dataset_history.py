@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 import io
 import json
+import os
+import time
 import uuid
 import zipfile
 
@@ -311,6 +313,36 @@ def test_delete_all_counts_and_filters_by_kind(client, other, isolated_jobs_dir)
     assert client.get(f"/jobs/{job_id}").status_code == 404
     assert not (isolated_jobs_dir / job_id).exists()
     assert [d["id"] for d in _list(other)] == [kept]
+
+
+def test_pruned_datasets_go_with_their_jobs(client, monkeypatch):
+    from factor_analysis import storage
+
+    first, second = _sample(client), _sample(client)
+    session_id = _session_of(first["dataset_id"])
+    old = time.time() - 60
+    os.utime(storage.dataset_dir(session_id, first["dataset_id"]) / "meta.json", (old, old))
+    prune = storage.prune_session
+    monkeypatch.setattr(storage, "prune_session", lambda s: prune(s, keep=1))
+
+    third = _csv(client)
+    assert [d["id"] for d in _list(client)] == [third, second["dataset_id"]]
+    assert client.get(f"/jobs/{first['job_id']}").status_code == 404
+    assert client.get(f"/jobs/{second['job_id']}").status_code == 200
+
+
+def test_datasets_of_idle_sessions_go_with_their_jobs(client, other):
+    from factor_analysis import storage
+
+    theirs = _sample(other)
+    session_dir = storage.root() / _session_of(theirs["dataset_id"])
+    old = time.time() - storage.SESSION_MAX_IDLE_S - 60
+    for meta in session_dir.rglob("meta.json"):
+        os.utime(meta, (old, old))
+
+    _csv(client)
+    assert not session_dir.exists()
+    assert other.get(f"/jobs/{theirs['job_id']}").status_code == 404
 
 
 def test_deleting_the_job_deletes_its_dataset(client):

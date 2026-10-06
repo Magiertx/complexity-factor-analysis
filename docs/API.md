@@ -167,7 +167,8 @@ There are two kinds, each with its own catalog:
   the feature groups of ComFy for log measures. A row is one log.
 
 A dataset belongs to the session that created it and is kept on the server next to the job
-artifacts (30 per session; a session unused for a week is removed).
+artifacts (30 per session; a session unused for a week is removed). A dataset removed for
+either reason takes the job that computed it along, as a delete does.
 
 ### Create a dataset
 
