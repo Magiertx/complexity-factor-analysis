@@ -383,11 +383,32 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     [dataset],
   );
 
+  // Set when the form closes on a choice made in it: the focused button goes away with the
+  // form, so the summary that replaces it takes the focus once it is shown.
+  const focusSummary = useRef(false);
+  const summaryTitle = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!focusSummary.current || formOpen || !dataset) return;
+    focusSummary.current = false;
+    summaryTitle.current?.focus();
+  }, [formOpen, dataset]);
+
+  const openChosen = (id: string) => {
+    focusSummary.current = true;
+    openDataset(id);
+  };
+
+  const cancelChoice = () => {
+    focusSummary.current = true;
+    setChoosing(false);
+  };
+
   const submit = async (input: CreateDatasetInput) => {
     setSubmitting(true);
     setSubmitError(null);
     try {
       const res = await createDataset(input);
+      focusSummary.current = true;
       selectDataset(res.dataset_id);
       setChoosing(false);
     } catch (e) {
@@ -600,14 +621,15 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                 submitting={submitting}
                 submitError={submitError}
                 onSubmit={submit}
-                onOpen={openDataset}
+                onOpen={openChosen}
                 onDelete={removeDataset}
-                onCancel={dataset && choosing ? () => setChoosing(false) : undefined}
+                onCancel={dataset && choosing ? cancelChoice : undefined}
               />
             ) : dataset ? (
               <DataSummary
                 dataset={dataset}
                 catalog={catalog}
+                titleRef={summaryTitle}
                 onChange={() => setChoosing(true)}
                 onCancelJob={cancelJob}
                 onDelete={() => removeDataset(dataset.id)}

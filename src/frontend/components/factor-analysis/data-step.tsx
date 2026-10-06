@@ -971,18 +971,22 @@ function Estimate({ rows, cols }: { rows: number; cols: number }) {
 export function DataSummary({
   dataset,
   catalog,
+  titleRef,
   onChange,
   onCancelJob,
   onDelete,
 }: {
   dataset: FactorDataset;
   catalog: FactorCatalog;
+  /** The title of the summary, which takes the focus when the summary replaces the form. */
+  titleRef?: React.Ref<HTMLDivElement>;
   onChange: () => void;
   onCancelJob: () => void;
   onDelete: () => Promise<boolean>;
 }) {
   const t = useT();
   const name = datasetName(dataset, t);
+  const title = "rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
   if (dataset.status === "computing") {
     const pct = progressPercent(dataset.progress);
@@ -990,7 +994,7 @@ export function DataSummary({
       <div className="space-y-3" role="status" aria-live="polite">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="min-w-0 space-y-1.5">
-            <div className="flex items-center gap-2 text-sm font-medium">
+            <div ref={titleRef} tabIndex={-1} className={cn("flex items-center gap-2 text-sm font-medium", title)}>
               <Loader2 className="h-4 w-4 animate-spin text-accent-ink" />
               {t("factor.data.computing_title", { name })}
             </div>
@@ -1028,7 +1032,9 @@ export function DataSummary({
         <div role="alert" className="rounded-lg bg-danger/10 px-3.5 py-3 flex items-start gap-2.5">
           <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
           <div className="text-sm">
-            <div className="font-medium">{t("factor.data.failed_title")}</div>
+            <div ref={titleRef} tabIndex={-1} className={cn("font-medium", title)}>
+              {t("factor.data.failed_title")}
+            </div>
             {dataset.error && <div className="text-muted mt-1 break-words">{dataset.error}</div>}
           </div>
         </div>
@@ -1047,7 +1053,9 @@ export function DataSummary({
           <Check className="h-4 w-4 text-success-ink" />
         </div>
         <div className="min-w-0 space-y-1.5">
-          <div className="text-sm font-medium truncate">{name}</div>
+          <div ref={titleRef} tabIndex={-1} className={cn("text-sm font-medium truncate", title)}>
+            {name}
+          </div>
           <InputChips dataset={dataset} catalog={catalog} />
         </div>
       </div>
