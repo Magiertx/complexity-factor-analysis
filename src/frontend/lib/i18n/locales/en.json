@@ -137,7 +137,7 @@
       "delete_preset_aria": "Delete preset {name}",
       "delete_preset_title": "Delete preset",
       "clear_all_label": "Clear all presets",
-      "clear_all_hint": "Removes all {n} saved preset across every algorithm.",
+      "clear_all_hint": "Removes the one saved preset.",
       "clear_all_hint_plural": "Removes all {n} saved presets across every algorithm.",
       "clear_all_empty": "No presets saved.",
       "confirm_clear": "Confirm clear",
