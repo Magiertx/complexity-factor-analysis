@@ -556,6 +556,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             ) : dataset ? (
               <DataSummary
                 dataset={dataset}
+                catalog={catalog}
                 onChange={() => setChoosing(true)}
                 onCancelJob={cancelJob}
                 onDelete={() => removeDataset(dataset.id)}

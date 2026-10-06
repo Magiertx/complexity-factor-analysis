@@ -586,7 +586,8 @@
       "delete_confirm": "Confirm delete",
       "delete_failed": "The dataset could not be deleted.",
       "gone": "The dataset you had open is no longer available. It was deleted or expired after 7 days.",
-      "dismiss_aria": "Dismiss"
+      "dismiss_aria": "Dismiss",
+      "inputs_aria": "What the dataset was built from"
     },
     "inputs": {
       "logs": "{n} log",

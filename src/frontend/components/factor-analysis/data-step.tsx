@@ -29,9 +29,10 @@ import {
   type FactorCatalog,
   type FactorDataset,
   type FactorKind,
+  type InputsSummary,
   type SampleInput,
 } from "@/lib/api";
-import { MIN_MEASURES, progressPercent, relativeTime } from "@/lib/factor-analysis";
+import { MIN_MEASURES, countText, progressPercent, relativeTime } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -967,27 +968,30 @@ function Estimate({ rows, cols }: { rows: number; cols: number }) {
 /** The data step once a dataset exists: what is loaded, or the progress while it is computed. */
 export function DataSummary({
   dataset,
+  catalog,
   onChange,
   onCancelJob,
   onDelete,
 }: {
   dataset: FactorDataset;
+  catalog: FactorCatalog;
   onChange: () => void;
   onCancelJob: () => void;
   onDelete: () => Promise<boolean>;
 }) {
   const t = useT();
-  const sourceKey = (["bundled", "csv", "logs", "pnml"] as const).find((s) => s === dataset.source);
-  const sourceLabel = sourceKey ? t(`factor.data.source.${sourceKey}`) : dataset.source;
 
   if (dataset.status === "computing") {
     const pct = progressPercent(dataset.progress);
     return (
       <div className="space-y-3" role="status" aria-live="polite">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <Loader2 className="h-4 w-4 animate-spin text-accent-ink" />
-            {t("factor.data.computing_title", { name: dataset.name })}
+          <div className="min-w-0 space-y-1.5">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Loader2 className="h-4 w-4 animate-spin text-accent-ink" />
+              {t("factor.data.computing_title", { name: dataset.name })}
+            </div>
+            <InputChips dataset={dataset} catalog={catalog} />
           </div>
           <Button variant="outline" size="sm" onClick={onCancelJob}>
             {t("factor.data.cancel")}
@@ -1034,16 +1038,14 @@ export function DataSummary({
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 flex-wrap">
-      <div className="flex items-center gap-3 min-w-0">
+    <div className="flex items-start justify-between gap-3 flex-wrap">
+      <div className="flex items-start gap-3 min-w-0">
         <div className="h-9 w-9 rounded-md bg-success/10 grid place-items-center shrink-0">
           <Check className="h-4 w-4 text-success-ink" />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 space-y-1.5">
           <div className="text-sm font-medium truncate">{dataset.name}</div>
-          <div className="text-xs text-muted">
-            {sourceLabel} · {t("factor.data.bundled_size", { rows: dataset.n_observations, cols: dataset.measures.length })}
-          </div>
+          <InputChips dataset={dataset} catalog={catalog} />
         </div>
       </div>
       <div className="flex items-center gap-2 flex-wrap">
@@ -1053,6 +1055,68 @@ export function DataSummary({
         </Button>
       </div>
     </div>
+  );
+}
+
+const SOURCES: DatasetSource[] = ["bundled", "csv", "logs", "pnml"];
+
+/** What a dataset was built from, as chips: source, inputs, miners or feature groups, size. */
+function InputChips({ dataset, catalog }: { dataset: FactorDataset; catalog: FactorCatalog }) {
+  const t = useT();
+  const source = SOURCES.find((s) => s === dataset.source);
+  const Icon = source ? SOURCE_ICON[source] : Database;
+  const inputs: InputsSummary = dataset.inputs ?? { files: 0 };
+  const names = (keys: string[], known: { key: string; name: string }[] | undefined) =>
+    keys.map((k) => known?.find((x) => x.key === k)?.name ?? k).join(", ");
+  const sample = inputs.sample_id ? catalog.samples?.find((s) => s.id === inputs.sample_id) : undefined;
+  const chips: { key: string; text: string; title?: string }[] = [];
+  if ((source === "logs" || source === "pnml") && inputs.files > 0) {
+    chips.push({
+      key: "files",
+      text: countText(t, source === "logs" ? "factor.inputs.logs" : "factor.inputs.nets", inputs.files),
+      title: sample && `${t("factor.data.sample_label")}: ${sample.name}`,
+    });
+  }
+  if (inputs.miners?.length) {
+    chips.push({
+      key: "miners",
+      text: countText(t, "factor.inputs.miners", inputs.miners.length),
+      title: names(inputs.miners, catalog.miners),
+    });
+  }
+  if (inputs.groups?.length) {
+    chips.push({
+      key: "groups",
+      text: countText(t, "factor.inputs.groups", inputs.groups.length),
+      title: names(inputs.groups, catalog.groups),
+    });
+  }
+  if (dataset.status === "ready") {
+    chips.push({
+      key: "size",
+      text: t("factor.data.bundled_size", { rows: dataset.n_observations, cols: dataset.measures.length }),
+    });
+  } else if (dataset.kind === "model" && inputs.measures?.length) {
+    // Until the matrix exists, the measures asked for.
+    chips.push({
+      key: "measures",
+      text: countText(t, "factor.inputs.measures", inputs.measures.length),
+      title: names(inputs.measures, catalog.measures),
+    });
+  }
+  const chip = "inline-flex items-center gap-1 rounded-md bg-tile px-2 py-0.5 text-[11px] text-muted";
+  return (
+    <ul aria-label={t("factor.data.inputs_aria")} className="flex flex-wrap gap-1.5">
+      <li className={chip}>
+        <Icon className="h-3 w-3 shrink-0" />
+        {source ? t(`factor.data.source.${source}`) : dataset.source}
+      </li>
+      {chips.map((c) => (
+        <li key={c.key} className={chip} title={c.title}>
+          {c.text}
+        </li>
+      ))}
+    </ul>
   );
 }
 

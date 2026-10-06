@@ -586,7 +586,8 @@
       "delete_confirm": "Löschen bestätigen",
       "delete_failed": "Der Datensatz konnte nicht gelöscht werden.",
       "gone": "Der Datensatz, den du geöffnet hattest, ist nicht mehr verfügbar. Er wurde gelöscht oder ist nach 7 Tagen abgelaufen.",
-      "dismiss_aria": "Hinweis ausblenden"
+      "dismiss_aria": "Hinweis ausblenden",
+      "inputs_aria": "Woraus der Datensatz besteht"
     },
     "inputs": {
       "logs": "{n} Log",
