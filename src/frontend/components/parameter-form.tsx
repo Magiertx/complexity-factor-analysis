@@ -92,6 +92,16 @@ function valuesEqual(a: unknown, b: unknown): boolean {
   return String(a) === String(b);
 }
 
+/**
+ * The choices of a multiple choice. A past run keeps a single choice as a plain string, since
+ * the form sent one value; the backend reads a string as a comma-separated list, and so does this.
+ */
+export function choiceList(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String);
+  if (typeof value === "string") return value.split(",").map((s) => s.trim()).filter(Boolean);
+  return [];
+}
+
 function Field({
   spec,
   algorithmId,
@@ -170,7 +180,7 @@ function Field({
 
   if (spec.type === "multi_enum") {
     const options = spec.options ?? [];
-    const selected = Array.isArray(value) ? (value as string[]) : [];
+    const selected = choiceList(value);
     const defaults = Array.isArray(spec.default) ? (spec.default as string[]) : [];
     // In the order of the options, as the data step of the factor analysis keeps its lists.
     const choose = (next: string[]) => {

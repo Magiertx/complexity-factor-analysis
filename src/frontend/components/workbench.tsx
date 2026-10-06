@@ -53,7 +53,7 @@ import {
 } from "@/lib/api";
 import { AlgorithmList } from "./algorithm-list";
 import { FileDrop, LOG_EXTENSIONS } from "./file-drop";
-import { ParameterForm, type OptionInfo } from "./parameter-form";
+import { ParameterForm, choiceList, type OptionInfo } from "./parameter-form";
 import { SingleRunTour } from "./single-run-tour";
 import { AlgorithmExplainerModal } from "./algorithm-explainer-modal";
 import { PresetBar } from "./preset-bar";
@@ -546,7 +546,7 @@ export function Workbench() {
     for (const p of selected.parameters_schema) {
       const val = params[p.name];
       // ComFy fails without a miner or a measure; say so before the run starts.
-      if (p.type === "multi_enum" && (!Array.isArray(val) || val.length === 0)) {
+      if (p.type === "multi_enum" && choiceList(val).length === 0) {
         errors[p.name] = t("workbench.errors.choose_one");
       }
       if (p.type === "int" || p.type === "float") {
