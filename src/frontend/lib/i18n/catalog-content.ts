@@ -90,8 +90,8 @@ const DE: CatalogContent = {
     "comfy-paper-hybrid-ilp-miner": PAPER_MINER("Hybrid ILP miner"),
     "comfy-paper-directly-follows-miner": PAPER_MINER("Directly Follows miner"),
     "comfy-log-pdc-training-logs":
-      "feeed-Maße der 2112 Trainingslogs der Process Discovery Contests 2020 bis 2025, wie im Paper „Cleaning Up the Measure Mess: A Factor Analysis on Event Log Measures“ verwendet. Mit einem älteren feeed berechnet: simple_trace_diversity, distinct_activities_mean, distinct_activities_std, event_density und complexity_factor weichen von Datensätzen ab, die der Dienst berechnet.",
-    "pdc-sample-logs": "Trainingslogs der Process Discovery Contests 2020, 2023, 2024 und 2025, je 1000 Traces.",
+      "feeed-Maße der 2.112 Trainingslogs der Process Discovery Contests 2020 bis 2025, wie im Paper „Cleaning Up the Measure Mess: A Factor Analysis on Event Log Measures“ verwendet. Mit einem älteren feeed berechnet: simple_trace_diversity, distinct_activities_mean, distinct_activities_std, event_density und complexity_factor weichen von Datensätzen ab, die der Dienst berechnet.",
+    "pdc-sample-logs": "Trainingslogs der Process Discovery Contests 2020, 2023, 2024 und 2025, je 1.000 Traces.",
     "pdc-sample-models":
       "32 Netze, mit dem Inductive miner von pm4py bei Rauschschwellen von 0 bis 0,8 aus den vier Beispiellogs entdeckt (samples/make_sample_models.py).",
   },
@@ -105,7 +105,7 @@ const DE: CatalogContent = {
       license: "Keine Lizenzdatei im Original; die Erlaubnis der Autorin steht noch aus.",
     },
     "comfy-log-paper": {
-      description: "feeed-Maße der 2112 Trainingslogs der Process Discovery Contests 2020 bis 2025.",
+      description: "feeed-Maße der 2.112 Trainingslogs der Process Discovery Contests 2020 bis 2025.",
       note: "Mit einem älteren feeed berechnet: simple_trace_diversity, distinct_activities_mean, distinct_activities_std, event_density und complexity_factor weichen von Datensätzen ab, die der Dienst berechnet.",
     },
   },
