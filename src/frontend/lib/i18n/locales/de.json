@@ -418,7 +418,8 @@
     "run_bar": {
       "job_status": "Job-Status: {status}",
       "ready": "Bereit zum Ausführen.",
-      "upload_hint": "Lade ein event log hoch, um die Analyse zu starten.",
+      "upload_hint": "Lade ein Event-Log hoch oder wähle ein zuletzt hochgeladenes, um die Analyse zu starten.",
+      "sample_hint": "Wähle ein Beispiel-Log, um die Analyse zu starten.",
       "abort": "Abbrechen",
       "new_run": "Neuer Run",
       "run_title": "Analyse starten (Ctrl+Enter)"

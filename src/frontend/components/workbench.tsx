@@ -551,6 +551,9 @@ export function Workbench() {
     }
   }
 
+  // A log is chosen in the source tab that is shown.
+  const hasLog = activeSourceTab === "sample" ? !!selectedSampleId : !!file || !!selectedRecentId;
+
   const isJobRunning = selectedJobDetail
     ? selectedJobDetail.status === "running" || selectedJobDetail.status === "pending"
     : false;
@@ -1227,9 +1230,11 @@ export function Workbench() {
                 <div className="text-xs text-muted">
                   {selectedJobDetail
                     ? t("workbench.run_bar.job_status", { status: selectedJobDetail.status })
-                    : file
-                    ? t("workbench.run_bar.ready")
-                    : t("workbench.run_bar.upload_hint")}
+                    : hasLog
+                      ? t("workbench.run_bar.ready")
+                      : activeSourceTab === "sample"
+                        ? t("workbench.run_bar.sample_hint")
+                        : t("workbench.run_bar.upload_hint")}
                 </div>
                 <div className="flex items-center gap-2">
                   {selectedJobDetail ? (
@@ -1261,11 +1266,7 @@ export function Workbench() {
                     <Button
                       onClick={run}
                       title={t("workbench.run_bar.run_title")}
-                      disabled={
-                        activeSourceTab === "sample"
-                          ? !selectedSampleId
-                          : (!file && !selectedRecentId)
-                      }
+                      disabled={!hasLog}
                       size="md"
                       data-tour="single-run"
                     >

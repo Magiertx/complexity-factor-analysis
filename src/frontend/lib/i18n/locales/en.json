@@ -418,7 +418,8 @@
     "run_bar": {
       "job_status": "Job Status: {status}",
       "ready": "Ready to run.",
-      "upload_hint": "Upload an event log to enable analysis.",
+      "upload_hint": "Upload an event log or choose a recent one to enable the analysis.",
+      "sample_hint": "Choose an example log to enable the analysis.",
       "abort": "Abort",
       "new_run": "New Run",
       "run_title": "Run analysis (Ctrl+Enter)"
