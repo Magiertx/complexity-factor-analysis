@@ -24,7 +24,6 @@ import {
   Check,
   Download,
   History,
-  Clock,
   LayoutGrid,
   List,
   X,
@@ -63,6 +62,7 @@ import { ResultPanel } from "./result-panel";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Segmented } from "./ui/segmented";
+import { ChoiceMark, choiceTile } from "./ui/choice";
 import { cn } from "@/lib/utils";
 import { formatDateTime, formatKilobytes, formatPercent } from "@/lib/i18n/local-format";
 
@@ -947,78 +947,67 @@ export function Workbench() {
                               ]}
                             />
                           </div>
-                          <div className="max-h-[148px] overflow-y-auto p-1 no-scrollbar">
-                            {recentLayout === "grid" ? (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
-                                {recentLogs.map((log) => {
-                                  const isSelected = selectedRecentId === log.id;
-                                  return (
-                                    <button
-                                      key={log.id}
-                                      type="button"
-                                      onClick={() => {
+                          {/* A choice of one, with the radio tiles of the data step. */}
+                          <div
+                            role="radiogroup"
+                            aria-label={t("workbench.recent.label")}
+                            className="max-h-[156px] overflow-y-auto p-1 no-scrollbar"
+                          >
+                            <div
+                              className={cn(
+                                "gap-2",
+                                recentLayout === "grid"
+                                  ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                                  : "flex flex-col gap-1.5",
+                              )}
+                            >
+                              {recentLogs.map((log) => {
+                                const isSelected = selectedRecentId === log.id;
+                                return (
+                                  <label
+                                    key={log.id}
+                                    className={cn(
+                                      "flex items-start gap-2.5 rounded-md px-3 py-2 text-xs min-w-0",
+                                      choiceTile(isSelected),
+                                    )}
+                                  >
+                                    <input
+                                      type="radio"
+                                      name="recent-log"
+                                      className="sr-only"
+                                      checked={isSelected}
+                                      onChange={() => {
                                         setSelectedRecentId(log.id);
                                         setError(null);
                                         setFile(null); // Clear file when recent log is chosen
                                       }}
+                                    />
+                                    <ChoiceMark type="radio" checked={isSelected} className="mt-px" />
+                                    <span
                                       className={cn(
-                                        "text-left px-3 py-2.5 rounded-md text-[11px] transition-all duration-200 flex flex-col justify-between min-h-[62px] relative group",
-                                        isSelected
-                                          ? "bg-accent/[0.45]"
-                                          : "bg-tile hover:bg-accent/[0.14]"
+                                        "min-w-0 flex-1",
+                                        recentLayout === "list" && "flex items-center justify-between gap-4",
                                       )}
                                     >
-                                      <div className="flex items-start justify-between gap-2 w-full">
-                                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                          <Clock className="h-3.5 w-3.5 text-muted/40 group-hover:text-muted/70 transition shrink-0" />
-                                          <span className="font-medium truncate text-fg" title={log.name}>{log.name}</span>
-                                        </div>
-                                      </div>
-                                      <div className="flex items-center justify-between text-[9px] text-muted/50 mt-1 w-full gap-2">
+                                      <span className="block font-medium truncate" title={log.name}>
+                                        {log.name}
+                                      </span>
+                                      <span
+                                        className={cn(
+                                          "flex items-center justify-between gap-3 text-[11px] text-muted",
+                                          recentLayout === "grid" ? "mt-0.5" : "shrink-0",
+                                        )}
+                                      >
                                         <span className="shrink-0">{formatKilobytes(log.size_bytes, locale)}</span>
-                                        <span className="truncate">
+                                        <span className={cn("truncate", recentLayout === "list" && "hidden sm:inline")}>
                                           {formatDateTime(log.mtime * 1000, locale)}
                                         </span>
-                                      </div>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <div className="flex flex-col gap-1.5">
-                                {recentLogs.map((log) => {
-                                  const isSelected = selectedRecentId === log.id;
-                                  return (
-                                    <button
-                                      key={log.id}
-                                      type="button"
-                                      onClick={() => {
-                                        setSelectedRecentId(log.id);
-                                        setError(null);
-                                        setFile(null); // Clear file when recent log is chosen
-                                      }}
-                                      className={cn(
-                                        "text-left px-3 py-2 rounded-md text-[11px] transition-all duration-200 flex items-center justify-between relative group w-full",
-                                        isSelected
-                                          ? "bg-accent/[0.45]"
-                                          : "bg-tile hover:bg-accent/[0.14]"
-                                      )}
-                                    >
-                                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                                        <Clock className="h-3.5 w-3.5 text-muted/40 group-hover:text-muted/70 transition shrink-0" />
-                                        <span className="font-medium truncate text-fg" title={log.name}>{log.name}</span>
-                                      </div>
-                                      <div className="flex items-center gap-4 text-[9px] text-muted/50 shrink-0 ml-4">
-                                        <span>{formatKilobytes(log.size_bytes, locale)}</span>
-                                        <span className="hidden sm:inline">
-                                          {formatDateTime(log.mtime * 1000, locale)}
-                                        </span>
-                                      </div>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            )}
+                                      </span>
+                                    </span>
+                                  </label>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
                       )}
@@ -1042,79 +1031,52 @@ export function Workbench() {
                         )}
                       </div>
 
-                      {sampleLayout === "grid" ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
-                          {sampleLogs.map((sample) => {
-                            const log = localizedSampleLog(sample, locale);
-                            const isSelected = selectedSampleId === log.id;
-                            return (
-                              <button
-                                key={log.id}
-                                type="button"
-                                onClick={() => {
+                      <div
+                        role="radiogroup"
+                        aria-label={t("workbench.samples.label")}
+                        className={cn(
+                          "w-full gap-2",
+                          sampleLayout === "grid" ? "grid grid-cols-1 md:grid-cols-2" : "flex flex-col",
+                        )}
+                      >
+                        {sampleLogs.map((sample) => {
+                          const log = localizedSampleLog(sample, locale);
+                          const isSelected = selectedSampleId === log.id;
+                          return (
+                            <label
+                              key={log.id}
+                              className={cn("flex items-start gap-2.5 rounded-md p-3 min-w-0", choiceTile(isSelected))}
+                            >
+                              <input
+                                type="radio"
+                                name="sample-log"
+                                className="sr-only"
+                                checked={isSelected}
+                                onChange={() => {
                                   setSelectedSampleId(log.id);
                                   setError(null);
                                 }}
-                                className={cn(
-                                  "text-left p-3 rounded-lg transition-all duration-200 flex flex-col justify-between h-28 relative group",
-                                  isSelected
-                                    ? "bg-accent/[0.45]"
-                                    : "bg-tile hover:bg-accent/[0.14]"
-                                )}
-                              >
-                                <div>
-                                  <div className="font-semibold text-xs">
-                                    <span className="truncate">{log.name}</span>
-                                  </div>
-                                  <p className="text-[11px] text-muted/85 line-clamp-2 mt-1 leading-normal">
-                                    {log.description}
-                                  </p>
-                                </div>
-                                <div className="text-[9px] font-mono text-muted/60 mt-1 flex items-center justify-between w-full">
-                                  <span className="truncate max-w-[70%]">{log.filename}</span>
-                                  <span>{formatKilobytes(log.size_bytes, locale)}</span>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-2 w-full">
-                          {sampleLogs.map((sample) => {
-                            const log = localizedSampleLog(sample, locale);
-                            const isSelected = selectedSampleId === log.id;
-                            return (
-                              <button
-                                key={log.id}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedSampleId(log.id);
-                                  setError(null);
-                                }}
-                                className={cn(
-                                  "text-left p-3 rounded-lg transition-all duration-200 flex items-center justify-between relative group w-full gap-4",
-                                  isSelected
-                                    ? "bg-accent/[0.45]"
-                                    : "bg-tile hover:bg-accent/[0.14]"
-                                )}
-                              >
-                                <div className="min-w-0 flex-1">
-                                  <div className="font-semibold text-xs text-fg truncate">
-                                    {log.name}
-                                  </div>
-                                  <p className="text-[11px] text-muted/85 line-clamp-1 mt-0.5 leading-normal">
-                                    {log.description}
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-4 text-[9px] text-muted/50 shrink-0 ml-4">
-                                  <span className="font-mono">{log.filename}</span>
-                                  <span>{formatKilobytes(log.size_bytes, locale)}</span>
-                                </div>
-                              </button>
-                            );
-                          })}
-                    </div>
-                  )}
+                              />
+                              <ChoiceMark type="radio" checked={isSelected} className="mt-px" />
+                              <span className="min-w-0 flex-1">
+                                <span className="block text-sm font-medium truncate">{log.name}</span>
+                                <span
+                                  className={cn(
+                                    "block text-[11px] text-muted mt-0.5 leading-normal",
+                                    sampleLayout === "grid" ? "line-clamp-2" : "line-clamp-1",
+                                  )}
+                                >
+                                  {log.description}
+                                </span>
+                                <span className="mt-1 flex items-center justify-between gap-3 text-[11px] text-muted">
+                                  <span className="font-mono truncate">{log.filename}</span>
+                                  <span className="shrink-0">{formatKilobytes(log.size_bytes, locale)}</span>
+                                </span>
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
                 </div>
               )}
             </div>
