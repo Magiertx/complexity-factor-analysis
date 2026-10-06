@@ -1,10 +1,11 @@
 "use client";
 
-import { Download } from "lucide-react";
+import { FileSpreadsheet } from "lucide-react";
 import type { Artifact } from "@/lib/api";
 import { localizedAlgoText, useLocale } from "@/lib/i18n";
 import { NO_VALUE, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 type T = Extract<Artifact, { kind: "table" }>;
 
@@ -55,15 +56,16 @@ export function TableView({ artifact, runId }: { artifact: T; runId?: string | n
     <div className="rounded-md bg-tile/40 overflow-hidden">
       <div className="px-3 py-2 border-b border-border flex items-center justify-between gap-3">
         <span className="text-xs text-muted font-medium">{t("artifacts.table.table_data_label")}</span>
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={downloadCSV}
           title={t("artifacts.table.download_csv_title")}
-          className="h-7 px-2.5 rounded bg-tile hover:bg-accent/[0.08] text-fg transition flex items-center gap-1.5 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="shrink-0 whitespace-nowrap"
         >
-          <Download className="h-3.5 w-3.5" />
-          <span className="text-xs">{t("artifacts.table.download_csv_button")}</span>
-        </button>
+          <FileSpreadsheet className="h-3.5 w-3.5" />
+          {t("artifacts.table.download_csv_button")}
+        </Button>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">

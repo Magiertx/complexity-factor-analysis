@@ -27,7 +27,7 @@ export function LogDownload({ artifact }: { artifact: L }) {
         variant="secondary"
         onClick={() => downloadBase64(artifact.data_base64, artifact.filename, artifact.mime ?? "application/xml")}
       >
-        <Download className="h-4 w-4" />
+        <Download className="h-3.5 w-3.5" />
         {t("artifacts.log_download.download_button")}
       </Button>
     </div>

@@ -334,7 +334,7 @@
   },
   "result_panel": {
     "heading": "Ergebnis",
-    "download_all": "Alle herunterladen (ZIP)"
+    "download_all": "Ergebnisse herunterladen (ZIP)"
   },
   "artifacts": {
     "petri_nets_heading": "Gefundene Petri-Netze ({n})",
@@ -363,7 +363,7 @@
     "table": {
       "table_data_label": "Tabelle",
       "download_csv_title": "Tabelle als CSV herunterladen",
-      "download_csv_button": "CSV herunterladen"
+      "download_csv_button": "Tabelle herunterladen (CSV)"
     }
   },
   "jobs": {

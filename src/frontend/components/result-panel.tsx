@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3, Download } from "lucide-react";
+import { BarChart3, FileArchive } from "lucide-react";
 import type { AnalysisResult } from "@/lib/api";
 import { API_BASE } from "@/lib/api";
 import { Artifacts } from "./artifacts/artifacts";
@@ -36,10 +36,10 @@ export function ResultPanel({ result, runId }: Props) {
             }}
             variant="secondary"
             size="sm"
-            className="h-8 px-2.5 flex items-center gap-1.5 shrink-0"
+            className="shrink-0"
           >
-            <Download className="h-3.5 w-3.5" />
-            <span className="text-xs">{t("result_panel.download_all")}</span>
+            <FileArchive className="h-3.5 w-3.5" />
+            {t("result_panel.download_all")}
           </Button>
         )}
       </div>
