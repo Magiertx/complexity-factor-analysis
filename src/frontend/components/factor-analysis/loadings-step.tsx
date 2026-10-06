@@ -5,16 +5,15 @@ import { FileArchive, FileCode2, FileSpreadsheet, Loader2 } from "lucide-react";
 import type { FactorAnalysis } from "@/lib/api";
 import {
   ORTHOGONAL,
-  formatNumber,
-  formatPercent,
   loadingStyle,
   orderMeasures,
   signColor,
   type AnalysisOptions,
   type ExportFormat,
 } from "@/lib/factor-analysis";
+import { formatNumber, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { useT } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Segmented } from "@/components/ui/segmented";
 import { HelpLabel, NumberField } from "./step-section";
@@ -32,6 +31,7 @@ interface Props {
 
 export function LoadingsView({ analysis, options, onOptions, measureName, onExport, exporting, zipReady }: Props) {
   const t = useT();
+  const { locale } = useLocale();
   const [order, setOrder] = useState<"factor" | "original">("factor");
   const [matrix, setMatrix] = useState<"pattern" | "structure">("pattern");
   const k = analysis.n_factors;
@@ -190,14 +190,14 @@ export function LoadingsView({ analysis, options, onOptions, measureName, onExpo
                         <td
                           key={i}
                           style={loadingStyle(v)}
-                          title={`${measureName(m)} · ${t("factor.loadings.factor_n", { i: i + 1 })}: ${formatNumber(v, 3)}`}
+                          title={`${measureName(m)} · ${t("factor.loadings.factor_n", { i: i + 1 })}: ${formatNumber(v, locale, 3)}`}
                           className={cn(
                             cellPad,
                             "text-right font-mono tabular-nums whitespace-nowrap",
                             strong ? "font-bold text-fg" : "text-fg/70",
                           )}
                         >
-                          {formatNumber(v)}
+                          {formatNumber(v, locale, 2)}
                         </td>
                       );
                     })}
@@ -210,7 +210,7 @@ export function LoadingsView({ analysis, options, onOptions, measureName, onExpo
                               style={{ width: `${Math.min(1, Math.max(0, h2)) * 100}%` }}
                             />
                           </span>
-                          <span className="font-mono tabular-nums">{formatNumber(h2)}</span>
+                          <span className="font-mono tabular-nums">{formatNumber(h2, locale, 2)}</span>
                         </span>
                       )}
                     </td>
@@ -219,19 +219,19 @@ export function LoadingsView({ analysis, options, onOptions, measureName, onExpo
               })}
             </tbody>
             <tfoot className="bg-bg/60 text-muted">
-              <VarianceRow label={t("factor.loadings.ss_loadings")} values={analysis.variance.ss_loadings} format={(v) => formatNumber(v)} pad={cellPad} />
+              <VarianceRow label={t("factor.loadings.ss_loadings")} values={analysis.variance.ss_loadings} format={(v) => formatNumber(v, locale, 2)} pad={cellPad} />
               {proportion && (
-                <VarianceRow label={t("factor.loadings.proportion")} values={proportion} format={(v) => formatPercent(v)} pad={cellPad} />
+                <VarianceRow label={t("factor.loadings.proportion")} values={proportion} format={(v) => formatPercent(v, locale)} pad={cellPad} />
               )}
               {cumulative && (
-                <VarianceRow label={t("factor.loadings.cumulative")} values={cumulative} format={(v) => formatPercent(v)} pad={cellPad} />
+                <VarianceRow label={t("factor.loadings.cumulative")} values={cumulative} format={(v) => formatPercent(v, locale)} pad={cellPad} />
               )}
             </tfoot>
           </table>
         </div>
         <p className="text-[11px] text-muted max-w-prose">
           {t("factor.loadings.footer_note")}
-          {oblique && ` ${t("factor.loadings.oblique_note", { pct: formatPercent(analysis.variance.explained) })}`}
+          {oblique && ` ${t("factor.loadings.oblique_note", { pct: formatPercent(analysis.variance.explained, locale) })}`}
         </p>
       </div>
 
@@ -270,6 +270,7 @@ function VarianceRow({
 
 function FactorCorrelations({ values, pad }: { values: number[][]; pad: string }) {
   const t = useT();
+  const { locale } = useLocale();
   return (
     <div className="space-y-2">
       <HelpLabel label={t("factor.loadings.correlations_heading")} help={t("factor.help.factor_correlations")} />
@@ -298,7 +299,7 @@ function FactorCorrelations({ values, pad }: { values: number[][]; pad: string }
                     style={i === j ? undefined : loadingStyle(v)}
                     className={cn(pad, "text-right font-mono tabular-nums", i === j && "text-muted")}
                   >
-                    {formatNumber(v)}
+                    {formatNumber(v, locale, 2)}
                   </td>
                 ))}
               </tr>
@@ -312,6 +313,7 @@ function FactorCorrelations({ values, pad }: { values: number[][]; pad: string }
 
 function Legend({ threshold }: { threshold: number }) {
   const t = useT();
+  const { locale } = useLocale();
   return (
     <div className="flex items-center gap-3 text-[11px] text-muted flex-wrap" aria-hidden>
       <span className="flex items-center gap-1.5">
@@ -323,7 +325,8 @@ function Legend({ threshold }: { threshold: number }) {
         {t("factor.loadings.legend_positive")}
       </span>
       <span>
-        <b className="text-fg">0.00</b> {t("factor.loadings.legend_bold", { threshold: formatNumber(threshold) })}
+        <b className="text-fg">{formatNumber(0, locale, 2)}</b>{" "}
+        {t("factor.loadings.legend_bold", { threshold: formatNumber(threshold, locale, 2) })}
       </span>
     </div>
   );
@@ -331,6 +334,7 @@ function Legend({ threshold }: { threshold: number }) {
 
 function FactorGroups({ analysis, measureName }: { analysis: FactorAnalysis; measureName: (key: string) => string }) {
   const t = useT();
+  const { locale } = useLocale();
   return (
     <div className="space-y-2">
       <HelpLabel label={t("factor.loadings.groups_heading")} help={t("factor.help.groups")} />
@@ -343,7 +347,7 @@ function FactorGroups({ analysis, measureName }: { analysis: FactorAnalysis; mea
               <div className="flex items-baseline justify-between gap-2">
                 <h4 className="text-sm font-semibold">{t("factor.loadings.factor_n", { i: f.index + 1 })}</h4>
                 {share !== undefined && (
-                  <span className="text-[11px] text-muted">{t("factor.loadings.factor_variance", { pct: formatPercent(share) })}</span>
+                  <span className="text-[11px] text-muted">{t("factor.loadings.factor_variance", { pct: formatPercent(share, locale) })}</span>
                 )}
               </div>
               {f.measures.length === 0 ? (
@@ -356,7 +360,7 @@ function FactorGroups({ analysis, measureName }: { analysis: FactorAnalysis; mea
                         <span className="truncate" title={m.measure}>
                           {measureName(m.measure)}
                         </span>
-                        <span className="font-mono tabular-nums shrink-0">{formatNumber(m.loading)}</span>
+                        <span className="font-mono tabular-nums shrink-0">{formatNumber(m.loading, locale, 2)}</span>
                       </div>
                       <div className="mt-1 h-1 rounded-full bg-bg/80 overflow-hidden" aria-hidden>
                         <div

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { formatNumber } from "@/lib/factor-analysis";
-import { useT } from "@/lib/i18n";
+import { formatNumber } from "@/lib/format";
+import { useLocale, useT } from "@/lib/i18n";
 
 const HEIGHT = 260;
 const M = { l: 44, r: 16, t: 28, b: 40 };
@@ -27,6 +27,7 @@ interface Props {
  */
 export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onSelect }: Props) {
   const t = useT();
+  const { locale } = useLocale();
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(600);
   const [hover, setHover] = useState<number | null>(null);
@@ -78,7 +79,7 @@ export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onS
   };
 
   const tip = hover !== null ? { i: hover, v: eigenvalues[hover - 1] } : null;
-  const tipText = tip ? t("factor.factors.eigen_point", { i: tip.i, value: formatNumber(tip.v) }) : "";
+  const tipText = tip ? t("factor.factors.eigen_point", { i: tip.i, value: formatNumber(tip.v, locale, 2) }) : "";
   const tipW = tipText.length * 6.2 + 16;
 
   return (
@@ -103,7 +104,7 @@ export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onS
         <title id={titleId}>{t("factor.factors.scree_title")}</title>
         <desc id={descId}>
           {t("factor.factors.scree_desc", { n: above })}{" "}
-          {eigenvalues.map((v, i) => `${i + 1}: ${formatNumber(v)}`).join(", ")}
+          {eigenvalues.map((v, i) => `${i + 1}: ${formatNumber(v, locale, 2)}`).join(", ")}
         </desc>
 
         {/* retained factors */}
@@ -116,7 +117,7 @@ export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onS
           <g key={v}>
             <line x1={M.l} x2={M.l + w} y1={y(v)} y2={y(v)} className="stroke-border" strokeWidth={1} />
             <text x={M.l - 8} y={y(v)} dy="0.32em" textAnchor="end" fontSize={10} className="fill-muted">
-              {Number.isInteger(v) ? v : v.toFixed(2)}
+              {formatNumber(v, locale, Number.isInteger(v) ? 0 : 2)}
             </text>
           </g>
         ))}

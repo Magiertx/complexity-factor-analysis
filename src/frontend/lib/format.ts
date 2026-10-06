@@ -39,6 +39,26 @@ export function formatNumber(value: number, locale: string, digits?: number): st
   return signed(numberFormat(locale, options).format(value));
 }
 
+/**
+ * A number as a field shows it for editing: without thousands grouping, which
+ * parseInputNumber does not read, and with the minus a keyboard types.
+ */
+export function formatInputNumber(value: number, locale: string): string {
+  if (!Number.isFinite(value)) return "";
+  const text = numberFormat(locale, { maximumFractionDigits: 6, useGrouping: false }).format(value);
+  return /[1-9]/.test(text) ? text : text.replace("-", "");
+}
+
+/**
+ * The number typed into a field, or null. A comma and a point both count as the decimal
+ * separator, whatever the language: fields take no grouping, so neither can mean one.
+ */
+export function parseInputNumber(text: string): number | null {
+  const s = text.trim().replace("−", "-");
+  if (!/^[+-]?(\d+([.,]\d*)?|[.,]\d+)$/.test(s)) return null;
+  return Number(s.replace(",", "."));
+}
+
 /** A share of 1 as a percentage: 0.727 is "72.7%" in English and "72,7 %" in German. */
 export function formatPercent(share: number, locale: string, digits = 1): string {
   if (!Number.isFinite(share)) return NO_VALUE;

@@ -75,21 +75,17 @@ export const PREVIEW_ROWS = 8;
 
 export const ORTHOGONAL: Rotation[] = ["varimax", "quartimax"];
 
-/** Fixed digits with a typographic minus, so columns of signed values line up. */
-export function formatNumber(value: number, digits = 2): string {
-  if (!Number.isFinite(value)) return "–";
-  const s = value.toFixed(digits);
-  return s.startsWith("-") ? `−${s.slice(1)}` : s;
-}
+// Params of analysis notices that the backend sends as text with digits of its choosing.
+const NUMERIC_TEXT_PARAMS = ["overall", "p"];
 
-export function formatPValue(p: number): string {
-  if (!Number.isFinite(p)) return "–";
-  if (p < 0.001) return "< 0.001";
-  return p.toFixed(3);
-}
-
-export function formatPercent(share: number, digits = 1): string {
-  return `${(share * 100).toFixed(digits)}%`;
+/** The params of an analysis notice with its numbers as numbers, so the text shows them in the UI language. */
+export function noticeParams(params: Record<string, string | number>): Record<string, string | number> {
+  const out = { ...params };
+  for (const key of NUMERIC_TEXT_PARAMS) {
+    const v = out[key];
+    if (typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) out[key] = Number(v);
+  }
+  return out;
 }
 
 export type KmoGrade =
@@ -239,24 +235,4 @@ export function datasetJobHref(job: Job): string | null {
   const tab = kind === "log" ? "/log" : "/";
   const id = job.params?.dataset_id;
   return typeof id === "string" ? `${tab}?dataset=${encodeURIComponent(id)}` : tab;
-}
-
-const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
-  ["year", 365 * 24 * 3600],
-  ["month", 30 * 24 * 3600],
-  ["week", 7 * 24 * 3600],
-  ["day", 24 * 3600],
-  ["hour", 3600],
-  ["minute", 60],
-];
-
-/** "3 hours ago" in the given locale; an empty string for a date that cannot be read. */
-export function relativeTime(iso: string, locale: string, now = Date.now()): string {
-  const seconds = (new Date(iso).getTime() - now) / 1000;
-  if (!Number.isFinite(seconds)) return "";
-  const format = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
-  for (const [unit, size] of RELATIVE_UNITS) {
-    if (Math.abs(seconds) >= size) return format.format(Math.round(seconds / size), unit);
-  }
-  return format.format(0, "second");
 }

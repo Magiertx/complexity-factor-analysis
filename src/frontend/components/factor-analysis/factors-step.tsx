@@ -2,8 +2,9 @@
 
 import { Minus, Plus, Sparkles } from "lucide-react";
 import { ROTATIONS, type FactorAnalysis, type Rotation } from "@/lib/api";
-import { ORTHOGONAL, formatPercent, type AnalysisOptions } from "@/lib/factor-analysis";
-import { useT } from "@/lib/i18n";
+import { ORTHOGONAL, type AnalysisOptions } from "@/lib/factor-analysis";
+import { formatPercent } from "@/lib/format";
+import { useLocale, useT } from "@/lib/i18n";
 import { Select } from "@/components/ui/select";
 import { HelpLabel } from "./step-section";
 import { ScreePlot } from "./scree-plot";
@@ -16,6 +17,7 @@ interface Props {
 
 export function FactorsView({ analysis, options, onOptions }: Props) {
   const t = useT();
+  const { locale } = useLocale();
   const max = Math.max(1, analysis.used_measures.length - 1);
   // The pending choice wins over the last result, so quick clicks add up before re-analysis.
   const current = Math.min(options.n_factors ?? analysis.n_factors, max);
@@ -88,7 +90,7 @@ export function FactorsView({ analysis, options, onOptions }: Props) {
             )}
           </div>
           {explained !== undefined && (
-            <p className="text-xs">{t("factor.factors.explained", { n: current, pct: formatPercent(explained) })}</p>
+            <p className="text-xs">{t("factor.factors.explained", { n: current, pct: formatPercent(explained, locale) })}</p>
           )}
         </div>
 

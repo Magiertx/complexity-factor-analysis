@@ -32,7 +32,8 @@ import {
   type InputsSummary,
   type SampleInput,
 } from "@/lib/api";
-import { MIN_MEASURES, countText, datasetName, progressPercent, relativeTime } from "@/lib/factor-analysis";
+import { MIN_MEASURES, countText, datasetName, progressPercent } from "@/lib/factor-analysis";
+import { formatDateTime, formatFileSize, formatNumber, formatPercent, formatRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -693,14 +694,14 @@ function DatasetTile({
                 <span className="inline-flex items-center gap-1.5">
                   <span aria-hidden>·</span>
                   <span title={t("factor.data.bundled_size", { rows, cols })}>
-                    {rows} × {cols}
+                    {formatNumber(rows, locale)} × {formatNumber(cols, locale)}
                   </span>
                 </span>
               )}
               <span className="inline-flex items-center gap-1.5">
                 <span aria-hidden>·</span>
-                <time dateTime={dataset.created_at} title={new Date(dataset.created_at).toLocaleString(locale)}>
-                  {relativeTime(dataset.created_at, locale)}
+                <time dateTime={dataset.created_at} title={formatDateTime(dataset.created_at, locale)}>
+                  {formatRelative(dataset.created_at, locale)}
                 </time>
               </span>
               {dataset.status !== "ready" && (
@@ -829,6 +830,7 @@ function FileList({
   onClear?: () => void;
 }) {
   const t = useT();
+  const { locale } = useLocale();
   const total = files.reduce((acc, f) => acc + f.size, 0);
   return (
     <div className="rounded-lg bg-tile">
@@ -837,7 +839,7 @@ function FileList({
           {t(files.length === 1 ? "factor.data.files_selected" : "factor.data.files_selected_plural", {
             n: files.length,
           })}{" "}
-          · {(total / 1024 / 1024).toFixed(1)} MB
+          · {formatFileSize(total, locale)}
         </span>
         {onClear && files.length > 1 && (
           <button type="button" onClick={onClear} className="hover:text-fg transition">
@@ -852,7 +854,7 @@ function FileList({
             <span className="truncate flex-1" title={f.name}>
               {f.name}
             </span>
-            <span className="text-[10px] text-muted shrink-0">{(f.size / 1024).toFixed(0)} KB</span>
+            <span className="text-[10px] text-muted shrink-0">{formatFileSize(f.size, locale)}</span>
             <button
               type="button"
               onClick={() => onRemove(i)}
@@ -1005,6 +1007,7 @@ export function DataSummary({
   onDelete: () => Promise<boolean>;
 }) {
   const t = useT();
+  const { locale } = useLocale();
   const name = datasetName(dataset, t);
   const withRun = !!dataset.job_id;
   const title =
@@ -1045,7 +1048,7 @@ export function DataSummary({
           )}
         </div>
         <p className="text-xs text-muted">
-          {pct !== null && <span className="font-mono mr-2">{pct}%</span>}
+          {pct !== null && <span className="font-mono mr-2">{formatPercent(pct / 100, locale, 0)}</span>}
           {t("factor.data.computing_hint")}
         </p>
       </div>

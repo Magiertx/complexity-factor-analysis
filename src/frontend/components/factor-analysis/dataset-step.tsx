@@ -2,8 +2,9 @@
 
 import { AlertCircle, Download } from "lucide-react";
 import { datasetDownloadUrl, type FactorDataset } from "@/lib/api";
-import { PREVIEW_ROWS, formatNumber } from "@/lib/factor-analysis";
-import { useT, useTMaybe } from "@/lib/i18n";
+import { PREVIEW_ROWS } from "@/lib/factor-analysis";
+import { NO_VALUE, formatNumber } from "@/lib/format";
+import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { HelpLabel, StatTile } from "./step-section";
 
 export function DatasetView({
@@ -15,6 +16,7 @@ export function DatasetView({
 }) {
   const t = useT();
   const tMaybe = useTMaybe();
+  const { locale } = useLocale();
   const preview = dataset.values.slice(0, PREVIEW_ROWS);
   // Older datasets carry only the English detail.
   const detailOf = (d: FactorDataset["dropped"][number]) =>
@@ -24,10 +26,10 @@ export function DatasetView({
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <StatTile label={t("factor.dataset.observations")} value={dataset.n_observations.toLocaleString()} />
-        <StatTile label={t("factor.dataset.measures")} value={dataset.measures.length} />
-        <StatTile label={t("factor.dataset.dropped_measures")} value={dataset.dropped.length} />
-        <StatTile label={t("factor.dataset.dropped_rows")} value={dataset.dropped_rows} />
+        <StatTile label={t("factor.dataset.observations")} value={formatNumber(dataset.n_observations, locale)} />
+        <StatTile label={t("factor.dataset.measures")} value={formatNumber(dataset.measures.length, locale)} />
+        <StatTile label={t("factor.dataset.dropped_measures")} value={formatNumber(dataset.dropped.length, locale)} />
+        <StatTile label={t("factor.dataset.dropped_rows")} value={formatNumber(dataset.dropped_rows, locale)} />
       </div>
 
       <div className="space-y-2">
@@ -121,7 +123,7 @@ export function DatasetView({
                   </th>
                   {row.map((v, j) => (
                     <td key={j} className="px-3 py-1.5 text-right font-mono tabular-nums whitespace-nowrap">
-                      {v === null ? <span className="text-muted">—</span> : formatNumber(v, Number.isInteger(v) ? 0 : 3)}
+                      {v === null ? <span className="text-muted">{NO_VALUE}</span> : formatNumber(v, locale, Number.isInteger(v) ? 0 : 3)}
                     </td>
                   ))}
                 </tr>
@@ -132,7 +134,7 @@ export function DatasetView({
         <p className="text-[11px] text-muted">
           {t("factor.dataset.preview_note", {
             n: Math.min(PREVIEW_ROWS, dataset.n_observations),
-            total: dataset.n_observations.toLocaleString(),
+            total: dataset.n_observations,
           })}
         </p>
       </div>

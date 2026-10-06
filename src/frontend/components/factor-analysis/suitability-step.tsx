@@ -2,15 +2,10 @@
 
 import { AlertTriangle } from "lucide-react";
 import type { FactorAnalysis, FactorDataset } from "@/lib/api";
-import {
-  MIN_MEASURES,
-  formatNumber,
-  formatPValue,
-  kmoGrade,
-  type AnalysisOptions,
-} from "@/lib/factor-analysis";
+import { MIN_MEASURES, kmoGrade, noticeParams, type AnalysisOptions } from "@/lib/factor-analysis";
+import { NO_VALUE, formatNumber, formatPValue } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { useT, useTMaybe } from "@/lib/i18n";
+import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { ChoiceMark } from "@/components/ui/choice";
 import { Switch } from "@/components/ui/switch";
 import { HelpLabel, NumberField, PassBadge } from "./step-section";
@@ -26,10 +21,11 @@ interface Props {
 export function SuitabilityView({ dataset, analysis, options, onOptions, measureName }: Props) {
   const t = useT();
   const tMaybe = useTMaybe();
+  const { locale } = useLocale();
   // Translated by code where the UI knows it; the English message otherwise.
   const warnings = analysis
     ? (analysis.warning_details ?? analysis.warnings.map((message) => ({ code: "", message, params: {} }))).map(
-        (w) => (w.code && tMaybe(`factor.warnings.${w.code}`, w.params)) || w.message,
+        (w) => (w.code && tMaybe(`factor.warnings.${w.code}`, noticeParams(w.params))) || w.message,
       )
     : [];
   return (
@@ -109,7 +105,7 @@ export function SuitabilityView({ dataset, analysis, options, onOptions, measure
                     <li key={r.measure} className="rounded-md bg-bg/70 px-2 py-1">
                       <span className="text-muted font-mono mr-1">{r.step}.</span>
                       <span className="font-medium">{measureName(r.measure)}</span>{" "}
-                      <span className="font-mono text-muted">{formatNumber(r.msa)}</span>
+                      <span className="font-mono text-muted">{formatNumber(r.msa, locale, 2)}</span>
                     </li>
                   ))}
                 </ol>
@@ -132,6 +128,7 @@ export function SuitabilityView({ dataset, analysis, options, onOptions, measure
 
 function BartlettCard({ analysis, alpha }: { analysis: FactorAnalysis | null; alpha: number }) {
   const t = useT();
+  const { locale } = useLocale();
   const b = analysis?.bartlett;
   return (
     <div className="rounded-lg bg-tile p-4 space-y-3">
@@ -144,11 +141,11 @@ function BartlettCard({ analysis, alpha }: { analysis: FactorAnalysis | null; al
       <dl className="grid grid-cols-3 gap-2 text-xs">
         <Value
           label={b?.regularised ? `χ² (${t("factor.suitability.regularised")})` : "χ²"}
-          value={b ? formatNumber(b.chi_square, 1) : "–"}
+          value={b ? formatNumber(b.chi_square, locale, 1) : NO_VALUE}
           title={b?.regularised ? t("factor.suitability.regularised_title") : undefined}
         />
-        <Value label={t("factor.suitability.df")} value={b ? String(b.df) : "–"} />
-        <Value label="p" value={b ? formatPValue(b.p_value) : "–"} />
+        <Value label={t("factor.suitability.df")} value={b ? formatNumber(b.df, locale) : NO_VALUE} />
+        <Value label="p" value={b ? formatPValue(b.p_value, locale) : NO_VALUE} />
       </dl>
     </div>
   );
@@ -156,6 +153,7 @@ function BartlettCard({ analysis, alpha }: { analysis: FactorAnalysis | null; al
 
 function KmoCard({ analysis, threshold }: { analysis: FactorAnalysis | null; threshold: number }) {
   const t = useT();
+  const { locale } = useLocale();
   const k = analysis?.kmo;
   const limit = k?.threshold ?? threshold;
   return (
@@ -167,7 +165,7 @@ function KmoCard({ analysis, threshold }: { analysis: FactorAnalysis | null; thr
       />
       <p className="text-xs text-muted">{t("factor.suitability.kmo_explain", { threshold: limit })}</p>
       <div className="flex items-baseline gap-2">
-        <span className="text-2xl font-semibold font-mono tabular-nums">{k ? formatNumber(k.overall) : "–"}</span>
+        <span className="text-2xl font-semibold font-mono tabular-nums">{k ? formatNumber(k.overall, locale, 2) : NO_VALUE}</span>
         {k && <span className="text-xs text-muted">{t(`factor.suitability.grade.${kmoGrade(k.overall)}`)}</span>}
       </div>
       <Scale value={k?.overall ?? null} threshold={limit} />
@@ -205,6 +203,7 @@ function Value({ label, value, title }: { label: string; value: string; title?: 
 
 function MsaTable({ dataset, analysis, options, onOptions, measureName }: Props) {
   const t = useT();
+  const { locale } = useLocale();
   const excluded = new Set(options.excluded);
   const removed = new Map((analysis?.msa_filter.removed ?? []).map((r) => [r.measure, r]));
   const included = dataset.measures.length - excluded.size;
@@ -256,10 +255,10 @@ function MsaTable({ dataset, analysis, options, onOptions, measureName }: Props)
                   </th>
                   <td className="px-3 py-2">
                     {msa === null || isExcluded ? (
-                      <span className="text-muted">–</span>
+                      <span className="text-muted">{NO_VALUE}</span>
                     ) : (
                       <span className="flex items-center gap-2">
-                        <span className="font-mono tabular-nums w-10">{formatNumber(msa)}</span>
+                        <span className="font-mono tabular-nums w-10">{formatNumber(msa, locale, 2)}</span>
                         <Scale value={msa} threshold={threshold} compact />
                       </span>
                     )}
@@ -272,7 +271,7 @@ function MsaTable({ dataset, analysis, options, onOptions, measureName }: Props)
                     ) : analysis ? (
                       <span className="text-success-ink">{t("factor.suitability.status_used")}</span>
                     ) : (
-                      <span className="text-muted">–</span>
+                      <span className="text-muted">{NO_VALUE}</span>
                     )}
                   </td>
                   <td className="px-3 py-2 text-center">
