@@ -633,7 +633,7 @@ def test_dataset_jobs_respect_the_session_quota(client, monkeypatch):
 
     monkeypatch.setattr(jobs_db, "count_active_jobs", _full)
     r = _post(client, kind="model", source="pnml", bundled_id="pdc-sample-models")
-    assert r.status_code == 429
+    assert r.status_code == 429 and r.json()["code"] == "job_quota"
 
 
 def test_dataset_jobs_respect_the_global_cap(client, monkeypatch):
@@ -646,6 +646,7 @@ def test_dataset_jobs_respect_the_global_cap(client, monkeypatch):
     monkeypatch.setattr(jobs_db, "count_active_jobs_by_prefix", _busy)
     r = _post(client, kind="model", source="pnml", bundled_id="pdc-sample-models")
     assert r.status_code == 429 and "at once" in r.json()["detail"]
+    assert r.json()["code"] == "dataset_jobs_busy" and r.json()["params"] == {"active": fa.MAX_ACTIVE_DATASET_JOBS}
 
 
 def _session_of(dataset_id: str) -> str:

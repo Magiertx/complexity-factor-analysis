@@ -171,7 +171,11 @@ def test_job_quota_rejects_when_the_session_is_already_full(client, monkeypatch,
         files={"file": ("sample.xes", b"<log/>", "application/xml")},
     )
     assert r.status_code == 429, r.text
-    assert "queued or running" in r.json()["detail"]
+    body = r.json()
+    assert "queued or running" in body["detail"]
+    # The UI says it in its own language from the code and the numbers.
+    assert body["code"] == "job_quota"
+    assert body["params"] == {"active": jobs_db.MAX_ACTIVE_JOBS_PER_SESSION, "requested": 1, "limit": jobs_db.MAX_ACTIVE_JOBS_PER_SESSION}
 
 
 def test_job_quota_allows_a_normal_run(client, monkeypatch, stub_algorithm):

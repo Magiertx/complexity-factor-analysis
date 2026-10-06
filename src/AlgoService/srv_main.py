@@ -32,7 +32,7 @@ from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 import jobs_db
-from config import APP_NAME, JSONFormatter, limiter
+from config import APP_NAME, CodedHTTPException, JSONFormatter, limiter
 from routes import health, algorithms, jobs, factor_analysis, interpretation
 
 from starlette.middleware.sessions import SessionMiddleware
@@ -138,8 +138,14 @@ def _rate_limited(request: Request, exc: RateLimitExceeded) -> Response:
     return limited
 
 
+def _coded_error(request: Request, exc: CodedHTTPException) -> Response:
+    body = {"detail": exc.detail, "code": exc.code, "params": exc.params}
+    return JSONResponse(body, status_code=exc.status_code, headers=exc.headers)
+
+
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limited)
+app.add_exception_handler(CodedHTTPException, _coded_error)
 app.add_middleware(SlowAPIMiddleware)
 
 # CORS middleware configurations

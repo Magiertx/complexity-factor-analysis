@@ -7,7 +7,7 @@ import re
 import json
 import logging
 import asyncio
-from typing import Set
+from typing import Any, Set
 from fastapi import HTTPException
 
 # Product name shown in the API docs and wherever the backend names itself. The frontend has
@@ -30,6 +30,16 @@ class JSONFormatter(logging.Formatter):
 logger = logging.getLogger("algoservice")
 
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
+
+
+class CodedHTTPException(HTTPException):
+    """An HTTP error that also carries ``code`` and ``params`` next to ``detail``, like the
+    analysis errors, so the UI can say it in its own language. srv_main renders the body."""
+
+    def __init__(self, status_code: int, detail: str, code: str, **params: Any) -> None:
+        super().__init__(status_code=status_code, detail=detail)
+        self.code = code
+        self.params = params
 
 # SSE Connection Management
 class SSEConnectionManager:

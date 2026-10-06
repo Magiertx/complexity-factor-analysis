@@ -15,7 +15,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, B
 from fastapi.concurrency import run_in_threadpool
 
 import jobs_db
-from config import broadcast_jobs_update, MAX_FILE_SIZE, logger, get_session_id, limiter
+from config import CodedHTTPException, broadcast_jobs_update, MAX_FILE_SIZE, logger, get_session_id, limiter
 from env_config import rate_limit
 from algorithms import REGISTRY, get as get_algorithm
 from algorithms.base import ParameterValidationError, TOOL_CATEGORIES
@@ -25,14 +25,18 @@ router = APIRouter()
 async def _enforce_job_quota(session_id: str, requested: int = 1) -> None:
     """Refuse the request when this session already has too many jobs queued or running."""
     active = await jobs_db.count_active_jobs(session_id)
-    if active + requested > jobs_db.MAX_ACTIVE_JOBS_PER_SESSION:
-        raise HTTPException(
-            status_code=429,
-            detail=(
+    limit = jobs_db.MAX_ACTIVE_JOBS_PER_SESSION
+    if active + requested > limit:
+        raise CodedHTTPException(
+            429,
+            (
                 f"You already have {active} job(s) queued or running; this request would add "
-                f"{requested}. The limit is {jobs_db.MAX_ACTIVE_JOBS_PER_SESSION}. Wait for "
-                "them to finish or abort some from the jobs panel."
+                f"{requested}. The limit is {limit}. Wait for them to finish or abort some."
             ),
+            "job_quota",
+            active=active,
+            requested=requested,
+            limit=limit,
         )
 
 
