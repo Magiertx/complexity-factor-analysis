@@ -262,18 +262,32 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   }, [datasetId, kind, selectDataset, datasetGone, jobCount]);
 
   // The list for the data step: fetched again when the form opens, when jobs come or go and
-  // when the open dataset is ready or failed.
+  // when the open dataset is ready or failed. While the form shows a dataset that is computed,
+  // it is polled, so that dataset does not stay "computing" once its job is done.
   const formOpen = choosing || !datasetId;
   const datasetStatus = dataset?.status;
   useEffect(() => {
     const ctrl = new AbortController();
-    listDatasets(kind, ctrl.signal)
-      .then(setDatasets)
-      .catch(() => {
-        // Without the list the data step offers new data only.
-        if (!ctrl.signal.aborted) setDatasets((list) => list ?? []);
-      });
-    return () => ctrl.abort();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const load = () =>
+      listDatasets(kind, ctrl.signal).then(
+        (list) => {
+          if (ctrl.signal.aborted) return;
+          setDatasets(list);
+          if (formOpen && list.some((d) => d.status === "computing")) {
+            timer = setTimeout(load, document.hidden ? HIDDEN_POLL_MS : POLL_MS);
+          }
+        },
+        () => {
+          // Without the list the data step offers new data only.
+          if (!ctrl.signal.aborted) setDatasets((list) => list ?? []);
+        },
+      );
+    load();
+    return () => {
+      ctrl.abort();
+      clearTimeout(timer);
+    };
   }, [kind, formOpen, jobCount, datasetStatus]);
 
   const ready = !!dataset && dataset.status === "ready" && dataset.id === datasetId;
