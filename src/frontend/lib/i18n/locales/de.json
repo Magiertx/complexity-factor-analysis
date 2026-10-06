@@ -689,6 +689,7 @@
     },
     "factors": {
       "scree_title": "Screeplot",
+      "notes_heading": "Hinweise zur Faktorlösung",
       "scree_desc": "Eigenwerte in absteigender Reihenfolge; {n} liegen über 1.",
       "scree_hint": "Klicke auf einen Punkt, um so viele Faktoren zu behalten. Die gestrichelte Linie markiert den Eigenwert 1.",
       "axis_factor": "Faktor",

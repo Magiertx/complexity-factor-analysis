@@ -1,9 +1,10 @@
 // Helpers for the factor analysis view. Kept free of React so they stay easy to reuse.
 
 import type { CSSProperties } from "react";
-import type { AnalyzeOptions, FactorAnalysis, FactorKind, InputsSummary, Job, Rotation } from "./api";
+import type { AnalysisNotice, AnalyzeOptions, FactorAnalysis, FactorKind, InputsSummary, Job, Rotation } from "./api";
 
 type Translate = (key: string, params?: Record<string, string | number>) => string;
+type TranslateMaybe = (key: string, params?: Record<string, string | number>) => string | undefined;
 
 export interface AnalysisOptions {
   excluded: string[];
@@ -79,13 +80,38 @@ export const ORTHOGONAL: Rotation[] = ["varimax", "quartimax"];
 const NUMERIC_TEXT_PARAMS = ["overall", "p"];
 
 /** The params of an analysis notice with its numbers as numbers, so the text shows them in the UI language. */
-export function noticeParams(params: Record<string, string | number>): Record<string, string | number> {
+function noticeParams(params: Record<string, string | number>): Record<string, string | number> {
   const out = { ...params };
   for (const key of NUMERIC_TEXT_PARAMS) {
     const v = out[key];
     if (typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) out[key] = Number(v);
   }
   return out;
+}
+
+/** The notices of an analysis; older results carry only the English messages. */
+export function analysisNotices(analysis: FactorAnalysis): AnalysisNotice[] {
+  return analysis.warning_details ?? analysis.warnings.map((message) => ({ code: "", message, params: {} }));
+}
+
+/** A notice in the UI language where its code is known, else the English message. */
+export function noticeText(notice: AnalysisNotice, tMaybe: TranslateMaybe): string {
+  return (notice.code && tMaybe(`factor.warnings.${notice.code}`, noticeParams(notice.params))) || notice.message;
+}
+
+// Notices on the factor solution rather than the data: step 4 shows them next to the factor
+// count and the rotation, which they ask to change, instead of step 3 with the tests.
+const SOLUTION_NOTICES = ["not_identified", "heywood", "fit_not_converged", "single_factor_no_rotation"];
+// Only says what happened; the solution itself is fine.
+const INFO_NOTICES = ["single_factor_no_rotation"];
+
+export function isSolutionNotice(notice: AnalysisNotice): boolean {
+  return SOLUTION_NOTICES.includes(notice.code);
+}
+
+/** The factor solution needs attention, e.g. too many factors for the measures. */
+export function solutionNeedsAttention(analysis: FactorAnalysis): boolean {
+  return analysisNotices(analysis).some((n) => isSolutionNotice(n) && !INFO_NOTICES.includes(n.code));
 }
 
 export type KmoGrade =

@@ -284,3 +284,21 @@ export function FieldLabel({ id, children }: { id?: string; children: React.Reac
     </span>
   );
 }
+
+/** The notes of the analysis that concern a step, e.g. a failed test or too many factors. */
+export function NoticeList({ heading, notes }: { heading: string; notes: string[] }) {
+  if (notes.length === 0) return null;
+  return (
+    <div className="rounded-lg bg-warn/10 px-3.5 py-3 flex items-start gap-2.5 text-sm">
+      <AlertTriangle className="h-4 w-4 text-warn-ink shrink-0 mt-0.5" />
+      <div className="min-w-0">
+        <div className="font-medium">{heading}</div>
+        <ul className="mt-1 text-xs text-muted space-y-0.5 list-disc pl-4">
+          {notes.map((note) => (
+            <li key={note}>{note}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}

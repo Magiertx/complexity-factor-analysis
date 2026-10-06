@@ -1,14 +1,21 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
 import type { FactorAnalysis, FactorDataset } from "@/lib/api";
-import { MIN_MEASURES, countText, kmoGrade, noticeParams, type AnalysisOptions } from "@/lib/factor-analysis";
+import {
+  MIN_MEASURES,
+  analysisNotices,
+  countText,
+  isSolutionNotice,
+  kmoGrade,
+  noticeText,
+  type AnalysisOptions,
+} from "@/lib/factor-analysis";
 import { NO_VALUE, formatNumber, formatPValue } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { ChoiceMark } from "@/components/ui/choice";
 import { Switch } from "@/components/ui/switch";
-import { HelpLabel, PassBadge, ThresholdField } from "./step-section";
+import { HelpLabel, NoticeList, PassBadge, ThresholdField } from "./step-section";
 
 interface Props {
   dataset: FactorDataset;
@@ -22,27 +29,15 @@ export function SuitabilityView({ dataset, analysis, options, onOptions, measure
   const t = useT();
   const tMaybe = useTMaybe();
   const { locale } = useLocale();
-  // Translated by code where the UI knows it; the English message otherwise.
-  const warnings = analysis
-    ? (analysis.warning_details ?? analysis.warnings.map((message) => ({ code: "", message, params: {} }))).map(
-        (w) => (w.code && tMaybe(`factor.warnings.${w.code}`, noticeParams(w.params))) || w.message,
-      )
+  // Notes on the factor solution are shown in step 4.
+  const notes = analysis
+    ? analysisNotices(analysis)
+        .filter((n) => !isSolutionNotice(n))
+        .map((n) => noticeText(n, tMaybe))
     : [];
   return (
     <div className="space-y-6">
-      {warnings.length > 0 && (
-        <div className="rounded-lg bg-warn/10 px-3.5 py-3 flex items-start gap-2.5 text-sm">
-          <AlertTriangle className="h-4 w-4 text-warn-ink shrink-0 mt-0.5" />
-          <div>
-            <div className="font-medium">{t("factor.suitability.warnings_heading")}</div>
-            <ul className="mt-1 text-xs text-muted space-y-0.5 list-disc pl-4">
-              {warnings.map((w) => (
-                <li key={w}>{w}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
+      <NoticeList heading={t("factor.suitability.warnings_heading")} notes={notes} />
 
       <div className="grid gap-3 md:grid-cols-2">
         <BartlettCard analysis={analysis} alpha={options.bartlett_alpha} />

@@ -689,6 +689,7 @@
     },
     "factors": {
       "scree_title": "Scree plot",
+      "notes_heading": "Notes on the factor solution",
       "scree_desc": "Eigenvalues in descending order; {n} are above 1.",
       "scree_hint": "Click a point to keep that many factors. The dashed line marks an eigenvalue of 1.",
       "axis_factor": "Factor",

@@ -33,6 +33,7 @@ import {
   downloadBlob,
   initialOptions,
   optionsFromSaved,
+  solutionNeedsAttention,
   type AnalysisOptions,
   type ExportFormat,
 } from "@/lib/factor-analysis";
@@ -534,7 +535,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           : "done",
     dataset: ready ? "done" : dataset?.status === "computing" ? "busy" : "locked",
     suitability: resultState === "done" ? (suitable ? "done" : "warn") : resultState,
-    factors: resultState,
+    factors: resultState === "done" && analysis && solutionNeedsAttention(analysis) ? "warn" : resultState,
     loadings: resultState,
     interpretation:
       resultState !== "done"
