@@ -540,7 +540,8 @@ function JobCard({
             e.stopPropagation();
             onDelete();
           }}
-          aria-label={t("jobs.delete_job_aria")}
+          aria-label={t(info.mode === "dataset" ? "jobs.delete_dataset_job_aria" : "jobs.delete_job_aria")}
+          title={info.mode === "dataset" ? t("jobs.delete_dataset_job_aria") : undefined}
           className="shrink-0 text-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-danger-ink transition p-0.5 rounded hover:bg-danger/10"
         >
           <Trash2 className="h-3.5 w-3.5" />

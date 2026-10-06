@@ -326,7 +326,7 @@ export function RunHistoryView() {
                           onClick={() => setConfirmingDelete(job.id)}
                           className="h-8 w-8 grid place-items-center rounded-md text-muted hover:text-danger-ink hover:bg-surface transition"
                           aria-label={t("run_history.delete_run_aria", { id: job.id })}
-                          title={t("run_history.delete_run_title")}
+                          title={t(subtitle ? "run_history.delete_dataset_run_title" : "run_history.delete_run_title")}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
