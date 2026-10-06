@@ -227,7 +227,7 @@
       "fa_catalog": "Measures, miners or feature groups, bundled datasets, example inputs and the accepted sources.",
       "fa_create": "Create a dataset from a bundled one or a CSV (ready at once), or from event logs or PNML files (computed as a run).",
       "fa_list": "The datasets of your session, newest first; kind is optional.",
-      "fa_get": "Status, progress, saved settings and the cleaned measure matrix (first 2000 rows).",
+      "fa_get": "Status, progress, saved settings and the cleaned measure matrix (first 2,000 rows).",
       "fa_options": "Keep the settings of an analysis with the dataset.",
       "fa_delete": "Delete a dataset with its run and its cached interpretations.",
       "fa_delete_all": "Delete every dataset of your session, or every one of a kind.",

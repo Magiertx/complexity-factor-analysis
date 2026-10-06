@@ -227,7 +227,7 @@
       "fa_catalog": "Maße, Miner oder Merkmalsgruppen, mitgelieferte Datensätze, Beispieleingaben und die angenommenen Quellen.",
       "fa_create": "Einen Datensatz aus einem mitgelieferten oder einer CSV anlegen (sofort bereit) oder aus Event-Logs oder PNML-Dateien (als Run berechnet).",
       "fa_list": "Die Datensätze deiner Sitzung, neueste zuerst; kind ist optional.",
-      "fa_get": "Status, Fortschritt, gespeicherte Einstellungen und die bereinigte Matrix der Maße (erste 2000 Zeilen).",
+      "fa_get": "Status, Fortschritt, gespeicherte Einstellungen und die bereinigte Matrix der Maße (erste 2.000 Zeilen).",
       "fa_options": "Die Einstellungen einer Analyse beim Datensatz speichern.",
       "fa_delete": "Einen Datensatz mit seinem Run und seinen gespeicherten Interpretationen löschen.",
       "fa_delete_all": "Alle Datensätze deiner Sitzung löschen oder alle einer Art.",
