@@ -283,11 +283,21 @@ five-step view (`components/factor-analysis/`) for the two kinds:
 3. **Suitability**: Bartlett and KMO, the MSA filter and a per-measure MSA table with manual
    exclusion.
 4. **Factors**: hand-written SVG scree plot, factor count and rotation.
-5. **Loadings**: heatmap table, communalities, variance, factor groups, CSV/LaTeX export.
+5. **Loadings**: heatmap table, communalities, variance, factor groups, CSV/LaTeX export and
+   the whole analysis as a ZIP (`POST /datasets/{id}/export/zip`, with the options and the
+   language on screen).
 
-Every parameter change re-runs `POST /datasets/{id}/analyze`, debounced by 300 ms. The id of
-the last dataset is kept per tab in `localStorage`; dataset jobs in the run history link to
-their tab with `?dataset=<id>`.
+Every parameter change re-runs `POST /datasets/{id}/analyze`, debounced by 300 ms. The options
+of each new analysis are saved with the dataset (`PUT /datasets/{id}/options`, debounced, fire
+and forget), and a dataset opens with its saved options or else the defaults. The id of the
+last dataset is kept per tab in `localStorage`. The data step lists the datasets of the tab in
+the session (`GET /datasets?kind=...`) as a first source, "My datasets", to reopen or delete
+one (`DELETE /datasets/{id}`); a remembered or linked dataset that answers 404 is reported in
+the data step instead of being dropped silently. The jobs drawer slides over the two tabs
+(on `/inspect` it is a column on wide screens), and dataset jobs there and in the run
+history link to their tab with `?dataset=<id>`, which also works while the tab is open. The
+settings delete all datasets of the session (`DELETE /datasets`) together with their
+`localStorage` entries.
 
 The single-log ComFy workbench lives at `/inspect` ("Inspect a single log" on the model tab):
 
