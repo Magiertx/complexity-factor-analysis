@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { FileText, HelpCircle, Star } from "lucide-react";
 import type { AlgorithmManifest } from "@/lib/api";
-import { TOOL_TYPE_LABEL } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useLocale, localizedAlgoDescription } from "@/lib/i18n";
 
@@ -38,7 +37,7 @@ export function AlgorithmList({
   onSelect,
   onShowExplainer,
 }: Props) {
-  const { locale, t } = useLocale();
+  const { locale, t, tMaybe } = useLocale();
 
   // Favorites are pinned in their own group at the top and additionally keep
   // their place in the regular categories (marked with a filled star).
@@ -70,17 +69,14 @@ export function AlgorithmList({
     groups.get(t)!.push(a);
   }
 
-  // Determine categories ordering and labels from props, fallback to defaults
-  let orderedKeys: string[] = [];
-  let categoryLabels: Record<string, string> = {};
-
-  if (categories && categories.length > 0) {
-    orderedKeys = categories.map((c) => c.id).filter((id) => groups.has(id));
-    categoryLabels = Object.fromEntries(categories.map((c) => [c.id, c.label]));
-  } else {
-    orderedKeys = ORDER.filter((k) => groups.has(k));
-    categoryLabels = TOOL_TYPE_LABEL;
-  }
+  // Order from the backend's categories, else the known ids. A label of the UI language comes
+  // first, then the backend's English one, then the id.
+  const orderedKeys =
+    categories.length > 0
+      ? categories.map((c) => c.id).filter((id) => groups.has(id))
+      : ORDER.filter((k) => groups.has(k));
+  const backendLabels: Record<string, string> = Object.fromEntries(categories.map((c) => [c.id, c.label]));
+  const categoryLabel = (id: string) => tMaybe(`algorithm_list.category.${id}`) ?? backendLabels[id] ?? id;
 
   // Append any unknown tool_types at the end.
   for (const k of groups.keys()) {
@@ -169,6 +165,9 @@ export function AlgorithmList({
     );
   };
 
+  // A single group needs no heading: it would only repeat what the page is about.
+  const headed = orderedKeys.length > 1 || favoriteAlgos.length > 0;
+
   return (
     <nav className="flex flex-col gap-5" data-tour="single-algo-list">
       {favoriteAlgos.length > 0 && (
@@ -182,9 +181,7 @@ export function AlgorithmList({
       )}
       {orderedKeys.map((tt) => (
         <div key={tt} className="flex flex-col gap-1.5">
-          <div className="text-xs font-medium text-muted px-1">
-            {categoryLabels[tt] ?? tt}
-          </div>
+          {headed && <div className="text-xs font-medium text-muted px-1">{categoryLabel(tt)}</div>}
           {groups.get(tt)!.map(renderAlgo)}
         </div>
       ))}

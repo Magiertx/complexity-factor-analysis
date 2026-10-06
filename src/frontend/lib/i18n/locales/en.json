@@ -38,7 +38,10 @@
     "favorite_add_title": "Pin as favorite",
     "favorite_remove_title": "Remove from favorites",
     "favorite_add_aria": "Add {name} to favorites",
-    "favorite_remove_aria": "Remove {name} from favorites"
+    "favorite_remove_aria": "Remove {name} from favorites",
+    "category": {
+      "complexity": "Complexity analysis"
+    }
   },
   "file_drop": {
     "drop_label": "Drop event log here",
@@ -59,18 +62,18 @@
   },
   "tours": {
     "single_run": {
-      "intro_title": "Single Run tour",
-      "intro_content": "In a Single Run you execute exactly one algorithm on exactly one log — the simplest setup to get started. This walkthrough highlights the key spots; ESC or Skip exits at any time.",
-      "algo_pick_title": "Pick an algorithm",
-      "algo_pick_content": "On the left you find the available tools, grouped by category. Clicking an entry selects it.",
-      "algo_help_title": "Algorithm explanation",
-      "algo_help_content": "Next to every algorithm sits a ? icon. Clicking it opens a panel with a detailed explanation — what the algorithm does, how it works, when to use it.",
+      "intro_title": "Inspect a single log",
+      "intro_content": "Here you run ComFy on one event log: it discovers Petri nets with the chosen miners and computes their complexity measures. This tour shows the key spots; Esc or Skip ends it at any time.",
+      "algo_pick_title": "The algorithm",
+      "algo_pick_content": "On the left is the algorithm this page runs: ComFy, which measures the complexity of discovered Petri nets.",
+      "algo_help_title": "What ComFy does",
+      "algo_help_content": "The ? next to it opens a detailed explanation: what ComFy does, how it works and when it is useful.",
       "logsource_title": "Pick an event log",
-      "logsource_content": "Two sources for the log: 'Upload File' for your own XES or JSON files (recent uploads are listed below), or 'Use Sample' for the bundled example log.",
-      "params_title": "Parameters",
-      "params_content": "Every tool has its own parameters with sensible defaults. The preset bar above lets you save and reuse configurations.",
+      "logsource_content": "Two sources: “Upload file” for your own XES or JSON file (recent uploads are listed below), or “Use example” for the bundled example log.",
+      "params_title": "Miners and measures",
+      "params_content": "Choose the miners to run and the measures to compute. The preset bar above saves a selection for later.",
       "run_title": "Start the run",
-      "run_content": "Once algorithm + log + parameters fit, run via Ctrl/Cmd+Enter or click. The result appears inline with stats, tables, plots and downloads. Past runs land in the jobs panel on the right."
+      "run_content": "Start with the button or Ctrl+Enter (Cmd+Enter on a Mac). The result appears below with the measures, the discovered nets and downloads; the run is listed under Recent runs."
     },
     "onboarding": {
       "step0_title": "Welcome to {app}",
@@ -194,7 +197,9 @@
     "interactive_ref_title": "Interactive reference",
     "interactive_ref_desc": "Full OpenAPI 3 spec — try endpoints directly from the browser.",
     "quick_start_title": "Quick start",
-    "quick_start_desc": "Run an algorithm from a Python script or your shell.",
+    "quick_start_desc": "Inspect a log or run a factor analysis from a Python script or your shell.",
+    "example_single_log": "Inspect a single log (Python)",
+    "example_factor_analysis": "Factor analysis (Python)",
     "endpoint_summary_title": "Endpoint summary",
     "endpoint_summary_desc": "All paths are relative to {base} when accessed through the web UI, or the bare root when hitting the backend directly.",
     "notes_title": "Notes",
@@ -371,13 +376,13 @@
     "sidebar": {
       "algorithm_label": "Algorithm",
       "tour_button": "Tour",
-      "tour_aria": "Start single-run tour",
-      "tour_title": "Walkthrough — how single-run works",
+      "tour_aria": "Start the tour of this page",
+      "tour_title": "How inspecting a single log works",
       "close_sidebar_aria": "Close algorithm sidebar",
       "show_menu_title": "Show menu",
       "show_sidebar_title": "Show sidebar",
       "hide_sidebar_title": "Hide sidebar",
-      "nav_aria": "Navigation and history sidebar"
+      "nav_aria": "Algorithms"
     },
     "job_badge": "Run {id}: {status}",
     "algo_card": {
@@ -391,8 +396,8 @@
       "analyzed_log": "Analyzed event log"
     },
     "log_source": {
-      "upload_file": "Upload File",
-      "use_sample": "Use Sample"
+      "upload_file": "Upload file",
+      "use_sample": "Use example"
     },
     "recent": {
       "label": "Recently Uploaded Logs"
@@ -423,7 +428,7 @@
       "sample_hint": "Choose an example log to enable the analysis.",
       "abort": "Abort",
       "new_run": "New run",
-      "run_title": "Run analysis (Ctrl+Enter)"
+      "run_title": "Run the analysis (Ctrl+Enter)"
     },
     "load_error": {
       "title": "Cannot reach the AlgoService"

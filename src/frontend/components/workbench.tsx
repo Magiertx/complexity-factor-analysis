@@ -998,15 +998,17 @@ export function Workbench() {
                         <div className="text-xs font-medium text-muted flex items-center gap-1.5">
                           <span>{t("workbench.samples.label")}</span>
                         </div>
-                        <Segmented
-                          size="sm"
-                          value={sampleLayout}
-                          onChange={setSampleLayout}
-                          options={[
-                            { value: "grid", label: <><LayoutGrid className="h-3 w-3" /><span>{t("workbench.layout.grid")}</span></>, title: t("workbench.layout.grid_title") },
-                            { value: "list", label: <><List className="h-3 w-3" /><span>{t("workbench.layout.list")}</span></>, title: t("workbench.layout.list_title") },
-                          ]}
-                        />
+                        {sampleLogs.length > 1 && (
+                          <Segmented
+                            size="sm"
+                            value={sampleLayout}
+                            onChange={setSampleLayout}
+                            options={[
+                              { value: "grid", label: <><LayoutGrid className="h-3 w-3" /><span>{t("workbench.layout.grid")}</span></>, title: t("workbench.layout.grid_title") },
+                              { value: "list", label: <><List className="h-3 w-3" /><span>{t("workbench.layout.list")}</span></>, title: t("workbench.layout.list_title") },
+                            ]}
+                          />
+                        )}
                       </div>
 
                       {sampleLayout === "grid" ? (

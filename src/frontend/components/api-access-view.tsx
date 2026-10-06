@@ -48,6 +48,33 @@ else:
     print("Job failed:", job.get("error"))
 `;
 
+const FACTOR_EXAMPLE = `import requests
+
+BASE = "http://localhost:3000/api"  # change to your deployment URL
+s = requests.Session()  # datasets belong to the session of the cookie
+
+# 1. A dataset: a bundled one here; a CSV, event logs or PNML files work as well
+ds = s.post(
+    f"{BASE}/factor-analysis/datasets",
+    data={"kind": "model", "source": "bundled", "bundled_id": "comfy-paper-inductive-miner"},
+).json()
+
+# 2. Suitability, eigenvalues and rotated loadings for the chosen settings
+options = {"n_factors": 4, "rotation": "varimax"}
+result = s.post(f"{BASE}/factor-analysis/datasets/{ds['dataset_id']}/analyze", json=options).json()
+print("KMO", round(result["kmo"]["overall"], 2))
+for factor in result["factors"]:
+    print(factor["index"] + 1, [m["measure"] for m in factor["measures"]])
+
+# 3. The loadings as a LaTeX table for a paper
+tex = s.post(
+    f"{BASE}/factor-analysis/datasets/{ds['dataset_id']}/export",
+    json={**options, "format": "latex"},
+)
+with open("loadings.tex", "wb") as f:
+    f.write(tex.content)
+`;
+
 const CURL_EXAMPLE = `# List algorithms
 curl http://localhost:3000/api/algorithms
 
@@ -63,6 +90,14 @@ curl http://localhost:3000/api/jobs/<job_id>
 
 # Download the full result ZIP
 curl -OJ http://localhost:3000/api/jobs/<job_id>/download
+
+# Factor analysis of a bundled dataset; keep the session cookie
+curl -c cookies.txt -b cookies.txt -X POST \\
+  -F kind=model -F source=bundled -F bundled_id=comfy-paper-inductive-miner \\
+  http://localhost:3000/api/factor-analysis/datasets
+curl -c cookies.txt -b cookies.txt -X POST \\
+  -H "Content-Type: application/json" -d '{"n_factors": 4}' \\
+  http://localhost:3000/api/factor-analysis/datasets/<dataset_id>/analyze
 `;
 
 interface Endpoint {
@@ -158,7 +193,16 @@ export function ApiAccessView() {
           <CardDescription>{t("api_access.quick_start_desc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
-          <CodeBlock label="Python (requests)" icon={<Terminal className="h-3.5 w-3.5" />} code={PYTHON_EXAMPLE} />
+          <CodeBlock
+            label={t("api_access.example_single_log")}
+            icon={<Terminal className="h-3.5 w-3.5" />}
+            code={PYTHON_EXAMPLE}
+          />
+          <CodeBlock
+            label={t("api_access.example_factor_analysis")}
+            icon={<Terminal className="h-3.5 w-3.5" />}
+            code={FACTOR_EXAMPLE}
+          />
           <CodeBlock label="curl" icon={<Terminal className="h-3.5 w-3.5" />} code={CURL_EXAMPLE} />
         </CardContent>
       </Card>

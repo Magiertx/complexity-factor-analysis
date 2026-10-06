@@ -7,8 +7,8 @@ export type ParameterType = "int" | "float" | "bool" | "enum" | "multi_enum" | "
 // Open string; the backend's `/algorithms` response carries the authoritative
 // `categories` list (id + label), and the frontend renders whichever ids show
 // up. Keeping this typed as a closed Literal would make every new category a
-// frontend change. Known id today: "complexity". TOOL_TYPE_LABEL covers it;
-// unknown ids fall back to the raw id at the call sites.
+// frontend change. Known id today: "complexity"; the locale files translate its
+// label (algorithm_list.category.*), unknown ids fall back to the backend label.
 export type ToolType = string;
 
 export interface ParameterSpec {
@@ -279,14 +279,6 @@ export async function updateJobNotes(jobId: string, notes: string | null): Promi
   });
   if (!r.ok) throw new Error(`Failed to update notes (${r.status})`);
 }
-
-// Fallback labels for tool_type ids the frontend ships with. The /algorithms
-// response also carries a `categories` array with the authoritative labels;
-// prefer that when available; this map only covers ids that aren't in the
-// response (defensive) and gives a stable default at top-level.
-export const TOOL_TYPE_LABEL: Record<string, string> = {
-  complexity: "Complexity analysis",
-};
 
 // ----------------------- Factor analysis -----------------------
 // Mirrors the /factor-analysis endpoints of the AlgoService.
