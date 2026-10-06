@@ -715,7 +715,7 @@
       },
       "rotation_hint": {
         "orthogonal": "Hält die Faktoren unkorreliert. Ladungen sind Korrelationen zwischen Maß und Faktor.",
-        "oblique": "Erlaubt korrelierte Faktoren. Ladungen sind Regressionsgewichte (Mustermatrix).",
+        "oblique": "Erlaubt korrelierte Faktoren. Schritt 5 zeigt die Ladungen als Regressionsgewichte (Mustermatrix) oder als Korrelationen (Strukturmatrix).",
         "none": "Unrotierte Lösung. Der erste Faktor nimmt meist den Großteil der Varianz auf, was die Faktoren schwer deutbar macht."
       }
     },
@@ -738,7 +738,10 @@
       "ss_loadings": "SS-Ladungen",
       "proportion": "Anteil",
       "cumulative": "Kumuliert",
-      "footer_note": "h² ist der Anteil der Varianz eines Maßes, den die behaltenen Faktoren erklären. Die Zeilen unter der Tabelle zeigen die Varianz je Faktor.",
+      "h2_note": "h² ist der Anteil der Varianz eines Maßes, den die behaltenen Faktoren erklären.",
+      "footer_rows": "Die Fußzeilen zeigen die Varianz je Faktor.",
+      "footer_row_pattern": "Die Fußzeile zeigt die Summe der quadrierten Ladungen je Faktor, aus der Mustermatrix.",
+      "structure_note": "Die Strukturmatrix enthält die Korrelationen zwischen Maßen und Faktoren; die Summen der quadrierten Ladungen gibt es für die Mustermatrix.",
       "oblique_note": "Bei obliquer Rotation korrelieren die Faktoren, ihre Anteile lassen sich daher nicht addieren; zusammen erklären sie {pct} der Varianz.",
       "legend_negative": "negativ",
       "legend_positive": "positiv",

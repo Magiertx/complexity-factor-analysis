@@ -210,19 +210,27 @@ export function LoadingsView({ analysis, options, onOptions, measureName, onExpo
                 );
               })}
             </tbody>
-            <tfoot className="bg-bg/60 text-muted">
-              <VarianceRow label={t("factor.loadings.ss_loadings")} values={analysis.variance.ss_loadings} format={(v) => formatNumber(v, locale, 2)} pad={cellPad} />
-              {proportion && (
-                <VarianceRow label={t("factor.loadings.proportion")} values={proportion} format={(v) => formatPercent(v, locale)} pad={cellPad} />
-              )}
-              {cumulative && (
-                <VarianceRow label={t("factor.loadings.cumulative")} values={cumulative} format={(v) => formatPercent(v, locale)} pad={cellPad} />
-              )}
-            </tfoot>
+            {/* The sums of squares are those of the pattern matrix; the structure matrix has none. */}
+            {!structure && (
+              <tfoot className="bg-bg/60 text-muted">
+                <VarianceRow label={t("factor.loadings.ss_loadings")} values={analysis.variance.ss_loadings} format={(v) => formatNumber(v, locale, 2)} pad={cellPad} />
+                {proportion && (
+                  <VarianceRow label={t("factor.loadings.proportion")} values={proportion} format={(v) => formatPercent(v, locale)} pad={cellPad} />
+                )}
+                {cumulative && (
+                  <VarianceRow label={t("factor.loadings.cumulative")} values={cumulative} format={(v) => formatPercent(v, locale)} pad={cellPad} />
+                )}
+              </tfoot>
+            )}
           </table>
         </div>
         <p className="text-[11px] text-muted max-w-prose">
-          {t("factor.loadings.footer_note")}
+          {t("factor.loadings.h2_note")}{" "}
+          {!oblique
+            ? t("factor.loadings.footer_rows")
+            : structure
+              ? t("factor.loadings.structure_note")
+              : t("factor.loadings.footer_row_pattern")}
           {oblique && ` ${t("factor.loadings.oblique_note", { pct: formatPercent(analysis.variance.explained, locale) })}`}
         </p>
       </div>

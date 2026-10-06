@@ -715,7 +715,7 @@
       },
       "rotation_hint": {
         "orthogonal": "Keeps the factors uncorrelated. Loadings are correlations between measure and factor.",
-        "oblique": "Allows the factors to correlate. Loadings are regression weights (pattern matrix).",
+        "oblique": "Allows the factors to correlate. Step 5 shows the loadings as regression weights (pattern matrix) or as correlations (structure matrix).",
         "none": "Unrotated solution. The first factor usually takes most of the variance, which makes the factors hard to interpret."
       }
     },
@@ -738,7 +738,10 @@
       "ss_loadings": "SS loadings",
       "proportion": "Proportion",
       "cumulative": "Cumulative",
-      "footer_note": "h² is the share of a measure's variance that the kept factors explain. The rows below the table give the variance per factor.",
+      "h2_note": "h² is the share of a measure's variance that the kept factors explain.",
+      "footer_rows": "The footer rows give the variance per factor.",
+      "footer_row_pattern": "The footer row gives the sum of squared loadings per factor, from the pattern matrix.",
+      "structure_note": "The structure matrix holds the correlations between measures and factors; sums of squared loadings are given for the pattern matrix.",
       "oblique_note": "With an oblique rotation the factors correlate, so their shares do not add up; together they explain {pct} of the variance.",
       "legend_negative": "negative",
       "legend_positive": "positive",
