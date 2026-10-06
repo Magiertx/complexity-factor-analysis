@@ -492,6 +492,7 @@ function CollectionBlock({
       },
       () => {},
     );
+  // On a phone the labels are only hidden from view: they still name the icon buttons.
   const action =
     "h-7 px-2 inline-flex items-center gap-1.5 rounded-md text-[11px] font-medium text-muted hover:text-fg hover:bg-accent/[0.08] transition";
   return (
@@ -515,13 +516,13 @@ function CollectionBlock({
           {collection.citation && (
             <button type="button" onClick={copy} title={collection.citation} className={action}>
               {copied ? <Check className="h-3.5 w-3.5 text-success-ink" /> : <Copy className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">{copied ? t("factor.data.copied") : t("factor.data.copy_citation")}</span>
+              <span className="sr-only sm:not-sr-only">{copied ? t("factor.data.copied") : t("factor.data.copy_citation")}</span>
             </button>
           )}
           {collection.source_url && (
             <a href={collection.source_url} target="_blank" rel="noreferrer" className={action}>
               <ExternalLink className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">{t("factor.data.source_link")}</span>
+              <span className="sr-only sm:not-sr-only">{t("factor.data.source_link")}</span>
             </a>
           )}
         </div>
