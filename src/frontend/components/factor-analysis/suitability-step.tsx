@@ -2,7 +2,7 @@
 
 import { AlertTriangle } from "lucide-react";
 import type { FactorAnalysis, FactorDataset } from "@/lib/api";
-import { MIN_MEASURES, kmoGrade, noticeParams, type AnalysisOptions } from "@/lib/factor-analysis";
+import { MIN_MEASURES, countText, kmoGrade, noticeParams, type AnalysisOptions } from "@/lib/factor-analysis";
 import { NO_VALUE, formatNumber, formatPValue } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
@@ -96,14 +96,24 @@ export function SuitabilityView({ dataset, analysis, options, onOptions, measure
             ) : (
               <div className="space-y-1.5">
                 <div className="text-muted">
-                  {t("factor.suitability.removed_heading", { n: analysis.msa_filter.removed.length })}
+                  {countText(t, "factor.suitability.removed_heading", analysis.msa_filter.removed.length)}
                 </div>
-                <ol className="flex flex-wrap gap-1.5">
-                  {analysis.msa_filter.removed.map((r) => (
-                    <li key={r.measure} className="rounded-md bg-bg/70 px-2 py-1">
-                      <span className="text-muted font-mono mr-1">{r.step}.</span>
-                      <span className="font-medium">{measureName(r.measure)}</span>{" "}
-                      <span className="font-mono text-muted">{formatNumber(r.msa, locale, 2)}</span>
+                {/* One line per round: all measures below the threshold go at once, then the MSA
+                    values are computed again for the measures that are left. */}
+                <ol className="space-y-1.5">
+                  {removedRounds(analysis.msa_filter.removed).map(([round, measures]) => (
+                    <li key={round} className="flex items-start gap-2">
+                      <span className="text-muted shrink-0 min-w-[4rem] py-1">
+                        {t("factor.suitability.round", { step: round })}
+                      </span>
+                      <ul className="flex flex-wrap gap-1.5 min-w-0">
+                        {measures.map((r) => (
+                          <li key={r.measure} className="rounded-md bg-bg/70 px-2 py-1">
+                            <span className="font-medium">{measureName(r.measure)}</span>{" "}
+                            <span className="font-mono text-muted">{formatNumber(r.msa, locale, 2)}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </li>
                   ))}
                 </ol>
@@ -122,6 +132,15 @@ export function SuitabilityView({ dataset, analysis, options, onOptions, measure
       />
     </div>
   );
+}
+
+type Removed = FactorAnalysis["msa_filter"]["removed"];
+
+/** The removed measures by the round of the filter that removed them, first round first. */
+function removedRounds(removed: Removed): [number, Removed][] {
+  const rounds = new Map<number, Removed>();
+  for (const r of removed) rounds.set(r.step, [...(rounds.get(r.step) ?? []), r]);
+  return [...rounds.entries()].sort(([a], [b]) => a - b);
 }
 
 function BartlettCard({ analysis, alpha }: { analysis: FactorAnalysis | null; alpha: number }) {
