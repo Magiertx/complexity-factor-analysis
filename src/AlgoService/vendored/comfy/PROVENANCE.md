@@ -34,10 +34,17 @@
 2. **Shared ProM4Py client.** `_shared_prom4py.py` is new. The ProM-based
    miners in `discovery/DiscoveryAlgorithms.py` call `get_shared_prom4py()`
    instead of starting their own ProM4Py process on port 8000; the client
-   connects to the running ProM4Py service at `PROM4PY_URL`.
+   connects to the running ProM4Py service at `PROM4PY_URL`. Every request of
+   that client has a timeout (`PROM4PY_CALL_TIMEOUT`, shared by the requests
+   of one discovery) and raises `ProMTimeout` or `ProMUnavailable`.
 3. **Depth and Diameter.** In `modelcomplexity/ModelComplexityMeasures.py`,
    `Depth.calculate_for` and `Diameter.calculate_for` had their `return`
    indented under the `if` that raises for missing markings, so they returned
    `None` whenever markings were given. The `return` is now at method level.
    Covered by `tests/test_comfy.py`.
 4. Empty `__init__.py` files added to make the directories packages.
+5. **HTTP through `ProMClient.http`.** In `prom4py/client/prom_client.py` the
+   requests go through the class attribute `http` (the `requests` module by
+   default) instead of calling `requests.get/post/delete` directly, so that
+   the shared client can put a timeout on each of them. Covered by
+   `tests/test_prom4py_limits.py`.

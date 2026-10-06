@@ -16,7 +16,7 @@ event logs, plus a factor analysis over them. Origin and local changes:
 comfy/
 ├─ Constants.py
 ├─ FactorAnalysis.py         unused; reimplemented in factor_analysis/core.py
-├─ _shared_prom4py.py        one ProM4Py client per process (local addition)
+├─ _shared_prom4py.py        one ProM4Py client per process, requests with a timeout (local addition)
 ├─ discovery/                miners; all analysed ones run inside ProM4Py
 ├─ logcomplexity/
 │  └─ Complexity.py          upstream placeholder, see PROVENANCE.md
