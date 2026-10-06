@@ -17,7 +17,7 @@
     "try_again": "Erneut versuchen"
   },
   "header": {
-    "tagline": "Process Mining · Faktorenanalyse von Komplexität",
+    "tagline": "Komplexitätsmaße von Prozessmodellen und Event-Logs",
     "settings_label": "Einstellungen",
     "settings_title": "Einstellungen",
     "api_title": "{app} programmatisch nutzen",
@@ -29,7 +29,7 @@
     "switch_to_light": "Zum hellen Modus wechseln"
   },
   "footer": {
-    "credit": "Entwickelt für Process-Mining-Forschung an der Universität Augsburg."
+    "credit": "Entwickelt für die Process-Mining-Forschung an der Universität Augsburg."
   },
   "algorithm_list": {
     "what_is_aria": "Was ist {name}?",
@@ -92,8 +92,8 @@
       "step3_inspect": "Einzelnes Log untersuchen: ComFy auf einem Log ausführen und die gefundenen Modelle ansehen."
     },
     "factor": {
-      "intro": "Fünf Schritte von den Rohmaßen zu den Faktoren und eine optionale Interpretation. Jeder Schritt erklärt seine Zahlen; die ?-Knöpfe neben einer Überschrift sagen mehr. ESC oder Überspringen beendet die Tour jederzeit.",
-      "data": "Hier geht es los: Wähle einen mitgelieferten Datensatz, lade eine CSV hoch oder berechne die Maße aus eigenen Dateien. Große Berechnungen laufen als Hintergrundjobs.",
+      "intro": "Fünf Schritte von den Rohmaßen zu den Faktoren und eine optionale Interpretation. Jeder Schritt erklärt seine Zahlen; die ?-Knöpfe neben einer Überschrift sagen mehr. Esc oder Überspringen beendet die Tour jederzeit.",
+      "data": "Hier geht es los: Wähle einen mitgelieferten Datensatz, lade eine CSV hoch oder berechne die Maße aus eigenen Dateien. Große Berechnungen laufen im Hintergrund.",
       "dataset": "Prüfe die Größe der Matrix und was die Bereinigung entfernt hat. Die bereinigten Daten kannst du als CSV herunterladen.",
       "suitability": "Bartlett und KMO zeigen, ob eine Faktorenanalyse überhaupt sinnvoll ist. Schließe hier Maße mit niedrigem MSA aus, von Hand oder per Filter.",
       "factors": "Der Screeplot schlägt vor, wie viele Faktoren du behältst. Ändere die Anzahl oder die Rotation; alles darunter aktualisiert sich sofort.",
@@ -111,14 +111,14 @@
       "theme_light": "Hell",
       "theme_dark": "Dunkel",
       "language_label": "Sprache",
-      "language_hint": "Betrifft Erklärungstexte. Fachbegriffe bleiben auf Englisch."
+      "language_hint": "Ändert die Sprache der Oberfläche; die Namen von Maßen und Minern bleiben englisch."
     },
     "page_title": "Einstellungen",
     "page_subtitle": "Lokale Einstellungen — im Browser gespeichert, kein Konto erforderlich.",
     "load_error": "Algorithmus-Liste konnte nicht geladen werden: {error}",
     "toast_theme_updated": "Theme aktualisiert",
-    "toast_cleared_caches": "{n} Parameter-Cache geleert",
-    "toast_cleared_caches_plural": "{n} Parameter-Caches geleert",
+    "toast_cleared_caches": "Parameter von {n} Algorithmus vergessen",
+    "toast_cleared_caches_plural": "Parameter von {n} Algorithmen vergessen",
     "toast_deleted_preset": "\"{name}\" gelöscht",
     "toast_cleared_presets": "{n} Preset geleert",
     "toast_cleared_presets_plural": "{n} Presets geleert",
@@ -156,12 +156,12 @@
     "storage": {
       "title": "Speicher & Daten",
       "description": "Gemerkte Parameter, die auf dem Server gespeicherten Runs und die Datensätze der Faktorenanalyse.",
-      "cached_params_label": "Gecachte Algorithmus-Parameter",
-      "cached_params_hint": "{n} Algorithmus hat Parameter aus früheren Runs gespeichert.",
-      "cached_params_hint_plural": "{n} Algorithmen haben Parameter aus früheren Runs gespeichert.",
-      "cached_params_empty": "Noch keine gecachten Parameter.",
+      "cached_params_label": "Gemerkte Parameter",
+      "cached_params_hint": "Die Parameter von {n} Algorithmus sind aus früheren Runs gemerkt.",
+      "cached_params_hint_plural": "Die Parameter von {n} Algorithmen sind aus früheren Runs gemerkt.",
+      "cached_params_empty": "Noch keine Parameter gemerkt.",
       "confirm_clear": "Löschen bestätigen",
-      "clear_cache_button": "Cache leeren",
+      "clear_cache_button": "Vergessen",
       "onboarding_label": "Onboarding-Tour",
       "onboarding_hint": "Wiederhole die 4-Schritte-Einführung, die Erstbesuchern gezeigt wird.",
       "replay_tour_button": "Tour wiederholen",
@@ -172,7 +172,7 @@
       "clear_jobs_hint": "Löscht jeden Run dieser Sitzung auf dem Server, mit seinen Ergebnissen und den aus Logs oder Netzen berechneten Datensätzen. Das lässt sich nicht rückgängig machen.",
       "confirm_delete": "Löschen bestätigen",
       "delete_all_jobs": "Alle Runs löschen",
-      "clear_datasets_label": "Faktoranalyse-Datensätze löschen",
+      "clear_datasets_label": "Datensätze der Faktorenanalyse löschen",
       "clear_datasets_hint": "{n} Datensatz der Tabs Modell- und Log-Komplexität liegt auf dem Server, mit den Einstellungen seiner letzten Analyse. Wurde er aus Logs oder Netzen berechnet, wird der Run, der ihn berechnet hat, mitgelöscht.",
       "clear_datasets_hint_plural": "{n} Datensätze der Tabs Modell- und Log-Komplexität liegen auf dem Server, jeder mit den Einstellungen seiner letzten Analyse. Aus Logs oder Netzen berechnete werden mit den Runs gelöscht, die sie berechnet haben.",
       "clear_datasets_empty": "Für diese Sitzung liegen keine Datensätze der Tabs Modell- und Log-Komplexität auf dem Server.",
@@ -428,10 +428,10 @@
       "tour_button": "Tour",
       "tour_aria": "Tour dieser Seite starten",
       "tour_title": "Wie das Untersuchen eines einzelnen Logs funktioniert",
-      "close_sidebar_aria": "Algorithmen-Sidebar schließen",
-      "show_menu_title": "Menü anzeigen",
-      "show_sidebar_title": "Sidebar anzeigen",
-      "hide_sidebar_title": "Sidebar ausblenden",
+      "close_sidebar_aria": "Algorithmenliste schließen",
+      "show_menu_title": "Algorithmenliste anzeigen",
+      "show_sidebar_title": "Algorithmenliste anzeigen",
+      "hide_sidebar_title": "Algorithmenliste ausblenden",
       "nav_aria": "Algorithmen"
     },
     "job_badge": "Run {id}: {status}",
@@ -439,11 +439,11 @@
       "implemented_by": "Implementiert von: {author}",
       "paper_link": "Paper",
       "academic_reference": "Literaturnachweis",
-      "copied_bibtex": "BibTeX kopiert!",
+      "copied_bibtex": "BibTeX kopiert",
       "copy_bibtex": "BibTeX kopieren",
       "download_bib_title": "Als .bib-Datei herunterladen",
       "download_bib": ".bib herunterladen",
-      "analyzed_log": "Analysiertes event log"
+      "analyzed_log": "Analysiertes Event-Log"
     },
     "log_source": {
       "upload_file": "Datei hochladen",
@@ -459,7 +459,7 @@
       "list_title": "Listenansicht"
     },
     "samples": {
-      "label": "Verfügbare Samples"
+      "label": "Beispiel-Logs"
     },
     "params": {
       "showing_modified": "Nur geänderte Parameter werden angezeigt",
@@ -481,11 +481,11 @@
       "run_title": "Analyse starten (Strg+Enter)"
     },
     "load_error": {
-      "title": "AlgoService nicht erreichbar"
+      "title": "Der Server ist nicht erreichbar"
     },
     "errors": {
-      "no_sample": "Bitte wähle ein Sample-Log zur Analyse aus.",
-      "no_upload": "Bitte lade eine event-log-Datei hoch oder wähle ein kürzlich verwendetes Log aus der Liste.",
+      "no_sample": "Wähle ein Beispiel-Log zur Analyse.",
+      "no_upload": "Lade ein Event-Log hoch oder wähle ein zuletzt hochgeladenes aus der Liste darunter.",
       "must_be_number": "Muss eine gültige Zahl sein.",
       "must_be_at_least": "Muss mindestens {min} sein.",
       "must_be_at_most": "Darf höchstens {max} sein.",
@@ -493,7 +493,7 @@
       "fix_validation": "Bitte behebe die Parameter-Validierungsfehler vor dem Ausführen.",
       "submitting": "Run wird gestartet…",
       "load_job_details": "Die Details des Runs konnten nicht geladen werden.",
-      "aborted": "Analyse vom Nutzer abgebrochen.",
+      "aborted": "Die Analyse wurde abgebrochen.",
       "analysis_failed": "Analyse fehlgeschlagen",
       "unknown_submission": "Unbekannter Übermittlungsfehler",
       "file_too_large": "Datei überschreitet das 100-MB-Limit.",

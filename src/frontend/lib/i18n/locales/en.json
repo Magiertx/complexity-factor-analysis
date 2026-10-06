@@ -17,7 +17,7 @@
     "try_again": "Try again"
   },
   "header": {
-    "tagline": "process mining · complexity factor analysis",
+    "tagline": "Complexity measures of process models and event logs",
     "settings_label": "Settings",
     "settings_title": "Settings",
     "api_title": "Use {app} programmatically",
@@ -29,7 +29,7 @@
     "switch_to_light": "Switch to light mode"
   },
   "footer": {
-    "credit": "Built for process-mining research at University of Augsburg."
+    "credit": "Built for process mining research at the University of Augsburg."
   },
   "algorithm_list": {
     "what_is_aria": "What is {name}?",
@@ -80,7 +80,7 @@
       "step0_p1": "Find out which complexity measures of process models and event logs capture the same thing. Load or compute a table of measures, check whether it suits a factor analysis, and read off groups of related measures.",
       "step0_p2": "This quick tour shows the four things you'll use most.",
       "step1_title": "Two tabs: models and logs",
-      "step1_p1": "Model complexity analyses measures of Petri nets discovered from event logs, computed with ComFy. Log complexity analyses measures of the event logs themselves, computed with feeed.",
+      "step1_p1": "Model complexity analyzes measures of Petri nets discovered from event logs, computed with ComFy. Log complexity analyzes measures of the event logs themselves, computed with feeed.",
       "step1_p2": "Both tabs work the same way.",
       "step2_title": "Step by step, top to bottom",
       "step2_p1": "Data, dataset, suitability, factors, loadings. Every change to a setting re-runs the analysis right away, and the loadings can be exported as CSV or LaTeX. An optional sixth step lets Claude propose names for the factors.",
@@ -92,8 +92,8 @@
       "step3_inspect": "Inspect a single log: run ComFy on one log and look at the discovered models."
     },
     "factor": {
-      "intro": "Five steps from raw measures to factors, and an optional interpretation. Each step explains its numbers; the ? buttons next to a heading say more. ESC or Skip ends the tour at any time.",
-      "data": "Start here: pick a bundled dataset, upload a CSV, or compute the measures from your own files. Large computations run as background jobs.",
+      "intro": "Five steps from raw measures to factors, and an optional interpretation. Each step explains its numbers; the ? buttons next to a heading say more. Esc or Skip ends the tour at any time.",
+      "data": "Start here: pick a bundled dataset, upload a CSV, or compute the measures from your own files. Large computations run in the background.",
       "dataset": "Check the size of the matrix and what the cleaning removed. You can download the cleaned data as CSV.",
       "suitability": "Bartlett and KMO tell you whether a factor analysis makes sense at all. Exclude measures with low MSA here, by hand or with the filter.",
       "factors": "The scree plot suggests how many factors to keep. Change the number or the rotation; everything below updates right away.",
@@ -111,14 +111,14 @@
       "theme_light": "Light",
       "theme_dark": "Dark",
       "language_label": "Language",
-      "language_hint": "Affects explanatory text. Technical terms stay in English."
+      "language_hint": "Changes the language of the interface; the names of measures and miners stay in English."
     },
     "page_title": "Settings",
     "page_subtitle": "Local preferences — stored in your browser, no account required.",
     "load_error": "Could not load algorithm list: {error}",
     "toast_theme_updated": "Theme updated",
-    "toast_cleared_caches": "Cleared {n} parameter cache",
-    "toast_cleared_caches_plural": "Cleared {n} parameter caches",
+    "toast_cleared_caches": "Forgot the parameters of {n} algorithm",
+    "toast_cleared_caches_plural": "Forgot the parameters of {n} algorithms",
     "toast_deleted_preset": "Deleted \"{name}\"",
     "toast_cleared_presets": "Cleared {n} preset",
     "toast_cleared_presets_plural": "Cleared {n} presets",
@@ -156,12 +156,12 @@
     "storage": {
       "title": "Storage & data",
       "description": "Remembered parameters, the runs stored on the server and the datasets of the factor analysis.",
-      "cached_params_label": "Cached algorithm parameters",
-      "cached_params_hint": "{n} algorithm has remembered parameters from previous runs.",
-      "cached_params_hint_plural": "{n} algorithms have remembered parameters from previous runs.",
-      "cached_params_empty": "No cached parameters yet.",
+      "cached_params_label": "Remembered parameters",
+      "cached_params_hint": "The parameters of {n} algorithm are remembered from earlier runs.",
+      "cached_params_hint_plural": "The parameters of {n} algorithms are remembered from earlier runs.",
+      "cached_params_empty": "No parameters remembered yet.",
       "confirm_clear": "Confirm clear",
-      "clear_cache_button": "Clear cache",
+      "clear_cache_button": "Forget",
       "onboarding_label": "Onboarding tour",
       "onboarding_hint": "Replay the 4-step introduction shown to first-time visitors.",
       "replay_tour_button": "Replay tour",
@@ -172,7 +172,7 @@
       "clear_jobs_hint": "Deletes every run of this session on the server, with its results and the datasets computed from logs or nets. This cannot be undone.",
       "confirm_delete": "Confirm delete",
       "delete_all_jobs": "Delete all runs",
-      "clear_datasets_label": "Delete factor-analysis datasets",
+      "clear_datasets_label": "Delete the factor analysis datasets",
       "clear_datasets_hint": "{n} dataset of the model and log complexity tabs is stored on the server, with the settings of its last analysis. If it was computed from logs or nets, the run that computed it is deleted as well.",
       "clear_datasets_hint_plural": "{n} datasets of the model and log complexity tabs are stored on the server, each with the settings of its last analysis. Those computed from logs or nets are deleted with the runs that computed them.",
       "clear_datasets_empty": "No datasets of the model and log complexity tabs are stored for this session.",
@@ -328,7 +328,7 @@
   },
   "result_panel": {
     "heading": "Result",
-    "download_all": "Download All (ZIP)"
+    "download_all": "Download all (ZIP)"
   },
   "artifacts": {
     "petri_nets_heading": "Discovered Petri nets ({n})",
@@ -428,18 +428,18 @@
       "tour_button": "Tour",
       "tour_aria": "Start the tour of this page",
       "tour_title": "How inspecting a single log works",
-      "close_sidebar_aria": "Close algorithm sidebar",
-      "show_menu_title": "Show menu",
-      "show_sidebar_title": "Show sidebar",
-      "hide_sidebar_title": "Hide sidebar",
+      "close_sidebar_aria": "Close the algorithm list",
+      "show_menu_title": "Show the algorithm list",
+      "show_sidebar_title": "Show the algorithm list",
+      "hide_sidebar_title": "Hide the algorithm list",
       "nav_aria": "Algorithms"
     },
     "job_badge": "Run {id}: {status}",
     "algo_card": {
       "implemented_by": "Implemented by: {author}",
       "paper_link": "Paper",
-      "academic_reference": "Academic Reference",
-      "copied_bibtex": "Copied BibTeX!",
+      "academic_reference": "Citation",
+      "copied_bibtex": "BibTeX copied",
       "copy_bibtex": "Copy BibTeX",
       "download_bib_title": "Download as .bib file",
       "download_bib": "Download .bib",
@@ -450,7 +450,7 @@
       "use_sample": "Use example"
     },
     "recent": {
-      "label": "Recently Uploaded Logs"
+      "label": "Recently uploaded logs"
     },
     "layout": {
       "grid": "Grid",
@@ -459,7 +459,7 @@
       "list_title": "List view"
     },
     "samples": {
-      "label": "Available Samples"
+      "label": "Example logs"
     },
     "params": {
       "showing_modified": "Showing only modified parameters",
@@ -481,11 +481,11 @@
       "run_title": "Run the analysis (Ctrl+Enter)"
     },
     "load_error": {
-      "title": "Cannot reach the AlgoService"
+      "title": "The server cannot be reached"
     },
     "errors": {
-      "no_sample": "Please select a sample log to analyze.",
-      "no_upload": "Please upload an event log file or choose a recent log from the list below.",
+      "no_sample": "Choose an example log to analyze.",
+      "no_upload": "Upload an event log or choose a recent one from the list below.",
       "must_be_number": "Must be a valid number.",
       "must_be_at_least": "Must be at least {min}.",
       "must_be_at_most": "Must be at most {max}.",
@@ -493,12 +493,12 @@
       "fix_validation": "Please fix parameter validation errors before running.",
       "submitting": "Starting the run…",
       "load_job_details": "The details of the run could not be loaded.",
-      "aborted": "Analysis aborted by user.",
+      "aborted": "The analysis was aborted.",
       "analysis_failed": "Analysis failed",
       "unknown_submission": "Unknown submission error",
       "file_too_large": "File size exceeds the 100 MB limit.",
       "wrong_type": "This file type cannot be analyzed; use {formats}.",
-      "aborted_by_user": "Aborted by user"
+      "aborted_by_user": "Aborted by the user"
     }
   },
   "factor": {

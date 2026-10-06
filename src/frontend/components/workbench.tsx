@@ -795,7 +795,7 @@ export function Workbench() {
                             setCopiedCitation(true);
                             setTimeout(() => setCopiedCitation(false), 2000);
                           }}
-                          className="flex items-center gap-1 text-[10px] text-muted hover:text-accent-ink font-semibold transition"
+                          className="flex items-center gap-1 text-[11px] text-muted hover:text-accent-ink font-medium transition whitespace-nowrap"
                         >
                           {copiedCitation ? (
                             <>
@@ -822,7 +822,7 @@ export function Workbench() {
                             document.body.removeChild(a);
                             URL.revokeObjectURL(url);
                           }}
-                          className="flex items-center gap-1 text-[10px] text-muted hover:text-accent-ink font-semibold transition"
+                          className="flex items-center gap-1 text-[11px] text-muted hover:text-accent-ink font-medium transition whitespace-nowrap"
                           title={t("workbench.algo_card.download_bib_title")}
                         >
                           <Download className="h-3 w-3" />
