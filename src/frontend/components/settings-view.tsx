@@ -251,12 +251,10 @@ export function SettingsView() {
       />
 
       {loadError && (
-        <Card className="border-danger/40">
-          <CardContent className="flex items-start gap-2 text-sm text-danger-ink">
-            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-            <span>{t("settings.load_error", { error: loadError })}</span>
-          </CardContent>
-        </Card>
+        <div role="alert" className="rounded-lg bg-danger/10 px-4 py-3 flex items-start gap-3">
+          <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
+          <div className="text-sm">{t("settings.load_error", { error: loadError })}</div>
+        </div>
       )}
 
       {/* Appearance */}

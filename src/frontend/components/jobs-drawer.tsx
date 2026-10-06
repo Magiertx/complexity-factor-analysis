@@ -348,7 +348,7 @@ export function JobsDrawer() {
         slides in and out via translate-x. The overlay routes keep this at
         every width.
         lg+ elsewhere: becomes a static layout column; open/close collapses
-        the width instead of translating, and shadow and left border go away.
+        the width instead of translating, and shadow and ring go away.
         Closed, it is inert, so its links cannot be reached with Tab.
       */}
       <aside
@@ -361,7 +361,7 @@ export function JobsDrawer() {
         className={cn(
           "shrink-0 transition-all duration-300 ease-out overflow-hidden",
           // Mobile baseline: fixed drawer, decorations directly on the aside
-          "fixed right-0 top-0 h-full w-[360px] max-w-[90vw] bg-surface border-l border-border z-50 shadow-2xl",
+          "fixed right-0 top-0 h-full w-[360px] max-w-[90vw] bg-surface ring-1 ring-border/70 z-50 shadow-2xl",
           // Desktop: transparent aside, the card is the rounded tile in the
           // inner wrapper. Sticky with a fixed height instead of growing with
           // the column, so the job list scrolls internally and the "View all"
@@ -370,7 +370,7 @@ export function JobsDrawer() {
           // overflow-hidden does not break sticky; only overflow on an
           // ancestor would, and row and body have none.
           !overlay &&
-            "lg:sticky lg:top-0 lg:self-start lg:h-[calc(100vh_-_157px)] lg:max-w-none lg:bg-transparent lg:border-l-0 lg:shadow-none lg:z-auto",
+            "lg:sticky lg:top-0 lg:self-start lg:h-[calc(100vh_-_157px)] lg:max-w-none lg:bg-transparent lg:ring-0 lg:shadow-none lg:z-auto",
           // Mobile slide (reset on desktop via lg:translate-x-0)
           open ? "translate-x-0" : "translate-x-full",
           !overlay && "lg:translate-x-0",

@@ -642,7 +642,7 @@ export function Workbench() {
           "space-y-6 shrink-0 transition-all duration-300 ease-in-out " +
           (sidebarCollapsed ? "lg:w-0 lg:opacity-0 lg:overflow-hidden lg:pointer-events-none lg:mr-0 " : "lg:w-[280px] lg:opacity-100 ") +
           // Mobile Drawer absolute overlay classes
-          "fixed inset-y-0 left-0 z-50 w-[290px] bg-surface p-5 shadow-2xl border-r border-border transition-transform duration-300 overflow-y-auto lg:overflow-visible lg:shadow-none lg:p-0 lg:border-none lg:bg-transparent lg:static lg:transform-none " +
+          "fixed inset-y-0 left-0 z-50 w-[290px] bg-surface p-5 shadow-2xl ring-1 ring-border/70 transition-transform duration-300 overflow-y-auto lg:overflow-visible lg:shadow-none lg:p-0 lg:ring-0 lg:bg-transparent lg:static lg:transform-none " +
           (sidebarOpenMobile ? "translate-x-0" : "-translate-x-full lg:translate-x-0")
         }
       >
@@ -1299,7 +1299,7 @@ export function Workbench() {
         )}
 
         {error && (
-          <div className="rounded-lg bg-danger/10 px-4 py-3 flex items-start gap-3">
+          <div role="alert" className="rounded-lg bg-danger/10 px-4 py-3 flex items-start gap-3">
             <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
             <div className="text-sm">{error}</div>
           </div>
