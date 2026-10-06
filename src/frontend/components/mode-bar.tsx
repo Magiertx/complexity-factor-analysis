@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Network, ScrollText, History, ListChecks } from "lucide-react";
 import { hasJobsPanel, useJobsDrawer } from "./jobs-drawer";
 import { cn } from "@/lib/utils";
@@ -58,10 +58,28 @@ export function ModeBar() {
 
   const showJobs = hasJobsPanel(pathname);
 
+  // On a phone the bar scrolls sideways; the tab of the open page is scrolled into view, so
+  // /runs does not open with its tab hidden past the edge. Not scrollIntoView, which would
+  // scroll the page as well.
+  const navRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const nav = navRef.current;
+    const tab = nav?.querySelector<HTMLElement>("[data-active]");
+    if (!nav || !tab) return;
+    const n = nav.getBoundingClientRect();
+    const r = tab.getBoundingClientRect();
+    if (r.right > n.right) nav.scrollLeft += r.right - n.right;
+    else if (r.left < n.left) nav.scrollLeft -= n.left - r.left;
+  }, [pathname]);
+
   return (
     <div className="border-b border-border bg-bg">
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6">
-        <nav className="flex items-stretch gap-1 overflow-x-auto no-scrollbar -mb-px" aria-label={t("mode_bar.aria_label")}>
+        <nav
+          ref={navRef}
+          className="flex items-stretch gap-1 overflow-x-auto no-scrollbar -mb-px"
+          aria-label={t("mode_bar.aria_label")}
+        >
           {modes.map((mode) => {
             const Icon = mode.icon;
             const isActive = pathname === mode.href || !!mode.also?.includes(pathname);
@@ -70,6 +88,7 @@ export function ModeBar() {
                 key={mode.href}
                 href={mode.href}
                 aria-current={pathname === mode.href ? "page" : undefined}
+                data-active={isActive || undefined}
                 className={tabClass(isActive)}
               >
                 <Icon className={iconClass(isActive)} />
@@ -103,6 +122,7 @@ export function ModeBar() {
             <Link
               href="/runs"
               aria-current={pathname === "/runs" ? "page" : undefined}
+              data-active={pathname === "/runs" || undefined}
               className={tabClass(pathname === "/runs")}
             >
               <ListChecks className={iconClass(pathname === "/runs")} />
