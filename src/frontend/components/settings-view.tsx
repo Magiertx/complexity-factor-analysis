@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import {
@@ -26,12 +26,10 @@ import {
   deleteAllDatasets,
   deleteAllJobs,
   listDatasets,
-  TOOL_TYPE_LABEL,
 } from "@/lib/api";
 import { APP_NAME, REPO_URL } from "@/lib/app-config";
 import { STORAGE_PREFIXES } from "@/lib/factor-analysis";
 import { Button } from "./ui/button";
-import { Select } from "./ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Segmented } from "./ui/segmented";
 import {
@@ -45,7 +43,6 @@ import {
 import { useT } from "@/lib/i18n";
 import { LocaleSegmented } from "./locale-toggle";
 
-export const DEFAULT_ALGORITHM_KEY = "app.default-algorithm";
 const ALGO_PARAMS_PREFIX = "app.params-";
 
 type ThemeChoice = "system" | "light" | "dark";
@@ -55,9 +52,7 @@ export function SettingsView() {
   const t = useT();
   const [mounted, setMounted] = useState(false);
   const [algorithms, setAlgorithms] = useState<AlgorithmManifest[]>([]);
-  const [categories, setCategories] = useState<{ id: string; label: string }[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [defaultAlgo, setDefaultAlgo] = useState<string>("");
   const [cachedParamCount, setCachedParamCount] = useState(0);
   const [confirmClearJobs, setConfirmClearJobs] = useState(false);
   const [confirmClearDatasets, setConfirmClearDatasets] = useState(false);
@@ -78,10 +73,7 @@ export function SettingsView() {
 
   useEffect(() => {
     fetchAlgorithms()
-      .then((res) => {
-        setAlgorithms(res.algorithms);
-        setCategories(res.categories);
-      })
+      .then((res) => setAlgorithms(res.algorithms))
       .catch((e: Error) => setLoadError(e.message));
   }, []);
 
@@ -97,7 +89,6 @@ export function SettingsView() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setDefaultAlgo(localStorage.getItem(DEFAULT_ALGORITHM_KEY) || "");
     refreshCachedParamCount();
     setPresetGroups(listAllPresets());
   }, []);
@@ -120,16 +111,6 @@ export function SettingsView() {
   const handleThemeChange = (value: ThemeChoice) => {
     setTheme(value);
     showToast(t("settings.toast_theme_updated"));
-  };
-
-  const handleDefaultAlgoChange = (value: string) => {
-    setDefaultAlgo(value);
-    if (value) {
-      localStorage.setItem(DEFAULT_ALGORITHM_KEY, value);
-    } else {
-      localStorage.removeItem(DEFAULT_ALGORITHM_KEY);
-    }
-    showToast(t("settings.toast_default_algo_saved"));
   };
 
   const handleClearParamCache = () => {
@@ -262,16 +243,6 @@ export function SettingsView() {
     }
   };
 
-  const grouped = useMemo(() => {
-    const buckets: Record<string, AlgorithmManifest[]> = {};
-    for (const a of algorithms) {
-      const key = a.tool_type;
-      if (!buckets[key]) buckets[key] = [];
-      buckets[key].push(a);
-    }
-    return buckets;
-  }, [algorithms]);
-
   const currentTheme: ThemeChoice = mounted
     ? (theme === "system" ? "system" : ((theme as ThemeChoice) || "system"))
     : "system";
@@ -335,48 +306,6 @@ export function SettingsView() {
           </SettingRow>
           <SettingRow label={t("settings.appearance.language_label")} hint={t("settings.appearance.language_hint")}>
             <LocaleSegmented />
-          </SettingRow>
-        </CardContent>
-      </Card>
-
-      {/* Defaults */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("settings.defaults.title")}</CardTitle>
-          <CardDescription>{t("settings.defaults.description")}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <SettingRow
-            label={t("settings.defaults.default_algo_label")}
-            hint={t("settings.defaults.default_algo_hint")}
-          >
-            <div className="flex items-center gap-3">
-              <Select
-                value={defaultAlgo}
-                onValueChange={handleDefaultAlgoChange}
-                className="min-w-[280px] w-auto"
-                aria-label={t("settings.defaults.default_algo_label")}
-                options={[
-                  { value: "", label: t("settings.defaults.none_option") },
-                  ...categories.flatMap((cat) =>
-                    (grouped[cat.id] || []).map((a) => ({ value: a.id, label: a.name, group: cat.label })),
-                  ),
-                  // Algorithms without a known category (defensive).
-                  ...algorithms
-                    .filter((a) => !categories.some((c) => c.id === a.tool_type))
-                    .map((a) => ({ value: a.id, label: `${a.name} (${TOOL_TYPE_LABEL[a.tool_type] || a.tool_type})` })),
-                ]}
-              />
-              {defaultAlgo && (
-                <button
-                  type="button"
-                  onClick={() => handleDefaultAlgoChange("")}
-                  className="text-[11px] text-muted hover:text-fg underline-offset-2 hover:underline"
-                >
-                  {t("settings.defaults.clear_button")}
-                </button>
-              )}
-            </div>
           </SettingRow>
         </CardContent>
       </Card>
@@ -661,10 +590,6 @@ export function SettingsView() {
           <div className="flex items-center justify-between">
             <span className="text-muted">{t("settings.about.product_label")}</span>
             <span>{APP_NAME}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-muted">{t("settings.about.algorithms_loaded_label")}</span>
-            <span>{algorithms.length}</span>
           </div>
           {REPO_URL && (
             <div className="flex items-center justify-between">

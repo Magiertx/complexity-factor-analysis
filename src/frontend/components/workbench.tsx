@@ -187,19 +187,7 @@ export function Workbench() {
         if (cancelled) return;
         setAlgorithms(res.algorithms);
         setCategories(res.categories);
-        if (res.algorithms.length > 0) {
-          // Honor the user-configured default from /settings, falling back to
-          // the first algorithm in the list if the saved id is no longer valid.
-          const saved =
-            typeof window !== "undefined"
-              ? localStorage.getItem("app.default-algorithm")
-              : null;
-          const preselect =
-            saved && res.algorithms.some((a) => a.id === saved)
-              ? saved
-              : res.algorithms[0].id;
-          setSelectedId(preselect);
-        }
+        if (res.algorithms.length > 0) setSelectedId(res.algorithms[0].id);
       })
       .catch((e: Error) => !cancelled && setLoadError(e.message));
 

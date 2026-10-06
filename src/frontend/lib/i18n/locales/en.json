@@ -115,7 +115,6 @@
     "back_aria": "Back to model complexity",
     "load_error": "Could not load algorithm list: {error}",
     "toast_theme_updated": "Theme updated",
-    "toast_default_algo_saved": "Default algorithm saved",
     "toast_cleared_caches": "Cleared {n} parameter cache",
     "toast_cleared_caches_plural": "Cleared {n} parameter caches",
     "toast_deleted_preset": "Deleted \"{name}\"",
@@ -123,14 +122,6 @@
     "toast_cleared_presets_plural": "Cleared {n} presets",
     "toast_job_history_cleared": "Job history cleared",
     "toast_job_history_failed": "Failed to clear job history",
-    "defaults": {
-      "title": "Defaults",
-      "description": "Preselect what shows up when you inspect a single log.",
-      "default_algo_label": "Default algorithm",
-      "default_algo_hint": "Opens automatically when you inspect a single log. Leave empty to use the first algorithm in the list.",
-      "none_option": "— None (use first in list) —",
-      "clear_button": "Clear"
-    },
     "presets": {
       "title": "Parameter presets",
       "description": "Named parameter sets you saved while inspecting a single log. Stored locally on this device.",
@@ -192,7 +183,6 @@
       "title": "About",
       "description": "Build and links.",
       "product_label": "Product",
-      "algorithms_loaded_label": "Algorithms loaded",
       "source_label": "Source",
       "documentation_label": "Documentation",
       "api_link": "API access and examples"
