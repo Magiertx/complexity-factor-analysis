@@ -565,7 +565,7 @@
       "failed": "The analysis failed.",
       "failed_title": "The analysis could not run with these settings",
       "failed_hint": "Change the settings, or use one of these fixes:",
-      "stale_note": "The results below are from the last successful run.",
+      "stale_note": "The results below are from the last successful analysis.",
       "reset_factors": "Use the suggested number of factors",
       "enable_filter": "Turn the MSA filter on"
     },

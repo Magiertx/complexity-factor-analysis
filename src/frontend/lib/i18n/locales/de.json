@@ -565,7 +565,7 @@
       "failed": "Die Analyse ist fehlgeschlagen.",
       "failed_title": "Mit diesen Einstellungen lässt sich die Analyse nicht ausführen",
       "failed_hint": "Ändere die Einstellungen oder nutze eine dieser Korrekturen:",
-      "stale_note": "Die Ergebnisse unten stammen aus dem letzten erfolgreichen Lauf.",
+      "stale_note": "Die Ergebnisse unten stammen aus der letzten erfolgreichen Analyse.",
       "reset_factors": "Vorgeschlagene Faktorenzahl verwenden",
       "enable_filter": "MSA-Filter einschalten"
     },
