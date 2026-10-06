@@ -919,7 +919,8 @@ async def export_archive(
     archive = await run_in_threadpool(
         lambda: analysis_zip(
             dataset=_dataset_record(meta),
-            params=used,
+            # A single factor is not rotated, whatever was asked for.
+            params={**used, "rotation": result["rotation"]},
             result=result,
             matrix=matrix_csv(data),
             interpretation=(body.language, stored[0]) if stored else None,

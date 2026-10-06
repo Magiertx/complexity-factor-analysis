@@ -225,8 +225,8 @@ renamed into place.
   dataset job they delete, so the run history and the dataset list do not drift apart.
 - **ZIP.** `POST .../export/zip` runs the analysis once and packs it with
   `export.analysis_zip`: the result, the matrix as the download writes it, the loadings and
-  the other tables, a manifest with the dataset, the parameters (with the factor count the
-  analysis used) and the library versions, and a README whose factor_analyzer snippet
+  the other tables, a manifest with the dataset, the parameters (with the factor count and
+  rotation the analysis used) and the library versions, and a README whose factor_analyzer snippet
   reproduces the loadings (`tests/test_dataset_history.py` runs it). An interpretation is
   added only if `interpretation.store.lookup`, the lookup behind `cached_only`, finds one, so
   an export never leads to a paid call.

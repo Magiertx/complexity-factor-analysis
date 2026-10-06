@@ -328,7 +328,7 @@ report or reproduce the analysis. Its errors are those of `analyze`.
 
 | File | Content |
 |------|---------|
-| `manifest.json` | `app`, `created_at`, `dataset` (`id`, `name`, `kind`, `source`, `bundled_id`; `collection`, `citation` and `license` for a bundled dataset, else `null`; `inputs`, `n_observations`, the `measures` left after cleaning and the `dropped` ones as `{name, reason}`), `analysis_params` (the parameters used, with the factor count of the analysis and the thresholds of the kind), `libraries` (versions of factor_analyzer, numpy, pandas, scipy and scikit-learn) and `files` (`{name, description}` of each file). |
+| `manifest.json` | `app`, `created_at`, `dataset` (`id`, `name`, `kind`, `source`, `bundled_id`; `collection`, `citation` and `license` for a bundled dataset, else `null`; `inputs`, `n_observations`, the `measures` left after cleaning and the `dropped` ones as `{name, reason}`), `analysis_params` (the parameters used, with the factor count and rotation of the analysis and the thresholds of the kind; a single factor is not rotated), `libraries` (versions of factor_analyzer, numpy, pandas, scipy and scikit-learn) and `files` (`{name, description}` of each file). |
 | `README.txt` | The files, and how to reproduce the analysis in the UI or with factor_analyzer. |
 | `analysis.json` | The response of `analyze` for these parameters. |
 | `dataset.csv` | The cleaned matrix, the same file as `.../download`. |

@@ -432,6 +432,13 @@ def test_zip_of_an_oblique_rotation(client):
     assert "structure.csv" not in _zip(client, dataset_id, n_factors=2).namelist()
 
 
+def test_zip_gives_the_rotation_used(client):
+    archive = _zip(client, _csv(client), n_factors=1, rotation="promax", auto_msa_filter=False)
+    assert json.loads(archive.read("analysis.json"))["rotation"] == "none"
+    assert json.loads(archive.read("manifest.json"))["analysis_params"]["rotation"] == "none"
+    assert "rotation=None" in archive.read("README.txt").decode()
+
+
 def test_readme_reproduces_the_loadings(client, tmp_path, monkeypatch):
     import factor_analyzer.factor_analyzer as fa_module
 
