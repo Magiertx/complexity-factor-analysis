@@ -664,6 +664,8 @@ function DatasetTile({
   const Icon = SOURCE_ICON[dataset.source];
   const { n_observations: rows, n_measures: cols } = dataset;
   const title = datasetName(dataset, t);
+  // A computed dataset goes with the run that computed it.
+  const withRun = !!dataset.job_id;
   return (
     // min-w-0: a long name is truncated instead of widening the grid column beyond the page.
     <div className={cn("rounded-md min-w-0", choiceTile(chosen))}>
@@ -716,7 +718,7 @@ function DatasetTile({
           onClick={() => setConfirming((c) => !c)}
           aria-label={t("factor.data.delete_aria", { name: title })}
           aria-expanded={confirming}
-          title={t("factor.data.delete")}
+          title={t(withRun ? "factor.data.delete_with_run" : "factor.data.delete")}
           className="m-1.5 h-7 w-7 grid place-items-center rounded-md text-muted hover:text-danger-ink hover:bg-danger/10 transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           <Trash2 className="h-3.5 w-3.5" />
@@ -725,6 +727,7 @@ function DatasetTile({
       {confirming && (
         <div className="px-3 pb-2.5 flex items-center justify-end gap-2 flex-wrap">
           <ConfirmDelete
+            withRun={withRun}
             onConfirm={onDelete}
             onCancel={() => {
               setConfirming(false);
@@ -737,8 +740,19 @@ function DatasetTile({
   );
 }
 
-/** The confirmation that replaces a delete button, as in the settings and the run history. */
-function ConfirmDelete({ onConfirm, onCancel }: { onConfirm: () => Promise<unknown>; onCancel: () => void }) {
+/**
+ * The confirmation that replaces a delete button, as in the settings and the run history.
+ * `withRun` says that the run that computed the dataset goes as well.
+ */
+function ConfirmDelete({
+  withRun,
+  onConfirm,
+  onCancel,
+}: {
+  withRun: boolean;
+  onConfirm: () => Promise<unknown>;
+  onCancel: () => void;
+}) {
   const t = useT();
   const [deleting, setDeleting] = useState(false);
   const confirm = async () => {
@@ -761,7 +775,7 @@ function ConfirmDelete({ onConfirm, onCancel }: { onConfirm: () => Promise<unkno
         autoFocus
       >
         {deleting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-        {t("factor.data.delete_confirm")}
+        {t(withRun ? "factor.data.delete_confirm_run" : "factor.data.delete_confirm")}
       </Button>
       <Button size="sm" variant="ghost" onClick={onCancel} disabled={deleting}>
         {t("common.cancel")}
@@ -988,6 +1002,7 @@ export function DataSummary({
 }) {
   const t = useT();
   const name = datasetName(dataset, t);
+  const withRun = !!dataset.job_id;
   const title = "rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
   if (dataset.status === "computing") {
@@ -1004,7 +1019,7 @@ export function DataSummary({
           </div>
           {/* Deleting aborts the job as well; cancelling keeps the dataset, as failed. */}
           <div className="flex items-center gap-2 flex-wrap">
-            <DeleteDataset onDelete={onDelete} />
+            <DeleteDataset withRun={withRun} onDelete={onDelete} />
             <Button variant="outline" size="sm" onClick={onCancelJob}>
               {t("factor.data.cancel")}
             </Button>
@@ -1046,7 +1061,7 @@ export function DataSummary({
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Button onClick={onChange}>{t("factor.data.change")}</Button>
-          <DeleteDataset onDelete={onDelete} />
+          <DeleteDataset withRun={withRun} onDelete={onDelete} />
         </div>
       </div>
     );
@@ -1066,7 +1081,7 @@ export function DataSummary({
         </div>
       </div>
       <div className="flex items-center gap-2 flex-wrap">
-        <DeleteDataset onDelete={onDelete} />
+        <DeleteDataset withRun={withRun} onDelete={onDelete} />
         <Button variant="outline" size="sm" onClick={onChange}>
           {t("factor.data.change")}
         </Button>
@@ -1138,7 +1153,7 @@ function InputChips({ dataset, catalog }: { dataset: FactorDataset; catalog: Fac
 }
 
 /** A ghost button that deletes the open dataset after a confirmation. */
-function DeleteDataset({ onDelete }: { onDelete: () => Promise<boolean> }) {
+function DeleteDataset({ withRun, onDelete }: { withRun: boolean; onDelete: () => Promise<boolean> }) {
   const t = useT();
   const [confirming, setConfirming] = useState(false);
   const askRef = useRef<HTMLButtonElement>(null);
@@ -1153,6 +1168,7 @@ function DeleteDataset({ onDelete }: { onDelete: () => Promise<boolean> }) {
   if (confirming) {
     return (
       <ConfirmDelete
+        withRun={withRun}
         onConfirm={onDelete}
         onCancel={() => {
           refocus.current = true;
@@ -1168,6 +1184,7 @@ function DeleteDataset({ onDelete }: { onDelete: () => Promise<boolean> }) {
       size="sm"
       className="text-muted hover:text-danger-ink hover:bg-danger/10"
       onClick={() => setConfirming(true)}
+      title={withRun ? t("factor.data.delete_with_run") : undefined}
     >
       <Trash2 className="h-3.5 w-3.5" />
       {t("factor.data.delete")}
