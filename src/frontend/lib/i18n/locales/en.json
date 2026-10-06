@@ -503,14 +503,16 @@
         "bundled": "Bundled dataset",
         "csv": "CSV file",
         "logs": "Event logs",
-        "pnml": "Petri nets"
+        "pnml": "Petri nets",
+        "mine": "My datasets"
       },
       "source_hint": {
         "bundled": "Measure matrices from published studies. A good way to try the analysis before computing your own.",
         "csv": "Your own matrix: one row per observation, one column per measure, for example exported from ComFy.",
         "logs_model": "Each log is mined with each selected miner, and the selected measures are computed on every discovered Petri net. Every log × miner pair becomes one observation.",
         "logs_log": "The selected feature groups are computed for every log with feeed. Every log becomes one observation.",
-        "pnml": "The selected measures are computed on Petri nets you already have. Every net becomes one observation."
+        "pnml": "The selected measures are computed on Petri nets you already have. Every net becomes one observation.",
+        "mine": "Datasets you loaded or computed in this session, each with the settings of its last analysis. The server keeps them for 7 days."
       },
       "bundled_empty": "No bundled datasets are available on this server.",
       "bundled_size": "{rows} observations × {cols} measures",
@@ -554,6 +556,7 @@
       "estimate_too_few": "Too few: a factor analysis needs more observations than measures, at least {min}. Add files or remove measures.",
       "estimate_thin": "Few observations per measure. Results get more stable with about five per measure ({target}).",
       "need_bundled": "Pick a dataset.",
+      "need_mine": "Pick a dataset.",
       "need_csv": "Add a CSV file.",
       "need_files": "Add at least one file.",
       "need_miner": "Pick at least one miner.",
@@ -562,6 +565,7 @@
       "submit_bundled": "Use dataset",
       "submit_csv": "Load CSV",
       "submit_compute": "Compute measures",
+      "submit_open": "Open dataset",
       "submitting": "Submitting…",
       "submit_failed": "The dataset could not be created.",
       "computing_title": "Computing {name}",
@@ -573,7 +577,16 @@
       "catalog_error": "Could not load the available datasets and measures: {error}",
       "load_failed": "The dataset could not be loaded. Retrying…",
       "cancel_failed": "The job could not be cancelled. Try again or check the jobs panel.",
-      "too_large_total": "Some files were skipped: all files of one dataset may have at most {mb} MB together."
+      "too_large_total": "Some files were skipped: all files of one dataset may have at most {mb} MB together.",
+      "mine_open": "open",
+      "mine_computing": "computing",
+      "mine_failed": "failed",
+      "delete": "Delete dataset",
+      "delete_aria": "Delete {name}",
+      "delete_confirm": "Confirm delete",
+      "delete_failed": "The dataset could not be deleted.",
+      "gone": "The dataset you had open is no longer available. It was deleted or expired after 7 days.",
+      "dismiss_aria": "Dismiss"
     },
     "inputs": {
       "logs": "{n} log",

@@ -503,14 +503,16 @@
         "bundled": "Mitgelieferter Datensatz",
         "csv": "CSV-Datei",
         "logs": "Event-Logs",
-        "pnml": "Petri-Netze"
+        "pnml": "Petri-Netze",
+        "mine": "Meine Datensätze"
       },
       "source_hint": {
         "bundled": "Maßmatrizen aus veröffentlichten Studien. Gut geeignet, um die Analyse auszuprobieren, bevor du eigene Daten berechnest.",
         "csv": "Deine eigene Matrix: eine Zeile pro Beobachtung, eine Spalte pro Maß, zum Beispiel aus ComFy exportiert.",
         "logs_model": "Jedes Log wird mit jedem gewählten Miner verarbeitet, und die gewählten Maße werden auf jedem gefundenen Petri-Netz berechnet. Jedes Paar aus Log und Miner ergibt eine Beobachtung.",
         "logs_log": "Die gewählten Feature-Gruppen werden mit feeed für jedes Log berechnet. Jedes Log ergibt eine Beobachtung.",
-        "pnml": "Die gewählten Maße werden auf Petri-Netzen berechnet, die du schon hast. Jedes Netz ergibt eine Beobachtung."
+        "pnml": "Die gewählten Maße werden auf Petri-Netzen berechnet, die du schon hast. Jedes Netz ergibt eine Beobachtung.",
+        "mine": "Datensätze, die du in dieser Sitzung geladen oder berechnet hast, jeweils mit den Einstellungen ihrer letzten Analyse. Der Server bewahrt sie 7 Tage lang auf."
       },
       "bundled_empty": "Auf diesem Server sind keine mitgelieferten Datensätze verfügbar.",
       "bundled_size": "{rows} Beobachtungen × {cols} Maße",
@@ -554,6 +556,7 @@
       "estimate_too_few": "Zu wenige: Eine Faktorenanalyse braucht mehr Beobachtungen als Maße, mindestens {min}. Füge Dateien hinzu oder entferne Maße.",
       "estimate_thin": "Wenige Beobachtungen pro Maß. Mit etwa fünf pro Maß ({target}) werden die Ergebnisse stabiler.",
       "need_bundled": "Wähle einen Datensatz.",
+      "need_mine": "Wähle einen Datensatz.",
       "need_csv": "Füge eine CSV-Datei hinzu.",
       "need_files": "Füge mindestens eine Datei hinzu.",
       "need_miner": "Wähle mindestens einen Miner.",
@@ -562,6 +565,7 @@
       "submit_bundled": "Datensatz verwenden",
       "submit_csv": "CSV laden",
       "submit_compute": "Maße berechnen",
+      "submit_open": "Datensatz öffnen",
       "submitting": "Wird gesendet…",
       "submit_failed": "Der Datensatz konnte nicht angelegt werden.",
       "computing_title": "{name} wird berechnet",
@@ -573,7 +577,16 @@
       "catalog_error": "Die verfügbaren Datensätze und Maße konnten nicht geladen werden: {error}",
       "load_failed": "Der Datensatz konnte nicht geladen werden. Neuer Versuch…",
       "cancel_failed": "Der Job ließ sich nicht abbrechen. Versuche es noch einmal oder sieh in der Jobliste nach.",
-      "too_large_total": "Einige Dateien wurden übersprungen: Alle Dateien eines Datensatzes dürfen zusammen höchstens {mb} MB groß sein."
+      "too_large_total": "Einige Dateien wurden übersprungen: Alle Dateien eines Datensatzes dürfen zusammen höchstens {mb} MB groß sein.",
+      "mine_open": "geöffnet",
+      "mine_computing": "wird berechnet",
+      "mine_failed": "fehlgeschlagen",
+      "delete": "Datensatz löschen",
+      "delete_aria": "{name} löschen",
+      "delete_confirm": "Löschen bestätigen",
+      "delete_failed": "Der Datensatz konnte nicht gelöscht werden.",
+      "gone": "Der Datensatz, den du geöffnet hattest, ist nicht mehr verfügbar. Er wurde gelöscht oder ist nach 7 Tagen abgelaufen.",
+      "dismiss_aria": "Hinweis ausblenden"
     },
     "inputs": {
       "logs": "{n} Log",

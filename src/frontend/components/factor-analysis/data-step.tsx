@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   BookOpen,
@@ -10,10 +10,12 @@ import {
   ExternalLink,
   FileSpreadsheet,
   FileText,
+  History,
   Loader2,
   Network,
   Package,
   RotateCcw,
+  Trash2,
   X,
 } from "lucide-react";
 import {
@@ -23,14 +25,15 @@ import {
   type CreateDatasetInput,
   type DatasetCollection,
   type DatasetSource,
+  type DatasetSummary,
   type FactorCatalog,
   type FactorDataset,
   type FactorKind,
   type SampleInput,
 } from "@/lib/api";
-import { MIN_MEASURES, progressPercent } from "@/lib/factor-analysis";
+import { MIN_MEASURES, progressPercent, relativeTime } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
-import { useT } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { Input } from "@/components/ui/input";
@@ -55,17 +58,38 @@ const ACCEPT: Record<Exclude<DatasetSource, "bundled">, { accept: string; test: 
 interface Props {
   kind: FactorKind;
   catalog: FactorCatalog;
+  /** Datasets of this kind in the session, newest first; listed in their own tab. */
+  datasets: DatasetSummary[];
+  /** The dataset open on the tab, if any. */
+  openId: string | null;
   submitting: boolean;
   submitError: string | null;
   onSubmit: (input: CreateDatasetInput) => void;
+  onOpen: (id: string) => void;
+  /** Resolves to whether the dataset was deleted. */
+  onDelete: (id: string) => Promise<boolean>;
   /** Shown when a dataset already exists, to return to it without building a new one. */
   onCancel?: () => void;
 }
 
-export function DataForm({ kind, catalog, submitting, submitError, onSubmit, onCancel }: Props) {
+export function DataForm({
+  kind,
+  catalog,
+  datasets,
+  openId,
+  submitting,
+  submitError,
+  onSubmit,
+  onOpen,
+  onDelete,
+  onCancel,
+}: Props) {
   const t = useT();
   const sources = catalog.sources.filter((s) => kind === "model" || s !== "pnml");
   const [source, setSource] = useState<DatasetSource>(sources[0] ?? "bundled");
+  // The own datasets come first when there are any; the tab goes away with the last of them.
+  const [mineChosen, setMineChosen] = useState(datasets.length > 0);
+  const mine = mineChosen && datasets.length > 0;
   const [bundledId, setBundledId] = useState<string | null>(catalog.bundled[0]?.id ?? null);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [logFiles, setLogFiles] = useState<File[]>([]);
@@ -182,18 +206,32 @@ export function DataForm({ kind, catalog, submitting, submitError, onSubmit, onC
         ? t("factor.data.submit_csv")
         : t("factor.data.submit_compute");
 
-  return (
-    <div className="space-y-5">
-      <div className="space-y-2">
-        <div className="overflow-x-auto no-scrollbar">
-          <Segmented
-            className="min-w-max sm:max-w-[560px]"
-            value={source}
-            onChange={(s) => {
-              setSource(s);
-              setNotice(null);
-            }}
-            options={sources.map((s) => {
+  const tabs = (
+    <div className="space-y-2">
+      <div className="overflow-x-auto no-scrollbar">
+        <Segmented<DatasetSource | "mine">
+          className="min-w-max sm:max-w-[560px]"
+          value={mine ? "mine" : source}
+          onChange={(s) => {
+            setMineChosen(s === "mine");
+            if (s !== "mine") setSource(s);
+            setNotice(null);
+          }}
+          options={[
+            ...(datasets.length > 0
+              ? [
+                  {
+                    value: "mine" as const,
+                    label: (
+                      <>
+                        <History className="h-3.5 w-3.5" />
+                        <span>{t("factor.data.source.mine")}</span>
+                      </>
+                    ),
+                  },
+                ]
+              : []),
+            ...sources.map((s) => {
               const Icon = SOURCE_ICON[s];
               return {
                 value: s,
@@ -204,13 +242,41 @@ export function DataForm({ kind, catalog, submitting, submitError, onSubmit, onC
                   </>
                 ),
               };
-            })}
-          />
-        </div>
-        <p className="text-xs text-muted max-w-prose">
-          {t(source === "logs" ? `factor.data.source_hint.logs_${kind}` : `factor.data.source_hint.${source}`)}
-        </p>
+            }),
+          ]}
+        />
       </div>
+      <p className="text-xs text-muted max-w-prose">
+        {t(
+          mine
+            ? "factor.data.source_hint.mine"
+            : source === "logs"
+              ? `factor.data.source_hint.logs_${kind}`
+              : `factor.data.source_hint.${source}`,
+        )}
+      </p>
+    </div>
+  );
+
+  if (mine) {
+    return (
+      <div className="space-y-5">
+        {tabs}
+        <DatasetPicker
+          kind={kind}
+          datasets={datasets}
+          openId={openId}
+          onOpen={onOpen}
+          onDelete={onDelete}
+          onCancel={onCancel}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      {tabs}
 
       {source === "bundled" && (
         <BundledList kind={kind} catalog={catalog} selected={bundledId} onSelect={setBundledId} />
@@ -501,6 +567,204 @@ function BundledTile({
   );
 }
 
+/** The datasets of the session as choice tiles: one to reopen, any to delete. */
+function DatasetPicker({
+  kind,
+  datasets,
+  openId,
+  onOpen,
+  onDelete,
+  onCancel,
+}: {
+  kind: FactorKind;
+  datasets: DatasetSummary[];
+  openId: string | null;
+  onOpen: (id: string) => void;
+  onDelete: (id: string) => Promise<boolean>;
+  onCancel?: () => void;
+}) {
+  const t = useT();
+  // The newest dataset that is not open already; opening the open one only closes the form.
+  const [selected, setSelected] = useState(() => (datasets.find((d) => d.id !== openId) ?? datasets[0]).id);
+  const chosen = datasets.some((d) => d.id === selected) ? selected : null;
+  const listRef = useRef<HTMLDivElement>(null);
+  const refocus = useRef(false);
+
+  // A deleted tile takes the focus with it; hand it to the list.
+  useEffect(() => {
+    if (!refocus.current) return;
+    refocus.current = false;
+    const list = listRef.current;
+    (list?.querySelector<HTMLInputElement>("input:checked") ?? list?.querySelector<HTMLInputElement>("input"))?.focus();
+  }, [datasets]);
+
+  const remove = async (id: string) => {
+    refocus.current = true;
+    if (!(await onDelete(id))) refocus.current = false;
+  };
+
+  return (
+    <div className="space-y-5">
+      <div
+        ref={listRef}
+        role="radiogroup"
+        aria-label={t("factor.data.source.mine")}
+        className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
+      >
+        {datasets.map((d) => (
+          <DatasetTile
+            key={d.id}
+            name={`fa-mine-${kind}`}
+            dataset={d}
+            chosen={d.id === chosen}
+            open={d.id === openId}
+            onSelect={() => setSelected(d.id)}
+            onDelete={() => remove(d.id)}
+          />
+        ))}
+      </div>
+      <div className="flex items-center justify-end gap-3 flex-wrap pt-1">
+        {!chosen && <span className="text-xs text-muted mr-auto">{t("factor.data.need_mine")}</span>}
+        {onCancel && (
+          <Button variant="ghost" onClick={onCancel}>
+            {t("common.cancel")}
+          </Button>
+        )}
+        <Button onClick={() => chosen && onOpen(chosen)} disabled={!chosen}>
+          {t("factor.data.submit_open")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function DatasetTile({
+  name,
+  dataset,
+  chosen,
+  open,
+  onSelect,
+  onDelete,
+}: {
+  name: string;
+  dataset: DatasetSummary;
+  chosen: boolean;
+  /** The dataset is the one open on the tab. */
+  open: boolean;
+  onSelect: () => void;
+  onDelete: () => Promise<void>;
+}) {
+  const t = useT();
+  const { locale } = useLocale();
+  const [confirming, setConfirming] = useState(false);
+  const askRef = useRef<HTMLButtonElement>(null);
+  const Icon = SOURCE_ICON[dataset.source];
+  const { n_observations: rows, n_measures: cols } = dataset;
+  return (
+    <div className={cn("rounded-md", choiceTile(chosen))}>
+      <div className="flex items-start">
+        <label className="flex-1 min-w-0 flex items-start gap-2.5 pl-3 py-2.5 cursor-pointer">
+          <input type="radio" name={name} className="sr-only" checked={chosen} onChange={onSelect} />
+          <ChoiceMark type="radio" checked={chosen} className="mt-0.5" />
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-1.5 min-w-0">
+              <span className="text-sm font-medium truncate" title={dataset.name}>
+                {dataset.name}
+              </span>
+              {open && (
+                <span className="rounded bg-success/15 text-success-ink px-1 text-[10px] font-medium shrink-0">
+                  {t("factor.data.mine_open")}
+                </span>
+              )}
+            </span>
+            <span className="mt-0.5 flex items-center gap-x-1.5 gap-y-0.5 flex-wrap text-[11px] text-muted">
+              <Icon className="h-3 w-3 shrink-0" />
+              <span>{t(`factor.data.source.${dataset.source}`)}</span>
+              {rows !== null && cols !== null && (
+                <>
+                  <span aria-hidden>·</span>
+                  <span title={t("factor.data.bundled_size", { rows, cols })}>
+                    {rows} × {cols}
+                  </span>
+                </>
+              )}
+              <span aria-hidden>·</span>
+              <time dateTime={dataset.created_at} title={new Date(dataset.created_at).toLocaleString(locale)}>
+                {relativeTime(dataset.created_at, locale)}
+              </time>
+              {dataset.status !== "ready" && (
+                <span
+                  className={cn(
+                    "rounded px-1 text-[10px] font-medium",
+                    dataset.status === "failed" ? "bg-danger/15 text-danger-ink" : "bg-accent/[0.18] text-accent-ink",
+                  )}
+                >
+                  {t(`factor.data.mine_${dataset.status}`)}
+                </span>
+              )}
+            </span>
+          </span>
+        </label>
+        <button
+          ref={askRef}
+          type="button"
+          onClick={() => setConfirming((c) => !c)}
+          aria-label={t("factor.data.delete_aria", { name: dataset.name })}
+          aria-expanded={confirming}
+          title={t("factor.data.delete")}
+          className="m-1.5 h-7 w-7 grid place-items-center rounded-md text-muted hover:text-danger-ink hover:bg-danger/10 transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      {confirming && (
+        <div className="px-3 pb-2.5 flex items-center justify-end gap-2 flex-wrap">
+          <ConfirmDelete
+            onConfirm={onDelete}
+            onCancel={() => {
+              setConfirming(false);
+              askRef.current?.focus();
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** The confirmation that replaces a delete button, as in the settings and the run history. */
+function ConfirmDelete({ onConfirm, onCancel }: { onConfirm: () => Promise<unknown>; onCancel: () => void }) {
+  const t = useT();
+  const [deleting, setDeleting] = useState(false);
+  const confirm = async () => {
+    setDeleting(true);
+    try {
+      await onConfirm();
+    } finally {
+      // Gone on success; back for another try after an error.
+      setDeleting(false);
+    }
+  };
+  return (
+    <>
+      <Button
+        size="sm"
+        variant="primary"
+        className="bg-danger hover:bg-danger/90"
+        onClick={confirm}
+        disabled={deleting}
+        autoFocus
+      >
+        {deleting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+        {t("factor.data.delete_confirm")}
+      </Button>
+      <Button size="sm" variant="ghost" onClick={onCancel} disabled={deleting}>
+        {t("common.cancel")}
+      </Button>
+    </>
+  );
+}
+
 /** Bundled input files for the logs or PNML source; chosen, they replace the upload. */
 function SampleTile({ sample, chosen, onToggle }: { sample: SampleInput; chosen: boolean; onToggle: () => void }) {
   const t = useT();
@@ -705,10 +969,12 @@ export function DataSummary({
   dataset,
   onChange,
   onCancelJob,
+  onDelete,
 }: {
   dataset: FactorDataset;
   onChange: () => void;
   onCancelJob: () => void;
+  onDelete: () => Promise<boolean>;
 }) {
   const t = useT();
   const sourceKey = (["bundled", "csv", "logs", "pnml"] as const).find((s) => s === dataset.source);
@@ -759,7 +1025,10 @@ export function DataSummary({
             {dataset.error && <div className="text-muted mt-1 break-words">{dataset.error}</div>}
           </div>
         </div>
-        <Button onClick={onChange}>{t("factor.data.change")}</Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button onClick={onChange}>{t("factor.data.change")}</Button>
+          <DeleteDataset onDelete={onDelete} />
+        </div>
       </div>
     );
   }
@@ -777,9 +1046,50 @@ export function DataSummary({
           </div>
         </div>
       </div>
-      <Button variant="outline" size="sm" onClick={onChange}>
-        {t("factor.data.change")}
-      </Button>
+      <div className="flex items-center gap-2 flex-wrap">
+        <DeleteDataset onDelete={onDelete} />
+        <Button variant="outline" size="sm" onClick={onChange}>
+          {t("factor.data.change")}
+        </Button>
+      </div>
     </div>
+  );
+}
+
+/** A ghost button that deletes the open dataset after a confirmation. */
+function DeleteDataset({ onDelete }: { onDelete: () => Promise<boolean> }) {
+  const t = useT();
+  const [confirming, setConfirming] = useState(false);
+  const askRef = useRef<HTMLButtonElement>(null);
+  const refocus = useRef(false);
+  // The confirmation replaces the button; after a cancel the focus goes back to it.
+  useEffect(() => {
+    if (!confirming && refocus.current) {
+      refocus.current = false;
+      askRef.current?.focus();
+    }
+  }, [confirming]);
+  if (confirming) {
+    return (
+      <ConfirmDelete
+        onConfirm={onDelete}
+        onCancel={() => {
+          refocus.current = true;
+          setConfirming(false);
+        }}
+      />
+    );
+  }
+  return (
+    <Button
+      ref={askRef}
+      variant="ghost"
+      size="sm"
+      className="text-muted hover:text-danger-ink hover:bg-danger/10"
+      onClick={() => setConfirming(true)}
+    >
+      <Trash2 className="h-3.5 w-3.5" />
+      {t("factor.data.delete")}
+    </Button>
   );
 }

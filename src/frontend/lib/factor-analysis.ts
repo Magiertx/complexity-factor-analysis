@@ -184,3 +184,23 @@ export function datasetJobHref(job: Job): string | null {
   const id = job.params?.dataset_id;
   return typeof id === "string" ? `${tab}?dataset=${encodeURIComponent(id)}` : tab;
 }
+
+const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
+  ["year", 365 * 24 * 3600],
+  ["month", 30 * 24 * 3600],
+  ["week", 7 * 24 * 3600],
+  ["day", 24 * 3600],
+  ["hour", 3600],
+  ["minute", 60],
+];
+
+/** "3 hours ago" in the given locale; an empty string for a date that cannot be read. */
+export function relativeTime(iso: string, locale: string, now = Date.now()): string {
+  const seconds = (new Date(iso).getTime() - now) / 1000;
+  if (!Number.isFinite(seconds)) return "";
+  const format = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  for (const [unit, size] of RELATIVE_UNITS) {
+    if (Math.abs(seconds) >= size) return format.format(Math.round(seconds / size), unit);
+  }
+  return format.format(0, "second");
+}
