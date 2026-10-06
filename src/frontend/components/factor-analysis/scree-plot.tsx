@@ -78,6 +78,9 @@ export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onS
     setHover(Math.max(1, Math.min(maxSelectable, next)));
   };
 
+  const suggestedLabel = t("factor.factors.suggested_mark");
+  const suggestedLabelLeft = x(suggested) + 11 + suggestedLabel.length * 6 > M.l + w;
+
   const tip = hover !== null ? { i: hover, v: eigenvalues[hover - 1] } : null;
   const tipText = tip ? t("factor.factors.eigen_point", { i: tip.i, value: formatNumber(tip.v, locale, 2) }) : "";
   const tipW = tipText.length * 6.2 + 16;
@@ -156,14 +159,17 @@ export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onS
               strokeWidth={1.5}
               strokeDasharray="3 2"
             />
+            {/* Above and right of the point: below it sits the dashed line, since the suggested
+                factor is the last one above an eigenvalue of 1, and the curve only falls to the
+                right. Left of the point where the label would leave the plot. */}
             <text
-              x={x(suggested)}
-              y={y(eigenvalues[suggested - 1]) + 22}
-              textAnchor="middle"
+              x={suggestedLabelLeft ? x(suggested) - 11 : x(suggested) + 11}
+              y={y(eigenvalues[suggested - 1]) - 9}
+              textAnchor={suggestedLabelLeft ? "end" : "start"}
               fontSize={10}
               className="fill-fg"
             >
-              {t("factor.factors.suggested_mark")}
+              {suggestedLabel}
             </text>
           </g>
         )}
