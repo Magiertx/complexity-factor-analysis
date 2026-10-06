@@ -998,7 +998,6 @@ function Estimate({ rows, cols }: { rows: number; cols: number }) {
 /** The data step once a dataset exists: what is loaded, or the progress while it is computed. */
 export function DataSummary({
   dataset,
-  bundledId,
   catalog,
   titleRef,
   onChange,
@@ -1006,8 +1005,6 @@ export function DataSummary({
   onDelete,
 }: {
   dataset: FactorDataset;
-  /** The bundled dataset it was loaded from, as the list of datasets says; names it in the UI language. */
-  bundledId?: string | null;
   catalog: FactorCatalog;
   /** The title of the summary, which takes the focus when the summary replaces the form. */
   titleRef?: React.Ref<HTMLDivElement>;
@@ -1017,7 +1014,7 @@ export function DataSummary({
 }) {
   const t = useT();
   const { locale } = useLocale();
-  const name = datasetName({ ...dataset, bundled_id: bundledId }, t, catalog);
+  const name = datasetName(dataset, t, catalog);
   const withRun = !!dataset.job_id;
   const title =
     "rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface";

@@ -366,6 +366,8 @@ export interface FactorDataset {
   name_auto: boolean;
   source: string;
   status: "computing" | "ready" | "failed";
+  /** For a bundled dataset, its id in the catalog, which names it in the UI language. */
+  bundled_id?: string | null;
   job_id?: string;
   error?: string;
   progress?: number;

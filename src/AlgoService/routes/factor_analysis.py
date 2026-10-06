@@ -678,6 +678,7 @@ async def get_dataset(
         "name_auto": bool(meta.get("name_auto")),
         "source": meta["source"],
         "status": meta["status"],
+        "bundled_id": meta.get("bundled_id"),
         "n_observations": meta["n_observations"],
         "measures": meta["measures"],
         "observations": [],

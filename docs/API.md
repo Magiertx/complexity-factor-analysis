@@ -232,8 +232,8 @@ limit is marked `failed` here too.
   for a CSV and 0 for a bundled dataset. `measures`, `miners`, `groups` and `sample_id` are the
   choices made at creation, where they apply; for `bundled` and `csv`, `measures` is only there
   if columns were selected.
-- `GET /factor-analysis/datasets/{id}` carries the same `name_auto` and `inputs`, and
-  `options`: the saved parameters or `null`.
+- `GET /factor-analysis/datasets/{id}` carries the same `name_auto`, `bundled_id` and
+  `inputs`, and `options`: the saved parameters or `null`.
 
 `PUT /factor-analysis/datasets/{id}/options` takes the body of `analyze` and keeps it with the
 dataset, every field filled in, so that a client reopening the dataset can start from its last

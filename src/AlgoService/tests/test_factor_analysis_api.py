@@ -144,6 +144,7 @@ def test_bundled_dataset(client, inductive):
     d = client.get(f"/factor-analysis/datasets/{inductive}").json()
     assert d["status"] == "ready" and d["kind"] == "model" and d["source"] == "bundled"
     assert d["name"] == "ComFy paper scores: Inductive miner"
+    assert d["bundled_id"] == "comfy-paper-inductive-miner"
     assert d["n_observations"] == 288 and len(d["observations"]) == 288
     assert d["observations"][0] == "pdc2025_02000100.xes / Inductive miner"
     assert len(d["measures"]) == 12 and len(d["values"][0]) == 12
