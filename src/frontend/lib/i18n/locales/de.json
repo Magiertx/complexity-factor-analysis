@@ -228,7 +228,7 @@
       "recent_logs": "Logs, die deine Sitzung zuletzt hochgeladen hat.",
       "analyze": "Einen Algorithmus auf einem Log ausführen; liefert eine job_id.",
       "log_stats": "Schnelle beschreibende Statistiken eines Logs: Traces, Events, Varianten, Zeitraum.",
-      "fa_catalog": "Maße, Miner oder Merkmalsgruppen, mitgelieferte Datensätze, Beispieleingaben und die angenommenen Quellen.",
+      "fa_catalog": "Maße, Miner oder Feature-Gruppen, mitgelieferte Datensätze, Beispieleingaben und die angenommenen Quellen.",
       "fa_create": "Einen Datensatz aus einem mitgelieferten oder einer CSV anlegen (sofort bereit) oder aus Event-Logs oder PNML-Dateien (als Run berechnet).",
       "fa_list": "Die Datensätze deiner Sitzung, neueste zuerst; kind ist optional.",
       "fa_get": "Status, Fortschritt, gespeicherte Einstellungen und die bereinigte Matrix der Maße (erste 2.000 Zeilen).",
