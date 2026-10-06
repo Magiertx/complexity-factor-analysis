@@ -9,7 +9,7 @@ export const ALGO_CONTENT_DE: AlgoContentMap = {
   comfy: {
     name: "ComFy — Komplexität von Petri-Netzen",
     description:
-      "Aus dem hochgeladenen Event-Log wird mit den gewählten Minern ein Petri-Netz entdeckt; " +
+      "Aus dem hochgeladenen Event-Log wird mit den gewählten Minern ein Petri-Netz gefunden; " +
       "anschließend werden Komplexitätsmaße für jedes resultierende Netz berechnet.",
     labels: {
       discovery_algorithms: "Discovery-Algorithmen",
@@ -19,7 +19,7 @@ export const ALGO_CONTENT_DE: AlgoContentMap = {
       discovery_algorithms:
         "Welche Miner auf dem hochgeladenen Log ausgeführt werden sollen.",
       complexity_measures:
-        "Maße, die für jedes entdeckte Netz berechnet werden. Cross-Connectivity, Depth, Diameter und Cyclicity sind langsam.",
+        "Maße, die für jedes gefundene Netz berechnet werden. Cross-Connectivity, Depth, Diameter und Cyclicity sind langsam.",
     },
   },
 };

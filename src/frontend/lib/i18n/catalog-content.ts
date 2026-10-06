@@ -21,7 +21,7 @@ interface CatalogContent {
 }
 
 const PAPER_MINER = (miner: string) =>
-  `ComFy-Modellmaße der Netze, die der ${miner} aus den 288 Trainingslogs des Process Discovery Contest 2025 entdeckt hat, wie im Paper verwendet.`;
+  `ComFy-Modellmaße der Netze, die der ${miner} aus den 288 Trainingslogs des Process Discovery Contest 2025 gefunden hat, wie im Paper verwendet.`;
 
 const DE: CatalogContent = {
   groups: {
@@ -93,7 +93,7 @@ const DE: CatalogContent = {
       "feeed-Maße der 2.112 Trainingslogs der Process Discovery Contests 2020 bis 2025, wie im Paper „Cleaning Up the Measure Mess: A Factor Analysis on Event Log Measures“ verwendet. Mit einem älteren feeed berechnet: simple_trace_diversity, distinct_activities_mean, distinct_activities_std, event_density und complexity_factor weichen von Datensätzen ab, die der Dienst berechnet.",
     "pdc-sample-logs": "Trainingslogs der Process Discovery Contests 2020, 2023, 2024 und 2025, je 1.000 Traces.",
     "pdc-sample-models":
-      "32 Netze, mit dem Inductive miner von pm4py bei Rauschschwellen von 0 bis 0,8 aus den vier Beispiellogs entdeckt (samples/make_sample_models.py).",
+      "32 Netze, mit dem Inductive miner von pm4py bei Rauschschwellen von 0 bis 0,8 aus den vier Beispiel-Logs gefunden (samples/make_sample_models.py).",
   },
   labels: {
     "comfy-log-pdc-training-logs": "PDC-Trainingslogs 2020–2025",
@@ -101,7 +101,7 @@ const DE: CatalogContent = {
   collections: {
     "comfy-paper": {
       description:
-        "ComFy-Modellmaße der Netze, die jeder Miner aus den 288 Trainingslogs des Process Discovery Contest 2025 entdeckt hat.",
+        "ComFy-Modellmaße der Netze, die jeder Miner aus den 288 Trainingslogs des Process Discovery Contest 2025 gefunden hat.",
       license: "Keine Lizenzdatei im Original; die Erlaubnis der Autorin steht noch aus.",
     },
     "comfy-log-paper": {

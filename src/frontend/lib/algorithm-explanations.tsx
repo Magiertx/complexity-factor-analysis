@@ -25,7 +25,7 @@ const EXPLANATIONS_DE: Record<string, AlgorithmExplanation> = {
     ),
     how: (
       <>
-        Für jeden ausgewählten Miner wird ein Netz entdeckt und darauf werden die
+        Für jeden ausgewählten Miner wird ein Netz gefunden und darauf werden die
         gewählten Komplexitätsmaße berechnet (Größe, Dichte,
         Kontrollfluss-Komplexität und weitere). Das Ergebnis ist eine
         Tabellenzeile pro Miner, sodass sich vergleichen lässt, wie komplex die
