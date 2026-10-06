@@ -431,9 +431,10 @@ def test_readme_reproduces_the_loadings(client, tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     scope: dict = {}
     exec(code, scope)
-    loadings = pd.read_csv(tmp_path / "loadings.csv", index_col=0).drop(columns="communality")
-    assert list(scope["data"].columns) == list(loadings.index)
-    assert np.allclose(scope["fa"].loadings_, loadings.to_numpy())
+    loadings = json.loads(archive.read("analysis.json"))["loadings"]
+    assert list(scope["data"].columns) == list(loadings)
+    # Same libraries, same process: not close, but equal.
+    assert scope["fa"].loadings_.tolist() == list(loadings.values())
 
 
 def test_zip_includes_a_stored_interpretation_only(client):

@@ -184,10 +184,13 @@ def _readme(
         '    data = pd.read_csv("dataset.csv", index_col=0)',
         '    msa = pd.read_csv("msa.csv")',
         '    data = data[msa.loc[msa["status"] == "used", "measure"]]',
-        f"    fa = FactorAnalyzer(n_factors={params['n_factors']}, rotation={rotation!r}).fit(data)",
+        "    # Pass an array: factor_analyzer copies a DataFrame in another memory order,",
+        "    # which moves the minres optimum by about 1e-8.",
+        f"    fa = FactorAnalyzer(n_factors={params['n_factors']}, rotation={rotation!r}).fit(data.to_numpy())",
         "    print(fa.loadings_)",
         "",
-        "  manifest.json lists the library versions the analysis ran with.",
+        "  manifest.json lists the library versions the analysis ran with; with the same versions",
+        "  on the same platform the loadings are equal to those in analysis.json.",
     ]
     if result["structure_loadings"] is not None:
         lines += [
