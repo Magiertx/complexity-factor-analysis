@@ -586,8 +586,10 @@ function DatasetPicker({
 }) {
   const t = useT();
   // The newest dataset that is not open already; opening the open one only closes the form.
-  const [selected, setSelected] = useState(() => (datasets.find((d) => d.id !== openId) ?? datasets[0]).id);
-  const chosen = datasets.some((d) => d.id === selected) ? selected : null;
+  const fallback = (datasets.find((d) => d.id !== openId) ?? datasets[0])?.id ?? null;
+  const [selected, setSelected] = useState(fallback);
+  // The chosen one can go, deleted here or with its job in the drawer; then the default again.
+  const chosen = datasets.some((d) => d.id === selected) ? selected : fallback;
   const listRef = useRef<HTMLDivElement>(null);
   const refocus = useRef(false);
 
