@@ -894,6 +894,7 @@ export function Workbench() {
                 <div className="space-y-4" data-tour="single-logsource">
                   {/* Log Source Tab Selector */}
                   <Segmented
+                    aria-label={t("workbench.log_source.aria")}
                     className="max-w-[420px]"
                     value={activeSourceTab}
                     onChange={(v) => {
@@ -979,6 +980,7 @@ export function Workbench() {
                             </div>
                             <Segmented
                               size="sm"
+                              aria-label={t("workbench.layout.aria")}
                               value={recentLayout}
                               onChange={setRecentLayout}
                               options={[
@@ -1061,6 +1063,7 @@ export function Workbench() {
                         {sampleLogs.length > 1 && (
                           <Segmented
                             size="sm"
+                            aria-label={t("workbench.layout.aria")}
                             value={sampleLayout}
                             onChange={setSampleLayout}
                             options={[

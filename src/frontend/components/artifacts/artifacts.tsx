@@ -86,6 +86,7 @@ export function Artifacts({ artifacts, runId }: Props) {
                   <h3 className="text-sm font-medium text-muted">{t("artifacts.petri_nets_heading", { n: g.images.length })}</h3>
                   <Segmented
                     size="sm"
+                    aria-label={t("artifacts.layout_aria")}
                     value={imageLayout}
                     onChange={setImageLayout}
                     options={[

@@ -345,6 +345,7 @@
     "grid_view_title": "Rasteransicht (gerahmt, ausgerichtet)",
     "list_view_title": "Listenansicht (groß, im eigenen Format)",
     "grid_label": "Raster",
+    "layout_aria": "Ansicht der Petri-Netze",
     "list_label": "Liste",
     "image": {
       "download_title": "Bild direkt herunterladen",
@@ -407,6 +408,7 @@
     "search_placeholder": "Name, Dateiname oder Run-ID suchen…",
     "search_aria": "Runs suchen",
     "filter_kind_aria": "Nach Art filtern",
+    "filter_status_aria": "Nach Status filtern",
     "filter_all_kinds": "Alle Arten",
     "status_all": "Alle ({n})",
     "status_active": "Aktiv ({n})",
@@ -457,7 +459,8 @@
     },
     "log_source": {
       "upload_file": "Datei hochladen",
-      "use_sample": "Beispiel verwenden"
+      "use_sample": "Beispiel verwenden",
+      "aria": "Quelle des Logs"
     },
     "recent": {
       "label": "Zuletzt hochgeladene Logs"
@@ -466,6 +469,7 @@
       "grid": "Raster",
       "list": "Liste",
       "grid_title": "Rasteransicht",
+      "aria": "Ansicht",
       "list_title": "Listenansicht"
     },
     "samples": {
@@ -596,6 +600,7 @@
       "copy_citation": "Literaturnachweis kopieren",
       "copied": "Kopiert",
       "source_link": "Quelle",
+      "source_aria": "Datenquelle",
       "sample_label": "Mitgeliefertes Beispiel",
       "own_files": "Eigene Dateien",
       "csv_drop_label": "CSV-Datei hier ablegen",

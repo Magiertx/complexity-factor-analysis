@@ -212,6 +212,7 @@ export function DataForm({
     <div className="space-y-2">
       <div className="overflow-x-auto no-scrollbar">
         <Segmented<DatasetSource | "mine">
+          aria-label={t("factor.data.source_aria")}
           className="min-w-max sm:max-w-[560px]"
           value={mine ? "mine" : source}
           onChange={(s) => {

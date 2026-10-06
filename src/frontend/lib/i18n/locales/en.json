@@ -345,6 +345,7 @@
     "grid_view_title": "Grid view (framed, aligned)",
     "list_view_title": "List view (large, native format)",
     "grid_label": "Grid",
+    "layout_aria": "View of the Petri nets",
     "list_label": "List",
     "image": {
       "download_title": "Download image directly",
@@ -407,6 +408,7 @@
     "search_placeholder": "Search name, file name or run ID…",
     "search_aria": "Search runs",
     "filter_kind_aria": "Filter by kind",
+    "filter_status_aria": "Filter by status",
     "filter_all_kinds": "All kinds",
     "status_all": "All ({n})",
     "status_active": "Active ({n})",
@@ -457,7 +459,8 @@
     },
     "log_source": {
       "upload_file": "Upload file",
-      "use_sample": "Use example"
+      "use_sample": "Use example",
+      "aria": "Log source"
     },
     "recent": {
       "label": "Recently uploaded logs"
@@ -466,6 +469,7 @@
       "grid": "Grid",
       "list": "List",
       "grid_title": "Grid view",
+      "aria": "View",
       "list_title": "List view"
     },
     "samples": {
@@ -596,6 +600,7 @@
       "copy_citation": "Copy citation",
       "copied": "Copied",
       "source_link": "Source",
+      "source_aria": "Data source",
       "sample_label": "Bundled example",
       "own_files": "Own files",
       "csv_drop_label": "Drop a CSV file here",

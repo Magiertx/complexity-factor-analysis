@@ -219,6 +219,7 @@ export function RunHistoryView() {
           {/* Scrolls on its own on a phone, where the five filters are wider than the page. */}
           <div className="overflow-x-auto no-scrollbar">
             <Segmented<StatusFilter>
+              aria-label={t("run_history.filter_status_aria")}
               className="min-w-max"
               value={statusFilter}
               onChange={setStatusFilter}
