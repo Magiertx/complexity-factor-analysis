@@ -703,7 +703,10 @@ export function Workbench() {
                     : "")
                 }
               >
-                {t("workbench.job_badge", { id: selectedJobDetail.id.slice(0, 8), status: selectedJobDetail.status })}
+                {t("workbench.job_badge", {
+                  id: selectedJobDetail.id.slice(0, 8),
+                  status: t(`run_history.status_label_${selectedJobDetail.status}`),
+                })}
               </span>
             )}
           </div>
@@ -1232,7 +1235,7 @@ export function Workbench() {
               <div className="flex items-center justify-between gap-3 w-full">
                 <div className="text-xs text-muted">
                   {selectedJobDetail
-                    ? t("workbench.run_bar.job_status", { status: selectedJobDetail.status })
+                    ? t("workbench.run_bar.job_status", { status: t(`run_history.status_label_${selectedJobDetail.status}`) })
                     : hasLog
                       ? t("workbench.run_bar.ready")
                       : activeSourceTab === "sample"

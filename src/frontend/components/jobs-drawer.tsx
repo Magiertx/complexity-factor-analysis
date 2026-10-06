@@ -19,7 +19,6 @@ import {
   Play,
   Layers,
   Database,
-  BarChart3,
   History,
   CheckCircle2,
   XCircle,
@@ -71,10 +70,6 @@ const MODE_META: Record<RunMode, { label: string; icon: React.ComponentType<{ cl
   single: { label: "jobs.mode.single", icon: Play },
   batch: { label: "jobs.mode.batch", icon: Layers },
   dataset: { label: "jobs.mode.dataset", icon: Database },
-};
-
-const TOOL_TYPE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
-  complexity: BarChart3,
 };
 
 // ----------------------- Context -----------------------
@@ -197,7 +192,7 @@ export function JobsDrawer() {
     return m;
   }, [algorithms]);
 
-  // Load the manifests once; only needed for tool_type and algorithm names.
+  // Load the manifests once; only needed for the algorithm names of old batch runs.
   useEffect(() => {
     fetchAlgorithms()
       .then((res) => setAlgorithms(res.algorithms))
@@ -524,8 +519,6 @@ function JobCard({
   };
   const ModeIcon = MODE_META[info.mode].icon;
   const innerAlgo = info.innerAlgoId ? algoById.get(info.innerAlgoId) : null;
-  const toolType = innerAlgo?.tool_type ?? null;
-  const ToolTypeIcon = toolType ? TOOL_TYPE_ICON[toolType] : null;
   const activeJob = job.status === "pending" || job.status === "running";
 
   const shortAlgo =
@@ -558,14 +551,6 @@ function JobCard({
           >
             <ModeIcon className="h-3 w-3" />
           </span>
-          {ToolTypeIcon && (
-            <span
-              className="h-5 w-5 rounded grid place-items-center bg-muted/15 text-muted"
-              title={t("jobs.tool_type_title", { type: toolType ?? "" })}
-            >
-              <ToolTypeIcon className="h-3 w-3" />
-            </span>
-          )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-xs font-semibold text-fg truncate" title={shortAlgo}>

@@ -200,19 +200,22 @@ export function RunHistoryView() {
                 aria-label={t("run_history.search_aria")}
               />
             </div>
-            <div className="flex items-center gap-2">
-              <Filter className="h-3.5 w-3.5 text-muted" aria-hidden />
-              <Select
-                value={algoFilter}
-                onValueChange={setAlgoFilter}
-                className="min-w-[180px] w-auto"
-                aria-label={t("run_history.filter_algo_aria")}
-                options={[
-                  { value: "", label: t("run_history.filter_all_algorithms") },
-                  ...algorithmOptions.map((a) => ({ value: a.id, label: a.name })),
-                ]}
-              />
-            </div>
+            {/* Datasets of either tab and inspected logs; with one kind there is nothing to filter. */}
+            {(algorithmOptions.length > 1 || algoFilter) && (
+              <div className="flex items-center gap-2 min-w-0">
+                <Filter className="h-3.5 w-3.5 text-muted shrink-0" aria-hidden />
+                <Select
+                  value={algoFilter}
+                  onValueChange={setAlgoFilter}
+                  className="min-w-[180px] w-auto max-w-full"
+                  aria-label={t("run_history.filter_kind_aria")}
+                  options={[
+                    { value: "", label: t("run_history.filter_all_kinds") },
+                    ...algorithmOptions.map((a) => ({ value: a.id, label: a.name })),
+                  ]}
+                />
+              </div>
+            )}
           </div>
 
           {/* Scrolls on its own on a phone, where the five filters are wider than the page. */}

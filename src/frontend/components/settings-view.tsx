@@ -18,6 +18,7 @@ import {
   Upload,
   Loader2,
   Code2,
+  ListChecks,
 } from "lucide-react";
 import {
   AlgorithmManifest,
@@ -455,7 +456,7 @@ export function SettingsView() {
               href="/runs"
               className="h-8 px-3 inline-flex items-center gap-1.5 rounded-md bg-tile hover:bg-accent/[0.08] transition text-xs font-medium text-fg"
             >
-              <ExternalLink className="h-3.5 w-3.5" />
+              <ListChecks className="h-3.5 w-3.5" />
               {t("settings.storage.open_run_history")}
             </Link>
           </SettingRow>
