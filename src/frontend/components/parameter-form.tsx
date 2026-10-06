@@ -98,7 +98,7 @@ function Field({
   const hintId = help || spec.recommended ? `${id}-hint` : undefined;
 
   const hint = help || spec.recommended ? (
-    <span id={hintId} className="block text-[11px] text-muted mt-1.5 normal-case font-normal tracking-normal">
+    <span id={hintId} className="block text-[11px] text-muted mt-1.5">
       {help}
       {spec.recommended && (
         <span className="block text-muted/70 italic mt-0.5">

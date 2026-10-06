@@ -265,7 +265,7 @@ export function RunHistoryView() {
                         </span>
                         <span
                           className={cn(
-                            "text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded",
+                            "text-[11px] font-medium px-1.5 py-0.5 rounded shrink-0",
                             STATUS_BADGE[job.status],
                           )}
                         >

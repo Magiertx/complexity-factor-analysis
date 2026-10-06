@@ -54,11 +54,11 @@ export function LogOverviewCard({ stats, filename }: Props) {
 
   return (
     <section className="rounded-lg bg-surface px-4 py-3 space-y-2.5">
-      <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-muted">
+      <div className="flex items-center gap-2 text-xs font-medium text-muted min-w-0">
         <FileBarChart className="h-3 w-3" />
         <span>{t("log_overview.heading")}</span>
         {filename && (
-          <span className="font-mono normal-case text-muted/70 truncate" title={filename}>
+          <span className="font-mono text-muted/70 truncate" title={filename}>
             · {filename}
           </span>
         )}
@@ -115,7 +115,7 @@ export function LogOverviewCard({ stats, filename }: Props) {
 
       {stats.top_activities.length > 0 && (
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted shrink-0">
+          <span className="inline-flex items-center gap-1.5 text-xs text-muted shrink-0">
             <Flame className="h-3 w-3" />
             <span>{t("log_overview.top_label")}</span>
           </span>

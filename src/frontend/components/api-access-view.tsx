@@ -173,7 +173,7 @@ export function ApiAccessView() {
         <CardContent className="space-y-5">
           {ENDPOINTS.map((g) => (
             <div key={g.group} className="space-y-1.5">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted/80">
+              <div className="text-xs font-medium text-muted">
                 {g.group}
               </div>
               <ul className="rounded-md bg-tile/40 overflow-hidden">
@@ -240,7 +240,7 @@ function MethodBadge({ method }: { method: "GET" | "POST" | "DELETE" }) {
   return (
     <span
       className={cn(
-        "shrink-0 w-14 text-center font-mono text-[10px] font-semibold uppercase rounded px-1 py-0.5",
+        "shrink-0 w-14 text-center font-mono text-[10px] font-semibold rounded px-1 py-0.5",
         styles,
       )}
     >

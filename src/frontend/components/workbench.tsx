@@ -609,7 +609,7 @@ export function Workbench() {
         }
       >
         <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-muted px-1">
+          <div className="flex items-center justify-between text-xs font-medium text-muted px-1">
             <span>{t("workbench.sidebar.algorithm_label")}</span>
             <div className="flex items-center gap-1">
               <button
@@ -617,7 +617,7 @@ export function Workbench() {
                 onClick={() => setPageTourOpen(true)}
                 aria-label={t("workbench.sidebar.tour_aria")}
                 title={t("workbench.sidebar.tour_title")}
-                className="h-6 px-1.5 inline-flex items-center gap-1 rounded text-[10px] normal-case font-normal text-muted hover:text-fg hover:bg-tile transition appearance-none"
+                className="h-6 px-1.5 inline-flex items-center gap-1 rounded text-[11px] font-normal text-muted hover:text-fg hover:bg-tile transition appearance-none"
               >
                 <HelpCircle className="h-3.5 w-3.5" />
                 <span>{t("workbench.sidebar.tour_button")}</span>
@@ -688,7 +688,7 @@ export function Workbench() {
             {selectedJobDetail && (
               <span
                 className={
-                  "text-[10px] font-mono px-2 py-0.5 rounded-full uppercase shrink-0 " +
+                  "text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 " +
                   (selectedJobDetail.status === "completed"
                     ? "bg-success/15 text-success-ink "
                     : "") +
@@ -743,7 +743,7 @@ export function Workbench() {
               {/* Formatted Citation Helper */}
               {(selected.formatted_citation || selected.citation) && (
                 <div className="mt-4 bg-tile rounded-lg p-3.5 relative group">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-muted mb-1.5 flex items-center justify-between gap-2">
+                  <div className="text-xs font-medium text-muted mb-1.5 flex items-center justify-between gap-x-3 gap-y-1 flex-wrap">
                     <span>{t("workbench.algo_card.academic_reference")}</span>
                     {selected.citation && (
                       <div className="flex items-center gap-3">
@@ -899,7 +899,7 @@ export function Workbench() {
                       {recentLogs.length > 0 && (
                         <div className="space-y-2 pt-1">
                           <div className="flex items-center justify-between px-1">
-                            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted/80 flex items-center gap-1.5">
+                            <div className="text-xs font-medium text-muted flex items-center gap-1.5">
                               <History className="h-3.5 w-3.5 text-muted/70" />
                               <span>{t("workbench.recent.label")}</span>
                             </div>
@@ -992,7 +992,7 @@ export function Workbench() {
                   ) : (
                     <div className="space-y-4 w-full">
                       <div className="flex items-center justify-between px-1">
-                        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted/80 flex items-center gap-1.5">
+                        <div className="text-xs font-medium text-muted flex items-center gap-1.5">
                           <span>{t("workbench.samples.label")}</span>
                         </div>
                         <Segmented
@@ -1128,10 +1128,10 @@ export function Workbench() {
                     const chosen = secondaryFiles[sf.name];
                     return (
                       <div key={sf.name} className="space-y-1.5">
-                        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted/80">
+                        <div className="text-xs font-medium text-muted">
                           {sf.label}
                           {sf.optional && (
-                            <span className="ml-1.5 normal-case font-normal tracking-normal text-muted/60">
+                            <span className="ml-1.5 font-normal text-muted">
                               · {t("workbench.secondary.optional")}
                             </span>
                           )}

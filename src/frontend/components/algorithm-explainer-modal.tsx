@@ -126,7 +126,7 @@ function Section({
 }) {
   return (
     <section className="space-y-1.5">
-      <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted">
+      <h3 className="flex items-center gap-2 text-sm font-semibold text-muted">
         <span className="text-accent-ink">{icon}</span>
         {title}
       </h3>

@@ -75,7 +75,7 @@ export function Artifacts({ artifacts, runId }: Props) {
             const a = g.images[0];
             return (
               <section key={i} className="space-y-2">
-                <h3 className="text-xs font-medium uppercase tracking-wide text-muted">{a.label}</h3>
+                <h3 className="text-sm font-medium text-muted">{a.label}</h3>
                 <ImageView artifact={a} runId={runId} />
               </section>
             );
@@ -83,7 +83,7 @@ export function Artifacts({ artifacts, runId }: Props) {
             return (
               <div key={i} className="space-y-3">
                 <div className="flex items-center justify-between border-b border-border/40 pb-2">
-                  <h3 className="text-xs font-medium uppercase tracking-wide text-muted">{t("artifacts.petri_nets_heading", { n: g.images.length })}</h3>
+                  <h3 className="text-sm font-medium text-muted">{t("artifacts.petri_nets_heading", { n: g.images.length })}</h3>
                   <Segmented
                     size="sm"
                     value={imageLayout}
@@ -99,7 +99,7 @@ export function Artifacts({ artifacts, runId }: Props) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     {g.images.map((a, idx) => (
                       <section key={idx} className="space-y-2">
-                        <h3 className="text-xs font-medium uppercase tracking-wide text-muted">{a.label}</h3>
+                        <h3 className="text-sm font-medium text-muted">{a.label}</h3>
                         <ImageView artifact={a} runId={runId} fixedHeight={true} />
                       </section>
                     ))}
@@ -108,7 +108,7 @@ export function Artifacts({ artifacts, runId }: Props) {
                   <div className="space-y-6">
                     {g.images.map((a, idx) => (
                       <section key={idx} className="space-y-2">
-                        <h3 className="text-xs font-medium uppercase tracking-wide text-muted">{a.label}</h3>
+                        <h3 className="text-sm font-medium text-muted">{a.label}</h3>
                         <ImageView artifact={a} runId={runId} fixedHeight={false} />
                       </section>
                     ))}
@@ -122,7 +122,7 @@ export function Artifacts({ artifacts, runId }: Props) {
         const a = g.artifact;
         return (
           <section key={i} className="space-y-2">
-            <h3 className="text-xs font-medium uppercase tracking-wide text-muted">{a.label}</h3>
+            <h3 className="text-sm font-medium text-muted">{a.label}</h3>
             {a.kind === "table" && <TableView artifact={a} runId={runId} />}
             {a.kind === "log" && <LogDownload artifact={a} />}
             {a.kind === "text" && <TextView artifact={a} />}

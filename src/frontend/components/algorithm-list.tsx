@@ -173,7 +173,7 @@ export function AlgorithmList({
     <nav className="flex flex-col gap-5" data-tour="single-algo-list">
       {favoriteAlgos.length > 0 && (
         <div className="flex flex-col gap-1.5">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted px-1 flex items-center gap-1.5">
+          <div className="text-xs font-medium text-muted px-1 flex items-center gap-1.5">
             <Star className="h-3 w-3 fill-current text-accent-ink" />
             {t("algorithm_list.favorites_heading")}
           </div>
@@ -182,7 +182,7 @@ export function AlgorithmList({
       )}
       {orderedKeys.map((tt) => (
         <div key={tt} className="flex flex-col gap-1.5">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted px-1">
+          <div className="text-xs font-medium text-muted px-1">
             {categoryLabels[tt] ?? tt}
           </div>
           {groups.get(tt)!.map(renderAlgo)}

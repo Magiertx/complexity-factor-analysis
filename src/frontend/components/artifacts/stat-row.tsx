@@ -24,7 +24,7 @@ export function StatRow({ stats }: Props) {
         const value = formatValue(s);
         return (
           <div key={i}>
-            <div className="text-xs uppercase tracking-wide text-muted">{s.label}</div>
+            <div className="text-xs text-muted">{s.label}</div>
             <div className={cn("mt-1 text-2xl font-semibold font-mono", color)}>{value}</div>
           </div>
         );
