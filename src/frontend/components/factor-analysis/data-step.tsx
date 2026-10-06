@@ -266,6 +266,7 @@ export function DataForm({
         {tabs}
         <DatasetPicker
           kind={kind}
+          catalog={catalog}
           datasets={datasets}
           openId={openId}
           onOpen={onOpen}
@@ -572,6 +573,7 @@ function BundledTile({
 /** The datasets of the session as choice tiles: one to reopen, any to delete. */
 function DatasetPicker({
   kind,
+  catalog,
   datasets,
   openId,
   onOpen,
@@ -579,6 +581,7 @@ function DatasetPicker({
   onCancel,
 }: {
   kind: FactorKind;
+  catalog: FactorCatalog;
   datasets: DatasetSummary[];
   openId: string | null;
   onOpen: (id: string) => void;
@@ -620,6 +623,7 @@ function DatasetPicker({
             key={d.id}
             name={`fa-mine-${kind}`}
             dataset={d}
+            catalog={catalog}
             chosen={d.id === chosen}
             open={d.id === openId}
             onSelect={() => setSelected(d.id)}
@@ -645,6 +649,7 @@ function DatasetPicker({
 function DatasetTile({
   name,
   dataset,
+  catalog,
   chosen,
   open,
   onSelect,
@@ -652,6 +657,7 @@ function DatasetTile({
 }: {
   name: string;
   dataset: DatasetSummary;
+  catalog: FactorCatalog;
   chosen: boolean;
   /** The dataset is the one open on the tab. */
   open: boolean;
@@ -664,7 +670,7 @@ function DatasetTile({
   const askRef = useRef<HTMLButtonElement>(null);
   const Icon = SOURCE_ICON[dataset.source];
   const { n_observations: rows, n_measures: cols } = dataset;
-  const title = datasetName(dataset, t);
+  const title = datasetName(dataset, t, catalog);
   // A computed dataset goes with the run that computed it.
   const withRun = !!dataset.job_id;
   return (
@@ -992,6 +998,7 @@ function Estimate({ rows, cols }: { rows: number; cols: number }) {
 /** The data step once a dataset exists: what is loaded, or the progress while it is computed. */
 export function DataSummary({
   dataset,
+  bundledId,
   catalog,
   titleRef,
   onChange,
@@ -999,6 +1006,8 @@ export function DataSummary({
   onDelete,
 }: {
   dataset: FactorDataset;
+  /** The bundled dataset it was loaded from, as the list of datasets says; names it in the UI language. */
+  bundledId?: string | null;
   catalog: FactorCatalog;
   /** The title of the summary, which takes the focus when the summary replaces the form. */
   titleRef?: React.Ref<HTMLDivElement>;
@@ -1008,7 +1017,7 @@ export function DataSummary({
 }) {
   const t = useT();
   const { locale } = useLocale();
-  const name = datasetName(dataset, t);
+  const name = datasetName({ ...dataset, bundled_id: bundledId }, t, catalog);
   const withRun = !!dataset.job_id;
   const title =
     "rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface";

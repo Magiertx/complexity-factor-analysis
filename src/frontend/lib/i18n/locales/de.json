@@ -563,7 +563,7 @@
       "slow_badge": "langsam",
       "slow_title": "Dauert bei großen Logs spürbar länger",
       "name_label": "Name des Datensatzes (optional)",
-      "name_placeholder": "z. B. BPI-Logs, Inductive Miner",
+      "name_placeholder": "z. B. BPI-Logs, Inductive miner",
       "auto_name": {
         "logs": "Datensatz aus {n} Log",
         "logs_plural": "Datensatz aus {n} Logs",

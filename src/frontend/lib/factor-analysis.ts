@@ -1,7 +1,16 @@
 // Helpers for the factor analysis view. Kept free of React so they stay easy to reuse.
 
 import type { CSSProperties } from "react";
-import type { AnalysisNotice, AnalyzeOptions, FactorAnalysis, FactorKind, InputsSummary, Job, Rotation } from "./api";
+import type {
+  AnalysisNotice,
+  AnalyzeOptions,
+  FactorAnalysis,
+  FactorCatalog,
+  FactorKind,
+  InputsSummary,
+  Job,
+  Rotation,
+} from "./api";
 
 type Translate = (key: string, params?: Record<string, string | number>) => string;
 type TranslateMaybe = (key: string, params?: Record<string, string | number>) => string | undefined;
@@ -228,12 +237,19 @@ function inputsName(t: Translate, nets: boolean, n: number): string {
   return countText(t, `factor.data.auto_name.${nets ? "nets" : "logs"}`, n);
 }
 
-/** The name of a dataset; one the server made up from the inputs is said in the UI language. */
+/**
+ * The name of a dataset in the UI language where the server's is English: one it made up from
+ * the inputs, or that of a bundled dataset, which the (localized) catalog has.
+ */
 export function datasetName(
-  dataset: { name: string; name_auto?: boolean; source: string; inputs?: InputsSummary },
+  dataset: { name: string; name_auto?: boolean; source: string; inputs?: InputsSummary; bundled_id?: string | null },
   t: Translate,
+  catalog?: FactorCatalog | null,
 ): string {
-  return dataset.name_auto ? inputsName(t, dataset.source === "pnml", dataset.inputs?.files ?? 0) : dataset.name;
+  if (dataset.name_auto) return inputsName(t, dataset.source === "pnml", dataset.inputs?.files ?? 0);
+  // The server names a bundled dataset after its catalog entry; the UI gives it no other name.
+  const bundled = dataset.bundled_id ? catalog?.bundled.find((b) => b.id === dataset.bundled_id) : undefined;
+  return bundled?.name ?? dataset.name;
 }
 
 /** What a dataset job computes, e.g. "Model complexity · 4 logs × 2 miners"; null for other jobs. */

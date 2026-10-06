@@ -10,12 +10,14 @@ interface CatalogContent {
   groups: Record<string, { name: string; description: string }>;
   /** Model measure descriptions by measure name. */
   measures: Record<string, string>;
+  /** Names of bundled datasets and samples by id. Collections keep theirs: they are paper titles. */
+  names: Record<string, string>;
   /** Descriptions of bundled datasets and samples by id. */
   datasets: Record<string, string>;
   /** Short labels of bundled datasets by id, where they are not names. */
   labels: Record<string, string>;
-  /** Descriptions and notes of the dataset collections (papers) by id. */
-  collections: Record<string, { description: string; note?: string }>;
+  /** Descriptions, notes and license remarks of the dataset collections (papers) by id. */
+  collections: Record<string, { description: string; note?: string; license?: string }>;
 }
 
 const PAPER_MINER = (miner: string) =>
@@ -66,19 +68,32 @@ const DE: CatalogContent = {
       "Wiederholungen von Transitionsbeschriftungen; stille Transitionen zählen als Wiederholungen einer Beschriftung.",
     "Number of empty sequence flows": "Stellen zwischen einem parallelen Split und einem parallelen Join.",
   },
+  names: {
+    "comfy-paper-inductive-miner": "Maßwerte aus dem ComFy-Paper: Inductive miner",
+    "comfy-paper-alpha-miner": "Maßwerte aus dem ComFy-Paper: Alpha miner",
+    "comfy-paper-alpha-plus-miner": "Maßwerte aus dem ComFy-Paper: Alpha Plus miner",
+    "comfy-paper-alpha-dollar-miner": "Maßwerte aus dem ComFy-Paper: Alpha Dollar miner",
+    "comfy-paper-heuristics-miner": "Maßwerte aus dem ComFy-Paper: Heuristics miner",
+    "comfy-paper-hybrid-ilp-miner": "Maßwerte aus dem ComFy-Paper: Hybrid ILP miner",
+    "comfy-paper-directly-follows-miner": "Maßwerte aus dem ComFy-Paper: Directly Follows miner",
+    "comfy-log-pdc-training-logs": "Log-Maße der PDC-Trainingslogs",
+    "pdc-sample-logs": "Vier PDC-Trainingslogs",
+    "pdc-sample-models": "Petri-Netze der vier PDC-Logs",
+  },
+  // Miner names as ComFy spells them, like the miner list of the data step.
   datasets: {
-    "comfy-paper-inductive-miner": PAPER_MINER("Inductive Miner"),
-    "comfy-paper-alpha-miner": PAPER_MINER("Alpha Miner"),
-    "comfy-paper-alpha-plus-miner": PAPER_MINER("Alpha Plus Miner"),
-    "comfy-paper-alpha-dollar-miner": PAPER_MINER("Alpha Dollar Miner"),
-    "comfy-paper-heuristics-miner": PAPER_MINER("Heuristics Miner"),
-    "comfy-paper-hybrid-ilp-miner": PAPER_MINER("Hybrid ILP Miner"),
-    "comfy-paper-directly-follows-miner": PAPER_MINER("Directly Follows Miner"),
+    "comfy-paper-inductive-miner": PAPER_MINER("Inductive miner"),
+    "comfy-paper-alpha-miner": PAPER_MINER("Alpha miner"),
+    "comfy-paper-alpha-plus-miner": PAPER_MINER("Alpha Plus miner"),
+    "comfy-paper-alpha-dollar-miner": PAPER_MINER("Alpha Dollar miner"),
+    "comfy-paper-heuristics-miner": PAPER_MINER("Heuristics miner"),
+    "comfy-paper-hybrid-ilp-miner": PAPER_MINER("Hybrid ILP miner"),
+    "comfy-paper-directly-follows-miner": PAPER_MINER("Directly Follows miner"),
     "comfy-log-pdc-training-logs":
       "feeed-Maße der 2112 Trainingslogs der Process Discovery Contests 2020 bis 2025, wie im Paper „Cleaning Up the Measure Mess: A Factor Analysis on Event Log Measures“ verwendet. Mit einem älteren feeed berechnet: simple_trace_diversity, distinct_activities_mean, distinct_activities_std, event_density und complexity_factor weichen von Datensätzen ab, die der Dienst berechnet.",
     "pdc-sample-logs": "Trainingslogs der Process Discovery Contests 2020, 2023, 2024 und 2025, je 1000 Traces.",
     "pdc-sample-models":
-      "32 Netze, mit dem Inductive Miner von pm4py bei Rauschschwellen von 0 bis 0,8 aus den vier Beispiellogs entdeckt (samples/make_sample_models.py).",
+      "32 Netze, mit dem Inductive miner von pm4py bei Rauschschwellen von 0 bis 0,8 aus den vier Beispiellogs entdeckt (samples/make_sample_models.py).",
   },
   labels: {
     "comfy-log-pdc-training-logs": "PDC-Trainingslogs 2020–2025",
@@ -87,6 +102,7 @@ const DE: CatalogContent = {
     "comfy-paper": {
       description:
         "ComFy-Modellmaße der Netze, die jeder Miner aus den 288 Trainingslogs des Process Discovery Contest 2025 entdeckt hat.",
+      license: "Keine Lizenzdatei im Original; die Erlaubnis der Autorin steht noch aus.",
     },
     "comfy-log-paper": {
       description: "feeed-Maße der 2112 Trainingslogs der Process Discovery Contests 2020 bis 2025.",
@@ -326,11 +342,16 @@ export function localizeCatalog(catalog: FactorCatalog, locale: Locale): FactorC
     ...(c && {
       bundled: catalog.bundled.map((b) => ({
         ...b,
+        name: c.names[b.id] ?? b.name,
         description: c.datasets[b.id] ?? b.description,
         label: c.labels[b.id] ?? b.label,
       })),
       collections: catalog.collections?.map((col) => ({ ...col, ...c.collections[col.id] })),
-      samples: catalog.samples?.map((s) => ({ ...s, description: c.datasets[s.id] ?? s.description })),
+      samples: catalog.samples?.map((s) => ({
+        ...s,
+        name: c.names[s.id] ?? s.name,
+        description: c.datasets[s.id] ?? s.description,
+      })),
     }),
   };
 }

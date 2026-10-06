@@ -678,6 +678,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             ) : dataset ? (
               <DataSummary
                 dataset={dataset}
+                bundledId={datasets?.find((d) => d.id === dataset.id)?.bundled_id}
                 catalog={catalog}
                 titleRef={summaryTitle}
                 onChange={() => setChoosing(true)}
