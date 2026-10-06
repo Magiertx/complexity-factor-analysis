@@ -64,6 +64,9 @@ export function initialOptions(
   return { ...options, excluded: options.excluded.filter((m) => measures.includes(m)) };
 }
 
+/** localStorage keys of the factor analysis tabs, cleared with the datasets in the settings. */
+export const STORAGE_PREFIXES = ["app.factor-dataset-", "app.factor-options-"];
+
 /** Fewest measures the backend accepts for an analysis. */
 export const MIN_MEASURES = 3;
 

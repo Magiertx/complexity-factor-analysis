@@ -158,7 +158,7 @@
     },
     "storage": {
       "title": "Storage & data",
-      "description": "Cached parameters and the persistent job history.",
+      "description": "Cached parameters, the persistent job history and the datasets of the factor analysis.",
       "cached_params_label": "Cached algorithm parameters",
       "cached_params_hint": "{n} algorithm has remembered parameters from previous runs.",
       "cached_params_hint_plural": "{n} algorithms have remembered parameters from previous runs.",
@@ -174,7 +174,16 @@
       "clear_jobs_label": "Clear job history",
       "clear_jobs_hint": "Deletes every persisted run on the server, including artifacts. This cannot be undone.",
       "confirm_delete": "Confirm delete",
-      "delete_all_jobs": "Delete all jobs"
+      "delete_all_jobs": "Delete all jobs",
+      "clear_datasets_label": "Delete factor-analysis datasets",
+      "clear_datasets_hint": "{n} dataset of the model and log complexity tabs is stored on the server, with the settings of its last analysis.",
+      "clear_datasets_hint_plural": "{n} datasets of the model and log complexity tabs are stored on the server, each with the settings of its last analysis.",
+      "clear_datasets_empty": "No datasets of the model and log complexity tabs are stored for this session.",
+      "clear_datasets_unknown": "Datasets of the model and log complexity tabs, each with the settings of its last analysis.",
+      "delete_all_datasets": "Delete datasets",
+      "toast_datasets_deleted": "{n} dataset deleted",
+      "toast_datasets_deleted_plural": "{n} datasets deleted",
+      "toast_datasets_failed": "Failed to delete the datasets"
     },
     "about": {
       "title": "About",

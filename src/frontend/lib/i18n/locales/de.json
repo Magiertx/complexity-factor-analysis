@@ -158,7 +158,7 @@
     },
     "storage": {
       "title": "Speicher & Daten",
-      "description": "Gecachte Parameter und der persistente Job-Verlauf.",
+      "description": "Gecachte Parameter, der persistente Job-Verlauf und die Datensätze der Faktoranalyse.",
       "cached_params_label": "Gecachte Algorithmus-Parameter",
       "cached_params_hint": "{n} Algorithmus hat Parameter aus früheren Runs gespeichert.",
       "cached_params_hint_plural": "{n} Algorithmen haben Parameter aus früheren Runs gespeichert.",
@@ -174,7 +174,16 @@
       "clear_jobs_label": "Job-Verlauf löschen",
       "clear_jobs_hint": "Löscht jeden gespeicherten Run auf dem Server, einschließlich Artefakten. Dies kann nicht rückgängig gemacht werden.",
       "confirm_delete": "Löschen bestätigen",
-      "delete_all_jobs": "Alle Jobs löschen"
+      "delete_all_jobs": "Alle Jobs löschen",
+      "clear_datasets_label": "Faktoranalyse-Datensätze löschen",
+      "clear_datasets_hint": "{n} Datensatz der Tabs Modell- und Log-Komplexität liegt auf dem Server, mit den Einstellungen seiner letzten Analyse.",
+      "clear_datasets_hint_plural": "{n} Datensätze der Tabs Modell- und Log-Komplexität liegen auf dem Server, jeder mit den Einstellungen seiner letzten Analyse.",
+      "clear_datasets_empty": "Für diese Sitzung liegen keine Datensätze der Tabs Modell- und Log-Komplexität auf dem Server.",
+      "clear_datasets_unknown": "Datensätze der Tabs Modell- und Log-Komplexität, jeder mit den Einstellungen seiner letzten Analyse.",
+      "delete_all_datasets": "Datensätze löschen",
+      "toast_datasets_deleted": "{n} Datensatz gelöscht",
+      "toast_datasets_deleted_plural": "{n} Datensätze gelöscht",
+      "toast_datasets_failed": "Löschen der Datensätze fehlgeschlagen"
     },
     "about": {
       "title": "Info",
