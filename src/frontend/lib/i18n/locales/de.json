@@ -151,7 +151,13 @@
       "toast_imported": "{n} Presets importiert",
       "toast_imported_renamed": "{n} Presets importiert ({renamed} umbenannt, um Duplikate zu vermeiden)",
       "import_error_invalid_json": "Diese Datei ist kein gültiges JSON.",
-      "import_error_generic": "Diese Datei konnte nicht importiert werden."
+      "import_error_generic": "Diese Datei konnte nicht importiert werden.",
+      "errors": {
+        "empty_name": "Gib dem Preset einen Namen.",
+        "not_an_object": "Diese Datei enthält keine Presets: Sie ist kein JSON-Objekt.",
+        "no_groups": "Diese Datei enthält keine Presets: Ihre Liste der Gruppen fehlt.",
+        "no_presets": "In der Datei wurden keine gültigen Presets gefunden."
+      }
     },
     "storage": {
       "title": "Speicher & Daten",

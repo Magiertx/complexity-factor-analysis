@@ -41,6 +41,17 @@ function write(algorithmId: string, presets: Preset[]): void {
   }
 }
 
+/** Why saving or importing presets failed; the UI says it in its language by the code. */
+export class PresetError extends Error {
+  code: "empty_name" | "not_an_object" | "no_groups" | "no_presets";
+
+  constructor(code: PresetError["code"], message: string) {
+    super(message);
+    this.name = "PresetError";
+    this.code = code;
+  }
+}
+
 export function listPresets(algorithmId: string): Preset[] {
   return read(algorithmId).sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -52,7 +63,7 @@ export function getPreset(algorithmId: string, name: string): Preset | undefined
 export function savePreset(algorithmId: string, name: string, params: Record<string, unknown>): Preset {
   const trimmed = name.trim();
   if (!trimmed) {
-    throw new Error("Preset name must not be empty.");
+    throw new PresetError("empty_name", "Preset name must not be empty.");
   }
   const presets = read(algorithmId).filter((p) => p.name !== trimmed);
   const preset: Preset = { name: trimmed, params, createdAt: Date.now() };
@@ -118,12 +129,12 @@ export type ImportResult = {
  */
 export function importPresets(payload: unknown): ImportResult {
   if (!payload || typeof payload !== "object") {
-    throw new Error("Invalid preset file: not a JSON object.");
+    throw new PresetError("not_an_object", "Invalid preset file: not a JSON object.");
   }
   const obj = payload as Record<string, unknown>;
   const groups = obj.groups;
   if (!Array.isArray(groups)) {
-    throw new Error("Invalid preset file: missing 'groups' array.");
+    throw new PresetError("no_groups", "Invalid preset file: missing 'groups' array.");
   }
 
   let added = 0;
@@ -175,7 +186,7 @@ export function importPresets(payload: unknown): ImportResult {
   }
 
   if (added === 0) {
-    throw new Error("No valid presets found in the file.");
+    throw new PresetError("no_presets", "No valid presets found in the file.");
   }
 
   return { added, renamed, groups: touchedGroups };

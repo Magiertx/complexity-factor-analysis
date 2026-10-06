@@ -39,6 +39,7 @@ import {
   deletePreset,
   importPresets,
   listAllPresets,
+  PresetError,
 } from "@/lib/presets";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDateTime } from "@/lib/i18n/local-format";
@@ -183,9 +184,11 @@ export function SettingsView() {
         : t("settings.presets.toast_imported", { n: result.added });
       showToast(msg);
     } catch (err) {
-      const msg = err instanceof Error && err.message
-        ? err.message
-        : t("settings.presets.import_error_generic");
+      const msg = err instanceof PresetError
+        ? t(`settings.presets.errors.${err.code}`)
+        : err instanceof Error && err.message
+          ? err.message
+          : t("settings.presets.import_error_generic");
       setPresetImportError(msg);
     }
   };
