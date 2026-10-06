@@ -524,7 +524,7 @@
         "logs_model": "Each log is mined with each selected miner, and the selected measures are computed on every discovered Petri net. Every log × miner pair becomes one observation.",
         "logs_log": "The selected feature groups are computed for every log with feeed. Every log becomes one observation.",
         "pnml": "The selected measures are computed on Petri nets you already have. Every net becomes one observation.",
-        "mine": "Datasets you loaded or computed in this session, each with the settings of its last analysis. The server keeps them for 7 days."
+        "mine": "Datasets you loaded or computed in this session, each with the settings of its last analysis. The server keeps up to 30 per session and removes them after 7 days without use."
       },
       "bundled_empty": "No bundled datasets are available on this server.",
       "bundled_size": "{rows} observations × {cols} measures",
@@ -600,7 +600,7 @@
       "delete_with_run": "Delete dataset and the run that computed it",
       "delete_confirm_run": "Delete dataset and run",
       "delete_failed": "The dataset could not be deleted.",
-      "gone": "The dataset you had open is no longer available. It was deleted or expired after 7 days.",
+      "gone": "The dataset you had open is no longer available. It was deleted, replaced by newer datasets, or removed after 7 days without use.",
       "dismiss_aria": "Dismiss",
       "inputs_aria": "What the dataset was built from"
     },
