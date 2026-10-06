@@ -309,6 +309,7 @@
     "no_runs_yet": "Noch keine Runs. Starte einen von einem beliebigen Tool.",
     "view_all": "Alle Jobs anzeigen",
     "delete_job_aria": "Job löschen",
+    "abort_job_aria": "Job abbrechen",
     "run_mode_title": "Run-Modus: {mode}",
     "tool_type_title": "Tool-Typ: {type}",
     "status_completed": "Abgeschlossen",
