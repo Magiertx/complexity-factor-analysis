@@ -38,6 +38,7 @@ import {
 import { datasetJobHref, datasetJobSubtitle, jobDisplayName, jobTitle } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
+import { Button } from "./ui/button";
 
 // How a job was started, derived from the `algorithm_id` prefix: runs of the
 // removed batch mode are stored as "_batch:<algo>", factor analysis datasets as
@@ -310,8 +311,17 @@ export function JobsDrawer() {
     setCount(0);
   };
 
+  // A deleted card takes the focus with it; the drawer keeps it.
+  const refocus = useRef(false);
+  useEffect(() => {
+    if (!refocus.current) return;
+    refocus.current = false;
+    if (document.activeElement === document.body) closeRef.current?.focus();
+  }, [jobs]);
+
   const handleDelete = async (id: string) => {
     await deleteJob(id);
+    refocus.current = true;
     setJobs((prev) => prev.filter((j) => j.id !== id));
     setCount(jobs.length - 1);
   };
@@ -484,12 +494,31 @@ function JobCard({
   job: Job;
   active: boolean;
   algoById: Map<string, AlgorithmManifest>;
-  onDelete: () => void;
+  onDelete: () => Promise<void>;
   onAbort: () => void;
   onOpen?: () => void;
 }) {
   const t = useT();
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const askRef = useRef<HTMLButtonElement>(null);
   const info = deriveRunInfo(job);
+  // A dataset job takes its dataset along, maybe the result of a long computation, so its
+  // delete is confirmed like the other deletes of a dataset. Other jobs go at once.
+  const confirmDelete = info.mode === "dataset";
+  // The buttons sit inside the card's link.
+  const stop = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+  const remove = async () => {
+    setDeleting(true);
+    try {
+      await onDelete();
+    } finally {
+      setDeleting(false);
+    }
+  };
   const ModeIcon = MODE_META[info.mode].icon;
   const innerAlgo = info.innerAlgoId ? algoById.get(info.innerAlgoId) : null;
   const toolType = innerAlgo?.tool_type ?? null;
@@ -565,19 +594,56 @@ function JobCard({
           </button>
         )}
         <button
+          ref={askRef}
           type="button"
           onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onDelete();
+            stop(e);
+            if (confirmDelete) setConfirming((c) => !c);
+            else onDelete();
           }}
-          aria-label={t(info.mode === "dataset" ? "jobs.delete_dataset_job_aria" : "jobs.delete_job_aria")}
-          title={info.mode === "dataset" ? t("jobs.delete_dataset_job_aria") : undefined}
-          className="shrink-0 text-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-danger-ink transition p-0.5 rounded hover:bg-danger/10"
+          aria-label={t(confirmDelete ? "jobs.delete_dataset_job_aria" : "jobs.delete_job_aria")}
+          aria-expanded={confirmDelete ? confirming : undefined}
+          title={confirmDelete ? t("jobs.delete_dataset_job_aria") : undefined}
+          className={cn(
+            // Without hover, as on a touch screen, it is always shown.
+            "shrink-0 text-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 hover:text-danger-ink transition p-0.5 rounded hover:bg-danger/10",
+            confirming && "opacity-100",
+          )}
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
+      {confirming && (
+        <div className="flex items-center justify-end gap-2 flex-wrap">
+          <Button
+            size="sm"
+            variant="primary"
+            className="h-7 px-2.5 text-xs bg-danger hover:bg-danger/90"
+            onClick={(e) => {
+              stop(e);
+              remove();
+            }}
+            disabled={deleting}
+            autoFocus
+          >
+            {deleting && <Loader2 className="h-3 w-3 animate-spin" />}
+            {t("jobs.delete_dataset_job_confirm")}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 px-2.5 text-xs"
+            onClick={(e) => {
+              stop(e);
+              setConfirming(false);
+              askRef.current?.focus();
+            }}
+            disabled={deleting}
+          >
+            {t("common.cancel")}
+          </Button>
+        </div>
+      )}
       <div className="flex items-center justify-between text-[10px] font-medium">
         <StatusBadge job={job} />
         <span className="font-mono text-muted/60">{dateStr}</span>

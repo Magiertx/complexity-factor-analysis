@@ -319,6 +319,7 @@
     "view_all": "Alle Jobs anzeigen",
     "delete_job_aria": "Job löschen",
     "delete_dataset_job_aria": "Job und seinen Datensatz löschen",
+    "delete_dataset_job_confirm": "Job und Datensatz löschen",
     "abort_job_aria": "Job abbrechen",
     "run_mode_title": "Run-Modus: {mode}",
     "tool_type_title": "Tool-Typ: {type}",
