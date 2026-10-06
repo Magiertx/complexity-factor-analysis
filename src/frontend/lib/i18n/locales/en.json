@@ -112,7 +112,6 @@
     },
     "page_title": "Settings",
     "page_subtitle": "Local preferences — stored in your browser, no account required.",
-    "back_aria": "Back to model complexity",
     "load_error": "Could not load algorithm list: {error}",
     "toast_theme_updated": "Theme updated",
     "toast_cleared_caches": "Cleared {n} parameter cache",
@@ -190,7 +189,6 @@
     }
   },
   "api_access": {
-    "back_aria": "Back to model complexity",
     "heading": "API access",
     "subtitle": "Submit jobs and read results without using the web UI. All endpoints are unauthenticated; you are scoped to your browser session via cookie.",
     "interactive_ref_title": "Interactive reference",
@@ -334,7 +332,6 @@
     }
   },
   "run_history": {
-    "back_aria": "Back to model complexity",
     "heading": "Run history",
     "subtitle": "All runs in this session.",
     "refresh_button": "Refresh",
@@ -829,7 +826,6 @@
   },
   "inspect": {
     "title": "Inspect a single log",
-    "subtitle": "Run ComFy on one event log and look at the discovered models and their complexity measures.",
-    "back_aria": "Back to model complexity"
+    "subtitle": "Run ComFy on one event log and look at the discovered models and their complexity measures."
   }
 }

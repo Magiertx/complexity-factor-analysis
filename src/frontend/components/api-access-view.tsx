@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, Copy, Check, ExternalLink, Code2, FileJson, Terminal } from "lucide-react";
+import { Copy, Check, ExternalLink, Code2, FileJson, Terminal } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
+import { PageHeader } from "./page-header";
 
 const linkButtonClass =
   "inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-tile hover:bg-accent/[0.08] text-fg text-sm font-medium transition";
@@ -124,22 +124,9 @@ const ENDPOINTS: { group: string; items: Endpoint[] }[] = [
 export function ApiAccessView() {
   const t = useT();
   return (
-    <div className="space-y-6">
-      <header className="flex items-center gap-3">
-        <Link
-          href="/"
-          className="h-9 w-9 grid place-items-center rounded-md bg-tile hover:bg-accent/[0.08] transition text-muted hover:text-fg"
-          aria-label={t("api_access.back_aria")}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight">{t("api_access.heading")}</h1>
-          <p className="text-xs text-muted mt-0.5">
-            {t("api_access.subtitle")}
-          </p>
-        </div>
-      </header>
+    // Code and endpoint rows read badly across the whole width.
+    <div className="space-y-6 max-w-5xl">
+      <PageHeader title={t("api_access.heading")} subtitle={t("api_access.subtitle")} />
 
       <Card>
         <CardHeader>

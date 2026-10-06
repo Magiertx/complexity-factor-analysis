@@ -9,7 +9,8 @@ import { SiteFooter } from "@/components/site-footer";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/app-config";
 
 export const metadata: Metadata = {
-  title: APP_NAME,
+  // Each route names its page in English; PageHeader renames the tab in the language of the UI.
+  title: { default: APP_NAME, template: `%s · ${APP_NAME}` },
   description: APP_DESCRIPTION,
 };
 
@@ -21,8 +22,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="min-h-screen flex flex-col">
             <SiteHeader />
             <ModeBar />
-            <div className="flex-1 flex mx-auto max-w-[1920px] w-full">
-              <main className="flex-1 min-w-0">{children}</main>
+            {/* Same width and side gutter as the header, the mode bar and the footer, so every
+                page starts at the same left edge. */}
+            <div className="flex-1 flex mx-auto max-w-[1600px] w-full">
+              <main className="flex-1 min-w-0 px-4 sm:px-6 py-8">{children}</main>
               {/* Suspense: JobsDrawer reads useSearchParams (active job);
                   without a boundary Next would bail out of prerendering. */}
               <Suspense fallback={null}>

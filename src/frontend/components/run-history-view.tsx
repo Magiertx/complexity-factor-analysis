@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowLeft,
   Search,
   RefreshCw,
   Trash2,
@@ -20,6 +19,7 @@ import {
   fetchJobs,
 } from "@/lib/api";
 import { JobNotesField } from "./job-notes-field";
+import { PageHeader } from "./page-header";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Segmented } from "./ui/segmented";
@@ -154,38 +154,27 @@ export function RunHistoryView() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3 min-w-0">
-          <Link
-            href="/"
-            className="h-9 w-9 grid place-items-center rounded-md bg-tile hover:bg-accent/[0.08] transition text-muted hover:text-fg shrink-0"
-            aria-label={t("run_history.back_aria")}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-          <div className="min-w-0">
-            <h1 className="text-lg font-semibold tracking-tight">{t("run_history.heading")}</h1>
-            <p className="text-xs text-muted mt-0.5">
-              {t("run_history.subtitle")}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button size="sm" variant="outline" onClick={() => load(true)} disabled={refreshing}>
-            <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
-            {t("run_history.refresh_button")}
-          </Button>
-          {/* Always rendered, so screen readers announce each toast that appears in it. */}
-          <div role="status">
-            {toast && (
-              <span className="flex items-center gap-1.5 text-xs text-muted bg-tile rounded-md px-3 py-2">
-                <Check className="h-3.5 w-3.5 text-accent-ink" />
-                {toast}
-              </span>
-            )}
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        title={t("run_history.heading")}
+        subtitle={t("run_history.subtitle")}
+        actions={
+          <>
+            <Button size="sm" variant="outline" onClick={() => load(true)} disabled={refreshing}>
+              <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
+              {t("run_history.refresh_button")}
+            </Button>
+            {/* Always rendered, so screen readers announce each toast that appears in it. */}
+            <div role="status">
+              {toast && (
+                <span className="flex items-center gap-1.5 text-xs text-muted bg-tile rounded-md px-3 py-2">
+                  <Check className="h-3.5 w-3.5 text-accent-ink" />
+                  {toast}
+                </span>
+              )}
+            </div>
+          </>
+        }
+      />
 
       {loadError && (
         <Card className="border-danger/40">

@@ -11,7 +11,7 @@ export function SiteHeader() {
   const t = useT();
   return (
     <header className="border-b border-border">
-      <div className="mx-auto max-w-[1920px] px-6 py-4 flex items-center justify-between">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-3">
             <div className="h-7 w-7 rounded-md bg-accent grid place-items-center text-accent-fg text-xs font-semibold">

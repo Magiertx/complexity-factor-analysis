@@ -112,7 +112,6 @@
     },
     "page_title": "Einstellungen",
     "page_subtitle": "Lokale Einstellungen — im Browser gespeichert, kein Konto erforderlich.",
-    "back_aria": "Zurück zur Modellkomplexität",
     "load_error": "Algorithmus-Liste konnte nicht geladen werden: {error}",
     "toast_theme_updated": "Theme aktualisiert",
     "toast_cleared_caches": "{n} Parameter-Cache geleert",
@@ -190,7 +189,6 @@
     }
   },
   "api_access": {
-    "back_aria": "Zurück zur Modellkomplexität",
     "heading": "API-Zugang",
     "subtitle": "Jobs übermitteln und Ergebnisse abrufen ohne die Web-Oberfläche. Alle Endpoints sind nicht authentifiziert; du bist per Cookie auf deine Browser-Session beschränkt.",
     "interactive_ref_title": "Interaktive Referenz",
@@ -334,7 +332,6 @@
     }
   },
   "run_history": {
-    "back_aria": "Zurück zur Modellkomplexität",
     "heading": "Run history",
     "subtitle": "Alle Runs dieser Sitzung.",
     "refresh_button": "Aktualisieren",
@@ -829,7 +826,6 @@
   },
   "inspect": {
     "title": "Einzelnes Log untersuchen",
-    "subtitle": "Führe ComFy auf einem Event-Log aus und sieh dir die gefundenen Modelle und ihre Komplexitätsmaße an.",
-    "back_aria": "Zurück zur Modellkomplexität"
+    "subtitle": "Führe ComFy auf einem Event-Log aus und sieh dir die gefundenen Modelle und ihre Komplexitätsmaße an."
   }
 }

@@ -60,7 +60,7 @@ export function ModeBar() {
 
   return (
     <div className="border-b border-border bg-bg">
-      <div className="mx-auto max-w-[1920px] px-2 sm:px-6">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6">
         <nav className="flex items-stretch gap-1 overflow-x-auto no-scrollbar -mb-px" aria-label={t("mode_bar.aria_label")}>
           {modes.map((mode) => {
             const Icon = mode.icon;

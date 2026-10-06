@@ -1,14 +1,17 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { Workbench } from "@/components/workbench";
-import { InspectHeader } from "@/components/inspect-header";
+import { InspectHeader, InspectLoading } from "@/components/inspect-header";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+
+export const metadata: Metadata = { title: "Inspect a single log" };
 
 export default function InspectPage() {
   return (
-    <div className="mx-auto max-w-[1920px] px-4 sm:px-6 py-8 space-y-6">
+    <div className="space-y-6">
       <InspectHeader />
       <ErrorBoundary>
-        <Suspense fallback={<div className="text-sm text-muted">Loading…</div>}>
+        <Suspense fallback={<InspectLoading />}>
           <Workbench />
         </Suspense>
       </ErrorBoundary>

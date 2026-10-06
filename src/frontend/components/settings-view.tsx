@@ -12,7 +12,6 @@ import {
   AlertCircle,
   Check,
   Github,
-  ArrowLeft,
   PlayCircle,
   Bookmark,
   Download,
@@ -42,6 +41,7 @@ import {
 } from "@/lib/presets";
 import { useT } from "@/lib/i18n";
 import { LocaleSegmented } from "./locale-toggle";
+import { PageHeader } from "./page-header";
 
 const ALGO_PARAMS_PREFIX = "app.params-";
 
@@ -230,33 +230,23 @@ export function SettingsView() {
     : "system";
 
   return (
-    <div className="space-y-6">
-      <header className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/"
-            className="h-9 w-9 grid place-items-center rounded-md bg-tile hover:bg-accent/[0.08] transition text-muted hover:text-fg"
-            aria-label={t("settings.back_aria")}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-          <div>
-            <h1 className="text-lg font-semibold tracking-tight">{t("settings.page_title")}</h1>
-            <p className="text-xs text-muted mt-0.5">
-              {t("settings.page_subtitle")}
-            </p>
+    // Rows of a label and a control read badly across the whole width.
+    <div className="space-y-6 max-w-5xl">
+      <PageHeader
+        title={t("settings.page_title")}
+        subtitle={t("settings.page_subtitle")}
+        actions={
+          // Always rendered, so screen readers announce each toast that appears in it.
+          <div role="status">
+            {savedToast && (
+              <div className="flex items-center gap-2 text-xs text-muted bg-tile rounded-md px-3 py-2">
+                <Check className="h-3.5 w-3.5 text-accent-ink" />
+                {savedToast}
+              </div>
+            )}
           </div>
-        </div>
-        {/* Always rendered, so screen readers announce each toast that appears in it. */}
-        <div role="status">
-          {savedToast && (
-            <div className="flex items-center gap-2 text-xs text-muted bg-tile rounded-md px-3 py-2">
-              <Check className="h-3.5 w-3.5 text-accent-ink" />
-              {savedToast}
-            </div>
-          )}
-        </div>
-      </header>
+        }
+      />
 
       {loadError && (
         <Card className="border-danger/40">
