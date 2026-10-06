@@ -74,12 +74,18 @@ function messageOf(e: unknown, fallback: string) {
   return e instanceof Error && e.message ? e.message : fallback;
 }
 
-/** The message of an API error in the UI language if its code is known, else as sent. */
+/**
+ * The message of an API error in the UI language if its code is known, else as sent. Codes the
+ * whole API shares, such as a full run quota, are translated under errors.*.
+ */
 function useErrorText() {
   const tMaybe = useTMaybe();
   return useCallback(
     (e: unknown, fallback: string) =>
-      (e instanceof HttpError && e.code && tMaybe(`factor.errors.${e.code}`, e.params)) || messageOf(e, fallback),
+      (e instanceof HttpError &&
+        e.code &&
+        (tMaybe(`factor.errors.${e.code}`, e.params) ?? tMaybe(`errors.${e.code}`, e.params))) ||
+      messageOf(e, fallback),
     [tMaybe],
   );
 }
