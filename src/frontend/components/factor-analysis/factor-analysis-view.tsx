@@ -405,6 +405,16 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     selectDataset(null);
   };
 
+  // Set when the open dataset is deleted from its summary: the focused button goes away with
+  // it, so the form that replaces the summary takes the focus.
+  const focusForm = useRef(false);
+  useEffect(() => {
+    if (!focusForm.current || !formOpen || !datasets) return;
+    focusForm.current = false;
+    const step = document.getElementById(stepAnchor("data"));
+    (step?.querySelector<HTMLElement>("input:checked") ?? step?.querySelector<HTMLElement>("button"))?.focus();
+  }, [formOpen, datasets]);
+
   const removeDataset = async (id: string) => {
     setDeleteError(null);
     try {
@@ -418,6 +428,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     }
     setDatasets((list) => list && list.filter((d) => d.id !== id));
     if (id === datasetIdRef.current) {
+      if (!formOpen) focusForm.current = true;
       selectDataset(null);
       setChoosing(false);
     }
