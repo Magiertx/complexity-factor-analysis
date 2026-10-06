@@ -132,9 +132,10 @@ export function ImageView({ artifact, runId, fixedHeight = false }: { artifact: 
             handleDownload();
           }}
           title={t("artifacts.image.download_title")}
-          className="absolute top-2.5 right-2.5 z-20 h-8 w-8 rounded-full bg-black/75 hover:bg-black/90 text-white flex items-center justify-center backdrop-blur-sm shadow-lg ring-1 ring-white/15 opacity-0 group-hover:opacity-100 transition duration-200"
+          aria-label={t("artifacts.image.download_title")}
+          className="absolute top-2.5 right-2.5 z-20 h-8 w-8 rounded-full bg-black/75 hover:bg-black/90 text-white flex items-center justify-center backdrop-blur-sm shadow-lg ring-1 ring-white/15 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent transition duration-200"
         >
-          <Download className="h-4 w-4" />
+          <Download className="h-4 w-4" aria-hidden />
         </button>
 
         <div

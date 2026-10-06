@@ -707,8 +707,10 @@ export function Workbench() {
                 className="lg:hidden h-8 w-8 p-0 flex items-center justify-center text-muted hover:text-fg shrink-0"
                 onClick={() => setSidebarOpenMobile(true)}
                 title={t("workbench.sidebar.show_menu_title")}
+                aria-label={t("workbench.sidebar.show_menu_title")}
+                aria-expanded={sidebarOpenMobile}
               >
-                <Menu className="h-4 w-4" />
+                <Menu className="h-4 w-4" aria-hidden />
               </Button>
 
               {/* Desktop Sidebar Collapse Toggle Button */}
@@ -718,8 +720,10 @@ export function Workbench() {
                 className="hidden lg:flex h-8 w-8 p-0 items-center justify-center text-muted hover:text-fg shrink-0"
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
                 title={sidebarCollapsed ? t("workbench.sidebar.show_sidebar_title") : t("workbench.sidebar.hide_sidebar_title")}
+                aria-label={sidebarCollapsed ? t("workbench.sidebar.show_sidebar_title") : t("workbench.sidebar.hide_sidebar_title")}
+                aria-expanded={!sidebarCollapsed}
               >
-                {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+                {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" aria-hidden /> : <PanelLeftClose className="h-4 w-4" aria-hidden />}
               </Button>
             </div>
 
