@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useT, useLocale, localizedAlgoDescription, localizeCatalog } from "@/lib/i18n";
+import {
+  useT,
+  useLocale,
+  localizedAlgoDescription,
+  localizedAlgoName,
+  localizedAlgoText,
+  localizedSampleLog,
+  localizeCatalog,
+} from "@/lib/i18n";
 import {
   AlertCircle,
   Play,
@@ -740,7 +748,7 @@ export function Workbench() {
             <CardHeader>
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1 flex-1">
-                  <CardTitle className="text-lg lg:text-xl font-bold">{selected.name}</CardTitle>
+                  <CardTitle className="text-lg lg:text-xl font-bold">{localizedAlgoName(selected, locale)}</CardTitle>
                   <CardDescription className="text-sm text-muted mt-1">{localizedAlgoDescription(selected, locale)}</CardDescription>
                 </div>
                 <div className="flex flex-col items-end gap-1.5 shrink-0 text-right">
@@ -1036,7 +1044,8 @@ export function Workbench() {
 
                       {sampleLayout === "grid" ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
-                          {sampleLogs.map((log) => {
+                          {sampleLogs.map((sample) => {
+                            const log = localizedSampleLog(sample, locale);
                             const isSelected = selectedSampleId === log.id;
                             return (
                               <button
@@ -1071,7 +1080,8 @@ export function Workbench() {
                         </div>
                       ) : (
                         <div className="flex flex-col gap-2 w-full">
-                          {sampleLogs.map((log) => {
+                          {sampleLogs.map((sample) => {
+                            const log = localizedSampleLog(sample, locale);
                             const isSelected = selectedSampleId === log.id;
                             return (
                               <button
@@ -1247,7 +1257,7 @@ export function Workbench() {
               {progress && (
                 <div className="w-full space-y-2 mb-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-muted truncate max-w-[80%]">{progress.status}</span>
+                    <span className="font-medium text-muted truncate max-w-[80%]">{localizedAlgoText(progress.status, t)}</span>
                     <span className="font-bold text-accent-ink shrink-0">{formatPercent(progress.percentage / 100, locale)}</span>
                   </div>
                   <div className="w-full bg-border rounded-full h-2 overflow-hidden">

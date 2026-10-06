@@ -193,7 +193,7 @@
   },
   "api_access": {
     "heading": "API access",
-    "subtitle": "Submit jobs and read results without using the web UI. All endpoints are unauthenticated; you are scoped to your browser session via cookie.",
+    "subtitle": "Start runs and read results without the web UI. The endpoints need no login; a cookie scopes them to your browser session.",
     "interactive_ref_title": "Interactive reference",
     "interactive_ref_desc": "Full OpenAPI 3 spec — try endpoints directly from the browser.",
     "quick_start_title": "Quick start",
@@ -204,7 +204,51 @@
     "endpoint_summary_desc": "All paths are relative to {base} when accessed through the web UI, or the bare root when hitting the backend directly.",
     "notes_title": "Notes",
     "copied": "Copied",
-    "copy": "Copy"
+    "copy": "Copy",
+    "groups": {
+      "catalog": "Catalog",
+      "single_log": "Single log",
+      "factor_analysis": "Factor analysis",
+      "runs": "Runs",
+      "diagnostics": "Diagnostics"
+    },
+    "endpoints": {
+      "algorithms": "Every registered algorithm with its parameter schema.",
+      "sample_logs": "Bundled example logs you can analyze without uploading.",
+      "recent_logs": "Logs your session uploaded recently.",
+      "analyze": "Run one algorithm on one log; returns a job_id.",
+      "log_stats": "Quick descriptive statistics of a log: traces, events, variants, time range.",
+      "fa_catalog": "Measures, miners or feature groups, bundled datasets, example inputs and the accepted sources.",
+      "fa_create": "Create a dataset from a bundled one or a CSV (ready at once), or from event logs or PNML files (computed as a run).",
+      "fa_list": "The datasets of your session, newest first; kind is optional.",
+      "fa_get": "Status, progress, saved settings and the cleaned measure matrix (first 2000 rows).",
+      "fa_options": "Keep the settings of an analysis with the dataset.",
+      "fa_delete": "Delete a dataset with its run and its cached interpretations.",
+      "fa_delete_all": "Delete every dataset of your session, or every one of a kind.",
+      "fa_download": "The cleaned matrix as CSV.",
+      "fa_analyze": "Bartlett, KMO with the MSA filter, eigenvalues and rotated loadings for the given settings (JSON).",
+      "fa_export": "The loadings table as CSV or LaTeX; the body of analyze plus format.",
+      "fa_export_zip": "The whole analysis as a ZIP: result, matrix, tables, parameters and library versions.",
+      "fa_interpretation_status": "Whether Claude can interpret factors, and with which model.",
+      "fa_interpret": "Names and short interpretations of the factors by Claude; the body of analyze plus language. Optional, needs an API key on the server.",
+      "jobs": "All runs of your session.",
+      "job": "Status, progress and, once it is finished, the full result of a run.",
+      "job_download": "ZIP archive of everything a run produced.",
+      "job_events": "Server-Sent Events stream that pings whenever a run changes.",
+      "progress": "Lower-level SSE stream of a single task.",
+      "abort": "Ask a running task to stop.",
+      "job_notes": "Set or clear the note of a run.",
+      "job_delete": "Delete a run and its results; a dataset run takes its dataset with it.",
+      "jobs_delete": "Delete every run of your session, with the datasets they computed.",
+      "health": "Readiness probe: 200 when the database is reachable."
+    },
+    "notes": {
+      "rate_limits": "Rate limits per IP: `60/hour` on `POST /algorithms/{id}/analyze` and on `POST /factor-analysis/datasets`, `600/minute` on `GET /factor-analysis/datasets/{id}`, `300/hour` on `POST /log-stats` and `120/minute` everywhere else. Interpretations by Claude: `10/hour` per session and `200/day` for the server. Over a limit the answer is a 429 with a `code`.",
+      "quota": "Runs: at most 12 queued or running per session, and at most 4 dataset runs at once over all sessions; more are answered with a 429.",
+      "uploads": "Uploads: at most 100 MB per file. `POST /algorithms/{id}/analyze` and `POST /log-stats` take one event log (`.xes`, `.xes.gz`, `.xml`, `.json`). `POST /factor-analysis/datasets` takes one `.csv`, up to 50 event logs (`.xes`, `.xes.gz`) or up to 200 Petri nets (`.pnml`), at most 500 MB together.",
+      "session": "Session: a signed cookie scopes every endpoint. Reuse it across requests (in Python with `requests.Session()`) to keep your runs and datasets visible.",
+      "schemas": "Parameter schemas come from `GET /algorithms`: read the `parameters_schema` of an algorithm before submitting."
+    }
   },
   "parameter_form": {
     "all_at_defaults": "All parameters were left at their defaults.",
@@ -245,12 +289,12 @@
     "variants": "variants",
     "length": "length",
     "span": "span",
-    "top_label": "Top",
-    "median_abbr": "med",
+    "top_label": "Most frequent",
+    "median_abbr": "median",
     "noisy_title": "{pct} of the traces are unique sequences: many distinct variants.",
     "normal_title": "{pct} of the traces are unique sequences.",
-    "length_title": "Trace length range. Median {median}, average {avg}.",
-    "span_title": "Log covers {duration}.",
+    "length_title": "Shortest to longest trace. Median {median}, mean {avg}.",
+    "span_title": "The log covers {duration}.",
     "duration_years": "{n} years",
     "duration_months": "{n} months",
     "duration_days": "{n} days",
@@ -287,21 +331,21 @@
     "download_all": "Download All (ZIP)"
   },
   "artifacts": {
-    "petri_nets_heading": "Discovered Petri Nets ({n})",
+    "petri_nets_heading": "Discovered Petri nets ({n})",
     "grid_view_title": "Grid view (framed, aligned)",
     "list_view_title": "List view (large, native format)",
     "grid_label": "Grid",
     "list_label": "List",
     "image": {
       "download_title": "Download image directly",
-      "preview_zoom": "Preview / Zoom",
-      "process_model_fallback": "Process Model",
+      "preview_zoom": "Preview and zoom",
+      "process_model_fallback": "Process model",
       "zoom_out_title": "Zoom out",
       "zoom_in_title": "Zoom in",
       "reset_zoom_title": "Reset zoom",
-      "toggle_bg_title": "Toggle background (Current: {bg})",
+      "toggle_bg_title": "Change the background (now: {bg})",
       "download_image_title": "Download image",
-      "close_title": "Close (ESC)",
+      "close_title": "Close (Esc)",
       "bg_transparent": "Transparent",
       "bg_light": "White background",
       "bg_dark": "Dark background",
@@ -311,7 +355,7 @@
       "download_button": "Download"
     },
     "table": {
-      "table_data_label": "Table Data",
+      "table_data_label": "Table",
       "download_csv_title": "Download table as CSV",
       "download_csv_button": "Download CSV"
     }
@@ -842,5 +886,24 @@
   "inspect": {
     "title": "Inspect a single log",
     "subtitle": "Run ComFy on one event log and look at the discovered models and their complexity measures."
+  },
+  "algo_text": {
+    "summary": "Miners: {miners} · measures: {measures}",
+    "summary_partial": "Miners: {miners} · measures: {measures} · {computed} of {total} cells computed",
+    "miners": "Miners",
+    "measures": "Measures",
+    "cells_computed": "Cells computed",
+    "complexity_scores": "Complexity scores",
+    "miner": "Miner",
+    "notes": "Notes",
+    "petri_net": "Petri net ({miner})",
+    "discovered_by": "Discovered by the {miner}",
+    "hires_png": "High-resolution PNG ({miner}, 300 dpi)",
+    "progress_starting": "Starting the analysis…",
+    "progress_reading": "Reading the event log…",
+    "progress_miner": "Computing the complexity for the {miner} ({i}/{n})…",
+    "progress_done": "Analysis complete",
+    "progress_aborted": "Aborted by the user",
+    "progress_pending": "Pending…"
   }
 }

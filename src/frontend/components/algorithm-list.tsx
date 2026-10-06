@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { FileText, HelpCircle, Star } from "lucide-react";
 import type { AlgorithmManifest } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { useLocale, localizedAlgoDescription } from "@/lib/i18n";
+import { useLocale, localizedAlgoDescription, localizedAlgoName } from "@/lib/i18n";
 
 const FAVORITES_KEY = "app.favorite-algorithms";
 
@@ -95,7 +95,8 @@ export function AlgorithmList({
     const isFirst = algoIdx === 0;
     algoIdx++;
     const isFavorite = favorites.includes(a.id);
-    const shortName = a.name.split(" — ")[0];
+    const name = localizedAlgoName(a, locale);
+    const shortName = name.split(" — ")[0];
     return (
       // Wrapper div so the select button and the icon buttons are siblings
       // instead of nested (nested buttons are invalid HTML).
@@ -112,7 +113,7 @@ export function AlgorithmList({
           <div className={cn("min-w-0", onShowExplainer ? "pr-14" : "pr-8")}>
             <div className="flex items-center gap-2 leading-tight">
               <FileText className="h-3.5 w-3.5 text-muted shrink-0" />
-              <span className="text-sm font-medium truncate">{a.name}</span>
+              <span className="text-sm font-medium truncate">{name}</span>
             </div>
             <p className="mt-1 text-xs text-muted overflow-hidden leading-[1rem] max-h-[2rem]">
               {localizedAlgoDescription(a, locale)}

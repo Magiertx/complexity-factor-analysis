@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { X, ExternalLink, HelpCircle, BookOpen, Compass, Wrench } from "lucide-react";
 import type { AlgorithmManifest } from "@/lib/api";
 import { getExplanation } from "@/lib/algorithm-explanations";
-import { useLocale, localizedAlgoDescription } from "@/lib/i18n";
+import { useLocale, localizedAlgoDescription, localizedAlgoName } from "@/lib/i18n";
 
 // Modal with a detailed explanation of an algorithm, opened from the `?`
 // button next to the algorithm picker. The texts come from
@@ -32,7 +32,8 @@ export function AlgorithmExplainerModal({
   if (!algo) return null;
 
   const explanation = getExplanation(algo.id, locale);
-  const shortName = algo.name.split(" — ")[0];
+  const name = localizedAlgoName(algo, locale);
+  const shortName = name.split(" — ")[0];
 
   return (
     <div
@@ -53,7 +54,7 @@ export function AlgorithmExplainerModal({
               <h2 id="explainer-title" className="text-base font-semibold tracking-tight truncate">
                 {shortName}
               </h2>
-              <div className="text-xs text-muted mt-0.5 truncate">{algo.name}</div>
+              <div className="text-xs text-muted mt-0.5 truncate">{name}</div>
             </div>
           </div>
           <button

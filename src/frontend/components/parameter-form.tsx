@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useT, useLocale, localizedParamHelp } from "@/lib/i18n";
+import { useT, useLocale, localizedParamHelp, localizedParamLabel } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 /** What the UI knows about an option of a multiple choice: its definition, and whether it is slow. */
@@ -112,6 +112,7 @@ function Field({
   const [search, setSearch] = useState("");
   const { locale, t } = useLocale();
   const help = localizedParamHelp(algorithmId, spec, locale);
+  const label = localizedParamLabel(algorithmId, spec, locale);
   const id = `p-${spec.name}`;
   const labelId = `${id}-label`;
   const hintId = help || spec.recommended ? `${id}-hint` : undefined;
@@ -131,7 +132,7 @@ function Field({
     return (
       <div className={"flex items-center justify-between gap-3 py-1.5 " + (disabled ? "opacity-60" : "")}>
         <div>
-          <Label id={labelId} htmlFor={id}>{spec.label}</Label>
+          <Label id={labelId} htmlFor={id}>{label}</Label>
           {hint}
         </div>
         <Switch
@@ -149,7 +150,7 @@ function Field({
   if (spec.type === "enum") {
     return (
       <div className={disabled ? "opacity-60" : ""}>
-        <Label id={labelId} htmlFor={id}>{spec.label}</Label>
+        <Label id={labelId} htmlFor={id}>{label}</Label>
         <div className="mt-1.5">
           <Select
             id={id}
@@ -186,7 +187,7 @@ function Field({
     return (
       <fieldset className={cn("sm:col-span-2 space-y-2", disabled && "opacity-60")} aria-describedby={help ? hintId : undefined}>
         <legend className="text-sm font-semibold">
-          {spec.label}{" "}
+          {label}{" "}
           <span className="text-xs font-normal text-muted">
             {t("parameter_form.selected_count", { n: selected.length, total: options.length })}
           </span>
@@ -206,7 +207,7 @@ function Field({
                   placeholder={t("parameter_form.search_placeholder")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  aria-label={t("parameter_form.search_options_aria", { label: spec.label })}
+                  aria-label={t("parameter_form.search_options_aria", { label })}
                   className="h-7 pl-8 pr-2.5 text-xs rounded bg-tile text-fg placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/50 w-[150px] transition"
                 />
               </div>
@@ -274,7 +275,7 @@ function Field({
   if (spec.type === "string") {
     return (
       <div className={"sm:col-span-2 " + (disabled ? "opacity-60" : "")}>
-        <Label id={labelId} htmlFor={id}>{spec.label}</Label>
+        <Label id={labelId} htmlFor={id}>{label}</Label>
         <div className="mt-1.5">
           <Input
             id={id}
@@ -295,7 +296,7 @@ function Field({
   const step = spec.type === "float" ? "0.01" : "1";
   return (
     <div className={disabled ? "opacity-60" : ""}>
-      <Label id={labelId} htmlFor={id}>{spec.label}</Label>
+      <Label id={labelId} htmlFor={id}>{label}</Label>
       <div className="mt-1.5">
         <Input
           id={id}

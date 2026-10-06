@@ -100,61 +100,88 @@ curl -c cookies.txt -b cookies.txt -X POST \\
   http://localhost:3000/api/factor-analysis/datasets/<dataset_id>/analyze
 `;
 
+type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+
+/** `key` names the description in api_access.endpoints. */
 interface Endpoint {
-  method: "GET" | "POST" | "DELETE";
+  method: Method;
   path: string;
-  description: string;
+  key: string;
 }
 
+// The same list as the endpoint tables of docs/API.md; `group` names the heading in api_access.groups.
 const ENDPOINTS: { group: string; items: Endpoint[] }[] = [
   {
-    group: "Catalog",
+    group: "catalog",
     items: [
-      { method: "GET", path: "/algorithms", description: "List every registered algorithm and its parameter schema." },
-      { method: "GET", path: "/sample-logs", description: "Built-in event logs you can analyse without uploading." },
-      { method: "GET", path: "/recent-logs", description: "Logs your session has uploaded recently." },
+      { method: "GET", path: "/algorithms", key: "algorithms" },
+      { method: "GET", path: "/sample-logs", key: "sample_logs" },
+      { method: "GET", path: "/recent-logs", key: "recent_logs" },
     ],
   },
   {
-    group: "Run jobs",
+    group: "single_log",
     items: [
-      { method: "POST", path: "/algorithms/{id}/analyze", description: "Submit one log to one algorithm. Returns a job_id." },
-      { method: "POST", path: "/log-stats", description: "Cheap descriptive statistics of a log (traces, events, variants, time range)." },
+      { method: "POST", path: "/algorithms/{id}/analyze", key: "analyze" },
+      { method: "POST", path: "/log-stats", key: "log_stats" },
     ],
   },
   {
-    group: "Factor analysis",
+    group: "factor_analysis",
     items: [
-      { method: "GET", path: "/factor-analysis/catalog?kind=model|log", description: "Measures, miners or feature groups, bundled datasets, sample inputs and the accepted sources." },
-      { method: "POST", path: "/factor-analysis/datasets", description: "Create a dataset from a bundled one, a CSV, event logs or PNML files (multipart). Logs and PNML run as a job." },
-      { method: "GET", path: "/factor-analysis/datasets/{id}", description: "Status, progress and the cleaned measure matrix (first 2000 rows)." },
-      { method: "GET", path: "/factor-analysis/datasets/{id}/download", description: "The cleaned matrix as CSV." },
-      { method: "POST", path: "/factor-analysis/datasets/{id}/analyze", description: "Bartlett, KMO/MSA, eigenvalues and rotated loadings for the given settings (JSON)." },
-      { method: "POST", path: "/factor-analysis/datasets/{id}/export", description: "The loadings table as CSV or LaTeX; same body as analyze plus format." },
-      { method: "GET", path: "/factor-analysis/interpretation/status", description: "Whether factors can be interpreted by Claude, and with which model." },
-      { method: "POST", path: "/factor-analysis/datasets/{id}/interpret", description: "Names and short interpretations of the factors by Claude; same body as analyze plus language. Optional, needs an API key on the server." },
+      { method: "GET", path: "/factor-analysis/catalog?kind=model|log", key: "fa_catalog" },
+      { method: "POST", path: "/factor-analysis/datasets", key: "fa_create" },
+      { method: "GET", path: "/factor-analysis/datasets?kind=model|log", key: "fa_list" },
+      { method: "GET", path: "/factor-analysis/datasets/{id}", key: "fa_get" },
+      { method: "PUT", path: "/factor-analysis/datasets/{id}/options", key: "fa_options" },
+      { method: "DELETE", path: "/factor-analysis/datasets/{id}", key: "fa_delete" },
+      { method: "DELETE", path: "/factor-analysis/datasets?kind=model|log", key: "fa_delete_all" },
+      { method: "GET", path: "/factor-analysis/datasets/{id}/download", key: "fa_download" },
+      { method: "POST", path: "/factor-analysis/datasets/{id}/analyze", key: "fa_analyze" },
+      { method: "POST", path: "/factor-analysis/datasets/{id}/export", key: "fa_export" },
+      { method: "POST", path: "/factor-analysis/datasets/{id}/export/zip", key: "fa_export_zip" },
+      { method: "GET", path: "/factor-analysis/interpretation/status", key: "fa_interpretation_status" },
+      { method: "POST", path: "/factor-analysis/datasets/{id}/interpret", key: "fa_interpret" },
     ],
   },
   {
-    group: "Job lifecycle",
+    group: "runs",
     items: [
-      { method: "GET", path: "/jobs", description: "All jobs visible to your session." },
-      { method: "GET", path: "/jobs/{job_id}", description: "Current status, progress, and (once finished) the full result." },
-      { method: "GET", path: "/jobs/{job_id}/download", description: "ZIP archive of every artifact the job produced." },
-      { method: "GET", path: "/jobs/events", description: "Server-Sent Events stream that pings whenever job state changes." },
-      { method: "GET", path: "/progress/{task_id}", description: "Lower-level SSE stream for a single task." },
-      { method: "POST", path: "/progress/{task_id}/abort", description: "Request cooperative cancellation of a running task." },
-      { method: "DELETE", path: "/jobs/{job_id}", description: "Delete one job and its artifacts." },
-      { method: "DELETE", path: "/jobs", description: "Delete every job visible to your session." },
+      { method: "GET", path: "/jobs", key: "jobs" },
+      { method: "GET", path: "/jobs/{job_id}", key: "job" },
+      { method: "GET", path: "/jobs/{job_id}/download", key: "job_download" },
+      { method: "GET", path: "/jobs/events", key: "job_events" },
+      { method: "GET", path: "/progress/{task_id}", key: "progress" },
+      { method: "POST", path: "/progress/{task_id}/abort", key: "abort" },
+      { method: "PATCH", path: "/jobs/{job_id}/notes", key: "job_notes" },
+      { method: "DELETE", path: "/jobs/{job_id}", key: "job_delete" },
+      { method: "DELETE", path: "/jobs", key: "jobs_delete" },
     ],
   },
   {
-    group: "Diagnostics",
-    items: [
-      { method: "GET", path: "/health", description: "Readiness probe — returns 200 when the database is reachable." },
-    ],
+    group: "diagnostics",
+    items: [{ method: "GET", path: "/health", key: "health" }],
   },
 ];
+
+const NOTES = ["rate_limits", "quota", "uploads", "session", "schemas"];
+
+/** A text of the locale files in which `backticks` mark code. */
+function WithCode({ text }: { text: string }) {
+  return (
+    <>
+      {text.split("`").map((part, i) =>
+        i % 2 ? (
+          <code key={i} className="font-mono text-[11px] text-fg">
+            {part}
+          </code>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  );
+}
 
 export function ApiAccessView() {
   const t = useT();
@@ -217,18 +244,19 @@ export function ApiAccessView() {
         <CardContent className="space-y-5">
           {ENDPOINTS.map((g) => (
             <div key={g.group} className="space-y-1.5">
-              <div className="text-xs font-medium text-muted">
-                {g.group}
-              </div>
+              <h3 className="text-xs font-medium text-muted">{t(`api_access.groups.${g.group}`)}</h3>
               <ul className="rounded-md bg-tile/40 overflow-hidden">
                 {g.items.map((e) => (
+                  // On a phone the description goes below the path, which may break anywhere.
                   <li
                     key={`${e.method} ${e.path}`}
-                    className="flex items-start gap-3 px-3 py-2 text-sm border-b border-border last:border-0 bg-tile/30"
+                    className="grid grid-cols-[3.5rem_minmax(0,1fr)] md:grid-cols-[3.5rem_minmax(0,auto)_minmax(0,1fr)] gap-x-3 gap-y-0.5 items-start px-3 py-2 border-b border-border last:border-0"
                   >
                     <MethodBadge method={e.method} />
-                    <code className="font-mono text-[12px] text-fg whitespace-nowrap shrink-0">{e.path}</code>
-                    <span className="text-[12px] text-muted leading-snug">{e.description}</span>
+                    <code className="font-mono text-[12px] text-fg break-all md:break-normal md:whitespace-nowrap">{e.path}</code>
+                    <span className="col-start-2 md:col-start-auto text-[12px] text-muted leading-snug">
+                      {t(`api_access.endpoints.${e.key}`)}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -241,44 +269,26 @@ export function ApiAccessView() {
         <CardHeader>
           <CardTitle>{t("api_access.notes_title")}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted">
-          <p>
-            • Rate limits (per IP): <code className="font-mono text-[11px]">60/hour</code> on{" "}
-            <code className="font-mono text-[11px]">/algorithms/&#123;id&#125;/analyze</code>,{" "}
-            <code className="font-mono text-[11px]">60/hour</code> on{" "}
-            <code className="font-mono text-[11px]">POST /factor-analysis/datasets</code>,{" "}
-            <code className="font-mono text-[11px]">600/minute</code> on{" "}
-            <code className="font-mono text-[11px]">GET /factor-analysis/datasets/&#123;id&#125;</code>,{" "}
-            <code className="font-mono text-[11px]">300/hour</code> on{" "}
-            <code className="font-mono text-[11px]">/log-stats</code>; 120/minute everywhere else. Interpretations
-            that call Claude: 10/hour per session and 200/day for the server.
-          </p>
-          <p>
-            • Upload limit: 100 MB per file. Allowed extensions:{" "}
-            <code className="font-mono text-[11px]">.xes</code>,{" "}
-            <code className="font-mono text-[11px]">.xes.gz</code>,{" "}
-            <code className="font-mono text-[11px]">.xml</code>,{" "}
-            <code className="font-mono text-[11px]">.json</code>.
-          </p>
-          <p>
-            • Session: a signed cookie scopes every endpoint. Reuse the same cookie across requests
-            (Python&apos;s <code className="font-mono text-[11px]">requests.Session()</code>) to keep job history visible.
-          </p>
-          <p>
-            • Parameter schemas come from{" "}
-            <code className="font-mono text-[11px]">/algorithms</code> — read{" "}
-            <code className="font-mono text-[11px]">parameters_schema</code> for each algorithm before submitting.
-          </p>
+        <CardContent>
+          <ul className="list-disc pl-5 space-y-2 text-sm text-muted">
+            {NOTES.map((key) => (
+              <li key={key}>
+                <WithCode text={t(`api_access.notes.${key}`)} />
+              </li>
+            ))}
+          </ul>
         </CardContent>
       </Card>
     </div>
   );
 }
 
-function MethodBadge({ method }: { method: "GET" | "POST" | "DELETE" }) {
+function MethodBadge({ method }: { method: Method }) {
   const styles = {
     GET: "bg-success/15 text-success-ink",
     POST: "bg-accent/15 text-accent-ink",
+    PUT: "bg-warn/15 text-warn-ink",
+    PATCH: "bg-warn/15 text-warn-ink",
     DELETE: "bg-danger/15 text-danger-ink",
   }[method];
   return (

@@ -8,8 +8,12 @@ export {
   type Locale,
 } from "./provider";
 export {
+  localizedAlgoName,
   localizedAlgoDescription,
+  localizedAlgoText,
+  localizedParamLabel,
   localizedParamHelp,
+  localizedSampleLog,
   type AlgoContentMap,
   type AlgoContentOverride,
 } from "./algo-content";

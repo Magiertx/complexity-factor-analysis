@@ -2,7 +2,7 @@
 
 import { Download } from "lucide-react";
 import type { Artifact } from "@/lib/api";
-import { useT } from "@/lib/i18n";
+import { localizedAlgoText, useT } from "@/lib/i18n";
 
 type T = Extract<Artifact, { kind: "table" }>;
 
@@ -58,7 +58,7 @@ export function TableView({ artifact, runId }: { artifact: T; runId?: string | n
             <tr>
               {artifact.columns.map((c) => (
                 <th key={c} className="px-3 py-2 text-left text-xs font-medium text-muted border-b border-border">
-                  {c}
+                  {localizedAlgoText(c, t)}
                 </th>
               ))}
             </tr>

@@ -2,6 +2,7 @@
 
 import type { Artifact } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { localizedAlgoText, useT } from "@/lib/i18n";
 
 type Stat = Extract<Artifact, { kind: "stat" }>;
 
@@ -17,6 +18,7 @@ const ACCENT: Record<NonNullable<Stat["accent"]>, string> = {
 };
 
 export function StatRow({ stats }: Props) {
+  const t = useT();
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
       {stats.map((s, i) => {
@@ -24,7 +26,7 @@ export function StatRow({ stats }: Props) {
         const value = formatValue(s);
         return (
           <div key={i}>
-            <div className="text-xs text-muted">{s.label}</div>
+            <div className="text-xs text-muted">{localizedAlgoText(s.label, t)}</div>
             <div className={cn("mt-1 text-2xl font-semibold font-mono", color)}>{value}</div>
           </div>
         );

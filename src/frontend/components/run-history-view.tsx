@@ -27,7 +27,7 @@ import { Input } from "./ui/input";
 import { Select } from "./ui/select";
 import { datasetJobHref, datasetJobSubtitle, jobDisplayName, jobTitle } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
-import { useLocale } from "@/lib/i18n";
+import { localizedAlgoName, useLocale } from "@/lib/i18n";
 import { formatDateTime, formatPercent } from "@/lib/i18n/local-format";
 
 type StatusFilter = "all" | "active" | "completed" | "failed" | "aborted";
@@ -117,11 +117,11 @@ export function RunHistoryView() {
     for (const j of jobs) {
       if (seen.has(j.algorithm_id)) continue;
       seen.add(j.algorithm_id);
-      opts.push({ id: j.algorithm_id, name: jobDisplayName(j, t) });
+      opts.push({ id: j.algorithm_id, name: localizedAlgoName({ id: j.algorithm_id, name: jobDisplayName(j, t) }, locale) });
     }
     opts.sort((a, b) => a.name.localeCompare(b.name));
     return opts;
-  }, [jobs, t]);
+  }, [jobs, t, locale]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -254,7 +254,7 @@ export function RunHistoryView() {
               {filtered.map((job) => {
                 const isBatch = job.algorithm_id.startsWith("_batch");
                 const detailHref = datasetJobHref(job) ?? `/inspect?job=${job.id}`;
-                const title = jobTitle(job, t);
+                const title = localizedAlgoName({ id: job.algorithm_id, name: jobTitle(job, t) }, locale);
                 const subtitle = datasetJobSubtitle(job, t);
                 return (
                   <li key={job.id} className="p-4 flex items-start gap-4 flex-wrap hover:bg-surface/40 transition">
