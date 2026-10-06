@@ -2,7 +2,8 @@
 
 import type { Artifact } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { localizedAlgoText, useT } from "@/lib/i18n";
+import { localizedAlgoText, useLocale, type Locale } from "@/lib/i18n";
+import { formatNumber, formatPercent } from "@/lib/i18n/local-format";
 
 type Stat = Extract<Artifact, { kind: "stat" }>;
 
@@ -18,12 +19,12 @@ const ACCENT: Record<NonNullable<Stat["accent"]>, string> = {
 };
 
 export function StatRow({ stats }: Props) {
-  const t = useT();
+  const { t, locale } = useLocale();
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
       {stats.map((s, i) => {
         const color = ACCENT[s.accent ?? "default"];
-        const value = formatValue(s);
+        const value = formatValue(s, locale);
         return (
           <div key={i}>
             <div className="text-xs text-muted">{localizedAlgoText(s.label, t)}</div>
@@ -35,9 +36,9 @@ export function StatRow({ stats }: Props) {
   );
 }
 
-function formatValue(s: Stat): string {
+function formatValue(s: Stat, locale: Locale): string {
   if (typeof s.value === "string") return s.value;
-  if (s.pct) return `${(s.value * 100).toFixed(1)}%`;
-  const formatted = Number.isInteger(s.value) ? s.value.toLocaleString() : s.value.toFixed(3);
+  if (s.pct) return formatPercent(s.value, locale, 1);
+  const formatted = formatNumber(s.value, locale, Number.isInteger(s.value) ? 0 : 3);
   return s.unit ? `${formatted} ${s.unit}` : formatted;
 }

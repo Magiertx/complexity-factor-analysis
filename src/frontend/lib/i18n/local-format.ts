@@ -26,7 +26,7 @@ export function formatDay(value: Date | number | string, locale: Locale): string
 
 /** A number with a fixed count of decimals; a value that rounds to zero never shows a minus. */
 export function formatNumber(value: number, locale: Locale, digits = 0): string {
-  if (!Number.isFinite(value)) return "–";
+  if (!Number.isFinite(value)) return "—";
   return new Intl.NumberFormat(TAGS[locale], {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
@@ -36,7 +36,7 @@ export function formatNumber(value: number, locale: Locale, digits = 0): string 
 
 /** A share between 0 and 1 as a percentage: "72.7%" in English, "72,7 %" in German. */
 export function formatPercent(share: number, locale: Locale, digits = 0): string {
-  if (!Number.isFinite(share)) return "–";
+  if (!Number.isFinite(share)) return "—";
   return new Intl.NumberFormat(TAGS[locale], {
     style: "percent",
     minimumFractionDigits: digits,
