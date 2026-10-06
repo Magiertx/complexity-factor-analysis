@@ -70,10 +70,13 @@ def model_from_logs(
             continue
         for miner in miners:
             label = f"{item.label} / {miner}"
-            progress(100.0 * done / total, f"{label}: discovering")
+            pct = 100.0 * done / total
+            progress(pct, f"{label}: discovering")
             done += 1
             try:
-                net, im, fm = discover(miner, log)
+                net, im, fm = discover(
+                    miner, log, item.label, on_wait=lambda msg: progress(pct, f"{label}: {msg}")
+                )
             except Exception as e:
                 failures.append((label, f"discovery failed: {_short(e)}"))
                 continue
