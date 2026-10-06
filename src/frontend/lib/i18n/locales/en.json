@@ -528,6 +528,7 @@
       },
       "bundled_empty": "No bundled datasets are available on this server.",
       "bundled_size": "{rows} observations × {cols} measures",
+      "cleaned_size": "{rows} observations × {cols} measures after cleaning",
       "license": "Licence: {license}",
       "copy_citation": "Copy citation",
       "copied": "Copied",

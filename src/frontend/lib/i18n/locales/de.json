@@ -528,6 +528,7 @@
       },
       "bundled_empty": "Auf diesem Server sind keine mitgelieferten Datensätze verfügbar.",
       "bundled_size": "{rows} Beobachtungen × {cols} Maße",
+      "cleaned_size": "{rows} Beobachtungen × {cols} Maße nach der Bereinigung",
       "license": "Lizenz: {license}",
       "copy_citation": "Zitat kopieren",
       "copied": "Kopiert",

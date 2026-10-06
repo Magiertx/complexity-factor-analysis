@@ -699,7 +699,7 @@ function DatasetTile({
               {rows !== null && cols !== null && (
                 <span className="inline-flex items-center gap-1.5">
                   <span aria-hidden>·</span>
-                  <span title={t("factor.data.bundled_size", { rows, cols })}>
+                  <span title={t("factor.data.cleaned_size", { rows, cols })}>
                     {formatNumber(rows, locale)} × {formatNumber(cols, locale)}
                   </span>
                 </span>
@@ -1144,9 +1144,10 @@ function InputChips({ dataset, catalog }: { dataset: FactorDataset; catalog: Fac
     });
   }
   if (dataset.status === "ready") {
+    // After the cleaning, so it can be smaller than the size of a bundled dataset in the list.
     chips.push({
       key: "size",
-      text: t("factor.data.bundled_size", { rows: dataset.n_observations, cols: dataset.measures.length }),
+      text: t("factor.data.cleaned_size", { rows: dataset.n_observations, cols: dataset.measures.length }),
     });
   } else if (dataset.kind === "model" && inputs.measures?.length) {
     // Until the matrix exists, the measures asked for.
