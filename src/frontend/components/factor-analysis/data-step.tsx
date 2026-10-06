@@ -1076,9 +1076,12 @@ export function DataSummary({
             {dataset.error && <div className="text-muted mt-1 break-words">{dataset.error}</div>}
           </div>
         </div>
+        {/* The same buttons, in the same order, as for a ready dataset. */}
         <div className="flex items-center gap-2 flex-wrap">
-          <Button onClick={onChange}>{t("factor.data.change")}</Button>
           <DeleteDataset withRun={withRun} onDelete={onDelete} />
+          <Button variant="outline" size="sm" onClick={onChange}>
+            {t("factor.data.change")}
+          </Button>
         </div>
       </div>
     );
