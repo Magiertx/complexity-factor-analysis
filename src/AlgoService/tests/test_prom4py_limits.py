@@ -73,6 +73,19 @@ def fake_prom(monkeypatch):
 _NO_SLEEP = SimpleNamespace(monotonic=time.monotonic, sleep=lambda seconds: None)
 
 
+class _Clock:
+    """``time`` for ``algorithms._prom4py`` on which a pause passes at once."""
+
+    def __init__(self):
+        self.now = 0.0
+
+    def monotonic(self):
+        return self.now
+
+    def sleep(self, seconds):
+        self.now += seconds
+
+
 def _closed_port_url() -> str:
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
@@ -227,7 +240,64 @@ def test_discover_gives_up_when_prom_stays_away(monkeypatch):
         comfy.discover(miner, None, "a.xes")
     assert miner.calls == 1
     # The next wait is short instead of the full START_WAIT_S again for every input.
-    assert _prom4py._gave_up is True
+    assert _prom4py._given_up()
+
+
+def test_waits_are_short_only_until_prom_answers_anything(fake_prom, monkeypatch):
+    """A discovery that ProM serves ends the short waits, so the wait for the restart after a
+    later timeout is a whole one again."""
+    from algorithms import _prom4py, comfy
+
+    clock = _Clock()
+    monkeypatch.setattr(_prom4py, "time", clock)
+    monkeypatch.setattr(comfy, "CALL_TIMEOUT_S", 1)
+    answers_from = None  # down
+    monkeypatch.setattr(
+        _prom4py, "is_responsive", lambda timeout: answers_from is not None and clock.now >= answers_from
+    )
+
+    with pytest.raises(comfy.ProMUnavailable, match="did not answer within 180 s"):
+        comfy.discover(_ScriptedMiner(comfy.ProMUnavailable("refused")), None, "a.xes")
+    assert _prom4py._given_up()
+
+    # Back: it serves a discovery without anybody waiting for it.
+    assert comfy.discover(_HangingMiner(fake_prom.url), None, "b.xes") == ("net", "im", "fm")
+    assert not _prom4py._given_up()
+
+    fake_prom.delay = 10.0
+    with pytest.raises(comfy.ProMTimeout):
+        comfy.discover(_HangingMiner(fake_prom.url), None, "c.xes")
+
+    # Busy with that call, then restarted by its watchdog: it answers 40 s later.
+    answers_from = clock.now + 40
+    waits: list[str] = []
+    assert comfy.discover(_ScriptedMiner(), None, "d.xes", on_wait=waits.append) == ("net", "im", "fm")
+    assert waits == ["waiting for ProM to restart"] * 40
+    assert not os.path.exists(_prom4py._STUCK_MARK)
+
+
+def test_a_restart_that_does_not_come_fails_the_input_once(monkeypatch):
+    """The wait for a restart outlasts the watchdog (up to about PROM4PY_CALL_TIMEOUT + 40 s
+    after the timeout); when ProM does not come back even then, it is down for longer."""
+    from algorithms import _prom4py, comfy
+
+    clock = _Clock()
+    monkeypatch.setattr(_prom4py, "time", clock)
+    monkeypatch.setattr(_prom4py, "is_responsive", lambda timeout: False)
+    with open(_prom4py._STUCK_MARK, "w"):
+        pass
+
+    miner = _ScriptedMiner()
+    with pytest.raises(_prom4py.ProMNotRestarted, match="did not finish restarting within"):
+        comfy.discover(miner, None, "a.xes")
+    # Not repeated, and no more waits for the restart: the next input fails quickly.
+    assert miner.calls == 0
+    assert clock.now == pytest.approx(_prom4py.RESTART_WAIT_S, abs=1)
+    assert not os.path.exists(_prom4py._STUCK_MARK)
+    start = clock.now
+    with pytest.raises(comfy.ProMUnavailable, match="did not answer within 5 s"):
+        comfy.discover(_ScriptedMiner(comfy.ProMUnavailable("refused")), None, "b.xes")
+    assert clock.now - start <= 6
 
 
 def test_discover_does_not_repeat_unavailable_forever(monkeypatch):

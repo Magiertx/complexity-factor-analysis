@@ -32,6 +32,8 @@ CALL_TIMEOUT_S = positive_int("PROM4PY_CALL_TIMEOUT", 300, minimum=10)
 _lock = threading.Lock()
 _client: Any = None
 _deadline = threading.local()
+# ``time.monotonic()`` of the last answer ProM4Py gave this process, whatever the answer was.
+_last_answer = float("-inf")
 
 
 class ProMTimeout(requests.exceptions.Timeout):
@@ -76,14 +78,25 @@ def call_deadline(seconds: float) -> Iterator[None]:
         _deadline.current = previous
 
 
+def last_answer() -> float:
+    """``time.monotonic()`` when ProM4Py last answered a request of this process."""
+    return _last_answer
+
+
+def _answered() -> None:
+    global _last_answer
+    _last_answer = time.monotonic()
+
+
 def is_responsive(timeout: float) -> bool:
     """Whether ProM4Py answers ``/isRunning`` within ``timeout`` seconds. It answers only
     between calls, so a busy ProM counts as not responsive."""
     try:
         r = requests.get(f"{prom4py_url()}/isRunning", timeout=timeout)
-        return r.status_code == 200
     except requests.exceptions.RequestException:
         return False
+    _answered()
+    return r.status_code == 200
 
 
 class _BoundedHTTP:
@@ -109,9 +122,11 @@ class _BoundedHTTP:
             raise ProMTimeout(f"ProM did not answer within {budget:g} s")
         try:
             # One value bounds connecting, sending and waiting for the answer alike.
-            return requests.request(method, url, timeout=timeout, **kwargs)
+            response = requests.request(method, url, timeout=timeout, **kwargs)
         except requests.exceptions.Timeout as e:
             raise ProMTimeout(f"ProM did not answer within {budget:g} s") from e
         except requests.exceptions.ConnectionError as e:
             server = urlparse(url)
             raise ProMUnavailable(f"ProM4Py is not reachable at {server.scheme}://{server.netloc}") from e
+        _answered()
+        return response

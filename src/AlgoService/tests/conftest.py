@@ -125,7 +125,7 @@ def private_prom4py_turn(monkeypatch, tmp_path):
 
     monkeypatch.setattr(_prom4py, "_LOCK_PATH", str(tmp_path / "prom4py.lock"))
     monkeypatch.setattr(_prom4py, "_STUCK_MARK", str(tmp_path / "prom4py.lock.stuck"))
-    monkeypatch.setattr(_prom4py, "_gave_up", False)
+    monkeypatch.setattr(_prom4py, "_gave_up_after", None)
 
 
 @pytest.fixture

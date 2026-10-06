@@ -21,6 +21,7 @@ from vendored.comfy.discovery import DiscoveryAlgorithms as _DA
 from ._log_io import read_event_log
 from ._prom4py import (
     CALL_TIMEOUT_S,
+    ProMNotRestarted,
     ProMTimeout,
     ProMUnavailable,
     WaitFn,
@@ -73,10 +74,11 @@ def discover(
             # call until its watchdog restarts it; the next turn waits for that.
             on = f" on {log_name}" if log_name else ""
             raise ProMTimeout(f"ProM took longer than {CALL_TIMEOUT_S} s for {miner}{on}") from None
-        except ProMUnavailable:
+        except ProMUnavailable as e:
             # Starting or restarted, which also empties ProM's object cache, so the discovery
-            # starts over once ProM answers again.
-            if attempt == DISCOVERY_ATTEMPTS:
+            # starts over once ProM answers again. Not when the turn already waited for ProM's
+            # restart in vain: then ProM is down for longer.
+            if attempt == DISCOVERY_ATTEMPTS or isinstance(e, ProMNotRestarted):
                 raise
             wait_for_prom4py(on_wait)
         except Exception as e:

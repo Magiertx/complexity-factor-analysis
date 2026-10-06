@@ -88,17 +88,21 @@ One discovery, one miner on one log with all of its requests, may take
   when no probe has been answered for `PROM4PY_CALL_TIMEOUT` + 30 s, or when Java exited. A
   restart takes about 5 s. Details in [`src/prom4py/README.md`](../src/prom4py/README.md#watchdog).
 - **Recovery.** After a timeout, the next discovery waits until ProM answers again ("waiting
-  for ProM to restart"). One that finds ProM refused or the connection dropped (starting,
-  restarted, crashed) waits up to 180 s for it and starts the whole discovery over, since a
-  restart empties ProM's object cache; at most three attempts. When ProM does not come back,
-  the input fails with "ProM4Py is not reachable", and later inputs wait only 5 s each until
-  it answers again.
+  for ProM to restart"), for up to `PROM4PY_CALL_TIMEOUT` + 60 s (at least 180 s): the
+  watchdog counts from ProM's last answer before the stuck request, which can come well
+  after the discovery started, so the restart can follow the timeout by up to about
+  `PROM4PY_CALL_TIMEOUT` + 40 s. If ProM is not back by then, that input fails with "ProM
+  did not finish restarting". One that finds ProM refused or the connection dropped
+  (starting, restarted, crashed) waits up to 180 s for it and starts the whole discovery
+  over, since a restart empties ProM's object cache; at most three attempts. When ProM does
+  not come back, the input fails with "ProM4Py is not reachable", and later inputs wait only
+  5 s each until ProM answers anything again.
 - **Startup.** `algoservice` and `celery_worker` depend on `prom4py` being started, not
   healthy, so a stuck or starting ProM does not hold up `docker compose up`; jobs started
   before ProM is up wait for it as above.
 
 A worker blocked in a ProM call is free again at the latest after `PROM4PY_CALL_TIMEOUT`, also
-when its job was aborted, and ProM about half a minute later.
+when its job was aborted, and ProM usually about half a minute later.
 
 ## Job flow
 

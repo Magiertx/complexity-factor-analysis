@@ -160,7 +160,7 @@ discovery, one miner on one log, is therefore limited to `PROM4PY_CALL_TIMEOUT` 
   pdc2025_02001100.xes": in a dataset job it is listed under the failed inputs and the job
   goes on, in a single run its cells read `ERR: ProMTimeout`.
 - ProM itself goes on with the call. The watchdog in the `prom4py` container restarts it
-  about half a minute after the timeout; the restart takes about 5 s. Meanwhile the next
+  usually about half a minute after the timeout; the restart takes about 5 s. Meanwhile the next
   discovery shows "waiting for ProM to restart" and then runs normally.
 - Aborting a job does not stop a running ProM call either; the worker is free once the call
   returns or times out.
