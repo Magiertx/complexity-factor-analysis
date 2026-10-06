@@ -39,7 +39,8 @@ import {
   importPresets,
   listAllPresets,
 } from "@/lib/presets";
-import { useT } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n";
+import { formatDateTime } from "@/lib/i18n/local-format";
 import { LocaleSegmented } from "./locale-toggle";
 import { PageHeader } from "./page-header";
 
@@ -49,7 +50,7 @@ type ThemeChoice = "system" | "light" | "dark";
 
 export function SettingsView() {
   const { theme, setTheme } = useTheme();
-  const t = useT();
+  const { t, locale } = useLocale();
   const [mounted, setMounted] = useState(false);
   const [algorithms, setAlgorithms] = useState<AlgorithmManifest[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -355,7 +356,7 @@ export function SettingsView() {
                           className="inline-flex items-center gap-1 rounded-md bg-tile pl-2 pr-1 h-7 text-xs"
                         >
                           <Bookmark className="h-3 w-3 text-muted" />
-                          <span className="font-medium text-fg" title={t("settings.presets.saved_at", { date: new Date(preset.createdAt).toLocaleString() })}>
+                          <span className="font-medium text-fg" title={t("settings.presets.saved_at", { date: formatDateTime(preset.createdAt, locale) })}>
                             {preset.name}
                           </span>
                           <button

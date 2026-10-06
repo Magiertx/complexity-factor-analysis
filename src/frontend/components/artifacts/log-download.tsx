@@ -4,13 +4,13 @@ import { Download, FileCode2 } from "lucide-react";
 import type { Artifact } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { downloadBase64 } from "@/lib/utils";
-import { useT } from "@/lib/i18n";
+import { useLocale } from "@/lib/i18n";
+import { formatKilobytes } from "@/lib/i18n/local-format";
 
 type L = Extract<Artifact, { kind: "log" }>;
 
 export function LogDownload({ artifact }: { artifact: L }) {
-  const t = useT();
-  const sizeKb = Math.max(1, Math.round((artifact.data_base64.length * 0.75) / 1024));
+  const { t, locale } = useLocale();
   return (
     <div className="rounded-md bg-tile/40 px-4 py-3 flex items-center justify-between gap-3">
       <div className="flex items-center gap-3 min-w-0">
@@ -19,7 +19,7 @@ export function LogDownload({ artifact }: { artifact: L }) {
         </div>
         <div className="min-w-0">
           <div className="text-sm font-medium truncate">{artifact.filename}</div>
-          <div className="text-xs text-muted">{sizeKb} KB</div>
+          <div className="text-xs text-muted">{formatKilobytes(artifact.data_base64.length * 0.75, locale)}</div>
         </div>
       </div>
       <Button

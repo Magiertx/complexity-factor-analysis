@@ -236,10 +236,15 @@
     "span": "span",
     "top_label": "Top",
     "median_abbr": "med",
-    "noisy_title": "{pct}% of traces are unique sequences — many distinct variants.",
-    "normal_title": "{pct}% of traces are unique sequences.",
+    "noisy_title": "{pct} of the traces are unique sequences: many distinct variants.",
+    "normal_title": "{pct} of the traces are unique sequences.",
     "length_title": "Trace length range. Median {median}, average {avg}.",
-    "span_title": "Log covers {duration}."
+    "span_title": "Log covers {duration}.",
+    "duration_years": "{n} years",
+    "duration_months": "{n} months",
+    "duration_days": "{n} days",
+    "duration_hours": "{n} h",
+    "duration_seconds": "{n} s"
   },
   "algorithm_explainer": {
     "close_aria": "Close",
@@ -318,7 +323,7 @@
     "status_completed": "Completed",
     "status_failed": "Failed",
     "status_aborted": "Aborted",
-    "status_running": "Running {pct}%",
+    "status_running": "Running {pct}",
     "status_pending": "Pending…",
     "clear_all_confirm": "Clear the entire jobs archive? Datasets computed from logs or nets are deleted with their jobs.",
     "mode": {

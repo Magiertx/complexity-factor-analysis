@@ -37,7 +37,8 @@ import {
 } from "@/lib/api";
 import { datasetJobHref, datasetJobSubtitle, jobDisplayName, jobTitle } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
-import { useT } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n";
+import { formatDateTime, formatPercent } from "@/lib/i18n/local-format";
 import { Button } from "./ui/button";
 
 // How a job was started, derived from the `algorithm_id` prefix: runs of the
@@ -500,7 +501,7 @@ function JobCard({
   onAbort: () => void;
   onOpen?: () => void;
 }) {
-  const t = useT();
+  const { t, locale } = useLocale();
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const askRef = useRef<HTMLButtonElement>(null);
@@ -535,12 +536,7 @@ function JobCard({
         : jobDisplayName(job, t).split(" — ")[0];
   const subtitle = datasetJobSubtitle(job, t) ?? job.filename;
 
-  const dateStr = new Date(job.created_at * 1000).toLocaleString([], {
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const dateStr = formatDateTime(job.created_at * 1000, locale);
 
   return (
     <Link
@@ -655,7 +651,7 @@ function JobCard({
 }
 
 function StatusBadge({ job }: { job: Job }) {
-  const t = useT();
+  const { t, locale } = useLocale();
   if (job.status === "completed")
     return (
       <span className="flex items-center gap-1 text-success-ink">
@@ -681,7 +677,7 @@ function StatusBadge({ job }: { job: Job }) {
     <span className="flex items-center gap-1 text-accent-ink">
       <Loader2 className="h-3 w-3 animate-spin" />
       {job.status === "running"
-        ? t("jobs.status_running", { pct: job.percentage })
+        ? t("jobs.status_running", { pct: formatPercent(job.percentage / 100, locale) })
         : t("jobs.status_pending")}
     </span>
   );

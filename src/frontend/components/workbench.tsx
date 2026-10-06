@@ -54,6 +54,7 @@ import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Segmented } from "./ui/segmented";
 import { cn } from "@/lib/utils";
+import { formatDateTime, formatKilobytes, formatPercent } from "@/lib/i18n/local-format";
 
 export function Workbench() {
   const t = useT();
@@ -848,7 +849,7 @@ export function Workbench() {
                             </div>
                             <div className="min-w-0">
                               <div className="text-sm font-medium truncate">{uploadDisplayMeta.name}</div>
-                              <div className="text-xs text-muted">{(uploadDisplayMeta.size / 1024).toFixed(1)} KB</div>
+                              <div className="text-xs text-muted">{formatKilobytes(uploadDisplayMeta.size, locale)}</div>
                             </div>
                           </div>
                           <button
@@ -940,9 +941,9 @@ export function Workbench() {
                                         </div>
                                       </div>
                                       <div className="flex items-center justify-between text-[9px] text-muted/50 mt-1 w-full gap-2">
-                                        <span className="shrink-0">{(log.size_bytes / 1024).toFixed(1)} KB</span>
+                                        <span className="shrink-0">{formatKilobytes(log.size_bytes, locale)}</span>
                                         <span className="truncate">
-                                          {new Date(log.mtime * 1000).toLocaleDateString([], { month: 'short', day: 'numeric' })}, {new Date(log.mtime * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                          {formatDateTime(log.mtime * 1000, locale)}
                                         </span>
                                       </div>
                                     </button>
@@ -974,9 +975,9 @@ export function Workbench() {
                                         <span className="font-medium truncate text-fg" title={log.name}>{log.name}</span>
                                       </div>
                                       <div className="flex items-center gap-4 text-[9px] text-muted/50 shrink-0 ml-4">
-                                        <span>{(log.size_bytes / 1024).toFixed(1)} KB</span>
+                                        <span>{formatKilobytes(log.size_bytes, locale)}</span>
                                         <span className="hidden sm:inline">
-                                          {new Date(log.mtime * 1000).toLocaleDateString([], { month: 'short', day: 'numeric' })}, {new Date(log.mtime * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                          {formatDateTime(log.mtime * 1000, locale)}
                                         </span>
                                       </div>
                                     </button>
@@ -1034,7 +1035,7 @@ export function Workbench() {
                                 </div>
                                 <div className="text-[9px] font-mono text-muted/60 mt-1 flex items-center justify-between w-full">
                                   <span className="truncate max-w-[70%]">{log.filename}</span>
-                                  <span>{(log.size_bytes / 1024).toFixed(1)} KB</span>
+                                  <span>{formatKilobytes(log.size_bytes, locale)}</span>
                                 </div>
                               </button>
                             );
@@ -1069,7 +1070,7 @@ export function Workbench() {
                                 </div>
                                 <div className="flex items-center gap-4 text-[9px] text-muted/50 shrink-0 ml-4">
                                   <span className="font-mono">{log.filename}</span>
-                                  <span>{(log.size_bytes / 1024).toFixed(1)} KB</span>
+                                  <span>{formatKilobytes(log.size_bytes, locale)}</span>
                                 </div>
                               </button>
                             );
@@ -1218,7 +1219,7 @@ export function Workbench() {
                 <div className="w-full space-y-2 mb-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-medium text-muted truncate max-w-[80%]">{progress.status}</span>
-                    <span className="font-bold text-accent-ink shrink-0">{progress.percentage}%</span>
+                    <span className="font-bold text-accent-ink shrink-0">{formatPercent(progress.percentage / 100, locale)}</span>
                   </div>
                   <div className="w-full bg-border rounded-full h-2 overflow-hidden">
                     <div

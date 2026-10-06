@@ -236,10 +236,15 @@
     "span": "Zeitspanne",
     "top_label": "Top",
     "median_abbr": "med",
-    "noisy_title": "{pct}% der Traces sind eindeutige Sequenzen — viele verschiedene Varianten.",
-    "normal_title": "{pct}% der traces sind eindeutige Sequenzen.",
+    "noisy_title": "{pct} der Traces sind eindeutige Sequenzen: viele verschiedene Varianten.",
+    "normal_title": "{pct} der Traces sind eindeutige Sequenzen.",
     "length_title": "Trace-Längenbereich. Median {median}, Durchschnitt {avg}.",
-    "span_title": "Log umfasst {duration}."
+    "span_title": "Log umfasst {duration}.",
+    "duration_years": "{n} Jahre",
+    "duration_months": "{n} Monate",
+    "duration_days": "{n} Tage",
+    "duration_hours": "{n} h",
+    "duration_seconds": "{n} s"
   },
   "algorithm_explainer": {
     "close_aria": "Schließen",
@@ -318,7 +323,7 @@
     "status_completed": "Abgeschlossen",
     "status_failed": "Fehlgeschlagen",
     "status_aborted": "Abgebrochen",
-    "status_running": "Läuft {pct}%",
+    "status_running": "Läuft {pct}",
     "status_pending": "In Warteschlange…",
     "clear_all_confirm": "Das gesamte Job-Archiv leeren? Datensätze, die aus Logs oder Netzen berechnet wurden, werden mit ihren Jobs gelöscht.",
     "mode": {

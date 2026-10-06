@@ -27,7 +27,8 @@ import { Input } from "./ui/input";
 import { Select } from "./ui/select";
 import { datasetJobHref, datasetJobSubtitle, jobDisplayName, jobTitle } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
-import { useT } from "@/lib/i18n";
+import { useLocale } from "@/lib/i18n";
+import { formatDateTime, formatPercent } from "@/lib/i18n/local-format";
 
 type StatusFilter = "all" | "active" | "completed" | "failed" | "aborted";
 
@@ -40,7 +41,7 @@ const STATUS_BADGE: Record<Job["status"], string> = {
 };
 
 export function RunHistoryView() {
-  const t = useT();
+  const { t, locale } = useLocale();
 
   const STATUS_LABEL: Record<Job["status"], string> = {
     pending: t("run_history.status_label_pending"),
@@ -248,7 +249,6 @@ export function RunHistoryView() {
           ) : (
             <ul ref={listRef} tabIndex={-1} className="divide-y divide-border outline-none">
               {filtered.map((job) => {
-                const date = new Date(job.created_at * 1000);
                 const isBatch = job.algorithm_id.startsWith("_batch");
                 const detailHref = datasetJobHref(job) ?? `/inspect?job=${job.id}`;
                 const title = jobTitle(job, t);
@@ -271,7 +271,7 @@ export function RunHistoryView() {
                         >
                           {STATUS_LABEL[job.status]}
                           {(job.status === "running" || job.status === "pending") &&
-                            ` ${Math.round(job.percentage)}%`}
+                            ` ${formatPercent(job.percentage / 100, locale)}`}
                         </span>
                       </div>
                       <div className="text-[11px] text-muted flex items-center gap-2 flex-wrap font-mono">
@@ -285,7 +285,7 @@ export function RunHistoryView() {
                           </span>
                         )}
                         <span>·</span>
-                        <span>{date.toLocaleString()}</span>
+                        <span className="font-sans">{formatDateTime(job.created_at * 1000, locale)}</span>
                         {job.error && (
                           <>
                             <span>·</span>
