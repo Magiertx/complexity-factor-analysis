@@ -52,7 +52,7 @@ import {
   FactorCatalog,
 } from "@/lib/api";
 import { AlgorithmList } from "./algorithm-list";
-import { FileDrop } from "./file-drop";
+import { FileDrop, LOG_EXTENSIONS } from "./file-drop";
 import { ParameterForm, type OptionInfo } from "./parameter-form";
 import { SingleRunTour } from "./single-run-tour";
 import { AlgorithmExplainerModal } from "./algorithm-explainer-modal";
@@ -912,6 +912,12 @@ export function Workbench() {
                             }
                             if (f.size > 100 * 1024 * 1024) {
                               setError(t("workbench.errors.file_too_large"));
+                              setFile(null);
+                              return;
+                            }
+                            // A dropped file skips the filter of the file picker.
+                            if (!LOG_EXTENSIONS.some((ext) => f.name.toLowerCase().endsWith(ext))) {
+                              setError(t("workbench.errors.wrong_type", { formats: LOG_EXTENSIONS.join(", ") }));
                               setFile(null);
                               return;
                             }

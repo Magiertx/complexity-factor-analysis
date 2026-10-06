@@ -12,7 +12,11 @@ interface Props {
   accept?: string;
 }
 
-export function FileDrop({ file, onChange, accept = ".xes,.json" }: Props) {
+// What POST /algorithms/{id}/analyze accepts; ".gz" stands for ".xes.gz", which a file picker cannot match.
+export const LOG_ACCEPT = ".xes,.gz,.xml,.json";
+export const LOG_EXTENSIONS = [".xes", ".xes.gz", ".xml", ".json"];
+
+export function FileDrop({ file, onChange, accept = LOG_ACCEPT }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState(false);
   const { t, locale } = useLocale();

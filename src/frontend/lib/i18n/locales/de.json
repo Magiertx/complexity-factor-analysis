@@ -44,8 +44,8 @@
     }
   },
   "file_drop": {
-    "drop_label": "Event Log hier ablegen",
-    "drop_hint": "oder klicken zum Auswählen · .xes, .json",
+    "drop_label": "Event-Log hier ablegen",
+    "drop_hint": "oder klicken zum Auswählen · .xes, .xes.gz, .xml, .json",
     "remove_aria": "Datei entfernen"
   },
   "mode_bar": {
@@ -496,6 +496,7 @@
       "analysis_failed": "Analyse fehlgeschlagen",
       "unknown_submission": "Unbekannter Übermittlungsfehler",
       "file_too_large": "Datei überschreitet das 100-MB-Limit.",
+      "wrong_type": "Dieser Dateityp lässt sich nicht analysieren; verwende {formats}.",
       "aborted_by_user": "Vom Nutzer abgebrochen"
     }
   },
