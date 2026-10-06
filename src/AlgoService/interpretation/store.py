@@ -69,7 +69,6 @@ def _read(path: Path) -> dict[str, Any] | None:
 
 
 def _write(path: Path, data: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(f".{os.getpid()}.tmp")
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=1)
@@ -81,9 +80,13 @@ def read_cached(session_id: str, meta: dict[str, Any], key: str) -> dict[str, An
 
 
 def write_cached(session_id: str, meta: dict[str, Any], key: str, entry: dict[str, Any]) -> None:
+    """Raises FileNotFoundError for an own dataset deleted since ``meta`` was read: the
+    answer arrives long after the request started, and must not bring the dataset back."""
     directory = _cache_dir(session_id, meta)
+    shared = directory == shared_dir()
+    directory.mkdir(parents=shared, exist_ok=True)
     _write(directory / f"{key}.json", entry)
-    if directory == shared_dir():
+    if shared:
         _prune(directory)
 
 
@@ -117,6 +120,7 @@ def read_precomputed(
 
 def write_precomputed(bundled_id: str, language: str, entry: dict[str, Any]) -> Path:
     path = precomputed_path(bundled_id, language)
+    path.parent.mkdir(parents=True, exist_ok=True)
     _write(path, entry)
     return path
 

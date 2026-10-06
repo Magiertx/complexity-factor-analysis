@@ -756,6 +756,43 @@ def test_concurrent_requests_make_one_call(client, claude, csv_dataset):
     assert len(claude.calls) == 1
 
 
+def test_dataset_deleted_during_the_call_stays_deleted(client, claude, csv_dataset):
+    """The answer is shown, but caching it must not create the dataset directory again:
+    nothing would list or delete it."""
+    import asyncio
+
+    from factor_analysis import storage
+    from srv_main import app
+
+    answer = _answer_for
+    dataset_id = csv_dataset[0]
+    session_dir = next(storage.root().iterdir())
+
+    async def held(**kwargs):
+        claude.calls.append(kwargs)
+        in_call.set()
+        await release.wait()
+        return answer(kwargs)
+
+    async def delete_during_the_call():
+        transport = httpx2.ASGITransport(app=app)
+        async with httpx2.AsyncClient(transport=transport, base_url="http://testserver", cookies=dict(client.cookies)) as c:
+            url = f"/factor-analysis/datasets/{dataset_id}"
+            interpret = asyncio.create_task(c.post(f"{url}/interpret", json={"auto_msa_filter": False}))
+            await in_call.wait()
+            deleted = await c.delete(url)
+            release.set()
+            return await interpret, deleted
+
+    in_call, release = asyncio.Event(), asyncio.Event()
+    claude.create = held
+    answered, deleted = client.portal.call(delete_during_the_call)
+    assert deleted.status_code == 204
+    assert answered.status_code == 200 and answered.json()["cached"] is False
+    assert not (session_dir / dataset_id).exists()
+    assert client.get("/factor-analysis/datasets").json() == {"datasets": []}
+
+
 # --- limits -------------------------------------------------------------------------------
 
 
