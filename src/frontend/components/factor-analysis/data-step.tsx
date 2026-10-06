@@ -662,7 +662,8 @@ function DatasetTile({
   const Icon = SOURCE_ICON[dataset.source];
   const { n_observations: rows, n_measures: cols } = dataset;
   return (
-    <div className={cn("rounded-md", choiceTile(chosen))}>
+    // min-w-0: a long name is truncated instead of widening the grid column beyond the page.
+    <div className={cn("rounded-md min-w-0", choiceTile(chosen))}>
       <div className="flex items-start">
         <label className="flex-1 min-w-0 flex items-start gap-2.5 pl-3 py-2.5 cursor-pointer">
           <input type="radio" name={name} className="sr-only" checked={chosen} onChange={onSelect} />
