@@ -7,7 +7,7 @@
       "venue": "ATAED 2026",
       "description": "ComFy model measures of the nets each miner discovered from the 288 training logs of the Process Discovery Contest 2025.",
       "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
-      "license": "No licence file upstream; permission of the author pending",
+      "license": "No license file upstream; permission of the author pending",
       "source_url": "https://github.com/Pati-nets/ComFy"
     },
     {
@@ -31,7 +31,7 @@
       "row_labels": "comfy_tuple",
       "source_url": "https://github.com/Pati-nets/ComFy",
       "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
-      "license": "No licence file upstream; permission of the author pending",
+      "license": "No license file upstream; permission of the author pending",
       "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
       "collection": "comfy-paper",
       "label": "Inductive miner"
@@ -45,7 +45,7 @@
       "row_labels": "comfy_tuple",
       "source_url": "https://github.com/Pati-nets/ComFy",
       "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
-      "license": "No licence file upstream; permission of the author pending",
+      "license": "No license file upstream; permission of the author pending",
       "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
       "collection": "comfy-paper",
       "label": "Alpha miner"
@@ -59,7 +59,7 @@
       "row_labels": "comfy_tuple",
       "source_url": "https://github.com/Pati-nets/ComFy",
       "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
-      "license": "No licence file upstream; permission of the author pending",
+      "license": "No license file upstream; permission of the author pending",
       "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
       "collection": "comfy-paper",
       "label": "Alpha Plus miner"
@@ -73,7 +73,7 @@
       "row_labels": "comfy_tuple",
       "source_url": "https://github.com/Pati-nets/ComFy",
       "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
-      "license": "No licence file upstream; permission of the author pending",
+      "license": "No license file upstream; permission of the author pending",
       "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
       "collection": "comfy-paper",
       "label": "Alpha Dollar miner"
@@ -87,7 +87,7 @@
       "row_labels": "comfy_tuple",
       "source_url": "https://github.com/Pati-nets/ComFy",
       "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
-      "license": "No licence file upstream; permission of the author pending",
+      "license": "No license file upstream; permission of the author pending",
       "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
       "collection": "comfy-paper",
       "label": "Heuristics miner"
@@ -101,7 +101,7 @@
       "row_labels": "comfy_tuple",
       "source_url": "https://github.com/Pati-nets/ComFy",
       "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
-      "license": "No licence file upstream; permission of the author pending",
+      "license": "No license file upstream; permission of the author pending",
       "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
       "collection": "comfy-paper",
       "label": "Hybrid ILP miner"
@@ -115,7 +115,7 @@
       "row_labels": "comfy_tuple",
       "source_url": "https://github.com/Pati-nets/ComFy",
       "source_commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
-      "license": "No licence file upstream; permission of the author pending",
+      "license": "No license file upstream; permission of the author pending",
       "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
       "collection": "comfy-paper",
       "label": "Directly Follows miner"
@@ -162,7 +162,7 @@
       ],
       "source": "pnml",
       "name": "Petri nets of the four PDC logs",
-      "description": "32 nets mined from the four sample logs with pm4py's inductive miner at noise thresholds 0 to 0.8 (samples/make_sample_models.py).",
+      "description": "32 nets mined from the four sample logs with the Inductive miner of pm4py at noise thresholds 0 to 0.8 (samples/make_sample_models.py).",
       "files": [
         "samples/models/pdc2023_00101000_im_noise00.pnml",
         "samples/models/pdc2023_00101000_im_noise10.pnml",
