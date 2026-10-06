@@ -198,9 +198,9 @@ export function countText(t: Translate, key: string, n: number): string {
   return t(n === 1 ? key : `${key}_plural`, { n });
 }
 
-/** "Dataset from 3 logs". */
+/** "Dataset from 3 logs"; a text of its own per noun, since German declines it. */
 function inputsName(t: Translate, nets: boolean, n: number): string {
-  return t("factor.data.auto_name", { inputs: countText(t, nets ? "factor.inputs.nets" : "factor.inputs.logs", n) });
+  return countText(t, `factor.data.auto_name.${nets ? "nets" : "logs"}`, n);
 }
 
 /** The name of a dataset; one the server made up from the inputs is said in the UI language. */

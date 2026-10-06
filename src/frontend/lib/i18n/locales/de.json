@@ -564,7 +564,12 @@
       "slow_title": "Dauert bei großen Logs spürbar länger",
       "name_label": "Name des Datensatzes (optional)",
       "name_placeholder": "z. B. BPI-Logs, Inductive Miner",
-      "auto_name": "Datensatz aus {inputs}",
+      "auto_name": {
+        "logs": "Datensatz aus {n} Log",
+        "logs_plural": "Datensatz aus {n} Logs",
+        "nets": "Datensatz aus {n} Netz",
+        "nets_plural": "Datensatz aus {n} Netzen"
+      },
       "estimate": "Das ergibt bis zu {rows} Beobachtungen von {cols} Maßen.",
       "estimate_too_few": "Zu wenige: Eine Faktorenanalyse braucht mehr Beobachtungen als Maße, mindestens {min}. Füge Dateien hinzu oder entferne Maße.",
       "estimate_thin": "Wenige Beobachtungen pro Maß. Mit etwa fünf pro Maß ({target}) werden die Ergebnisse stabiler.",

@@ -564,7 +564,12 @@
       "slow_title": "Takes noticeably longer on large logs",
       "name_label": "Dataset name (optional)",
       "name_placeholder": "e.g. BPI logs, inductive miner",
-      "auto_name": "Dataset from {inputs}",
+      "auto_name": {
+        "logs": "Dataset from {n} log",
+        "logs_plural": "Dataset from {n} logs",
+        "nets": "Dataset from {n} net",
+        "nets_plural": "Dataset from {n} nets"
+      },
       "estimate": "This gives up to {rows} observations of {cols} measures.",
       "estimate_too_few": "Too few: a factor analysis needs more observations than measures, at least {min}. Add files or remove measures.",
       "estimate_thin": "Few observations per measure. Results get more stable with about five per measure ({target}).",
