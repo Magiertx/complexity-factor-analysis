@@ -34,6 +34,7 @@ from factor_analysis.core import (
     AnalysisError,
     AnalysisParams,
     analyze as run_analysis,
+    check_excluded,
 )
 from factor_analysis.export import loadings_csv, loadings_latex, matrix_csv
 from routes.algorithms import (
@@ -669,6 +670,7 @@ async def get_dataset(
         "failures": meta.get("failures", []),
         "created_at": meta["created_at"],
         "inputs": _inputs(meta),
+        "options": meta.get("options"),
     }
     if meta.get("job_id"):
         out["job_id"] = meta["job_id"]
@@ -690,10 +692,15 @@ def _slug(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "-", name).strip("-")[:80] or "dataset"
 
 
-async def _ready_matrix(dataset_id: str, session_id: str) -> tuple[dict[str, Any], pd.DataFrame]:
+async def _ready_meta(dataset_id: str, session_id: str) -> dict[str, Any]:
     meta = await _meta_or_404(dataset_id, session_id)
     if meta["status"] != "ready":
         raise HTTPException(status_code=409, detail=f"The dataset is {meta['status']}, not ready.")
+    return meta
+
+
+async def _ready_matrix(dataset_id: str, session_id: str) -> tuple[dict[str, Any], pd.DataFrame]:
+    meta = await _ready_meta(dataset_id, session_id)
     return meta, await run_in_threadpool(storage.load_matrix, session_id, meta["id"])
 
 
@@ -773,6 +780,28 @@ async def analyze_dataset(
         return await _analyze(data, (body or AnalyzeRequest()).params(meta["kind"]))
     except _AnalysisFailed as e:
         return e.response
+
+
+@router.put("/datasets/{dataset_id}/options", status_code=204)
+@limiter.limit(rate_limit("dataset_status", "600/minute"))
+async def save_options(
+    request: Request,
+    dataset_id: str,
+    body: AnalyzeRequest,
+    session_id: str = Depends(get_session_id),
+) -> Response:
+    """Keep the parameters of an analysis with the dataset, so reopening it starts from them.
+
+    Checked like ``analyze`` checks them, without running the analysis: an excluded measure
+    the dataset lacks is a 400 with ``code`` and ``params``.
+    """
+    meta = await _ready_meta(dataset_id, session_id)
+    try:
+        check_excluded(meta["measures"], body.excluded)
+    except AnalysisError as e:
+        return _AnalysisFailed(e).response
+    storage.update_meta(session_id, meta["id"], options=body.model_dump())
+    return Response(status_code=204)
 
 
 @router.post("/datasets/{dataset_id}/export")

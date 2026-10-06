@@ -1,4 +1,4 @@
-"""The datasets of a session: the list and what each was made from."""
+"""The datasets of a session: the list and saved options."""
 
 from __future__ import annotations
 
@@ -124,6 +124,7 @@ def test_other_sessions_see_nothing(client, other):
     dataset_id = _csv(client)
     assert _list(other) == []
     assert other.get(f"/factor-analysis/datasets/{dataset_id}").status_code == 404
+    assert other.put(f"/factor-analysis/datasets/{dataset_id}/options", json={}).status_code == 404
     assert [d["id"] for d in _list(client)] == [dataset_id]
 
 
@@ -132,6 +133,7 @@ def test_computed_dataset_records_its_inputs(client):
     d = client.get(f"/factor-analysis/datasets/{body['dataset_id']}").json()
     assert d["status"] == "ready", d
     assert d["inputs"] == {"files": 32, "measures": ["Size", "Density"], "sample_id": SAMPLE}
+    assert d["options"] is None
     (summary,) = _list(client)
     assert summary["job_id"] == body["job_id"] and summary["inputs"] == d["inputs"]
 
@@ -170,4 +172,53 @@ def test_list_fails_stale_computing_datasets(client, monkeypatch):
     assert _list(client)[0]["status"] == "failed"
     assert client.get(f"/jobs/{job_id}").json()["status"] == "failed"
     assert "time limit" in client.get(f"/factor-analysis/datasets/{dataset_id}").json()["error"]
+
+
+# --- options ------------------------------------------------------------------------------
+
+
+def test_options_round_trip(client):
+    dataset_id = _csv(client)
+    options = {"excluded": ["Size"], "rotation": "promax", "n_factors": 2, "loading_threshold": 0.4}
+    r = client.put(f"/factor-analysis/datasets/{dataset_id}/options", json=options)
+    assert r.status_code == 204, r.text
+
+    assert client.get(f"/factor-analysis/datasets/{dataset_id}").json()["options"] == {
+        "excluded": ["Size"],
+        "auto_msa_filter": True,
+        "msa_threshold": 0.6,
+        "bartlett_alpha": 0.05,
+        "n_factors": 2,
+        "rotation": "promax",
+        "loading_threshold": 0.4,
+        "communality_threshold": None,
+    }
+    assert _list(client)[0]["has_options"] is True
+
+    client.put(f"/factor-analysis/datasets/{dataset_id}/options", json={})
+    assert client.get(f"/factor-analysis/datasets/{dataset_id}").json()["options"]["excluded"] == []
+
+
+def test_options_are_checked_like_an_analysis(client):
+    dataset_id = _csv(client)
+    url = f"/factor-analysis/datasets/{dataset_id}"
+    body = {"excluded": ["Size", "Nope"]}
+    r = client.put(f"{url}/options", json=body)
+    assert r.status_code == 400
+    assert r.json() == client.post(f"{url}/analyze", json=body).json()
+    assert r.json()["code"] == "unknown_excluded"
+
+    assert client.put(f"{url}/options", json={"rotation": "spin"}).status_code == 422
+    assert client.put(f"{url}/options", json={"msa_threshold": 2}).status_code == 422
+    assert client.get(url).json()["options"] is None
+
+    missing = "00000000-0000-4000-8000-000000000000"
+    assert client.put(f"/factor-analysis/datasets/{missing}/options", json={}).status_code == 404
+    assert client.put("/factor-analysis/datasets/not-a-uuid/options", json={}).status_code == 400
+
+
+def test_options_need_a_ready_dataset(client):
+    dataset_id, _ = _computing_with_job(client)
+    r = client.put(f"/factor-analysis/datasets/{dataset_id}/options", json={})
+    assert r.status_code == 409
 
