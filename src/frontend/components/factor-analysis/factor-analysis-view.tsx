@@ -322,21 +322,39 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
 
   // Remember the options of every new analysis with its dataset, so that reopening the dataset
   // starts from them. Nothing depends on the answer; a failure only costs that convenience.
+  const pendingSave = useRef<(() => void) | null>(null);
   useEffect(() => {
+    pendingSave.current = null;
     if (!datasetId || !analyzedOptions) return;
     const json = JSON.stringify(analyzedOptions);
     const saved = savedOptions.current;
     if (saved?.id === datasetId && saved.json === json) return;
-    const timer = setTimeout(() => {
+    const save = () => {
+      pendingSave.current = null;
       saveDatasetOptions(datasetId, analyzedOptions).then(
         () => {
           if (datasetIdRef.current === datasetId) savedOptions.current = { id: datasetId, json };
         },
-        (e) => console.error("Could not save the analysis options", e),
+        (e) => {
+          // A dataset deleted meanwhile needs no options.
+          if (!(e instanceof HttpError && e.status === 404)) console.error("Could not save the analysis options", e);
+        },
       );
-    }, SAVE_OPTIONS_DEBOUNCE_MS);
+    };
+    pendingSave.current = save;
+    const timer = setTimeout(save, SAVE_OPTIONS_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [datasetId, analyzedOptions]);
+
+  // Leaving the tab, the page or the dataset sends a save still waiting for its debounce.
+  useEffect(() => {
+    const flush = () => pendingSave.current?.();
+    window.addEventListener("pagehide", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
+  }, [datasetId]);
 
   // Show a stored interpretation of the analysis on screen without asking for a new one:
   // precomputed for a bundled dataset, or requested before. Never calls the model. Without a

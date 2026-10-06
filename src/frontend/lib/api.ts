@@ -576,6 +576,8 @@ export async function saveDatasetOptions(id: string, options: AnalyzeOptions): P
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(options),
+    // Sent when the page is left, too.
+    keepalive: true,
   });
   if (!r.ok) throw await httpError(r, "Could not save the options");
 }
