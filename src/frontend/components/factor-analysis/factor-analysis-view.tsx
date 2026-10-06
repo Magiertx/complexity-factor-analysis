@@ -426,8 +426,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     selectDataset(null);
   };
 
-  // Set when the open dataset is deleted from its summary: the focused button goes away with
-  // it, so the form that replaces the summary takes the focus.
+  // Set when the open dataset is deleted from its summary, or the last one from the list in the
+  // form: the focused button goes away with it, so the form that replaces the summary or the
+  // list takes the focus.
   const focusForm = useRef(false);
   useEffect(() => {
     if (!focusForm.current || !formOpen || !datasets) return;
@@ -448,6 +449,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       }
     }
     setDatasets((list) => list && list.filter((d) => d.id !== id));
+    // With others left, the list hands the focus on itself.
+    if (formOpen && datasets?.every((d) => d.id === id)) focusForm.current = true;
     if (id === datasetIdRef.current) {
       if (!formOpen) focusForm.current = true;
       selectDataset(null);
