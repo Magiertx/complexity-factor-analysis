@@ -330,15 +330,18 @@ five-step view (`components/factor-analysis/`) for the two kinds:
 
 Every parameter change re-runs `POST /datasets/{id}/analyze`, debounced by 300 ms. The options
 of each new analysis are saved with the dataset (`PUT /datasets/{id}/options`, debounced, fire
-and forget), and a dataset opens with its saved options or else the defaults. The id of the
-last dataset is kept per tab in `localStorage`. "My datasets", the first source of the data
-step, reopens a dataset the same way as a `?dataset=<id>` link or deletes it
-(`DELETE /datasets/{id}`); a remembered or linked dataset that answers 404 is reported in the
-data step instead of being dropped silently. The jobs drawer slides over the two tabs (on
-`/inspect` it is a column on wide screens), and dataset jobs there and in the run history
-link to their tab with `?dataset=<id>`, which also works while the tab is open. The settings
-delete all datasets of the session (`DELETE /datasets`) together with their `localStorage`
-entries.
+and forget; a save still waiting is sent when the dataset, the tab or the page is left), and a
+dataset opens with its saved options or else the defaults. The id of the last dataset is kept
+per tab in `localStorage`. "My datasets", the first source of the data step, reopens a dataset
+the same way as a `?dataset=<id>` link or deletes it (`DELETE /datasets/{id}`); a remembered or
+linked dataset that answers 404 is reported in the data step instead of being dropped
+silently. A dataset without a name of its own (`name_auto`) and its job are called after the
+inputs in the UI language. The jobs drawer slides over the two tabs as a modal dialog that
+keeps the focus and holds the page still (on `/inspect` it is a column on wide screens), and
+dataset jobs there and in the run history link to their tab with `?dataset=<id>`, which also
+works while the tab is open. Every delete of a dataset, there included, is confirmed first.
+The settings delete all datasets of the session (`DELETE /datasets`) together with their
+`localStorage` entries.
 
 The single-log ComFy workbench lives at `/inspect` ("Inspect a single log" on the model tab):
 
