@@ -42,6 +42,7 @@ import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { useJobsDrawer } from "@/components/jobs-drawer";
 import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
+import { PageHeader } from "@/components/page-header";
 import { DataForm, DataSummary } from "./data-step";
 import { DatasetView } from "./dataset-step";
 import { SuitabilityView } from "./suitability-step";
@@ -591,28 +592,28 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         <DatasetLink onLink={openDataset} />
       </Suspense>
 
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0 max-w-3xl">
-          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{t(`factor.${kind}.title`)}</h1>
-          <p className="text-sm text-muted mt-1 leading-relaxed">{t(`factor.${kind}.subtitle`)}</p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {kind === "model" && (
-            <Link
-              href="/inspect"
-              title={t("factor.model.inspect_title")}
-              className="h-8 px-3 inline-flex items-center gap-1.5 rounded-md bg-tile hover:bg-accent/[0.08] transition text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-            >
-              <Microscope className="h-3.5 w-3.5" />
-              {t("factor.model.inspect_link")}
-            </Link>
-          )}
-          <Button variant="outline" size="sm" onClick={() => setTourOpen(true)} title={t("factor.tour_title")}>
-            <HelpCircle className="h-3.5 w-3.5" />
-            {t("factor.tour_button")}
-          </Button>
-        </div>
-      </header>
+      <PageHeader
+        title={t(`factor.${kind}.title`)}
+        subtitle={t(`factor.${kind}.subtitle`)}
+        actions={
+          <>
+            {kind === "model" && (
+              <Link
+                href="/inspect"
+                title={t("factor.model.inspect_title")}
+                className="h-8 px-3 inline-flex items-center gap-1.5 rounded-md bg-tile hover:bg-accent/[0.08] transition text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <Microscope className="h-3.5 w-3.5" />
+                {t("factor.model.inspect_link")}
+              </Link>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setTourOpen(true)} title={t("factor.tour_title")}>
+              <HelpCircle className="h-3.5 w-3.5" />
+              {t("factor.tour_button")}
+            </Button>
+          </>
+        }
+      />
 
       <div className="lg:grid lg:grid-cols-[12.5rem_minmax(0,1fr)] lg:gap-8 lg:items-start">
         <StepRail states={states} stateLabels={stateLabels} />
