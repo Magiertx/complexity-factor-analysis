@@ -676,6 +676,8 @@
       "order_original": "Wie im Datensatz",
       "export_csv": "CSV exportieren",
       "export_latex": "LaTeX exportieren",
+      "export_zip": "Analyse herunterladen (ZIP)",
+      "export_zip_title": "Der Datensatz, alle Ergebnisse, die Ladungen als CSV und LaTeX, eine gespeicherte Interpretation, falls vorhanden, und ein Manifest, um die Analyse zu reproduzieren",
       "export_failed": "Der Export ist fehlgeschlagen.",
       "table_heading": "Ladungen",
       "caption": "Faktorladungen, {n} Faktoren, Rotation {rotation}",

@@ -8,6 +8,7 @@ import {
   abortTask,
   analyzeDataset,
   createDataset,
+  downloadAnalysisZip,
   exportLoadings,
   fetchDataset,
   fetchFactorCatalog,
@@ -21,7 +22,7 @@ import {
   type FactorKind,
   type InterpretationStatus,
 } from "@/lib/api";
-import { PREVIEW_ROWS, defaultOptions, downloadBlob, type AnalysisOptions } from "@/lib/factor-analysis";
+import { PREVIEW_ROWS, defaultOptions, downloadBlob, type AnalysisOptions, type ExportFormat } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -100,7 +101,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const [analysis, setAnalysis] = useState<FactorAnalysis | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
-  const [exporting, setExporting] = useState<"csv" | "latex" | null>(null);
+  const [exporting, setExporting] = useState<ExportFormat | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
   const onboarding = useOnboarding();
@@ -262,12 +263,12 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     return () => ctrl.abort();
   }, [ready, datasetId, analyzedOptions, analyzedFactors, locale, lookupInterpretation]);
 
-  // Only the analysis on screen can be interpreted: during the debounce after a change of the
-  // settings, `options` are already ahead of it.
-  const canInterpret = !!analyzedOptions && analyzedOptions === options && !analyzing;
+  // Only the analysis on screen can be interpreted or downloaded as a whole: during the
+  // debounce after a change of the settings, `options` are already ahead of it.
+  const analysisCurrent = !!analyzedOptions && analyzedOptions === options && !analyzing;
 
   const runInterpretation = async () => {
-    if (!datasetId || !analyzedOptions || !canInterpret) return;
+    if (!datasetId || !analyzedOptions || !analysisCurrent) return;
     const forDataset = datasetId;
     const forOptions = analyzedOptions;
     const key = interpretationKey(datasetId, forOptions, locale);
@@ -320,13 +321,18 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     selectDataset(null);
   };
 
-  const runExport = async (format: "csv" | "latex") => {
+  const runExport = async (format: ExportFormat) => {
     if (!datasetId) return;
     setExporting(format);
     setExportError(null);
     try {
-      const { blob, filename } = await exportLoadings(datasetId, options, format);
-      downloadBlob(blob, filename);
+      if (format === "zip") {
+        // The button is enabled only while both are the same: the ZIP holds what is shown.
+        await downloadAnalysisZip(datasetId, analyzedOptions ?? options, locale);
+      } else {
+        const { blob, filename } = await exportLoadings(datasetId, options, format);
+        downloadBlob(blob, filename);
+      }
     } catch (e) {
       setExportError(errorText(e, t("factor.loadings.export_failed")));
     } finally {
@@ -569,6 +575,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                     measureName={measureName}
                     onExport={runExport}
                     exporting={exporting}
+                    zipReady={analysisCurrent}
                   />
                 </div>
               </div>
@@ -594,7 +601,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                 stale={interpretationStale}
                 running={interpreting}
                 error={interpretError}
-                canRun={canInterpret}
+                canRun={analysisCurrent}
                 onInterpret={runInterpretation}
                 measureName={measureName}
               />

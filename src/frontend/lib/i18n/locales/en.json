@@ -676,6 +676,8 @@
       "order_original": "As in dataset",
       "export_csv": "Export CSV",
       "export_latex": "Export LaTeX",
+      "export_zip": "Download analysis (ZIP)",
+      "export_zip_title": "The dataset, all results, the loadings as CSV and LaTeX, a stored interpretation if there is one, and a manifest to reproduce the analysis",
       "export_failed": "The export failed.",
       "table_heading": "Loadings",
       "caption": "Factor loadings, {n} factors, rotation {rotation}",

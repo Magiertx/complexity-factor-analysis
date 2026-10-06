@@ -116,6 +116,9 @@ export function progressPercent(progress: number | undefined): number | null {
   return Math.max(0, Math.min(100, Math.round(progress)));
 }
 
+/** The loadings table as CSV or LaTeX, or the whole analysis as a ZIP. */
+export type ExportFormat = "csv" | "latex" | "zip";
+
 export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
