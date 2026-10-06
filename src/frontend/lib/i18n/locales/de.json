@@ -208,9 +208,15 @@
   },
   "parameter_form": {
     "all_at_defaults": "Alle Parameter wurden auf ihren Standardwerten belassen.",
-    "search_placeholder": "Suchen...",
+    "search_placeholder": "Suchen…",
     "search_options_aria": "Optionen für {label} suchen",
-    "recommended": "Empfohlen: {value}"
+    "recommended": "Empfohlen: {value}",
+    "selected_count": "{n} von {total}",
+    "select_all": "Alle",
+    "select_none": "Keine",
+    "select_defaults": "Standard",
+    "slow_badge": "langsam",
+    "slow_title": "Dauert bei großen Logs spürbar länger"
   },
   "preset_bar": {
     "load_preset": "Preset laden",

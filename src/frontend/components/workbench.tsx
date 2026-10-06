@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useT, useLocale, localizedAlgoDescription } from "@/lib/i18n";
+import { useT, useLocale, localizedAlgoDescription, localizeCatalog } from "@/lib/i18n";
 import {
   AlertCircle,
   Play,
@@ -40,10 +40,12 @@ import {
   fetchLogStats,
   LogStatsResponse,
   API_BASE,
+  fetchFactorCatalog,
+  FactorCatalog,
 } from "@/lib/api";
 import { AlgorithmList } from "./algorithm-list";
 import { FileDrop } from "./file-drop";
-import { ParameterForm } from "./parameter-form";
+import { ParameterForm, type OptionInfo } from "./parameter-form";
 import { SingleRunTour } from "./single-run-tour";
 import { AlgorithmExplainerModal } from "./algorithm-explainer-modal";
 import { PresetBar } from "./preset-bar";
@@ -78,6 +80,27 @@ export function Workbench() {
   const [copiedCitation, setCopiedCitation] = useState(false);
   const [recentLayout, setRecentLayout] = useState<"grid" | "list">("grid");
   const [sampleLayout, setSampleLayout] = useState<"grid" | "list">("grid");
+
+  // The catalog of the model tab lists the same miners and measures ComFy offers here; its
+  // definitions and slow marks describe the options of the form.
+  const [modelCatalog, setModelCatalog] = useState<FactorCatalog | null>(null);
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetchFactorCatalog("model", ctrl.signal)
+      .then(setModelCatalog)
+      .catch(() => {
+        // Only labels the options; the form works without it.
+      });
+    return () => ctrl.abort();
+  }, []);
+  const optionInfo = useMemo<OptionInfo | undefined>(() => {
+    if (!modelCatalog) return undefined;
+    const catalog = localizeCatalog(modelCatalog, locale);
+    return Object.fromEntries([
+      ...catalog.measures.map((m) => [m.key, { description: m.description, slow: m.slow }] as const),
+      ...(catalog.miners ?? []).map((m) => [m.key, { slow: m.slow }] as const),
+    ]);
+  }, [modelCatalog, locale]);
 
   // Cheap descriptive stats of the selected log for the overview card.
   // Fetched whenever the user picks a new log source.
@@ -1200,6 +1223,7 @@ export function Workbench() {
               <ParameterForm
                 schema={selected.parameters_schema}
                 algorithmId={selected.id}
+                optionInfo={optionInfo}
                 values={params}
                 disabled={!!selectedJobId}
                 errors={validationErrors}
