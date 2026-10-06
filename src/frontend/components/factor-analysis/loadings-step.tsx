@@ -142,7 +142,7 @@ export function LoadingsView({
         <div className="rounded-md bg-tile/40 overflow-x-auto">
           <table className="w-full text-xs">
             <caption className="sr-only">
-              {t("factor.loadings.caption", { n: k, rotation: analysis.rotation })}
+              {t("factor.loadings.caption", { n: k, rotation: t(`factor.factors.rotation.${analysis.rotation}`) })}
               {oblique && ` (${t(`factor.loadings.matrix_${structure ? "structure" : "pattern"}`)})`}
             </caption>
             <thead className="bg-bg">
