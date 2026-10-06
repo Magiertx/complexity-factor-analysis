@@ -667,19 +667,20 @@ function DatasetTile({
   // A computed dataset goes with the run that computed it.
   const withRun = !!dataset.job_id;
   return (
-    // min-w-0: a long name is truncated instead of widening the grid column beyond the page.
+    // min-w-0: a long name wraps instead of widening the grid column beyond the page.
     <div className={cn("rounded-md min-w-0", choiceTile(chosen))}>
       <div className="flex items-start">
         <label className="flex-1 min-w-0 flex items-start gap-2.5 pl-3 py-2.5 cursor-pointer">
           <input type="radio" name={name} className="sr-only" checked={chosen} onChange={onSelect} />
           <ChoiceMark type="radio" checked={chosen} className="mt-0.5" />
           <span className="min-w-0 flex-1">
-            <span className="flex items-center gap-1.5 min-w-0">
-              <span className="text-sm font-medium truncate" title={title}>
+            <span className="flex items-start gap-1.5 min-w-0">
+              {/* Two lines: names of one paper differ only at the end. */}
+              <span className="min-w-0 text-sm font-medium line-clamp-2 break-words" title={title}>
                 {title}
               </span>
               {open && (
-                <span className="rounded bg-success/15 text-success-ink px-1 text-[10px] font-medium shrink-0">
+                <span className="mt-0.5 rounded bg-success/15 text-success-ink px-1 text-[10px] font-medium shrink-0">
                   {t("factor.data.mine_open")}
                 </span>
               )}
@@ -687,18 +688,21 @@ function DatasetTile({
             <span className="mt-0.5 flex items-center gap-x-1.5 gap-y-0.5 flex-wrap text-[11px] text-muted">
               <Icon className="h-3 w-3 shrink-0" />
               <span>{t(`factor.data.source.${dataset.source}`)}</span>
+              {/* Each separator wraps with the item after it, so none ends a line. */}
               {rows !== null && cols !== null && (
-                <>
+                <span className="inline-flex items-center gap-1.5">
                   <span aria-hidden>·</span>
                   <span title={t("factor.data.bundled_size", { rows, cols })}>
                     {rows} × {cols}
                   </span>
-                </>
+                </span>
               )}
-              <span aria-hidden>·</span>
-              <time dateTime={dataset.created_at} title={new Date(dataset.created_at).toLocaleString(locale)}>
-                {relativeTime(dataset.created_at, locale)}
-              </time>
+              <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden>·</span>
+                <time dateTime={dataset.created_at} title={new Date(dataset.created_at).toLocaleString(locale)}>
+                  {relativeTime(dataset.created_at, locale)}
+                </time>
+              </span>
               {dataset.status !== "ready" && (
                 <span
                   className={cn(
