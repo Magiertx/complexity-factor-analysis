@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -59,6 +59,12 @@ export function RunHistoryView() {
   const [algoFilter, setAlgoFilter] = useState<string>("");
   const [toast, setToast] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+  // The confirmation takes the place of the delete button, and a deleted row takes the focus
+  // with it, so the focus is moved by hand: back to the delete button of the row, or to the
+  // row that took the place of a deleted one ("" for the list itself).
+  const deleteButtons = useRef(new Map<string, HTMLButtonElement>());
+  const listRef = useRef<HTMLUListElement>(null);
+  const refocus = useRef<string | null>(null);
 
   const load = async (silent = false) => {
     if (silent) setRefreshing(true);
@@ -79,6 +85,13 @@ export function RunHistoryView() {
     load();
   }, []);
 
+  useEffect(() => {
+    const id = refocus.current;
+    if (id === null) return;
+    refocus.current = null;
+    (deleteButtons.current.get(id) ?? listRef.current)?.focus();
+  }, [confirmingDelete, jobs]);
+
   const showToast = (msg: string) => {
     setToast(msg);
     window.setTimeout(() => setToast(null), 1800);
@@ -87,6 +100,8 @@ export function RunHistoryView() {
   const handleDelete = async (jobId: string) => {
     try {
       await deleteJob(jobId);
+      const i = filtered.findIndex((j) => j.id === jobId);
+      refocus.current = (filtered[i + 1] ?? filtered[i - 1])?.id ?? "";
       setJobs((prev) => prev.filter((j) => j.id !== jobId));
       setConfirmingDelete(null);
       showToast(t("run_history.toast_run_deleted"));
@@ -160,12 +175,15 @@ export function RunHistoryView() {
             <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
             {t("run_history.refresh_button")}
           </Button>
-          {toast && (
-            <span className="flex items-center gap-1.5 text-xs text-muted bg-tile rounded-md px-3 py-2">
-              <Check className="h-3.5 w-3.5 text-accent-ink" />
-              {toast}
-            </span>
-          )}
+          {/* Always rendered, so screen readers announce each toast that appears in it. */}
+          <div role="status">
+            {toast && (
+              <span className="flex items-center gap-1.5 text-xs text-muted bg-tile rounded-md px-3 py-2">
+                <Check className="h-3.5 w-3.5 text-accent-ink" />
+                {toast}
+              </span>
+            )}
+          </div>
         </div>
       </header>
 
@@ -239,7 +257,7 @@ export function RunHistoryView() {
                 : t("run_history.no_runs_filter")}
             </div>
           ) : (
-            <ul className="divide-y divide-border">
+            <ul ref={listRef} tabIndex={-1} className="divide-y divide-border outline-none">
               {filtered.map((job) => {
                 const date = new Date(job.created_at * 1000);
                 const isBatch = job.algorithm_id.startsWith("_batch");
@@ -317,15 +335,28 @@ export function RunHistoryView() {
                             variant="primary"
                             className="bg-danger hover:bg-danger/90"
                             onClick={() => handleDelete(job.id)}
+                            // It replaces the focused delete button.
+                            autoFocus
                           >
                             {t("run_history.confirm_delete")}
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={() => setConfirmingDelete(null)}>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              refocus.current = job.id;
+                              setConfirmingDelete(null);
+                            }}
+                          >
                             {t("common.cancel")}
                           </Button>
                         </>
                       ) : (
                         <button
+                          ref={(el) => {
+                            if (el) deleteButtons.current.set(job.id, el);
+                            else deleteButtons.current.delete(job.id);
+                          }}
                           type="button"
                           onClick={() => setConfirmingDelete(job.id)}
                           className="h-8 w-8 grid place-items-center rounded-md text-muted hover:text-danger-ink hover:bg-surface transition"
