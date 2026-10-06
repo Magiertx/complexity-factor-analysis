@@ -1235,7 +1235,14 @@ export function Workbench() {
                     <span className="font-medium text-muted truncate max-w-[80%]">{localizedAlgoText(progress.status, t)}</span>
                     <span className="font-bold text-accent-ink shrink-0">{formatPercent(progress.percentage / 100, locale)}</span>
                   </div>
-                  <div className="w-full bg-border rounded-full h-2 overflow-hidden">
+                  <div
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.round(progress.percentage)}
+                    aria-label={localizedAlgoText(progress.status, t)}
+                    className="w-full bg-border rounded-full h-2 overflow-hidden"
+                  >
                     <div
                       className="bg-accent h-full rounded-full transition-all duration-300 ease-out"
                       style={{ width: `${progress.percentage}%` }}
