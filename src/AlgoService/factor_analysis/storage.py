@@ -1,7 +1,8 @@
 """Session-scoped datasets on disk, next to the job artifacts.
 
 Layout: ``<ARTIFACTS_DIR>/datasets/<session id>/<dataset id>/`` with ``meta.json``,
-``data.csv`` (the cleaned matrix, once ready) and ``inputs/`` (uploads waiting for the job).
+``data.csv`` (the cleaned matrix, once ready), ``inputs/`` (uploads waiting for the job) and
+``interpretations/`` (cached interpretations of an own dataset).
 """
 
 from __future__ import annotations
@@ -64,9 +65,12 @@ def create(
     name: str,
     source: str,
     status: str,
+    inputs: dict[str, Any],
     params: dict[str, Any] | None = None,
     bundled_id: str | None = None,
 ) -> dict[str, Any]:
+    """``inputs`` says what the dataset is made from: the number of files and the measures,
+    miners, feature groups or sample chosen for it."""
     dataset_id = str(uuid.uuid4())
     directory = dataset_dir(session_id, dataset_id)
     directory.mkdir(parents=True)
@@ -77,13 +81,15 @@ def create(
         "source": source,
         "status": status,
         "params": params or {},
+        "inputs": inputs,
         "n_observations": 0,
         "measures": [],
         "observations": [],
         "dropped": [],
         "dropped_rows": 0,
         "failures": [],
-        "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        # Milliseconds, so datasets created within one second still list in order.
+        "created_at": datetime.now(timezone.utc).isoformat(timespec="milliseconds"),
     }
     if bundled_id:
         meta["bundled_id"] = bundled_id
@@ -110,6 +116,15 @@ def update_meta(session_id: str, dataset_id: str, **changes: Any) -> dict[str, A
     meta.update(changes)
     _write_json(dataset_dir(session_id, dataset_id) / "meta.json", meta)
     return meta
+
+
+def list_metas(session_id: str) -> list[dict[str, Any]]:
+    """The metadata of every dataset of the session, newest first."""
+    session_root = root() / session_id
+    if not session_root.is_dir():
+        return []
+    metas = [m for d in session_root.iterdir() if (m := read_meta(session_id, d.name)) is not None]
+    return sorted(metas, key=lambda m: datetime.fromisoformat(m["created_at"]), reverse=True)
 
 
 #: Failed inputs kept in the metadata; the job result lists all of them.

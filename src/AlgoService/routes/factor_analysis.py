@@ -440,9 +440,12 @@ async def create_dataset(
             display = name or filename
             bundled_id = None
         table = _select_columns(table, measure_list)
+        inputs: dict[str, Any] = {"files": 0 if source == "bundled" else 1}
+        if measure_list:
+            inputs["measures"] = measure_list
         meta = storage.create(
             session_id, kind=kind, name=display, source=source, status="computing",
-            bundled_id=bundled_id,
+            inputs=inputs, bundled_id=bundled_id,
         )
         try:
             meta = await run_in_threadpool(storage.store_matrix, session_id, meta["id"], table)
@@ -498,9 +501,11 @@ async def create_dataset(
     n_inputs = len(sample["files"]) if sample else len(uploads)
     noun = "log(s)" if source == "logs" else "net(s)"
     display = name or (sample["name"] if sample else f"{n_inputs} {noun}")
+    chosen = {k: v for k, v in spec.items() if k in ("measures", "miners", "groups")}
     meta = storage.create(
         session_id, kind=kind, name=display, source=source, status="computing",
-        params={k: v for k, v in spec.items() if k in ("measures", "miners", "groups")},
+        inputs={"files": n_inputs, **chosen, **({"sample_id": sample["id"]} if sample else {})},
+        params=chosen,
     )
     dataset_id = meta["id"]
     try:
@@ -518,8 +523,7 @@ async def create_dataset(
         algorithm_id=f"_dataset:{kind}",
         algorithm_name=f"Factor analysis dataset ({kind} measures)",
         filename=f"{n_inputs} {noun}",
-        params={"dataset_id": dataset_id, "dataset_name": display, "source": source,
-                **{k: v for k, v in spec.items() if k in ("measures", "miners", "groups")}},
+        params={"dataset_id": dataset_id, "dataset_name": display, "source": source, **chosen},
         session_id=session_id,
     )
     storage.update_meta(session_id, dataset_id, job_id=job_id)
@@ -570,6 +574,74 @@ async def _fail_stale_job(meta: dict[str, Any], session_id: str, job: dict[str, 
     return True
 
 
+async def _job_state(meta: dict[str, Any], session_id: str) -> dict[str, Any]:
+    """Status and error of a computing dataset as its job has it, or the job's progress."""
+    job = await jobs_db.read_job(meta["job_id"], session_id)
+    if job is None:
+        return {"status": "failed", "error": "The job computing this dataset was deleted."}
+    if job["status"] in ("failed", "aborted"):
+        return {"status": "failed", "error": job.get("error") or "Aborted by user"}
+    if await _fail_stale_job(meta, session_id, job):
+        await broadcast_jobs_update()
+        return {"status": "failed", "error": storage.read_meta(session_id, meta["id"])["error"]}
+    return {"progress": job.get("percentage", 0.0)}
+
+
+def _inputs(meta: dict[str, Any]) -> dict[str, Any]:
+    """What the dataset is made from. Datasets stored before this was recorded count their
+    files from the observations and failures."""
+    if "inputs" in meta:
+        return meta["inputs"]
+    if meta["source"] in ("bundled", "csv"):
+        return {"files": 0 if meta["source"] == "bundled" else 1}
+    labels = [*meta.get("observations", []), *(f["input"] for f in meta.get("failures", []))]
+    if meta["kind"] == "model" and meta["source"] == "logs":
+        # Rows are "<log> / <miner>"; file names cannot contain a slash.
+        labels = [label.split(" / ")[0] for label in labels]
+    return {"files": len(set(labels)), **meta.get("params", {})}
+
+
+def _summary(meta: dict[str, Any], status: str) -> dict[str, Any]:
+    ready = status == "ready"
+    return {
+        "id": meta["id"],
+        "kind": meta["kind"],
+        "name": meta["name"],
+        "source": meta["source"],
+        "status": status,
+        "created_at": meta["created_at"],
+        "n_observations": meta["n_observations"] if ready else None,
+        "n_measures": len(meta["measures"]) if ready else None,
+        "bundled_id": meta.get("bundled_id"),
+        "job_id": meta.get("job_id"),
+        "inputs": _inputs(meta),
+        "has_options": meta.get("options") is not None,
+    }
+
+
+def _session_metas(session_id: str, kind: str | None) -> list[dict[str, Any]]:
+    if kind is not None:
+        _check_kind(kind)
+    return [m for m in storage.list_metas(session_id) if kind is None or m["kind"] == kind]
+
+
+@router.get("/datasets")
+@limiter.limit(rate_limit("dataset_status", "600/minute"))
+async def list_datasets(
+    request: Request,
+    kind: str | None = None,
+    session_id: str = Depends(get_session_id),
+) -> dict[str, Any]:
+    """The session's datasets, newest first, optionally of one kind."""
+    out = []
+    for meta in await run_in_threadpool(_session_metas, session_id, kind):
+        status = meta["status"]
+        if status == "computing" and meta.get("job_id"):
+            status = (await _job_state(meta, session_id)).get("status", status)
+        out.append(_summary(meta, status))
+    return {"datasets": out}
+
+
 @router.get("/datasets/{dataset_id}")
 @limiter.limit(rate_limit("dataset_status", "600/minute"))
 async def get_dataset(
@@ -596,6 +668,7 @@ async def get_dataset(
         "dropped_rows": meta["dropped_rows"],
         "failures": meta.get("failures", []),
         "created_at": meta["created_at"],
+        "inputs": _inputs(meta),
     }
     if meta.get("job_id"):
         out["job_id"] = meta["job_id"]
@@ -603,17 +676,7 @@ async def get_dataset(
         out["error"] = meta["error"]
 
     if meta["status"] == "computing" and meta.get("job_id"):
-        job = await jobs_db.read_job(meta["job_id"], session_id)
-        if job is None:
-            out["status"], out["error"] = "failed", "The job computing this dataset was deleted."
-        elif job["status"] in ("failed", "aborted"):
-            out["status"] = "failed"
-            out["error"] = job.get("error") or "Aborted by user"
-        elif await _fail_stale_job(meta, session_id, job):
-            out["status"], out["error"] = "failed", storage.read_meta(session_id, meta["id"])["error"]
-            await broadcast_jobs_update()
-        else:
-            out["progress"] = job.get("percentage", 0.0)
+        out.update(await _job_state(meta, session_id))
     elif meta["status"] == "ready":
         data = await run_in_threadpool(storage.load_matrix, session_id, meta["id"])
         head = data.iloc[:rows]
@@ -731,3 +794,4 @@ async def export_loadings(
     if body.format == "latex":
         return _attachment(loadings_latex(result), f"{stem}.tex", "application/x-latex; charset=utf-8")
     return _attachment(loadings_csv(result), f"{stem}.csv", "text/csv; charset=utf-8")
+
