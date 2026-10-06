@@ -5,10 +5,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatPct(n: number, digits = 1): string {
-  return `${(n * 100).toFixed(digits)}%`;
-}
-
 export function downloadBase64(base64: string, filename: string, mime = "application/xml") {
   const bin = atob(base64);
   const bytes = new Uint8Array(bin.length);
