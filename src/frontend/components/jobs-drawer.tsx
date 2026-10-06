@@ -97,6 +97,9 @@ export function useJobsDrawer() {
   return ctx;
 }
 
+// What Tab reaches inside the drawer while it is a dialog.
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])';
+
 // Routes on which the jobs panel is shown as a layout column: the single-log workbench.
 export const PANEL_ROUTES = new Set(["/inspect"]);
 // Routes on which it slides over the page instead, at every width: the factor analysis tabs,
@@ -259,14 +262,42 @@ export function JobsDrawer() {
     return () => window.removeEventListener("keydown", handler);
   }, [open, setOpen]);
 
-  // Over the page, the drawer takes the focus while it is open and hands it back when it
-  // closes; as a column next to the page it leaves the focus where it is.
+  // Over the page, the drawer is a modal dialog while it is open: it takes the focus, keeps Tab
+  // inside, holds the page behind it still and hands the focus back when it closes. As a column
+  // next to the page it leaves the focus where it is.
   useEffect(() => {
     const panel = panelRef.current;
     if (!open || !panel || !(overlay || !window.matchMedia("(min-width: 1024px)").matches)) return;
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     closeRef.current?.focus();
+
+    const trap = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const elements = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+        (el) => el.getClientRects().length > 0,
+      );
+      if (elements.length === 0) return;
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      const inside = panel.contains(document.activeElement);
+      if (e.shiftKey ? !inside || document.activeElement === first : !inside || document.activeElement === last) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+      }
+    };
+    window.addEventListener("keydown", trap);
+
+    // The padding takes the place of the scrollbar, so the page does not shift sideways.
+    const body = document.body.style;
+    const locked = { overflow: body.overflow, paddingRight: body.paddingRight };
+    const scrollbar = window.innerWidth - document.documentElement.clientWidth;
+    body.overflow = "hidden";
+    if (scrollbar > 0) body.paddingRight = `${scrollbar}px`;
+
     return () => {
+      window.removeEventListener("keydown", trap);
+      body.overflow = locked.overflow;
+      body.paddingRight = locked.paddingRight;
       const focus = document.activeElement;
       if (!focus || focus === document.body || panel.contains(focus)) previous?.focus();
     };
