@@ -905,5 +905,10 @@
     "progress_done": "Analysis complete",
     "progress_aborted": "Aborted by the user",
     "progress_pending": "Pending…"
+  },
+  "errors": {
+    "rate_limited": "Too many requests. Wait a moment and try again.",
+    "job_quota": "You already have {active} runs queued or running, and this would add {requested}; at most {limit} are allowed. Wait for them to finish or abort some under Recent runs.",
+    "dataset_jobs_busy": "The server is already computing {active} datasets, the most it runs at once. Try again in a few minutes."
   }
 }

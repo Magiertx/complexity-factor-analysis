@@ -40,6 +40,7 @@ import {
   fetchJobs,
   fetchJobDetail,
   ValidationError,
+  HttpError,
   fetchSampleLogs,
   SampleLog,
   fetchRecentLogs,
@@ -68,7 +69,7 @@ import { formatDateTime, formatKilobytes, formatPercent } from "@/lib/i18n/local
 
 export function Workbench() {
   const t = useT();
-  const { locale } = useLocale();
+  const { locale, tMaybe } = useLocale();
   const [algorithms, setAlgorithms] = useState<AlgorithmManifest[]>([]);
   const [categories, setCategories] = useState<{ id: string; label: string }[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -579,7 +580,9 @@ export function Workbench() {
         setValidationErrors(e.errors);
         setError(t("workbench.errors.fix_validation"));
       } else {
-        setError(e instanceof Error ? e.message : t("workbench.errors.unknown_submission"));
+        // Refusals with a code, such as a full run quota, in the language of the UI.
+        const coded = e instanceof HttpError && e.code ? tMaybe(`errors.${e.code}`, e.params) : undefined;
+        setError(coded ?? (e instanceof Error ? e.message : t("workbench.errors.unknown_submission")));
       }
       setProgress(null);
     }

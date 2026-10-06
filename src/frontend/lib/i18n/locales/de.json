@@ -905,5 +905,10 @@
     "progress_done": "Analyse abgeschlossen",
     "progress_aborted": "Vom Nutzer abgebrochen",
     "progress_pending": "Ausstehend…"
+  },
+  "errors": {
+    "rate_limited": "Zu viele Anfragen. Warte kurz und versuche es noch einmal.",
+    "job_quota": "Du hast schon {active} wartende oder laufende Runs, und das käme mit {requested} dazu; erlaubt sind höchstens {limit}. Warte, bis sie fertig sind, oder brich einige unter Letzte Runs ab.",
+    "dataset_jobs_busy": "Der Server berechnet schon {active} Datensätze, mehr gleichzeitig nicht. Versuche es in ein paar Minuten noch einmal."
   }
 }

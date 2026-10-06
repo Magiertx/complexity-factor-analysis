@@ -209,6 +209,9 @@ export async function analyze(
   });
   if (!r.ok) {
     let msg = `Request failed (${r.status})`;
+    // A refusal such as a full run quota comes with a code, so the UI can say it in its language.
+    let code: string | undefined = r.status === 429 ? "rate_limited" : undefined;
+    let params: Record<string, string | number> | undefined;
     try {
       const j = await r.json();
       if (j.detail) {
@@ -217,10 +220,12 @@ export async function analyze(
         }
         msg = typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail);
       }
+      if (typeof j.code === "string") code = j.code;
+      if (j.params && typeof j.params === "object") params = j.params;
     } catch (e) {
       if (e instanceof ValidationError) throw e;
     }
-    throw new Error(msg);
+    throw new HttpError(msg, r.status, code, params);
   }
   return r.json();
 }
