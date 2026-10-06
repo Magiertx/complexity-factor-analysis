@@ -21,6 +21,10 @@
     --success-ink: 22 101 52;
     --warn-ink: 146 64 14;
     --danger-ink: 185 28 28;
+    /* Signs of values such as loadings: blue for positive, orange for negative, so that a
+       negative value looks neither like an error (red) nor like the accent. */
+    --positive: 37 99 235;
+    --negative: 234 88 12;
     --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
     --font-mono: ui-monospace, "SFMono-Regular", "Menlo", "Consolas", monospace;
   }
@@ -41,6 +45,8 @@
     --success-ink: 34 197 94;
     --warn-ink: 234 179 8;
     --danger-ink: 248 113 113;
+    --positive: 59 130 246;
+    --negative: 249 115 22;
   }
   html, body { @apply bg-bg text-fg; }
   body { @apply font-sans antialiased; }

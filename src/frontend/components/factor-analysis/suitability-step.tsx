@@ -185,14 +185,14 @@ function KmoCard({ analysis, threshold }: { analysis: FactorAnalysis | null; thr
   );
 }
 
-/** 0..1 bar with the threshold as a tick. */
+/** 0..1 bar with the threshold as a tick; a value below it is a warning, not an error. */
 function Scale({ value, threshold, compact }: { value: number | null; threshold: number; compact?: boolean }) {
   const pass = value !== null && value >= threshold;
   return (
     <div className={cn("relative rounded-full bg-bg/80", compact ? "h-1.5 w-20" : "h-2 w-full")} aria-hidden>
       {value !== null && (
         <div
-          className={cn("absolute inset-y-0 left-0 rounded-full", pass ? "bg-success" : "bg-danger")}
+          className={cn("absolute inset-y-0 left-0 rounded-full", pass ? "bg-success" : "bg-warn")}
           style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%` }}
         />
       )}

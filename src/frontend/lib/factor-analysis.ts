@@ -136,19 +136,18 @@ export function kmoGrade(value: number): KmoGrade {
   return "unacceptable";
 }
 
-// Diverging blue/red pair over the surface colour; the surface itself is the neutral midpoint.
-const POSITIVE = "37 99 235";
-const NEGATIVE = "220 38 38";
+// Diverging blue/orange pair over the surface colour (tokens in globals.css); the surface
+// itself is the neutral midpoint.
+const signToken = (value: number) => (value >= 0 ? "var(--positive)" : "var(--negative)");
 
 /** Background of a loading cell: hue by sign, opacity by magnitude. */
 export function loadingStyle(value: number): CSSProperties {
   const alpha = Math.min(Math.abs(value), 1) * 0.55;
-  const rgb = value >= 0 ? POSITIVE : NEGATIVE;
-  return { backgroundColor: `rgb(${rgb} / ${alpha.toFixed(3)})` };
+  return { backgroundColor: `rgb(${signToken(value)} / ${alpha.toFixed(3)})` };
 }
 
 export function signColor(value: number): string {
-  return `rgb(${value >= 0 ? POSITIVE : NEGATIVE})`;
+  return `rgb(${signToken(value)})`;
 }
 
 /**

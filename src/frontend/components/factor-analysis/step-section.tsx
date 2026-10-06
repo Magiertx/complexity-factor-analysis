@@ -143,14 +143,17 @@ export function HelpLabel({
   );
 }
 
-/** Pass/fail chip with an icon, so the state never depends on colour alone. */
+/**
+ * Pass/fail chip with an icon, so the state never depends on colour alone. A failed test is a
+ * warning: the analysis still runs.
+ */
 export function PassBadge({ passed }: { passed: boolean }) {
   const t = useT();
   return (
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
-        passed ? "bg-success/15 text-success-ink" : "bg-danger/15 text-danger-ink",
+        passed ? "bg-success/15 text-success-ink" : "bg-warn/15 text-warn-ink",
       )}
     >
       {passed ? <Check className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
