@@ -32,7 +32,7 @@ import {
   type InputsSummary,
   type SampleInput,
 } from "@/lib/api";
-import { MIN_MEASURES, countText, progressPercent, relativeTime } from "@/lib/factor-analysis";
+import { MIN_MEASURES, countText, datasetName, progressPercent, relativeTime } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -661,6 +661,7 @@ function DatasetTile({
   const askRef = useRef<HTMLButtonElement>(null);
   const Icon = SOURCE_ICON[dataset.source];
   const { n_observations: rows, n_measures: cols } = dataset;
+  const title = datasetName(dataset, t);
   return (
     // min-w-0: a long name is truncated instead of widening the grid column beyond the page.
     <div className={cn("rounded-md min-w-0", choiceTile(chosen))}>
@@ -670,8 +671,8 @@ function DatasetTile({
           <ChoiceMark type="radio" checked={chosen} className="mt-0.5" />
           <span className="min-w-0 flex-1">
             <span className="flex items-center gap-1.5 min-w-0">
-              <span className="text-sm font-medium truncate" title={dataset.name}>
-                {dataset.name}
+              <span className="text-sm font-medium truncate" title={title}>
+                {title}
               </span>
               {open && (
                 <span className="rounded bg-success/15 text-success-ink px-1 text-[10px] font-medium shrink-0">
@@ -711,7 +712,7 @@ function DatasetTile({
           ref={askRef}
           type="button"
           onClick={() => setConfirming((c) => !c)}
-          aria-label={t("factor.data.delete_aria", { name: dataset.name })}
+          aria-label={t("factor.data.delete_aria", { name: title })}
           aria-expanded={confirming}
           title={t("factor.data.delete")}
           className="m-1.5 h-7 w-7 grid place-items-center rounded-md text-muted hover:text-danger-ink hover:bg-danger/10 transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
@@ -981,6 +982,7 @@ export function DataSummary({
   onDelete: () => Promise<boolean>;
 }) {
   const t = useT();
+  const name = datasetName(dataset, t);
 
   if (dataset.status === "computing") {
     const pct = progressPercent(dataset.progress);
@@ -990,7 +992,7 @@ export function DataSummary({
           <div className="min-w-0 space-y-1.5">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Loader2 className="h-4 w-4 animate-spin text-accent-ink" />
-              {t("factor.data.computing_title", { name: dataset.name })}
+              {t("factor.data.computing_title", { name })}
             </div>
             <InputChips dataset={dataset} catalog={catalog} />
           </div>
@@ -1004,7 +1006,7 @@ export function DataSummary({
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={pct ?? undefined}
-          aria-label={t("factor.data.computing_title", { name: dataset.name })}
+          aria-label={t("factor.data.computing_title", { name })}
         >
           {pct === null ? (
             <div className="h-full w-1/3 bg-accent/70 rounded-full animate-pulse" />
@@ -1045,7 +1047,7 @@ export function DataSummary({
           <Check className="h-4 w-4 text-success-ink" />
         </div>
         <div className="min-w-0 space-y-1.5">
-          <div className="text-sm font-medium truncate">{dataset.name}</div>
+          <div className="text-sm font-medium truncate">{name}</div>
           <InputChips dataset={dataset} catalog={catalog} />
         </div>
       </div>

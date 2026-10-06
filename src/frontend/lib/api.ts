@@ -365,6 +365,8 @@ export interface FactorDataset {
   id: string;
   kind: FactorKind;
   name: string;
+  /** The server made the name up from the inputs, in English; see `datasetName`. */
+  name_auto: boolean;
   source: string;
   status: "computing" | "ready" | "failed";
   job_id?: string;
@@ -401,6 +403,7 @@ export interface DatasetSummary {
   id: string;
   kind: FactorKind;
   name: string;
+  name_auto: boolean;
   source: DatasetSource;
   status: FactorDataset["status"];
   created_at: string;

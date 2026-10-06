@@ -1,7 +1,7 @@
 // Helpers for the factor analysis view. Kept free of React so they stay easy to reuse.
 
 import type { CSSProperties } from "react";
-import type { AnalyzeOptions, FactorAnalysis, FactorKind, Job, Rotation } from "./api";
+import type { AnalyzeOptions, FactorAnalysis, FactorKind, InputsSummary, Job, Rotation } from "./api";
 
 type Translate = (key: string, params?: Record<string, string | number>) => string;
 
@@ -179,15 +179,36 @@ export function jobDisplayName(job: Job, t: Translate): string {
   return kind ? t(`jobs.dataset_name.${kind}`) : job.algorithm_name;
 }
 
-/** The title of a job: the name of the dataset it computes, else the name of its algorithm. */
+/**
+ * The title of a job: the name of the dataset it computes, else the name of its algorithm. A
+ * dataset job without a name is called after its inputs, like its dataset.
+ */
 export function jobTitle(job: Job, t: Translate): string {
+  const kind = datasetJobKind(job);
   const name = job.params?.dataset_name;
-  return datasetJobKind(job) && typeof name === "string" && name ? name : jobDisplayName(job, t);
+  if (!kind) return jobDisplayName(job, t);
+  if (typeof name === "string" && name) return name;
+  // The backend names the input of a dataset job "<n> log(s)" or "<n> net(s)".
+  const n = parseInt(job.filename, 10);
+  return Number.isFinite(n) ? inputsName(t, job.params?.source === "pnml", n) : jobDisplayName(job, t);
 }
 
 /** "1 log" or "4 logs": the text of `key`, or of `<key>_plural` for any other count. */
 export function countText(t: Translate, key: string, n: number): string {
   return t(n === 1 ? key : `${key}_plural`, { n });
+}
+
+/** "Dataset from 3 logs". */
+function inputsName(t: Translate, nets: boolean, n: number): string {
+  return t("factor.data.auto_name", { inputs: countText(t, nets ? "factor.inputs.nets" : "factor.inputs.logs", n) });
+}
+
+/** The name of a dataset; one the server made up from the inputs is said in the UI language. */
+export function datasetName(
+  dataset: { name: string; name_auto?: boolean; source: string; inputs?: InputsSummary },
+  t: Translate,
+): string {
+  return dataset.name_auto ? inputsName(t, dataset.source === "pnml", dataset.inputs?.files ?? 0) : dataset.name;
 }
 
 /** What a dataset job computes, e.g. "Model complexity · 4 logs × 2 miners"; null for other jobs. */
