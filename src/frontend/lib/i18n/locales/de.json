@@ -211,7 +211,7 @@
     "example_single_log": "Einzelnes Log untersuchen (Python)",
     "example_factor_analysis": "Faktorenanalyse (Python)",
     "endpoint_summary_title": "Endpoint-Übersicht",
-    "endpoint_summary_desc": "Alle Pfade sind relativ zu {base} beim Zugriff über die Web-Oberfläche, oder ab dem Wurzelpfad beim direkten Aufruf des Backends.",
+    "endpoint_summary_desc": "Alle Pfade sind relativ zu {base} beim Zugriff über die Weboberfläche, oder ab dem Wurzelpfad beim direkten Aufruf des Backends.",
     "notes_title": "Hinweise",
     "copied": "Kopiert",
     "copy": "Kopieren",
