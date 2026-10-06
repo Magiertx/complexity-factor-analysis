@@ -284,17 +284,22 @@ def test_finished_jobs_are_not_aborted(client, monkeypatch):
     assert updates == [] and client.get(f"/jobs/{job_id}").status_code == 404
 
 
-def test_delete_all_counts_and_filters_by_kind(client, other):
+def test_delete_all_counts_and_filters_by_kind(client, other, isolated_jobs_dir):
     kept = _csv(other)
     _csv(client, "model")
     _csv(client, "log")
     _bundled(client)
+    job_id = _sample(client)["job_id"]
+    (isolated_jobs_dir / job_id).mkdir()
 
     assert client.delete("/factor-analysis/datasets?kind=process").status_code == 400
     assert client.delete("/factor-analysis/datasets?kind=log").json() == {"deleted": 1}
-    assert [d["kind"] for d in _list(client)] == ["model", "model"]
-    assert client.delete("/factor-analysis/datasets").json() == {"deleted": 2}
+    assert [d["kind"] for d in _list(client)] == ["model", "model", "model"]
+    assert client.get(f"/jobs/{job_id}").status_code == 200
+    assert client.delete("/factor-analysis/datasets").json() == {"deleted": 3}
     assert _list(client) == []
+    assert client.get(f"/jobs/{job_id}").status_code == 404
+    assert not (isolated_jobs_dir / job_id).exists()
     assert [d["id"] for d in _list(other)] == [kept]
 
 
