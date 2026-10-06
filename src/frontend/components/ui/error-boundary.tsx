@@ -18,7 +18,7 @@ interface State {
 function ErrorFallback({ error, onRetry }: { error: Error | null; onRetry: () => void }) {
   const t = useT();
   return (
-    <Card className="max-w-[600px] mx-auto my-8 border-danger/40 bg-danger/5">
+    <Card className="max-w-[600px] mx-auto my-8 bg-danger/5">
       <CardHeader className="flex flex-row items-center gap-3">
         <div className="h-10 w-10 rounded-full bg-danger/10 grid place-items-center text-danger-ink shrink-0">
           <AlertCircle className="h-5 w-5" />

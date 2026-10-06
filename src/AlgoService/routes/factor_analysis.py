@@ -23,7 +23,7 @@ from pydantic import BaseModel, Field
 
 import jobs_db
 from algorithms._log_io import MAX_DECOMPRESSED_BYTES
-from config import MAX_FILE_SIZE, broadcast_jobs_update, get_session_id, limiter, logger
+from config import MAX_FILE_SIZE, CodedHTTPException, broadcast_jobs_update, get_session_id, limiter, logger
 from env_config import positive_int, rate_limit
 from factor_analysis import catalog as cat
 from factor_analysis import compute, storage
@@ -500,12 +500,14 @@ async def create_dataset(
     await _enforce_job_quota(session_id)
     active = await jobs_db.count_active_jobs_by_prefix("_dataset:")
     if active >= MAX_ACTIVE_DATASET_JOBS:
-        raise HTTPException(
-            status_code=429,
-            detail=(
+        raise CodedHTTPException(
+            429,
+            (
                 f"The server is computing {active} datasets already, the most it runs at once. "
                 "Try again in a few minutes."
             ),
+            "dataset_jobs_busy",
+            active=active,
         )
 
     n_inputs = len(sample["files"]) if sample else len(uploads)

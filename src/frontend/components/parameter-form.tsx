@@ -1,13 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Search } from "lucide-react";
+import { RotateCcw, Search } from "lucide-react";
 import type { ParameterSpec } from "@/lib/api";
+import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { useT, useLocale, localizedParamHelp } from "@/lib/i18n";
+import { useT, useLocale, localizedParamHelp, localizedParamLabel } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
+
+/** What the UI knows about an option of a multiple choice: its definition, and whether it is slow. */
+export type OptionInfo = Record<string, { description?: string; slow?: boolean }>;
 
 interface Props {
   schema: ParameterSpec[];
@@ -23,9 +28,20 @@ interface Props {
   diffOnly?: boolean;
   /** Enables the German overlay for `spec.help` (see lib/i18n/algo-content). */
   algorithmId?: string;
+  /** Definitions and slow marks of the options of multiple choices, by option. */
+  optionInfo?: OptionInfo;
 }
 
-export function ParameterForm({ schema, values, onChange, disabled, errors = {}, diffOnly = false, algorithmId }: Props) {
+export function ParameterForm({
+  schema,
+  values,
+  onChange,
+  disabled,
+  errors = {},
+  diffOnly = false,
+  algorithmId,
+  optionInfo,
+}: Props) {
   const t = useT();
   const visible = diffOnly
     ? schema.filter((p) => !valuesEqual(values[p.name], p.default))
@@ -46,6 +62,7 @@ export function ParameterForm({ schema, values, onChange, disabled, errors = {},
           key={p.name}
           spec={p}
           algorithmId={algorithmId}
+          optionInfo={optionInfo}
           value={values[p.name]}
           onChange={(v) => onChange(p.name, v)}
           disabled={disabled}
@@ -78,6 +95,7 @@ function valuesEqual(a: unknown, b: unknown): boolean {
 function Field({
   spec,
   algorithmId,
+  optionInfo,
   value,
   onChange,
   disabled,
@@ -85,6 +103,7 @@ function Field({
 }: {
   spec: ParameterSpec;
   algorithmId?: string;
+  optionInfo?: OptionInfo;
   value: unknown;
   onChange: (v: unknown) => void;
   disabled?: boolean;
@@ -93,12 +112,13 @@ function Field({
   const [search, setSearch] = useState("");
   const { locale, t } = useLocale();
   const help = localizedParamHelp(algorithmId, spec, locale);
+  const label = localizedParamLabel(algorithmId, spec, locale);
   const id = `p-${spec.name}`;
   const labelId = `${id}-label`;
   const hintId = help || spec.recommended ? `${id}-hint` : undefined;
 
   const hint = help || spec.recommended ? (
-    <span id={hintId} className="block text-[11px] text-muted mt-1.5 normal-case font-normal tracking-normal">
+    <span id={hintId} className="block text-[11px] text-muted mt-1.5">
       {help}
       {spec.recommended && (
         <span className="block text-muted/70 italic mt-0.5">
@@ -112,7 +132,7 @@ function Field({
     return (
       <div className={"flex items-center justify-between gap-3 py-1.5 " + (disabled ? "opacity-60" : "")}>
         <div>
-          <Label id={labelId} htmlFor={id}>{spec.label}</Label>
+          <Label id={labelId} htmlFor={id}>{label}</Label>
           {hint}
         </div>
         <Switch
@@ -130,7 +150,7 @@ function Field({
   if (spec.type === "enum") {
     return (
       <div className={disabled ? "opacity-60" : ""}>
-        <Label id={labelId} htmlFor={id}>{spec.label}</Label>
+        <Label id={labelId} htmlFor={id}>{label}</Label>
         <div className="mt-1.5">
           <Select
             id={id}
@@ -149,87 +169,113 @@ function Field({
   }
 
   if (spec.type === "multi_enum") {
+    const options = spec.options ?? [];
     const selected = Array.isArray(value) ? (value as string[]) : [];
-    const toggle = (opt: string) => {
-      if (disabled) return;
-      const next = selected.includes(opt) ? selected.filter((s) => s !== opt) : [...selected, opt];
-      onChange(next);
+    const defaults = Array.isArray(spec.default) ? (spec.default as string[]) : [];
+    // In the order of the options, as the data step of the factor analysis keeps its lists.
+    const choose = (next: string[]) => {
+      if (!disabled) onChange(options.filter((o) => next.includes(o)));
     };
-
-    let regex: RegExp | null = null;
-    try {
-      // Escape special regex characters to make user search safe and ReDoS-immune
-      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      regex = escaped ? new RegExp(escaped, "i") : null;
-    } catch {
-      // Ignore invalid regex
-    }
-
-    const matches = (opt: string) => {
-      if (!search) return true;
-      if (regex) {
-        return regex.test(opt);
-      }
-      return opt.toLowerCase().includes(search.toLowerCase());
-    };
-
-    const sortedOptions = [...(spec.options ?? [])].sort((x, y) => x.localeCompare(y));
-    const groupA = sortedOptions.filter(matches);
-    const groupB = search ? sortedOptions.filter((opt) => !matches(opt)) : [];
-    const finalOptions = [...groupA, ...groupB];
+    const toggle = (opt: string) =>
+      choose(selected.includes(opt) ? selected.filter((s) => s !== opt) : [...selected, opt]);
+    // The search only dims the options that do not match, so the tiles keep their places.
+    const query = search.trim().toLowerCase();
+    const matches = (opt: string) => !query || opt.toLowerCase().includes(query);
+    const linkClass =
+      "text-[11px] text-muted hover:text-fg transition inline-flex items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
     return (
-      <div className={"sm:col-span-2 space-y-2 " + (disabled ? "opacity-60" : "")}>
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <Label id={labelId}>{spec.label}</Label>
+      <fieldset className={cn("sm:col-span-2 space-y-2", disabled && "opacity-60")} aria-describedby={help ? hintId : undefined}>
+        <legend className="text-sm font-semibold">
+          {label}{" "}
+          <span className="text-xs font-normal text-muted">
+            {t("parameter_form.selected_count", { n: selected.length, total: options.length })}
+          </span>
+        </legend>
+        <div className="flex items-start justify-between gap-x-4 gap-y-2 flex-wrap">
+          {help && (
+            <p id={hintId} className="text-xs text-muted max-w-prose">
+              {help}
+            </p>
+          )}
           {!disabled && (
-            <div className="relative flex items-center shrink-0">
-              <Search className="absolute left-2.5 h-3.5 w-3.5 text-muted pointer-events-none" />
-              <input
-                type="text"
-                placeholder={t("parameter_form.search_placeholder")}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                aria-label={t("parameter_form.search_options_aria", { label: spec.label })}
-                className="h-7 pl-8 pr-2.5 text-xs rounded bg-tile text-fg placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-accent/40 min-w-[120px] max-w-[180px] transition"
-              />
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="relative flex items-center">
+                <Search className="absolute left-2.5 h-3.5 w-3.5 text-muted pointer-events-none" aria-hidden />
+                <input
+                  type="search"
+                  placeholder={t("parameter_form.search_placeholder")}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  aria-label={t("parameter_form.search_options_aria", { label })}
+                  className="h-7 pl-8 pr-2.5 text-xs rounded bg-tile text-fg placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/50 w-[150px] transition"
+                />
+              </div>
+              <button type="button" className={linkClass} onClick={() => choose(options)}>
+                {t("parameter_form.select_all")}
+              </button>
+              <button type="button" className={linkClass} onClick={() => choose([])}>
+                {t("parameter_form.select_none")}
+              </button>
+              <button type="button" className={linkClass} onClick={() => choose(defaults)}>
+                <RotateCcw className="h-3 w-3" aria-hidden />
+                {t("parameter_form.select_defaults")}
+              </button>
             </div>
           )}
         </div>
-        <div className="flex flex-wrap gap-1.5" role="group" aria-labelledby={labelId} aria-describedby={hintId}>
-          {finalOptions.map((o) => {
-            const active = selected.includes(o);
-            const isMatch = !search || groupA.includes(o);
+        <div className="grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
+          {options.map((o) => {
+            const on = selected.includes(o);
+            const info = optionInfo?.[o];
             return (
-              <button
+              <label
                 key={o}
-                type="button"
-                onClick={() => toggle(o)}
-                disabled={disabled}
-                aria-pressed={active}
-                className={
-                  "rounded-md px-2.5 h-8 text-xs font-mono transition " +
-                  (active
-                    ? "bg-accent/[0.45] text-fg "
-                    : "bg-tile text-muted hover:text-fg hover:bg-accent/[0.14] ") +
-                  (isMatch ? "" : "opacity-30 ")
-                }
+                title={info?.description}
+                className={cn(
+                  "flex items-start gap-2.5 rounded-md px-2.5 py-2 text-xs",
+                  choiceTile(on),
+                  !matches(o) && "opacity-40",
+                  disabled && "cursor-default",
+                )}
               >
-                {o}
-              </button>
+                <input
+                  type="checkbox"
+                  checked={on}
+                  onChange={() => toggle(o)}
+                  disabled={disabled}
+                  className="sr-only"
+                />
+                <ChoiceMark checked={on} className="mt-px" />
+                <span className="min-w-0 flex-1 flex items-center gap-1.5 flex-wrap">
+                  <span className="font-medium">{o}</span>
+                  {info?.slow && (
+                    <span
+                      className="rounded bg-warn/15 text-warn-ink px-1 text-[10px] font-medium"
+                      title={t("parameter_form.slow_title")}
+                    >
+                      {t("parameter_form.slow_badge")}
+                    </span>
+                  )}
+                </span>
+              </label>
             );
           })}
         </div>
-        {hint}
-        {error && <span className="block text-[11px] text-danger-ink mt-1.5 font-medium">{error}</span>}
-      </div>
+        {spec.recommended && (
+          <p className="text-[11px] text-muted italic">
+            {t("parameter_form.recommended", { value: spec.recommended })}
+          </p>
+        )}
+        {error && <span className="block text-[11px] text-danger-ink font-medium">{error}</span>}
+      </fieldset>
     );
   }
 
   if (spec.type === "string") {
     return (
       <div className={"sm:col-span-2 " + (disabled ? "opacity-60" : "")}>
-        <Label id={labelId} htmlFor={id}>{spec.label}</Label>
+        <Label id={labelId} htmlFor={id}>{label}</Label>
         <div className="mt-1.5">
           <Input
             id={id}
@@ -250,7 +296,7 @@ function Field({
   const step = spec.type === "float" ? "0.01" : "1";
   return (
     <div className={disabled ? "opacity-60" : ""}>
-      <Label id={labelId} htmlFor={id}>{spec.label}</Label>
+      <Label id={labelId} htmlFor={id}>{label}</Label>
       <div className="mt-1.5">
         <Input
           id={id}

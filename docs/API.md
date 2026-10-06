@@ -142,7 +142,7 @@ Details in [Factor analysis](#factor-analysis) below.
 ## Notes & limits
 
 - **Rate limits** (per source IP, tunable via `RATE_LIMIT_*` in `.env`): `60/hour` for `POST /algorithms/{id}/analyze`, `60/hour` for `POST /factor-analysis/datasets` (`RATE_LIMIT_DATASETS`; choosing a bundled dataset counts too), `600/minute` for `GET /factor-analysis/datasets/{id}`, which the UI polls, and for listing datasets, saving their options and deleting them (`RATE_LIMIT_DATASET_STATUS`), `120/minute` for factor-analysis `analyze`, `export`, `export/zip` and `interpret` (`RATE_LIMIT_FA_ANALYZE`), `300/hour` for `POST /log-stats`, `120/minute` for everything else. A 429 carries `detail` and `"code": "rate_limited"`. Interpretations that call Claude are limited further, see [Interpretation by Claude](#interpretation-by-claude).
-- **Job quota:** at most 12 queued or running jobs per session (`MAX_ACTIVE_JOBS_PER_SESSION`), and at most 4 dataset jobs over all sessions (`MAX_ACTIVE_DATASET_JOBS`); both answer 429.
+- **Job quota:** at most 12 queued or running jobs per session (`MAX_ACTIVE_JOBS_PER_SESSION`), and at most 4 dataset jobs over all sessions (`MAX_ACTIVE_DATASET_JOBS`); both answer 429, with `"code": "job_quota"` and `params` `active`, `requested` and `limit`, or `"code": "dataset_jobs_busy"` and `params` `active`.
 - **Upload size:** 100 MB per file. Factor-analysis datasets: at most 50 logs or 200 PNML
   files and 500 MB in total per request, `.xes.gz` counted decompressed.
 - **Allowed extensions:** `.xes`, `.xes.gz`, `.xml`, `.json` for single runs; `.xes`,

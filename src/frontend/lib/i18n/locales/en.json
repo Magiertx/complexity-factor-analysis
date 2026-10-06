@@ -17,16 +17,19 @@
     "try_again": "Try again"
   },
   "header": {
-    "tagline": "process mining · complexity factor analysis",
+    "tagline": "Complexity measures of process models and event logs",
     "settings_label": "Settings",
     "settings_title": "Settings",
     "api_title": "Use {app} programmatically",
     "locale_label": "Language",
     "switch_to_german": "Switch to German",
-    "switch_to_english": "Switch to English"
+    "switch_to_english": "Switch to English",
+    "dark_mode": "Dark mode",
+    "switch_to_dark": "Switch to dark mode",
+    "switch_to_light": "Switch to light mode"
   },
   "footer": {
-    "credit": "Built for process-mining research at University of Augsburg."
+    "credit": "Built for process mining research at the University of Augsburg."
   },
   "algorithm_list": {
     "what_is_aria": "What is {name}?",
@@ -35,46 +38,49 @@
     "favorite_add_title": "Pin as favorite",
     "favorite_remove_title": "Remove from favorites",
     "favorite_add_aria": "Add {name} to favorites",
-    "favorite_remove_aria": "Remove {name} from favorites"
+    "favorite_remove_aria": "Remove {name} from favorites",
+    "category": {
+      "complexity": "Complexity analysis"
+    }
   },
   "file_drop": {
-    "drop_label": "Drop event log here",
-    "drop_hint": "or click to browse · .xes, .json",
+    "drop_label": "Drop an event log here",
+    "drop_hint": "or click to choose one · .xes, .xes.gz, .xml, .json",
     "remove_aria": "Remove file"
   },
   "mode_bar": {
     "aria_label": "Analysis",
-    "jobs_label": "Jobs",
-    "jobs_desc": "Recent jobs",
-    "jobs_title": "Show jobs archive",
+    "jobs_label": "Recent runs",
+    "jobs_desc": "Progress and status",
+    "jobs_title": "Show the recent runs",
     "model_label": "Model complexity",
     "model_desc": "Measures of discovered process models",
     "log_label": "Log complexity",
     "log_desc": "Measures of event logs",
     "runs_label": "Runs",
-    "runs_desc": "All jobs of this session"
+    "runs_desc": "All runs of this session"
   },
   "tours": {
     "single_run": {
-      "intro_title": "Single Run tour",
-      "intro_content": "In a Single Run you execute exactly one algorithm on exactly one log — the simplest setup to get started. This walkthrough highlights the key spots; ESC or Skip exits at any time.",
-      "algo_pick_title": "Pick an algorithm",
-      "algo_pick_content": "On the left you find the available tools, grouped by category. Clicking an entry selects it.",
-      "algo_help_title": "Algorithm explanation",
-      "algo_help_content": "Next to every algorithm sits a ? icon. Clicking it opens a panel with a detailed explanation — what the algorithm does, how it works, when to use it.",
+      "intro_title": "Inspect a single log",
+      "intro_content": "Here you run ComFy on one event log: it discovers Petri nets with the chosen miners and computes their complexity measures. This tour shows the key spots; Esc or Skip ends it at any time.",
+      "algo_pick_title": "The algorithm",
+      "algo_pick_content": "On the left is the algorithm this page runs: ComFy, which measures the complexity of discovered Petri nets.",
+      "algo_help_title": "What ComFy does",
+      "algo_help_content": "The ? next to it opens a detailed explanation: what ComFy does, how it works and when it is useful.",
       "logsource_title": "Pick an event log",
-      "logsource_content": "Two sources for the log: 'Upload File' for your own XES or JSON files (recent uploads are listed below), or 'Use Sample' for the bundled example log.",
-      "params_title": "Parameters",
-      "params_content": "Every tool has its own parameters with sensible defaults. The preset bar above lets you save and reuse configurations.",
+      "logsource_content": "Two sources: “Upload file” for your own XES or JSON file (recent uploads are listed below), or “Use example” for the bundled example log.",
+      "params_title": "Miners and measures",
+      "params_content": "Choose the miners to run and the measures to compute. The preset bar above saves a selection for later.",
       "run_title": "Start the run",
-      "run_content": "Once algorithm + log + parameters fit, run via Ctrl/Cmd+Enter or click. The result appears inline with stats, tables, plots and downloads. Past runs land in the jobs panel on the right."
+      "run_content": "Start with the button or Ctrl+Enter (Cmd+Enter on a Mac). The result appears below with the measures, the discovered nets and downloads; the run is listed under Recent runs."
     },
     "onboarding": {
       "step0_title": "Welcome to {app}",
       "step0_p1": "Find out which complexity measures of process models and event logs capture the same thing. Load or compute a table of measures, check whether it suits a factor analysis, and read off groups of related measures.",
       "step0_p2": "This quick tour shows the four things you'll use most.",
       "step1_title": "Two tabs: models and logs",
-      "step1_p1": "Model complexity analyses measures of Petri nets discovered from event logs, computed with ComFy. Log complexity analyses measures of the event logs themselves, computed with feeed.",
+      "step1_p1": "Model complexity analyzes measures of Petri nets discovered from event logs, computed with ComFy. Log complexity analyzes measures of the event logs themselves, computed with feeed.",
       "step1_p2": "Both tabs work the same way.",
       "step2_title": "Step by step, top to bottom",
       "step2_p1": "Data, dataset, suitability, factors, loadings. Every change to a setting re-runs the analysis right away, and the loadings can be exported as CSV or LaTeX. An optional sixth step lets Claude propose names for the factors.",
@@ -82,12 +88,12 @@
       "step3_title": "More when you need it",
       "step3_api": "API: drive everything from Python or curl; see the API page in the header.",
       "progress_aria": "Progress",
-      "step3_history": "Runs: every job of your session, including dataset computations.",
+      "step3_history": "Runs: every run of your session, including dataset computations.",
       "step3_inspect": "Inspect a single log: run ComFy on one log and look at the discovered models."
     },
     "factor": {
-      "intro": "Five steps from raw measures to factors, and an optional interpretation. Each step explains its numbers; the ? buttons next to a heading say more. ESC or Skip ends the tour at any time.",
-      "data": "Start here: pick a bundled dataset, upload a CSV, or compute the measures from your own files. Large computations run as background jobs.",
+      "intro": "Five steps from raw measures to factors, and an optional interpretation. Each step explains its numbers; the ? buttons next to a heading say more. Esc or Skip ends the tour at any time.",
+      "data": "Start here: pick a bundled dataset, upload a CSV, or compute the measures from your own files. Large computations run in the background.",
       "dataset": "Check the size of the matrix and what the cleaning removed. You can download the cleaned data as CSV.",
       "suitability": "Bartlett and KMO tell you whether a factor analysis makes sense at all. Exclude measures with low MSA here, by hand or with the filter.",
       "factors": "The scree plot suggests how many factors to keep. Change the number or the rotation; everything below updates right away.",
@@ -105,29 +111,19 @@
       "theme_light": "Light",
       "theme_dark": "Dark",
       "language_label": "Language",
-      "language_hint": "Affects explanatory text. Technical terms stay in English."
+      "language_hint": "Changes the language of the interface; the names of measures and miners stay in English."
     },
     "page_title": "Settings",
     "page_subtitle": "Local preferences — stored in your browser, no account required.",
-    "back_aria": "Back to model complexity",
     "load_error": "Could not load algorithm list: {error}",
     "toast_theme_updated": "Theme updated",
-    "toast_default_algo_saved": "Default algorithm saved",
-    "toast_cleared_caches": "Cleared {n} parameter cache",
-    "toast_cleared_caches_plural": "Cleared {n} parameter caches",
+    "toast_cleared_caches": "Forgot the parameters of {n} algorithm",
+    "toast_cleared_caches_plural": "Forgot the parameters of {n} algorithms",
     "toast_deleted_preset": "Deleted \"{name}\"",
     "toast_cleared_presets": "Cleared {n} preset",
     "toast_cleared_presets_plural": "Cleared {n} presets",
-    "toast_job_history_cleared": "Job history cleared",
-    "toast_job_history_failed": "Failed to clear job history",
-    "defaults": {
-      "title": "Defaults",
-      "description": "Preselect what shows up when you inspect a single log.",
-      "default_algo_label": "Default algorithm",
-      "default_algo_hint": "Opens automatically when you inspect a single log. Leave empty to use the first algorithm in the list.",
-      "none_option": "— None (use first in list) —",
-      "clear_button": "Clear"
-    },
+    "toast_job_history_cleared": "All runs deleted",
+    "toast_job_history_failed": "The runs could not be deleted",
     "presets": {
       "title": "Parameter presets",
       "description": "Named parameter sets you saved while inspecting a single log. Stored locally on this device.",
@@ -142,6 +138,7 @@
       "clear_all_label": "Clear all presets",
       "clear_all_hint": "Removes all {n} saved preset across every algorithm.",
       "clear_all_hint_plural": "Removes all {n} saved presets across every algorithm.",
+      "clear_all_empty": "No presets saved.",
       "confirm_clear": "Confirm clear",
       "clear_button": "Clear presets",
       "transfer_label": "Export & import",
@@ -154,28 +151,34 @@
       "toast_imported": "Imported {n} presets",
       "toast_imported_renamed": "Imported {n} presets ({renamed} renamed to avoid duplicates)",
       "import_error_invalid_json": "That file is not valid JSON.",
-      "import_error_generic": "Could not import this file."
+      "import_error_generic": "Could not import this file.",
+      "errors": {
+        "empty_name": "Give the preset a name.",
+        "not_an_object": "This file holds no presets: it is not a JSON object.",
+        "no_groups": "This file holds no presets: its list of groups is missing.",
+        "no_presets": "No valid presets were found in the file."
+      }
     },
     "storage": {
       "title": "Storage & data",
-      "description": "Cached parameters, the persistent job history and the datasets of the factor analysis.",
-      "cached_params_label": "Cached algorithm parameters",
-      "cached_params_hint": "{n} algorithm has remembered parameters from previous runs.",
-      "cached_params_hint_plural": "{n} algorithms have remembered parameters from previous runs.",
-      "cached_params_empty": "No cached parameters yet.",
+      "description": "Remembered parameters, the runs stored on the server and the datasets of the factor analysis.",
+      "cached_params_label": "Remembered parameters",
+      "cached_params_hint": "The parameters of {n} algorithm are remembered from earlier runs.",
+      "cached_params_hint_plural": "The parameters of {n} algorithms are remembered from earlier runs.",
+      "cached_params_empty": "No parameters remembered yet.",
       "confirm_clear": "Confirm clear",
-      "clear_cache_button": "Clear cache",
-      "onboarding_label": "Onboarding tour",
-      "onboarding_hint": "Replay the 4-step introduction shown to first-time visitors.",
-      "replay_tour_button": "Replay tour",
-      "run_history_label": "Run history",
-      "run_history_hint": "Browse, filter and delete individual runs from this session in one place.",
-      "open_run_history": "Open run history",
-      "clear_jobs_label": "Clear job history",
-      "clear_jobs_hint": "Deletes every persisted run on the server, including artifacts and the datasets computed from logs or nets. This cannot be undone.",
+      "clear_cache_button": "Forget",
+      "onboarding_label": "Introduction",
+      "onboarding_hint": "Show the four-step introduction of the first visit again.",
+      "replay_tour_button": "Show again",
+      "run_history_label": "Runs",
+      "run_history_hint": "Browse, filter and delete the runs of this session in one place.",
+      "open_run_history": "View all runs",
+      "clear_jobs_label": "Delete the run history",
+      "clear_jobs_hint": "Deletes every run of this session on the server, with its results and the datasets computed from logs or nets. This cannot be undone.",
       "confirm_delete": "Confirm delete",
-      "delete_all_jobs": "Delete all jobs",
-      "clear_datasets_label": "Delete factor-analysis datasets",
+      "delete_all_jobs": "Delete all runs",
+      "clear_datasets_label": "Delete the factor analysis datasets",
       "clear_datasets_hint": "{n} dataset of the model and log complexity tabs is stored on the server, with the settings of its last analysis. If it was computed from logs or nets, the run that computed it is deleted as well.",
       "clear_datasets_hint_plural": "{n} datasets of the model and log complexity tabs are stored on the server, each with the settings of its last analysis. Those computed from logs or nets are deleted with the runs that computed them.",
       "clear_datasets_empty": "No datasets of the model and log complexity tabs are stored for this session.",
@@ -189,31 +192,81 @@
       "title": "About",
       "description": "Build and links.",
       "product_label": "Product",
-      "algorithms_loaded_label": "Algorithms loaded",
       "source_label": "Source",
       "documentation_label": "Documentation",
-      "back_to_workbench": "Back to model complexity"
+      "api_link": "API access and examples"
     }
   },
   "api_access": {
-    "back_aria": "Back to model complexity",
     "heading": "API access",
-    "subtitle": "Submit jobs and read results without using the web UI. All endpoints are unauthenticated; you are scoped to your browser session via cookie.",
+    "subtitle": "Start runs and read results without the web UI. The endpoints need no login; a cookie scopes them to your browser session.",
     "interactive_ref_title": "Interactive reference",
     "interactive_ref_desc": "Full OpenAPI 3 spec — try endpoints directly from the browser.",
     "quick_start_title": "Quick start",
-    "quick_start_desc": "Run an algorithm from a Python script or your shell.",
+    "quick_start_desc": "Inspect a log or run a factor analysis from a Python script or your shell.",
+    "example_single_log": "Inspect a single log (Python)",
+    "example_factor_analysis": "Factor analysis (Python)",
     "endpoint_summary_title": "Endpoint summary",
     "endpoint_summary_desc": "All paths are relative to {base} when accessed through the web UI, or the bare root when hitting the backend directly.",
     "notes_title": "Notes",
     "copied": "Copied",
-    "copy": "Copy"
+    "copy": "Copy",
+    "groups": {
+      "catalog": "Catalog",
+      "single_log": "Single log",
+      "factor_analysis": "Factor analysis",
+      "runs": "Runs",
+      "diagnostics": "Diagnostics"
+    },
+    "endpoints": {
+      "algorithms": "Every registered algorithm with its parameter schema.",
+      "sample_logs": "Bundled example logs you can analyze without uploading.",
+      "recent_logs": "Logs your session uploaded recently.",
+      "analyze": "Run one algorithm on one log; returns a job_id.",
+      "log_stats": "Quick descriptive statistics of a log: traces, events, variants, time range.",
+      "fa_catalog": "Measures, miners or feature groups, bundled datasets, example inputs and the accepted sources.",
+      "fa_create": "Create a dataset from a bundled one or a CSV (ready at once), or from event logs or PNML files (computed as a run).",
+      "fa_list": "The datasets of your session, newest first; kind is optional.",
+      "fa_get": "Status, progress, saved settings and the cleaned measure matrix (first 2000 rows).",
+      "fa_options": "Keep the settings of an analysis with the dataset.",
+      "fa_delete": "Delete a dataset with its run and its cached interpretations.",
+      "fa_delete_all": "Delete every dataset of your session, or every one of a kind.",
+      "fa_download": "The cleaned matrix as CSV.",
+      "fa_analyze": "Bartlett, KMO with the MSA filter, eigenvalues and rotated loadings for the given settings (JSON).",
+      "fa_export": "The loadings table as CSV or LaTeX; the body of analyze plus format.",
+      "fa_export_zip": "The whole analysis as a ZIP: result, matrix, tables, parameters and library versions.",
+      "fa_interpretation_status": "Whether Claude can interpret factors, and with which model.",
+      "fa_interpret": "Names and short interpretations of the factors by Claude; the body of analyze plus language. Optional, needs an API key on the server.",
+      "jobs": "All runs of your session.",
+      "job": "Status, progress and, once it is finished, the full result of a run.",
+      "job_download": "ZIP archive of everything a run produced.",
+      "job_events": "Server-Sent Events stream that pings whenever a run changes.",
+      "progress": "Lower-level SSE stream of a single task.",
+      "abort": "Ask a running task to stop.",
+      "job_notes": "Set or clear the note of a run.",
+      "job_delete": "Delete a run and its results; a dataset run takes its dataset with it.",
+      "jobs_delete": "Delete every run of your session, with the datasets they computed.",
+      "health": "Readiness probe: 200 when the database is reachable."
+    },
+    "notes": {
+      "rate_limits": "Rate limits per IP: `60/hour` on `POST /algorithms/{id}/analyze` and on `POST /factor-analysis/datasets`, `600/minute` on `GET /factor-analysis/datasets/{id}`, `300/hour` on `POST /log-stats` and `120/minute` everywhere else. Interpretations by Claude: `10/hour` per session and `200/day` for the server. Over a limit the answer is a 429 with a `code`.",
+      "quota": "Runs: at most 12 queued or running per session, and at most 4 dataset runs at once over all sessions; more are answered with a 429.",
+      "uploads": "Uploads: at most 100 MB per file. `POST /algorithms/{id}/analyze` and `POST /log-stats` take one event log (`.xes`, `.xes.gz`, `.xml`, `.json`). `POST /factor-analysis/datasets` takes one `.csv`, up to 50 event logs (`.xes`, `.xes.gz`) or up to 200 Petri nets (`.pnml`), at most 500 MB together.",
+      "session": "Session: a signed cookie scopes every endpoint. Reuse it across requests (in Python with `requests.Session()`) to keep your runs and datasets visible.",
+      "schemas": "Parameter schemas come from `GET /algorithms`: read the `parameters_schema` of an algorithm before submitting."
+    }
   },
   "parameter_form": {
     "all_at_defaults": "All parameters were left at their defaults.",
-    "search_placeholder": "Search...",
+    "search_placeholder": "Search…",
     "search_options_aria": "Search options for {label}",
-    "recommended": "Recommended: {value}"
+    "recommended": "Recommended: {value}",
+    "selected_count": "{n} of {total}",
+    "select_all": "All",
+    "select_none": "None",
+    "select_defaults": "Defaults",
+    "slow_badge": "slow",
+    "slow_title": "Takes noticeably longer on large logs"
   },
   "preset_bar": {
     "load_preset": "Load preset",
@@ -242,12 +295,17 @@
     "variants": "variants",
     "length": "length",
     "span": "span",
-    "top_label": "Top",
-    "median_abbr": "med",
-    "noisy_title": "{pct}% of traces are unique sequences — many distinct variants.",
-    "normal_title": "{pct}% of traces are unique sequences.",
-    "length_title": "Trace length range. Median {median}, average {avg}.",
-    "span_title": "Log covers {duration}."
+    "top_label": "Most frequent",
+    "median_abbr": "median",
+    "noisy_title": "{pct} of the traces are unique sequences: many distinct variants.",
+    "normal_title": "{pct} of the traces are unique sequences.",
+    "length_title": "Shortest to longest trace. Median {median}, mean {avg}.",
+    "span_title": "The log covers {duration}.",
+    "duration_years": "{n} years",
+    "duration_months": "{n} months",
+    "duration_days": "{n} days",
+    "duration_hours": "{n} h",
+    "duration_seconds": "{n} s"
   },
   "algorithm_explainer": {
     "close_aria": "Close",
@@ -276,24 +334,24 @@
   },
   "result_panel": {
     "heading": "Result",
-    "download_all": "Download All (ZIP)"
+    "download_all": "Download all (ZIP)"
   },
   "artifacts": {
-    "petri_nets_heading": "Discovered Petri Nets ({n})",
+    "petri_nets_heading": "Discovered Petri nets ({n})",
     "grid_view_title": "Grid view (framed, aligned)",
     "list_view_title": "List view (large, native format)",
     "grid_label": "Grid",
     "list_label": "List",
     "image": {
       "download_title": "Download image directly",
-      "preview_zoom": "Preview / Zoom",
-      "process_model_fallback": "Process Model",
+      "preview_zoom": "Preview and zoom",
+      "process_model_fallback": "Process model",
       "zoom_out_title": "Zoom out",
       "zoom_in_title": "Zoom in",
       "reset_zoom_title": "Reset zoom",
-      "toggle_bg_title": "Toggle background (Current: {bg})",
+      "toggle_bg_title": "Change the background (now: {bg})",
       "download_image_title": "Download image",
-      "close_title": "Close (ESC)",
+      "close_title": "Close (Esc)",
       "bg_transparent": "Transparent",
       "bg_light": "White background",
       "bg_dark": "Dark background",
@@ -303,34 +361,33 @@
       "download_button": "Download"
     },
     "table": {
-      "table_data_label": "Table Data",
+      "table_data_label": "Table",
       "download_csv_title": "Download table as CSV",
       "download_csv_button": "Download CSV"
     }
   },
   "jobs": {
-    "archive_aria": "Jobs archive",
-    "heading": "Jobs",
-    "clear_button": "All",
-    "clear_all_title": "Delete all jobs",
-    "close_drawer_aria": "Close jobs drawer",
+    "archive_aria": "Recent runs",
+    "heading": "Runs",
+    "clear_button": "Delete all runs",
+    "clear_all_title": "Delete all runs of this session",
+    "close_drawer_aria": "Close the recent runs",
     "loading": "Loading…",
-    "no_runs_yet": "No runs yet. Start one from any tool.",
-    "view_all": "View all jobs",
-    "delete_job_aria": "Delete job",
-    "delete_dataset_job_aria": "Delete job and its dataset",
-    "delete_dataset_job_confirm": "Delete job and dataset",
-    "abort_job_aria": "Abort job",
-    "run_mode_title": "Run mode: {mode}",
-    "tool_type_title": "Tool type: {type}",
+    "no_runs_yet": "No runs yet. A run starts when you compute a dataset from logs or nets or inspect a single log.",
+    "view_all": "View all runs",
+    "delete_job_aria": "Delete run",
+    "delete_dataset_job_aria": "Delete run and its dataset",
+    "delete_dataset_job_confirm": "Delete run and dataset",
+    "abort_job_aria": "Abort run",
+    "run_mode_title": "Kind of run: {mode}",
     "status_completed": "Completed",
     "status_failed": "Failed",
     "status_aborted": "Aborted",
-    "status_running": "Running {pct}%",
+    "status_running": "Running {pct}",
     "status_pending": "Pending…",
-    "clear_all_confirm": "Clear the entire jobs archive? Datasets computed from logs or nets are deleted with their jobs.",
+    "clear_all_confirm": "Delete all runs of this session? Datasets computed from logs or nets are deleted with their runs.",
     "mode": {
-      "single": "Single",
+      "single": "Single log",
       "batch": "Batch",
       "dataset": "Dataset"
     },
@@ -340,14 +397,13 @@
     }
   },
   "run_history": {
-    "back_aria": "Back to model complexity",
-    "heading": "Run history",
-    "subtitle": "All runs in this session.",
+    "heading": "Runs",
+    "subtitle": "Every run of this session: computed datasets and inspected logs. Search, filter, add notes or delete them.",
     "refresh_button": "Refresh",
-    "search_placeholder": "Search algorithm, filename or run id…",
+    "search_placeholder": "Search name, file name or run ID…",
     "search_aria": "Search runs",
-    "filter_algo_aria": "Filter by algorithm",
-    "filter_all_algorithms": "All algorithms",
+    "filter_kind_aria": "Filter by kind",
+    "filter_all_kinds": "All kinds",
     "status_all": "All ({n})",
     "status_active": "Active ({n})",
     "status_completed": "Completed ({n})",
@@ -359,10 +415,10 @@
     "status_label_failed": "Failed",
     "status_label_aborted": "Aborted",
     "loading_runs": "Loading runs…",
-    "no_runs_empty": "No runs in this session yet. Computed datasets and single-log runs appear here.",
+    "no_runs_empty": "No runs in this session yet. Computed datasets and inspected logs appear here.",
     "no_runs_filter": "No runs match the current filters.",
     "open_button": "Open",
-    "open_title": "Open in the originating view",
+    "open_title": "Open where the run was started",
     "confirm_delete": "Confirm",
     "delete_run_aria": "Delete run {id}",
     "delete_run_title": "Delete run",
@@ -376,31 +432,31 @@
     "sidebar": {
       "algorithm_label": "Algorithm",
       "tour_button": "Tour",
-      "tour_aria": "Start single-run tour",
-      "tour_title": "Walkthrough — how single-run works",
-      "close_sidebar_aria": "Close algorithm sidebar",
-      "show_menu_title": "Show menu",
-      "show_sidebar_title": "Show sidebar",
-      "hide_sidebar_title": "Hide sidebar",
-      "nav_aria": "Navigation and history sidebar"
+      "tour_aria": "Start the tour of this page",
+      "tour_title": "How inspecting a single log works",
+      "close_sidebar_aria": "Close the algorithm list",
+      "show_menu_title": "Show the algorithm list",
+      "show_sidebar_title": "Show the algorithm list",
+      "hide_sidebar_title": "Hide the algorithm list",
+      "nav_aria": "Algorithms"
     },
-    "job_badge": "Run: {id} ({status})",
+    "job_badge": "Run {id}: {status}",
     "algo_card": {
       "implemented_by": "Implemented by: {author}",
       "paper_link": "Paper",
-      "academic_reference": "Academic Reference",
-      "copied_bibtex": "Copied BibTeX!",
+      "academic_reference": "Citation",
+      "copied_bibtex": "BibTeX copied",
       "copy_bibtex": "Copy BibTeX",
       "download_bib_title": "Download as .bib file",
       "download_bib": "Download .bib",
       "analyzed_log": "Analyzed event log"
     },
     "log_source": {
-      "upload_file": "Upload File",
-      "use_sample": "Use Sample"
+      "upload_file": "Upload file",
+      "use_sample": "Use example"
     },
     "recent": {
-      "label": "Recently Uploaded Logs"
+      "label": "Recently uploaded logs"
     },
     "layout": {
       "grid": "Grid",
@@ -409,7 +465,7 @@
       "list_title": "List view"
     },
     "samples": {
-      "label": "Available Samples"
+      "label": "Example logs"
     },
     "params": {
       "showing_modified": "Showing only modified parameters",
@@ -422,30 +478,33 @@
       "choose": "Choose file… ({formats})"
     },
     "run_bar": {
-      "job_status": "Job Status: {status}",
+      "job_status": "Status: {status}",
       "ready": "Ready to run.",
-      "upload_hint": "Upload an event log to enable analysis.",
+      "upload_hint": "Upload an event log or choose a recent one to enable the analysis.",
+      "sample_hint": "Choose an example log to enable the analysis.",
       "abort": "Abort",
-      "new_run": "New Run",
-      "run_title": "Run analysis (Ctrl+Enter)"
+      "new_run": "New run",
+      "run_title": "Run the analysis (Ctrl+Enter)"
     },
     "load_error": {
-      "title": "Cannot reach the AlgoService"
+      "title": "The server cannot be reached"
     },
     "errors": {
-      "no_sample": "Please select a sample log to analyze.",
-      "no_upload": "Please upload an event log file or choose a recent log from the list below.",
+      "no_sample": "Choose an example log to analyze.",
+      "no_upload": "Upload an event log or choose a recent one from the list below.",
       "must_be_number": "Must be a valid number.",
       "must_be_at_least": "Must be at least {min}.",
       "must_be_at_most": "Must be at most {max}.",
+      "choose_one": "Choose at least one.",
       "fix_validation": "Please fix parameter validation errors before running.",
-      "submitting": "Submitting job...",
-      "load_job_details": "Failed to load job details",
-      "aborted": "Analysis aborted by user.",
+      "submitting": "Starting the run…",
+      "load_job_details": "The details of the run could not be loaded.",
+      "aborted": "The analysis was aborted.",
       "analysis_failed": "Analysis failed",
       "unknown_submission": "Unknown submission error",
       "file_too_large": "File size exceeds the 100 MB limit.",
-      "aborted_by_user": "Aborted by user"
+      "wrong_type": "This file type cannot be analyzed; use {formats}.",
+      "aborted_by_user": "Aborted by the user"
     }
   },
   "factor": {
@@ -844,7 +903,30 @@
   },
   "inspect": {
     "title": "Inspect a single log",
-    "subtitle": "Run ComFy on one event log and look at the discovered models and their complexity measures.",
-    "back_aria": "Back to model complexity"
+    "subtitle": "Run ComFy on one event log and look at the discovered models and their complexity measures."
+  },
+  "algo_text": {
+    "summary": "Miners: {miners} · measures: {measures}",
+    "summary_partial": "Miners: {miners} · measures: {measures} · {computed} of {total} cells computed",
+    "miners": "Miners",
+    "measures": "Measures",
+    "cells_computed": "Cells computed",
+    "complexity_scores": "Complexity scores",
+    "miner": "Miner",
+    "notes": "Notes",
+    "petri_net": "Petri net ({miner})",
+    "discovered_by": "Discovered by the {miner}",
+    "hires_png": "High-resolution PNG ({miner}, 300 dpi)",
+    "progress_starting": "Starting the analysis…",
+    "progress_reading": "Reading the event log…",
+    "progress_miner": "Computing the complexity for the {miner} ({i}/{n})…",
+    "progress_done": "Analysis complete",
+    "progress_aborted": "Aborted by the user",
+    "progress_pending": "Pending…"
+  },
+  "errors": {
+    "rate_limited": "Too many requests. Wait a moment and try again.",
+    "job_quota": "You already have {active} runs queued or running, and this would add {requested}; at most {limit} are allowed. Wait for them to finish or abort some under Recent runs.",
+    "dataset_jobs_busy": "The server is already computing {active} datasets, the most it runs at once. Try again in a few minutes."
   }
 }

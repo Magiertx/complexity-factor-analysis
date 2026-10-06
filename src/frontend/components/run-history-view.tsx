@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowLeft,
   Search,
   RefreshCw,
   Trash2,
-  ExternalLink,
+  ArrowRight,
   AlertCircle,
   Check,
   Loader2,
@@ -20,6 +19,7 @@ import {
   fetchJobs,
 } from "@/lib/api";
 import { JobNotesField } from "./job-notes-field";
+import { PageHeader } from "./page-header";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Segmented } from "./ui/segmented";
@@ -27,7 +27,8 @@ import { Input } from "./ui/input";
 import { Select } from "./ui/select";
 import { datasetJobHref, datasetJobSubtitle, jobDisplayName, jobTitle } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
-import { useT } from "@/lib/i18n";
+import { localizedAlgoName, useLocale } from "@/lib/i18n";
+import { formatDateTime, formatPercent } from "@/lib/i18n/local-format";
 
 type StatusFilter = "all" | "active" | "completed" | "failed" | "aborted";
 
@@ -40,7 +41,7 @@ const STATUS_BADGE: Record<Job["status"], string> = {
 };
 
 export function RunHistoryView() {
-  const t = useT();
+  const { t, locale } = useLocale();
 
   const STATUS_LABEL: Record<Job["status"], string> = {
     pending: t("run_history.status_label_pending"),
@@ -59,6 +60,12 @@ export function RunHistoryView() {
   const [algoFilter, setAlgoFilter] = useState<string>("");
   const [toast, setToast] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+  // The confirmation takes the place of the delete button, and a deleted row takes the focus
+  // with it, so the focus is moved by hand: back to the delete button of the row, or to the
+  // row that took the place of a deleted one ("" for the list itself).
+  const deleteButtons = useRef(new Map<string, HTMLButtonElement>());
+  const listRef = useRef<HTMLUListElement>(null);
+  const refocus = useRef<string | null>(null);
 
   const load = async (silent = false) => {
     if (silent) setRefreshing(true);
@@ -79,6 +86,13 @@ export function RunHistoryView() {
     load();
   }, []);
 
+  useEffect(() => {
+    const id = refocus.current;
+    if (id === null) return;
+    refocus.current = null;
+    (deleteButtons.current.get(id) ?? listRef.current)?.focus();
+  }, [confirmingDelete, jobs]);
+
   const showToast = (msg: string) => {
     setToast(msg);
     window.setTimeout(() => setToast(null), 1800);
@@ -87,6 +101,8 @@ export function RunHistoryView() {
   const handleDelete = async (jobId: string) => {
     try {
       await deleteJob(jobId);
+      const i = filtered.findIndex((j) => j.id === jobId);
+      refocus.current = (filtered[i + 1] ?? filtered[i - 1])?.id ?? "";
       setJobs((prev) => prev.filter((j) => j.id !== jobId));
       setConfirmingDelete(null);
       showToast(t("run_history.toast_run_deleted"));
@@ -101,11 +117,11 @@ export function RunHistoryView() {
     for (const j of jobs) {
       if (seen.has(j.algorithm_id)) continue;
       seen.add(j.algorithm_id);
-      opts.push({ id: j.algorithm_id, name: jobDisplayName(j, t) });
+      opts.push({ id: j.algorithm_id, name: localizedAlgoName({ id: j.algorithm_id, name: jobDisplayName(j, t) }, locale) });
     }
     opts.sort((a, b) => a.name.localeCompare(b.name));
     return opts;
-  }, [jobs, t]);
+  }, [jobs, t, locale]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -139,43 +155,33 @@ export function RunHistoryView() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3 min-w-0">
-          <Link
-            href="/"
-            className="h-9 w-9 grid place-items-center rounded-md bg-tile hover:bg-accent/[0.08] transition text-muted hover:text-fg shrink-0"
-            aria-label={t("run_history.back_aria")}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-          <div className="min-w-0">
-            <h1 className="text-lg font-semibold tracking-tight">{t("run_history.heading")}</h1>
-            <p className="text-xs text-muted mt-0.5">
-              {t("run_history.subtitle")}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button size="sm" variant="outline" onClick={() => load(true)} disabled={refreshing}>
-            <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
-            {t("run_history.refresh_button")}
-          </Button>
-          {toast && (
-            <span className="flex items-center gap-1.5 text-xs text-muted bg-tile rounded-md px-3 py-2">
-              <Check className="h-3.5 w-3.5 text-accent-ink" />
-              {toast}
-            </span>
-          )}
-        </div>
-      </header>
+      <PageHeader
+        title={t("run_history.heading")}
+        subtitle={t("run_history.subtitle")}
+        actions={
+          <>
+            <Button size="sm" variant="outline" onClick={() => load(true)} disabled={refreshing}>
+              <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
+              {t("run_history.refresh_button")}
+            </Button>
+            {/* Always rendered, so screen readers announce each toast that appears in it. */}
+            <div role="status">
+              {toast && (
+                <span className="flex items-center gap-1.5 text-xs text-muted bg-tile rounded-md px-3 py-2">
+                  <Check className="h-3.5 w-3.5 text-accent-ink" />
+                  {toast}
+                </span>
+              )}
+            </div>
+          </>
+        }
+      />
 
       {loadError && (
-        <Card className="border-danger/40">
-          <CardContent className="flex items-start gap-2 text-sm text-danger-ink">
-            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-            <span>{t("run_history.load_error", { error: loadError })}</span>
-          </CardContent>
-        </Card>
+        <div role="alert" className="rounded-lg bg-danger/10 px-4 py-3 flex items-start gap-3">
+          <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
+          <div className="text-sm">{t("run_history.load_error", { error: loadError })}</div>
+        </div>
       )}
 
       <Card>
@@ -192,19 +198,22 @@ export function RunHistoryView() {
                 aria-label={t("run_history.search_aria")}
               />
             </div>
-            <div className="flex items-center gap-2">
-              <Filter className="h-3.5 w-3.5 text-muted" aria-hidden />
-              <Select
-                value={algoFilter}
-                onValueChange={setAlgoFilter}
-                className="min-w-[180px] w-auto"
-                aria-label={t("run_history.filter_algo_aria")}
-                options={[
-                  { value: "", label: t("run_history.filter_all_algorithms") },
-                  ...algorithmOptions.map((a) => ({ value: a.id, label: a.name })),
-                ]}
-              />
-            </div>
+            {/* Datasets of either tab and inspected logs; with one kind there is nothing to filter. */}
+            {(algorithmOptions.length > 1 || algoFilter) && (
+              <div className="flex items-center gap-2 min-w-0">
+                <Filter className="h-3.5 w-3.5 text-muted shrink-0" aria-hidden />
+                <Select
+                  value={algoFilter}
+                  onValueChange={setAlgoFilter}
+                  className="min-w-[180px] w-auto max-w-full"
+                  aria-label={t("run_history.filter_kind_aria")}
+                  options={[
+                    { value: "", label: t("run_history.filter_all_kinds") },
+                    ...algorithmOptions.map((a) => ({ value: a.id, label: a.name })),
+                  ]}
+                />
+              </div>
+            )}
           </div>
 
           {/* Scrolls on its own on a phone, where the five filters are wider than the page. */}
@@ -239,12 +248,11 @@ export function RunHistoryView() {
                 : t("run_history.no_runs_filter")}
             </div>
           ) : (
-            <ul className="divide-y divide-border">
+            <ul ref={listRef} tabIndex={-1} className="divide-y divide-border outline-none">
               {filtered.map((job) => {
-                const date = new Date(job.created_at * 1000);
                 const isBatch = job.algorithm_id.startsWith("_batch");
                 const detailHref = datasetJobHref(job) ?? `/inspect?job=${job.id}`;
-                const title = jobTitle(job, t);
+                const title = localizedAlgoName({ id: job.algorithm_id, name: jobTitle(job, t) }, locale);
                 const subtitle = datasetJobSubtitle(job, t);
                 return (
                   <li key={job.id} className="p-4 flex items-start gap-4 flex-wrap hover:bg-surface/40 transition">
@@ -258,13 +266,13 @@ export function RunHistoryView() {
                         </span>
                         <span
                           className={cn(
-                            "text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded",
+                            "text-[11px] font-medium px-1.5 py-0.5 rounded shrink-0",
                             STATUS_BADGE[job.status],
                           )}
                         >
                           {STATUS_LABEL[job.status]}
                           {(job.status === "running" || job.status === "pending") &&
-                            ` ${Math.round(job.percentage)}%`}
+                            ` ${formatPercent(job.percentage / 100, locale)}`}
                         </span>
                       </div>
                       <div className="text-[11px] text-muted flex items-center gap-2 flex-wrap font-mono">
@@ -278,7 +286,7 @@ export function RunHistoryView() {
                           </span>
                         )}
                         <span>·</span>
-                        <span>{date.toLocaleString()}</span>
+                        <span className="font-sans">{formatDateTime(job.created_at * 1000, locale)}</span>
                         {job.error && (
                           <>
                             <span>·</span>
@@ -307,7 +315,7 @@ export function RunHistoryView() {
                         className="h-8 px-3 inline-flex items-center gap-1.5 rounded-md bg-tile hover:bg-accent/[0.08] transition text-xs font-medium text-muted hover:text-fg"
                         title={t("run_history.open_title")}
                       >
-                        <ExternalLink className="h-3.5 w-3.5" />
+                        <ArrowRight className="h-3.5 w-3.5" />
                         {t("run_history.open_button")}
                       </Link>
                       {confirmingDelete === job.id ? (
@@ -317,15 +325,28 @@ export function RunHistoryView() {
                             variant="primary"
                             className="bg-danger hover:bg-danger/90"
                             onClick={() => handleDelete(job.id)}
+                            // It replaces the focused delete button.
+                            autoFocus
                           >
                             {t("run_history.confirm_delete")}
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={() => setConfirmingDelete(null)}>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              refocus.current = job.id;
+                              setConfirmingDelete(null);
+                            }}
+                          >
                             {t("common.cancel")}
                           </Button>
                         </>
                       ) : (
                         <button
+                          ref={(el) => {
+                            if (el) deleteButtons.current.set(job.id, el);
+                            else deleteButtons.current.delete(job.id);
+                          }}
                           type="button"
                           onClick={() => setConfirmingDelete(job.id)}
                           className="h-8 w-8 grid place-items-center rounded-md text-muted hover:text-danger-ink hover:bg-surface transition"

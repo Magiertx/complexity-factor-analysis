@@ -1,12 +1,15 @@
+import type { Metadata } from "next";
 import { FactorAnalysisView } from "@/components/factor-analysis/factor-analysis-view";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { APP_NAME } from "@/lib/app-config";
+
+// The title template of the layout does not reach a page in the layout's own segment.
+export const metadata: Metadata = { title: { absolute: `Model complexity · ${APP_NAME}` } };
 
 export default function ModelComplexityPage() {
   return (
-    <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-8">
-      <ErrorBoundary>
-        <FactorAnalysisView kind="model" />
-      </ErrorBoundary>
-    </div>
+    <ErrorBoundary>
+      <FactorAnalysisView kind="model" />
+    </ErrorBoundary>
   );
 }

@@ -5,7 +5,7 @@ import { Bookmark, BookmarkPlus, Check, ChevronDown, RotateCcw, Trash2 } from "l
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Preset, deletePreset, listPresets, savePreset } from "@/lib/presets";
+import { Preset, PresetError, deletePreset, listPresets, savePreset } from "@/lib/presets";
 import { useT } from "@/lib/i18n";
 
 type Props = {
@@ -79,7 +79,7 @@ export function PresetBar({ algorithmId, currentParams, onLoad, defaults, disabl
       setSaving(false);
       showToast(t("preset_bar.toast_saved", { name }));
     } catch (err) {
-      showToast(err instanceof Error ? err.message : t("preset_bar.toast_save_failed"));
+      showToast(err instanceof PresetError ? t(`settings.presets.errors.${err.code}`) : t("preset_bar.toast_save_failed"));
     }
   };
 

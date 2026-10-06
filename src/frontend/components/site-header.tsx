@@ -5,38 +5,44 @@ import { Settings as SettingsIcon, Code2 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { APP_INITIALS, APP_NAME } from "@/lib/app-config";
 import { LocaleToggle } from "./locale-toggle";
+import { ThemeToggle } from "./theme-toggle";
 
 export function SiteHeader() {
   const t = useT();
   return (
     <header className="border-b border-border">
-      <div className="mx-auto max-w-[1920px] px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="h-7 w-7 rounded-md bg-accent grid place-items-center text-accent-fg text-xs font-semibold">
+      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <Link href="/" className="flex items-center gap-3 min-w-0">
+            <div className="h-7 w-7 rounded-md bg-accent grid place-items-center text-accent-fg text-xs font-semibold shrink-0">
               {APP_INITIALS}
             </div>
-            <span className="font-semibold tracking-tight">{APP_NAME}</span>
+            <span className="font-semibold tracking-tight leading-tight">{APP_NAME}</span>
           </Link>
-          <span className="hidden sm:inline text-xs text-muted">
+          <span className="hidden lg:inline text-xs text-muted">
             {t("header.tagline")}
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <LocaleToggle />
+          <ThemeToggle />
           <Link
             href="/api-access"
-            className="h-9 px-3 inline-flex items-center gap-1.5 rounded-md bg-tile hover:bg-accent/[0.08] transition text-xs font-medium whitespace-nowrap text-muted hover:text-fg"
+            className="h-9 w-9 sm:w-auto sm:px-3 inline-flex items-center justify-center gap-1.5 rounded-md bg-tile hover:bg-accent/[0.08] transition text-xs font-medium whitespace-nowrap text-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             title={t("header.api_title", { app: APP_NAME })}
+            aria-label={t("common.api")}
           >
             <Code2 className="h-3.5 w-3.5 shrink-0" />
-            <span>{t("common.api")}</span>
+            {/* The icon alone on a phone, where the name of the app needs the room. */}
+            <span className="hidden sm:inline" aria-hidden>
+              {t("common.api")}
+            </span>
           </Link>
           <Link
             href="/settings"
             aria-label={t("header.settings_label")}
             title={t("header.settings_title")}
-            className="h-9 w-9 grid place-items-center rounded-md bg-tile hover:bg-accent/[0.08] transition text-muted hover:text-fg"
+            className="h-9 w-9 grid place-items-center rounded-md bg-tile hover:bg-accent/[0.08] transition text-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <SettingsIcon className="h-4 w-4" />
           </Link>

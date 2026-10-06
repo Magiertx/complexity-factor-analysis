@@ -119,7 +119,7 @@ export function JobNotesField({ jobId, initialNotes, variant = "panel", onSaved 
   return (
     <div className="rounded-lg bg-surface p-4 space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
+        <div className="flex items-center gap-2 text-sm font-semibold text-muted">
           <StickyNote className="h-3.5 w-3.5 text-muted/70" />
           <span>{t("job_notes.section_title")}</span>
         </div>

@@ -19,7 +19,6 @@ import {
   Play,
   Layers,
   Database,
-  BarChart3,
   History,
   CheckCircle2,
   XCircle,
@@ -37,7 +36,8 @@ import {
 } from "@/lib/api";
 import { datasetJobHref, datasetJobSubtitle, jobDisplayName, jobTitle } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
-import { useT } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n";
+import { formatDateTime, formatPercent } from "@/lib/i18n/local-format";
 import { Button } from "./ui/button";
 
 // How a job was started, derived from the `algorithm_id` prefix: runs of the
@@ -70,10 +70,6 @@ const MODE_META: Record<RunMode, { label: string; icon: React.ComponentType<{ cl
   single: { label: "jobs.mode.single", icon: Play },
   batch: { label: "jobs.mode.batch", icon: Layers },
   dataset: { label: "jobs.mode.dataset", icon: Database },
-};
-
-const TOOL_TYPE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
-  complexity: BarChart3,
 };
 
 // ----------------------- Context -----------------------
@@ -196,7 +192,7 @@ export function JobsDrawer() {
     return m;
   }, [algorithms]);
 
-  // Load the manifests once; only needed for tool_type and algorithm names.
+  // Load the manifests once; only needed for the algorithm names of old batch runs.
   useEffect(() => {
     fetchAlgorithms()
       .then((res) => setAlgorithms(res.algorithms))
@@ -210,8 +206,10 @@ export function JobsDrawer() {
     let timer: ReturnType<typeof setInterval> | null = null;
     let es: EventSource | null = null;
 
-    const refresh = async () => {
-      if (document.hidden) return;
+    // Only the updates wait while the tab is hidden; the first load does not, or a page opened
+    // in a background tab would show nothing until it is looked at.
+    const refresh = async (always = false) => {
+      if (document.hidden && !always) return;
       try {
         const list = await fetchJobs();
         if (!active) return;
@@ -223,13 +221,13 @@ export function JobsDrawer() {
       }
     };
 
-    refresh();
+    refresh(true);
 
     const sseUrl = process.env.NEXT_PUBLIC_SSE_URL || "/api/jobs/events";
     try {
       es = new EventSource(sseUrl);
       es.onmessage = (e) => {
-        if (e.data === "update" || e.data === "initial") refresh();
+        if (e.data === "update" || e.data === "initial") void refresh();
       };
       es.onerror = () => {
         /* polling deckt's ab */
@@ -238,10 +236,10 @@ export function JobsDrawer() {
       /* SSE not supported */
     }
 
-    timer = setInterval(refresh, 10000);
+    timer = setInterval(() => void refresh(), 10000);
 
     const onVisible = () => {
-      if (!document.hidden) refresh();
+      if (!document.hidden) void refresh();
     };
     document.addEventListener("visibilitychange", onVisible);
 
@@ -350,7 +348,7 @@ export function JobsDrawer() {
         slides in and out via translate-x. The overlay routes keep this at
         every width.
         lg+ elsewhere: becomes a static layout column; open/close collapses
-        the width instead of translating, and shadow and left border go away.
+        the width instead of translating, and shadow and ring go away.
         Closed, it is inert, so its links cannot be reached with Tab.
       */}
       <aside
@@ -363,7 +361,7 @@ export function JobsDrawer() {
         className={cn(
           "shrink-0 transition-all duration-300 ease-out overflow-hidden",
           // Mobile baseline: fixed drawer, decorations directly on the aside
-          "fixed right-0 top-0 h-full w-[360px] max-w-[90vw] bg-surface border-l border-border z-50 shadow-2xl",
+          "fixed right-0 top-0 h-full w-[360px] max-w-[90vw] bg-surface ring-1 ring-border/70 z-50 shadow-2xl",
           // Desktop: transparent aside, the card is the rounded tile in the
           // inner wrapper. Sticky with a fixed height instead of growing with
           // the column, so the job list scrolls internally and the "View all"
@@ -372,7 +370,7 @@ export function JobsDrawer() {
           // overflow-hidden does not break sticky; only overflow on an
           // ancestor would, and row and body have none.
           !overlay &&
-            "lg:sticky lg:top-0 lg:self-start lg:h-[calc(100vh_-_157px)] lg:max-w-none lg:bg-transparent lg:border-l-0 lg:shadow-none lg:z-auto",
+            "lg:sticky lg:top-0 lg:self-start lg:h-[calc(100vh_-_157px)] lg:max-w-none lg:bg-transparent lg:ring-0 lg:shadow-none lg:z-auto",
           // Mobile slide (reset on desktop via lg:translate-x-0)
           open ? "translate-x-0" : "translate-x-full",
           !overlay && "lg:translate-x-0",
@@ -498,7 +496,7 @@ function JobCard({
   onAbort: () => void;
   onOpen?: () => void;
 }) {
-  const t = useT();
+  const { t, locale } = useLocale();
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const askRef = useRef<HTMLButtonElement>(null);
@@ -521,8 +519,6 @@ function JobCard({
   };
   const ModeIcon = MODE_META[info.mode].icon;
   const innerAlgo = info.innerAlgoId ? algoById.get(info.innerAlgoId) : null;
-  const toolType = innerAlgo?.tool_type ?? null;
-  const ToolTypeIcon = toolType ? TOOL_TYPE_ICON[toolType] : null;
   const activeJob = job.status === "pending" || job.status === "running";
 
   const shortAlgo =
@@ -533,12 +529,7 @@ function JobCard({
         : jobDisplayName(job, t).split(" — ")[0];
   const subtitle = datasetJobSubtitle(job, t) ?? job.filename;
 
-  const dateStr = new Date(job.created_at * 1000).toLocaleString([], {
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const dateStr = formatDateTime(job.created_at * 1000, locale);
 
   return (
     <Link
@@ -560,14 +551,6 @@ function JobCard({
           >
             <ModeIcon className="h-3 w-3" />
           </span>
-          {ToolTypeIcon && (
-            <span
-              className="h-5 w-5 rounded grid place-items-center bg-muted/15 text-muted"
-              title={t("jobs.tool_type_title", { type: toolType ?? "" })}
-            >
-              <ToolTypeIcon className="h-3 w-3" />
-            </span>
-          )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-xs font-semibold text-fg truncate" title={shortAlgo}>
@@ -653,7 +636,7 @@ function JobCard({
 }
 
 function StatusBadge({ job }: { job: Job }) {
-  const t = useT();
+  const { t, locale } = useLocale();
   if (job.status === "completed")
     return (
       <span className="flex items-center gap-1 text-success-ink">
@@ -679,7 +662,7 @@ function StatusBadge({ job }: { job: Job }) {
     <span className="flex items-center gap-1 text-accent-ink">
       <Loader2 className="h-3 w-3 animate-spin" />
       {job.status === "running"
-        ? t("jobs.status_running", { pct: job.percentage })
+        ? t("jobs.status_running", { pct: formatPercent(job.percentage / 100, locale) })
         : t("jobs.status_pending")}
     </span>
   );

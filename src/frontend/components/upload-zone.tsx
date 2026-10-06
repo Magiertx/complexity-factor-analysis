@@ -4,6 +4,7 @@ import { Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
+import { LOG_ACCEPT } from "./file-drop";
 
 // Compact drop area in the FileDrop look (circular icon, primary
 // label + muted hint, accent highlight while dragging). Callers keep their own
@@ -19,7 +20,7 @@ interface Props {
   hint?: string;
 }
 
-export function UploadZone({ onFiles, accept = ".xes,.json", multiple = false, label, hint }: Props) {
+export function UploadZone({ onFiles, accept = LOG_ACCEPT, multiple = false, label, hint }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState(false);
   const t = useT();

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { ZoomIn, ZoomOut, Download, X, RotateCcw, Maximize2, SunMoon } from "lucide-react";
 import type { Artifact } from "@/lib/api";
-import { useT } from "@/lib/i18n";
+import { localizedAlgoText, useT } from "@/lib/i18n";
 
 type I = Extract<Artifact, { kind: "image" }>;
 
@@ -119,6 +119,8 @@ export function ImageView({ artifact, runId, fixedHeight = false }: { artifact: 
   }[bgType];
 
   const imgSrc = `data:${artifact.mime};base64,${artifact.data_base64}`;
+  const label = localizedAlgoText(artifact.label, t);
+  const caption = artifact.caption ? localizedAlgoText(artifact.caption, t) : null;
 
   return (
     <>
@@ -130,7 +132,7 @@ export function ImageView({ artifact, runId, fixedHeight = false }: { artifact: 
             handleDownload();
           }}
           title={t("artifacts.image.download_title")}
-          className="absolute top-2.5 right-2.5 z-20 h-8 w-8 rounded-full bg-black/75 hover:bg-black/90 text-white flex items-center justify-center backdrop-blur-sm shadow-lg border border-white/15 opacity-0 group-hover:opacity-100 transition duration-200"
+          className="absolute top-2.5 right-2.5 z-20 h-8 w-8 rounded-full bg-black/75 hover:bg-black/90 text-white flex items-center justify-center backdrop-blur-sm shadow-lg ring-1 ring-white/15 opacity-0 group-hover:opacity-100 transition duration-200"
         >
           <Download className="h-4 w-4" />
         </button>
@@ -148,23 +150,23 @@ export function ImageView({ artifact, runId, fixedHeight = false }: { artifact: 
           <div className="w-full h-64 md:h-80 flex items-center justify-center bg-white p-4">
             <img
               src={imgSrc}
-              alt={artifact.label}
+              alt={label}
               className="max-w-full max-h-full object-contain transition group-hover:scale-[1.01]"
             />
           </div>
         ) : (
           <img
             src={imgSrc}
-            alt={artifact.label}
+            alt={label}
             className="w-full h-auto block transition group-hover:scale-[1.01]"
           />
         )}
         {(artifact.caption || runId) && (
           <figcaption className="px-3 py-2 text-xs text-muted border-t border-border bg-surface relative z-20 flex items-center justify-between gap-3 flex-wrap">
-            <span>{artifact.caption || t("artifacts.image.process_model_fallback")}</span>
+            <span>{caption || t("artifacts.image.process_model_fallback")}</span>
             {runId && (
-              <span className="text-[10px] font-mono uppercase bg-accent/15 text-accent-ink px-2 py-0.5 rounded-full shrink-0">
-                Run: {runId.slice(0, 8)}
+              <span className="text-[10px] font-mono bg-accent/15 text-accent-ink px-2 py-0.5 rounded-full shrink-0">
+                {t("artifacts.image.run_label", { id: runId.slice(0, 8) })}
               </span>
             )}
           </figcaption>
@@ -177,7 +179,7 @@ export function ImageView({ artifact, runId, fixedHeight = false }: { artifact: 
           <div className="absolute inset-0" onClick={handleClose} />
 
           {/* Floating Actions Toolbar */}
-          <div className="absolute top-6 left-1/2 transform -translate-x-1/2 flex items-center gap-1.5 bg-zinc-900/90 border border-zinc-800 backdrop-blur-md rounded-full px-4 py-2 z-50 shadow-2xl">
+          <div className="absolute top-6 left-1/2 transform -translate-x-1/2 flex items-center gap-1.5 bg-zinc-900/90 ring-1 ring-white/10 backdrop-blur-md rounded-full px-4 py-2 z-50 shadow-2xl">
             <button
               onClick={zoomOut}
               disabled={scale === 1}
@@ -253,7 +255,7 @@ export function ImageView({ artifact, runId, fixedHeight = false }: { artifact: 
             >
               <img
                 src={imgSrc}
-                alt={artifact.label}
+                alt={label}
                 draggable={false}
                 style={getBgStyle()}
                 className="max-w-[95vw] max-h-[85vh] object-contain rounded-md shadow-2xl"
@@ -262,14 +264,14 @@ export function ImageView({ artifact, runId, fixedHeight = false }: { artifact: 
           </div>
 
           {/* Bottom Info Bar */}
-          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-full border border-zinc-800/80 text-xs text-zinc-300 z-10 shadow-2xl font-medium flex items-center gap-2">
-            <span>{artifact.label || t("artifacts.image.process_model_fallback")}</span>
+          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-full ring-1 ring-white/10 text-xs text-zinc-300 z-10 shadow-2xl font-medium flex items-center gap-2">
+            <span>{label || t("artifacts.image.process_model_fallback")}</span>
             {runId && <span className="text-zinc-500">·</span>}
             {runId && <span className="text-zinc-400">{t("artifacts.image.run_label", { id: runId.slice(0, 8) })}</span>}
-            {artifact.caption && <span className="text-zinc-500">·</span>}
-            {artifact.caption && <span className="text-zinc-400">{artifact.caption}</span>}
+            {caption && <span className="text-zinc-500">·</span>}
+            {caption && <span className="text-zinc-400">{caption}</span>}
             <span className="text-zinc-500">·</span>
-            <span className="text-accent-ink font-mono text-[10px] uppercase bg-accent/20 px-2 py-0.5 rounded-full">{bgLabel}</span>
+            <span className="text-accent-ink text-[11px] bg-accent/20 px-2 py-0.5 rounded-full">{bgLabel}</span>
           </div>
         </div>
       )}

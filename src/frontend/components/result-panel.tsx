@@ -5,7 +5,7 @@ import type { AnalysisResult } from "@/lib/api";
 import { API_BASE } from "@/lib/api";
 import { Artifacts } from "./artifacts/artifacts";
 import { Button } from "./ui/button";
-import { useT } from "@/lib/i18n";
+import { localizedAlgoText, useT } from "@/lib/i18n";
 
 interface Props {
   result: AnalysisResult;
@@ -21,7 +21,7 @@ export function ResultPanel({ result, runId }: Props) {
           <BarChart3 className="h-4 w-4 text-muted shrink-0" />
           <h2 className="text-base font-semibold tracking-tight">{t("result_panel.heading")}</h2>
           {result.summary && (
-            <span className="text-xs text-muted truncate">· {result.summary}</span>
+            <span className="text-xs text-muted truncate">· {localizedAlgoText(result.summary, t)}</span>
           )}
         </div>
         {runId && (

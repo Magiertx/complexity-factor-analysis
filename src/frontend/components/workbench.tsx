@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useT, useLocale, localizedAlgoDescription } from "@/lib/i18n";
+import {
+  useT,
+  useLocale,
+  localizedAlgoDescription,
+  localizedAlgoName,
+  localizedAlgoText,
+  localizedSampleLog,
+  localizeCatalog,
+} from "@/lib/i18n";
 import {
   AlertCircle,
   Play,
@@ -16,7 +24,6 @@ import {
   Check,
   Download,
   History,
-  Clock,
   LayoutGrid,
   List,
   X,
@@ -33,6 +40,7 @@ import {
   fetchJobs,
   fetchJobDetail,
   ValidationError,
+  HttpError,
   fetchSampleLogs,
   SampleLog,
   fetchRecentLogs,
@@ -40,10 +48,12 @@ import {
   fetchLogStats,
   LogStatsResponse,
   API_BASE,
+  fetchFactorCatalog,
+  FactorCatalog,
 } from "@/lib/api";
 import { AlgorithmList } from "./algorithm-list";
-import { FileDrop } from "./file-drop";
-import { ParameterForm } from "./parameter-form";
+import { FileDrop, LOG_EXTENSIONS } from "./file-drop";
+import { ParameterForm, type OptionInfo } from "./parameter-form";
 import { SingleRunTour } from "./single-run-tour";
 import { AlgorithmExplainerModal } from "./algorithm-explainer-modal";
 import { PresetBar } from "./preset-bar";
@@ -53,11 +63,13 @@ import { ResultPanel } from "./result-panel";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Segmented } from "./ui/segmented";
+import { ChoiceMark, choiceTile } from "./ui/choice";
 import { cn } from "@/lib/utils";
+import { formatDateTime, formatKilobytes, formatPercent } from "@/lib/i18n/local-format";
 
 export function Workbench() {
   const t = useT();
-  const { locale } = useLocale();
+  const { locale, tMaybe } = useLocale();
   const [algorithms, setAlgorithms] = useState<AlgorithmManifest[]>([]);
   const [categories, setCategories] = useState<{ id: string; label: string }[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -77,6 +89,27 @@ export function Workbench() {
   const [copiedCitation, setCopiedCitation] = useState(false);
   const [recentLayout, setRecentLayout] = useState<"grid" | "list">("grid");
   const [sampleLayout, setSampleLayout] = useState<"grid" | "list">("grid");
+
+  // The catalog of the model tab lists the same miners and measures ComFy offers here; its
+  // definitions and slow marks describe the options of the form.
+  const [modelCatalog, setModelCatalog] = useState<FactorCatalog | null>(null);
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetchFactorCatalog("model", ctrl.signal)
+      .then(setModelCatalog)
+      .catch(() => {
+        // Only labels the options; the form works without it.
+      });
+    return () => ctrl.abort();
+  }, []);
+  const optionInfo = useMemo<OptionInfo | undefined>(() => {
+    if (!modelCatalog) return undefined;
+    const catalog = localizeCatalog(modelCatalog, locale);
+    return Object.fromEntries([
+      ...catalog.measures.map((m) => [m.key, { description: m.description, slow: m.slow }] as const),
+      ...(catalog.miners ?? []).map((m) => [m.key, { slow: m.slow }] as const),
+    ]);
+  }, [modelCatalog, locale]);
 
   // Cheap descriptive stats of the selected log for the overview card.
   // Fetched whenever the user picks a new log source.
@@ -187,19 +220,7 @@ export function Workbench() {
         if (cancelled) return;
         setAlgorithms(res.algorithms);
         setCategories(res.categories);
-        if (res.algorithms.length > 0) {
-          // Honor the user-configured default from /settings, falling back to
-          // the first algorithm in the list if the saved id is no longer valid.
-          const saved =
-            typeof window !== "undefined"
-              ? localStorage.getItem("app.default-algorithm")
-              : null;
-          const preselect =
-            saved && res.algorithms.some((a) => a.id === saved)
-              ? saved
-              : res.algorithms[0].id;
-          setSelectedId(preselect);
-        }
+        if (res.algorithms.length > 0) setSelectedId(res.algorithms[0].id);
       })
       .catch((e: Error) => !cancelled && setLoadError(e.message));
 
@@ -249,8 +270,10 @@ export function Workbench() {
     let eventSource: EventSource | null = null;
     let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-    const loadJobsList = async () => {
-      if (document.hidden) return;
+    // Skipped while the tab is hidden, except for the first load: a deep link opened in a
+    // background tab would otherwise show nothing until it is looked at.
+    const loadJobsList = async (always = false) => {
+      if (document.hidden && !always) return;
       try {
         const list = await fetchJobs();
         if (active) setJobs(list);
@@ -262,7 +285,7 @@ export function Workbench() {
       }
     };
 
-    const startStreaming = () => {
+    const startStreaming = (first = false) => {
       if (eventSource) {
         eventSource.close();
       }
@@ -271,7 +294,7 @@ export function Workbench() {
       }
 
       // Initial fetch to load historical state
-      loadJobsList();
+      void loadJobsList(first);
 
       // Same-origin SSE: goes through Next.js's /api/* rewrite (and any
       // reverse proxy in front of it; the backend sends
@@ -286,7 +309,7 @@ export function Workbench() {
         eventSource.onmessage = (event) => {
           // Trigger fetch whenever backend announces an update
           if (event.data === "update" || event.data === "initial") {
-            loadJobsList();
+            void loadJobsList();
           }
         };
         eventSource.onerror = () => {
@@ -300,7 +323,7 @@ export function Workbench() {
       // 5s polling as a fallback in case SSE events get buffered upstream
       // (Next.js standalone rewrites do this) or the EventSource silently
       // dies. `/jobs` is a cheap session-scoped query.
-      pollTimer = setInterval(loadJobsList, 5000);
+      pollTimer = setInterval(() => void loadJobsList(), 5000);
     };
 
     const stopStreaming = () => {
@@ -315,7 +338,7 @@ export function Workbench() {
     };
 
     // Initialize stream
-    startStreaming();
+    startStreaming(true);
 
     // Pause/Resume based on document visibility
     const handleVisibility = () => {
@@ -502,6 +525,10 @@ export function Workbench() {
     const errors: Record<string, string> = {};
     for (const p of selected.parameters_schema) {
       const val = params[p.name];
+      // ComFy fails without a miner or a measure; say so before the run starts.
+      if (p.type === "multi_enum" && (!Array.isArray(val) || val.length === 0)) {
+        errors[p.name] = t("workbench.errors.choose_one");
+      }
       if (p.type === "int" || p.type === "float") {
         const num = Number(val);
         if (val === undefined || val === null || String(val).trim() === "" || isNaN(num)) {
@@ -557,11 +584,16 @@ export function Workbench() {
         setValidationErrors(e.errors);
         setError(t("workbench.errors.fix_validation"));
       } else {
-        setError(e instanceof Error ? e.message : t("workbench.errors.unknown_submission"));
+        // Refusals with a code, such as a full run quota, in the language of the UI.
+        const coded = e instanceof HttpError && e.code ? tMaybe(`errors.${e.code}`, e.params) : undefined;
+        setError(coded ?? (e instanceof Error ? e.message : t("workbench.errors.unknown_submission")));
       }
       setProgress(null);
     }
   }
+
+  // A log is chosen in the source tab that is shown.
+  const hasLog = activeSourceTab === "sample" ? !!selectedSampleId : !!file || !!selectedRecentId;
 
   const isJobRunning = selectedJobDetail
     ? selectedJobDetail.status === "running" || selectedJobDetail.status === "pending"
@@ -610,12 +642,12 @@ export function Workbench() {
           "space-y-6 shrink-0 transition-all duration-300 ease-in-out " +
           (sidebarCollapsed ? "lg:w-0 lg:opacity-0 lg:overflow-hidden lg:pointer-events-none lg:mr-0 " : "lg:w-[280px] lg:opacity-100 ") +
           // Mobile Drawer absolute overlay classes
-          "fixed inset-y-0 left-0 z-50 w-[290px] bg-surface p-5 shadow-2xl border-r border-border transition-transform duration-300 overflow-y-auto lg:overflow-visible lg:shadow-none lg:p-0 lg:border-none lg:bg-transparent lg:static lg:transform-none " +
+          "fixed inset-y-0 left-0 z-50 w-[290px] bg-surface p-5 shadow-2xl ring-1 ring-border/70 transition-transform duration-300 overflow-y-auto lg:overflow-visible lg:shadow-none lg:p-0 lg:ring-0 lg:bg-transparent lg:static lg:transform-none " +
           (sidebarOpenMobile ? "translate-x-0" : "-translate-x-full lg:translate-x-0")
         }
       >
         <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-muted px-1">
+          <div className="flex items-center justify-between text-xs font-medium text-muted px-1">
             <span>{t("workbench.sidebar.algorithm_label")}</span>
             <div className="flex items-center gap-1">
               <button
@@ -623,7 +655,7 @@ export function Workbench() {
                 onClick={() => setPageTourOpen(true)}
                 aria-label={t("workbench.sidebar.tour_aria")}
                 title={t("workbench.sidebar.tour_title")}
-                className="h-6 px-1.5 inline-flex items-center gap-1 rounded text-[10px] normal-case font-normal text-muted hover:text-fg hover:bg-tile transition appearance-none"
+                className="h-6 px-1.5 inline-flex items-center gap-1 rounded text-[11px] font-normal text-muted hover:text-fg hover:bg-tile transition appearance-none"
               >
                 <HelpCircle className="h-3.5 w-3.5" />
                 <span>{t("workbench.sidebar.tour_button")}</span>
@@ -694,7 +726,7 @@ export function Workbench() {
             {selectedJobDetail && (
               <span
                 className={
-                  "text-[10px] font-mono px-2 py-0.5 rounded-full uppercase shrink-0 " +
+                  "text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 " +
                   (selectedJobDetail.status === "completed"
                     ? "bg-success/15 text-success-ink "
                     : "") +
@@ -709,7 +741,10 @@ export function Workbench() {
                     : "")
                 }
               >
-                {t("workbench.job_badge", { id: selectedJobDetail.id.slice(0, 8), status: selectedJobDetail.status })}
+                {t("workbench.job_badge", {
+                  id: selectedJobDetail.id.slice(0, 8),
+                  status: t(`run_history.status_label_${selectedJobDetail.status}`),
+                })}
               </span>
             )}
           </div>
@@ -720,7 +755,7 @@ export function Workbench() {
             <CardHeader>
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1 flex-1">
-                  <CardTitle className="text-lg lg:text-xl font-bold">{selected.name}</CardTitle>
+                  <CardTitle className="text-lg lg:text-xl font-bold">{localizedAlgoName(selected, locale)}</CardTitle>
                   <CardDescription className="text-sm text-muted mt-1">{localizedAlgoDescription(selected, locale)}</CardDescription>
                 </div>
                 <div className="flex flex-col items-end gap-1.5 shrink-0 text-right">
@@ -749,7 +784,7 @@ export function Workbench() {
               {/* Formatted Citation Helper */}
               {(selected.formatted_citation || selected.citation) && (
                 <div className="mt-4 bg-tile rounded-lg p-3.5 relative group">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-muted mb-1.5 flex items-center justify-between gap-2">
+                  <div className="text-xs font-medium text-muted mb-1.5 flex items-center justify-between gap-x-3 gap-y-1 flex-wrap">
                     <span>{t("workbench.algo_card.academic_reference")}</span>
                     {selected.citation && (
                       <div className="flex items-center gap-3">
@@ -760,7 +795,7 @@ export function Workbench() {
                             setCopiedCitation(true);
                             setTimeout(() => setCopiedCitation(false), 2000);
                           }}
-                          className="flex items-center gap-1 text-[10px] text-muted hover:text-accent-ink font-semibold transition"
+                          className="flex items-center gap-1 text-[11px] text-muted hover:text-accent-ink font-medium transition whitespace-nowrap"
                         >
                           {copiedCitation ? (
                             <>
@@ -787,7 +822,7 @@ export function Workbench() {
                             document.body.removeChild(a);
                             URL.revokeObjectURL(url);
                           }}
-                          className="flex items-center gap-1 text-[10px] text-muted hover:text-accent-ink font-semibold transition"
+                          className="flex items-center gap-1 text-[11px] text-muted hover:text-accent-ink font-medium transition whitespace-nowrap"
                           title={t("workbench.algo_card.download_bib_title")}
                         >
                           <Download className="h-3 w-3" />
@@ -855,7 +890,7 @@ export function Workbench() {
                             </div>
                             <div className="min-w-0">
                               <div className="text-sm font-medium truncate">{uploadDisplayMeta.name}</div>
-                              <div className="text-xs text-muted">{(uploadDisplayMeta.size / 1024).toFixed(1)} KB</div>
+                              <div className="text-xs text-muted">{formatKilobytes(uploadDisplayMeta.size, locale)}</div>
                             </div>
                           </div>
                           <button
@@ -884,6 +919,12 @@ export function Workbench() {
                               setFile(null);
                               return;
                             }
+                            // A dropped file skips the filter of the file picker.
+                            if (!LOG_EXTENSIONS.some((ext) => f.name.toLowerCase().endsWith(ext))) {
+                              setError(t("workbench.errors.wrong_type", { formats: LOG_EXTENSIONS.join(", ") }));
+                              setFile(null);
+                              return;
+                            }
                             setError(null);
                             // Match against existing recent logs: if a recent has the same name and
                             // size, treat the upload as picking that recent (instead of uploading a
@@ -905,7 +946,7 @@ export function Workbench() {
                       {recentLogs.length > 0 && (
                         <div className="space-y-2 pt-1">
                           <div className="flex items-center justify-between px-1">
-                            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted/80 flex items-center gap-1.5">
+                            <div className="text-xs font-medium text-muted flex items-center gap-1.5">
                               <History className="h-3.5 w-3.5 text-muted/70" />
                               <span>{t("workbench.recent.label")}</span>
                             </div>
@@ -919,78 +960,67 @@ export function Workbench() {
                               ]}
                             />
                           </div>
-                          <div className="max-h-[148px] overflow-y-auto p-1 no-scrollbar">
-                            {recentLayout === "grid" ? (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
-                                {recentLogs.map((log) => {
-                                  const isSelected = selectedRecentId === log.id;
-                                  return (
-                                    <button
-                                      key={log.id}
-                                      type="button"
-                                      onClick={() => {
+                          {/* A choice of one, with the radio tiles of the data step. */}
+                          <div
+                            role="radiogroup"
+                            aria-label={t("workbench.recent.label")}
+                            className="max-h-[156px] overflow-y-auto p-1 no-scrollbar"
+                          >
+                            <div
+                              className={cn(
+                                "gap-2",
+                                recentLayout === "grid"
+                                  ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                                  : "flex flex-col gap-1.5",
+                              )}
+                            >
+                              {recentLogs.map((log) => {
+                                const isSelected = selectedRecentId === log.id;
+                                return (
+                                  <label
+                                    key={log.id}
+                                    className={cn(
+                                      "flex items-start gap-2.5 rounded-md px-3 py-2 text-xs min-w-0",
+                                      choiceTile(isSelected),
+                                    )}
+                                  >
+                                    <input
+                                      type="radio"
+                                      name="recent-log"
+                                      className="sr-only"
+                                      checked={isSelected}
+                                      onChange={() => {
                                         setSelectedRecentId(log.id);
                                         setError(null);
                                         setFile(null); // Clear file when recent log is chosen
                                       }}
+                                    />
+                                    <ChoiceMark type="radio" checked={isSelected} className="mt-px" />
+                                    <span
                                       className={cn(
-                                        "text-left px-3 py-2.5 rounded-md text-[11px] transition-all duration-200 flex flex-col justify-between min-h-[62px] relative group",
-                                        isSelected
-                                          ? "bg-accent/[0.45]"
-                                          : "bg-tile hover:bg-accent/[0.14]"
+                                        "min-w-0 flex-1",
+                                        recentLayout === "list" && "flex items-center justify-between gap-4",
                                       )}
                                     >
-                                      <div className="flex items-start justify-between gap-2 w-full">
-                                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                          <Clock className="h-3.5 w-3.5 text-muted/40 group-hover:text-muted/70 transition shrink-0" />
-                                          <span className="font-medium truncate text-fg" title={log.name}>{log.name}</span>
-                                        </div>
-                                      </div>
-                                      <div className="flex items-center justify-between text-[9px] text-muted/50 mt-1 w-full gap-2">
-                                        <span className="shrink-0">{(log.size_bytes / 1024).toFixed(1)} KB</span>
-                                        <span className="truncate">
-                                          {new Date(log.mtime * 1000).toLocaleDateString([], { month: 'short', day: 'numeric' })}, {new Date(log.mtime * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      <span className="block font-medium truncate" title={log.name}>
+                                        {log.name}
+                                      </span>
+                                      <span
+                                        className={cn(
+                                          "flex items-center justify-between gap-3 text-[11px] text-muted",
+                                          recentLayout === "grid" ? "mt-0.5" : "shrink-0",
+                                        )}
+                                      >
+                                        <span className="shrink-0">{formatKilobytes(log.size_bytes, locale)}</span>
+                                        <span className={cn("truncate", recentLayout === "list" && "hidden sm:inline")}>
+                                          {formatDateTime(log.mtime * 1000, locale)}
                                         </span>
-                                      </div>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <div className="flex flex-col gap-1.5">
-                                {recentLogs.map((log) => {
-                                  const isSelected = selectedRecentId === log.id;
-                                  return (
-                                    <button
-                                      key={log.id}
-                                      type="button"
-                                      onClick={() => {
-                                        setSelectedRecentId(log.id);
-                                        setError(null);
-                                        setFile(null); // Clear file when recent log is chosen
-                                      }}
-                                      className={cn(
-                                        "text-left px-3 py-2 rounded-md text-[11px] transition-all duration-200 flex items-center justify-between relative group w-full",
-                                        isSelected
-                                          ? "bg-accent/[0.45]"
-                                          : "bg-tile hover:bg-accent/[0.14]"
-                                      )}
-                                    >
-                                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                                        <Clock className="h-3.5 w-3.5 text-muted/40 group-hover:text-muted/70 transition shrink-0" />
-                                        <span className="font-medium truncate text-fg" title={log.name}>{log.name}</span>
-                                      </div>
-                                      <div className="flex items-center gap-4 text-[9px] text-muted/50 shrink-0 ml-4">
-                                        <span>{(log.size_bytes / 1024).toFixed(1)} KB</span>
-                                        <span className="hidden sm:inline">
-                                          {new Date(log.mtime * 1000).toLocaleDateString([], { month: 'short', day: 'numeric' })}, {new Date(log.mtime * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
-                                      </div>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            )}
+                                      </span>
+                                    </span>
+                                  </label>
+                                );
+                              })}
+                            </div>
                           </div>
                         </div>
                       )}
@@ -998,91 +1028,68 @@ export function Workbench() {
                   ) : (
                     <div className="space-y-4 w-full">
                       <div className="flex items-center justify-between px-1">
-                        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted/80 flex items-center gap-1.5">
+                        <div className="text-xs font-medium text-muted flex items-center gap-1.5">
                           <span>{t("workbench.samples.label")}</span>
                         </div>
-                        <Segmented
-                          size="sm"
-                          value={sampleLayout}
-                          onChange={setSampleLayout}
-                          options={[
-                            { value: "grid", label: <><LayoutGrid className="h-3 w-3" /><span>{t("workbench.layout.grid")}</span></>, title: t("workbench.layout.grid_title") },
-                            { value: "list", label: <><List className="h-3 w-3" /><span>{t("workbench.layout.list")}</span></>, title: t("workbench.layout.list_title") },
-                          ]}
-                        />
+                        {sampleLogs.length > 1 && (
+                          <Segmented
+                            size="sm"
+                            value={sampleLayout}
+                            onChange={setSampleLayout}
+                            options={[
+                              { value: "grid", label: <><LayoutGrid className="h-3 w-3" /><span>{t("workbench.layout.grid")}</span></>, title: t("workbench.layout.grid_title") },
+                              { value: "list", label: <><List className="h-3 w-3" /><span>{t("workbench.layout.list")}</span></>, title: t("workbench.layout.list_title") },
+                            ]}
+                          />
+                        )}
                       </div>
 
-                      {sampleLayout === "grid" ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
-                          {sampleLogs.map((log) => {
-                            const isSelected = selectedSampleId === log.id;
-                            return (
-                              <button
-                                key={log.id}
-                                type="button"
-                                onClick={() => {
+                      <div
+                        role="radiogroup"
+                        aria-label={t("workbench.samples.label")}
+                        className={cn(
+                          "w-full gap-2",
+                          sampleLayout === "grid" ? "grid grid-cols-1 md:grid-cols-2" : "flex flex-col",
+                        )}
+                      >
+                        {sampleLogs.map((sample) => {
+                          const log = localizedSampleLog(sample, locale);
+                          const isSelected = selectedSampleId === log.id;
+                          return (
+                            <label
+                              key={log.id}
+                              className={cn("flex items-start gap-2.5 rounded-md p-3 min-w-0", choiceTile(isSelected))}
+                            >
+                              <input
+                                type="radio"
+                                name="sample-log"
+                                className="sr-only"
+                                checked={isSelected}
+                                onChange={() => {
                                   setSelectedSampleId(log.id);
                                   setError(null);
                                 }}
-                                className={cn(
-                                  "text-left p-3 rounded-lg transition-all duration-200 flex flex-col justify-between h-28 relative group",
-                                  isSelected
-                                    ? "bg-accent/[0.45]"
-                                    : "bg-tile hover:bg-accent/[0.14]"
-                                )}
-                              >
-                                <div>
-                                  <div className="font-semibold text-xs">
-                                    <span className="truncate">{log.name}</span>
-                                  </div>
-                                  <p className="text-[11px] text-muted/85 line-clamp-2 mt-1 leading-normal">
-                                    {log.description}
-                                  </p>
-                                </div>
-                                <div className="text-[9px] font-mono text-muted/60 mt-1 flex items-center justify-between w-full">
-                                  <span className="truncate max-w-[70%]">{log.filename}</span>
-                                  <span>{(log.size_bytes / 1024).toFixed(1)} KB</span>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-2 w-full">
-                          {sampleLogs.map((log) => {
-                            const isSelected = selectedSampleId === log.id;
-                            return (
-                              <button
-                                key={log.id}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedSampleId(log.id);
-                                  setError(null);
-                                }}
-                                className={cn(
-                                  "text-left p-3 rounded-lg transition-all duration-200 flex items-center justify-between relative group w-full gap-4",
-                                  isSelected
-                                    ? "bg-accent/[0.45]"
-                                    : "bg-tile hover:bg-accent/[0.14]"
-                                )}
-                              >
-                                <div className="min-w-0 flex-1">
-                                  <div className="font-semibold text-xs text-fg truncate">
-                                    {log.name}
-                                  </div>
-                                  <p className="text-[11px] text-muted/85 line-clamp-1 mt-0.5 leading-normal">
-                                    {log.description}
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-4 text-[9px] text-muted/50 shrink-0 ml-4">
-                                  <span className="font-mono">{log.filename}</span>
-                                  <span>{(log.size_bytes / 1024).toFixed(1)} KB</span>
-                                </div>
-                              </button>
-                            );
-                          })}
-                    </div>
-                  )}
+                              />
+                              <ChoiceMark type="radio" checked={isSelected} className="mt-px" />
+                              <span className="min-w-0 flex-1">
+                                <span className="block text-sm font-medium truncate">{log.name}</span>
+                                <span
+                                  className={cn(
+                                    "block text-[11px] text-muted mt-0.5 leading-normal",
+                                    sampleLayout === "grid" ? "line-clamp-2" : "line-clamp-1",
+                                  )}
+                                >
+                                  {log.description}
+                                </span>
+                                <span className="mt-1 flex items-center justify-between gap-3 text-[11px] text-muted">
+                                  <span className="font-mono truncate">{log.filename}</span>
+                                  <span className="shrink-0">{formatKilobytes(log.size_bytes, locale)}</span>
+                                </span>
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
                 </div>
               )}
             </div>
@@ -1134,10 +1141,10 @@ export function Workbench() {
                     const chosen = secondaryFiles[sf.name];
                     return (
                       <div key={sf.name} className="space-y-1.5">
-                        <div className="text-[10px] font-semibold uppercase tracking-wider text-muted/80">
+                        <div className="text-xs font-medium text-muted">
                           {sf.label}
                           {sf.optional && (
-                            <span className="ml-1.5 normal-case font-normal tracking-normal text-muted/60">
+                            <span className="ml-1.5 font-normal text-muted">
                               · {t("workbench.secondary.optional")}
                             </span>
                           )}
@@ -1201,6 +1208,7 @@ export function Workbench() {
               <ParameterForm
                 schema={selected.parameters_schema}
                 algorithmId={selected.id}
+                optionInfo={optionInfo}
                 values={params}
                 disabled={!!selectedJobId}
                 errors={validationErrors}
@@ -1224,10 +1232,17 @@ export function Workbench() {
               {progress && (
                 <div className="w-full space-y-2 mb-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-muted truncate max-w-[80%]">{progress.status}</span>
-                    <span className="font-bold text-accent-ink shrink-0">{progress.percentage}%</span>
+                    <span className="font-medium text-muted truncate max-w-[80%]">{localizedAlgoText(progress.status, t)}</span>
+                    <span className="font-bold text-accent-ink shrink-0">{formatPercent(progress.percentage / 100, locale)}</span>
                   </div>
-                  <div className="w-full bg-border rounded-full h-2 overflow-hidden">
+                  <div
+                    role="progressbar"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.round(progress.percentage)}
+                    aria-label={localizedAlgoText(progress.status, t)}
+                    className="w-full bg-border rounded-full h-2 overflow-hidden"
+                  >
                     <div
                       className="bg-accent h-full rounded-full transition-all duration-300 ease-out"
                       style={{ width: `${progress.percentage}%` }}
@@ -1238,10 +1253,12 @@ export function Workbench() {
               <div className="flex items-center justify-between gap-3 w-full">
                 <div className="text-xs text-muted">
                   {selectedJobDetail
-                    ? t("workbench.run_bar.job_status", { status: selectedJobDetail.status })
-                    : file
-                    ? t("workbench.run_bar.ready")
-                    : t("workbench.run_bar.upload_hint")}
+                    ? t("workbench.run_bar.job_status", { status: t(`run_history.status_label_${selectedJobDetail.status}`) })
+                    : hasLog
+                      ? t("workbench.run_bar.ready")
+                      : activeSourceTab === "sample"
+                        ? t("workbench.run_bar.sample_hint")
+                        : t("workbench.run_bar.upload_hint")}
                 </div>
                 <div className="flex items-center gap-2">
                   {selectedJobDetail ? (
@@ -1273,11 +1290,7 @@ export function Workbench() {
                     <Button
                       onClick={run}
                       title={t("workbench.run_bar.run_title")}
-                      disabled={
-                        activeSourceTab === "sample"
-                          ? !selectedSampleId
-                          : (!file && !selectedRecentId)
-                      }
+                      disabled={!hasLog}
                       size="md"
                       data-tour="single-run"
                     >
@@ -1293,7 +1306,7 @@ export function Workbench() {
         )}
 
         {error && (
-          <div className="rounded-lg bg-danger/10 px-4 py-3 flex items-start gap-3">
+          <div role="alert" className="rounded-lg bg-danger/10 px-4 py-3 flex items-start gap-3">
             <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
             <div className="text-sm">{error}</div>
           </div>

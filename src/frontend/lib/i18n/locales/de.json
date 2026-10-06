@@ -17,16 +17,19 @@
     "try_again": "Erneut versuchen"
   },
   "header": {
-    "tagline": "Process Mining · Faktorenanalyse von Komplexität",
+    "tagline": "Komplexitätsmaße von Prozessmodellen und Event-Logs",
     "settings_label": "Einstellungen",
     "settings_title": "Einstellungen",
     "api_title": "{app} programmatisch nutzen",
     "locale_label": "Sprache",
     "switch_to_german": "Auf Deutsch umschalten",
-    "switch_to_english": "Auf Englisch umschalten"
+    "switch_to_english": "Auf Englisch umschalten",
+    "dark_mode": "Dunkelmodus",
+    "switch_to_dark": "Zum dunklen Modus wechseln",
+    "switch_to_light": "Zum hellen Modus wechseln"
   },
   "footer": {
-    "credit": "Entwickelt für Process-Mining-Forschung an der Universität Augsburg."
+    "credit": "Entwickelt für die Process-Mining-Forschung an der Universität Augsburg."
   },
   "algorithm_list": {
     "what_is_aria": "Was ist {name}?",
@@ -35,39 +38,42 @@
     "favorite_add_title": "Als Favorit anheften",
     "favorite_remove_title": "Aus Favoriten entfernen",
     "favorite_add_aria": "{name} zu Favoriten hinzufügen",
-    "favorite_remove_aria": "{name} aus Favoriten entfernen"
+    "favorite_remove_aria": "{name} aus Favoriten entfernen",
+    "category": {
+      "complexity": "Komplexitätsanalyse"
+    }
   },
   "file_drop": {
-    "drop_label": "Event Log hier ablegen",
-    "drop_hint": "oder klicken zum Auswählen · .xes, .json",
+    "drop_label": "Event-Log hier ablegen",
+    "drop_hint": "oder klicken zum Auswählen · .xes, .xes.gz, .xml, .json",
     "remove_aria": "Datei entfernen"
   },
   "mode_bar": {
     "aria_label": "Analyse",
-    "jobs_label": "Jobs",
-    "jobs_desc": "Letzte Jobs",
-    "jobs_title": "Job-Archiv anzeigen",
+    "jobs_label": "Letzte Runs",
+    "jobs_desc": "Fortschritt und Status",
+    "jobs_title": "Letzte Runs anzeigen",
     "model_label": "Modellkomplexität",
     "model_desc": "Maße gefundener Prozessmodelle",
     "log_label": "Log-Komplexität",
     "log_desc": "Maße von Event-Logs",
     "runs_label": "Runs",
-    "runs_desc": "Alle Jobs dieser Sitzung"
+    "runs_desc": "Alle Runs dieser Sitzung"
   },
   "tours": {
     "single_run": {
-      "intro_title": "Single-Run-Tour",
-      "intro_content": "Im Single Run führst du genau einen Algorithmus auf genau einem Log aus — das einfachste Setup zum Reinkommen. Dieser Walkthrough zeigt die wichtigsten Stellen; ESC oder Skip beendet jederzeit.",
-      "algo_pick_title": "Algorithmus wählen",
-      "algo_pick_content": "Links findest du die verfügbaren Tools, gruppiert nach Kategorie. Klick auf einen Eintrag wählt ihn aus.",
-      "algo_help_title": "Algorithmus-Erklärung",
-      "algo_help_content": "Neben jedem Algorithmus sitzt ein ?-Symbol. Klick öffnet ein Fenster mit ausführlicher Erklärung — was er macht, wie er funktioniert, wann er sinnvoll ist.",
-      "logsource_title": "Event-Log auswählen",
-      "logsource_content": "Zwei Quellen für den Log: 'Datei hochladen' für eigene XES- oder JSON-Dateien (kürzlich hochgeladene stehen darunter), oder 'Sample verwenden' für den mitgelieferten Beispiel-Log.",
-      "params_title": "Parameter",
-      "params_content": "Jedes Tool hat eigene Parameter mit sinnvollen Defaults. Über die Preset-Leiste oben kannst du Konfigurationen speichern und wiederverwenden.",
+      "intro_title": "Einzelnes Log untersuchen",
+      "intro_content": "Hier führst du ComFy auf einem Event-Log aus: Es findet mit den gewählten Minern Petri-Netze und berechnet ihre Komplexitätsmaße. Die Tour zeigt die wichtigsten Stellen; Esc oder Überspringen beendet sie jederzeit.",
+      "algo_pick_title": "Der Algorithmus",
+      "algo_pick_content": "Links steht der Algorithmus, den diese Seite ausführt: ComFy, das die Komplexität gefundener Petri-Netze misst.",
+      "algo_help_title": "Was ComFy macht",
+      "algo_help_content": "Das ? daneben öffnet eine ausführliche Erklärung: was ComFy macht, wie es funktioniert und wann es nützt.",
+      "logsource_title": "Event-Log wählen",
+      "logsource_content": "Zwei Quellen: „Datei hochladen“ für eine eigene XES- oder JSON-Datei (zuletzt hochgeladene stehen darunter) oder „Beispiel verwenden“ für das mitgelieferte Beispiel-Log.",
+      "params_title": "Miner und Maße",
+      "params_content": "Wähle die Miner, die laufen sollen, und die Maße, die berechnet werden. Über die Preset-Leiste darüber speicherst du eine Auswahl für später.",
       "run_title": "Run starten",
-      "run_content": "Wenn Algorithmus + Log + Parameter passen, läuft der Run via Ctrl/Cmd+Enter oder Klick. Das Ergebnis erscheint inline mit Stats, Tabellen, Plots und Downloads. Vergangene Runs landen im Jobs-Panel rechts."
+      "run_content": "Starte mit dem Knopf oder Strg+Enter (Cmd+Enter auf dem Mac). Das Ergebnis erscheint darunter mit den Maßen, den gefundenen Netzen und Downloads; der Run steht unter Letzte Runs."
     },
     "onboarding": {
       "step0_title": "Willkommen bei {app}",
@@ -82,12 +88,12 @@
       "step3_title": "Mehr, wenn du es brauchst",
       "step3_api": "API: alles per Python oder curl steuern; siehe die API-Seite im Header.",
       "progress_aria": "Fortschritt",
-      "step3_history": "Runs: alle Jobs deiner Sitzung, auch Datensatz-Berechnungen.",
+      "step3_history": "Runs: alle Runs deiner Sitzung, auch Datensatz-Berechnungen.",
       "step3_inspect": "Einzelnes Log untersuchen: ComFy auf einem Log ausführen und die gefundenen Modelle ansehen."
     },
     "factor": {
-      "intro": "Fünf Schritte von den Rohmaßen zu den Faktoren und eine optionale Interpretation. Jeder Schritt erklärt seine Zahlen; die ?-Knöpfe neben einer Überschrift sagen mehr. ESC oder Überspringen beendet die Tour jederzeit.",
-      "data": "Hier geht es los: Wähle einen mitgelieferten Datensatz, lade eine CSV hoch oder berechne die Maße aus eigenen Dateien. Große Berechnungen laufen als Hintergrundjobs.",
+      "intro": "Fünf Schritte von den Rohmaßen zu den Faktoren und eine optionale Interpretation. Jeder Schritt erklärt seine Zahlen; die ?-Knöpfe neben einer Überschrift sagen mehr. Esc oder Überspringen beendet die Tour jederzeit.",
+      "data": "Hier geht es los: Wähle einen mitgelieferten Datensatz, lade eine CSV hoch oder berechne die Maße aus eigenen Dateien. Große Berechnungen laufen im Hintergrund.",
       "dataset": "Prüfe die Größe der Matrix und was die Bereinigung entfernt hat. Die bereinigten Daten kannst du als CSV herunterladen.",
       "suitability": "Bartlett und KMO zeigen, ob eine Faktorenanalyse überhaupt sinnvoll ist. Schließe hier Maße mit niedrigem MSA aus, von Hand oder per Filter.",
       "factors": "Der Screeplot schlägt vor, wie viele Faktoren du behältst. Ändere die Anzahl oder die Rotation; alles darunter aktualisiert sich sofort.",
@@ -99,35 +105,25 @@
     "appearance": {
       "title": "Erscheinungsbild",
       "description": "Wie die Oberfläche auf diesem Gerät aussieht.",
-      "theme_label": "Theme",
+      "theme_label": "Farbschema",
       "theme_hint": "Folgt standardmäßig deinem Betriebssystem.",
       "theme_system": "System",
       "theme_light": "Hell",
       "theme_dark": "Dunkel",
       "language_label": "Sprache",
-      "language_hint": "Betrifft Erklärungstexte. Fachbegriffe bleiben auf Englisch."
+      "language_hint": "Ändert die Sprache der Oberfläche; die Namen von Maßen und Minern bleiben englisch."
     },
     "page_title": "Einstellungen",
     "page_subtitle": "Lokale Einstellungen — im Browser gespeichert, kein Konto erforderlich.",
-    "back_aria": "Zurück zur Modellkomplexität",
     "load_error": "Algorithmus-Liste konnte nicht geladen werden: {error}",
-    "toast_theme_updated": "Theme aktualisiert",
-    "toast_default_algo_saved": "Standard-Algorithmus gespeichert",
-    "toast_cleared_caches": "{n} Parameter-Cache geleert",
-    "toast_cleared_caches_plural": "{n} Parameter-Caches geleert",
+    "toast_theme_updated": "Farbschema geändert",
+    "toast_cleared_caches": "Parameter von {n} Algorithmus vergessen",
+    "toast_cleared_caches_plural": "Parameter von {n} Algorithmen vergessen",
     "toast_deleted_preset": "\"{name}\" gelöscht",
     "toast_cleared_presets": "{n} Preset geleert",
     "toast_cleared_presets_plural": "{n} Presets geleert",
-    "toast_job_history_cleared": "Job-Verlauf geleert",
-    "toast_job_history_failed": "Job-Verlauf konnte nicht geleert werden",
-    "defaults": {
-      "title": "Standardwerte",
-      "description": "Vorauswahl beim Untersuchen eines einzelnen Logs.",
-      "default_algo_label": "Standard-Algorithmus",
-      "default_algo_hint": "Öffnet automatisch beim Untersuchen eines einzelnen Logs. Leer lassen, um den ersten Algorithmus der Liste zu verwenden.",
-      "none_option": "— Keiner (ersten in der Liste verwenden) —",
-      "clear_button": "Zurücksetzen"
-    },
+    "toast_job_history_cleared": "Alle Runs gelöscht",
+    "toast_job_history_failed": "Die Runs konnten nicht gelöscht werden",
     "presets": {
       "title": "Parameter-Presets",
       "description": "Benannte Parameter-Sets, die du beim Untersuchen eines einzelnen Logs gespeichert hast. Lokal auf diesem Gerät gespeichert.",
@@ -142,6 +138,7 @@
       "clear_all_label": "Alle Presets löschen",
       "clear_all_hint": "Entfernt alle {n} gespeicherten Preset bei jedem Algorithmus.",
       "clear_all_hint_plural": "Entfernt alle {n} gespeicherten Presets bei jedem Algorithmus.",
+      "clear_all_empty": "Keine Presets gespeichert.",
       "confirm_clear": "Löschen bestätigen",
       "clear_button": "Presets löschen",
       "transfer_label": "Export & Import",
@@ -154,28 +151,34 @@
       "toast_imported": "{n} Presets importiert",
       "toast_imported_renamed": "{n} Presets importiert ({renamed} umbenannt, um Duplikate zu vermeiden)",
       "import_error_invalid_json": "Diese Datei ist kein gültiges JSON.",
-      "import_error_generic": "Diese Datei konnte nicht importiert werden."
+      "import_error_generic": "Diese Datei konnte nicht importiert werden.",
+      "errors": {
+        "empty_name": "Gib dem Preset einen Namen.",
+        "not_an_object": "Diese Datei enthält keine Presets: Sie ist kein JSON-Objekt.",
+        "no_groups": "Diese Datei enthält keine Presets: Ihre Liste der Gruppen fehlt.",
+        "no_presets": "In der Datei wurden keine gültigen Presets gefunden."
+      }
     },
     "storage": {
       "title": "Speicher & Daten",
-      "description": "Gecachte Parameter, der persistente Job-Verlauf und die Datensätze der Faktoranalyse.",
-      "cached_params_label": "Gecachte Algorithmus-Parameter",
-      "cached_params_hint": "{n} Algorithmus hat Parameter aus früheren Runs gespeichert.",
-      "cached_params_hint_plural": "{n} Algorithmen haben Parameter aus früheren Runs gespeichert.",
-      "cached_params_empty": "Noch keine gecachten Parameter.",
+      "description": "Gemerkte Parameter, die auf dem Server gespeicherten Runs und die Datensätze der Faktorenanalyse.",
+      "cached_params_label": "Gemerkte Parameter",
+      "cached_params_hint": "Die Parameter von {n} Algorithmus sind aus früheren Runs gemerkt.",
+      "cached_params_hint_plural": "Die Parameter von {n} Algorithmen sind aus früheren Runs gemerkt.",
+      "cached_params_empty": "Noch keine Parameter gemerkt.",
       "confirm_clear": "Löschen bestätigen",
-      "clear_cache_button": "Cache leeren",
-      "onboarding_label": "Onboarding-Tour",
-      "onboarding_hint": "Wiederhole die 4-Schritte-Einführung, die Erstbesuchern gezeigt wird.",
-      "replay_tour_button": "Tour wiederholen",
-      "run_history_label": "Run history",
-      "run_history_hint": "Einzelne Runs dieser Sitzung an einem Ort durchsuchen, filtern und löschen.",
-      "open_run_history": "Run history öffnen",
-      "clear_jobs_label": "Job-Verlauf löschen",
-      "clear_jobs_hint": "Löscht jeden gespeicherten Run auf dem Server, einschließlich Artefakten und der aus Logs oder Netzen berechneten Datensätze. Dies kann nicht rückgängig gemacht werden.",
+      "clear_cache_button": "Vergessen",
+      "onboarding_label": "Einführung",
+      "onboarding_hint": "Die Einführung in vier Schritten vom ersten Besuch noch einmal zeigen.",
+      "replay_tour_button": "Noch einmal zeigen",
+      "run_history_label": "Runs",
+      "run_history_hint": "Die Runs dieser Sitzung an einem Ort durchsuchen, filtern und löschen.",
+      "open_run_history": "Alle Runs anzeigen",
+      "clear_jobs_label": "Run-Verlauf löschen",
+      "clear_jobs_hint": "Löscht jeden Run dieser Sitzung auf dem Server, mit seinen Ergebnissen und den aus Logs oder Netzen berechneten Datensätzen. Das lässt sich nicht rückgängig machen.",
       "confirm_delete": "Löschen bestätigen",
-      "delete_all_jobs": "Alle Jobs löschen",
-      "clear_datasets_label": "Faktoranalyse-Datensätze löschen",
+      "delete_all_jobs": "Alle Runs löschen",
+      "clear_datasets_label": "Datensätze der Faktorenanalyse löschen",
       "clear_datasets_hint": "{n} Datensatz der Tabs Modell- und Log-Komplexität liegt auf dem Server, mit den Einstellungen seiner letzten Analyse. Wurde er aus Logs oder Netzen berechnet, wird der Run, der ihn berechnet hat, mitgelöscht.",
       "clear_datasets_hint_plural": "{n} Datensätze der Tabs Modell- und Log-Komplexität liegen auf dem Server, jeder mit den Einstellungen seiner letzten Analyse. Aus Logs oder Netzen berechnete werden mit den Runs gelöscht, die sie berechnet haben.",
       "clear_datasets_empty": "Für diese Sitzung liegen keine Datensätze der Tabs Modell- und Log-Komplexität auf dem Server.",
@@ -189,31 +192,81 @@
       "title": "Info",
       "description": "Build und Links.",
       "product_label": "Produkt",
-      "algorithms_loaded_label": "Geladene Algorithmen",
       "source_label": "Quellcode",
       "documentation_label": "Dokumentation",
-      "back_to_workbench": "Zurück zur Modellkomplexität"
+      "api_link": "API-Zugang und Beispiele"
     }
   },
   "api_access": {
-    "back_aria": "Zurück zur Modellkomplexität",
     "heading": "API-Zugang",
-    "subtitle": "Jobs übermitteln und Ergebnisse abrufen ohne die Web-Oberfläche. Alle Endpoints sind nicht authentifiziert; du bist per Cookie auf deine Browser-Session beschränkt.",
+    "subtitle": "Runs starten und Ergebnisse abrufen ohne die Weboberfläche. Die Endpoints brauchen keine Anmeldung; ein Cookie beschränkt sie auf deine Browsersitzung.",
     "interactive_ref_title": "Interaktive Referenz",
     "interactive_ref_desc": "Vollständige OpenAPI-3-Spezifikation — Endpoints direkt im Browser ausprobieren.",
     "quick_start_title": "Schnellstart",
-    "quick_start_desc": "Einen Algorithmus aus einem Python-Skript oder der Shell ausführen.",
+    "quick_start_desc": "Ein Log untersuchen oder eine Faktorenanalyse ausführen, aus einem Python-Skript oder der Shell.",
+    "example_single_log": "Einzelnes Log untersuchen (Python)",
+    "example_factor_analysis": "Faktorenanalyse (Python)",
     "endpoint_summary_title": "Endpoint-Übersicht",
     "endpoint_summary_desc": "Alle Pfade sind relativ zu {base} beim Zugriff über die Web-Oberfläche, oder ab dem Wurzelpfad beim direkten Aufruf des Backends.",
     "notes_title": "Hinweise",
     "copied": "Kopiert",
-    "copy": "Kopieren"
+    "copy": "Kopieren",
+    "groups": {
+      "catalog": "Katalog",
+      "single_log": "Einzelnes Log",
+      "factor_analysis": "Faktorenanalyse",
+      "runs": "Runs",
+      "diagnostics": "Diagnose"
+    },
+    "endpoints": {
+      "algorithms": "Alle registrierten Algorithmen mit ihrem Parameterschema.",
+      "sample_logs": "Mitgelieferte Beispiel-Logs, die sich ohne Upload analysieren lassen.",
+      "recent_logs": "Logs, die deine Sitzung zuletzt hochgeladen hat.",
+      "analyze": "Einen Algorithmus auf einem Log ausführen; liefert eine job_id.",
+      "log_stats": "Schnelle beschreibende Statistiken eines Logs: Traces, Events, Varianten, Zeitraum.",
+      "fa_catalog": "Maße, Miner oder Merkmalsgruppen, mitgelieferte Datensätze, Beispieleingaben und die angenommenen Quellen.",
+      "fa_create": "Einen Datensatz aus einem mitgelieferten oder einer CSV anlegen (sofort bereit) oder aus Event-Logs oder PNML-Dateien (als Run berechnet).",
+      "fa_list": "Die Datensätze deiner Sitzung, neueste zuerst; kind ist optional.",
+      "fa_get": "Status, Fortschritt, gespeicherte Einstellungen und die bereinigte Matrix der Maße (erste 2000 Zeilen).",
+      "fa_options": "Die Einstellungen einer Analyse beim Datensatz speichern.",
+      "fa_delete": "Einen Datensatz mit seinem Run und seinen gespeicherten Interpretationen löschen.",
+      "fa_delete_all": "Alle Datensätze deiner Sitzung löschen oder alle einer Art.",
+      "fa_download": "Die bereinigte Matrix als CSV.",
+      "fa_analyze": "Bartlett, KMO mit MSA-Filter, Eigenwerte und rotierte Ladungen für die übergebenen Einstellungen (JSON).",
+      "fa_export": "Die Ladungstabelle als CSV oder LaTeX; der Body von analyze plus format.",
+      "fa_export_zip": "Die ganze Analyse als ZIP: Ergebnis, Matrix, Tabellen, Parameter und Bibliotheksversionen.",
+      "fa_interpretation_status": "Ob Claude Faktoren interpretieren kann, und mit welchem Modell.",
+      "fa_interpret": "Namen und kurze Interpretationen der Faktoren durch Claude; der Body von analyze plus language. Optional, braucht einen API-Schlüssel auf dem Server.",
+      "jobs": "Alle Runs deiner Sitzung.",
+      "job": "Status, Fortschritt und, sobald er fertig ist, das ganze Ergebnis eines Runs.",
+      "job_download": "ZIP-Archiv mit allem, was ein Run erzeugt hat.",
+      "job_events": "Server-Sent-Events-Stream, der sich bei jeder Änderung eines Runs meldet.",
+      "progress": "SSE-Stream einer einzelnen Aufgabe, eine Ebene tiefer.",
+      "abort": "Eine laufende Aufgabe bitten, anzuhalten.",
+      "job_notes": "Die Notiz eines Runs setzen oder löschen.",
+      "job_delete": "Einen Run und seine Ergebnisse löschen; ein Datensatz-Run nimmt seinen Datensatz mit.",
+      "jobs_delete": "Alle Runs deiner Sitzung löschen, mit den Datensätzen, die sie berechnet haben.",
+      "health": "Bereitschaftsprüfung: 200, wenn die Datenbank erreichbar ist."
+    },
+    "notes": {
+      "rate_limits": "Ratenlimits pro IP: `60/hour` für `POST /algorithms/{id}/analyze` und für `POST /factor-analysis/datasets`, `600/minute` für `GET /factor-analysis/datasets/{id}`, `300/hour` für `POST /log-stats` und `120/minute` überall sonst. Interpretationen durch Claude: `10/hour` pro Sitzung und `200/day` für den Server. Über einem Limit lautet die Antwort 429 mit einem `code`.",
+      "quota": "Runs: höchstens 12 wartende oder laufende pro Sitzung und höchstens 4 Datensatz-Runs gleichzeitig über alle Sitzungen; weitere werden mit 429 beantwortet.",
+      "uploads": "Uploads: höchstens 100 MB pro Datei. `POST /algorithms/{id}/analyze` und `POST /log-stats` nehmen ein Event-Log (`.xes`, `.xes.gz`, `.xml`, `.json`). `POST /factor-analysis/datasets` nimmt eine `.csv`, bis zu 50 Event-Logs (`.xes`, `.xes.gz`) oder bis zu 200 Petri-Netze (`.pnml`), zusammen höchstens 500 MB.",
+      "session": "Sitzung: Ein signiertes Cookie grenzt jeden Endpoint ein. Verwende es für alle Anfragen (in Python mit `requests.Session()`), damit deine Runs und Datensätze sichtbar bleiben.",
+      "schemas": "Die Parameterschemas liefert `GET /algorithms`: Lies vor dem Absenden das `parameters_schema` eines Algorithmus."
+    }
   },
   "parameter_form": {
     "all_at_defaults": "Alle Parameter wurden auf ihren Standardwerten belassen.",
-    "search_placeholder": "Suchen...",
+    "search_placeholder": "Suchen…",
     "search_options_aria": "Optionen für {label} suchen",
-    "recommended": "Empfohlen: {value}"
+    "recommended": "Empfohlen: {value}",
+    "selected_count": "{n} von {total}",
+    "select_all": "Alle",
+    "select_none": "Keine",
+    "select_defaults": "Standard",
+    "slow_badge": "langsam",
+    "slow_title": "Dauert bei großen Logs spürbar länger"
   },
   "preset_bar": {
     "load_preset": "Preset laden",
@@ -236,18 +289,23 @@
   },
   "log_overview": {
     "heading": "Log-Übersicht",
-    "traces": "traces",
-    "events": "events",
-    "activities": "activities",
-    "variants": "variants",
+    "traces": "Traces",
+    "events": "Events",
+    "activities": "Aktivitäten",
+    "variants": "Varianten",
     "length": "Länge",
     "span": "Zeitspanne",
-    "top_label": "Top",
-    "median_abbr": "med",
-    "noisy_title": "{pct}% der Traces sind eindeutige Sequenzen — viele verschiedene Varianten.",
-    "normal_title": "{pct}% der traces sind eindeutige Sequenzen.",
-    "length_title": "Trace-Längenbereich. Median {median}, Durchschnitt {avg}.",
-    "span_title": "Log umfasst {duration}."
+    "top_label": "Häufigste",
+    "median_abbr": "Median",
+    "noisy_title": "{pct} der Traces sind eindeutige Sequenzen: viele verschiedene Varianten.",
+    "normal_title": "{pct} der Traces sind eindeutige Sequenzen.",
+    "length_title": "Kürzester bis längster Trace. Median {median}, Mittelwert {avg}.",
+    "span_title": "Das Log umfasst {duration}.",
+    "duration_years": "{n} Jahre",
+    "duration_months": "{n} Monate",
+    "duration_days": "{n} Tage",
+    "duration_hours": "{n} h",
+    "duration_seconds": "{n} s"
   },
   "algorithm_explainer": {
     "close_aria": "Schließen",
@@ -279,21 +337,21 @@
     "download_all": "Alle herunterladen (ZIP)"
   },
   "artifacts": {
-    "petri_nets_heading": "Discovered Petri Nets ({n})",
-    "grid_view_title": "Grid-Ansicht (gerahmt, ausgerichtet)",
-    "list_view_title": "Listen-Ansicht (groß, natives Format)",
-    "grid_label": "Grid",
+    "petri_nets_heading": "Gefundene Petri-Netze ({n})",
+    "grid_view_title": "Rasteransicht (gerahmt, ausgerichtet)",
+    "list_view_title": "Listenansicht (groß, im eigenen Format)",
+    "grid_label": "Raster",
     "list_label": "Liste",
     "image": {
       "download_title": "Bild direkt herunterladen",
-      "preview_zoom": "Vorschau / Zoom",
-      "process_model_fallback": "Process Model",
+      "preview_zoom": "Vorschau und Zoom",
+      "process_model_fallback": "Prozessmodell",
       "zoom_out_title": "Verkleinern",
       "zoom_in_title": "Vergrößern",
       "reset_zoom_title": "Zoom zurücksetzen",
-      "toggle_bg_title": "Hintergrund wechseln (Aktuell: {bg})",
+      "toggle_bg_title": "Hintergrund wechseln (jetzt: {bg})",
       "download_image_title": "Bild herunterladen",
-      "close_title": "Schließen (ESC)",
+      "close_title": "Schließen (Esc)",
       "bg_transparent": "Transparent",
       "bg_light": "Weißer Hintergrund",
       "bg_dark": "Dunkler Hintergrund",
@@ -303,51 +361,49 @@
       "download_button": "Herunterladen"
     },
     "table": {
-      "table_data_label": "Tabellendaten",
+      "table_data_label": "Tabelle",
       "download_csv_title": "Tabelle als CSV herunterladen",
       "download_csv_button": "CSV herunterladen"
     }
   },
   "jobs": {
-    "archive_aria": "Job-Archiv",
-    "heading": "Jobs",
-    "clear_button": "Alle",
-    "clear_all_title": "Alle Jobs löschen",
-    "close_drawer_aria": "Jobs-Drawer schließen",
+    "archive_aria": "Letzte Runs",
+    "heading": "Runs",
+    "clear_button": "Alle Runs löschen",
+    "clear_all_title": "Alle Runs dieser Sitzung löschen",
+    "close_drawer_aria": "Letzte Runs schließen",
     "loading": "Lädt…",
-    "no_runs_yet": "Noch keine Runs. Starte einen von einem beliebigen Tool.",
-    "view_all": "Alle Jobs anzeigen",
-    "delete_job_aria": "Job löschen",
-    "delete_dataset_job_aria": "Job und seinen Datensatz löschen",
-    "delete_dataset_job_confirm": "Job und Datensatz löschen",
-    "abort_job_aria": "Job abbrechen",
-    "run_mode_title": "Run-Modus: {mode}",
-    "tool_type_title": "Tool-Typ: {type}",
+    "no_runs_yet": "Noch keine Runs. Ein Run entsteht, sobald du einen Datensatz aus Logs oder Netzen berechnest oder ein einzelnes Log untersuchst.",
+    "view_all": "Alle Runs anzeigen",
+    "delete_job_aria": "Run löschen",
+    "delete_dataset_job_aria": "Run und seinen Datensatz löschen",
+    "delete_dataset_job_confirm": "Run und Datensatz löschen",
+    "abort_job_aria": "Run abbrechen",
+    "run_mode_title": "Art des Runs: {mode}",
     "status_completed": "Abgeschlossen",
     "status_failed": "Fehlgeschlagen",
     "status_aborted": "Abgebrochen",
-    "status_running": "Läuft {pct}%",
-    "status_pending": "In Warteschlange…",
-    "clear_all_confirm": "Das gesamte Job-Archiv leeren? Datensätze, die aus Logs oder Netzen berechnet wurden, werden mit ihren Jobs gelöscht.",
+    "status_running": "Läuft {pct}",
+    "status_pending": "Ausstehend…",
+    "clear_all_confirm": "Alle Runs dieser Sitzung löschen? Datensätze, die aus Logs oder Netzen berechnet wurden, werden mit ihren Runs gelöscht.",
     "mode": {
-      "single": "Einzeln",
+      "single": "Einzelnes Log",
       "batch": "Batch",
       "dataset": "Datensatz"
     },
     "dataset_name": {
-      "model": "Datensatz der Faktoranalyse (Modellmaße)",
-      "log": "Datensatz der Faktoranalyse (Log-Maße)"
+      "model": "Datensatz der Faktorenanalyse (Modellmaße)",
+      "log": "Datensatz der Faktorenanalyse (Log-Maße)"
     }
   },
   "run_history": {
-    "back_aria": "Zurück zur Modellkomplexität",
-    "heading": "Run history",
-    "subtitle": "Alle Runs dieser Sitzung.",
+    "heading": "Runs",
+    "subtitle": "Alle Runs dieser Sitzung: berechnete Datensätze und untersuchte Logs. Durchsuchen, filtern, mit Notizen versehen oder löschen.",
     "refresh_button": "Aktualisieren",
-    "search_placeholder": "Algorithmus, Dateiname oder Run-ID suchen…",
+    "search_placeholder": "Name, Dateiname oder Run-ID suchen…",
     "search_aria": "Runs suchen",
-    "filter_algo_aria": "Nach Algorithmus filtern",
-    "filter_all_algorithms": "Alle Algorithmen",
+    "filter_kind_aria": "Nach Art filtern",
+    "filter_all_kinds": "Alle Arten",
     "status_all": "Alle ({n})",
     "status_active": "Aktiv ({n})",
     "status_completed": "Abgeschlossen ({n})",
@@ -359,10 +415,10 @@
     "status_label_failed": "Fehlgeschlagen",
     "status_label_aborted": "Abgebrochen",
     "loading_runs": "Runs werden geladen…",
-    "no_runs_empty": "Noch keine Runs in dieser Sitzung. Berechnete Datensätze und Einzel-Log-Runs erscheinen hier.",
+    "no_runs_empty": "Noch keine Runs in dieser Sitzung. Berechnete Datensätze und untersuchte Logs erscheinen hier.",
     "no_runs_filter": "Keine Runs stimmen mit den aktuellen Filtern überein.",
     "open_button": "Öffnen",
-    "open_title": "In der Ursprungsansicht öffnen",
+    "open_title": "Dort öffnen, wo der Run gestartet wurde",
     "confirm_delete": "Bestätigen",
     "delete_run_aria": "Run {id} löschen",
     "delete_run_title": "Run löschen",
@@ -376,40 +432,40 @@
     "sidebar": {
       "algorithm_label": "Algorithmus",
       "tour_button": "Tour",
-      "tour_aria": "Single-Run-Tour starten",
-      "tour_title": "Walkthrough — wie Single Run funktioniert",
-      "close_sidebar_aria": "Algorithmen-Sidebar schließen",
-      "show_menu_title": "Menü anzeigen",
-      "show_sidebar_title": "Sidebar anzeigen",
-      "hide_sidebar_title": "Sidebar ausblenden",
-      "nav_aria": "Navigations- und Verlauf-Sidebar"
+      "tour_aria": "Tour dieser Seite starten",
+      "tour_title": "Wie das Untersuchen eines einzelnen Logs funktioniert",
+      "close_sidebar_aria": "Algorithmenliste schließen",
+      "show_menu_title": "Algorithmenliste anzeigen",
+      "show_sidebar_title": "Algorithmenliste anzeigen",
+      "hide_sidebar_title": "Algorithmenliste ausblenden",
+      "nav_aria": "Algorithmen"
     },
-    "job_badge": "Run: {id} ({status})",
+    "job_badge": "Run {id}: {status}",
     "algo_card": {
       "implemented_by": "Implementiert von: {author}",
       "paper_link": "Paper",
       "academic_reference": "Literaturnachweis",
-      "copied_bibtex": "BibTeX kopiert!",
+      "copied_bibtex": "BibTeX kopiert",
       "copy_bibtex": "BibTeX kopieren",
       "download_bib_title": "Als .bib-Datei herunterladen",
       "download_bib": ".bib herunterladen",
-      "analyzed_log": "Analysiertes event log"
+      "analyzed_log": "Analysiertes Event-Log"
     },
     "log_source": {
       "upload_file": "Datei hochladen",
-      "use_sample": "Sample verwenden"
+      "use_sample": "Beispiel verwenden"
     },
     "recent": {
       "label": "Zuletzt hochgeladene Logs"
     },
     "layout": {
-      "grid": "Grid",
+      "grid": "Raster",
       "list": "Liste",
-      "grid_title": "Grid-Ansicht",
-      "list_title": "Listen-Ansicht"
+      "grid_title": "Rasteransicht",
+      "list_title": "Listenansicht"
     },
     "samples": {
-      "label": "Verfügbare Samples"
+      "label": "Beispiel-Logs"
     },
     "params": {
       "showing_modified": "Nur geänderte Parameter werden angezeigt",
@@ -422,29 +478,32 @@
       "choose": "Datei auswählen… ({formats})"
     },
     "run_bar": {
-      "job_status": "Job-Status: {status}",
+      "job_status": "Status: {status}",
       "ready": "Bereit zum Ausführen.",
-      "upload_hint": "Lade ein event log hoch, um die Analyse zu starten.",
+      "upload_hint": "Lade ein Event-Log hoch oder wähle ein zuletzt hochgeladenes, um die Analyse zu starten.",
+      "sample_hint": "Wähle ein Beispiel-Log, um die Analyse zu starten.",
       "abort": "Abbrechen",
       "new_run": "Neuer Run",
-      "run_title": "Analyse starten (Ctrl+Enter)"
+      "run_title": "Analyse starten (Strg+Enter)"
     },
     "load_error": {
-      "title": "AlgoService nicht erreichbar"
+      "title": "Der Server ist nicht erreichbar"
     },
     "errors": {
-      "no_sample": "Bitte wähle ein Sample-Log zur Analyse aus.",
-      "no_upload": "Bitte lade eine event-log-Datei hoch oder wähle ein kürzlich verwendetes Log aus der Liste.",
+      "no_sample": "Wähle ein Beispiel-Log zur Analyse.",
+      "no_upload": "Lade ein Event-Log hoch oder wähle ein zuletzt hochgeladenes aus der Liste darunter.",
       "must_be_number": "Muss eine gültige Zahl sein.",
       "must_be_at_least": "Muss mindestens {min} sein.",
       "must_be_at_most": "Darf höchstens {max} sein.",
+      "choose_one": "Wähle mindestens einen Eintrag.",
       "fix_validation": "Bitte behebe die Parameter-Validierungsfehler vor dem Ausführen.",
-      "submitting": "Job wird übermittelt...",
-      "load_job_details": "Job-Details konnten nicht geladen werden",
-      "aborted": "Analyse vom Nutzer abgebrochen.",
+      "submitting": "Run wird gestartet…",
+      "load_job_details": "Die Details des Runs konnten nicht geladen werden.",
+      "aborted": "Die Analyse wurde abgebrochen.",
       "analysis_failed": "Analyse fehlgeschlagen",
       "unknown_submission": "Unbekannter Übermittlungsfehler",
       "file_too_large": "Datei überschreitet das 100-MB-Limit.",
+      "wrong_type": "Dieser Dateityp lässt sich nicht analysieren; verwende {formats}.",
       "aborted_by_user": "Vom Nutzer abgebrochen"
     }
   },
@@ -844,7 +903,30 @@
   },
   "inspect": {
     "title": "Einzelnes Log untersuchen",
-    "subtitle": "Führe ComFy auf einem Event-Log aus und sieh dir die gefundenen Modelle und ihre Komplexitätsmaße an.",
-    "back_aria": "Zurück zur Modellkomplexität"
+    "subtitle": "Führe ComFy auf einem Event-Log aus und sieh dir die gefundenen Modelle und ihre Komplexitätsmaße an."
+  },
+  "algo_text": {
+    "summary": "Miner: {miners} · Maße: {measures}",
+    "summary_partial": "Miner: {miners} · Maße: {measures} · {computed} von {total} Zellen berechnet",
+    "miners": "Miner",
+    "measures": "Maße",
+    "cells_computed": "Berechnete Zellen",
+    "complexity_scores": "Komplexitätswerte",
+    "miner": "Miner",
+    "notes": "Hinweise",
+    "petri_net": "Petri-Netz ({miner})",
+    "discovered_by": "Gefunden mit dem {miner}",
+    "hires_png": "PNG in hoher Auflösung ({miner}, 300 dpi)",
+    "progress_starting": "Analyse wird gestartet…",
+    "progress_reading": "Event-Log wird gelesen…",
+    "progress_miner": "Komplexität für den {miner} wird berechnet ({i}/{n})…",
+    "progress_done": "Analyse abgeschlossen",
+    "progress_aborted": "Vom Nutzer abgebrochen",
+    "progress_pending": "Ausstehend…"
+  },
+  "errors": {
+    "rate_limited": "Zu viele Anfragen. Warte kurz und versuche es noch einmal.",
+    "job_quota": "Du hast schon {active} wartende oder laufende Runs, und das käme mit {requested} dazu; erlaubt sind höchstens {limit}. Warte, bis sie fertig sind, oder brich einige unter Letzte Runs ab.",
+    "dataset_jobs_busy": "Der Server berechnet schon {active} Datensätze, mehr gleichzeitig nicht. Versuche es in ein paar Minuten noch einmal."
   }
 }
