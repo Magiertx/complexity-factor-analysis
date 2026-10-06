@@ -221,14 +221,16 @@ temporary file that is then renamed into place.
   deletes the Run row with its artifact directory and the dataset directory. Interpretations
   of bundled datasets are in the shared directory and stay. `DELETE /datasets` does this for
   every dataset of the session or of one kind.
-- **Hooks.** A dataset job carries `dataset_id` and `dataset_name` in its params.
+- **Hooks.** A dataset job carries `dataset_id` in its params, and `dataset_name` when the
+  dataset was named or made from a sample; for a name the server made up (`name_auto` in
+  `meta.json`) the UI names job and dataset after the inputs, in its own language.
   `DELETE /jobs/{id}` and `DELETE /jobs` (`routes/jobs.py`) delete the dataset of every
   dataset job they delete, so the run history and the dataset list do not drift apart.
 - **ZIP.** `POST .../export/zip` runs the analysis once and packs it with
   `export.analysis_zip`: the result, the matrix as the download writes it, the loadings and
   the other tables, a manifest with the dataset, the parameters (with the factor count and
-  rotation the analysis used) and the library versions, and a README whose factor_analyzer snippet
-  reproduces the loadings (`tests/test_dataset_history.py` runs it). An interpretation is
+  rotation the analysis used) and the library versions, and a README whose factor_analyzer
+  snippet reproduces the loadings (`tests/test_dataset_history.py` runs it). An interpretation is
   added only if `interpretation.store.lookup`, the lookup behind `cached_only`, finds one, so
   an export never leads to a paid call.
 

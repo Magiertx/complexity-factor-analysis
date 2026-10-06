@@ -110,6 +110,7 @@ def test_list_is_newest_first_and_filters_by_kind(client):
         "id": third,
         "kind": "model",
         "name": "ComFy paper scores: Inductive miner",
+        "name_auto": False,
         "source": "bundled",
         "status": "ready",
         "created_at": bundled["created_at"],
@@ -146,6 +147,22 @@ def test_computed_dataset_records_its_inputs(client):
     job = client.get(f"/jobs/{body['job_id']}").json()
     assert job["params"]["dataset_id"] == body["dataset_id"]
     assert job["params"]["dataset_name"] == "Petri nets of the four PDC logs"
+    assert d["name_auto"] is False
+
+
+def test_a_name_made_up_for_an_upload_is_marked(client):
+    from factor_analysis import catalog as cat
+
+    paths = cat.sample_paths(cat.sample_entry(SAMPLE))[:3]
+    files = [("files", (p.name, p.read_bytes(), "application/xml")) for p in paths]
+    unnamed = _post(client, kind="model", source="pnml", measures=["Size", "Density"], files=files)
+    named = _post(client, kind="model", source="pnml", measures=["Size", "Density"], files=files, name="Mine")
+
+    d = client.get(f"/factor-analysis/datasets/{unnamed['dataset_id']}").json()
+    assert d["name"] == "3 net(s)" and d["name_auto"] is True
+    assert "dataset_name" not in client.get(f"/jobs/{unnamed['job_id']}").json()["params"]
+    assert client.get(f"/jobs/{named['job_id']}").json()["params"]["dataset_name"] == "Mine"
+    assert [(s["name"], s["name_auto"]) for s in _list(client)] == [("Mine", False), ("3 net(s)", True)]
 
 
 def test_inputs_of_a_dataset_stored_before_they_were_recorded(client):

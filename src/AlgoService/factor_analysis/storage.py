@@ -68,9 +68,11 @@ def create(
     inputs: dict[str, Any],
     params: dict[str, Any] | None = None,
     bundled_id: str | None = None,
+    name_auto: bool = False,
 ) -> dict[str, Any]:
     """``inputs`` says what the dataset is made from: the number of files and the measures,
-    miners, feature groups or sample chosen for it."""
+    miners, feature groups or sample chosen for it. ``name_auto`` marks a name made up from
+    them, which the UI replaces with one in its language."""
     dataset_id = str(uuid.uuid4())
     directory = dataset_dir(session_id, dataset_id)
     directory.mkdir(parents=True)
@@ -93,6 +95,8 @@ def create(
     }
     if bundled_id:
         meta["bundled_id"] = bundled_id
+    if name_auto:
+        meta["name_auto"] = True
     _write_json(directory / "meta.json", meta)
     return meta
 

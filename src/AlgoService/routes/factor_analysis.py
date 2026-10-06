@@ -510,12 +510,13 @@ async def create_dataset(
 
     n_inputs = len(sample["files"]) if sample else len(uploads)
     noun = "log(s)" if source == "logs" else "net(s)"
-    display = name or (sample["name"] if sample else f"{n_inputs} {noun}")
+    given = name or (sample["name"] if sample else None)
+    display = given or f"{n_inputs} {noun}"
     chosen = {k: v for k, v in spec.items() if k in ("measures", "miners", "groups")}
     meta = storage.create(
         session_id, kind=kind, name=display, source=source, status="computing",
         inputs={"files": n_inputs, **chosen, **({"sample_id": sample["id"]} if sample else {})},
-        params=chosen,
+        params=chosen, name_auto=given is None,
     )
     dataset_id = meta["id"]
     try:
@@ -527,13 +528,17 @@ async def create_dataset(
         shutil.rmtree(storage.dataset_dir(session_id, dataset_id), ignore_errors=True)
         raise
 
+    job_params = {"dataset_id": dataset_id, "source": source, **chosen}
+    if given:
+        # Without one, the UI names the job like the dataset, in its own language.
+        job_params["dataset_name"] = given
     job_id = str(uuid.uuid4())
     await jobs_db.create_job(
         job_id=job_id,
         algorithm_id=f"_dataset:{kind}",
         algorithm_name=f"Factor analysis dataset ({kind} measures)",
         filename=f"{n_inputs} {noun}",
-        params={"dataset_id": dataset_id, "dataset_name": display, "source": source, **chosen},
+        params=job_params,
         session_id=session_id,
     )
     storage.update_meta(session_id, dataset_id, job_id=job_id)
@@ -617,6 +622,7 @@ def _summary(meta: dict[str, Any], status: str) -> dict[str, Any]:
         "id": meta["id"],
         "kind": meta["kind"],
         "name": meta["name"],
+        "name_auto": bool(meta.get("name_auto")),
         "source": meta["source"],
         "status": status,
         "created_at": meta["created_at"],
@@ -667,6 +673,7 @@ async def get_dataset(
         "id": meta["id"],
         "kind": meta["kind"],
         "name": meta["name"],
+        "name_auto": bool(meta.get("name_auto")),
         "source": meta["source"],
         "status": meta["status"],
         "n_observations": meta["n_observations"],
