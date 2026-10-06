@@ -2,8 +2,9 @@
 
 import { Languages } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useLocale } from "@/lib/i18n";
+import { useLocale, type Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { Segmented } from "./ui/segmented";
 
 export function LocaleToggle({ className }: { className?: string }) {
   const { locale, setLocale, t } = useLocale();
@@ -32,33 +33,19 @@ export function LocaleToggle({ className }: { className?: string }) {
   );
 }
 
+/** The language as a toggle like the theme toggle beside it in the settings. */
 export function LocaleSegmented({ className }: { className?: string }) {
   const { locale, setLocale, t } = useLocale();
   return (
-    <div
-      role="group"
+    <Segmented<Locale>
+      value={locale}
+      onChange={setLocale}
       aria-label={t("header.locale_label")}
-      className={cn(
-        "inline-flex rounded-md bg-tile/40 overflow-hidden text-xs font-medium",
-        className,
-      )}
-    >
-      {(["en", "de"] as const).map((l) => (
-        <button
-          key={l}
-          type="button"
-          onClick={() => setLocale(l)}
-          aria-pressed={locale === l}
-          className={cn(
-            "h-9 px-3 transition",
-            locale === l
-              ? "bg-accent text-accent-fg"
-              : "text-muted hover:text-fg hover:bg-surface",
-          )}
-        >
-          {l.toUpperCase()}
-        </button>
-      ))}
-    </div>
+      className={cn("w-[120px]", className)}
+      options={[
+        { value: "en", label: "EN" },
+        { value: "de", label: "DE" },
+      ]}
+    />
   );
 }

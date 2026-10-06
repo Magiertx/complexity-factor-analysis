@@ -271,6 +271,7 @@ export function SettingsView() {
             <Segmented<ThemeChoice>
               value={currentTheme}
               onChange={handleThemeChange}
+              aria-label={t("settings.appearance.theme_label")}
               className="w-[280px]"
               options={[
                 { value: "system", label: <span className="flex items-center gap-1.5"><Monitor className="h-3 w-3" />{t("settings.appearance.theme_system")}</span> },

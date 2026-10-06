@@ -18,6 +18,8 @@ interface Props<T extends string> {
   className?: string;
   /** The label of the group, e.g. the id of a FieldLabel above it. */
   "aria-labelledby"?: string;
+  /** The label of the group where no visible label has an id. */
+  "aria-label"?: string;
 }
 
 export function Segmented<T extends string>({
@@ -27,6 +29,7 @@ export function Segmented<T extends string>({
   size = "md",
   className,
   "aria-labelledby": labelledBy,
+  "aria-label": label,
 }: Props<T>) {
   const idx = Math.max(0, options.findIndex((o) => o.value === value));
 
@@ -59,6 +62,7 @@ export function Segmented<T extends string>({
       ref={containerRef}
       role="group"
       aria-labelledby={labelledBy}
+      aria-label={label}
       className={cn(
         // As tall as the fields next to it (h-8 small, h-9 like inputs and selects), so a row lines up.
         "relative flex bg-tile rounded-md gap-1",
