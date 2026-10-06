@@ -153,6 +153,16 @@ function BartlettCard({ analysis, alpha }: { analysis: FactorAnalysis | null; al
         extra={b && <PassBadge passed={b.passed} />}
       />
       <p className="text-xs text-muted">{t("factor.suitability.bartlett_explain", { alpha: b?.alpha ?? alpha })}</p>
+      {/* As in ComFy, the test sees the measures before the MSA filter, so its df can stand for
+          more measures than KMO and the later steps use. */}
+      {analysis && analysis.msa_filter.removed.length > 0 && (
+        <p className="text-xs text-muted">
+          {t("factor.suitability.bartlett_before_filter", {
+            n: analysis.used_measures.length + analysis.msa_filter.removed.length,
+            left: analysis.used_measures.length,
+          })}
+        </p>
+      )}
       <dl className="grid grid-cols-3 gap-2 text-xs">
         <Value
           label={b?.regularised ? `χ² (${t("factor.suitability.regularised")})` : "χ²"}

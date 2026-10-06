@@ -654,6 +654,7 @@
       "warnings_heading": "Hinweise aus der Analyse",
       "bartlett_title": "Sphärizitätstest nach Bartlett",
       "bartlett_explain": "Prüft, ob die Maße überhaupt korreliert sind. Bestanden, wenn p unter α = {alpha} liegt.",
+      "bartlett_before_filter": "Wie in ComFy läuft der Test auf allen {n} Maßen vor dem MSA-Filter; KMO und die weiteren Schritte nutzen die {left} Maße, die danach übrig sind.",
       "df": "df",
       "kmo_title": "Kaiser-Meyer-Olkin (KMO)",
       "kmo_explain": "Wie viel der Korrelation zwischen den Maßen allen gemeinsam ist. Ab {threshold} gilt der Wert als ausreichend.",

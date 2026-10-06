@@ -654,6 +654,7 @@
       "warnings_heading": "Notes from the analysis",
       "bartlett_title": "Bartlett's test of sphericity",
       "bartlett_explain": "Tests whether the measures are correlated at all. It passes when p is below α = {alpha}.",
+      "bartlett_before_filter": "As in ComFy, the test runs on all {n} measures before the MSA filter; KMO and the later steps use the {left} measures left after it.",
       "df": "df",
       "kmo_title": "Kaiser–Meyer–Olkin (KMO)",
       "kmo_explain": "How much of the correlation between measures is shared by all of them. A value of at least {threshold} is adequate.",
