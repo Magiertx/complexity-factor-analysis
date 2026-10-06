@@ -6,7 +6,7 @@ import {
   Search,
   RefreshCw,
   Trash2,
-  ExternalLink,
+  ArrowRight,
   AlertCircle,
   Check,
   Loader2,
@@ -315,7 +315,7 @@ export function RunHistoryView() {
                         className="h-8 px-3 inline-flex items-center gap-1.5 rounded-md bg-tile hover:bg-accent/[0.08] transition text-xs font-medium text-muted hover:text-fg"
                         title={t("run_history.open_title")}
                       >
-                        <ExternalLink className="h-3.5 w-3.5" />
+                        <ArrowRight className="h-3.5 w-3.5" />
                         {t("run_history.open_button")}
                       </Link>
                       {confirmingDelete === job.id ? (
