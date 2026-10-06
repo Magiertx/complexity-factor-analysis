@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { ChoiceMark } from "@/components/ui/choice";
 import { Switch } from "@/components/ui/switch";
-import { HelpLabel, NumberField, PassBadge } from "./step-section";
+import { HelpLabel, PassBadge, ThresholdField } from "./step-section";
 
 interface Props {
   dataset: FactorDataset;
@@ -67,29 +67,27 @@ export function SuitabilityView({ dataset, analysis, options, onOptions, measure
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-x-5 gap-y-2 flex-wrap pl-12">
-          <label className="flex items-center gap-2 text-xs text-muted">
-            <span>{t("factor.suitability.msa_threshold")}</span>
-            <NumberField
-              id="fa-msa-threshold"
-              value={options.msa_threshold}
-              min={0}
-              max={1}
-              step={0.05}
-              onChange={(v) => onOptions({ msa_threshold: v })}
-            />
-          </label>
-          <label className="flex items-center gap-2 text-xs text-muted">
-            <span>{t("factor.suitability.bartlett_alpha")}</span>
-            <NumberField
-              id="fa-bartlett-alpha"
-              value={options.bartlett_alpha}
-              min={0.0001}
-              max={0.5}
-              step={0.01}
-              onChange={(v) => onOptions({ bartlett_alpha: v })}
-            />
-          </label>
+        <div className="flex items-start gap-x-6 gap-y-3 flex-wrap pl-12">
+          <ThresholdField
+            id="fa-msa-threshold"
+            label={t("factor.suitability.msa_threshold")}
+            help={t("factor.help.msa_threshold")}
+            value={options.msa_threshold}
+            min={0}
+            max={1}
+            step={0.05}
+            onChange={(v) => onOptions({ msa_threshold: v })}
+          />
+          <ThresholdField
+            id="fa-bartlett-alpha"
+            label={t("factor.suitability.bartlett_alpha")}
+            help={t("factor.help.bartlett_alpha")}
+            value={options.bartlett_alpha}
+            min={0.0001}
+            max={0.5}
+            step={0.01}
+            onChange={(v) => onOptions({ bartlett_alpha: v })}
+          />
         </div>
         {analysis && options.auto_msa_filter && (
           <div className="pl-12 text-xs">

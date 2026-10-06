@@ -248,3 +248,39 @@ export function NumberField({
     />
   );
 }
+
+/** A threshold or level with its label and explanation above the field, alike in every step. */
+export function ThresholdField({
+  id,
+  label,
+  help,
+  ...field
+}: {
+  id: string;
+  label: string;
+  help: string;
+  value: number;
+  onChange: (v: number) => void;
+  min: number;
+  max: number;
+  step: number;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <HelpLabel htmlFor={id} label={label} help={help} />
+      <NumberField id={id} {...field} />
+    </div>
+  );
+}
+
+/**
+ * The label of a control without an explanation, as tall as a HelpLabel, so controls in one
+ * row line up.
+ */
+export function FieldLabel({ id, children }: { id?: string; children: React.ReactNode }) {
+  return (
+    <span id={id} className="flex items-center h-6 text-sm font-semibold">
+      {children}
+    </span>
+  );
+}

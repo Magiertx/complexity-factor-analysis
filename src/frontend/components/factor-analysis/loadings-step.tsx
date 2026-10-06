@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Segmented } from "@/components/ui/segmented";
-import { HelpLabel, NumberField } from "./step-section";
+import { FieldLabel, HelpLabel, ThresholdField } from "./step-section";
 
 interface Props {
   analysis: FactorAnalysis;
@@ -47,42 +47,33 @@ export function LoadingsView({ analysis, options, onOptions, measureName, onExpo
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between gap-4 flex-wrap">
-        <div className="flex items-end gap-5 flex-wrap">
-          <div className="space-y-1.5">
-            <HelpLabel
-              htmlFor="fa-loading-threshold"
-              label={t("factor.loadings.threshold_label")}
-              help={t("factor.help.threshold")}
-            />
-            <NumberField
-              id="fa-loading-threshold"
-              value={threshold}
-              min={0}
-              max={1}
-              step={0.05}
-              onChange={(v) => onOptions({ loading_threshold: v })}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <HelpLabel
-              htmlFor="fa-communality-threshold"
-              label={t("factor.loadings.communality_threshold_label")}
-              help={t("factor.help.communality_threshold")}
-            />
-            <NumberField
-              id="fa-communality-threshold"
-              value={options.communality_threshold}
-              min={0}
-              max={1}
-              step={0.05}
-              onChange={(v) => onOptions({ communality_threshold: v })}
-            />
-          </div>
+        <div className="flex items-start gap-x-6 gap-y-3 flex-wrap">
+          <ThresholdField
+            id="fa-loading-threshold"
+            label={t("factor.loadings.threshold_label")}
+            help={t("factor.help.threshold")}
+            value={threshold}
+            min={0}
+            max={1}
+            step={0.05}
+            onChange={(v) => onOptions({ loading_threshold: v })}
+          />
+          <ThresholdField
+            id="fa-communality-threshold"
+            label={t("factor.loadings.communality_threshold_label")}
+            help={t("factor.help.communality_threshold")}
+            value={options.communality_threshold}
+            min={0}
+            max={1}
+            step={0.05}
+            onChange={(v) => onOptions({ communality_threshold: v })}
+          />
           {oblique && analysis.structure_loadings && (
             <div className="space-y-1.5">
-              <span className="block text-sm font-semibold">{t("factor.loadings.matrix_label")}</span>
+              <FieldLabel id="fa-matrix-label">{t("factor.loadings.matrix_label")}</FieldLabel>
               <Segmented
                 size="sm"
+                aria-labelledby="fa-matrix-label"
                 value={matrix}
                 onChange={setMatrix}
                 options={[
@@ -93,9 +84,10 @@ export function LoadingsView({ analysis, options, onOptions, measureName, onExpo
             </div>
           )}
           <div className="space-y-1.5">
-            <span className="block text-sm font-semibold">{t("factor.loadings.order_label")}</span>
+            <FieldLabel id="fa-order-label">{t("factor.loadings.order_label")}</FieldLabel>
             <Segmented
               size="sm"
+              aria-labelledby="fa-order-label"
               value={order}
               onChange={setOrder}
               options={[
