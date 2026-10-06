@@ -905,8 +905,8 @@
     "subtitle": "Run ComFy on one event log and look at the discovered models and their complexity measures."
   },
   "algo_text": {
-    "summary": "Miners: {miners} · measures: {measures}",
-    "summary_partial": "Miners: {miners} · measures: {measures} · {computed} of {total} cells computed",
+    "summary": "Miners: {miners} · Measures: {measures}",
+    "summary_partial": "Miners: {miners} · Measures: {measures} · {computed} of {total} cells computed",
     "miners": "Miners",
     "measures": "Measures",
     "cells_computed": "Cells computed",
