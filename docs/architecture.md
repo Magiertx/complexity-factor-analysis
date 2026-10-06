@@ -194,8 +194,41 @@ Optional, in `interpretation/` with the endpoints in `routes/interpretation.py`
    trims it to the factors and measures of the analysis and rejects it if a factor is
    missing.
 
-Datasets are session-scoped: at most 30 per session (the oldest finished ones are pruned),
-and the datasets of sessions idle for seven days are removed.
+### Dataset lifecycle
+
+A dataset lives in `artifacts/datasets/<session>/<id>/`: `meta.json` (kind, name, source,
+status, `inputs`, the results of the cleaning, the saved `options`), `data.csv` once it is
+ready, `inputs/` while a job waits for its uploads, and `interpretations/` with the cached
+interpretations of an own dataset. Datasets are session-scoped: at most 30 per session (the
+oldest finished ones are pruned when a new one is created), and the datasets of sessions idle
+for seven days are removed. Every write of `meta.json` goes to a temporary file that is then
+renamed into place.
+
+- **List and reopen.** `GET /factor-analysis/datasets` reads the `meta.json` files of the
+  session (`storage.list_metas`), newest first by `created_at`. A computing dataset takes its
+  status from its job as in `GET /datasets/{id}`, so a stale job is failed here too. The Data
+  step lists the datasets of its kind and opens one the way the `?dataset=` link does.
+  `inputs` records what a dataset was made from; datasets stored before it was recorded count
+  their files from their observations and failures.
+- **Options.** After a successful analysis the UI stores its parameters with
+  `PUT .../options` (`options` in `meta.json`) and starts from them when the dataset is
+  reopened. Only the excluded measures are checked against the dataset; the analysis does
+  not run again.
+- **Delete.** `DELETE /datasets/{id}` marks a still running job `aborted`, as
+  `POST /progress/{id}/abort` does, so its worker stops at the next progress tick; then it
+  deletes the Run row with its artifact directory and the dataset directory. Interpretations
+  of bundled datasets are in the shared directory and stay. `DELETE /datasets` does this for
+  every dataset of the session or of one kind.
+- **Hooks.** A dataset job carries `dataset_id` and `dataset_name` in its params.
+  `DELETE /jobs/{id}` and `DELETE /jobs` (`routes/jobs.py`) delete the dataset of every
+  dataset job they delete, so the run history and the dataset list do not drift apart.
+- **ZIP.** `POST .../export/zip` runs the analysis once and packs it with
+  `export.analysis_zip`: the result, the matrix as the download writes it, the loadings and
+  the other tables, a manifest with the dataset, the parameters (with the factor count the
+  analysis used) and the library versions, and a README whose factor_analyzer snippet
+  reproduces the loadings (`tests/test_dataset_history.py` runs it). An interpretation is
+  added only if `interpretation.store.lookup`, the lookup behind `cached_only`, finds one, so
+  an export never leads to a paid call.
 
 ## Sessions
 
@@ -264,8 +297,8 @@ Adapters use the constructor helpers from `algorithms.base`: `stat`, `table`, `i
 ## REST API
 
 The full list is in [`API.md`](API.md). In short: the factor analysis under
-`/factor-analysis` (`catalog`, `datasets`, `datasets/{id}`, `.../download`, `.../analyze`,
-`.../export`), the single-log endpoints `GET /algorithms`, `GET /sample-logs`,
+`/factor-analysis` (`catalog`, `datasets`, `datasets/{id}`, `.../options`, `.../download`,
+`.../analyze`, `.../export`, `.../export/zip`), the single-log endpoints `GET /algorithms`, `GET /sample-logs`,
 `GET /recent-logs`, `POST /log-stats`, `POST /algorithms/{id}/analyze`, and the job endpoints
 under `/jobs` and `/progress`.
 
@@ -274,18 +307,21 @@ under `/jobs` and `/progress`.
 The two main tabs, **Model complexity** (`/`) and **Log complexity** (`/log`), are the same
 five-step view (`components/factor-analysis/`) for the two kinds:
 
-1. **Data**: the sources of the catalog (`GET /factor-analysis/catalog?kind=...`): bundled
-   datasets, CSV, logs (or the sample logs) and, on the model tab, PNML (or the sample nets);
-   miners and measures or feature groups for the computed sources. Submitting calls
-   `POST /factor-analysis/datasets`; a job is polled through `GET /datasets/{id}` and can be
-   cancelled with the abort endpoint.
+1. **Data**: the datasets of the session (`GET /factor-analysis/datasets?kind=...`) to reopen
+   or delete, and the sources of the catalog (`GET /factor-analysis/catalog?kind=...`):
+   bundled datasets, CSV, logs (or the sample logs) and, on the model tab, PNML (or the
+   sample nets); miners and measures or feature groups for the computed sources. Submitting
+   calls `POST /factor-analysis/datasets`; a job is polled through `GET /datasets/{id}` and can
+   be cancelled with the abort endpoint.
 2. **Dataset**: size, dropped measures with reasons, a preview, the CSV download.
 3. **Suitability**: Bartlett and KMO, the MSA filter and a per-measure MSA table with manual
    exclusion.
 4. **Factors**: hand-written SVG scree plot, factor count and rotation.
-5. **Loadings**: heatmap table, communalities, variance, factor groups, CSV/LaTeX export.
+5. **Loadings**: heatmap table, communalities, variance, factor groups, CSV/LaTeX export and
+   the whole analysis as a ZIP.
 
-Every parameter change re-runs `POST /datasets/{id}/analyze`, debounced by 300 ms. The id of
+Every parameter change re-runs `POST /datasets/{id}/analyze`, debounced by 300 ms; the
+parameters of a successful analysis are saved with `PUT /datasets/{id}/options`. The id of
 the last dataset is kept per tab in `localStorage`; dataset jobs in the run history link to
 their tab with `?dataset=<id>`.
 
@@ -329,8 +365,8 @@ Every limit is overridable from the environment (`RATE_LIMIT_DEFAULT`, `_LOG_STA
 | `/log-stats` | `300/hour` |
 | `/algorithms/{id}/analyze` | `60/hour` |
 | `POST /factor-analysis/datasets` | `60/hour` |
-| `GET /factor-analysis/datasets/{id}` (polled while a dataset is computed) | `600/minute` |
-| `/factor-analysis/datasets/{id}/analyze`, `.../export` | `120/minute` |
+| `GET /factor-analysis/datasets/{id}` (polled while a dataset is computed); listing and deleting datasets, `PUT .../options` | `600/minute` |
+| `/factor-analysis/datasets/{id}/analyze`, `.../export`, `.../export/zip`, `.../interpret` | `120/minute` |
 
 - Disabled when `RATE_LIMIT_DISABLED=1` or when `PYTEST_CURRENT_TEST` is set; `conftest.py` sets this before the app is imported.
 
@@ -379,7 +415,7 @@ A malformed value in any of these stops the service at startup instead of fallin
     │   │   ├── compute.py       # measure values from logs (ProM4Py miners, feeed) or PNML
     │   │   ├── catalog.py       # measures, miners, feature groups, bundled data, samples
     │   │   ├── storage.py       # session-scoped datasets on disk
-    │   │   └── export.py        # loadings as CSV / LaTeX, matrix as CSV
+    │   │   └── export.py        # loadings as CSV / LaTeX, matrix as CSV, analysis as ZIP
     │   ├── interpretation/      # factor names by Claude: payload, prompt, client, cache, limits
     │   ├── scripts/             # precompute_interpretations.py
     │   ├── datasets/            # bundled scores and sample logs/nets, see PROVENANCE.md

@@ -29,7 +29,12 @@ Schalk do it, but interactively in the browser.
 - **Same numbers as upstream.** On the bundled Inductive-miner scores the analysis equals
   ComFy's own report to four decimals; a test checks it. Oblique rotations report correct
   communalities, the structure matrix and the factor correlations.
-- **Export.** Loadings as CSV or as a LaTeX `tabular` for the paper, the cleaned matrix as CSV.
+- **Come back to a dataset.** The datasets of a session are listed on the data step, reopen
+  with the parameters of their last analysis and can be deleted one by one or all at once;
+  deleting a dataset job in the run history deletes its dataset too.
+- **Export.** Loadings as CSV or as a LaTeX `tabular` for the paper, the cleaned matrix as CSV,
+  or the whole analysis as a ZIP: result, matrix, tables, parameters, library versions and a
+  README on how to reproduce it.
 - **Interpretation by Claude (optional).** A button after the loadings asks Claude (Anthropic)
   for a name and a short interpretation of each factor, with the measures it rests on, a
   confidence and caveats such as cross-loadings or a failed Bartlett or KMO test. Only the
