@@ -593,7 +593,7 @@
       "bundled_size": "{rows} Beobachtungen × {cols} Maße",
       "cleaned_size": "{rows} Beobachtungen × {cols} Maße nach der Bereinigung",
       "license": "Lizenz: {license}",
-      "copy_citation": "Zitat kopieren",
+      "copy_citation": "Literaturnachweis kopieren",
       "copied": "Kopiert",
       "source_link": "Quelle",
       "sample_label": "Mitgeliefertes Beispiel",
