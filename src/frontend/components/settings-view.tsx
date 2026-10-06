@@ -708,7 +708,7 @@ function SettingRow({
     <div
       ref={rowRef}
       tabIndex={rowRef ? -1 : undefined}
-      className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-6 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+      className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-6 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-4 focus-visible:ring-offset-surface"
     >
       <div className="min-w-0 max-w-md">
         <div className="text-sm font-medium">{label}</div>

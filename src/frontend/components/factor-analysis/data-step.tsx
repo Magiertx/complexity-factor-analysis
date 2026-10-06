@@ -1007,7 +1007,8 @@ export function DataSummary({
   const t = useT();
   const name = datasetName(dataset, t);
   const withRun = !!dataset.job_id;
-  const title = "rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-accent";
+  const title =
+    "rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
 
   if (dataset.status === "computing") {
     const pct = progressPercent(dataset.progress);
