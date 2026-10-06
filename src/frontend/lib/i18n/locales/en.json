@@ -253,7 +253,7 @@
       "health": "Readiness probe: 200 when the database is reachable."
     },
     "notes": {
-      "rate_limits": "Rate limits per IP: `60/hour` on `POST /algorithms/{id}/analyze` and on `POST /factor-analysis/datasets`, `600/minute` on `GET /factor-analysis/datasets/{id}`, `300/hour` on `POST /log-stats` and `120/minute` everywhere else. Interpretations by Claude: `10/hour` per session and `200/day` for the server. Over a limit the answer is a 429 with a `code`.",
+      "rate_limits": "Rate limits per IP: `60/hour` on `POST /algorithms/{id}/analyze` and on `POST /factor-analysis/datasets`, `600/minute` on reading, listing and deleting datasets and on saving their options, `300/hour` on `POST /log-stats` and `120/minute` everywhere else. Interpretations by Claude: `10/hour` per session and `200/day` for the server. Over a limit the answer is a 429 with a `code`.",
       "quota": "Runs: at most 12 queued or running per session, and at most 4 dataset runs at once over all sessions; more are answered with a 429.",
       "uploads": "Uploads: at most 100 MB per file. `POST /algorithms/{id}/analyze` and `POST /log-stats` take one event log (`.xes`, `.xes.gz`, `.xml`, `.json`). `POST /factor-analysis/datasets` takes one `.csv`, up to 50 event logs (`.xes`, `.xes.gz`) or up to 200 Petri nets (`.pnml`), at most 500 MB together.",
       "session": "Session: a signed cookie scopes every endpoint. Reuse it across requests (in Python with `requests.Session()`) to keep your runs and datasets visible.",
