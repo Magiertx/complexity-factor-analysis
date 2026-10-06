@@ -19,7 +19,7 @@ type Mode = {
 
 const tabClass = (active: boolean) =>
   cn(
-    "group relative inline-flex items-center gap-2.5 px-4 py-3 text-sm font-medium border-b-2 transition whitespace-nowrap shrink-0 appearance-none focus-visible:outline-none focus-visible:bg-surface",
+    "group relative inline-flex items-center gap-2.5 px-4 py-3 text-sm font-medium border-b-2 transition whitespace-nowrap shrink-0 appearance-none focus-visible:outline-none focus-visible:bg-surface focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
     active ? "border-accent text-fg" : "border-transparent text-muted hover:text-fg hover:bg-surface/40",
   );
 
@@ -27,7 +27,7 @@ const tabClass = (active: boolean) =>
 // the page; while the drawer is open it is tinted instead.
 const toggleClass = (open: boolean) =>
   cn(
-    "group relative inline-flex items-center gap-2.5 px-4 py-3 text-sm font-medium border-b-2 border-transparent transition whitespace-nowrap shrink-0 appearance-none focus-visible:outline-none focus-visible:bg-surface",
+    "group relative inline-flex items-center gap-2.5 px-4 py-3 text-sm font-medium border-b-2 border-transparent transition whitespace-nowrap shrink-0 appearance-none focus-visible:outline-none focus-visible:bg-surface focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
     open ? "bg-accent/[0.08] text-fg" : "text-muted hover:text-fg hover:bg-surface/40",
   );
 
