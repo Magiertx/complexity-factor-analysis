@@ -450,6 +450,73 @@ def _xes(traces: list[list[str]]) -> bytes:
     return f'<?xml version="1.0" encoding="UTF-8"?><log xes.version="1.0">{body}</log>'.encode()
 
 
+def _can_take(path: str, within: float) -> bool:
+    """Whether the ProM turn lock ``path`` can be taken within ``within`` seconds."""
+    from algorithms import _prom4py
+
+    end = time.monotonic() + within
+
+    def give_up(msg: str) -> None:
+        if time.monotonic() >= end:
+            raise TimeoutError
+
+    try:
+        release = _prom4py._lock(path, give_up)
+    except TimeoutError:
+        return False
+    release()
+    return True
+
+
+def test_aborting_a_job_that_waits_for_its_turn_frees_the_worker(client, hanging_miner):
+    from algorithms import _prom4py
+
+    client.get("/jobs")  # the session cookie, also for the request in the thread below
+    posted: dict = {}
+
+    def create_dataset() -> None:
+        # Returns only once the dataset job, run as a background task, has ended.
+        posted["response"] = client.post(
+            "/factor-analysis/datasets",
+            data={
+                "kind": "model",
+                "source": "logs",
+                "miners": json.dumps(["Fake miner"]),
+                "measures": json.dumps(["Size", "Token split"]),
+            },
+            files=[("files", ("seq.xes", _xes([["a", "b", "c"]] * 3), "application/xml"))],
+        )
+
+    release_turn = _prom4py._acquire(None)  # another job is using ProM
+    try:
+        worker = threading.Thread(target=create_dataset)
+        worker.start()
+        deadline = time.time() + 30
+        while True:
+            waiting = [
+                j for j in client.get("/jobs").json()["jobs"]
+                if "waiting for ProM, another job is using it" in (j.get("progress_status") or "")
+            ]
+            if waiting:
+                break
+            assert time.time() < deadline, "the job never waited for its turn"
+            time.sleep(0.1)
+        [job] = waiting
+
+        assert client.post(f"/progress/{job['id']}/abort").status_code == 200
+        # It stops waiting, gives up its place in the queue and the job ends, while the other
+        # job still has ProM.
+        assert _can_take(_prom4py._NEXT_PATH, within=5.0)
+        worker.join(timeout=10)
+        assert not worker.is_alive()
+    finally:
+        release_turn()
+
+    assert client.get(f"/jobs/{job['id']}").json()["status"] == "aborted"
+    d = client.get(f"/factor-analysis/datasets/{posted['response'].json()['dataset_id']}").json()
+    assert d["status"] == "failed" and d["error"] == "Aborted by user"
+
+
 def test_a_timeout_is_a_failed_input_of_a_dataset_job(client, hanging_miner, monkeypatch):
     from algorithms import comfy
 
