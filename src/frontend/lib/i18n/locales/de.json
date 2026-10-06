@@ -489,6 +489,7 @@
       "must_be_number": "Muss eine gültige Zahl sein.",
       "must_be_at_least": "Muss mindestens {min} sein.",
       "must_be_at_most": "Darf höchstens {max} sein.",
+      "choose_one": "Wähle mindestens einen Eintrag.",
       "fix_validation": "Bitte behebe die Parameter-Validierungsfehler vor dem Ausführen.",
       "submitting": "Run wird gestartet…",
       "load_job_details": "Die Details des Runs konnten nicht geladen werden.",

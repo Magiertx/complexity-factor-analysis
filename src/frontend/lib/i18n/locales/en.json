@@ -489,6 +489,7 @@
       "must_be_number": "Must be a valid number.",
       "must_be_at_least": "Must be at least {min}.",
       "must_be_at_most": "Must be at most {max}.",
+      "choose_one": "Choose at least one.",
       "fix_validation": "Please fix parameter validation errors before running.",
       "submitting": "Starting the run…",
       "load_job_details": "The details of the run could not be loaded.",
