@@ -10,9 +10,11 @@ import { HelpLabel, StatTile } from "./step-section";
 export function DatasetView({
   dataset,
   measureName,
+  measureTitle,
 }: {
   dataset: FactorDataset;
   measureName: (key: string) => string;
+  measureTitle: (key: string) => string;
 }) {
   const t = useT();
   const tMaybe = useTMaybe();
@@ -42,7 +44,7 @@ export function DatasetView({
               <li
                 key={`${d.measure}:${d.reason}`}
                 className="inline-flex items-center gap-1.5 rounded-md bg-tile px-2 py-1 text-xs"
-                title={detailOf(d)}
+                title={measureTitle(d.measure)}
               >
                 <span className="font-medium">{measureName(d.measure)}</span>
                 <span className="rounded bg-bg/70 px-1 text-[10px] text-muted">
@@ -105,7 +107,7 @@ export function DatasetView({
                     key={m}
                     scope="col"
                     className="px-3 py-2 text-right font-medium text-muted border-b border-border whitespace-nowrap"
-                    title={m}
+                    title={measureTitle(m)}
                   >
                     {measureName(m)}
                   </th>

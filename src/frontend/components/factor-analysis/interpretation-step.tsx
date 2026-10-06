@@ -19,6 +19,8 @@ interface Props {
   canRun: boolean;
   onInterpret: () => void;
   measureName: (key: string) => string;
+  /** Name and description of a measure, for its tooltip. */
+  measureTitle: (key: string) => string;
 }
 
 const CONFIDENCE_STYLE = {
@@ -37,6 +39,7 @@ export function InterpretationView({
   canRun,
   onInterpret,
   measureName,
+  measureTitle,
 }: Props) {
   const t = useT();
   const available = !!status?.available;
@@ -138,7 +141,7 @@ export function InterpretationView({
                 {f.driving_measures.length > 0 && (
                   <ul aria-label={t("factor.interpretation.driving")} className="flex flex-wrap gap-1.5">
                     {f.driving_measures.map((m) => (
-                      <li key={m} className="rounded-md bg-surface px-2 py-0.5 text-xs">
+                      <li key={m} className="rounded-md bg-surface px-2 py-0.5 text-xs" title={measureTitle(m)}>
                         {measureName(m)}
                       </li>
                     ))}

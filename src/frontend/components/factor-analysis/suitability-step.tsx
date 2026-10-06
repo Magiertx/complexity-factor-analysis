@@ -23,9 +23,11 @@ interface Props {
   options: AnalysisOptions;
   onOptions: (patch: Partial<AnalysisOptions>) => void;
   measureName: (key: string) => string;
+  /** Name and description of a measure, for its tooltip. */
+  measureTitle: (key: string) => string;
 }
 
-export function SuitabilityView({ dataset, analysis, options, onOptions, measureName }: Props) {
+export function SuitabilityView({ dataset, analysis, options, onOptions, measureName, measureTitle }: Props) {
   const t = useT();
   const tMaybe = useTMaybe();
   const { locale } = useLocale();
@@ -103,7 +105,7 @@ export function SuitabilityView({ dataset, analysis, options, onOptions, measure
                       </span>
                       <ul className="flex flex-wrap gap-1.5 min-w-0">
                         {measures.map((r) => (
-                          <li key={r.measure} className="rounded-md bg-bg/70 px-2 py-1">
+                          <li key={r.measure} className="rounded-md bg-bg/70 px-2 py-1" title={measureTitle(r.measure)}>
                             <span className="font-medium">{measureName(r.measure)}</span>{" "}
                             <span className="font-mono text-muted">{formatNumber(r.msa, locale, 2)}</span>
                           </li>
@@ -124,6 +126,7 @@ export function SuitabilityView({ dataset, analysis, options, onOptions, measure
         options={options}
         onOptions={onOptions}
         measureName={measureName}
+        measureTitle={measureTitle}
       />
     </div>
   );
@@ -213,7 +216,7 @@ function Value({ label, value, title }: { label: string; value: string; title?: 
   );
 }
 
-function MsaTable({ dataset, analysis, options, onOptions, measureName }: Props) {
+function MsaTable({ dataset, analysis, options, onOptions, measureName, measureTitle }: Props) {
   const t = useT();
   const { locale } = useLocale();
   const excluded = new Set(options.excluded);
@@ -261,7 +264,7 @@ function MsaTable({ dataset, analysis, options, onOptions, measureName }: Props)
               return (
                 <tr key={m} className={cn("border-b border-border last:border-0", isExcluded && "text-muted")}>
                   <th scope="row" className="px-3 py-2 text-left font-medium">
-                    <label htmlFor={id} className="cursor-pointer">
+                    <label htmlFor={id} className="cursor-pointer" title={measureTitle(m)}>
                       {measureName(m)}
                     </label>
                   </th>

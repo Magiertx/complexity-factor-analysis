@@ -513,6 +513,13 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
 
   const names = useMemo(() => new Map((catalog?.measures ?? []).map((m) => [m.key, m.name])), [catalog]);
   const measureName = useCallback((key: string) => names.get(key) ?? key, [names]);
+  // The tooltip of a measure: its full name, which a cell may cut off, and what it measures.
+  const titles = useMemo(
+    () =>
+      new Map((catalog?.measures ?? []).map((m) => [m.key, m.description ? `${m.name}\n${m.description}` : m.name])),
+    [catalog],
+  );
+  const measureTitle = useCallback((key: string) => titles.get(key) ?? key, [titles]);
 
   const suitable = analysis ? analysis.bartlett.passed && analysis.kmo.passed : false;
   const interpretationStale =
@@ -706,7 +713,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             title={t("factor.steps.dataset")}
             description={t("factor.step_desc.dataset")}
           >
-            {ready && dataset ? <DatasetView dataset={dataset} measureName={measureName} /> : lockedHint}
+            {ready && dataset ? <DatasetView dataset={dataset} measureName={measureName} measureTitle={measureTitle} /> : lockedHint}
           </StepSection>
 
           <StepSection
@@ -736,6 +743,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                     options={options}
                     onOptions={updateOptions}
                     measureName={measureName}
+                    measureTitle={measureTitle}
                   />
                 </div>
               </div>
@@ -784,6 +792,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                     options={options}
                     onOptions={updateOptions}
                     measureName={measureName}
+                    measureTitle={measureTitle}
                     onExport={runExport}
                     exporting={exporting}
                     zipReady={analysisCurrent}
@@ -815,6 +824,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                 canRun={analysisCurrent}
                 onInterpret={runInterpretation}
                 measureName={measureName}
+                measureTitle={measureTitle}
               />
             ) : (
               resultPlaceholder

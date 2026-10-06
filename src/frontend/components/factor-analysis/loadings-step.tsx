@@ -23,13 +23,24 @@ interface Props {
   options: AnalysisOptions;
   onOptions: (patch: Partial<AnalysisOptions>) => void;
   measureName: (key: string) => string;
+  /** Name and description of a measure, for its tooltip. */
+  measureTitle: (key: string) => string;
   onExport: (format: ExportFormat) => void;
   exporting: ExportFormat | null;
   /** The analysis on screen matches the settings, so the ZIP holds what is shown. */
   zipReady: boolean;
 }
 
-export function LoadingsView({ analysis, options, onOptions, measureName, onExport, exporting, zipReady }: Props) {
+export function LoadingsView({
+  analysis,
+  options,
+  onOptions,
+  measureName,
+  measureTitle,
+  onExport,
+  exporting,
+  zipReady,
+}: Props) {
   const t = useT();
   const { locale } = useLocale();
   const [order, setOrder] = useState<"factor" | "original">("factor");
@@ -170,7 +181,7 @@ export function LoadingsView({ analysis, options, onOptions, measureName, onExpo
                     <th
                       scope="row"
                       className={cn(cellPad, "sticky left-0 z-10 bg-surface text-left font-medium max-w-[14rem] truncate")}
-                      title={m}
+                      title={measureTitle(m)}
                     >
                       {measureName(m)}
                     </th>
@@ -237,7 +248,7 @@ export function LoadingsView({ analysis, options, onOptions, measureName, onExpo
 
       {analysis.factor_correlations && <FactorCorrelations values={analysis.factor_correlations} pad={cellPad} />}
 
-      <FactorGroups analysis={analysis} measureName={measureName} />
+      <FactorGroups analysis={analysis} measureName={measureName} measureTitle={measureTitle} />
     </div>
   );
 }
@@ -332,7 +343,15 @@ function Legend({ threshold }: { threshold: number }) {
   );
 }
 
-function FactorGroups({ analysis, measureName }: { analysis: FactorAnalysis; measureName: (key: string) => string }) {
+function FactorGroups({
+  analysis,
+  measureName,
+  measureTitle,
+}: {
+  analysis: FactorAnalysis;
+  measureName: (key: string) => string;
+  measureTitle: (key: string) => string;
+}) {
   const t = useT();
   const { locale } = useLocale();
   return (
@@ -357,7 +376,7 @@ function FactorGroups({ analysis, measureName }: { analysis: FactorAnalysis; mea
                   {f.measures.map((m) => (
                     <li key={m.measure} className="text-xs">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="truncate" title={m.measure}>
+                        <span className="truncate" title={measureTitle(m.measure)}>
                           {measureName(m.measure)}
                         </span>
                         <span className="font-mono tabular-nums shrink-0">{formatNumber(m.loading, locale, 2)}</span>
@@ -387,7 +406,7 @@ function FactorGroups({ analysis, measureName }: { analysis: FactorAnalysis; mea
             </div>
             <ul className="flex flex-wrap gap-1.5">
               {analysis.unassigned.map((m) => (
-                <li key={m} className="rounded bg-tile px-1.5 py-0.5 text-xs">
+                <li key={m} className="rounded bg-tile px-1.5 py-0.5 text-xs" title={measureTitle(m)}>
                   {measureName(m)}
                 </li>
               ))}
