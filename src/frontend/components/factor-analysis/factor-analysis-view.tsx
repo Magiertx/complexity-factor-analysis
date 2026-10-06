@@ -1,19 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, HelpCircle, Loader2, Microscope, RotateCcw } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { AlertCircle, HelpCircle, Info, Loader2, Microscope, RotateCcw, X } from "lucide-react";
 import {
   HttpError,
   abortTask,
   analyzeDataset,
   createDataset,
+  deleteDataset,
+  downloadAnalysisZip,
   exportLoadings,
   fetchDataset,
   fetchFactorCatalog,
   fetchInterpretationStatus,
   interpretDataset,
+  listDatasets,
+  saveDatasetOptions,
   type CreateDatasetInput,
+  type DatasetSummary,
   type FactorAnalysis,
   type FactorCatalog,
   type FactorDataset,
@@ -21,10 +27,19 @@ import {
   type FactorKind,
   type InterpretationStatus,
 } from "@/lib/api";
-import { PREVIEW_ROWS, defaultOptions, downloadBlob, type AnalysisOptions } from "@/lib/factor-analysis";
+import {
+  PREVIEW_ROWS,
+  defaultOptions,
+  downloadBlob,
+  initialOptions,
+  optionsFromSaved,
+  type AnalysisOptions,
+  type ExportFormat,
+} from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { useJobsDrawer } from "@/components/jobs-drawer";
 import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
 import { DataForm, DataSummary } from "./data-step";
 import { DatasetView } from "./dataset-step";
@@ -46,6 +61,7 @@ const POLL_MS = 1500;
 // Polling slows down while the browser tab is hidden.
 const HIDDEN_POLL_MS = 15000;
 const ANALYZE_DEBOUNCE_MS = 300;
+const SAVE_OPTIONS_DEBOUNCE_MS = 1000;
 
 /** What an interpretation was requested for; a change of any part makes it stale. */
 function interpretationKey(datasetId: string, options: AnalysisOptions, locale: string) {
@@ -91,16 +107,26 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const [datasetId, setDatasetId] = useState<string | null>(null);
   const [dataset, setDataset] = useState<FactorDataset | null>(null);
   const [datasetError, setDatasetError] = useState<string | null>(null);
+  // The dataset that was open answered 404; said instead of starting over silently.
+  const [gone, setGone] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  // The datasets of this kind in the session, offered for reopening in the data step.
+  const [datasets, setDatasets] = useState<DatasetSummary[] | null>(null);
   const [choosing, setChoosing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // Changes whenever jobs come or go, e.g. one deleted in the jobs drawer next to this view.
+  const { count: jobCount } = useJobsDrawer();
 
   const [options, setOptions] = useState<AnalysisOptions>(() => defaultOptions(kind));
+  // The dataset whose saved options were applied, and the options the server has for it.
+  const optionsAppliedFor = useRef<string | null>(null);
+  const savedOptions = useRef<{ id: string; json: string | null } | null>(null);
   // The last successful result stays visible while a new one is computed or after an error.
   const [analysis, setAnalysis] = useState<FactorAnalysis | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
-  const [exporting, setExporting] = useState<"csv" | "latex" | null>(null);
+  const [exporting, setExporting] = useState<ExportFormat | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
   const onboarding = useOnboarding();
@@ -140,18 +166,14 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     return () => ctrl.abort();
   }, [kind, catalogAttempt]);
 
-  // Datasets live in the server session; remember the last one per tab. A link from the
-  // jobs list (?dataset=<id>) takes precedence once; it is removed from the address, so a
-  // reload shows the dataset chosen last.
+  // Datasets live in the server session; remember the last one per tab. A link to one
+  // (?dataset=<id>) is opened by DatasetLink and takes precedence.
   useEffect(() => {
-    const linked = new URLSearchParams(window.location.search).get("dataset");
-    if (linked) window.history.replaceState(window.history.state, "", window.location.pathname);
     try {
-      if (linked) localStorage.setItem(storageKey, linked);
-      const saved = linked ?? localStorage.getItem(storageKey);
+      const saved = localStorage.getItem(storageKey);
       if (saved) setDatasetId(saved);
     } catch {
-      if (linked) setDatasetId(linked);
+      /* storage blocked */
     }
   }, [storageKey]);
 
@@ -160,6 +182,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       setDatasetId(id);
       setDataset(null);
       setDatasetError(null);
+      setDeleteError(null);
+      if (id) setGone(false);
       setAnalysis(null);
       setAnalysisError(null);
       setAnalyzedOptions(null);
@@ -167,8 +191,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       setInterpretError(null);
       // A request for the old dataset is aborted and would not reset this itself.
       setAnalyzing(false);
-      // Keep rotation and thresholds, but exclusions and the factor count belong to the old data.
-      setOptions((o) => ({ ...o, excluded: [], n_factors: null }));
+      // Every dataset has its own options; those saved with it are applied once it has loaded.
+      setOptions(defaultOptions(kind));
+      optionsAppliedFor.current = null;
       try {
         if (id) localStorage.setItem(storageKey, id);
         else localStorage.removeItem(storageKey);
@@ -176,10 +201,26 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         /* storage blocked */
       }
     },
-    [storageKey],
+    [storageKey, kind],
   );
 
-  // Load the dataset and poll while its measures are computed.
+  // Opens a dataset of the session: from the list in the data step or from a link.
+  const openDataset = useCallback(
+    (id: string) => {
+      setChoosing(false);
+      if (id !== datasetIdRef.current) selectDataset(id);
+    },
+    [selectDataset],
+  );
+
+  // Deleted, or expired with the session: back to the form, with a note why.
+  const datasetGone = useCallback(() => {
+    selectDataset(null);
+    setGone(true);
+  }, [selectDataset]);
+
+  // Load the dataset and poll while its measures are computed. Loaded again when jobs come or
+  // go, since deleting the job of a computed dataset deletes the dataset as well.
   useEffect(() => {
     if (!datasetId) return;
     const ctrl = new AbortController();
@@ -192,14 +233,21 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           selectDataset(null);
           return;
         }
+        // Once per opening, start from the options saved with the dataset. Set together with
+        // the dataset, so that the first analysis already uses them.
+        if (d.status === "ready" && optionsAppliedFor.current !== d.id) {
+          optionsAppliedFor.current = d.id;
+          const saved = d.options ? JSON.stringify(optionsFromSaved(kind, d.options)) : null;
+          savedOptions.current = { id: d.id, json: saved };
+          setOptions(initialOptions(kind, d.options, d.measures));
+        }
         setDataset(d);
         setDatasetError(null);
         if (d.status === "computing") timer = setTimeout(load, interval());
       } catch (e) {
         if (ctrl.signal.aborted) return;
         if (e instanceof HttpError && e.status === 404) {
-          // Expired with the session or deleted; start over.
-          selectDataset(null);
+          datasetGone();
           return;
         }
         setDatasetError(errorTextRef.current(e, tRef.current("factor.data.load_failed")));
@@ -211,7 +259,22 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       ctrl.abort();
       clearTimeout(timer);
     };
-  }, [datasetId, kind, selectDataset]);
+  }, [datasetId, kind, selectDataset, datasetGone, jobCount]);
+
+  // The list for the data step: fetched again when the form opens, when jobs come or go and
+  // when the open dataset is ready or failed.
+  const formOpen = choosing || !datasetId;
+  const datasetStatus = dataset?.status;
+  useEffect(() => {
+    const ctrl = new AbortController();
+    listDatasets(kind, ctrl.signal)
+      .then(setDatasets)
+      .catch(() => {
+        // Without the list the data step offers new data only.
+        if (!ctrl.signal.aborted) setDatasets((list) => list ?? []);
+      });
+    return () => ctrl.abort();
+  }, [kind, formOpen, jobCount, datasetStatus]);
 
   const ready = !!dataset && dataset.status === "ready" && dataset.id === datasetId;
 
@@ -228,6 +291,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         setAnalysisError(null);
       } catch (e) {
         if (ctrl.signal.aborted) return;
+        if (e instanceof HttpError && e.status === 404) {
+          datasetGone();
+          return;
+        }
         setAnalysisError(errorTextRef.current(e, tRef.current("factor.analysis.failed")));
       } finally {
         if (!ctrl.signal.aborted) setAnalyzing(false);
@@ -237,7 +304,25 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       clearTimeout(timer);
       ctrl.abort();
     };
-  }, [ready, datasetId, options]);
+  }, [ready, datasetId, options, datasetGone]);
+
+  // Remember the options of every new analysis with its dataset, so that reopening the dataset
+  // starts from them. Nothing depends on the answer; a failure only costs that convenience.
+  useEffect(() => {
+    if (!datasetId || !analyzedOptions) return;
+    const json = JSON.stringify(analyzedOptions);
+    const saved = savedOptions.current;
+    if (saved?.id === datasetId && saved.json === json) return;
+    const timer = setTimeout(() => {
+      saveDatasetOptions(datasetId, analyzedOptions).then(
+        () => {
+          if (datasetIdRef.current === datasetId) savedOptions.current = { id: datasetId, json };
+        },
+        (e) => console.error("Could not save the analysis options", e),
+      );
+    }, SAVE_OPTIONS_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [datasetId, analyzedOptions]);
 
   // Show a stored interpretation of the analysis on screen without asking for a new one:
   // precomputed for a bundled dataset, or requested before. Never calls the model. Without a
@@ -262,12 +347,12 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     return () => ctrl.abort();
   }, [ready, datasetId, analyzedOptions, analyzedFactors, locale, lookupInterpretation]);
 
-  // Only the analysis on screen can be interpreted: during the debounce after a change of the
-  // settings, `options` are already ahead of it.
-  const canInterpret = !!analyzedOptions && analyzedOptions === options && !analyzing;
+  // Only the analysis on screen can be interpreted or downloaded as a whole: during the
+  // debounce after a change of the settings, `options` are already ahead of it.
+  const analysisCurrent = !!analyzedOptions && analyzedOptions === options && !analyzing;
 
   const runInterpretation = async () => {
-    if (!datasetId || !analyzedOptions || !canInterpret) return;
+    if (!datasetId || !analyzedOptions || !analysisCurrent) return;
     const forDataset = datasetId;
     const forOptions = analyzedOptions;
     const key = interpretationKey(datasetId, forOptions, locale);
@@ -320,13 +405,37 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     selectDataset(null);
   };
 
-  const runExport = async (format: "csv" | "latex") => {
+  const removeDataset = async (id: string) => {
+    setDeleteError(null);
+    try {
+      await deleteDataset(id);
+    } catch (e) {
+      // Gone already is as good as deleted.
+      if (!(e instanceof HttpError && e.status === 404)) {
+        setDeleteError(errorText(e, t("factor.data.delete_failed")));
+        return false;
+      }
+    }
+    setDatasets((list) => list && list.filter((d) => d.id !== id));
+    if (id === datasetIdRef.current) {
+      selectDataset(null);
+      setChoosing(false);
+    }
+    return true;
+  };
+
+  const runExport = async (format: ExportFormat) => {
     if (!datasetId) return;
     setExporting(format);
     setExportError(null);
     try {
-      const { blob, filename } = await exportLoadings(datasetId, options, format);
-      downloadBlob(blob, filename);
+      if (format === "zip") {
+        // The button is enabled only while both are the same: the ZIP holds what is shown.
+        await downloadAnalysisZip(datasetId, analyzedOptions ?? options, locale);
+      } else {
+        const { blob, filename } = await exportLoadings(datasetId, options, format);
+        downloadBlob(blob, filename);
+      }
     } catch (e) {
       setExportError(errorText(e, t("factor.loadings.export_failed")));
     } finally {
@@ -403,6 +512,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     <div className="space-y-6">
       <OnboardingTour open={onboarding.open} onClose={onboarding.close} />
       <FactorTour kind={kind} run={tourOpen} onClose={() => setTourOpen(false)} />
+      <Suspense fallback={null}>
+        <DatasetLink onLink={openDataset} />
+      </Suspense>
 
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 max-w-3xl">
@@ -438,6 +550,20 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             title={t("factor.steps.data")}
             description={t(`factor.step_desc.data_${kind}`)}
           >
+            {gone && (
+              <div role="status" className="mb-4 rounded-lg bg-tile px-3.5 py-2.5 flex items-start gap-2.5 text-sm">
+                <Info className="h-4 w-4 text-muted shrink-0 mt-0.5" />
+                <p className="flex-1 min-w-0">{t("factor.data.gone")}</p>
+                <button
+                  type="button"
+                  onClick={() => setGone(false)}
+                  aria-label={t("factor.data.dismiss_aria")}
+                  className="h-6 w-6 -my-0.5 grid place-items-center rounded text-muted hover:text-fg hover:bg-accent/[0.08] transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
             {catalogError ? (
               <div role="alert" className="rounded-lg bg-danger/10 px-3.5 py-3 flex items-start gap-2.5 text-sm">
                 <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
@@ -449,22 +575,32 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                   </Button>
                 </div>
               </div>
-            ) : !catalog ? (
+            ) : !catalog || (formOpen && !datasets) ? (
               <div className="text-sm text-muted flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 {t("common.loading")}
               </div>
-            ) : choosing || !datasetId ? (
+            ) : formOpen ? (
               <DataForm
                 kind={kind}
                 catalog={catalog}
+                datasets={datasets ?? []}
+                openId={datasetId}
                 submitting={submitting}
                 submitError={submitError}
                 onSubmit={submit}
+                onOpen={openDataset}
+                onDelete={removeDataset}
                 onCancel={dataset && choosing ? () => setChoosing(false) : undefined}
               />
             ) : dataset ? (
-              <DataSummary dataset={dataset} onChange={() => setChoosing(true)} onCancelJob={cancelJob} />
+              <DataSummary
+                dataset={dataset}
+                catalog={catalog}
+                onChange={() => setChoosing(true)}
+                onCancelJob={cancelJob}
+                onDelete={() => removeDataset(dataset.id)}
+              />
             ) : datasetError ? (
               <Button variant="outline" size="sm" onClick={() => selectDataset(null)}>
                 {t("factor.data.change")}
@@ -478,6 +614,11 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             {datasetError && (
               <p role="alert" className="mt-3 text-xs text-danger-ink">
                 {datasetError}
+              </p>
+            )}
+            {deleteError && (
+              <p role="alert" className="mt-3 text-xs text-danger-ink">
+                {deleteError}
               </p>
             )}
           </StepSection>
@@ -569,6 +710,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                     measureName={measureName}
                     onExport={runExport}
                     exporting={exporting}
+                    zipReady={analysisCurrent}
                   />
                 </div>
               </div>
@@ -594,7 +736,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                 stale={interpretationStale}
                 running={interpreting}
                 error={interpretError}
-                canRun={canInterpret}
+                canRun={analysisCurrent}
                 onInterpret={runInterpretation}
                 measureName={measureName}
               />
@@ -606,6 +748,23 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       </div>
     </div>
   );
+}
+
+/**
+ * Opens the dataset of a link (?dataset=<id>), e.g. from a job card, also while the tab is
+ * already shown, and removes it from the address, so a reload shows the dataset chosen last.
+ * Its own component, so that only it waits for the search params on the client.
+ */
+function DatasetLink({ onLink }: { onLink: (id: string) => void }) {
+  const linked = useSearchParams().get("dataset");
+  useEffect(() => {
+    if (!linked) return;
+    // Without a state of its own, Next.js takes the new address over, so the same link opens
+    // the dataset again later.
+    window.history.replaceState(null, "", window.location.pathname);
+    onLink(linked);
+  }, [linked, onLink]);
+  return null;
 }
 
 function AnalysisError({

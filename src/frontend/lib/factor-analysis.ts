@@ -1,7 +1,9 @@
 // Helpers for the factor analysis view. Kept free of React so they stay easy to reuse.
 
 import type { CSSProperties } from "react";
-import type { FactorAnalysis, FactorKind, Job, Rotation } from "./api";
+import type { AnalyzeOptions, FactorAnalysis, FactorKind, Job, Rotation } from "./api";
+
+type Translate = (key: string, params?: Record<string, string | number>) => string;
 
 export interface AnalysisOptions {
   excluded: string[];
@@ -29,6 +31,41 @@ export function defaultOptions(kind: FactorKind): AnalysisOptions {
     communality_threshold: kind === "log" ? 0.5 : 0,
   };
 }
+
+/**
+ * Options saved with a dataset, completed with the defaults. Same key order as the defaults,
+ * so options compare equal as JSON however they were made.
+ */
+export function optionsFromSaved(kind: FactorKind, saved: AnalyzeOptions): AnalysisOptions {
+  const defaults = defaultOptions(kind);
+  return {
+    excluded: saved.excluded ?? [],
+    auto_msa_filter: saved.auto_msa_filter ?? defaults.auto_msa_filter,
+    msa_threshold: saved.msa_threshold ?? defaults.msa_threshold,
+    bartlett_alpha: saved.bartlett_alpha ?? defaults.bartlett_alpha,
+    n_factors: saved.n_factors ?? null,
+    rotation: saved.rotation ?? defaults.rotation,
+    loading_threshold: saved.loading_threshold ?? defaults.loading_threshold,
+    communality_threshold: saved.communality_threshold ?? defaults.communality_threshold,
+  };
+}
+
+/**
+ * The options a dataset opens with: those saved with it, else the defaults. Exclusions of
+ * measures the dataset no longer has are dropped.
+ */
+export function initialOptions(
+  kind: FactorKind,
+  saved: AnalyzeOptions | null | undefined,
+  measures: string[],
+): AnalysisOptions {
+  if (!saved) return defaultOptions(kind);
+  const options = optionsFromSaved(kind, saved);
+  return { ...options, excluded: options.excluded.filter((m) => measures.includes(m)) };
+}
+
+/** localStorage keys of the factor analysis tabs, cleared with the datasets in the settings. */
+export const STORAGE_PREFIXES = ["app.factor-dataset-", "app.factor-options-"];
 
 /** Fewest measures the backend accepts for an analysis. */
 export const MIN_MEASURES = 3;
@@ -116,6 +153,9 @@ export function progressPercent(progress: number | undefined): number | null {
   return Math.max(0, Math.min(100, Math.round(progress)));
 }
 
+/** The loadings table as CSV or LaTeX, or the whole analysis as a ZIP. */
+export type ExportFormat = "csv" | "latex" | "zip";
+
 export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -127,17 +167,75 @@ export function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-/** The name of a job in the UI language; the backend names dataset jobs in English. */
-export function jobDisplayName(job: Job, t: (key: string, params?: Record<string, string | number>) => string): string {
-  if (!job.algorithm_id.startsWith("_dataset:")) return job.algorithm_name;
-  const kind = job.algorithm_id.slice("_dataset:".length) === "log" ? "log" : "model";
-  return t(`jobs.dataset_name.${kind}`);
+/** Dataset jobs are stored as "_dataset:<kind>"; null for every other job. */
+function datasetJobKind(job: Job): FactorKind | null {
+  if (!job.algorithm_id.startsWith("_dataset:")) return null;
+  return job.algorithm_id.slice("_dataset:".length) === "log" ? "log" : "model";
 }
 
-/** Dataset jobs are stored as "_dataset:<kind>"; this is the tab that shows their dataset. */
+/** The name of a job's algorithm in the UI language; the backend names dataset jobs in English. */
+export function jobDisplayName(job: Job, t: Translate): string {
+  const kind = datasetJobKind(job);
+  return kind ? t(`jobs.dataset_name.${kind}`) : job.algorithm_name;
+}
+
+/** The title of a job: the name of the dataset it computes, else the name of its algorithm. */
+export function jobTitle(job: Job, t: Translate): string {
+  const name = job.params?.dataset_name;
+  return datasetJobKind(job) && typeof name === "string" && name ? name : jobDisplayName(job, t);
+}
+
+/** "1 log" or "4 logs": the text of `key`, or of `<key>_plural` for any other count. */
+export function countText(t: Translate, key: string, n: number): string {
+  return t(n === 1 ? key : `${key}_plural`, { n });
+}
+
+/** What a dataset job computes, e.g. "Model complexity · 4 logs × 2 miners"; null for other jobs. */
+export function datasetJobSubtitle(job: Job, t: Translate): string | null {
+  const kind = datasetJobKind(job);
+  if (!kind) return null;
+  const params = job.params ?? {};
+  const count = (key: string, v: unknown) => (Array.isArray(v) ? countText(t, `factor.inputs.${key}`, v.length) : null);
+  const nets = params.source === "pnml";
+  // The backend names the input of a dataset job "<n> log(s)" or "<n> net(s)".
+  const n = parseInt(job.filename, 10);
+  const files = Number.isFinite(n) ? countText(t, nets ? "factor.inputs.nets" : "factor.inputs.logs", n) : null;
+  const miners = count("miners", params.miners);
+  // Every log is mined with every miner, hence the product.
+  const inputs =
+    kind === "log"
+      ? [files, count("groups", params.groups)]
+      : !nets && files && miners
+        ? [`${files} × ${miners}`]
+        : [files, count("measures", params.measures)];
+  return [t(`mode_bar.${kind}_label`), ...inputs].filter(Boolean).join(" · ");
+}
+
+/** The tab that shows the dataset of a dataset job, with a link to it; null for other jobs. */
 export function datasetJobHref(job: Job): string | null {
-  if (!job.algorithm_id.startsWith("_dataset:")) return null;
-  const tab = job.algorithm_id.slice("_dataset:".length) === "log" ? "/log" : "/";
+  const kind = datasetJobKind(job);
+  if (!kind) return null;
+  const tab = kind === "log" ? "/log" : "/";
   const id = job.params?.dataset_id;
   return typeof id === "string" ? `${tab}?dataset=${encodeURIComponent(id)}` : tab;
+}
+
+const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
+  ["year", 365 * 24 * 3600],
+  ["month", 30 * 24 * 3600],
+  ["week", 7 * 24 * 3600],
+  ["day", 24 * 3600],
+  ["hour", 3600],
+  ["minute", 60],
+];
+
+/** "3 hours ago" in the given locale; an empty string for a date that cannot be read. */
+export function relativeTime(iso: string, locale: string, now = Date.now()): string {
+  const seconds = (new Date(iso).getTime() - now) / 1000;
+  if (!Number.isFinite(seconds)) return "";
+  const format = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+  for (const [unit, size] of RELATIVE_UNITS) {
+    if (Math.abs(seconds) >= size) return format.format(Math.round(seconds / size), unit);
+  }
+  return format.format(0, "second");
 }

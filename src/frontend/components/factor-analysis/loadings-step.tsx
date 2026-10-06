@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileCode2, FileSpreadsheet, Loader2 } from "lucide-react";
+import { FileArchive, FileCode2, FileSpreadsheet, Loader2 } from "lucide-react";
 import type { FactorAnalysis } from "@/lib/api";
 import {
   ORTHOGONAL,
@@ -11,6 +11,7 @@ import {
   orderMeasures,
   signColor,
   type AnalysisOptions,
+  type ExportFormat,
 } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
@@ -23,11 +24,13 @@ interface Props {
   options: AnalysisOptions;
   onOptions: (patch: Partial<AnalysisOptions>) => void;
   measureName: (key: string) => string;
-  onExport: (format: "csv" | "latex") => void;
-  exporting: "csv" | "latex" | null;
+  onExport: (format: ExportFormat) => void;
+  exporting: ExportFormat | null;
+  /** The analysis on screen matches the settings, so the ZIP holds what is shown. */
+  zipReady: boolean;
 }
 
-export function LoadingsView({ analysis, options, onOptions, measureName, onExport, exporting }: Props) {
+export function LoadingsView({ analysis, options, onOptions, measureName, onExport, exporting, zipReady }: Props) {
   const t = useT();
   const [order, setOrder] = useState<"factor" | "original">("factor");
   const [matrix, setMatrix] = useState<"pattern" | "structure">("pattern");
@@ -110,6 +113,16 @@ export function LoadingsView({ analysis, options, onOptions, measureName, onExpo
           <Button variant="outline" size="sm" onClick={() => onExport("latex")} disabled={exporting !== null}>
             {exporting === "latex" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileCode2 className="h-3.5 w-3.5" />}
             {t("factor.loadings.export_latex")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onExport("zip")}
+            disabled={exporting !== null || !zipReady}
+            title={t("factor.loadings.export_zip_title")}
+          >
+            {exporting === "zip" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileArchive className="h-3.5 w-3.5" />}
+            {t("factor.loadings.export_zip")}
           </Button>
         </div>
       </div>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 import { Network, ScrollText, History, ListChecks } from "lucide-react";
-import { PANEL_ROUTES, useJobsDrawer } from "./jobs-drawer";
+import { hasJobsPanel, useJobsDrawer } from "./jobs-drawer";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
@@ -48,7 +48,7 @@ export function ModeBar() {
     [t],
   );
 
-  const showJobs = PANEL_ROUTES.has(pathname);
+  const showJobs = hasJobsPanel(pathname);
 
   return (
     <div className="border-b border-border bg-bg">

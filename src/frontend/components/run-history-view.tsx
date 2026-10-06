@@ -25,7 +25,7 @@ import { Card, CardContent } from "./ui/card";
 import { Segmented } from "./ui/segmented";
 import { Input } from "./ui/input";
 import { Select } from "./ui/select";
-import { datasetJobHref, jobDisplayName } from "@/lib/factor-analysis";
+import { datasetJobHref, datasetJobSubtitle, jobDisplayName, jobTitle } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
@@ -118,6 +118,7 @@ export function RunHistoryView() {
       }
       if (!q) return true;
       return (
+        jobTitle(j, t).toLowerCase().includes(q) ||
         jobDisplayName(j, t).toLowerCase().includes(q) ||
         j.filename.toLowerCase().includes(q) ||
         j.id.toLowerCase().includes(q)
@@ -239,6 +240,8 @@ export function RunHistoryView() {
                 const date = new Date(job.created_at * 1000);
                 const isBatch = job.algorithm_id.startsWith("_batch");
                 const detailHref = datasetJobHref(job) ?? `/inspect?job=${job.id}`;
+                const title = jobTitle(job, t);
+                const subtitle = datasetJobSubtitle(job, t);
                 return (
                   <li key={job.id} className="p-4 flex items-start gap-4 flex-wrap hover:bg-surface/40 transition">
                     <div className="flex-1 min-w-[260px] space-y-1.5">
@@ -246,8 +249,8 @@ export function RunHistoryView() {
                         {isBatch && (
                           <Layers className="h-3.5 w-3.5 text-muted shrink-0" aria-label={t("jobs.mode.batch")} />
                         )}
-                        <span className="text-sm font-medium truncate" title={jobDisplayName(job, t)}>
-                          {jobDisplayName(job, t)}
+                        <span className="text-sm font-medium truncate" title={title}>
+                          {title}
                         </span>
                         <span
                           className={cn(
@@ -261,9 +264,15 @@ export function RunHistoryView() {
                         </span>
                       </div>
                       <div className="text-[11px] text-muted flex items-center gap-2 flex-wrap font-mono">
-                        <span className="truncate" title={job.filename}>
-                          {job.filename}
-                        </span>
+                        {subtitle ? (
+                          <span className="truncate font-sans" title={subtitle}>
+                            {subtitle}
+                          </span>
+                        ) : (
+                          <span className="truncate" title={job.filename}>
+                            {job.filename}
+                          </span>
+                        )}
                         <span>·</span>
                         <span>{date.toLocaleString()}</span>
                         {job.error && (
@@ -317,7 +326,7 @@ export function RunHistoryView() {
                           onClick={() => setConfirmingDelete(job.id)}
                           className="h-8 w-8 grid place-items-center rounded-md text-muted hover:text-danger-ink hover:bg-surface transition"
                           aria-label={t("run_history.delete_run_aria", { id: job.id })}
-                          title={t("run_history.delete_run_title")}
+                          title={t(subtitle ? "run_history.delete_dataset_run_title" : "run_history.delete_run_title")}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>

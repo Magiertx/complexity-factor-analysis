@@ -24,16 +24,18 @@ import {
   CheckCircle2,
   XCircle,
   CircleSlash,
+  CircleStop,
 } from "lucide-react";
 import {
   AlgorithmManifest,
   Job,
+  abortTask,
   deleteAllJobs,
   deleteJob,
   fetchAlgorithms,
   fetchJobs,
 } from "@/lib/api";
-import { datasetJobHref, jobDisplayName } from "@/lib/factor-analysis";
+import { datasetJobHref, datasetJobSubtitle, jobDisplayName, jobTitle } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
@@ -77,6 +79,8 @@ const TOOL_TYPE_ICON: Record<string, React.ComponentType<{ className?: string }>
 
 interface JobsDrawerContextValue {
   open: boolean;
+  /** The drawer slides over the page instead of being a column next to it. */
+  overlay: boolean;
   setOpen: (v: boolean) => void;
   toggle: () => void;
   // Job count for the badge on the mode-bar button. Filled in by the drawer
@@ -93,34 +97,49 @@ export function useJobsDrawer() {
   return ctx;
 }
 
-// Routes on which the jobs panel is shown as a layout column. Only the single-log
-// workbench starts jobs that are worth browsing next to the page.
+// Routes on which the jobs panel is shown as a layout column: the single-log workbench.
 export const PANEL_ROUTES = new Set(["/inspect"]);
+// Routes on which it slides over the page instead, at every width: the factor analysis tabs,
+// whose step layout a column would squeeze.
+export const OVERLAY_ROUTES = new Set(["/", "/log"]);
+
+export function hasJobsPanel(pathname: string) {
+  return PANEL_ROUTES.has(pathname) || OVERLAY_ROUTES.has(pathname);
+}
 
 export function JobsDrawerProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const overlay = OVERLAY_ROUTES.has(pathname);
   // Default `false` for SSR consistency; the effect below switches to `true`
   // after mount on lg+ viewports (or restores the state from localStorage).
-  const [open, setOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
+  // The overlay is neither remembered nor opened by default: open on load it would cover the
+  // page. It closes when the page changes.
+  const [overlayOpen, setOverlayOpen] = useState(false);
   const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    setOverlayOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
       const stored = localStorage.getItem("app.jobs-drawer-open");
       if (stored !== null) {
-        setOpen(stored === "true");
+        setPanelOpen(stored === "true");
       } else if (window.matchMedia("(min-width: 1024px)").matches) {
-        setOpen(true);
+        setPanelOpen(true);
       }
     } catch {
       if (window.matchMedia("(min-width: 1024px)").matches) {
-        setOpen(true);
+        setPanelOpen(true);
       }
     }
   }, []);
 
   const setOpenWithStorage = useCallback((v: boolean | ((prev: boolean) => boolean)) => {
-    setOpen((prev) => {
+    setPanelOpen((prev) => {
       const next = typeof v === "function" ? v(prev) : v;
       try {
         if (window.matchMedia("(min-width: 1024px)").matches) {
@@ -133,10 +152,12 @@ export function JobsDrawerProvider({ children }: { children: React.ReactNode }) 
     });
   }, []);
 
-  const toggle = useCallback(() => setOpenWithStorage((v) => !v), [setOpenWithStorage]);
+  const open = overlay ? overlayOpen : panelOpen;
+  const setOpen = overlay ? setOverlayOpen : setOpenWithStorage;
+  const toggle = useCallback(() => setOpen((v) => !v), [setOpen]);
   const value = useMemo(
-    () => ({ open, setOpen: setOpenWithStorage, toggle, count, setCount }),
-    [open, setOpenWithStorage, toggle, count],
+    () => ({ open, overlay, setOpen, toggle, count, setCount }),
+    [open, overlay, setOpen, toggle, count],
   );
   return <JobsDrawerContext.Provider value={value}>{children}</JobsDrawerContext.Provider>;
 }
@@ -145,7 +166,7 @@ export function JobsDrawerProvider({ children }: { children: React.ReactNode }) 
 
 export function JobsDrawer() {
   const t = useT();
-  const { open, setOpen, setCount } = useJobsDrawer();
+  const { open, overlay, setOpen, setCount } = useJobsDrawer();
   const pathname = usePathname();
   // The open job always arrives as a ?job=<id> deep link (that is how job
   // cards and the run history navigate), which lets us highlight the active
@@ -156,9 +177,14 @@ export function JobsDrawer() {
   const [algorithms, setAlgorithms] = useState<AlgorithmManifest[]>([]);
   const [loading, setLoading] = useState(true);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const closeRef = useRef<HTMLButtonElement | null>(null);
+  // Rendered on the client only: the drawer starts closed anyway, and its texts would follow
+  // the stored language before React hydrates this Suspense boundary, which then mismatches.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  // Only shown next to the workbench. Elsewhere the run history page lists the jobs.
-  const isBuilderRoute = PANEL_ROUTES.has(pathname);
+  // Only shown where jobs are started. Elsewhere the run history page lists the jobs.
+  const shown = hasJobsPanel(pathname) && mounted;
 
   const algoById = useMemo(() => {
     const m = new Map<string, AlgorithmManifest>();
@@ -233,6 +259,19 @@ export function JobsDrawer() {
     return () => window.removeEventListener("keydown", handler);
   }, [open, setOpen]);
 
+  // Over the page, the drawer takes the focus while it is open and hands it back when it
+  // closes; as a column next to the page it leaves the focus where it is.
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!open || !panel || !(overlay || !window.matchMedia("(min-width: 1024px)").matches)) return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    closeRef.current?.focus();
+    return () => {
+      const focus = document.activeElement;
+      if (!focus || focus === document.body || panel.contains(focus)) previous?.focus();
+    };
+  }, [open, shown, overlay]);
+
   const handleClearAll = async () => {
     if (!confirm(t("jobs.clear_all_confirm"))) return;
     await deleteAllJobs();
@@ -246,14 +285,20 @@ export function JobsDrawer() {
     setCount(jobs.length - 1);
   };
 
-  if (!isBuilderRoute) return null;
+  const handleAbort = async (id: string) => {
+    if (await abortTask(id)) {
+      setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, status: "aborted" } : j)));
+    }
+  };
+
+  if (!shown) return null;
 
   return (
     <>
-      {/* Mobile backdrop; the desktop layout column needs no dimming */}
+      {/* Backdrop below lg and wherever the drawer is an overlay; a column needs no dimming */}
       {open && (
         <div
-          className="fixed inset-0 bg-black/40 z-40 transition-opacity lg:hidden"
+          className={cn("fixed inset-0 bg-black/40 z-40 transition-opacity", !overlay && "lg:hidden")}
           onClick={() => setOpen(false)}
           aria-hidden
         />
@@ -261,15 +306,19 @@ export function JobsDrawer() {
 
       {/*
         Mobile (default classes): fixed right-side drawer with shadow,
-        slides in and out via translate-x.
-        lg+: becomes a static layout column; open/close collapses the width
-        instead of translating, and shadow and left border go away.
+        slides in and out via translate-x. The overlay routes keep this at
+        every width.
+        lg+ elsewhere: becomes a static layout column; open/close collapses
+        the width instead of translating, and shadow and left border go away.
+        Closed, it is inert, so its links cannot be reached with Tab.
       */}
       <aside
+        id="jobs-drawer"
         ref={panelRef}
         role={open ? "dialog" : undefined}
         aria-modal={open ? "true" : undefined}
         aria-label={t("jobs.archive_aria")}
+        inert={!open}
         className={cn(
           "shrink-0 transition-all duration-300 ease-out overflow-hidden",
           // Mobile baseline: fixed drawer, decorations directly on the aside
@@ -281,16 +330,15 @@ export function JobsDrawer() {
           // column's offset from the viewport top. The aside's own
           // overflow-hidden does not break sticky; only overflow on an
           // ancestor would, and row and body have none.
-          "lg:sticky lg:top-0 lg:self-start lg:h-[calc(100vh_-_157px)] lg:max-w-none lg:bg-transparent lg:border-l-0 lg:shadow-none lg:z-auto",
+          !overlay &&
+            "lg:sticky lg:top-0 lg:self-start lg:h-[calc(100vh_-_157px)] lg:max-w-none lg:bg-transparent lg:border-l-0 lg:shadow-none lg:z-auto",
           // Mobile slide (reset on desktop via lg:translate-x-0)
           open ? "translate-x-0" : "translate-x-full",
-          "lg:translate-x-0",
+          !overlay && "lg:translate-x-0",
           // Desktop collapse animates the width, not the inner card. The inner
           // wrapper has a fixed width, so it is clipped instead of reflowed
           // while the aside shrinks to 0.
-          open
-            ? "lg:w-[340px] lg:opacity-100"
-            : "lg:w-0 lg:opacity-0 lg:pointer-events-none",
+          !overlay && (open ? "lg:w-[340px] lg:opacity-100" : "lg:w-0 lg:opacity-0 lg:pointer-events-none"),
         )}
       >
         {/* Fixed-width inner wrapper decouples the content layout from the
@@ -299,7 +347,7 @@ export function JobsDrawer() {
           className={cn(
             "flex flex-col h-full",
             "w-[360px] max-w-[90vw]",
-            "lg:w-[340px] lg:max-w-none lg:py-6 lg:pr-4 lg:pl-2",
+            !overlay && "lg:w-[340px] lg:max-w-none lg:py-6 lg:pr-4 lg:pl-2",
             // The wrapper fills the aside, which is fixed to viewport height.
           )}
         >
@@ -310,7 +358,7 @@ export function JobsDrawer() {
           <div
             className={cn(
               "flex flex-col h-full overflow-hidden",
-              "lg:bg-surface lg:rounded-lg",
+              !overlay && "lg:bg-surface lg:rounded-lg",
             )}
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
@@ -334,6 +382,7 @@ export function JobsDrawer() {
                   </button>
                 )}
                 <button
+                  ref={closeRef}
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label={t("jobs.close_drawer_aria")}
@@ -363,6 +412,9 @@ export function JobsDrawer() {
                   active={job.id === activeJobId}
                   algoById={algoById}
                   onDelete={() => handleDelete(job.id)}
+                  onAbort={() => handleAbort(job.id)}
+                  // The page under the overlay is where the link leads; uncover it.
+                  onOpen={overlay ? () => setOpen(false) : undefined}
                 />
               ))}
             </div>
@@ -395,11 +447,15 @@ function JobCard({
   active,
   algoById,
   onDelete,
+  onAbort,
+  onOpen,
 }: {
   job: Job;
   active: boolean;
   algoById: Map<string, AlgorithmManifest>;
   onDelete: () => void;
+  onAbort: () => void;
+  onOpen?: () => void;
 }) {
   const t = useT();
   const info = deriveRunInfo(job);
@@ -407,11 +463,15 @@ function JobCard({
   const innerAlgo = info.innerAlgoId ? algoById.get(info.innerAlgoId) : null;
   const toolType = innerAlgo?.tool_type ?? null;
   const ToolTypeIcon = toolType ? TOOL_TYPE_ICON[toolType] : null;
+  const activeJob = job.status === "pending" || job.status === "running";
 
   const shortAlgo =
-    info.mode !== "batch"
-      ? jobDisplayName(job, t).split(" — ")[0]
-      : `${t(MODE_META[info.mode].label)}: ${innerAlgo?.name.split(" — ")[0] ?? info.innerAlgoId}`;
+    info.mode === "batch"
+      ? `${t(MODE_META[info.mode].label)}: ${innerAlgo?.name.split(" — ")[0] ?? info.innerAlgoId}`
+      : info.mode === "dataset"
+        ? jobTitle(job, t)
+        : jobDisplayName(job, t).split(" — ")[0];
+  const subtitle = datasetJobSubtitle(job, t) ?? job.filename;
 
   const dateStr = new Date(job.created_at * 1000).toLocaleString([], {
     month: "short",
@@ -423,6 +483,7 @@ function JobCard({
   return (
     <Link
       href={info.href}
+      onClick={onOpen}
       aria-current={active ? "true" : undefined}
       className={cn(
         "group relative rounded-lg transition flex flex-col gap-1.5 p-2.5 overflow-hidden",
@@ -449,9 +510,29 @@ function JobCard({
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-xs font-semibold text-fg truncate">{shortAlgo}</div>
-          <div className="text-[11px] text-muted truncate">{job.filename}</div>
+          <div className="text-xs font-semibold text-fg truncate" title={shortAlgo}>
+            {shortAlgo}
+          </div>
+          <div className="text-[11px] text-muted truncate" title={subtitle}>
+            {subtitle}
+          </div>
         </div>
+        {/* Visible without hovering: the job limit tells users to abort jobs here. */}
+        {activeJob && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onAbort();
+            }}
+            aria-label={t("jobs.abort_job_aria")}
+            title={t("jobs.abort_job_aria")}
+            className="shrink-0 text-muted hover:text-danger-ink transition p-0.5 rounded hover:bg-danger/10"
+          >
+            <CircleStop className="h-3.5 w-3.5" />
+          </button>
+        )}
         <button
           type="button"
           onClick={(e) => {
@@ -459,8 +540,9 @@ function JobCard({
             e.stopPropagation();
             onDelete();
           }}
-          aria-label={t("jobs.delete_job_aria")}
-          className="shrink-0 text-muted opacity-0 group-hover:opacity-100 hover:text-danger-ink transition p-0.5 rounded hover:bg-danger/10"
+          aria-label={t(info.mode === "dataset" ? "jobs.delete_dataset_job_aria" : "jobs.delete_job_aria")}
+          title={info.mode === "dataset" ? t("jobs.delete_dataset_job_aria") : undefined}
+          className="shrink-0 text-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-danger-ink transition p-0.5 rounded hover:bg-danger/10"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>

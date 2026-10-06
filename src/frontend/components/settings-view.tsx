@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import {
@@ -21,10 +21,13 @@ import {
 import {
   AlgorithmManifest,
   fetchAlgorithms,
+  deleteAllDatasets,
   deleteAllJobs,
+  listDatasets,
   TOOL_TYPE_LABEL,
 } from "@/lib/api";
 import { APP_NAME, REPO_URL } from "@/lib/app-config";
+import { STORAGE_PREFIXES } from "@/lib/factor-analysis";
 import { Button } from "./ui/button";
 import { Select } from "./ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
@@ -55,6 +58,9 @@ export function SettingsView() {
   const [defaultAlgo, setDefaultAlgo] = useState<string>("");
   const [cachedParamCount, setCachedParamCount] = useState(0);
   const [confirmClearJobs, setConfirmClearJobs] = useState(false);
+  const [confirmClearDatasets, setConfirmClearDatasets] = useState(false);
+  // Datasets of the factor analysis on the server; null while unknown.
+  const [datasetCount, setDatasetCount] = useState<number | null>(null);
   const [confirmClearParams, setConfirmClearParams] = useState(false);
   const [confirmClearPresets, setConfirmClearPresets] = useState(false);
   const [presetGroups, setPresetGroups] = useState<{ algorithmId: string; presets: Preset[] }[]>([]);
@@ -72,6 +78,16 @@ export function SettingsView() {
       })
       .catch((e: Error) => setLoadError(e.message));
   }, []);
+
+  const refreshDatasetCount = useCallback(() => {
+    listDatasets()
+      .then((list) => setDatasetCount(list.length))
+      .catch(() => setDatasetCount(null));
+  }, []);
+
+  useEffect(() => {
+    refreshDatasetCount();
+  }, [refreshDatasetCount]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -200,6 +216,28 @@ export function SettingsView() {
       showToast(t("settings.toast_job_history_cleared"));
     } catch {
       showToast(t("settings.toast_job_history_failed"));
+    }
+    // Computed datasets go with their jobs.
+    refreshDatasetCount();
+  };
+
+  const handleClearDatasets = async () => {
+    try {
+      const n = await deleteAllDatasets();
+      // The tabs would otherwise try to reopen a deleted dataset.
+      const keys: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && STORAGE_PREFIXES.some((p) => k.startsWith(p))) keys.push(k);
+      }
+      for (const k of keys) localStorage.removeItem(k);
+      setDatasetCount(0);
+      setConfirmClearDatasets(false);
+      showToast(n === 1
+        ? t("settings.storage.toast_datasets_deleted", { n })
+        : t("settings.storage.toast_datasets_deleted_plural", { n }));
+    } catch {
+      showToast(t("settings.storage.toast_datasets_failed"));
     }
   };
 
@@ -529,6 +567,40 @@ export function SettingsView() {
               <Button size="sm" variant="outline" onClick={() => setConfirmClearJobs(true)}>
                 <Trash2 className="h-3.5 w-3.5" />
                 {t("settings.storage.delete_all_jobs")}
+              </Button>
+            )}
+          </SettingRow>
+
+          <SettingRow
+            label={t("settings.storage.clear_datasets_label")}
+            hint={
+              datasetCount === null
+                ? t("settings.storage.clear_datasets_unknown")
+                : datasetCount === 0
+                  ? t("settings.storage.clear_datasets_empty")
+                  : datasetCount === 1
+                    ? t("settings.storage.clear_datasets_hint", { n: datasetCount })
+                    : t("settings.storage.clear_datasets_hint_plural", { n: datasetCount })
+            }
+          >
+            {confirmClearDatasets ? (
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="primary" className="bg-danger hover:bg-danger/90" onClick={handleClearDatasets}>
+                  {t("settings.storage.confirm_delete")}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setConfirmClearDatasets(false)}>
+                  {t("common.cancel")}
+                </Button>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setConfirmClearDatasets(true)}
+                disabled={datasetCount === 0}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {t("settings.storage.delete_all_datasets")}
               </Button>
             )}
           </SettingRow>
