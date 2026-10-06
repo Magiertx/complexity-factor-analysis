@@ -426,16 +426,16 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     selectDataset(null);
   };
 
-  // Set when the open dataset is deleted from its summary, or the last one from the list in the
-  // form: the focused button goes away with it, so the form that replaces the summary or the
-  // list takes the focus.
+  // Set when the open dataset is deleted from its summary, the last one from the list in the
+  // form, or the notice of a gone dataset is dismissed: the focused button goes away, so the
+  // form that is shown then takes the focus.
   const focusForm = useRef(false);
   useEffect(() => {
     if (!focusForm.current || !formOpen || !datasets) return;
     focusForm.current = false;
     const step = document.getElementById(stepAnchor("data"));
     (step?.querySelector<HTMLElement>("input:checked") ?? step?.querySelector<HTMLElement>("button"))?.focus();
-  }, [formOpen, datasets]);
+  }, [formOpen, datasets, gone]);
 
   const removeDataset = async (id: string) => {
     setDeleteError(null);
@@ -585,20 +585,27 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             title={t("factor.steps.data")}
             description={t(`factor.step_desc.data_${kind}`)}
           >
-            {gone && (
-              <div role="status" className="mb-4 rounded-lg bg-tile px-3.5 py-2.5 flex items-start gap-2.5 text-sm">
-                <Info className="h-4 w-4 text-muted shrink-0 mt-0.5" />
-                <p className="flex-1 min-w-0">{t("factor.data.gone")}</p>
-                <button
-                  type="button"
-                  onClick={() => setGone(false)}
-                  aria-label={t("factor.data.dismiss_aria")}
-                  className="h-6 w-6 -my-0.5 grid place-items-center rounded text-muted hover:text-fg hover:bg-accent/[0.08] transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            )}
+            {/* Always rendered, so screen readers announce the notice that appears in it. */}
+            <div role="status">
+              {gone && (
+                <div className="mb-4 rounded-lg bg-tile px-3.5 py-2.5 flex items-start gap-2.5 text-sm">
+                  <Info className="h-4 w-4 text-muted shrink-0 mt-0.5" />
+                  <p className="flex-1 min-w-0">{t("factor.data.gone")}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // The button goes with the notice; the form below takes the focus.
+                      focusForm.current = true;
+                      setGone(false);
+                    }}
+                    aria-label={t("factor.data.dismiss_aria")}
+                    className="h-6 w-6 -my-0.5 grid place-items-center rounded text-muted hover:text-fg hover:bg-accent/[0.08] transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
             {catalogError ? (
               <div role="alert" className="rounded-lg bg-danger/10 px-3.5 py-3 flex items-start gap-2.5 text-sm">
                 <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
