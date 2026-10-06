@@ -5,6 +5,7 @@ import { Settings as SettingsIcon, Code2 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { APP_INITIALS, APP_NAME } from "@/lib/app-config";
 import { LocaleToggle } from "./locale-toggle";
+import { ThemeToggle } from "./theme-toggle";
 
 export function SiteHeader() {
   const t = useT();
@@ -24,6 +25,7 @@ export function SiteHeader() {
         </div>
         <div className="flex items-center gap-2">
           <LocaleToggle />
+          <ThemeToggle />
           <Link
             href="/api-access"
             className="h-9 px-3 inline-flex items-center gap-1.5 rounded-md bg-tile hover:bg-accent/[0.08] transition text-xs font-medium whitespace-nowrap text-muted hover:text-fg"

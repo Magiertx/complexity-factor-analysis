@@ -23,7 +23,10 @@
     "api_title": "{app} programmatisch nutzen",
     "locale_label": "Sprache",
     "switch_to_german": "Auf Deutsch umschalten",
-    "switch_to_english": "Auf Englisch umschalten"
+    "switch_to_english": "Auf Englisch umschalten",
+    "dark_mode": "Dunkelmodus",
+    "switch_to_dark": "Zum dunklen Modus wechseln",
+    "switch_to_light": "Zum hellen Modus wechseln"
   },
   "footer": {
     "credit": "Entwickelt für Process-Mining-Forschung an der Universität Augsburg."

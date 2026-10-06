@@ -23,7 +23,10 @@
     "api_title": "Use {app} programmatically",
     "locale_label": "Language",
     "switch_to_german": "Switch to German",
-    "switch_to_english": "Switch to English"
+    "switch_to_english": "Switch to English",
+    "dark_mode": "Dark mode",
+    "switch_to_dark": "Switch to dark mode",
+    "switch_to_light": "Switch to light mode"
   },
   "footer": {
     "credit": "Built for process-mining research at University of Augsburg."
