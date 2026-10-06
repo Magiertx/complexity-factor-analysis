@@ -133,6 +133,18 @@ export function Workbench() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarOpenMobile, setSidebarOpenMobile] = useState(false);
   const sidebarRef = useRef<HTMLElement | null>(null);
+  // Below lg the sidebar is a drawer, from lg on a column that collapses. Hidden in either form
+  // it is inert, so Tab does not land on its controls off screen or at zero width. Unknown
+  // until mounted, so the server HTML leaves it reachable.
+  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsDesktop(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  const sidebarHidden = isDesktop === null ? false : isDesktop ? sidebarCollapsed : !sidebarOpenMobile;
 
   // On-demand page tour and algorithm explainer state (see
   // single-run-tour.tsx / algorithm-explainer-modal.tsx).
@@ -174,6 +186,8 @@ export function Workbench() {
   // Focus trap for mobile drawer accessibility
   useEffect(() => {
     if (!sidebarOpenMobile || !sidebarRef.current) return;
+    const sidebar = sidebarRef.current;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
     // Focus the first interactive element (close button) when drawer opens
     const focusable = sidebarRef.current.querySelectorAll<HTMLElement>(
@@ -208,7 +222,13 @@ export function Workbench() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      // The closed drawer is inert, so focus inside it would fall to the page; hand it back to
+      // the menu button.
+      const focus = document.activeElement;
+      if (!focus || focus === document.body || sidebar.contains(focus)) previous?.focus();
+    };
   }, [sidebarOpenMobile]);
 
   // Load algorithms list, sample logs & recent logs
@@ -638,6 +658,7 @@ export function Workbench() {
         role={sidebarOpenMobile ? "dialog" : undefined}
         aria-modal={sidebarOpenMobile ? "true" : undefined}
         aria-label={t("workbench.sidebar.nav_aria")}
+        inert={sidebarHidden}
         className={
           "space-y-6 shrink-0 transition-all duration-300 ease-in-out " +
           (sidebarCollapsed ? "lg:w-0 lg:opacity-0 lg:overflow-hidden lg:pointer-events-none lg:mr-0 " : "lg:w-[280px] lg:opacity-100 ") +
