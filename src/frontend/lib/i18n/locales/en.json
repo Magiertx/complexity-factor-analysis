@@ -2,6 +2,7 @@
   "common": {
     "back": "Back",
     "next": "Next",
+    "next_with_progress": "Next ({current} of {total})",
     "skip": "Skip",
     "close": "Close",
     "cancel": "Cancel",

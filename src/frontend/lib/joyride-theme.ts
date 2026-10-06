@@ -68,6 +68,9 @@ export function getJoyrideLocale(t: TFn) {
     close: t("common.close"),
     last: t("common.done"),
     next: t("common.next"),
+    // Joyride fills in {current} and {total}; without it, every step but the last shows its
+    // English default.
+    nextWithProgress: t("common.next_with_progress"),
     skip: t("common.skip"),
   };
 }

@@ -2,6 +2,7 @@
   "common": {
     "back": "Zurück",
     "next": "Weiter",
+    "next_with_progress": "Weiter ({current} von {total})",
     "skip": "Überspringen",
     "close": "Schließen",
     "cancel": "Abbrechen",
