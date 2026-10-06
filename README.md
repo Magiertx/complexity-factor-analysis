@@ -162,7 +162,10 @@ All of this is set in `docker-compose.yml`; reverse proxy, TLS, volumes and back
   in the API process. At most two run at once per process; recent fits are cached. BLAS runs
   single-threaded (`OPENBLAS_NUM_THREADS=1`), which is many times faster for these matrices.
 - **Slow miners.** Alpha++ and Alpha Robust are marked slow; Alpha++ can run for many
-  minutes on a mid-sized log and ProM4Py cannot interrupt it. The Hybrid ILP miner needs the
+  minutes on a mid-sized log and ProM4Py cannot interrupt it. Such a discovery fails for its
+  input after `PROM4PY_CALL_TIMEOUT` (default 300 s), and the `prom4py` container restarts
+  the stuck ProM by itself (see [`docs/OFFLINE-DEMO.md`](docs/OFFLINE-DEMO.md#when-a-miner-hangs)).
+  The Hybrid ILP miner needs the
   native lp_solve 5.5 libraries, which the `prom4py` image builds in (see
   [`src/prom4py/README.md`](src/prom4py/README.md#lp_solve)).
 

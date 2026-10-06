@@ -163,6 +163,8 @@ MAX_ACTIVE_JOBS_PER_SESSION=3
 # RATE_LIMIT_ANALYZE=60/hour
 # RATE_LIMIT_DATASETS=60/hour
 # RATE_LIMIT_FA_ANALYZE=120/minute
+# Seconds one discovery may take in ProM before that input fails and ProM is restarted
+# PROM4PY_CALL_TIMEOUT=300
 
 # --- Interpretation by Claude (optional), see "Interpretation by Claude" below ---
 # ANTHROPIC_API_KEY=

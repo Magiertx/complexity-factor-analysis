@@ -32,7 +32,7 @@ vendored/comfy  prom4py        postgres          redis ──▶ celery_worker
 | `frontend`       | Next.js (App Router, TS). UI, file upload, parameter forms, charts, artifact rendering. No analysis logic. |
 | `algoservice`    | FastAPI app. Tool registry, factor analysis, job orchestration, SSE, ZIP export, input validation.    |
 | `celery_worker`  | Same image as `algoservice`; runs single-log analyses and dataset jobs in a separate process.         |
-| `prom4py`        | Java 8 HTTP server (`launch.sh`) wrapping a frozen ProM bundle from Zenodo. Runs all ComFy miners.    |
+| `prom4py`        | Java 8 HTTP server (`launch.sh`) wrapping a frozen ProM bundle from Zenodo. Runs all ComFy miners; restarts itself when a call is stuck. |
 | `postgres`       | Persistent state: `Run`, `Artifact`, `Session`, `User`, `Preset` (see `models.py`).                    |
 | `redis`          | Celery broker + result backend, and pub/sub channel `jobs_updates` that drives the SSE stream.        |
 
@@ -62,6 +62,43 @@ needs no frontend change. Today there is one category, `complexity`, with one to
     ([`src/prom4py/README.md`](../src/prom4py/README.md#lp_solve)).
   - The `/executor` endpoint runs arbitrary Java expressions, which is why the container is
     never published on the host.
+  - ProM4Py serves one request at a time and cannot cancel one, and some miners run for
+    very long on some logs (Alpha++ for more than 15 minutes on a 1000-trace PDC log). See
+    below how such a call is bounded.
+
+### Bounded ProM calls
+
+One discovery, one miner on one log with all of its requests, may take
+`PROM4PY_CALL_TIMEOUT` seconds (default 300, set in `.env` for all three containers below).
+
+- **Client** (`vendored/comfy/_shared_prom4py.py`, `algorithms/_prom4py.py`,
+  `algorithms/comfy.py: discover`). Every request of the shared client has a timeout; within
+  a discovery the requests share one budget. On expiry `discover` raises `ProMTimeout`
+  ("ProM took longer than 300 s for Alpha Plus Plus miner on pdc2025_02001100.xes"). It is
+  not repeated. The dataset job lists it as a failed input and goes on, a single run shows
+  `ERR: ProMTimeout` cells and the message in its notes (or fails with it if no miner
+  worked).
+- **Turns.** The worker processes of a container take turns on ProM for a whole discovery
+  (a file lock under `/tmp`). A call therefore never waits behind another job's call, its
+  timeout measures its own work, and the watchdog below never cuts off a call that is still
+  awaited. A process waiting for its turn reports "waiting for ProM, another job is using
+  it" as job progress, and can be aborted meanwhile.
+- **Watchdog** (`src/prom4py/launch.sh`). ProM goes on with a timed-out call. The watchdog
+  in the container probes `/isRunning`, which a busy ProM does not answer, and restarts Java
+  when no probe has been answered for `PROM4PY_CALL_TIMEOUT` + 30 s, or when Java exited. A
+  restart takes about 5 s. Details in [`src/prom4py/README.md`](../src/prom4py/README.md#watchdog).
+- **Recovery.** After a timeout, the next discovery waits until ProM answers again ("waiting
+  for ProM to restart"). One that finds ProM refused or the connection dropped (starting,
+  restarted, crashed) waits up to 180 s for it and starts the whole discovery over, since a
+  restart empties ProM's object cache; at most three attempts. When ProM does not come back,
+  the input fails with "ProM4Py is not reachable", and later inputs wait only 5 s each until
+  it answers again.
+- **Startup.** `algoservice` and `celery_worker` depend on `prom4py` being started, not
+  healthy, so a stuck or starting ProM does not hold up `docker compose up`; jobs started
+  before ProM is up wait for it as above.
+
+A worker blocked in a ProM call is free again at the latest after `PROM4PY_CALL_TIMEOUT`, also
+when its job was aborted, and ProM about half a minute later.
 
 ## Job flow
 
@@ -94,7 +131,7 @@ removed batch mode keep their `algorithm_id = "_batch:<tool id>"` and still show
 
 The frontend subscribes to `GET /jobs/events` (Server-Sent Events). `srv_main.py` runs a `redis_listener()` background task that bridges the Redis pub/sub channel into the in-process `SSEConnectionManager` (`config.py`), which fans out to all open browser connections.
 
-Cooperative cancellation: `POST /progress/{task_id}/abort` flips `Run.status` to `aborted`; the tool's progress callback raises on the next tick.
+Cooperative cancellation: `POST /progress/{task_id}/abort` flips `Run.status` to `aborted`; the tool's progress callback raises on the next tick. A ProM call in progress is not interrupted: the worker gets to that tick when the call returns or times out (see [Bounded ProM calls](#bounded-prom-calls)).
 
 ## Factor analysis
 
@@ -388,7 +425,7 @@ Every limit is overridable from the environment (`RATE_LIMIT_DEFAULT`, `_LOG_STA
 
 - Disabled when `RATE_LIMIT_DISABLED=1` or when `PYTEST_CURRENT_TEST` is set; `conftest.py` sets this before the app is imported.
 
-**Request limits are not the load limit.** They cap how often someone *starts* work; one dataset request can be 50 logs times several miners. What bounds the machine is `MAX_ACTIVE_JOBS_PER_SESSION` (`jobs_db`, default 12), which counts what is queued or running. That is the value to lower for a public demo. A client that drops the session cookie gets a new session with every request, so dataset jobs are also capped over all sessions by `MAX_ACTIVE_DATASET_JOBS` (default 4): the miners share one single-CPU `prom4py`, and ProM4Py calls cannot be interrupted, so this is what keeps one visitor from blocking the others for long.
+**Request limits are not the load limit.** They cap how often someone *starts* work; one dataset request can be 50 logs times several miners. What bounds the machine is `MAX_ACTIVE_JOBS_PER_SESSION` (`jobs_db`, default 12), which counts what is queued or running. That is the value to lower for a public demo. A client that drops the session cookie gets a new session with every request, so dataset jobs are also capped over all sessions by `MAX_ACTIVE_DATASET_JOBS` (default 4): the miners share one single-CPU `prom4py` and take turns on it, and a ProM4Py call cannot be interrupted, only bounded by `PROM4PY_CALL_TIMEOUT`, so this is what keeps one visitor from blocking the others for long.
 
 A malformed value in any of these stops the service at startup instead of falling back to the default, so a limit an operator believes they lowered cannot silently stay unapplied. Overrides in force are logged once at startup.
 
@@ -402,7 +439,7 @@ A malformed value in any of these stops the service at startup instead of fallin
 └── src/
     ├── prom4py/
     │   ├── Dockerfile           # downloads + de-signs ProM4Py bundle from Zenodo
-    │   ├── launch.sh            # portable headless launcher
+    │   ├── launch.sh            # portable headless launcher, watchdog and healthcheck
     │   └── README.md
     ├── AlgoService/
     │   ├── srv_main.py          # FastAPI app, CORS, sessions, SSE listener bootstrap, slowapi wiring
@@ -425,7 +462,7 @@ A malformed value in any of these stops the service at startup instead of fallin
     │   │   ├── base.py          # AlgorithmBase, ParameterSpec, Artifact, AnalysisResult, RunContext
     │   │   ├── __init__.py      # REGISTRY
     │   │   ├── _log_io.py       # reads .xes / .xes.gz / .xml / .json logs
-    │   │   ├── _prom4py.py      # shared ProM4Py client
+    │   │   ├── _prom4py.py      # shared ProM4Py client, turns on ProM, waiting for it
     │   │   ├── _petrinet.py     # Petri net → base64 PNG
     │   │   └── comfy.py         # ComFy adapter
     │   ├── factor_analysis/
