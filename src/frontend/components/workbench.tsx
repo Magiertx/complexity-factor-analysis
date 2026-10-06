@@ -753,12 +753,14 @@ export function Workbench() {
         {selected && (
           <Card>
             <CardHeader>
-              <div className="flex items-start justify-between gap-3">
+              {/* On a phone the author and the paper go below the description, which would
+                  otherwise be squeezed into a narrow column beside them. */}
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div className="space-y-1 flex-1">
                   <CardTitle className="text-lg lg:text-xl font-bold">{localizedAlgoName(selected, locale)}</CardTitle>
                   <CardDescription className="text-sm text-muted mt-1">{localizedAlgoDescription(selected, locale)}</CardDescription>
                 </div>
-                <div className="flex flex-col items-end gap-1.5 shrink-0 text-right">
+                <div className="flex flex-wrap sm:flex-col items-center sm:items-end gap-x-4 gap-y-1.5 shrink-0 sm:text-right">
                   {selected.author && (
                     <span
                       className="text-xs text-muted/80 flex items-center gap-1.5 shrink-0"
