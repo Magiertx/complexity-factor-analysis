@@ -17,6 +17,7 @@ import {
   Bookmark,
   Download,
   Upload,
+  Loader2,
 } from "lucide-react";
 import {
   AlgorithmManifest,
@@ -59,6 +60,10 @@ export function SettingsView() {
   const [cachedParamCount, setCachedParamCount] = useState(0);
   const [confirmClearJobs, setConfirmClearJobs] = useState(false);
   const [confirmClearDatasets, setConfirmClearDatasets] = useState(false);
+  const [clearingDatasets, setClearingDatasets] = useState(false);
+  const clearDatasetsRef = useRef<HTMLButtonElement>(null);
+  const confirmDatasetsRef = useRef<HTMLButtonElement>(null);
+  const datasetsRowRef = useRef<HTMLDivElement>(null);
   // Datasets of the factor analysis on the server; null while unknown.
   const [datasetCount, setDatasetCount] = useState<number | null>(null);
   const [confirmClearParams, setConfirmClearParams] = useState(false);
@@ -221,7 +226,20 @@ export function SettingsView() {
     refreshDatasetCount();
   };
 
+  // The confirmation replaces the button, and its own button is disabled while it deletes, so
+  // the focus would end up nowhere: it goes to whichever of the two is shown, or to the row
+  // once no dataset is left to delete.
+  const refocusDatasets = useRef(false);
+  useEffect(() => {
+    if (clearingDatasets || !refocusDatasets.current) return;
+    refocusDatasets.current = false;
+    const button = confirmClearDatasets ? confirmDatasetsRef.current : clearDatasetsRef.current;
+    (button && !button.disabled ? button : datasetsRowRef.current)?.focus();
+  }, [confirmClearDatasets, clearingDatasets]);
+
   const handleClearDatasets = async () => {
+    refocusDatasets.current = true;
+    setClearingDatasets(true);
     try {
       const n = await deleteAllDatasets();
       // The tabs would otherwise try to reopen a deleted dataset.
@@ -238,6 +256,8 @@ export function SettingsView() {
         : t("settings.storage.toast_datasets_deleted_plural", { n }));
     } catch {
       showToast(t("settings.storage.toast_datasets_failed"));
+    } finally {
+      setClearingDatasets(false);
     }
   };
 
@@ -575,6 +595,7 @@ export function SettingsView() {
           </SettingRow>
 
           <SettingRow
+            rowRef={datasetsRowRef}
             label={t("settings.storage.clear_datasets_label")}
             hint={
               datasetCount === null
@@ -589,21 +610,33 @@ export function SettingsView() {
             {confirmClearDatasets ? (
               <div className="flex items-center gap-2">
                 <Button
+                  ref={confirmDatasetsRef}
                   size="sm"
                   variant="primary"
                   className="bg-danger hover:bg-danger/90"
                   onClick={handleClearDatasets}
+                  disabled={clearingDatasets}
                   // It replaces the focused button, which would leave the focus nowhere.
                   autoFocus
                 >
+                  {clearingDatasets && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                   {t("settings.storage.confirm_delete")}
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => setConfirmClearDatasets(false)}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    refocusDatasets.current = true;
+                    setConfirmClearDatasets(false);
+                  }}
+                  disabled={clearingDatasets}
+                >
                   {t("common.cancel")}
                 </Button>
               </div>
             ) : (
               <Button
+                ref={clearDatasetsRef}
                 size="sm"
                 variant="outline"
                 onClick={() => setConfirmClearDatasets(true)}
@@ -662,14 +695,21 @@ export function SettingsView() {
 function SettingRow({
   label,
   hint,
+  rowRef,
   children,
 }: {
   label: string;
   hint?: string;
+  /** Makes the row focusable from script, for when its control can take no focus. */
+  rowRef?: React.Ref<HTMLDivElement>;
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+    <div
+      ref={rowRef}
+      tabIndex={rowRef ? -1 : undefined}
+      className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-6 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+    >
       <div className="min-w-0 max-w-md">
         <div className="text-sm font-medium">{label}</div>
         {hint && <div className="text-[11px] text-muted mt-1 leading-relaxed">{hint}</div>}
