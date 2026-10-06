@@ -136,6 +136,7 @@
       "clear_all_label": "Alle Presets löschen",
       "clear_all_hint": "Entfernt alle {n} gespeicherten Preset bei jedem Algorithmus.",
       "clear_all_hint_plural": "Entfernt alle {n} gespeicherten Presets bei jedem Algorithmus.",
+      "clear_all_empty": "Keine Presets gespeichert.",
       "confirm_clear": "Löschen bestätigen",
       "clear_button": "Presets löschen",
       "transfer_label": "Export & Import",
