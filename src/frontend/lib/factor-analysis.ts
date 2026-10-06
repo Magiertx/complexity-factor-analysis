@@ -228,8 +228,8 @@ export function jobTitle(job: Job, t: Translate): string {
 }
 
 /** "1 log" or "4 logs": the text of `key`, or of `<key>_plural` for any other count. */
-export function countText(t: Translate, key: string, n: number): string {
-  return t(n === 1 ? key : `${key}_plural`, { n });
+export function countText(t: Translate, key: string, n: number, params?: Record<string, string | number>): string {
+  return t(n === 1 ? key : `${key}_plural`, { ...params, n });
 }
 
 /** "Dataset from 3 logs"; a text of its own per noun, since German declines it. */

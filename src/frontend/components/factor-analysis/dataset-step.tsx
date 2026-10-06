@@ -2,7 +2,7 @@
 
 import { AlertCircle, FileSpreadsheet } from "lucide-react";
 import { datasetDownloadUrl, type FactorDataset } from "@/lib/api";
-import { PREVIEW_ROWS } from "@/lib/factor-analysis";
+import { PREVIEW_ROWS, countText } from "@/lib/factor-analysis";
 import { NO_VALUE, formatNumber } from "@/lib/format";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { HelpLabel, StatTile } from "./step-section";
@@ -56,7 +56,7 @@ export function DatasetView({
           </ul>
         )}
         {dataset.dropped_rows > 0 && (
-          <p className="text-xs text-muted">{t("factor.dataset.dropped_rows_note", { n: dataset.dropped_rows })}</p>
+          <p className="text-xs text-muted">{countText(t, "factor.dataset.dropped_rows_note", dataset.dropped_rows)}</p>
         )}
       </div>
 
@@ -64,7 +64,7 @@ export function DatasetView({
         <details className="rounded-lg bg-warn/10 px-3.5 py-2.5 text-xs">
           <summary className="cursor-pointer flex items-start gap-2 font-medium">
             <AlertCircle className="h-4 w-4 text-warn-ink shrink-0" />
-            {t("factor.dataset.failures_heading", { n: failures.length })}
+            {countText(t, "factor.dataset.failures_heading", failures.length)}
           </summary>
           <p className="text-muted mt-2">{t("factor.dataset.failures_hint")}</p>
           <ul className="mt-2 space-y-1 max-h-48 overflow-y-auto">

@@ -28,7 +28,7 @@ import {
   listDatasets,
 } from "@/lib/api";
 import { APP_NAME, REPO_URL } from "@/lib/app-config";
-import { STORAGE_PREFIXES } from "@/lib/factor-analysis";
+import { STORAGE_PREFIXES, countText } from "@/lib/factor-analysis";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Segmented } from "./ui/segmented";
@@ -155,7 +155,7 @@ export function SettingsView() {
     a.download = `presets-${yyyy}-${mm}-${dd}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast(t("settings.presets.toast_exported", { n: totalPresets }));
+    showToast(countText(t, "settings.presets.toast_exported", totalPresets));
   };
 
   const handleImportClick = () => {
@@ -180,8 +180,8 @@ export function SettingsView() {
       const result = importPresets(payload);
       setPresetGroups(listAllPresets());
       const msg = result.renamed > 0
-        ? t("settings.presets.toast_imported_renamed", { n: result.added, renamed: result.renamed })
-        : t("settings.presets.toast_imported", { n: result.added });
+        ? countText(t, "settings.presets.toast_imported_renamed", result.added, { renamed: result.renamed })
+        : countText(t, "settings.presets.toast_imported", result.added);
       showToast(msg);
     } catch (err) {
       const msg = err instanceof PresetError

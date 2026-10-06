@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { AlertTriangle, Loader2, Sparkles } from "lucide-react";
 import type { FactorInterpretation, InterpretationStatus } from "@/lib/api";
+import { countText } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -51,7 +52,7 @@ export function InterpretationView({
   const wasRunning = useRef(running);
   useEffect(() => {
     if (wasRunning.current && !running && interpretation && !error) {
-      setAnnouncement(t("factor.interpretation.ready", { n: interpretation.factors.length }));
+      setAnnouncement(countText(t, "factor.interpretation.ready", interpretation.factors.length));
     } else if (running) {
       setAnnouncement("");
     }

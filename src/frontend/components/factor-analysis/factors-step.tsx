@@ -2,7 +2,7 @@
 
 import { Minus, Plus, Sparkles } from "lucide-react";
 import { ROTATIONS, type FactorAnalysis, type Rotation } from "@/lib/api";
-import { ORTHOGONAL, analysisNotices, isSolutionNotice, noticeText, type AnalysisOptions } from "@/lib/factor-analysis";
+import { ORTHOGONAL, analysisNotices, countText, isSolutionNotice, noticeText, type AnalysisOptions } from "@/lib/factor-analysis";
 import { formatPercent } from "@/lib/format";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Select } from "@/components/ui/select";
@@ -96,7 +96,7 @@ export function FactorsView({ analysis, options, onOptions }: Props) {
               )}
             </div>
             {explained !== undefined && (
-              <p className="text-xs">{t("factor.factors.explained", { n: current, pct: formatPercent(explained, locale) })}</p>
+              <p className="text-xs">{countText(t, "factor.factors.explained", current, { pct: formatPercent(explained, locale) })}</p>
             )}
           </div>
 
