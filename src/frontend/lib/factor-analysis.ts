@@ -122,13 +122,17 @@ export type KmoGrade =
   | "miserable"
   | "unacceptable";
 
-/** Kaiser's (1974) verbal scale for KMO and MSA values. */
+/**
+ * Kaiser's (1974) verbal scale for KMO and MSA values. Graded with the two decimals the UI
+ * shows, so 0.698, shown as 0.70, is middling like the scale says.
+ */
 export function kmoGrade(value: number): KmoGrade {
-  if (value >= 0.9) return "marvelous";
-  if (value >= 0.8) return "meritorious";
-  if (value >= 0.7) return "middling";
-  if (value >= 0.6) return "mediocre";
-  if (value >= 0.5) return "miserable";
+  const shown = Math.round(value * 100) / 100;
+  if (shown >= 0.9) return "marvelous";
+  if (shown >= 0.8) return "meritorious";
+  if (shown >= 0.7) return "middling";
+  if (shown >= 0.6) return "mediocre";
+  if (shown >= 0.5) return "miserable";
   return "unacceptable";
 }
 
