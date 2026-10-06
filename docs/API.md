@@ -107,10 +107,15 @@ Details in [Factor analysis](#factor-analysis) below.
 |--------|------|-------------|
 | GET | `/factor-analysis/catalog?kind=model` or `kind=log` | Measures, miners (model) or feature groups (log), each with `slow: true` where it can take long, defaults, bundled datasets and sample inputs. |
 | POST | `/factor-analysis/datasets` | Create a dataset from bundled data or a CSV (ready at once), or from logs or PNML files (background job). |
-| GET | `/factor-analysis/datasets/{id}` | Status, progress, measures, dropped measures and the first 2000 rows. |
+| GET | `/factor-analysis/datasets?kind=model` | The datasets of your session, newest first; `kind` is optional. |
+| GET | `/factor-analysis/datasets/{id}` | Status, progress, inputs, saved options, measures, dropped measures and the first 2000 rows. |
+| PUT | `/factor-analysis/datasets/{id}/options` | Keep the parameters of an analysis with the dataset. |
+| DELETE | `/factor-analysis/datasets/{id}` | Delete a dataset with its job and cached interpretations. |
+| DELETE | `/factor-analysis/datasets?kind=model` | Delete every dataset of your session, or every one of a kind. |
 | GET | `/factor-analysis/datasets/{id}/download` | The cleaned matrix as CSV. |
 | POST | `/factor-analysis/datasets/{id}/analyze` | Bartlett, KMO with the MSA filter, eigenvalues, factor analysis and factor groups. |
 | POST | `/factor-analysis/datasets/{id}/export` | The loadings table as CSV or LaTeX. |
+| POST | `/factor-analysis/datasets/{id}/export/zip` | The whole analysis as a ZIP archive: result, matrix, tables, parameters and library versions. |
 | GET | `/factor-analysis/interpretation/status` | Whether factors can be interpreted by Claude, and with which model. |
 | POST | `/factor-analysis/datasets/{id}/interpret` | Names and short interpretations of the factors by Claude (optional, needs an API key on the server). |
 
@@ -124,8 +129,8 @@ Details in [Factor analysis](#factor-analysis) below.
 | GET | `/jobs/events` | Server-Sent Events stream — pings whenever job state changes. |
 | GET | `/progress/{task_id}` | Lower-level SSE stream for a single task. |
 | POST | `/progress/{task_id}/abort` | Request cooperative cancellation. |
-| DELETE | `/jobs/{job_id}` | Delete one job and its artifacts. |
-| DELETE | `/jobs` | Delete every job visible to your session. |
+| DELETE | `/jobs/{job_id}` | Delete one job and its artifacts; a dataset job takes its dataset with it. |
+| DELETE | `/jobs` | Delete every job visible to your session, with the datasets the dataset jobs computed. |
 | PATCH | `/jobs/{job_id}/notes` | Set or clear a free-text note on a job. |
 
 ### Diagnostics
@@ -136,7 +141,7 @@ Details in [Factor analysis](#factor-analysis) below.
 
 ## Notes & limits
 
-- **Rate limits** (per source IP, tunable via `RATE_LIMIT_*` in `.env`): `60/hour` for `POST /algorithms/{id}/analyze`, `60/hour` for `POST /factor-analysis/datasets` (`RATE_LIMIT_DATASETS`; choosing a bundled dataset counts too), `600/minute` for `GET /factor-analysis/datasets/{id}`, which the UI polls (`RATE_LIMIT_DATASET_STATUS`), `120/minute` for factor-analysis `analyze`, `export` and `interpret` (`RATE_LIMIT_FA_ANALYZE`), `300/hour` for `POST /log-stats`, `120/minute` for everything else. A 429 carries `detail` and `"code": "rate_limited"`. Interpretations that call Claude are limited further, see [Interpretation by Claude](#interpretation-by-claude).
+- **Rate limits** (per source IP, tunable via `RATE_LIMIT_*` in `.env`): `60/hour` for `POST /algorithms/{id}/analyze`, `60/hour` for `POST /factor-analysis/datasets` (`RATE_LIMIT_DATASETS`; choosing a bundled dataset counts too), `600/minute` for `GET /factor-analysis/datasets/{id}`, which the UI polls, and for listing datasets, saving their options and deleting them (`RATE_LIMIT_DATASET_STATUS`), `120/minute` for factor-analysis `analyze`, `export`, `export/zip` and `interpret` (`RATE_LIMIT_FA_ANALYZE`), `300/hour` for `POST /log-stats`, `120/minute` for everything else. A 429 carries `detail` and `"code": "rate_limited"`. Interpretations that call Claude are limited further, see [Interpretation by Claude](#interpretation-by-claude).
 - **Job quota:** at most 12 queued or running jobs per session (`MAX_ACTIVE_JOBS_PER_SESSION`), and at most 4 dataset jobs over all sessions (`MAX_ACTIVE_DATASET_JOBS`); both answer 429.
 - **Upload size:** 100 MB per file. Factor-analysis datasets: at most 50 logs or 200 PNML
   files and 500 MB in total per request, `.xes.gz` counted decompressed.
@@ -203,6 +208,55 @@ For `logs` and `pnml`, `failures` lists the inputs that gave no or incomplete va
 no row; a measure that failed on a single input is dropped for the whole dataset as
 `missing`. A job whose inputs leave fewer than 2 measures with values fails.
 
+### The datasets of a session
+
+`GET /factor-analysis/datasets` lists the datasets of your session, newest first; `?kind=model`
+or `?kind=log` keeps one kind, any other value is a 400. A dataset whose job outlived the time
+limit is marked `failed` here too.
+
+```json
+{ "datasets": [
+  { "id": "0c5b0f8e-…", "kind": "model", "name": "Petri nets of the four PDC logs",
+    "source": "pnml", "status": "ready", "created_at": "2026-10-06T09:12:44.512+00:00",
+    "n_observations": 32, "n_measures": 2, "bundled_id": null, "job_id": "a3e04d71-…",
+    "inputs": { "files": 32, "measures": ["Size", "Density"], "sample_id": "pdc-sample-models" },
+    "has_options": true } ] }
+```
+
+- `n_observations` and `n_measures` (after cleaning) are `null` until the dataset is `ready`.
+- `inputs` says what the dataset is made from. `files` counts the uploaded or sample files, 1
+  for a CSV and 0 for a bundled dataset. `measures`, `miners`, `groups` and `sample_id` are the
+  choices made at creation, where they apply; for `bundled` and `csv`, `measures` is only there
+  if columns were selected.
+- `GET /factor-analysis/datasets/{id}` carries the same `inputs`, and `options`: the saved
+  parameters or `null`.
+
+`PUT /factor-analysis/datasets/{id}/options` takes the body of `analyze` and keeps it with the
+dataset, every field filled in, so that a client reopening the dataset can start from its last
+analysis; the UI saves the parameters after each analysis. The body is checked as `analyze`
+checks it, without running the analysis: 422 for an invalid value, 400 with `code`
+`unknown_excluded` for an excluded measure the dataset does not have. The answer is 204, or 409
+if the dataset is not ready.
+
+```python
+s.put(f"{BASE}/factor-analysis/datasets/{dataset_id}/options",
+      json={"n_factors": 3, "rotation": "promax", "excluded": ["Density"]})
+s.get(f"{BASE}/factor-analysis/datasets/{dataset_id}").json()["options"]
+# {"excluded": ["Density"], "auto_msa_filter": True, "msa_threshold": 0.6,
+#  "bartlett_alpha": 0.05, "n_factors": 3, "rotation": "promax",
+#  "loading_threshold": None, "communality_threshold": None}
+```
+
+`DELETE /factor-analysis/datasets/{id}` answers 204 and removes the dataset: its matrix, its
+metadata and the interpretations cached for it (those of bundled datasets are shared by all
+sessions and stay). The job that computed it is aborted if it still runs and deleted with its
+artifacts. `DELETE /factor-analysis/datasets` does the same for every dataset of the session, or
+of `?kind=`, and answers `{"deleted": n}`. The other way round, deleting a dataset job with
+`DELETE /jobs/{job_id}` or `DELETE /jobs` deletes the dataset it computed; bundled and CSV
+datasets have no job and stay.
+
+A dataset of another session answers 404 everywhere, like one that does not exist.
+
 ### Analyse
 
 `POST /factor-analysis/datasets/{id}/analyze` with a JSON body; every field is optional:
@@ -265,6 +319,22 @@ and kept on another; the bundled log measures show this for `trace_len_hist6`.
 with its loadings (the pattern matrix for oblique rotations) and communality; in LaTeX a
 booktabs `tabular` with loadings at or above the threshold in bold, unless the communality is
 below `communality_threshold`.
+
+`POST /factor-analysis/datasets/{id}/export/zip` takes the same body plus `"language": "en" |
+"de"` (default `en`) and returns `<dataset name>-factor-analysis.zip`, everything needed to
+report or reproduce the analysis. Its errors are those of `analyze`.
+
+| File | Content |
+|------|---------|
+| `manifest.json` | `app`, `created_at`, `dataset` (`id`, `name`, `kind`, `source`, `bundled_id`; `collection`, `citation` and `license` for a bundled dataset, else `null`; `inputs`, `n_observations`, the `measures` left after cleaning and the `dropped` ones as `{name, reason}`), `analysis_params` (the parameters used, with the factor count of the analysis and the thresholds of the kind), `libraries` (versions of factor_analyzer, numpy, pandas, scipy and scikit-learn) and `files` (`{name, description}` of each file). |
+| `README.txt` | The files, and how to reproduce the analysis in the UI or with factor_analyzer. |
+| `analysis.json` | The response of `analyze` for these parameters. |
+| `dataset.csv` | The cleaned matrix, the same file as `.../download`. |
+| `loadings.csv`, `loadings.tex` | The loadings table as `.../export` returns it. |
+| `structure.csv`, `factor-correlations.csv` | Oblique rotations only: the structure matrix and the factor correlations. |
+| `eigenvalues.csv` | `factor`, `eigenvalue`, largest first. |
+| `msa.csv` | `measure`, `msa`, `status` for every measure of the dataset: `used`, `removed in step k` by the MSA filter (with the MSA of that step) or `excluded` (no MSA). |
+| `interpretation.<language>.json` | Only if an interpretation of exactly these parameters is cached or precomputed in that language: the stored entry with its model, prompt version and parameters. The export never asks for a new one. |
 
 ### Interpretation by Claude
 

@@ -6,11 +6,13 @@ import asyncio
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 import jobs_db
 from config import validate_job_id, sse_manager, broadcast_jobs_update, get_session_id
+from factor_analysis import storage as datasets
 from zip_export import download_job_artifacts as _download_job_artifacts
 
 
@@ -65,22 +67,38 @@ async def get_job_detail(job_id: str, session_id: str = Depends(get_session_id))
     return job
 
 
+def _delete_dataset_of(job: dict[str, Any], session_id: str) -> None:
+    """A factor-analysis dataset goes with the job that computed it."""
+    dataset_id = job["params"].get("dataset_id")
+    if not job["algorithm_id"].startswith("_dataset:") or not dataset_id:
+        return
+    try:
+        datasets.delete(session_id, dataset_id)
+    except ValueError:
+        pass
+
+
 @router.delete("/jobs/{job_id}")
 async def delete_job(job_id: str, session_id: str = Depends(get_session_id)) -> dict[str, str]:
-    """Delete a job and its associated workspace artifacts."""
+    """Delete a job and its associated workspace artifacts, and the dataset of a dataset job."""
     validate_job_id(job_id)
     job = await jobs_db.read_job(job_id, session_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     await jobs_db.delete_job_file(job_id, session_id)
+    await run_in_threadpool(_delete_dataset_of, job, session_id)
     await broadcast_jobs_update()
     return {"status": "deleted"}
 
 
 @router.delete("/jobs")
 async def delete_all_jobs(session_id: str = Depends(get_session_id)) -> dict[str, str]:
-    """Delete all jobs from database and clear local storage for the current session."""
+    """Delete all jobs from database and clear local storage for the current session, with
+    the datasets the dataset jobs computed."""
+    jobs = await jobs_db.list_jobs(session_id)
     await jobs_db.delete_all_jobs(session_id)
+    for job in jobs:
+        await run_in_threadpool(_delete_dataset_of, job, session_id)
     await broadcast_jobs_update()
     return {"status": "all deleted"}
 

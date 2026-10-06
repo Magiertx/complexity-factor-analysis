@@ -21,6 +21,8 @@ from config import logger
 from factor_analysis import catalog as cat
 from factor_analysis import storage
 
+from . import client
+
 PRECOMPUTED_DIR = cat.DATASETS_DIR / "interpretations"
 
 #: Files kept in the shared directory of the bundled datasets; the oldest go first.
@@ -121,3 +123,23 @@ def write_precomputed(bundled_id: str, language: str, entry: dict[str, Any]) -> 
 
 def has_precomputed() -> bool:
     return any(PRECOMPUTED_DIR.glob("*.json"))
+
+
+def key_for(meta: dict[str, Any], data_hash: str, params: dict[str, Any], language: str) -> str:
+    """The cache key of an analysis of this dataset with the configured model and prompt."""
+    return cache_key(
+        kind=meta["kind"], data_hash=data_hash, params=params, language=language,
+        model=client.MODEL, effort=client.EFFORT, prompt=client.PROMPT_DIGEST,
+    )
+
+
+def lookup(
+    session_id: str, meta: dict[str, Any], data_hash: str, params: dict[str, Any], language: str
+) -> tuple[dict[str, Any], bool] | None:
+    """The precomputed or cached interpretation of exactly this analysis, and whether it was
+    precomputed. Never calls the API. ``params`` are ``payload.effective_params``."""
+    entry = read_precomputed(meta.get("bundled_id"), language, data_hash, params, client.PROMPT_DIGEST)
+    if entry:
+        return entry, True
+    entry = read_cached(session_id, meta, key_for(meta, data_hash, params, language))
+    return (entry, False) if entry else None

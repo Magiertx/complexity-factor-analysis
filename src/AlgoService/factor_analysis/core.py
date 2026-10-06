@@ -465,6 +465,17 @@ class _Warnings:
         self.items.append({"code": code, "message": message, "params": params})
 
 
+def check_excluded(measures: list[str], excluded: list[str]) -> None:
+    """Every measure to exclude must be one of the dataset."""
+    unknown = [c for c in excluded if c not in measures]
+    if unknown:
+        raise AnalysisError(
+            f"Unknown measure(s) to exclude: {', '.join(unknown[:5])}.",
+            "unknown_excluded",
+            measures=", ".join(unknown[:5]),
+        )
+
+
 def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
     """Run all steps on a cleaned matrix and return the result as plain JSON values.
 
@@ -473,13 +484,7 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
     is analysed like ComFy for log measures does (clamped eigenvalues, pseudo-inverse in the
     MSA) and reported as a warning; it is an error only if the factor analysis then fails.
     """
-    unknown = [c for c in params.excluded if c not in data.columns]
-    if unknown:
-        raise AnalysisError(
-            f"Unknown measure(s) to exclude: {', '.join(unknown[:5])}.",
-            "unknown_excluded",
-            measures=", ".join(unknown[:5]),
-        )
+    check_excluded(list(data.columns), params.excluded)
     data = data.drop(columns=list(params.excluded))
     n, p = data.shape
     if p < MIN_MEASURES:
