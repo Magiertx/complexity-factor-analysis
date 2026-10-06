@@ -74,15 +74,19 @@ export function formatPValue(p: number, locale: string): string {
   return formatNumber(p, locale, 3);
 }
 
-/** A file size in bytes, kB or MB, e.g. "740 kB" or "12.5 MB". */
+/** A file size in bytes, kB, MB or GB, e.g. "740 kB" or "12.5 MB". */
 export function formatFileSize(bytes: number, locale: string): string {
   if (!Number.isFinite(bytes)) return NO_VALUE;
+  // The unit follows the value as shown, so 1,048,575 bytes read "1.0 MB", not "1,024 kB".
+  const mb = bytes / (1024 * 1024);
   const [unit, value, digits] =
-    bytes < 1024
+    Math.round(bytes) < 1024
       ? (["byte", bytes, 0] as const)
-      : bytes < 1024 * 1024
+      : Math.round(bytes / 1024) < 1024
         ? (["kilobyte", bytes / 1024, 0] as const)
-        : (["megabyte", bytes / (1024 * 1024), 1] as const);
+        : Math.round(mb * 10) / 10 < 1024
+          ? (["megabyte", mb, 1] as const)
+          : (["gigabyte", mb / 1024, 1] as const);
   return numberFormat(locale, {
     style: "unit",
     unit,
