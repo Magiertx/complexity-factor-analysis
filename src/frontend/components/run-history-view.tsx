@@ -207,17 +207,21 @@ export function RunHistoryView() {
             </div>
           </div>
 
-          <Segmented<StatusFilter>
-            value={statusFilter}
-            onChange={setStatusFilter}
-            options={[
-              { value: "all", label: t("run_history.status_all", { n: counts.all }) },
-              { value: "active", label: t("run_history.status_active", { n: counts.active }) },
-              { value: "completed", label: t("run_history.status_completed", { n: counts.completed }) },
-              { value: "failed", label: t("run_history.status_failed", { n: counts.failed }) },
-              { value: "aborted", label: t("run_history.status_aborted", { n: counts.aborted }) },
-            ]}
-          />
+          {/* Scrolls on its own on a phone, where the five filters are wider than the page. */}
+          <div className="overflow-x-auto no-scrollbar">
+            <Segmented<StatusFilter>
+              className="min-w-max"
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={[
+                { value: "all", label: t("run_history.status_all", { n: counts.all }) },
+                { value: "active", label: t("run_history.status_active", { n: counts.active }) },
+                { value: "completed", label: t("run_history.status_completed", { n: counts.completed }) },
+                { value: "failed", label: t("run_history.status_failed", { n: counts.failed }) },
+                { value: "aborted", label: t("run_history.status_aborted", { n: counts.aborted }) },
+              ]}
+            />
+          </div>
         </CardContent>
       </Card>
 
