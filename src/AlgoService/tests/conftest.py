@@ -119,11 +119,12 @@ def no_anthropic_api(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def private_prom4py_turn(monkeypatch, tmp_path):
-    """Each test gets its own ProM4Py turn lock and "stuck" mark, instead of the files in the
+    """Each test gets its own ProM4Py turn locks and "stuck" mark, instead of the files in the
     shared temp directory that another test run or a local server may have left."""
     from algorithms import _prom4py
 
     monkeypatch.setattr(_prom4py, "_LOCK_PATH", str(tmp_path / "prom4py.lock"))
+    monkeypatch.setattr(_prom4py, "_NEXT_PATH", str(tmp_path / "prom4py.lock.next"))
     monkeypatch.setattr(_prom4py, "_STUCK_MARK", str(tmp_path / "prom4py.lock.stuck"))
     monkeypatch.setattr(_prom4py, "_gave_up_after", None)
 

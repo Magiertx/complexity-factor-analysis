@@ -339,6 +339,38 @@ def test_discoveries_take_turns_on_prom():
     assert "waiting for ProM, another job is using it" in waits
 
 
+def test_a_waiting_job_gets_the_next_turn():
+    """A job that gives the turn back and starts its next discovery at once queues behind a job
+    that was already waiting, instead of taking the turn again and again."""
+    from algorithms import comfy
+
+    order: list[str] = []
+    a_started = threading.Event()
+
+    class Miner:
+        def __init__(self, job: str):
+            self.job = job
+
+        def discover_for(self, event_log):
+            order.append(self.job)
+            a_started.set()
+            time.sleep(0.5)
+            return ("net", "im", "fm")
+
+    def job(name: str, discoveries: int) -> None:
+        for _ in range(discoveries):
+            comfy.discover(Miner(name), None)
+
+    a = threading.Thread(target=job, args=("A", 4))
+    a.start()
+    assert a_started.wait(5)
+    b = threading.Thread(target=job, args=("B", 1))
+    b.start()
+    a.join()
+    b.join()
+    assert order == ["A", "B", "A", "A", "A"]
+
+
 # --- how a timeout shows up ---------------------------------------------------------------
 
 

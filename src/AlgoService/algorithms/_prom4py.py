@@ -63,10 +63,14 @@ class ProMNotRestarted(ProMUnavailable):
     """ProM4Py did not answer again within ``RESTART_WAIT_S`` after a call timed out."""
 
 
-# One file lock for all worker processes of a container. A lock taken on its own open file
-# description, so that processes forked from one parent do not share it.
+# File locks for all worker processes of a container, each taken on its own open file
+# description, so that processes forked from one parent do not share them: the turn on ProM,
+# and "next" for the process that waits for it (see ``_acquire``).
 _LOCK_PATH = os.path.join(tempfile.gettempdir(), "prom4py.lock")
-_thread_lock = threading.Lock()
+_NEXT_PATH = _LOCK_PATH + ".next"
+# Without fcntl (Windows, where only the tests run), the same with thread locks, by path.
+_thread_locks: dict[str, threading.Lock] = {}
+_thread_locks_guard = threading.Lock()
 
 # Left by a discovery that timed out. ProM goes on with that call until its watchdog restarts
 # it, so the next discovery in this container waits for ProM before it sends anything.
@@ -122,13 +126,32 @@ def _wait_for_restart(on_wait: WaitFn | None) -> None:
 
 
 def _acquire(on_wait: WaitFn | None) -> Callable[[], None]:
+    """Take the turn on ProM; returns the function that gives it back.
+
+    A lock alone is not fair: a job that gives the turn back and starts its next discovery a
+    few milliseconds later would mostly take it again before a job that has been waiting, for
+    discovery after discovery. So whoever wants the turn first takes "next", and holds it
+    until it has the turn. The job that just gave the turn back then queues behind the one
+    already waiting, which holds "next".
+    """
+    release_next = _lock(_NEXT_PATH, on_wait)
+    try:
+        return _lock(_LOCK_PATH, on_wait)
+    finally:
+        release_next()
+
+
+def _lock(path: str, on_wait: WaitFn | None) -> Callable[[], None]:
+    """Take the lock ``path``, asking ``on_wait`` about once a second while it is taken."""
     if fcntl is None:
-        while not _thread_lock.acquire(timeout=1.0):
+        with _thread_locks_guard:
+            lock = _thread_locks.setdefault(path, threading.Lock())
+        while not lock.acquire(timeout=1.0):
             if on_wait:
                 on_wait("waiting for ProM, another job is using it")
-        return _thread_lock.release
+        return lock.release
 
-    fd = os.open(_LOCK_PATH, os.O_RDWR | os.O_CREAT, 0o600)
+    fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
     try:
         while True:
             try:

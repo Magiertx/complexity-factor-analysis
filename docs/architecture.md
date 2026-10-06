@@ -79,10 +79,12 @@ One discovery, one miner on one log with all of its requests, may take
   `ERR: ProMTimeout` cells and the message in its notes (or fails with it if no miner
   worked).
 - **Turns.** The worker processes of a container take turns on ProM for a whole discovery
-  (a file lock under `/tmp`). A call therefore never waits behind another job's call, its
+  (file locks under `/tmp`). A call therefore never waits behind another job's call, its
   timeout measures its own work, and the watchdog below never cuts off a call that is still
-  awaited. A process waiting for its turn reports "waiting for ProM, another job is using
-  it" as job progress, and can be aborted meanwhile.
+  awaited. A job that is waiting gets the next turn, before the job that just had it starts
+  its next discovery, so two jobs at once alternate per discovery. A process waiting for its
+  turn reports "waiting for ProM, another job is using it" as job progress, and can be
+  aborted meanwhile.
 - **Watchdog** (`src/prom4py/launch.sh`). ProM goes on with a timed-out call. The watchdog
   in the container probes `/isRunning`, which a busy ProM does not answer, and restarts Java
   when no probe has been answered for `PROM4PY_CALL_TIMEOUT` + 30 s, or when Java exited. A
