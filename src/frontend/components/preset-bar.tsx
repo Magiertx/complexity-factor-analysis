@@ -87,7 +87,7 @@ export function PresetBar({ algorithmId, currentParams, onLoad, defaults, disabl
 
   return (
     <div className="flex items-center justify-between gap-3 flex-wrap text-xs">
-      <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-center gap-2 min-w-0 flex-wrap">
         <div ref={wrapperRef} className="relative">
           <Button
             type="button"
