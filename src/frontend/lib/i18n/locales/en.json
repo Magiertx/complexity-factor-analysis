@@ -259,7 +259,7 @@
       "uploads": "Uploads: at most 100 MB per file. `POST /algorithms/{id}/analyze` and `POST /log-stats` take one event log (`.xes`, `.xes.gz`, `.xml`, `.json`). `POST /factor-analysis/datasets` takes one `.csv`, up to 50 event logs (`.xes`, `.xes.gz`) or up to 200 Petri nets (`.pnml`), at most 500 MB together.",
       "session": "Session: a signed cookie scopes every endpoint. Reuse it across requests (in Python with `requests.Session()`) to keep your runs and datasets visible.",
       "schemas": "Parameter schemas come from `GET /algorithms`: read the `parameters_schema` of an algorithm before submitting.",
-      "analysis": "Analyses: at most `400` measures per analysis, more give a 400 with the code `too_many_measures_for_analysis`. A newer analysis of the same dataset in a session replaces an older one that still waits; the older one gets a 409 `superseded`."
+      "analysis": "Analyses: at most `400` measures per analysis, more give a 400 with the code `too_many_measures_for_analysis`. A newer analysis of the same dataset in a session replaces an older one that still waits; the older one gets a 409 `superseded`. Scripts that analyse one dataset with several settings in parallel pass `?latest_wins=false`."
     }
   },
   "parameter_form": {
