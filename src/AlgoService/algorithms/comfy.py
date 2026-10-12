@@ -31,7 +31,9 @@ from ._prom4py import (
     wait_for_prom4py,
 )
 
-from .base import AlgorithmBase, AnalysisResult, ParameterSpec, stat, table, text, image, log_file, RunContext
+from .base import (
+    AlgorithmBase, AnalysisResult, CodedRunError, ParameterSpec, stat, table, text, image, log_file, RunContext,
+)
 from ._petrinet import render_petri_net_to_base64_png
 
 
@@ -178,6 +180,8 @@ class ComFyAlgorithm(AlgorithmBase):
         columns = ["Miner"] + [str(m) for m in measures]
         rows: list[list[Any]] = []
         pn_images: list[Any] = []
+        # Miners whose discovery failed because ProM4Py could not be reached.
+        unreachable = 0
 
         for idx, miner in enumerate(miners):
             ctx.check_aborted()
@@ -209,6 +213,7 @@ class ComFyAlgorithm(AlgorithmBase):
                 row.extend([f"ERR: {type(e).__name__}"] * len(measures))
                 notes.append(f"{miner}: discovery failed: {e}")
                 rows.append(row)
+                unreachable += isinstance(e, ProMUnavailable)
                 continue
 
             for measure in measures:
@@ -228,6 +233,11 @@ class ComFyAlgorithm(AlgorithmBase):
         )
         if rows and computed == 0:
             detail = notes[0] if notes else "no measure could be computed"
+            if unreachable == len(miners):
+                raise CodedRunError(
+                    f"ProM4Py could not be reached, so no miner could run. First error: {detail}",
+                    "prom_unavailable",
+                )
             raise RuntimeError(
                 f"ComFy produced no results — every miner/measure combination failed. "
                 f"First error: {detail}"

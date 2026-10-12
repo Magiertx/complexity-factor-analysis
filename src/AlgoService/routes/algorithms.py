@@ -396,7 +396,7 @@ async def run_analysis_task(job_id: str, t_path: str, coerced_params: dict[str, 
         if js and ("Task aborted by user" in str(e) or js.get("status") == "aborted"):
             await jobs_db.update_job_progress(job_id, js.get("percentage", 0.0), "Aborted by user", status="aborted")
         else:
-            await jobs_db.set_job_failed(job_id, str(e))
+            await jobs_db.set_job_failed(job_id, str(e), getattr(e, "code", None))
         await broadcast_jobs_update()
     except Exception as e:
         await jobs_db.set_job_failed(job_id, f"Algorithm failed: {e}")

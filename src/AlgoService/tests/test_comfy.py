@@ -114,15 +114,18 @@ def test_factor_analysis_module_imports():
 
 @pytest.mark.skipif(PROM4PY_UP, reason="Only meaningful while ProM4Py is down.")
 def test_run_fails_loudly_without_prom4py(monkeypatch):
-    """With ProM4Py down every cell fails; the run must fail instead of reporting a table of errors."""
+    """With ProM4Py down every cell fails; the run must fail instead of reporting a table of
+    errors, and say why with a code the UI translates."""
+    from algorithms.base import CodedRunError
     from algorithms import _prom4py
     from algorithms.comfy import ComFyAlgorithm
 
     # Not the three minutes a discovery waits for a ProM that is starting.
     monkeypatch.setattr(_prom4py, "START_WAIT_S", 1.0)
     algo = ComFyAlgorithm()
-    with pytest.raises(RuntimeError, match="no results"):
+    with pytest.raises(CodedRunError, match="ProM4Py could not be reached") as failure:
         algo.analyze(_SAMPLE_LOG, algo.coerce_params(SMOKE_PARAMS))
+    assert failure.value.code == "prom_unavailable"
 
 
 @pytest.mark.skipif(not PROM4PY_UP, reason="ProM4Py unreachable, start it with `docker compose up prom4py`.")

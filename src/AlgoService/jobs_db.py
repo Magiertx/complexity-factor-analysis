@@ -217,8 +217,10 @@ async def set_job_completed(job_id: str, analysis_result: Any) -> None:
         await session.commit()
 
 
-async def set_job_failed(job_id: str, error_msg: str) -> None:
-    """Mark a job as failed and store the error message."""
+async def set_job_failed(job_id: str, error_msg: str, code: str | None = None) -> None:
+    """Mark a job as failed and store the error message. ``code`` names a known cause, e.g.
+    ``prom_unavailable``, so the UI can say it in its own language; it is kept with the
+    internal params, like ``_summary``, and served as ``error_code``."""
     async with AsyncSessionLocal() as session:
         uid = uuid.UUID(job_id)
         result = await session.execute(select(models.Run).where(models.Run.id == uid))
@@ -226,6 +228,8 @@ async def set_job_failed(job_id: str, error_msg: str) -> None:
         if run:
             run.status = "failed"
             run.error = error_msg
+            if code:
+                run.params_json = {**(run.params_json or {}), "_error_code": code}
             run.finished_at = _utcnow_naive()
             await session.commit()
 
@@ -407,6 +411,7 @@ def _serialize_run_meta(run: models.Run) -> dict[str, Any]:
         "started_at": run.started_at.timestamp() if run.started_at else None,
         "finished_at": run.finished_at.timestamp() if run.finished_at else None,
         "error": run.error,
+        "error_code": raw_params.get("_error_code"),
         "notes": run.notes,
     }
 

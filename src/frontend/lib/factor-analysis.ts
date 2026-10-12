@@ -208,6 +208,11 @@ function datasetJobKind(job: Job): FactorKind | null {
   return job.algorithm_id.slice("_dataset:".length) === "log" ? "log" : "model";
 }
 
+/** Why a job failed: in the UI language where the server names a known cause, else its message. */
+export function jobErrorText(job: Pick<Job, "error" | "error_code">, tMaybe: TranslateMaybe): string | undefined {
+  return (job.error_code && tMaybe(`errors.${job.error_code}`)) || job.error || undefined;
+}
+
 /** The name of a job's algorithm in the UI language; the backend names dataset jobs in English. */
 export function jobDisplayName(job: Job, t: Translate): string {
   const kind = datasetJobKind(job);

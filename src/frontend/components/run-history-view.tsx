@@ -25,7 +25,7 @@ import { Card, CardContent } from "./ui/card";
 import { Segmented } from "./ui/segmented";
 import { Input } from "./ui/input";
 import { Select } from "./ui/select";
-import { datasetJobHref, datasetJobSubtitle, jobDisplayName, jobTitle } from "@/lib/factor-analysis";
+import { datasetJobHref, datasetJobSubtitle, jobDisplayName, jobErrorText, jobTitle } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { localizedAlgoName, useLocale } from "@/lib/i18n";
 import { formatDateTime, formatPercent } from "@/lib/format";
@@ -41,7 +41,7 @@ const STATUS_BADGE: Record<Job["status"], string> = {
 };
 
 export function RunHistoryView() {
-  const { t, locale } = useLocale();
+  const { t, tMaybe, locale } = useLocale();
 
   const STATUS_LABEL: Record<Job["status"], string> = {
     pending: t("run_history.status_label_pending"),
@@ -292,7 +292,7 @@ export function RunHistoryView() {
                           <>
                             <span>·</span>
                             <span className="text-danger-ink truncate max-w-[300px]" title={job.error}>
-                              {job.error}
+                              {jobErrorText(job, tMaybe)}
                             </span>
                           </>
                         )}

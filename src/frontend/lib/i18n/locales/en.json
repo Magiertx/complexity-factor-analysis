@@ -942,6 +942,7 @@
   "errors": {
     "rate_limited": "Too many requests. Wait a moment and try again.",
     "job_quota": "You already have {active} runs queued or running, and this would add {requested}; at most {limit} are allowed. Wait for them to finish or abort some under Recent runs.",
-    "dataset_jobs_busy": "The server is already computing {active} datasets, the most it runs at once. Try again in a few minutes."
+    "dataset_jobs_busy": "The server is already computing {active} datasets, the most it runs at once. Try again in a few minutes.",
+    "prom_unavailable": "ProM, which runs the miners, cannot be reached right now, so no Petri net could be discovered. Try again in a few minutes; if it stays like this, the prom4py service has to be started on the server."
   }
 }

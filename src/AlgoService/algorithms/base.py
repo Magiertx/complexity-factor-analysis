@@ -179,6 +179,14 @@ class AnalysisResult:
         }
 
 
+class CodedRunError(RuntimeError):
+    """A run failed for a known reason; ``code`` lets the UI name it in its own language."""
+
+    def __init__(self, message: str, code: str) -> None:
+        super().__init__(message)
+        self.code = code
+
+
 class ParameterValidationError(ValueError):
     def __init__(self, errors: dict[str, str]) -> None:
         self.errors = errors

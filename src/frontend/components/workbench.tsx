@@ -51,6 +51,7 @@ import {
   fetchFactorCatalog,
   FactorCatalog,
 } from "@/lib/api";
+import { jobErrorText } from "@/lib/factor-analysis";
 import { AlgorithmList } from "./algorithm-list";
 import { FileDrop, LOG_EXTENSIONS } from "./file-drop";
 import { ParameterForm, choiceList, type OptionInfo } from "./parameter-form";
@@ -403,7 +404,7 @@ export function Workbench() {
     } else if (jobSummary.status === "failed") {
       setSelectedJobDetail(jobSummary);
       setResult(null);
-      setError(jobSummary.error || t("workbench.errors.analysis_failed"));
+      setError(jobErrorText(jobSummary, tMaybe) || t("workbench.errors.analysis_failed"));
       setProgress(null);
     } else if (jobSummary.status === "aborted") {
       setSelectedJobDetail(jobSummary);

@@ -560,3 +560,52 @@ def test_a_timeout_is_a_failed_input_of_a_dataset_job(client, hanging_miner, mon
     [failure] = d["failures"]
     log_label = failure["input"].removesuffix(f" / {hanging_miner}")
     assert f"ProM took longer than 1 s for {hanging_miner} on {log_label}" in failure["error"]
+
+
+# --- how an unreachable ProM shows up -----------------------------------------------------
+
+
+@pytest.fixture
+def unreachable_miner(monkeypatch):
+    """ComFy with a miner whose ProM4Py refuses the connection, and a short wait for ProM."""
+    import algorithms
+    from algorithms import _prom4py, comfy
+
+    class UnreachableMiner:
+        def __str__(self):
+            return "Unreachable miner"
+
+        def discover_for(self, event_log):
+            raise comfy.ProMUnavailable("ProM4Py is not reachable at http://prom4py:4040")
+
+    class BrokenMiner:
+        def __str__(self):
+            return "Broken miner"
+
+        def discover_for(self, event_log):
+            raise ValueError("this miner fails on every log")
+
+    monkeypatch.setattr(_prom4py, "START_WAIT_S", 0.2)
+    monkeypatch.setattr(_prom4py, "is_responsive", lambda timeout: False)
+    monkeypatch.setitem(comfy.MINERS_BY_NAME, "Unreachable miner", UnreachableMiner())
+    monkeypatch.setitem(comfy.MINERS_BY_NAME, "Broken miner", BrokenMiner())
+    monkeypatch.setitem(algorithms.REGISTRY, "comfy", comfy.ComFyAlgorithm())
+    return "Unreachable miner"
+
+
+def test_a_run_without_prom_fails_with_a_code(client, unreachable_miner):
+    job = _run_comfy(client, [unreachable_miner])
+    assert job["status"] == "failed"
+    assert job["error_code"] == "prom_unavailable"
+    assert job["error"].startswith("ProM4Py could not be reached")
+    listed = next(j for j in client.get("/jobs").json()["jobs"] if j["id"] == job["id"])
+    assert listed["error_code"] == "prom_unavailable"
+    # The code is not one of the parameters the run was started with.
+    assert "_error_code" not in job["params"]
+
+
+def test_a_run_that_fails_for_another_reason_too_has_no_code(client, unreachable_miner):
+    job = _run_comfy(client, [unreachable_miner, "Broken miner"])
+    assert job["status"] == "failed"
+    assert job["error_code"] is None
+    assert "no results" in job["error"]
