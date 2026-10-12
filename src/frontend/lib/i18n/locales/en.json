@@ -863,6 +863,8 @@
       "legend_negative": "negative",
       "legend_positive": "positive",
       "legend_bold": "bold: |loading| ≥ {threshold}",
+      "legend_bold_strict": "bold: |loading| > {threshold}",
+      "legend_bold_assigned": "bold: the loadings by which the rule assigns a measure",
       "groups_heading": "Factor groups",
       "factor_variance": "{pct} of variance",
       "factor_empty": "No measure reaches the threshold on this factor.",
@@ -1006,6 +1008,7 @@
         "none": "no rotation"
       },
       "loading": "|λ| ≥ {value}",
+      "loading_strict": "|λ| > {value}",
       "communality": "h² ≥ {value}",
       "rule": {
         "largest": "largest loading",

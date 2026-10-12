@@ -119,6 +119,25 @@ export function ruleCommunality(rule: AssignmentRule): number {
 }
 
 /**
+ * Whether a loading must exceed the threshold rather than reach it under a rule, as the server
+ * applies it (`assignment.loading_strict`): Important Factors asks for |λ| > 0.35.
+ */
+export function ruleStrict(rule: AssignmentRule): boolean {
+  return rule !== "largest";
+}
+
+/**
+ * The cells of the loadings table by which the rule put a measure on a factor, as
+ * "measure:factor". Under "multi" and "hair" these, not every loading above the threshold,
+ * are the ones that count, as the dimension tables of Important Factors show them.
+ */
+export function assignedCells(analysis: FactorAnalysis): Set<string> {
+  const out = new Set<string>();
+  for (const f of analysis.factors) for (const m of f.measures) out.add(`${m.measure}:${f.index}`);
+  return out;
+}
+
+/**
  * The communality an assigned measure needs: the threshold of the options or the rule's own
  * minimum, whichever is higher, as the server applies it.
  */
@@ -238,7 +257,10 @@ export function settingsSummary(
     { id: "rotation", text: t(`factor.settings.rotation.${options.rotation}`), differs: changed.has("rotation") },
     {
       id: "loading",
-      text: t("factor.settings.loading", { value: options.loading_threshold }),
+      // "multiple membership" and "Hair" count a loading above the threshold, not at it.
+      text: t(ruleStrict(options.assignment_rule) ? "factor.settings.loading_strict" : "factor.settings.loading", {
+        value: options.loading_threshold,
+      }),
       differs: changed.has("loading_threshold"),
     },
     {

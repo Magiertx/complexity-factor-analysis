@@ -581,6 +581,17 @@ export interface FactorAnalysis {
   unassigned_details?: { measure: string; reason: UnassignedReason }[];
   /** Absent before the assignment rules, which is "largest". */
   assignment_rule?: AssignmentRule;
+  /** The rule as applied; absent before the assignment rules. */
+  assignment?: {
+    rule: AssignmentRule;
+    loading_threshold: number;
+    /** A loading counts if it exceeds the threshold, rather than reaches it ("multi", "hair"). */
+    loading_strict: boolean;
+    /** The communality an assigned measure needed: the threshold asked for or the rule's minimum. */
+    communality_threshold: number;
+    cross_loading_gap: number;
+    cross_loaded: "largest" | "all" | "none";
+  };
   cross_loadings?: CrossLoading[];
   factor_count?: FactorCount;
   /** Only when the dataset has published numbers and the analysis used the published settings. */

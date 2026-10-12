@@ -863,6 +863,8 @@
       "legend_negative": "negativ",
       "legend_positive": "positiv",
       "legend_bold": "fett: |Ladung| ≥ {threshold}",
+      "legend_bold_strict": "fett: |Ladung| > {threshold}",
+      "legend_bold_assigned": "fett: die Ladungen, über die die Regel ein Maß zuordnet",
       "groups_heading": "Faktorgruppen",
       "factor_variance": "{pct} der Varianz",
       "factor_empty": "Kein Maß erreicht auf diesem Faktor die Schwelle.",
@@ -1006,6 +1008,7 @@
         "none": "keine Rotation"
       },
       "loading": "|λ| ≥ {value}",
+      "loading_strict": "|λ| > {value}",
       "communality": "h² ≥ {value}",
       "rule": {
         "largest": "größte Ladung",

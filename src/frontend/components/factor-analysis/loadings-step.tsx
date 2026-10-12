@@ -6,12 +6,14 @@ import { ASSIGNMENT_RULES, type AssignmentRule, type FactorAnalysis } from "@/li
 import {
   ORTHOGONAL,
   RULE_LIMITS,
+  assignedCells,
   countText,
   crossLoadingsByMeasure,
   effectiveCommunality,
   loadingStyle,
   orderMeasures,
   primaryFactor,
+  ruleStrict,
   secondaryCells,
   signColor,
   signInk,
@@ -43,6 +45,9 @@ interface Props {
   assignmentNote?: string | null;
 }
 
+/** What makes a loading bold: the rule's assignment, or the threshold reached or exceeded. */
+type BoldBy = "assigned" | "exceeds" | "reaches";
+
 export function LoadingsView({
   analysis,
   options,
@@ -70,6 +75,17 @@ export function LoadingsView({
   // The rule works on the pattern loadings, so only they get the ring of a cross-loading.
   const secondary = structure ? new Set<string>() : secondaryCells(analysis);
   const crossLabel = t("factor.loadings.cross_cell");
+  // Under "multi" and "hair" the cells the rule assigned are bold, as the paper's dimension
+  // tables mark them and the LaTeX export does; under "largest" every loading that counts, as in
+  // ComFy's report. The structure matrix, which no rule reads, keeps the threshold.
+  const assigned = !structure && (analysis.assignment_rule ?? "largest") !== "largest" ? assignedCells(analysis) : null;
+  const boldBy: BoldBy = assigned ? "assigned" : ruleStrict(options.assignment_rule) ? "exceeds" : "reaches";
+  const isBold = (measure: string, factor: number, value: number) =>
+    assigned
+      ? assigned.has(`${measure}:${factor}`)
+      : boldBy === "exceeds"
+        ? Math.abs(value) > threshold
+        : Math.abs(value) >= threshold;
 
   return (
     <div className="space-y-6">
@@ -166,7 +182,7 @@ export function LoadingsView({
             <HelpLabel as="span" label={t("factor.loadings.col_communality")} help={t("factor.help.communality")} />
             <HelpLabel as="span" label={t("factor.loadings.variance_label")} help={t("factor.help.variance")} />
           </div>
-          <Legend threshold={threshold} crossed={secondary.size > 0} />
+          <Legend threshold={threshold} boldBy={boldBy} crossed={secondary.size > 0} />
         </div>
         {/* relative: the screen-reader texts of the cells stay inside the scrolling table, which
             is focusable so the keyboard can scroll it on a phone. */}
@@ -224,7 +240,7 @@ export function LoadingsView({
                     {factorIdx.map((i) => {
                       const v = values[i];
                       if (v === undefined) return <td key={i} className={cellPad} />;
-                      const strong = Math.abs(v) >= threshold;
+                      const strong = isBold(m, i, v);
                       const crossed = secondary.has(`${m}:${i}`);
                       const title = `${measureName(m)} · ${t("factor.loadings.factor_n", { i: i + 1 })}: ${formatNumber(v, locale, 3)}`;
                       return (
@@ -438,7 +454,7 @@ function AssignmentChoice({
   );
 }
 
-function Legend({ threshold, crossed }: { threshold: number; crossed: boolean }) {
+function Legend({ threshold, boldBy, crossed }: { threshold: number; boldBy: BoldBy; crossed: boolean }) {
   const t = useT();
   const { locale } = useLocale();
   return (
@@ -453,7 +469,11 @@ function Legend({ threshold, crossed }: { threshold: number; crossed: boolean })
       </span>
       <span>
         <b className="text-fg">{formatNumber(0, locale, 2)}</b>{" "}
-        {t("factor.loadings.legend_bold", { threshold: formatNumber(threshold, locale, 2) })}
+        {boldBy === "assigned"
+          ? t("factor.loadings.legend_bold_assigned")
+          : t(boldBy === "exceeds" ? "factor.loadings.legend_bold_strict" : "factor.loadings.legend_bold", {
+              threshold: formatNumber(threshold, locale, 2),
+            })}
       </span>
       {crossed && (
         <span className="flex items-center gap-1.5">
