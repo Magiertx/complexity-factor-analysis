@@ -15,7 +15,8 @@
     "error_title": "Something went wrong",
     "error_description": "This page ran into an unexpected error.",
     "error_unknown": "Unknown error",
-    "try_again": "Try again"
+    "try_again": "Try again",
+    "undo": "Undo"
   },
   "header": {
     "tagline": "Complexity measures of process models and event logs",
@@ -994,6 +995,49 @@
         "largest": "largest loading",
         "multi": "multiple membership",
         "hair": "Hair"
+      },
+      "aria": "Settings of the analysis",
+      "chip_title": "Go to this setting",
+      "chip_changed_title": "Differs from the tool standard; go to this setting",
+      "changed": "differs from the standard",
+      "reset": "Reset to standard",
+      "reset_short": "Standard",
+      "reset_title": "Back to the standard settings of the tool",
+      "paper": "Use paper settings",
+      "paper_short": "Paper settings",
+      "paper_title": "The settings of {source}",
+      "reset_done": "Standard settings restored.",
+      "paper_done": "Paper settings applied."
+    },
+    "match": {
+      "chip_match": "Numbers = ComFy report",
+      "chip_differs": "Differs from ComFy report",
+      "title": "Comparison with the published report",
+      "summary_match": "Every compared number equals the report to {tolerance}.",
+      "summary_differs": "Numbers that differ from the report by more than {tolerance}: {n}.",
+      "compared": "Compared",
+      "what": {
+        "bartlett": "Bartlett's test",
+        "kmo": "KMO",
+        "msa": "MSA per measure",
+        "msa_filter": "Removed measures",
+        "loadings": "Loadings",
+        "communalities": "Communalities"
+      },
+      "differences": "Differences",
+      "col_what": "Value",
+      "col_expected": "Report",
+      "col_actual": "Tool",
+      "numbers_only": "Only numbers are compared, not the factor groups.",
+      "source": "Report",
+      "settings_from": "Settings from"
+    },
+    "paper_notes": {
+      "tables": {
+        "matches": "Tab. {tables} of the paper prints the same numbers.",
+        "extra_dup": "Tab. 8 of the paper additionally uses dup without τ, which this dataset does not have; its loadings differ by up to 0.06, the groups of Tab. 9 stay the same.",
+        "other_data": "Tab. 14–16 of the paper are based on other data than this dataset.",
+        "not_in_paper": "The paper does not analyse this miner; the numbers are those of the report in the repository."
       }
     }
   },

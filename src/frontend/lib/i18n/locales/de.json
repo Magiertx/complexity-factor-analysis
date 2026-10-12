@@ -15,7 +15,8 @@
     "error_title": "Etwas ist schiefgelaufen",
     "error_description": "Auf dieser Seite ist ein unerwarteter Fehler aufgetreten.",
     "error_unknown": "Unbekannter Fehler",
-    "try_again": "Erneut versuchen"
+    "try_again": "Erneut versuchen",
+    "undo": "Rückgängig"
   },
   "header": {
     "tagline": "Komplexitätsmaße von Prozessmodellen und Event-Logs",
@@ -994,6 +995,49 @@
         "largest": "größte Ladung",
         "multi": "Mehrfachzuordnung",
         "hair": "Hair"
+      },
+      "aria": "Einstellungen der Analyse",
+      "chip_title": "Zu dieser Einstellung",
+      "chip_changed_title": "Weicht vom Standard des Tools ab; zu dieser Einstellung",
+      "changed": "weicht vom Standard ab",
+      "reset": "Auf Standard zurücksetzen",
+      "reset_short": "Standard",
+      "reset_title": "Zurück zu den Standardeinstellungen des Tools",
+      "paper": "Paper-Einstellungen verwenden",
+      "paper_short": "Paper-Einstellungen",
+      "paper_title": "Die Einstellungen aus {source}",
+      "reset_done": "Standardeinstellungen wiederhergestellt.",
+      "paper_done": "Paper-Einstellungen übernommen."
+    },
+    "match": {
+      "chip_match": "Zahlen = ComFy-Report",
+      "chip_differs": "Weicht vom ComFy-Report ab",
+      "title": "Abgleich mit dem veröffentlichten Report",
+      "summary_match": "Jede verglichene Zahl stimmt auf {tolerance} mit dem Report überein.",
+      "summary_differs": "Zahlen, die um mehr als {tolerance} vom Report abweichen: {n}.",
+      "compared": "Verglichen",
+      "what": {
+        "bartlett": "Bartlett-Test",
+        "kmo": "KMO",
+        "msa": "MSA je Maß",
+        "msa_filter": "Entfernte Maße",
+        "loadings": "Ladungen",
+        "communalities": "Kommunalitäten"
+      },
+      "differences": "Abweichungen",
+      "col_what": "Wert",
+      "col_expected": "Report",
+      "col_actual": "Tool",
+      "numbers_only": "Verglichen werden nur Zahlen, nicht die Faktorgruppen.",
+      "source": "Report",
+      "settings_from": "Einstellungen aus"
+    },
+    "paper_notes": {
+      "tables": {
+        "matches": "Tab. {tables} des Papers enthält dieselben Zahlen.",
+        "extra_dup": "Tab. 8 des Papers nutzt zusätzlich dup ohne τ, das dieser Datensatz nicht hat; ihre Ladungen weichen um bis zu 0,06 ab, die Gruppen aus Tab. 9 bleiben gleich.",
+        "other_data": "Tab. 14–16 des Papers beruhen auf anderen Daten als dieser Datensatz.",
+        "not_in_paper": "Das Paper wertet diesen Miner nicht aus; die Zahlen sind die des Reports im Repository."
       }
     }
   },

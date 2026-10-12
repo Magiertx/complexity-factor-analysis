@@ -34,6 +34,7 @@ import {
   initialOptions,
   optionsFromSaved,
   publishedOptions,
+  sameOptions,
   solutionNeedsAttention,
   type AnalysisOptions,
   type ExportFormat,
@@ -41,6 +42,7 @@ import {
 import { cn } from "@/lib/utils";
 import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { UndoToast, type UndoNotice } from "@/components/ui/undo-toast";
 import { useJobsDrawer } from "@/components/jobs-drawer";
 import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
 import { PageHeader } from "@/components/page-header";
@@ -51,6 +53,7 @@ import { FactorsView } from "./factors-step";
 import { LoadingsView } from "./loadings-step";
 import { InterpretationView } from "./interpretation-step";
 import { FactorTour } from "./factor-tour";
+import { SettingsRow } from "./settings-row";
 import {
   EmptyStep,
   StepBadge,
@@ -128,6 +131,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const { count: jobCount } = useJobsDrawer();
 
   const [options, setOptions] = useState<AnalysisOptions>(() => defaultOptions(kind));
+  const standard = useMemo(() => defaultOptions(kind), [kind]);
+  // "Reset to standard" and "Use paper settings" can be undone once, from a toast.
+  const [undo, setUndo] = useState<(UndoNotice & { previous: AnalysisOptions }) | null>(null);
   // The dataset whose saved options were applied, and the options the server has for it.
   const optionsAppliedFor = useRef<string | null>(null);
   const savedOptions = useRef<{ id: string; json: string | null } | null>(null);
@@ -198,6 +204,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       setAnalyzedOptions(null);
       setInterpretation(null);
       setInterpretError(null);
+      setUndo(null);
       // A request for the old dataset is aborted and would not reset this itself.
       setAnalyzing(false);
       // Every dataset has its own options; those saved with it are applied once it has loaded.
@@ -424,6 +431,16 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     [dataset],
   );
 
+  // All settings at once, from the settings row; the toast offers to go back.
+  const applyOptions = (next: AnalysisOptions, which: "standard" | "published") => {
+    setUndo({
+      id: Date.now(),
+      message: t(which === "standard" ? "factor.settings.reset_done" : "factor.settings.paper_done"),
+      previous: options,
+    });
+    setOptions(next);
+  };
+
   // Set when the form closes on a choice made in it: the focused button goes away with the
   // form, so the summary that replaces it takes the focus once it is shown.
   const focusSummary = useRef(false);
@@ -532,6 +549,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // The catalog entry of a bundled dataset, and the settings of its paper if it has them.
   const bundled = dataset?.bundled_id ? catalog?.bundled.find((b) => b.id === dataset.bundled_id) : undefined;
   const published = useMemo(() => publishedOptions(kind, bundled), [kind, bundled]);
+  // Only for the analysis on screen, and only while the settings are still those it ran with.
+  const match =
+    analysis && analyzedOptions && sameOptions(analyzedOptions, options) ? (analysis.published_match ?? null) : null;
 
   const suitable = analysis ? analysis.bartlett.passed && analysis.kmo.passed : false;
   const interpretationStale =
@@ -598,6 +618,14 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   return (
     <div className="space-y-6">
       <OnboardingTour open={onboarding.open} onClose={onboarding.close} />
+      <UndoToast
+        notice={undo}
+        onUndo={() => {
+          if (undo) setOptions(undo.previous);
+          setUndo(null);
+        }}
+        onClose={() => setUndo(null)}
+      />
       <FactorTour kind={kind} run={tourOpen} onClose={() => setTourOpen(false)} />
       <Suspense fallback={null}>
         <DatasetLink onLink={openDataset} />
@@ -728,99 +756,117 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             {ready && dataset ? <DatasetView dataset={dataset} measureName={measureName} measureTitle={measureTitle} /> : lockedHint}
           </StepSection>
 
-          <StepSection
-            id="suitability"
-            n={3}
-            state={states.suitability}
-            title={t("factor.steps.suitability")}
-            description={t("factor.step_desc.suitability")}
-            actions={updating}
-          >
-            {!ready || !dataset ? (
-              lockedHint
-            ) : (
-              <div className="space-y-4">
-                {analysisError && (
-                  <AnalysisError
-                    kind={kind}
-                    message={analysisError}
-                    stale={!!analysis}
-                    options={options}
-                    onOptions={updateOptions}
-                  />
-                )}
+          {/* Steps 3 to 5 share the settings row, which stays in view while they scroll by. */}
+          <div className="space-y-6">
+            {ready && dataset && (
+              <SettingsRow
+                options={options}
+                standard={standard}
+                published={published}
+                publishedSource={bundled?.published_source}
+                analysis={analysis}
+                measureCount={dataset.measures.length}
+                match={match}
+                onApply={applyOptions}
+              />
+            )}
+            <StepSection
+              id="suitability"
+              n={3}
+              stickyRow
+              state={states.suitability}
+              title={t("factor.steps.suitability")}
+              description={t("factor.step_desc.suitability")}
+              actions={updating}
+            >
+              {!ready || !dataset ? (
+                lockedHint
+              ) : (
+                <div className="space-y-4">
+                  {analysisError && (
+                    <AnalysisError
+                      kind={kind}
+                      message={analysisError}
+                      stale={!!analysis}
+                      options={options}
+                      onOptions={updateOptions}
+                    />
+                  )}
+                  <div className={stale}>
+                    <SuitabilityView
+                      dataset={dataset}
+                      analysis={analysis}
+                      options={options}
+                      onOptions={updateOptions}
+                      measureName={measureName}
+                      measureTitle={measureTitle}
+                    />
+                  </div>
+                </div>
+              )}
+            </StepSection>
+
+            <StepSection
+              id="factors"
+              n={4}
+              stickyRow
+              state={states.factors}
+              title={t("factor.steps.factors")}
+              description={t("factor.step_desc.factors")}
+              actions={updating}
+            >
+              {!ready ? (
+                lockedHint
+              ) : analysis ? (
                 <div className={stale}>
-                  <SuitabilityView
-                    dataset={dataset}
+                  <FactorsView
                     analysis={analysis}
                     options={options}
                     onOptions={updateOptions}
-                    measureName={measureName}
-                    measureTitle={measureTitle}
+                    paperFactors={published?.n_factors ?? null}
                   />
                 </div>
-              </div>
-            )}
-          </StepSection>
+              ) : (
+                resultPlaceholder
+              )}
+            </StepSection>
 
-          <StepSection
-            id="factors"
-            n={4}
-            state={states.factors}
-            title={t("factor.steps.factors")}
-            description={t("factor.step_desc.factors")}
-            actions={updating}
-          >
-            {!ready ? (
-              lockedHint
-            ) : analysis ? (
-              <div className={stale}>
-                <FactorsView
-                  analysis={analysis}
-                  options={options}
-                  onOptions={updateOptions}
-                  paperFactors={published?.n_factors ?? null}
-                />
-              </div>
-            ) : (
-              resultPlaceholder
-            )}
-          </StepSection>
-
-          <StepSection
-            id="loadings"
-            n={5}
-            state={states.loadings}
-            title={t("factor.steps.loadings")}
-            description={t("factor.step_desc.loadings")}
-            actions={updating}
-          >
-            {!ready ? (
-              lockedHint
-            ) : analysis ? (
-              <div className="space-y-3">
-                {exportError && (
-                  <p role="alert" className="text-xs text-danger-ink">
-                    {exportError}
-                  </p>
-                )}
-                <div className={stale}>
-                  <LoadingsView
-                    analysis={analysis}
-                    options={options}
-                    onOptions={updateOptions}
-                    measureName={measureName}
-                    measureTitle={measureTitle}
-                    onExport={runExport}
-                    exporting={exporting}
-                    zipReady={analysisCurrent}
-                  />
+            <StepSection
+              id="loadings"
+              n={5}
+              stickyRow
+              state={states.loadings}
+              title={t("factor.steps.loadings")}
+              description={t("factor.step_desc.loadings")}
+              actions={updating}
+            >
+              {!ready ? (
+                lockedHint
+              ) : analysis ? (
+                <div className="space-y-3">
+                  {exportError && (
+                    <p role="alert" className="text-xs text-danger-ink">
+                      {exportError}
+                    </p>
+                  )}
+                  <div className={stale}>
+                    <LoadingsView
+                      analysis={analysis}
+                      options={options}
+                      onOptions={updateOptions}
+                      measureName={measureName}
+                      measureTitle={measureTitle}
+                      onExport={runExport}
+                      exporting={exporting}
+                      zipReady={analysisCurrent}
+                    />
+                  </div>
                 </div>
-              </div>
-            ) : (
-              resultPlaceholder
-            )}
-          </StepSection>
+              ) : (
+                resultPlaceholder
+              )}
+            </StepSection>
+          </div>
 
           <StepSection
             id="interpretation"
