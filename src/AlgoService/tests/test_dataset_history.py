@@ -416,6 +416,8 @@ def test_zip_of_a_bundled_dataset(client):
         "assignment.csv", "eigenvalues.csv", "msa.csv",
     }
     analysis = client.post(f"{url}/analyze", json=body).json()
+    # The time the request took is not part of the analysis.
+    del analysis["elapsed_ms"]
     assert json.loads(archive.read("analysis.json")) == analysis
     assert archive.read("dataset.csv") == client.get(f"{url}/download").content
     assert archive.read("loadings.csv") == client.post(f"{url}/export", json={**body, "format": "csv"}).content

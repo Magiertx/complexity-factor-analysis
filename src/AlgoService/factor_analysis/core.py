@@ -21,7 +21,7 @@ import threading
 import warnings
 from collections import OrderedDict
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
 import pandas as pd
@@ -125,6 +125,20 @@ class AnalysisError(ValueError):
         super().__init__(message)
         self.code = code
         self.params = params
+
+
+class Superseded(Exception):
+    """The analysis was given up because nobody waits for its result any more."""
+
+
+#: Asked between the steps of an analysis and before every evaluation of the minres
+#: objective; True gives the analysis up with ``Superseded``.
+StopCheck = Callable[[], bool]
+
+
+def _check_stop(should_stop: StopCheck | None) -> None:
+    if should_stop is not None and should_stop():
+        raise Superseded()
 
 
 # --- cleaning ----------------------------------------------------------------------------
@@ -407,20 +421,75 @@ def _fit_key(data: pd.DataFrame, n_factors: int, rotation: str) -> tuple:
     return digest.hexdigest(), n_factors, rotation
 
 
-def fit_factors(data: pd.DataFrame, n_factors: int, rotation: str = "varimax") -> FactorFit:
+@dataclass
+class _Flight:
+    """A fit in progress, which callers asking for the same fit wait for instead of running
+    it again."""
+
+    #: The stop checks of everybody waiting for it; None for a caller that always wants it.
+    wanted: list[StopCheck | None]
+    done: threading.Event = field(default_factory=threading.Event)
+    fit: FactorFit | None = None
+    error: BaseException | None = None
+
+    def stale(self) -> bool:
+        """Given up only once nobody wants it any more."""
+        return all(check is not None and check() for check in self.wanted)
+
+
+_IN_FLIGHT: dict[tuple, _Flight] = {}
+
+#: How often a caller waiting for somebody else's fit asks whether it is still wanted.
+_FLIGHT_POLL_S = 0.05
+
+
+def fit_factors(
+    data: pd.DataFrame, n_factors: int, rotation: str = "varimax", should_stop: StopCheck | None = None
+) -> FactorFit:
     """``FactorAnalyzer`` with its defaults. The minres fit takes seconds for a hundred
-    measures, so recent fits are cached; a new loading threshold does not refit."""
+    measures, so recent fits are cached; a new loading threshold does not refit.
+
+    A caller asking for a fit that is already running waits for it: the same analysis asked
+    for twice, e.g. by a double click or by two people opening the same bundled dataset, costs
+    one fit. ``should_stop`` gives the caller up with ``Superseded``; the fit itself is given
+    up only when every caller waiting for it is, and then it is not cached."""
     key = _fit_key(data, n_factors, rotation)
-    with _FIT_CACHE_LOCK:
-        if key in _FIT_CACHE:
-            _FIT_CACHE.move_to_end(key)
-            return _FIT_CACHE[key]
-    fit = _fit_factors(data, n_factors, rotation)
-    with _FIT_CACHE_LOCK:
-        _FIT_CACHE[key] = fit
-        if len(_FIT_CACHE) > _FIT_CACHE_SIZE:
-            _FIT_CACHE.popitem(last=False)
-    return fit
+    while True:
+        with _FIT_CACHE_LOCK:
+            if key in _FIT_CACHE:
+                _FIT_CACHE.move_to_end(key)
+                return _FIT_CACHE[key]
+            flight = _IN_FLIGHT.get(key)
+            runs_it = flight is None
+            if runs_it:
+                flight = _IN_FLIGHT[key] = _Flight(wanted=[should_stop])
+            else:
+                flight.wanted.append(should_stop)
+        if runs_it:
+            try:
+                fit = _fit_factors(data, n_factors, rotation, flight.stale)
+            except BaseException as e:
+                flight.error = e
+                raise
+            else:
+                flight.fit = fit
+                with _FIT_CACHE_LOCK:
+                    _FIT_CACHE[key] = fit
+                    if len(_FIT_CACHE) > _FIT_CACHE_SIZE:
+                        _FIT_CACHE.popitem(last=False)
+                return fit
+            finally:
+                with _FIT_CACHE_LOCK:
+                    del _IN_FLIGHT[key]
+                flight.done.set()
+        while not flight.done.wait(_FLIGHT_POLL_S):
+            _check_stop(should_stop)
+        if flight.fit is not None:
+            return flight.fit
+        if not isinstance(flight.error, Superseded):
+            raise flight.error
+        # Given up just before this caller asked for it; it runs the fit itself.
+        _check_stop(should_stop)
 
 
 def max_factors(p: int) -> int:
@@ -428,7 +497,22 @@ def max_factors(p: int) -> int:
     return p - 1
 
 
-def _fit_factors(data: pd.DataFrame, n_factors: int, rotation: str) -> FactorFit:
+class _StoppableFactorAnalyzer(FactorAnalyzer):
+    """``FactorAnalyzer`` that asks ``should_stop`` before each evaluation of the minres
+    objective. The optimiser evaluates it p + 1 times per step for its numerical gradient, so
+    a fit of a hundred measures stops within milliseconds instead of running on for seconds.
+    The objective itself is factor_analyzer's, so the loadings are the same to the last bit."""
+
+    should_stop: StopCheck | None = None
+
+    def _fit_uls_objective(self, psi, corr_mtx, n_factors):  # type: ignore[override]
+        _check_stop(self.should_stop)
+        return FactorAnalyzer._fit_uls_objective(psi, corr_mtx, n_factors)
+
+
+def _fit_factors(
+    data: pd.DataFrame, n_factors: int, rotation: str, should_stop: StopCheck | None = None
+) -> FactorFit:
     if rotation not in ROTATIONS:
         raise AnalysisError(f"Unknown rotation '{rotation}'.", "unknown_rotation", rotation=rotation)
     p = data.shape[1]
@@ -437,7 +521,8 @@ def _fit_factors(data: pd.DataFrame, n_factors: int, rotation: str) -> FactorFit
     # factor_analyzer skips the rotation for a single factor; say so in the result.
     used_rotation = "none" if rotation == "none" or n_factors == 1 else rotation
 
-    fa = FactorAnalyzer(n_factors=n_factors, rotation=None if used_rotation == "none" else used_rotation)
+    fa = _StoppableFactorAnalyzer(n_factors=n_factors, rotation=None if used_rotation == "none" else used_rotation)
+    fa.should_stop = should_stop
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         try:
@@ -683,7 +768,7 @@ def check_params(measures: list[str], n_observations: int, params: AnalysisParam
         raise _factor_count_error(params.n_factors, p)
 
 
-def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
+def analyze(data: pd.DataFrame, params: AnalysisParams, should_stop: StopCheck | None = None) -> dict[str, Any]:
     """Run all steps on a cleaned matrix and return the result as plain JSON values.
 
     Bartlett's test runs on the measures before the MSA filter, as in ComFy; the KMO values
@@ -693,7 +778,11 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
 
     The measures keep the order of ``data``, which callers take as stored: on singular data
     the KMO depends on the column order, so nothing may sort the columns on the way here.
+
+    ``should_stop`` is asked between the steps and during the fit; once it says True, the
+    analysis is given up with ``Superseded``.
     """
+    _check_stop(should_stop)
     _check_rule(params.assignment_rule)
     check_excluded(list(data.columns), params.excluded)
     data = data.drop(columns=list(params.excluded))
@@ -755,6 +844,7 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
             recommended=5 * p,
         )
 
+    _check_stop(should_stop)
     values = eigenvalues(data)
     suggested = min(kaiser_criterion(values), max_factors(p))
     # On the matrix of the scree plot, so the two criteria can be drawn on the same axes.
@@ -772,7 +862,8 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
             measures=p,
         )
 
-    fit = fit_factors(data, n_factors, params.rotation)
+    _check_stop(should_stop)
+    fit = fit_factors(data, n_factors, params.rotation, should_stop)
     for note in fit.notes:
         out.add("fit_not_converged", f"The factor fit: {note}", message=note)
     if fit.rotation != params.rotation:

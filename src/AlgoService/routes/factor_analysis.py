@@ -11,6 +11,8 @@ import os
 import re
 import shutil
 import tempfile
+import threading
+import time
 import uuid
 from pathlib import Path
 from typing import Any, Literal
@@ -34,6 +36,7 @@ from factor_analysis.core import (
     MISSING_MARKERS,
     AnalysisError,
     AnalysisParams,
+    Superseded,
     analyze as run_analysis,
     check_params,
 )
@@ -62,6 +65,9 @@ PREVIEW_ROWS = 2000
 
 # Factor fits of large datasets take seconds of CPU; at most this many run at once per process.
 _ANALYSIS_SLOTS = asyncio.Semaphore(2)
+
+#: How often an analysis asks whether its client is still connected.
+_DISCONNECT_POLL_S = 0.25
 
 # Dataset jobs queued or running over all sessions. The session quota alone does not bound
 # the load: a client without the session cookie gets a new session with every request.
@@ -837,12 +843,102 @@ class _AnalysisFailed(Exception):
         )
 
 
-async def _analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
+class _Latest:
+    """The newest analyze request per session and dataset. The UI sends a new request on
+    every change of a parameter and drops the answer to the one before; the server stops
+    working on that one as soon as the next arrives, so that clicking through rotations
+    costs one fit rather than one per click. A newer request for the same parameters does
+    not replace an older one: both wait for the same fit (core.fit_factors)."""
+
+    def __init__(self) -> None:
+        #: Per session and dataset: the number and the parameters of the newest request.
+        self._newest: dict[tuple[str, str], tuple[int, str]] = {}
+        self._count = 0
+
+    def take(self, key: tuple[str, str], parameters: str) -> int:
+        # Called on the event loop only, so the count needs no lock.
+        self._count += 1
+        self._newest[key] = (self._count, parameters)
+        return self._count
+
+    def is_newest(self, key: tuple[str, str], number: int, parameters: str) -> bool:
+        # Also read from the thread of the fit; a dict lookup is atomic.
+        newest = self._newest.get(key)
+        return newest is not None and (newest[0] == number or newest[1] == parameters)
+
+    def release(self, key: tuple[str, str], number: int) -> None:
+        newest = self._newest.get(key)
+        if newest is not None and newest[0] == number:
+            del self._newest[key]
+
+
+_LATEST = _Latest()
+
+
+class _Watch:
+    """Whether anybody still waits for an analysis: its client is connected and, with a
+    ``key``, no newer analyze request of the same session and dataset has come in for other
+    ``parameters``."""
+
+    def __init__(self, request: Request, key: tuple[str, str] | None = None, parameters: str = "") -> None:
+        self.request = request
+        self.key = key
+        self.parameters = parameters
+        self.number = _LATEST.take(key, parameters) if key else 0
+        self._gone = threading.Event()
+
+    def stale(self) -> bool:
+        """Safe to call from the thread of the fit."""
+        if self._gone.is_set():
+            return True
+        return self.key is not None and not _LATEST.is_newest(self.key, self.number, self.parameters)
+
+    async def check(self) -> bool:
+        if not self._gone.is_set() and await self.request.is_disconnected():
+            self._gone.set()
+        return self.stale()
+
+    async def poll(self) -> None:
+        # Behind a proxy that does not pass on a closed connection this never fires; then
+        # only a newer request stops the analysis.
+        while not await self.check():
+            await asyncio.sleep(_DISCONNECT_POLL_S)
+
+    def close(self) -> None:
+        if self.key:
+            _LATEST.release(self.key, self.number)
+
+
+async def _analyze(data: pd.DataFrame, params: AnalysisParams, watch: _Watch | None = None) -> dict[str, Any]:
+    """Run the analysis in one of the slots. With a ``watch``, an analysis nobody waits for
+    any more is given up before and after waiting for a slot and during the fit, with
+    ``Superseded``."""
     try:
+        if watch is not None and await watch.check():
+            raise Superseded()
         async with _ANALYSIS_SLOTS:
-            return await run_in_threadpool(run_analysis, data, params)
+            if watch is None:
+                return await run_in_threadpool(run_analysis, data, params)
+            if await watch.check():
+                raise Superseded()
+            poll = asyncio.create_task(watch.poll())
+            try:
+                return await run_in_threadpool(run_analysis, data, params, watch.stale)
+            finally:
+                poll.cancel()
     except AnalysisError as e:
         raise _AnalysisFailed(e) from None
+
+
+def _superseded() -> JSONResponse:
+    return JSONResponse(
+        status_code=409,
+        content={
+            "detail": "A newer analysis of this dataset replaced this one, or the client left.",
+            "code": "superseded",
+            "params": {},
+        },
+    )
 
 
 @router.post("/datasets/{dataset_id}/analyze")
@@ -851,17 +947,36 @@ async def analyze_dataset(
     request: Request,
     dataset_id: str,
     body: AnalyzeRequest | None = None,
+    latest_wins: bool = Query(
+        True,
+        description="Give this analysis up with a 409 once a newer one of the same session and dataset "
+        "arrives. False for clients that run several analyses of one dataset at once.",
+    ),
     session_id: str = Depends(get_session_id),
 ) -> dict[str, Any]:
     """Bartlett, KMO with the MSA filter, eigenvalues, the factor analysis and factor groups.
 
     A 400 for data that cannot be analysed carries ``code`` and ``params`` next to ``detail``.
+    A 409 with the code ``superseded`` answers a request that a newer one of the same session
+    and dataset replaced, or whose client left; it was not computed to the end.
     """
-    meta, data = await _ready_matrix(dataset_id, session_id)
+    started = time.perf_counter()
+    body = body or AnalyzeRequest()
+    # Numbered on arrival, before anything is awaited, so that the newest request wins.
+    key = (session_id, _validate_dataset_id(dataset_id))
+    parameters = json.dumps({**body.model_dump(), "excluded": sorted(body.excluded)}, sort_keys=True)
+    watch = _Watch(request, key if latest_wins else None, parameters)
     try:
-        return await _analyze(data, (body or AnalyzeRequest()).params(meta["kind"]))
+        meta, data = await _ready_matrix(dataset_id, session_id)
+        result = await _analyze(data, body.params(meta["kind"]), watch)
     except _AnalysisFailed as e:
         return e.response
+    except Superseded:
+        return _superseded()
+    finally:
+        watch.close()
+    result["elapsed_ms"] = round((time.perf_counter() - started) * 1000, 1)
+    return result
 
 
 @router.put("/datasets/{dataset_id}/options", status_code=204)
@@ -899,9 +1014,11 @@ async def export_loadings(
     body = body or ExportRequest()
     meta, data = await _ready_matrix(dataset_id, session_id)
     try:
-        result = await _analyze(data, body.params(meta["kind"]))
+        result = await _analyze(data, body.params(meta["kind"]), _Watch(request))
     except _AnalysisFailed as e:
         return e.response
+    except Superseded:
+        return _superseded()
     stem = f"{_slug(meta['name'])}-loadings"
     if body.format == "latex":
         return _attachment(loadings_latex(result), f"{stem}.tex", "application/x-latex; charset=utf-8")
@@ -962,9 +1079,11 @@ async def export_archive(
     meta, data = await _ready_matrix(dataset_id, session_id)
     params = body.params(meta["kind"])
     try:
-        result = await _analyze(data, params)
+        result = await _analyze(data, params, _Watch(request))
     except _AnalysisFailed as e:
         return e.response
+    except Superseded:
+        return _superseded()
     used = effective_params(params, result["n_factors"])
     digest = await run_in_threadpool(data_hash, data)
     stored = store.lookup(session_id, meta, digest, used, body.language)
