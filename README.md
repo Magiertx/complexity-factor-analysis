@@ -23,20 +23,26 @@ Schalk do it, but interactively in the browser.
 - **Suitability first.** Data cleaning with reasons, Bartlett's test of sphericity (the
   numerically stable variant), KMO with ComFy's iterative MSA filter, and a per-measure MSA
   table with manual exclusion.
-- **Factors and loadings.** Scree plot with the Kaiser suggestion, factor count and rotation
-  (varimax, promax, oblimin, quartimax, none), a loading heatmap with communalities and
-  explained variance, factor groups by loading threshold. Every change re-runs the analysis.
+- **Factors and loadings.** Scree plot with the Kaiser suggestion and parallel analysis (fixed
+  seed), factor count and rotation (varimax, promax, oblimin, quartimax, none), a loading
+  heatmap with communalities and explained variance, factor groups by one of three assignment
+  rules: the largest loading as in ComFy's report (default), multiple membership as in the
+  dimension tables of Important Factors, or Hair's rule as in its Tab. 17, with cross-loadings
+  reported under each. Every change re-runs the analysis; a newer change replaces the
+  analysis still running for the one before.
 - **Same numbers as upstream.** On the bundled paper scores of all seven miners the analysis
   equals ComFy's own reports to the four decimals they print; tests check every published
-  number. Oblique rotations report correct communalities, the structure matrix and the factor
-  correlations.
+  number. With the settings the paper published, which the catalog offers per dataset, every
+  analysis checks itself against the report and says what it compared. Oblique rotations
+  report correct communalities, the structure matrix and the factor correlations.
 - **Come back to a dataset.** The datasets of a session are listed on the data step, reopen
   with the parameters of their last analysis and can be deleted one by one or all at once;
   deleting a dataset job in the run history deletes its dataset too.
 - **Export.** Loadings as CSV or as a LaTeX `tabular` for the paper, the cleaned matrix as CSV,
-  or the whole analysis as a ZIP: result, matrix, tables, parameters, provenance (tool version
-  and commit, upstream commits, feeed, pm4py and ProM, miners with their parameters) and a
-  README on how to reproduce it.
+  or the whole analysis as a ZIP: result, matrix, tables, the assignment of each measure,
+  parameters, provenance (tool version and commit, upstream commits, feeed, pm4py and ProM,
+  miners with their parameters, assignment rule, the seed of parallel analysis, the published
+  settings if used) and a README on how to reproduce it.
 - **Interpretation by Claude (optional).** A button after the loadings asks Claude (Anthropic)
   for a name and a short interpretation of each factor, with the measures it rests on, a
   confidence and caveats such as cross-loadings or a failed Bartlett or KMO test. Only the
@@ -145,7 +151,12 @@ published with, extracted once into `datasets/published/` by
 filter round, eigenvalues, loadings, communalities and descriptive statistics) and, for the
 log measures, the cleaning and Bartlett's chi-square. `tests/test_column_order.py` checks that
 the analysis, the MSA filter and the exports keep the stored column order, on which the KMO of
-singular data depends.
+singular data depends. `tests/test_assignment_rules.py` checks the three assignment rules
+against the dimension tables of Important Factors (Tab. 6, 9 and 12 with the two documented
+deviations, and two rows of Tab. 17), `tests/test_published_match.py` the published settings
+and the check against the reports at runtime, `tests/test_parallel_analysis.py` the values of
+parallel analysis with its seed, and `tests/test_analysis_load.py` the measure cap and how a
+newer request replaces an analysis, with a stand-in fit.
 
 Frontend checks, from `src/frontend`:
 
