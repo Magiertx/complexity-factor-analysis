@@ -356,7 +356,8 @@ def random_eigenvalues(n: int, p: int) -> list[float]:
     They depend on n and p only, so they are cached per (n, p): the bundled log data take
     about half a second, and every analysis of a dataset has the same n and mostly the same p.
     The samples come from numpy's default generator with ``PARALLEL_ANALYSIS_SEED``, which
-    repeats them on any platform with the same numpy version.
+    draws the same samples on any platform with the same numpy version. The list is shared
+    by the cache; callers copy it before changing it.
     """
     key = (int(n), int(p))
     with _RANDOM_EIGENVALUES_LOCK:
@@ -848,7 +849,7 @@ def analyze(data: pd.DataFrame, params: AnalysisParams, should_stop: StopCheck |
     values = eigenvalues(data)
     suggested = min(kaiser_criterion(values), max_factors(p))
     # On the matrix of the scree plot, so the two criteria can be drawn on the same axes.
-    random = random_eigenvalues(n, p)
+    random = list(random_eigenvalues(n, p))
     by_parallel_analysis = min(parallel_analysis(values, random), max_factors(p))
     n_factors = suggested if params.n_factors is None else int(params.n_factors)
     if n_factors < 1 or n_factors > max_factors(p):
