@@ -201,8 +201,9 @@ paths on Windows, whose paths may not exceed 260 characters.
 
 `scripts/smoke.py` works through every dataset source (the sample logs with the default miner,
 the sample nets, the sample logs with feeed), analyses a paper dataset with its published
-settings and compares the numbers, downloads its ZIP and LaTeX table, and deletes everything
-it created. It needs only the standard library and prints a table of the steps with their
+settings and compares the numbers, also by the server's own check against the report, opens
+the same paper dataset again to see the session's copy come back, downloads its ZIP and LaTeX
+table, and deletes everything it created. It needs only the standard library and prints a table of the steps with their
 times; a failed step makes it exit with 1.
 
 ```bash

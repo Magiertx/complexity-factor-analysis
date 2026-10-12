@@ -10,8 +10,9 @@ fails. Exits with 1 if a step fails and prints a table of the steps with their t
 
 Steps: catalog of both kinds; a model dataset from the four sample logs with the default
 miner (needs ProM); the sample Petri nets; the sample logs through feeed; a paper dataset,
-analysed with the settings its numbers were published with and compared with them; its ZIP
-and LaTeX export. Only the standard library, so it runs with any Python 3.10 or later.
+analysed with the settings its numbers were published with and compared with them, here and
+by the server against the report; the session's copy of it handed back instead of a new one;
+its ZIP and LaTeX export. Only the standard library, so it runs with any Python 3.10 or later.
 """
 
 from __future__ import annotations
@@ -166,7 +167,32 @@ class Smoke:
         )
         if worst > 1e-4:
             raise StepFailed(f"a loading differs by {worst:.1e} from the published one")
-        return f"KMO {result['kmo']['overall']:.6f} and all loadings as published (largest difference {worst:.1e})"
+        # The settings of the paper as the catalog offers them: the server checks the numbers
+        # against the report itself and says so in the answer.
+        catalog = self.client.request("GET", "/factor-analysis/catalog?kind=model")
+        entry = next((b for b in catalog["bundled"] if b["id"] == PAPER_DATASET), {})
+        if not entry.get("published_options"):
+            raise StepFailed("the catalog offers no published settings for the paper dataset")
+        self.paper_settings = dict(entry["published_options"])
+        checked = self.analyze(dataset["id"], self.paper_settings)
+        match = checked.get("published_match") or {}
+        if match.get("status") != "match":
+            raise StepFailed(f"the server's comparison with the report: {match.get('status')} {match.get('differences')}")
+        counts = checked["factor_count"]
+        return (
+            f"KMO {result['kmo']['overall']:.6f} and all loadings as published (largest difference {worst:.1e}); "
+            f"server: {match['status']} on {', '.join(match['compared'])}; "
+            f"Kaiser {counts['kaiser']}, parallel analysis {counts['parallel_analysis']}"
+        )
+
+    def reuse(self) -> str:
+        again = self.client.request(
+            "POST", "/factor-analysis/datasets", form={"kind": "model", "source": "bundled", "bundled_id": PAPER_DATASET}
+        )
+        if again["dataset_id"] != self.paper_id or not again.get("reused"):
+            self.created.append(again["dataset_id"])
+            raise StepFailed(f"a new copy {again['dataset_id']} instead of the session's {self.paper_id}")
+        return "the session's copy came back"
 
     def exports(self) -> str:
         base = f"/factor-analysis/datasets/{self.paper_id}"
@@ -180,10 +206,14 @@ class Smoke:
         latex = self.client.request("POST", f"{base}/export", body={**self.paper_settings, "format": "latex"}, raw=True)
         if b"\\begin{tabular}" not in latex:
             raise StepFailed("the LaTeX export has no tabular")
+        rule = manifest["analysis"].get("assignment_rule")
+        match = ((manifest.get("published") or {}).get("match") or {}).get("status")
+        if rule != self.paper_settings.get("assignment_rule") or match != "match":
+            raise StepFailed(f"the manifest names the rule {rule} and the match {match}")
         tool = manifest.get("tool") or {}
         return (
             f"ZIP with {len(names)} files ({len(archive) // 1024} kB, tool {tool.get('version') or 'version not recorded'}), "
-            f"LaTeX {len(latex)} bytes"
+            f"LaTeX {len(latex)} bytes, rule {rule}, report {match}"
         )
 
     def cleanup(self) -> str:
@@ -207,6 +237,7 @@ class Smoke:
         self.step("sample Petri nets", self.model_from_pnml)
         self.step("sample logs with feeed", self.log_from_logs)
         if self.step("paper dataset as published", self.paper):
+            self.step("reuse of the paper dataset", self.reuse)
             self.step("ZIP and LaTeX export", self.exports)
         self.step("cleanup", self.cleanup)
         return all(ok for _, _, ok, _ in self.rows)
