@@ -941,7 +941,9 @@
       "interpretation_fallback_unavailable": "Das Modell hat abgelehnt, und das Ersatzmodell konnte gerade nicht laufen. Versuche es später noch einmal.",
       "interpretation_rate_limited": "Diese Sitzung hat ihr Limit an Interpretationen erreicht ({limit}). Versuche es später noch einmal.",
       "interpretation_limits_unavailable": "Der Server kann Interpretationen gerade nicht zählen. Versuche es später noch einmal.",
-      "interpretation_too_large": "Diese Analyse ist zu groß für eine Interpretation: gesendet werden höchstens {measures} Maße, {factors} Faktoren und Maßnamen mit {name_length} Zeichen. Schließe Maße aus oder wähle weniger Faktoren."
+      "interpretation_too_large": "Diese Analyse ist zu groß für eine Interpretation: gesendet werden höchstens {measures} Maße, {factors} Faktoren und Maßnamen mit {name_length} Zeichen. Schließe Maße aus oder wähle weniger Faktoren.",
+      "too_many_measures_for_analysis": "{n} Maße sind mehr als die {max}, die der Server auf einmal analysiert. Schließe in der Tabelle von Schritt 3 Maße aus.",
+      "superseded": "Eine neuere Analyse dieses Datensatzes, etwa in einem anderen Tab, hat diese ersetzt. Ändere eine Einstellung, um sie erneut zu starten."
     },
     "warnings": {
       "bartlett_not_significant": "Der Test nach Bartlett ist nicht signifikant (p = {p} ≥ {alpha}); die Maße sind womöglich unkorreliert.",

@@ -8,6 +8,7 @@ import { analysisLinkQuery, parseAnalysisLink } from "@/lib/analysis-link";
 import {
   HttpError,
   abortTask,
+  isSuperseded,
   analyzeDataset,
   createDataset,
   deleteDataset,
@@ -337,14 +338,23 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
 
   const ready = !!dataset && dataset.status === "ready" && dataset.id === datasetId;
 
-  // Re-run the analysis on every parameter change, debounced.
+  // Re-run the analysis on every parameter change, debounced. A change aborts the request before
+  // it, and the server drops a request that a newer one of the session replaced (409
+  // "superseded"). Replaced without a newer one of this page, e.g. by another tab on the same
+  // dataset, it is tried once more before that counts as an error.
   useEffect(() => {
     if (!ready || !datasetId) return;
     const ctrl = new AbortController();
+    const run = () =>
+      analyzeDataset(datasetId, options, ctrl.signal).catch(async (e) => {
+        if (!isSuperseded(e) || ctrl.signal.aborted) throw e;
+        await new Promise((resolve) => setTimeout(resolve, ANALYZE_DEBOUNCE_MS));
+        return analyzeDataset(datasetId, options, ctrl.signal);
+      });
     const timer = setTimeout(async () => {
       setAnalyzing(true);
       try {
-        const res = await analyzeDataset(datasetId, options, ctrl.signal);
+        const res = await run();
         setAnalysis(res);
         setAnalyzedOptions(options);
         setAnalysisError(null);
