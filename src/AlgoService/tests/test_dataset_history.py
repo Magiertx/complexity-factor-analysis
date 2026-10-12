@@ -454,8 +454,9 @@ def test_zip_of_a_bundled_dataset(client):
     assert all(name in readme for name in names)
 
     eigenvalues = _read_csv(archive, "eigenvalues.csv")
-    assert list(eigenvalues.columns) == ["factor", "eigenvalue"]
+    assert list(eigenvalues.columns) == ["factor", "eigenvalue", "parallel_analysis"]
     assert eigenvalues["eigenvalue"].tolist() == analysis["eigenvalues"]
+    assert eigenvalues["parallel_analysis"].tolist() == analysis["factor_count"]["eigenvalues_random"]
     msa = _read_csv(archive, "msa.csv", keep_default_na=False).set_index("measure")
     assert list(msa.index) == detail["measures"]
     assert msa.loc["Density", "status"] == "excluded" and msa.loc["Density", "msa"] == ""

@@ -84,6 +84,13 @@ ASSIGNMENT_RULES = {
 }
 DEFAULT_ASSIGNMENT_RULE = "largest"
 
+#: Horn's parallel analysis: the eigenvalues of the correlation matrices of this many samples
+#: of standard normal data, at this percentile per rank (Glorfeld's variant of Horn), drawn
+#: from a fixed seed so that every run suggests the same.
+PARALLEL_ANALYSIS_SEED = 20261012
+PARALLEL_ANALYSIS_SIMULATIONS = 100
+PARALLEL_ANALYSIS_PERCENTILE = 95
+
 
 def _check_array_compat(x, force_all_finite=None, **kwargs):
     # scikit-learn 1.6 renamed force_all_finite to ensure_all_finite and 1.8 removed the old
@@ -316,6 +323,50 @@ def eigenvalues(data: pd.DataFrame) -> list[float]:
 def kaiser_criterion(values: list[float]) -> int:
     """Number of eigenvalues above 1, at least 1."""
     return max(1, sum(1 for v in values if v > 1.0))
+
+
+_RANDOM_EIGENVALUES: OrderedDict[tuple[int, int], list[float]] = OrderedDict()
+_RANDOM_EIGENVALUES_SIZE = 64
+_RANDOM_EIGENVALUES_LOCK = threading.Lock()
+
+
+def random_eigenvalues(n: int, p: int) -> list[float]:
+    """The eigenvalues parallel analysis compares with, largest first: per rank, the
+    ``PARALLEL_ANALYSIS_PERCENTILE``-th percentile over ``PARALLEL_ANALYSIS_SIMULATIONS``
+    correlation matrices of n × p standard normal samples.
+
+    They depend on n and p only, so they are cached per (n, p): the bundled log data take
+    about half a second, and every analysis of a dataset has the same n and mostly the same p.
+    The samples come from numpy's default generator with ``PARALLEL_ANALYSIS_SEED``, which
+    repeats them on any platform with the same numpy version.
+    """
+    key = (int(n), int(p))
+    with _RANDOM_EIGENVALUES_LOCK:
+        if key in _RANDOM_EIGENVALUES:
+            _RANDOM_EIGENVALUES.move_to_end(key)
+            return _RANDOM_EIGENVALUES[key]
+    rng = np.random.default_rng(PARALLEL_ANALYSIS_SEED)
+    samples = np.empty((PARALLEL_ANALYSIS_SIMULATIONS, p))
+    for i in range(PARALLEL_ANALYSIS_SIMULATIONS):
+        # The same correlation as for the data, so that the comparison is like with like.
+        samples[i] = np.linalg.eigvalsh(_corr(rng.standard_normal((n, p))))[::-1]
+    values = [float(v) for v in np.percentile(samples, PARALLEL_ANALYSIS_PERCENTILE, axis=0)]
+    with _RANDOM_EIGENVALUES_LOCK:
+        _RANDOM_EIGENVALUES[key] = values
+        if len(_RANDOM_EIGENVALUES) > _RANDOM_EIGENVALUES_SIZE:
+            _RANDOM_EIGENVALUES.popitem(last=False)
+    return values
+
+
+def parallel_analysis(values: list[float], random: list[float]) -> int:
+    """Horn's criterion: the number of leading eigenvalues of the data above those of random
+    data of the same size, at least 1 like the Kaiser criterion."""
+    count = 0
+    for observed, reference in zip(values, random):
+        if observed <= reference:
+            break
+        count += 1
+    return max(1, count)
 
 
 # --- factor analysis ----------------------------------------------------------------------
@@ -693,6 +744,9 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
 
     values = eigenvalues(data)
     suggested = min(kaiser_criterion(values), max_factors(p))
+    # On the matrix of the scree plot, so the two criteria can be drawn on the same axes.
+    random = random_eigenvalues(n, p)
+    by_parallel_analysis = min(parallel_analysis(values, random), max_factors(p))
     n_factors = suggested if params.n_factors is None else int(params.n_factors)
     if n_factors < 1 or n_factors > max_factors(p):
         raise _factor_count_error(n_factors, p)
@@ -752,6 +806,15 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
         "msa_filter": {"enabled": params.auto_msa_filter, "removed": removed},
         "eigenvalues": values,
         "suggested_n_factors": suggested,
+        "factor_count": {
+            "kaiser": suggested,
+            "parallel_analysis": by_parallel_analysis,
+            "eigenvalues_random": random,
+            "method": "pca",
+            "seed": PARALLEL_ANALYSIS_SEED,
+            "simulations": PARALLEL_ANALYSIS_SIMULATIONS,
+            "percentile": PARALLEL_ANALYSIS_PERCENTILE,
+        },
         "n_factors": n_factors,
         "rotation": fit.rotation,
         "loading_threshold": params.loading_threshold,

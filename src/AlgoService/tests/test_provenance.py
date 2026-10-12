@@ -91,7 +91,11 @@ def _check_tool_and_analysis(manifest: dict) -> None:
     analysis = manifest["analysis"]
     assert analysis["method"] == "minres" and analysis["library"] == "factor_analyzer"
     assert analysis["assignment_rule"] == "largest"
-    assert analysis["seed"] is None
+    assert analysis["seed"] == 20261012
+    assert {k: analysis["factor_count"][k] for k in ("method", "seed", "simulations", "percentile")} == {
+        "method": "pca", "seed": 20261012, "simulations": 100, "percentile": 95,
+    }
+    assert "eigenvalues_random" not in analysis["factor_count"]
     assert [f["name"] for f in analysis["follows"]] == ["ComFy", "ComFy for log measures"]
     assert analysis["follows"][0]["commit"] == "1dd6ea610017cbca65bb54735ac6db922af00e8d"
     assert analysis["follows"][1]["commit"] == "70837cec7f3aff9580f52e78162b433e9e21f473"
@@ -119,7 +123,11 @@ def test_paper_dataset(client):
     }
     assert "Complexity Factor Analysis v0.9, commit 0123456789abcdef0123456789abcdef01234567." in readme
     assert "the bundled dataset comfy-paper-inductive-miner, copied from https://github.com/Pati-nets/ComFy" in readme
-    assert "assignment rule largest: each measure on the factor of its largest absolute loading (ComFy); no random seed." in readme
+    assert "assignment rule largest: each measure on the factor of its largest absolute loading (ComFy)." in readme
+    assert (
+        "Factors: 4 used; the Kaiser criterion suggests 2, parallel analysis 2 (pca-based, 100 simulations, "
+        "95th percentile, seed 20261012)."
+    ) in readme
 
 
 def test_bundled_log_dataset_names_the_older_feeed(client):

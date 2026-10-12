@@ -151,6 +151,7 @@ def dataset(
 def analysis(result: dict[str, Any]) -> dict[str, Any]:
     """How the analysis turns the matrix into factors, beyond its parameters; ``result`` is
     the analysis as ``core.analyze`` returns it."""
+    counts = result.get("factor_count") or {}
     return {
         "method": "minres",
         "library": "factor_analyzer",
@@ -159,6 +160,12 @@ def analysis(result: dict[str, Any]) -> dict[str, Any]:
         "assignment_rule": result.get("assignment_rule", "largest"),
         # The rule with the thresholds it applied, e.g. the communality "multi" asks for.
         "assignment": result.get("assignment"),
-        # No step draws random numbers yet; a seed appears here once one does.
-        "seed": None,
+        # Parallel analysis is the only step that draws random numbers.
+        "seed": counts.get("seed"),
+        # The criteria for the number of factors and the one used; the random eigenvalues
+        # are in eigenvalues.csv.
+        "factor_count": {
+            "used": result.get("n_factors"),
+            **{k: v for k, v in counts.items() if k != "eigenvalues_random"},
+        },
     }

@@ -141,10 +141,17 @@ def factor_correlations_csv(result: dict[str, Any]) -> str:
 
 
 def eigenvalues_csv(result: dict[str, Any]) -> str:
-    """The eigenvalues of the correlation matrix behind the scree plot, largest first."""
-    lines = [_csv_line(["factor", "eigenvalue"])]
-    for i, value in enumerate(result["eigenvalues"]):
-        lines.append(_csv_line([i + 1, value]))
+    """The eigenvalues of the correlation matrix behind the scree plot, largest first, and
+    those of random data that parallel analysis compares them with."""
+    random = (result.get("factor_count") or {}).get("eigenvalues_random")
+    if random is None:
+        lines = [_csv_line(["factor", "eigenvalue"])]
+        for i, value in enumerate(result["eigenvalues"]):
+            lines.append(_csv_line([i + 1, value]))
+        return "".join(lines)
+    lines = [_csv_line(["factor", "eigenvalue", "parallel_analysis"])]
+    for i, (value, reference) in enumerate(zip(result["eigenvalues"], random)):
+        lines.append(_csv_line([i + 1, value, reference]))
     return "".join(lines)
 
 
@@ -232,8 +239,15 @@ def _provenance_lines(dataset: dict[str, Any], result: dict[str, Any], tool: dic
     rule = analysis["assignment_rule"]
     lines.append(
         f"  Analysis: {analysis['method']} ({analysis['library']}), assignment rule {rule}: "
-        f"{ASSIGNMENT_RULE_TEXTS[rule]}; no random seed."
+        f"{ASSIGNMENT_RULE_TEXTS[rule]}."
     )
+    counts = analysis["factor_count"]
+    if "parallel_analysis" in counts:
+        lines.append(
+            f"  Factors: {counts['used']} used; the Kaiser criterion suggests {counts['kaiser']}, "
+            f"parallel analysis {counts['parallel_analysis']} ({counts['method']}-based, "
+            f"{counts['simulations']} simulations, {counts['percentile']}th percentile, seed {counts['seed']})."
+        )
     return lines
 
 
@@ -325,7 +339,8 @@ def analysis_zip(
             ("factor-correlations.csv", factor_correlations_csv(result), "Correlations among the factors."),
         ]
     files += [
-        ("eigenvalues.csv", eigenvalues_csv(result), "Eigenvalues of the correlation matrix (scree plot)."),
+        ("eigenvalues.csv", eigenvalues_csv(result),
+         "Eigenvalues of the correlation matrix (scree plot) and of random data (parallel analysis)."),
         ("msa.csv", msa_csv(result, dataset["measures"], params["excluded"]),
          "MSA per measure and whether it was used, removed by the MSA filter or excluded."),
     ]
