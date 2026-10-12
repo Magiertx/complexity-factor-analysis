@@ -94,6 +94,30 @@ def _make_status_cache(job_id: str, loop: asyncio.AbstractEventLoop, *, max_age_
     return is_aborted
 
 
+class _LoopCalls:
+    """Coroutines a worker thread hands to the event loop of its task, without waiting.
+
+    The task settles them before it ends. Under Celery the loop runs only while a task runs,
+    so an update still in flight when the task returned stayed suspended inside its
+    transaction: its row lock held every later write to that run, a delete as well, until
+    the worker process ran its next task.
+    """
+
+    def __init__(self, loop: asyncio.AbstractEventLoop) -> None:
+        self.loop = loop
+        self.futures: list[Any] = []
+
+    def submit(self, coro: Any) -> None:
+        self.futures.append(asyncio.run_coroutine_threadsafe(coro, self.loop))
+
+    async def settle(self) -> None:
+        """Wait for everything submitted so far; their errors are logged, not raised."""
+        pending, self.futures = self.futures, []
+        for result in await asyncio.gather(*(asyncio.wrap_future(f) for f in pending), return_exceptions=True):
+            if isinstance(result, Exception):
+                logger.warning(f"A progress update failed: {result}")
+
+
 class _ProgressThrottle:
     """Bookkeeping for progress-cb persistence. Returns True from
     `should_persist(pct)` at most every `min_interval_s` seconds or whenever
@@ -350,7 +374,8 @@ async def run_analysis_task(job_id: str, t_path: str, coerced_params: dict[str, 
     if not algorithm:
         logger.error(f"Cannot run task {job_id}: algorithm {algorithm_id} not found.")
         return
-        
+    updates = _LoopCalls(loop)
+
     try:
         job_state = await jobs_db.read_job(job_id)
         if not job_state or job_state.get("status") == "aborted":
@@ -368,11 +393,8 @@ async def run_analysis_task(job_id: str, t_path: str, coerced_params: dict[str, 
             # DB write to land. Persistence + broadcast are coalesced by the
             # same throttle so they always move together.
             if throttle.should_persist(pct):
-                asyncio.run_coroutine_threadsafe(
-                    jobs_db.update_job_progress(job_id, pct, msg, status="running"),
-                    loop,
-                )
-                asyncio.run_coroutine_threadsafe(broadcast_jobs_update(), loop)
+                updates.submit(jobs_db.update_job_progress(job_id, pct, msg, status="running"))
+                updates.submit(broadcast_jobs_update())
 
         ctx = RunContext(
             run_id=job_id,
@@ -383,7 +405,10 @@ async def run_analysis_task(job_id: str, t_path: str, coerced_params: dict[str, 
         )
         
         # Run the blocking algorithm
-        result = await asyncio.to_thread(algorithm.analyze, t_path, coerced_params, ctx)
+        try:
+            result = await asyncio.to_thread(algorithm.analyze, t_path, coerced_params, ctx)
+        finally:
+            await updates.settle()
         
         # Save results
         js = await jobs_db.read_job(job_id)

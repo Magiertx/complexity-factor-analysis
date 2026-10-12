@@ -42,6 +42,7 @@ from interpretation import store
 from interpretation.payload import data_hash, effective_params
 from routes.algorithms import (
     _enforce_job_quota,
+    _LoopCalls,
     _make_status_cache,
     _ProgressThrottle,
     _sanitize_filename,
@@ -298,6 +299,7 @@ async def run_dataset_task(job_id: str, session_id: str, dataset_id: str, spec: 
     from algorithms.base import stat, table, text
 
     loop = asyncio.get_running_loop()
+    updates = _LoopCalls(loop)
 
     def fail_dataset(error: str) -> None:
         try:
@@ -320,12 +322,13 @@ async def run_dataset_task(job_id: str, session_id: str, dataset_id: str, spec: 
             if check_aborted():
                 raise RuntimeError("Task aborted by user")
             if throttle.should_persist(pct):
-                asyncio.run_coroutine_threadsafe(
-                    jobs_db.update_job_progress(job_id, pct, msg, status="running"), loop
-                )
-                asyncio.run_coroutine_threadsafe(broadcast_jobs_update(), loop)
+                updates.submit(jobs_db.update_job_progress(job_id, pct, msg, status="running"))
+                updates.submit(broadcast_jobs_update())
 
-        result = await asyncio.to_thread(_compute, spec, progress_cb)
+        try:
+            result = await asyncio.to_thread(_compute, spec, progress_cb)
+        finally:
+            await updates.settle()
         if result.table.empty:
             first = result.failures[0][1] if result.failures else "no input produced values"
             raise RuntimeError(f"No observation could be computed. First error: {first}")
