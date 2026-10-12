@@ -1254,14 +1254,17 @@ function StepRail({
                 <StepBadge n={i + 1} state={state} />
                 <span className="min-w-0">
                   <span className="block text-sm font-medium whitespace-nowrap">{t(`factor.steps.${id}`)}</span>
-                  <span
-                    className={cn(
-                      "hidden lg:block text-[11px] leading-snug max-w-[9.5rem]",
-                      summaries[id] ? "text-fg/80 line-clamp-2 break-words" : "text-muted",
-                    )}
-                    title={summaries[id]}
-                  >
-                    {summaries[id] ?? t(`factor.rail.${id}`)}
+                  {/* A wrapper: line-clamp sets a display of its own, which would undo "hidden". */}
+                  <span className="hidden lg:block">
+                    <span
+                      className={cn(
+                        "block text-[11px] leading-snug max-w-[9.5rem]",
+                        summaries[id] ? "text-fg/80 line-clamp-2 break-words" : "text-muted",
+                      )}
+                      title={summaries[id]}
+                    >
+                      {summaries[id] ?? t(`factor.rail.${id}`)}
+                    </span>
                   </span>
                   <span className="sr-only"> ({stateLabels[id] ?? t(`factor.state.${state}`)})</span>
                 </span>
