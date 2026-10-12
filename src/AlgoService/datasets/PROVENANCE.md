@@ -52,6 +52,11 @@ unless noted.
   is all 0.0, and the tool reproduces the other three with 3 factors. For the log measures
   only the cleaning and Bartlett's chi-square are checked; KMO and MSA are kept for reference
   and marked platform dependent (see "Singular data" above).
+- **Used at runtime:** the seven datasets of Important Factors carry in `manifest.json` the
+  settings the paper analysed them with (`published_options`, `published_source`) and how the
+  paper's tables relate to the reports (`paper_tables`). An analysis with exactly these
+  settings compares itself with the numbers here that `verified` lists and reports the result
+  as `published_match` (`factor_analysis/published.py`). The log dataset has no settings yet.
 
 ## `samples/logs/` — sample event logs
 
