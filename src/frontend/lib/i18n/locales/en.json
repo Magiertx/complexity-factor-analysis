@@ -765,7 +765,7 @@
       "scree_title": "Scree plot",
       "notes_heading": "Notes on the factor solution",
       "scree_desc": "Eigenvalues in descending order; {n} are above 1.",
-      "scree_hint": "Click a point to keep that many factors. The dashed line marks an eigenvalue of 1.",
+      "scree_hint": "Click a point to keep that many factors. The dashed line marks an eigenvalue of 1, the dotted one the parallel analysis.",
       "axis_factor": "Factor",
       "axis_eigenvalue": "Eigenvalue",
       "kaiser_line": "eigenvalue 1",
@@ -777,7 +777,6 @@
       "increase": "One factor more",
       "range": "1 to {max}",
       "following_suggestion": "Follows the suggestion (eigenvalue > 1)",
-      "use_suggestion": "Back to the suggestion ({n})",
       "explained": "{n} factor explains {pct} of the variance.",
       "explained_plural": "Together, {n} factors explain {pct} of the variance.",
       "rotation_label": "Rotation",
@@ -792,7 +791,36 @@
         "orthogonal": "Keeps the factors uncorrelated. Loadings are correlations between measure and factor.",
         "oblique": "Allows the factors to correlate. Step 5 shows the loadings as regression weights (pattern matrix) or as correlations (structure matrix).",
         "none": "Unrotated solution. The first factor usually takes most of the variance, which makes the factors hard to interpret."
-      }
+      },
+      "criteria_label": "Criteria",
+      "criterion": {
+        "kaiser": "Kaiser",
+        "parallel": "Parallel analysis",
+        "paper": "Paper"
+      },
+      "criterion_detail": {
+        "kaiser": "eigenvalues above 1",
+        "parallel": "above the {percentile}th percentile of random data",
+        "paper": "chosen a priori"
+      },
+      "criterion_count": "{n} factor",
+      "criterion_count_plural": "{n} factors",
+      "criterion_capped": "{k} factors are more than the {max} these measures allow.",
+      "criteria_differ": "The criteria suggest different numbers of factors. The scree plot and the loadings help to decide.",
+      "criteria_differ_paper": "The criteria suggest different numbers of factors. Kaiser and parallel analysis follow from the data; the paper chose its number before the analysis.",
+      "random_point": "parallel analysis: {value}",
+      "cumulative_point": "cumulative share: {pct}",
+      "scree_desc_table": "A table with every series follows the plot.",
+      "legend_eigenvalues": "Eigenvalues",
+      "legend_parallel": "Parallel analysis ({percentile}th percentile)",
+      "legend_cumulative": "Cumulative share of the eigenvalues (right axis)",
+      "show_all": "Show all {n}",
+      "show_first": "Show the first {n}",
+      "show_table": "Show as table",
+      "hide_table": "Hide table",
+      "table_caption": "Eigenvalues, parallel analysis and cumulative share of the eigenvalues per factor",
+      "col_random": "Parallel analysis ({percentile}th pct.)",
+      "col_cumulative": "Cumulative share"
     },
     "loadings": {
       "threshold_label": "Loading threshold",
@@ -868,7 +896,7 @@
       "msa_filter": "As in ComFy, all measures below the threshold are removed and the MSA values are recomputed, until every remaining measure reaches the threshold.",
       "msa_threshold": "The filter removes measures whose MSA is below this value, and the overall KMO counts as adequate from this value on. ComFy and ComFy for log measures use 0.6.",
       "bartlett_alpha": "The significance level of Bartlett's test: the test passes when p is below α. ComFy and ComFy for log measures use 0.05.",
-      "scree": "The scree plot shows the eigenvalues of the correlation matrix in descending order. Look for the elbow where the curve flattens; factors after it add little. The elbow and the eigenvalue-above-1 rule can disagree, so treat both as starting points.",
+      "scree": "The scree plot shows the eigenvalues of the correlation matrix in descending order. Look for the elbow where the curve flattens; factors after it add little. The elbow, the eigenvalue-above-1 rule and the parallel analysis can disagree, so treat them as starting points. The thin line on the right axis adds up the eigenvalues: the share of the variance the first principal components explain. The factors of the analysis explain somewhat less, as step 5 shows.",
       "eigenvalue": "An eigenvalue is the variance a factor explains, in units of one standardized measure. The suggestion keeps every factor with an eigenvalue above 1 (Kaiser criterion), i.e. every factor that explains more than a single measure.",
       "rotation": "Rotation turns the factor solution so that each measure loads strongly on as few factors as possible, which makes the factors easier to name. It does not change how much variance the factors explain together. Varimax and quartimax keep the factors uncorrelated; promax and oblimin let them correlate, which is often more realistic for complexity measures.",
       "threshold": "Loadings with an absolute value at or above this threshold count as substantial. Which factors a measure joins depends on the assignment rule above; with the largest loading, it joins the factor where its absolute loading is highest, if that loading reaches the threshold. Common choices lie between 0.3 and 0.5; ComFy uses 0.35, ComFy for log measures 0.5.",
@@ -878,7 +906,8 @@
       "groups": "Each factor with the measures assigned to it, strongest loading first. Measures in one group capture a similar aspect of complexity; the name of the factor is up to your interpretation. Under multiple membership a measure can be in several groups; a chip names its other factors.",
       "communality_threshold": "Measures whose communality is below this value are left unassigned, because the factors explain too little of them. ComFy for log measures uses 0.5; 0 keeps every measure.",
       "factor_correlations": "With an oblique rotation the factors may correlate. Values near 0 mean the factors are nearly independent; large values mean they measure related aspects.",
-      "assignment": "How the loadings turn into factor groups. ComFy's report gives each measure to the factor it loads on most. Important Factors uses two further rules: in Tab. 6–16 a measure also joins every factor whose loading is at most {gap} below its largest (multiple membership), with h² ≥ {h2_multi}; Tab. 17 follows Hair et al. with h² ≥ {h2_hair} and leaves cross-loaded measures out. The factor solution is the same under every rule; only the groups change."
+      "assignment": "How the loadings turn into factor groups. ComFy's report gives each measure to the factor it loads on most. Important Factors uses two further rules: in Tab. 6–16 a measure also joins every factor whose loading is at most {gap} below its largest (multiple membership), with h² ≥ {h2_multi}; Tab. 17 follows Hair et al. with h² ≥ {h2_hair} and leaves cross-loaded measures out. The factor solution is the same under every rule; only the groups change.",
+      "criteria": "Kaiser keeps every factor with an eigenvalue above 1. Parallel analysis (Horn) keeps the factors whose eigenvalue is above the {percentile}th percentile of the eigenvalues of {simulations} random normal datasets of the same size, computed on principal components with the fixed seed {seed}; with many observations it comes close to Kaiser. A paper may also fix the number before the analysis. Choosing a criterion sets the number of factors."
     },
     "errors": {
       "unknown_rotation": "Unknown rotation “{rotation}”.",

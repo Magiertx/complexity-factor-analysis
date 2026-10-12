@@ -33,6 +33,7 @@ import {
   downloadBlob,
   initialOptions,
   optionsFromSaved,
+  publishedOptions,
   solutionNeedsAttention,
   type AnalysisOptions,
   type ExportFormat,
@@ -528,6 +529,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   );
   const measureTitle = useCallback((key: string) => titles.get(key) ?? key, [titles]);
 
+  // The catalog entry of a bundled dataset, and the settings of its paper if it has them.
+  const bundled = dataset?.bundled_id ? catalog?.bundled.find((b) => b.id === dataset.bundled_id) : undefined;
+  const published = useMemo(() => publishedOptions(kind, bundled), [kind, bundled]);
+
   const suitable = analysis ? analysis.bartlett.passed && analysis.kmo.passed : false;
   const interpretationStale =
     !!interpretation && (!datasetId || interpretation.key !== interpretationKey(datasetId, options, locale));
@@ -770,7 +775,12 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               lockedHint
             ) : analysis ? (
               <div className={stale}>
-                <FactorsView analysis={analysis} options={options} onOptions={updateOptions} />
+                <FactorsView
+                  analysis={analysis}
+                  options={options}
+                  onOptions={updateOptions}
+                  paperFactors={published?.n_factors ?? null}
+                />
               </div>
             ) : (
               resultPlaceholder

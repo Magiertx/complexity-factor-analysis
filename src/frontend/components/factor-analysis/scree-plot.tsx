@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { formatNumber } from "@/lib/format";
+import { Table2 } from "lucide-react";
+import { formatNumber, formatPercent } from "@/lib/format";
 import { useLocale, useT } from "@/lib/i18n";
 
 const HEIGHT = 260;
-const M = { l: 44, r: 16, t: 28, b: 40 };
+const M = { l: 44, r: 44, t: 28, b: 40 };
+// Without "Show all", the plot ends after this many factors or twice the largest suggestion,
+// whichever is more: past the elbow the eigenvalues of a hundred measures only crowd the axis.
+const MIN_SHOWN = 20;
 
 function niceStep(raw: number) {
   for (const s of [0.25, 0.5, 1, 2, 5, 10, 20, 50]) if (s >= raw) return s;
@@ -14,7 +18,13 @@ function niceStep(raw: number) {
 
 interface Props {
   eigenvalues: number[];
+  /** Parallel analysis: the percentile of the eigenvalues of random data, one per eigenvalue. */
+  random?: number[] | null;
+  /** The percentile of `random`, e.g. 95. */
+  percentile?: number;
   suggested: number;
+  /** The largest count any criterion suggests; the plot shows at least twice as many factors. */
+  largestSuggestion: number;
   selected: number;
   /** Largest factor count that may be picked by clicking a point. */
   maxSelectable: number;
@@ -22,17 +32,31 @@ interface Props {
 }
 
 /**
- * Eigenvalues in descending order with the Kaiser line; a point click sets the factor count.
- * For the keyboard the plot is one slider: arrow keys, Home and End change the count.
+ * Eigenvalues in descending order with the Kaiser line, the parallel analysis as a dashed line
+ * and the cumulative share of the variance on a right axis; a point click sets the factor
+ * count. For the keyboard the plot is one slider: arrow keys, Home and End change the count. A
+ * table with every series is the text alternative.
  */
-export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onSelect }: Props) {
+export function ScreePlot({
+  eigenvalues,
+  random,
+  percentile = 95,
+  suggested,
+  largestSuggestion,
+  selected,
+  maxSelectable,
+  onSelect,
+}: Props) {
   const t = useT();
   const { locale } = useLocale();
   const ref = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(600);
   const [hover, setHover] = useState<number | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const [tableOpen, setTableOpen] = useState(false);
   const titleId = useId();
   const descId = useId();
+  const tableId = useId();
 
   useEffect(() => {
     const el = ref.current;
@@ -44,16 +68,33 @@ export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onS
     return () => ro.disconnect();
   }, []);
 
-  const n = eigenvalues.length;
-  if (n === 0) return null;
+  const total = eigenvalues.length;
+  if (total === 0) return null;
+
+  // The eigenvalues of a correlation matrix add up to the number of measures, so their running
+  // sum is the cumulative share of the variance.
+  const sum = eigenvalues.reduce((a, v) => a + v, 0);
+  const cumulative: number[] = [];
+  let running = 0;
+  for (const v of eigenvalues) {
+    running += v / sum;
+    cumulative.push(running);
+  }
+  const randomValues = random && random.length === total ? random : null;
+
+  const limit = Math.max(MIN_SHOWN, 2 * Math.max(largestSuggestion, suggested, selected));
+  const truncated = total > limit;
+  const n = truncated && !showAll ? limit : total;
+  const shown = eigenvalues.slice(0, n);
 
   const w = width - M.l - M.r;
   const h = HEIGHT - M.t - M.b;
-  const max = Math.max(...eigenvalues, 1);
+  const max = Math.max(...shown, ...(randomValues?.slice(0, n) ?? []), 1);
   const step = niceStep((max * 1.1) / 4);
   const top = Math.ceil((max * 1.1) / step) * step;
   const x = (i: number) => M.l + ((i - 0.5) / n) * w;
   const y = (v: number) => M.t + h - (Math.max(0, v) / top) * h;
+  const yShare = (share: number) => M.t + h - Math.min(1, Math.max(0, share)) * h;
   const ticks: number[] = [];
   for (let v = 0; v <= top + 1e-9; v += step) ticks.push(Number(v.toFixed(4)));
   const labelEvery = Math.max(1, Math.ceil(n / Math.max(1, Math.floor(w / 28))));
@@ -75,18 +116,32 @@ export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onS
     if (next === null) return;
     e.preventDefault();
     pick(next);
-    setHover(Math.max(1, Math.min(maxSelectable, next)));
+    setHover(Math.max(1, Math.min(maxSelectable, next, n)));
   };
 
   const suggestedLabel = t("factor.factors.suggested_mark");
   const suggestedLabelLeft = x(suggested) + 11 + suggestedLabel.length * 6 > M.l + w;
 
-  const tip = hover !== null ? { i: hover, v: eigenvalues[hover - 1] } : null;
-  const tipText = tip ? t("factor.factors.eigen_point", { i: tip.i, value: formatNumber(tip.v, locale, 2) }) : "";
-  const tipW = tipText.length * 6.2 + 16;
+  const tip = hover !== null && hover <= n ? hover : null;
+  const tipLines = tip
+    ? [
+        t("factor.factors.eigen_point", { i: tip, value: formatNumber(eigenvalues[tip - 1], locale, 2) }),
+        ...(randomValues
+          ? [t("factor.factors.random_point", { value: formatNumber(randomValues[tip - 1], locale, 2) })]
+          : []),
+        t("factor.factors.cumulative_point", { pct: formatPercent(cumulative[tip - 1], locale) }),
+      ]
+    : [];
+  const tipW = Math.max(...tipLines.map((l) => l.length), 0) * 6.2 + 16;
+  const tipH = tipLines.length * 15 + 8;
+  const line = (values: number[], scale: (v: number) => number) =>
+    values
+      .slice(0, n)
+      .map((v, i) => `${x(i + 1)},${scale(v)}`)
+      .join(" ");
 
   return (
-    <div ref={ref} className="w-full">
+    <div ref={ref} className="w-full space-y-2">
       <svg
         width={width}
         height={HEIGHT}
@@ -107,7 +162,8 @@ export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onS
         <title id={titleId}>{t("factor.factors.scree_title")}</title>
         <desc id={descId}>
           {t("factor.factors.scree_desc", { n: above })}{" "}
-          {eigenvalues.map((v, i) => `${i + 1}: ${formatNumber(v, locale, 2)}`).join(", ")}
+          {eigenvalues.map((v, i) => `${i + 1}: ${formatNumber(v, locale, 2)}`).join(", ")}.{" "}
+          {t("factor.factors.scree_desc_table")}
         </desc>
 
         {/* retained factors */}
@@ -125,6 +181,20 @@ export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onS
           </g>
         ))}
 
+        {/* right axis: cumulative share of the variance */}
+        {[0, 0.25, 0.5, 0.75, 1].map((share) => (
+          <text
+            key={share}
+            x={M.l + w + 6}
+            y={yShare(share)}
+            dy="0.32em"
+            fontSize={10}
+            style={{ fill: "rgb(var(--positive-ink))" }}
+          >
+            {formatPercent(share, locale, 0)}
+          </text>
+        ))}
+
         {/* Kaiser criterion */}
         <line
           x1={M.l}
@@ -140,7 +210,28 @@ export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onS
         </text>
 
         <polyline
-          points={eigenvalues.map((v, i) => `${x(i + 1)},${y(v)}`).join(" ")}
+          points={line(cumulative, yShare)}
+          fill="none"
+          style={{ stroke: "rgb(var(--positive))" }}
+          strokeOpacity={0.75}
+          strokeWidth={1.25}
+          strokeLinejoin="round"
+        />
+
+        {randomValues && (
+          <polyline
+            points={line(randomValues, y)}
+            fill="none"
+            className="stroke-fg"
+            strokeOpacity={0.7}
+            strokeWidth={1.5}
+            strokeDasharray="2 3"
+            strokeLinejoin="round"
+          />
+        )}
+
+        <polyline
+          points={line(eigenvalues, y)}
           fill="none"
           className="stroke-accent"
           strokeWidth={2}
@@ -174,7 +265,7 @@ export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onS
           </g>
         )}
 
-        {eigenvalues.map((v, i) => {
+        {shown.map((v, i) => {
           const k = i + 1;
           const kept = k <= selected;
           return (
@@ -182,14 +273,14 @@ export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onS
               key={k}
               cx={x(k)}
               cy={y(v)}
-              r={hover === k ? 6 : 4.5}
+              r={hover === k ? 6 : n > 60 ? 3 : 4.5}
               className={kept ? "fill-accent stroke-surface" : "fill-surface stroke-accent"}
-              strokeWidth={2}
+              strokeWidth={n > 60 ? 1.5 : 2}
             />
           );
         })}
 
-        {eigenvalues.map((v, i) =>
+        {shown.map((_, i) =>
           (i + 1) % labelEvery === 0 || i === 0 ? (
             <text key={i} x={x(i + 1)} y={M.t + h + 16} textAnchor="middle" fontSize={10} className="fill-muted">
               {i + 1}
@@ -209,7 +300,7 @@ export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onS
         </text>
 
         {/* pointer targets, one column per factor; the keyboard uses the slider */}
-        {eigenvalues.map((_, i) => {
+        {shown.map((_, i) => {
           const k = i + 1;
           const pickable = k <= maxSelectable;
           return (
@@ -230,29 +321,110 @@ export function ScreePlot({ eigenvalues, suggested, selected, maxSelectable, onS
 
         {tip && (
           <g aria-hidden pointerEvents="none">
-            <line
-              x1={x(tip.i)}
-              x2={x(tip.i)}
-              y1={M.t}
-              y2={M.t + h}
-              className="stroke-muted"
-              strokeOpacity={0.4}
-            />
+            <line x1={x(tip)} x2={x(tip)} y1={M.t} y2={M.t + h} className="stroke-muted" strokeOpacity={0.4} />
             {(() => {
-              const tx = Math.min(Math.max(x(tip.i) - tipW / 2, M.l), M.l + w - tipW);
-              const ty = Math.max(y(tip.v) - 36, 2);
+              const tx = Math.min(Math.max(x(tip) - tipW / 2, M.l), M.l + w - tipW);
+              const ty = Math.max(y(eigenvalues[tip - 1]) - tipH - 14, 2);
               return (
                 <g transform={`translate(${tx} ${ty})`}>
-                  <rect width={tipW} height={22} rx={4} className="fill-surface stroke-border" />
-                  <text x={8} y={15} fontSize={11} className="fill-fg">
-                    {tipText}
-                  </text>
+                  <rect width={tipW} height={tipH} rx={4} className="fill-surface stroke-border" />
+                  {tipLines.map((l, j) => (
+                    <text key={j} x={8} y={16 + j * 15} fontSize={11} className={j === 0 ? "fill-fg" : "fill-muted"}>
+                      {l}
+                    </text>
+                  ))}
                 </g>
               );
             })()}
           </g>
         )}
       </svg>
+
+      <div className="flex items-center justify-between gap-x-4 gap-y-2 flex-wrap text-[11px] text-muted">
+        <ul className="flex items-center gap-x-3 gap-y-1 flex-wrap" aria-hidden>
+          <li className="flex items-center gap-1.5">
+            <svg width="18" height="8">
+              <line x1="0" x2="18" y1="4" y2="4" className="stroke-accent" strokeWidth={2} />
+              <circle cx="9" cy="4" r="3" className="fill-accent" />
+            </svg>
+            {t("factor.factors.legend_eigenvalues")}
+          </li>
+          {randomValues && (
+            <li className="flex items-center gap-1.5">
+              <svg width="18" height="8">
+                <line x1="0" x2="18" y1="4" y2="4" className="stroke-fg" strokeOpacity={0.7} strokeWidth={1.5} strokeDasharray="2 3" />
+              </svg>
+              {t("factor.factors.legend_parallel", { percentile })}
+            </li>
+          )}
+          <li className="flex items-center gap-1.5">
+            <svg width="18" height="8">
+              <line x1="0" x2="18" y1="4" y2="4" style={{ stroke: "rgb(var(--positive))" }} strokeWidth={1.25} />
+            </svg>
+            {t("factor.factors.legend_cumulative")}
+          </li>
+        </ul>
+        <span className="flex items-center gap-3">
+          {truncated && (
+            <button
+              type="button"
+              onClick={() => setShowAll((v) => !v)}
+              aria-pressed={showAll}
+              className="rounded text-accent-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              {showAll ? t("factor.factors.show_first", { n: limit }) : t("factor.factors.show_all", { n: total })}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setTableOpen((v) => !v)}
+            aria-expanded={tableOpen}
+            aria-controls={tableId}
+            className="inline-flex items-center gap-1 rounded hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <Table2 className="h-3.5 w-3.5" aria-hidden />
+            {tableOpen ? t("factor.factors.hide_table") : t("factor.factors.show_table")}
+          </button>
+        </span>
+      </div>
+
+      <div id={tableId} hidden={!tableOpen} className="max-h-64 overflow-auto rounded-md bg-tile/40">
+        <table className="w-full text-xs">
+          <caption className="sr-only">{t("factor.factors.table_caption")}</caption>
+          <thead className="bg-bg sticky top-0">
+            <tr className="text-muted">
+              <th scope="col" className="px-3 py-1.5 text-left font-medium">
+                {t("factor.factors.axis_factor")}
+              </th>
+              <th scope="col" className="px-3 py-1.5 text-right font-medium">
+                {t("factor.factors.axis_eigenvalue")}
+              </th>
+              {randomValues && (
+                <th scope="col" className="px-3 py-1.5 text-right font-medium">
+                  {t("factor.factors.col_random", { percentile })}
+                </th>
+              )}
+              <th scope="col" className="px-3 py-1.5 text-right font-medium">
+                {t("factor.factors.col_cumulative")}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {eigenvalues.map((v, i) => (
+              <tr key={i} className={i < selected ? "bg-accent/[0.05]" : undefined}>
+                <th scope="row" className="px-3 py-1 text-left font-medium">
+                  {i + 1}
+                </th>
+                <td className="px-3 py-1 text-right font-mono tabular-nums">{formatNumber(v, locale, 3)}</td>
+                {randomValues && (
+                  <td className="px-3 py-1 text-right font-mono tabular-nums">{formatNumber(randomValues[i], locale, 3)}</td>
+                )}
+                <td className="px-3 py-1 text-right font-mono tabular-nums">{formatPercent(cumulative[i], locale)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

@@ -765,7 +765,7 @@
       "scree_title": "Screeplot",
       "notes_heading": "Hinweise zur Faktorlösung",
       "scree_desc": "Eigenwerte in absteigender Reihenfolge; {n} liegen über 1.",
-      "scree_hint": "Klicke auf einen Punkt, um so viele Faktoren zu behalten. Die gestrichelte Linie markiert den Eigenwert 1.",
+      "scree_hint": "Klicke auf einen Punkt, um so viele Faktoren zu behalten. Die gestrichelte Linie markiert den Eigenwert 1, die gepunktete die Parallelanalyse.",
       "axis_factor": "Faktor",
       "axis_eigenvalue": "Eigenwert",
       "kaiser_line": "Eigenwert 1",
@@ -777,7 +777,6 @@
       "increase": "Ein Faktor mehr",
       "range": "1 bis {max}",
       "following_suggestion": "Folgt dem Vorschlag (Eigenwert > 1)",
-      "use_suggestion": "Zurück zum Vorschlag ({n})",
       "explained": "{n} Faktor erklärt {pct} der Varianz.",
       "explained_plural": "Zusammen erklären {n} Faktoren {pct} der Varianz.",
       "rotation_label": "Rotation",
@@ -792,7 +791,36 @@
         "orthogonal": "Hält die Faktoren unkorreliert. Ladungen sind Korrelationen zwischen Maß und Faktor.",
         "oblique": "Erlaubt korrelierte Faktoren. Schritt 5 zeigt die Ladungen als Regressionsgewichte (Mustermatrix) oder als Korrelationen (Strukturmatrix).",
         "none": "Unrotierte Lösung. Der erste Faktor nimmt meist den Großteil der Varianz auf, was die Faktoren schwer deutbar macht."
-      }
+      },
+      "criteria_label": "Kriterien",
+      "criterion": {
+        "kaiser": "Kaiser",
+        "parallel": "Parallelanalyse",
+        "paper": "Paper"
+      },
+      "criterion_detail": {
+        "kaiser": "Eigenwerte über 1",
+        "parallel": "über dem {percentile}. Perzentil zufälliger Daten",
+        "paper": "a priori gewählt"
+      },
+      "criterion_count": "{n} Faktor",
+      "criterion_count_plural": "{n} Faktoren",
+      "criterion_capped": "{k} Faktoren sind mehr als die {max}, die diese Maße erlauben.",
+      "criteria_differ": "Die Kriterien legen unterschiedlich viele Faktoren nahe. Screeplot und Ladungen helfen bei der Entscheidung.",
+      "criteria_differ_paper": "Die Kriterien legen unterschiedlich viele Faktoren nahe. Kaiser und Parallelanalyse folgen aus den Daten; das Paper hat seine Zahl vor der Analyse gewählt.",
+      "random_point": "Parallelanalyse: {value}",
+      "cumulative_point": "kumulierter Anteil: {pct}",
+      "scree_desc_table": "Eine Tabelle mit allen Reihen folgt dem Diagramm.",
+      "legend_eigenvalues": "Eigenwerte",
+      "legend_parallel": "Parallelanalyse ({percentile}. Perzentil)",
+      "legend_cumulative": "Kumulierter Anteil der Eigenwerte (rechte Achse)",
+      "show_all": "Alle {n} zeigen",
+      "show_first": "Die ersten {n} zeigen",
+      "show_table": "Als Tabelle zeigen",
+      "hide_table": "Tabelle ausblenden",
+      "table_caption": "Eigenwerte, Parallelanalyse und kumulierter Anteil der Eigenwerte je Faktor",
+      "col_random": "Parallelanalyse ({percentile}. Perz.)",
+      "col_cumulative": "Kumulierter Anteil"
     },
     "loadings": {
       "threshold_label": "Ladungsschwelle",
@@ -868,7 +896,7 @@
       "msa_filter": "Wie in ComFy werden alle Maße unter der Schwelle entfernt und die MSA-Werte neu berechnet, bis jedes verbleibende Maß die Schwelle erreicht.",
       "msa_threshold": "Der Filter entfernt Maße, deren MSA unter diesem Wert liegt, und der KMO-Gesamtwert gilt ab diesem Wert als ausreichend. ComFy und ComFy für Log-Maße nutzen 0,6.",
       "bartlett_alpha": "Das Signifikanzniveau des Tests nach Bartlett: Er ist bestanden, wenn p unter α liegt. ComFy und ComFy für Log-Maße nutzen 0,05.",
-      "scree": "Der Screeplot zeigt die Eigenwerte der Korrelationsmatrix in absteigender Reihenfolge. Suche den Knick, ab dem die Kurve flach wird; Faktoren danach tragen wenig bei. Knick und die Regel Eigenwert über 1 können sich widersprechen, nimm beide als Ausgangspunkt.",
+      "scree": "Der Screeplot zeigt die Eigenwerte der Korrelationsmatrix in absteigender Reihenfolge. Suche den Knick, ab dem die Kurve flach wird; Faktoren danach tragen wenig bei. Knick, die Regel Eigenwert über 1 und die Parallelanalyse können sich widersprechen, nimm sie als Ausgangspunkte. Die dünne Linie an der rechten Achse summiert die Eigenwerte auf: den Anteil der Varianz, den die ersten Hauptkomponenten erklären. Die Faktoren der Analyse erklären etwas weniger, wie Schritt 5 zeigt.",
       "eigenvalue": "Ein Eigenwert ist die Varianz, die ein Faktor erklärt, gemessen in Einheiten eines standardisierten Maßes. Der Vorschlag behält jeden Faktor mit Eigenwert über 1 (Kaiser-Kriterium), also jeden Faktor, der mehr erklärt als ein einzelnes Maß.",
       "rotation": "Die Rotation dreht die Faktorlösung so, dass jedes Maß auf möglichst wenigen Faktoren hoch lädt; das macht die Faktoren leichter benennbar. Wie viel Varianz die Faktoren zusammen erklären, ändert sie nicht. Varimax und Quartimax halten die Faktoren unkorreliert; Promax und Oblimin erlauben Korrelationen, was für Komplexitätsmaße oft realistischer ist.",
       "threshold": "Ladungen, deren Betrag diese Schwelle erreicht, gelten als substanziell. Zu welchen Faktoren ein Maß kommt, bestimmt die Zuordnungsregel oben; bei der größten Ladung kommt es zu dem Faktor mit dem größten Betrag, wenn dieser die Schwelle erreicht. Üblich sind Werte zwischen 0,3 und 0,5; ComFy nutzt 0,35, ComFy for log measures 0,5.",
@@ -878,7 +906,8 @@
       "groups": "Jeder Faktor mit den ihm zugeordneten Maßen, stärkste Ladung zuerst. Maße einer Gruppe erfassen einen ähnlichen Aspekt der Komplexität; wie der Faktor heißt, ist Sache der Interpretation. Bei Mehrfachzuordnung kann ein Maß in mehreren Gruppen stehen; ein Chip nennt seine anderen Faktoren.",
       "communality_threshold": "Maße mit einer Kommunalität unter diesem Wert bleiben unzugeordnet, weil die Faktoren zu wenig von ihnen erklären. ComFy für Log-Maße nutzt 0,5; 0 behält jedes Maß.",
       "factor_correlations": "Bei obliquer Rotation dürfen die Faktoren korrelieren. Werte nahe 0 heißen, dass die Faktoren fast unabhängig sind; große Werte heißen, dass sie verwandte Aspekte messen.",
-      "assignment": "Wie aus den Ladungen Faktorgruppen werden. ComFys Report gibt jedes Maß dem Faktor, auf dem es am stärksten lädt. Important Factors nutzt zwei weitere Regeln: In Tab. 6–16 kommt ein Maß auch zu jedem Faktor, dessen Ladung höchstens {gap} unter seiner größten liegt (Mehrfachzuordnung), bei h² ≥ {h2_multi}; Tab. 17 folgt Hair et al. mit h² ≥ {h2_hair} und lässt quergeladene Maße weg. Die Faktorlösung ist bei jeder Regel dieselbe; nur die Gruppen ändern sich."
+      "assignment": "Wie aus den Ladungen Faktorgruppen werden. ComFys Report gibt jedes Maß dem Faktor, auf dem es am stärksten lädt. Important Factors nutzt zwei weitere Regeln: In Tab. 6–16 kommt ein Maß auch zu jedem Faktor, dessen Ladung höchstens {gap} unter seiner größten liegt (Mehrfachzuordnung), bei h² ≥ {h2_multi}; Tab. 17 folgt Hair et al. mit h² ≥ {h2_hair} und lässt quergeladene Maße weg. Die Faktorlösung ist bei jeder Regel dieselbe; nur die Gruppen ändern sich.",
+      "criteria": "Kaiser behält jeden Faktor mit einem Eigenwert über 1. Die Parallelanalyse (Horn) behält die Faktoren, deren Eigenwert über dem {percentile}. Perzentil der Eigenwerte von {simulations} zufälligen normalverteilten Datensätzen gleicher Größe liegt, berechnet auf Hauptkomponenten mit dem festen Seed {seed}; bei vielen Beobachtungen liegt sie nahe bei Kaiser. Ein Paper kann die Zahl auch vor der Analyse festlegen. Die Wahl eines Kriteriums setzt die Anzahl der Faktoren."
     },
     "errors": {
       "unknown_rotation": "Unbekannte Rotation „{rotation}“.",
