@@ -26,9 +26,10 @@ Schalk do it, but interactively in the browser.
 - **Factors and loadings.** Scree plot with the Kaiser suggestion, factor count and rotation
   (varimax, promax, oblimin, quartimax, none), a loading heatmap with communalities and
   explained variance, factor groups by loading threshold. Every change re-runs the analysis.
-- **Same numbers as upstream.** On the bundled Inductive-miner scores the analysis equals
-  ComFy's own report to four decimals; a test checks it. Oblique rotations report correct
-  communalities, the structure matrix and the factor correlations.
+- **Same numbers as upstream.** On the bundled paper scores of all seven miners the analysis
+  equals ComFy's own reports to the four decimals they print; tests check every published
+  number. Oblique rotations report correct communalities, the structure matrix and the factor
+  correlations.
 - **Come back to a dataset.** The datasets of a session are listed on the data step, reopen
   with the parameters of their last analysis and can be deleted one by one or all at once;
   deleting a dataset job in the run history deletes its dataset too.
@@ -134,17 +135,61 @@ python -m pytest
 Tests that need the ProM4Py service skip when it is not reachable; start it with
 `docker compose up -d prom4py` to include them. The Petri-net rendering test skips without
 Graphviz. The factor-analysis tests run offline: model datasets from logs use a stand-in
-miner, PNML and log datasets run for real (feeed 2.2 needs no Java). One test compares the
-analysis of the bundled Inductive-miner scores with the values in ComFy's own report. The
-HTTP layer is tested with a small stub tool registered by `tests/conftest.py`, so those tests
-need neither Java nor a database server.
+miner, PNML and log datasets run for real (feeed 2.2 needs no Java). The HTTP layer is tested
+with a small stub tool registered by `tests/conftest.py`, so those tests need neither Java nor
+a database server.
+
+`tests/test_published_numbers.py` checks the bundled datasets against the numbers they were
+published with, extracted once into `datasets/published/` by
+`scripts/extract_published.py`: all seven ComFy reports (Bartlett, KMO, every MSA with its
+filter round, eigenvalues, loadings, communalities and descriptive statistics) and, for the
+log measures, the cleaning and Bartlett's chi-square. `tests/test_column_order.py` checks that
+the analysis, the MSA filter and the exports keep the stored column order, on which the KMO of
+singular data depends.
 
 Frontend checks, from `src/frontend`:
 
 ```bash
 npm run lint
 npx tsc --noEmit
+npm test               # Vitest: lib/format.ts and lib/factor-analysis.ts
+npm run check:i18n     # en.json and de.json alike, every key in the code exists
 npx next build
+```
+
+### End-to-end tests
+
+Playwright drives the UI in a browser (`src/frontend/e2e/`): a paper dataset through all six
+steps with its ZIP, a CSV upload reopened from "My datasets" with its excluded measure, the
+PNML and log samples, deleting a dataset, decimal commas in German, the theme switch, axe on
+every route in light and dark, and a single run without ProM, which has to fail with the
+coded error. They check text, roles and downloads, no pixels.
+
+Against the Docker stack, with a browser installed on the machine (here Microsoft Edge;
+Playwright's own browsers are not needed):
+
+```bash
+cd src/frontend
+BASE_URL=http://localhost:3000 PW_CHANNEL=msedge E2E_PROM=1 npx playwright test
+```
+
+`E2E_PROM=1` says that the stack has ProM: it adds the specs tagged `@prom` (the sample logs
+mined with the default miner) and skips those tagged `@no-prom`. The `e2e` job in CI runs the
+suite without ProM, against `uvicorn` on SQLite (`TESTING=1`, `RATE_LIMIT_DISABLED=1`,
+`ARTIFACTS_DIR`, `UPLOADED_LOGS_DIR`, `PROM4PY_START_WAIT=2`) and the standalone Next.js
+server; see `.github/workflows/ci.yml` to do the same locally. The data directories need short
+paths on Windows, whose paths may not exceed 260 characters.
+
+### Smoke test of a running stack
+
+`scripts/smoke.py` works through every dataset source (the sample logs with the default miner,
+the sample nets, the sample logs with feeed), analyses a paper dataset with its published
+settings and compares the numbers, downloads its ZIP and LaTeX table, and deletes everything
+it created. It needs only the standard library and prints a table of the steps with their
+times; a failed step makes it exit with 1.
+
+```bash
+python scripts/smoke.py --base-url http://localhost:3000
 ```
 
 ## Operating it
@@ -174,13 +219,14 @@ All of this is set in `docker-compose.yml`; reverse proxy, TLS, volumes and back
 
 ```
 ├── docs/                      # architecture, API, deployment
+├── scripts/smoke.py           # smoke test of a running stack
 ├── docker-compose.yml
 └── src/
     ├── AlgoService/           # FastAPI backend + Celery worker
     │   ├── algorithms/        #   tool adapters (ComFy)
     │   ├── factor_analysis/   #   factor analysis: numerics, datasets, export
     │   ├── interpretation/    #   interpretation of the factors by Claude
-    │   ├── scripts/           #   precompute_interpretations.py
+    │   ├── scripts/           #   precompute_interpretations.py, extract_published.py
     │   ├── datasets/          #   bundled scores and sample logs/nets, see PROVENANCE.md
     │   ├── vendored/comfy/    #   ComFy sources, see PROVENANCE.md
     │   ├── vendored/comfy_log/ #  ComFy for log measures (constants), MIT
