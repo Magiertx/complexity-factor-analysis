@@ -33,7 +33,8 @@ Schalk do it, but interactively in the browser.
   with the parameters of their last analysis and can be deleted one by one or all at once;
   deleting a dataset job in the run history deletes its dataset too.
 - **Export.** Loadings as CSV or as a LaTeX `tabular` for the paper, the cleaned matrix as CSV,
-  or the whole analysis as a ZIP: result, matrix, tables, parameters, library versions and a
+  or the whole analysis as a ZIP: result, matrix, tables, parameters, provenance (tool version
+  and commit, upstream commits, feeed, pm4py and ProM, miners with their parameters) and a
   README on how to reproduce it.
 - **Interpretation by Claude (optional).** A button after the loadings asks Claude (Anthropic)
   for a name and a short interpretation of each factor, with the measures it rests on, a

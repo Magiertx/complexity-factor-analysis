@@ -238,7 +238,7 @@
       "fa_download": "The cleaned matrix as CSV.",
       "fa_analyze": "Bartlett, KMO with the MSA filter, eigenvalues and rotated loadings for the given settings (JSON).",
       "fa_export": "The loadings table as CSV or LaTeX; the body of analyze plus format.",
-      "fa_export_zip": "The whole analysis as a ZIP: result, matrix, tables, parameters and library versions.",
+      "fa_export_zip": "The whole analysis as a ZIP: result, matrix, tables, parameters, library versions and provenance (tool version and commit, upstream commits, feeed, pm4py and ProM, miners with their parameters).",
       "fa_interpretation_status": "Whether Claude can interpret factors, and with which model.",
       "fa_interpret": "Names and short interpretations of the factors by Claude; the body of analyze plus language. Optional, needs an API key on the server.",
       "jobs": "All runs of your session.",

@@ -281,8 +281,11 @@ temporary file that is then renamed into place.
 - **ZIP.** `POST .../export/zip` runs the analysis once and packs it with
   `export.analysis_zip`: the result, the matrix as the download writes it, the loadings and
   the other tables, a manifest with the dataset, the parameters (with the factor count and
-  rotation the analysis used) and the library versions, and a README whose factor_analyzer
-  snippet reproduces the loadings (`tests/test_dataset_history.py` runs it). An interpretation is
+  rotation the analysis used), the library versions and the provenance (`provenance.py`:
+  tool version and commit, upstream commits, feeed and pm4py versions, miners with their
+  ProM4Py calls and parameters, recorded in `meta.json` when the dataset is created), and a
+  README whose factor_analyzer snippet reproduces the loadings
+  (`tests/test_dataset_history.py` runs it). An interpretation is
   added only if `interpretation.store.lookup`, the lookup behind `cached_only`, finds one, so
   an export never leads to a paid call.
 
@@ -462,6 +465,7 @@ A malformed value in any of these stops the service at startup instead of fallin
     │   ├── jobs_db.py           # repository: CRUD on Runs / Artifacts
     │   ├── celery_worker.py     # Celery app + run_analysis / build_dataset task wrappers
     │   ├── zip_export.py        # /jobs/{id}/download
+    │   ├── provenance.py        # tool version and commit, upstream code, miners and parameters
     │   ├── log_stats.py         # descriptive stats behind /log-stats
     │   ├── alembic.ini, alembic/  # schema migrations
     │   ├── routes/
@@ -482,9 +486,10 @@ A malformed value in any of these stops the service at startup instead of fallin
     │   │   ├── compute.py       # measure values from logs (ProM4Py miners, feeed) or PNML
     │   │   ├── catalog.py       # measures, miners, feature groups, bundled data, samples
     │   │   ├── storage.py       # session-scoped datasets on disk
+    │   │   ├── published.py     # the published numbers of the bundled datasets
     │   │   └── export.py        # loadings as CSV / LaTeX, matrix as CSV, analysis as ZIP
     │   ├── interpretation/      # factor names by Claude: payload, prompt, client, cache, limits
-    │   ├── scripts/             # precompute_interpretations.py
+    │   ├── scripts/             # precompute_interpretations.py, extract_published.py
     │   ├── datasets/            # bundled scores and sample logs/nets, see PROVENANCE.md
     │   ├── vendored/comfy/      # ComFy sources, see PROVENANCE.md
     │   ├── vendored/comfy_log/  # ComFy for log measures constants, MIT

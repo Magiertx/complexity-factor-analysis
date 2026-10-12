@@ -332,8 +332,8 @@ report or reproduce the analysis. Its errors are those of `analyze`.
 
 | File | Content |
 |------|---------|
-| `manifest.json` | `app`, `created_at`, `dataset` (`id`, `name`, `kind`, `source`, `bundled_id`; `collection`, `citation` and `license` for a bundled dataset, else `null`; `inputs`, `n_observations`, the `measures` left after cleaning and the `dropped` ones as `{name, reason}`), `analysis_params` (the parameters used, with the factor count and rotation of the analysis and the thresholds of the kind; a single factor is not rotated), `libraries` (versions of factor_analyzer, numpy, pandas, scipy and scikit-learn) and `files` (`{name, description}` of each file). |
-| `README.txt` | The files, and how to reproduce the analysis in the UI or with factor_analyzer. |
+| `manifest.json` | `app`, `created_at`, `tool` (`name`, `version` and `commit` of this tool, `null` where not recorded), `dataset` (`id`, `name`, `kind`, `source`, `bundled_id`; `collection`, `citation` and `license` for a bundled dataset, else `null`; `inputs`, `n_observations`, the `measures` left after cleaning, the `dropped` ones as `{name, reason}` and `provenance`, see below), `analysis_params` (the parameters used, with the factor count and rotation of the analysis and the thresholds of the kind; a single factor is not rotated), `analysis` (`method` minres of `library` factor_analyzer, the upstream code it `follows` with commits, the `assignment_rule` `largest_loading` and the random `seed`, `null` while no step draws random numbers), `libraries` (versions of factor_analyzer, numpy, pandas, scipy and scikit-learn) and `files` (`{name, description}` of each file). |
+| `README.txt` | The files, how to reproduce the analysis in the UI or with factor_analyzer, and the provenance in short. |
 | `analysis.json` | The response of `analyze` for these parameters. |
 | `dataset.csv` | The cleaned matrix, the same file as `.../download`. |
 | `loadings.csv`, `loadings.tex` | The loadings table as `.../export` returns it. |
@@ -341,6 +341,17 @@ report or reproduce the analysis. Its errors are those of `analyze`.
 | `eigenvalues.csv` | `factor`, `eigenvalue`, largest first. |
 | `msa.csv` | `measure`, `msa`, `status` for every measure of the dataset: `used`, `removed in step k` by the MSA filter (with the MSA of that step) or `excluded` (no MSA). |
 | `interpretation.<language>.json` | Only if an interpretation of exactly these parameters is cached or precomputed in that language: the stored entry with its model, prompt version and parameters. The export never asks for a new one. |
+
+`dataset.provenance` says how the dataset was made, as recorded when it was created: `kind`
+and `source`; for a bundled dataset `bundled` (`id`, `file` in `datasets/` and `copied_from`
+with repository and commit); for a CSV upload its `file` name; for logs or PNML files the
+`inputs` (file names) and `libraries.pm4py`, which read them; for model measures `measures`
+(ComFy with repository and commit) and, from logs, `discovery` (ProM4Py, the Zenodo `bundle`,
+and per miner its `prom4py_call` and `parameters`, the same for every input); for log measures
+`features` (feeed with its `version`, `null` for the bundled data, and a `note` on the five
+features feeed 2.2.0 changed). Datasets stored before this was recorded carry what their
+metadata tell, with today's versions, and `"recorded_at_creation": false`. The ZIP of a run
+(`GET /jobs/{id}/download`) names the `tool` as well.
 
 ### Interpretation by Claude
 

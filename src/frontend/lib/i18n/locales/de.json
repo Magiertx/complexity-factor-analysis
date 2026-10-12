@@ -238,7 +238,7 @@
       "fa_download": "Die bereinigte Matrix als CSV.",
       "fa_analyze": "Bartlett, KMO mit MSA-Filter, Eigenwerte und rotierte Ladungen für die übergebenen Einstellungen (JSON).",
       "fa_export": "Die Ladungstabelle als CSV oder LaTeX; der Body von analyze plus format.",
-      "fa_export_zip": "Die ganze Analyse als ZIP: Ergebnis, Matrix, Tabellen, Parameter und Bibliotheksversionen.",
+      "fa_export_zip": "Die ganze Analyse als ZIP: Ergebnis, Matrix, Tabellen, Parameter, Bibliotheksversionen und Herkunft (Version und Commit des Tools, Commits der Vorlagen, feeed, pm4py und ProM, Miner mit ihren Parametern).",
       "fa_interpretation_status": "Ob Claude Faktoren interpretieren kann, und mit welchem Modell.",
       "fa_interpret": "Namen und kurze Interpretationen der Faktoren durch Claude; der Body von analyze plus language. Optional, braucht einen API-Schlüssel auf dem Server.",
       "jobs": "Alle Runs deiner Sitzung.",
