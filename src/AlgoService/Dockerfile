@@ -13,6 +13,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Tool version and commit for the provenance of exports (provenance.py). The build context has
+# no .git, so docker compose passes them in (docs/DEPLOYMENT.md); empty means "not recorded".
+# After COPY, so a new commit does not reinstall the packages.
+ARG APP_VERSION=
+ARG APP_COMMIT=
+ENV APP_VERSION=$APP_VERSION APP_COMMIT=$APP_COMMIT
+
 # One BLAS thread per process. The factor fits work on small matrices, where OpenBLAS threads
 # only contend with each other and with parallel requests; with the default of one thread per
 # core a fit over 120 log measures took 85 s instead of 6 s.

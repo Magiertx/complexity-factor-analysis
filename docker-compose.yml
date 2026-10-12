@@ -33,6 +33,10 @@ services:
     build:
       context: ./src/AlgoService
       dockerfile: Dockerfile
+      # Recorded in the manifest of every export; see docs/DEPLOYMENT.md.
+      args:
+        APP_VERSION: ${APP_VERSION:-}
+        APP_COMMIT: ${APP_COMMIT:-}
     # Not published: the browser reaches the API through the frontend's /api/* rewrite.
     # For local API work, add a port mapping in a docker-compose.override.yml.
     expose:
@@ -99,6 +103,9 @@ services:
     build:
       context: ./src/AlgoService
       dockerfile: Dockerfile
+      args:
+        APP_VERSION: ${APP_VERSION:-}
+        APP_COMMIT: ${APP_COMMIT:-}
     command: celery -A celery_worker.celery_app worker --loglevel=info --concurrency=4
     environment:
       - PROM4PY_URL=http://prom4py:4040
