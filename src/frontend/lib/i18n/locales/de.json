@@ -895,7 +895,8 @@
       "reason": {
         "low_loading": "niedrige Ladung, |λ| {value}",
         "low_communality": "niedrige Kommunalität, h² {value}",
-        "cross_loading": "lädt quer auf {factors}"
+        "cross_loading": "lädt quer auf {factors}",
+        "cross_loading_plain": "lädt auf mehrere Faktoren"
       }
     },
     "help": {

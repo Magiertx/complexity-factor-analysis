@@ -554,5 +554,8 @@ function reasonText(
     });
   }
   const factors = (analysis.cross_loadings ?? []).find((c) => c.measure === u.measure)?.factors ?? [];
-  return t("factor.loadings.reason.cross_loading", { factors: factors.map((i) => `F${i + 1}`).join(", ") });
+  // Without the cross-loading listed, the reason is said without its factors.
+  return factors.length > 0
+    ? t("factor.loadings.reason.cross_loading", { factors: factors.map((i) => `F${i + 1}`).join(", ") })
+    : t("factor.loadings.reason.cross_loading_plain");
 }
