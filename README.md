@@ -25,11 +25,12 @@ Schalk do it, but interactively in the browser.
   table with manual exclusion.
 - **Factors and loadings.** Scree plot with the Kaiser line, a parallel analysis with a fixed
   seed and the cumulative share of the eigenvalues; tiles for the factor count of each criterion
-  (Kaiser, parallel analysis, and the paper's count chosen a priori); rotation (varimax, promax,
-  oblimin, quartimax, none); a loading heatmap with communalities and explained variance; factor
-  groups by one of three assignment rules: the largest loading as in ComFy's report (default),
-  multiple membership as in Important Factors (Tab. 6-16) or Hair et al. (Tab. 17), with
-  cross-loadings reported under each. A settings row above steps 3 to 5 sums up every choice and
+  (Kaiser, parallel analysis, and the paper's count chosen a priori, or the ComFy report's for
+  the datasets the paper does not analyse); rotation (varimax, promax, oblimin, quartimax, none);
+  a loading heatmap with communalities and explained variance; factor groups by one of three
+  assignment rules: the largest loading as in ComFy's report (default), multiple membership as in
+  Important Factors (Tab. 6-16) or Hair et al. (Tab. 17), with cross-loadings reported under
+  each and a note where a table of the paper differs from the rule it states. A settings row above steps 3 to 5 sums up every choice and
   tints those that differ from the standard. Every change re-runs the analysis; a newer change
   replaces the analysis still running for the one before.
 - **Same numbers as upstream.** On the bundled paper scores of all seven miners the analysis
