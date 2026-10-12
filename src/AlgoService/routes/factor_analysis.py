@@ -896,12 +896,15 @@ class _Latest:
     def __init__(self) -> None:
         #: Per session and dataset: the number and the parameters of the newest request.
         self._newest: dict[tuple[str, str], tuple[int, str]] = {}
+        #: Per session and dataset: how many requests are still being answered.
+        self._open: dict[tuple[str, str], int] = {}
         self._count = 0
 
     def take(self, key: tuple[str, str], parameters: str) -> int:
-        # Called on the event loop only, so the count needs no lock.
+        # Called on the event loop only, so the counts need no lock.
         self._count += 1
         self._newest[key] = (self._count, parameters)
+        self._open[key] = self._open.get(key, 0) + 1
         return self._count
 
     def is_newest(self, key: tuple[str, str], number: int, parameters: str) -> bool:
@@ -909,10 +912,15 @@ class _Latest:
         newest = self._newest.get(key)
         return newest is not None and (newest[0] == number or newest[1] == parameters)
 
-    def release(self, key: tuple[str, str], number: int) -> None:
-        newest = self._newest.get(key)
-        if newest is not None and newest[0] == number:
-            del self._newest[key]
+    def release(self, key: tuple[str, str]) -> None:
+        # The newest entry stays while any request of the key is open: an older one with the
+        # same parameters, still on its way to the fit, would else count as replaced.
+        left = self._open.get(key, 0) - 1
+        if left > 0:
+            self._open[key] = left
+        else:
+            self._open.pop(key, None)
+            self._newest.pop(key, None)
 
 
 _LATEST = _Latest()
@@ -951,7 +959,7 @@ class _Watch:
 
     def close(self) -> None:
         if self.key:
-            _LATEST.release(self.key, self.number)
+            _LATEST.release(self.key)
 
 
 async def _analyze(data: pd.DataFrame, params: AnalysisParams, watch: _Watch | None = None) -> dict[str, Any]:

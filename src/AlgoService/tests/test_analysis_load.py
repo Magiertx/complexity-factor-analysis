@@ -249,11 +249,19 @@ def test_the_newest_request_counts_per_session_and_dataset():
     # The same parameters again: the older request is as good as the newest.
     d = latest.take(one, "k=3")
     assert latest.is_newest(one, c, "k=3") and latest.is_newest(one, d, "k=3")
-    # An older request ending leaves the newer one alone; the newest ending clears the entry.
-    latest.release(one, c)
+    # An older request ending leaves the newer one alone.
+    latest.release(one)
     assert latest.is_newest(one, d, "k=3")
-    latest.release(one, d)
-    assert latest._newest == {two: (b, "k=2")}
+    # The newest ending first leaves an older one with the same parameters, which may not have
+    # reached its last stop check yet, as good as the newest.
+    e = latest.take(one, "k=4")
+    latest.take(one, "k=4")
+    latest.release(one)
+    assert latest.is_newest(one, e, "k=4") and not latest.is_newest(one, d, "k=3")
+    # The last open request of the session and dataset clears the entry.
+    for _ in (a, d, e):
+        latest.release(one)
+    assert latest._newest == {two: (b, "k=2")} and latest._open == {two: 1}
 
 
 def test_a_request_whose_client_left_is_not_fitted(slow_fit):
