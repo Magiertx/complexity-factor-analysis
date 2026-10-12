@@ -11,7 +11,8 @@
     --border-strong: 193 205 220;
     --muted: 71 85 105;
     --fg: 15 23 42;
-    --accent: 244 63 94;
+    /* Rose 600: white text on filled buttons and badges reaches 4.7:1 (rose 500 only 3.7:1). */
+    --accent: 225 29 72;
     --accent-fg: 255 255 255;
     --success: 22 163 74;
     --warn: 217 119 6;
@@ -36,7 +37,7 @@
     --border-strong: 58 58 64;
     --muted: 150 150 160;
     --fg: 244 244 245;
-    --accent: 244 63 94;
+    --accent: 225 29 72;
     --accent-fg: 255 255 255;
     --success: 34 197 94;
     --warn: 234 179 8;

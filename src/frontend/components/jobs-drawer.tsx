@@ -439,7 +439,7 @@ export function JobsDrawer() {
               {t("jobs.loading")}
             </div>
           ) : jobs.length === 0 ? (
-            <div className="text-xs text-muted/60 italic p-3 text-center bg-tile/40 rounded-lg">
+            <div className="text-xs text-muted italic p-3 text-center bg-tile/40 rounded-lg">
               {t("jobs.no_runs_yet")}
             </div>
           ) : (
@@ -629,7 +629,7 @@ function JobCard({
       )}
       <div className="flex items-center justify-between text-[10px] font-medium">
         <StatusBadge job={job} />
-        <span className="font-mono text-muted/60">{dateStr}</span>
+        <span className="font-mono text-muted">{dateStr}</span>
       </div>
     </Link>
   );

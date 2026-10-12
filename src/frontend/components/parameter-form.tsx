@@ -131,7 +131,7 @@ function Field({
     <span id={hintId} className="block text-[11px] text-muted mt-1.5">
       {help}
       {spec.recommended && (
-        <span className="block text-muted/70 italic mt-0.5">
+        <span className="block text-muted italic mt-0.5">
           {t("parameter_form.recommended", { value: spec.recommended })}
         </span>
       )}

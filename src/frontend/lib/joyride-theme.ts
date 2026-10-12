@@ -6,14 +6,14 @@ import type { Options, Styles } from "react-joyride";
 // tokens in app/globals.css.
 //
 // If the tokens there ever change, update them here as well:
-//   --accent      → 244 63 94
+//   --accent      → 225 29 72
 //   --accent-fg   → 255 255 255
 //   --surface     → light: 255 255 255  / dark: 17 17 20
 //   --border      → light: 203 213 225 / dark: 45 45 50
 //   --fg          → light: 15 23 42    / dark: 244 244 245
 //   --muted       → light: 71 85 105   / dark: 113 113 122
 
-const ACCENT = "rgb(244 63 94)";
+const ACCENT = "rgb(225 29 72)";
 const ACCENT_FG = "rgb(255 255 255)";
 
 const LIGHT = {

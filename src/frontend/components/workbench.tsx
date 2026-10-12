@@ -789,7 +789,7 @@ export function Workbench() {
                 <div className="flex flex-wrap sm:flex-col items-center sm:items-end gap-x-4 gap-y-1.5 shrink-0 sm:text-right">
                   {selected.author && (
                     <span
-                      className="text-xs text-muted/80 flex items-center gap-1.5 shrink-0"
+                      className="text-xs text-muted flex items-center gap-1.5 shrink-0"
                       title={t("workbench.algo_card.implemented_by", { author: selected.author ?? "" })}
                     >
                       <User className="h-3.5 w-3.5" />
@@ -859,7 +859,7 @@ export function Workbench() {
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-muted/90 italic leading-relaxed pr-2">
+                  <p className="text-xs text-muted italic leading-relaxed pr-2">
                     {selected.formatted_citation || selected.citation}
                   </p>
                 </div>
