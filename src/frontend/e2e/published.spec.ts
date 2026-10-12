@@ -69,6 +69,60 @@ test("the paper settings reproduce the report, and a reset to the standard can b
   await expect(row.getByRole("button", { name: text("factor.match.chip_match") })).toBeVisible();
 });
 
+test("the chips of the settings row and the match dialog work with the keyboard", async ({ page }) => {
+  await page.goto("/");
+  await openWith(page, "Inductive miner", "published");
+  const row = settingsRow(page);
+  const focused = () =>
+    page.evaluate(() => {
+      const el = document.activeElement as HTMLInputElement | null;
+      return { tag: el?.tagName, type: el?.type, msa: !!el?.closest("#fa-msa-table") };
+    });
+
+  // A chip leads to its control, not to the "?" of the label above it.
+  await row.getByRole("button", { name: pattern(text("factor.settings.rule.multi")) }).click();
+  await expect(page.locator('input[name="fa-assignment"]:checked')).toBeFocused();
+  await row.getByRole("button", { name: pattern(text("factor.settings.measures", { used: 10, total: 12 })) }).click();
+  expect(await focused()).toEqual({ tag: "INPUT", type: "checkbox", msa: true });
+
+  // Tab out of the dialog goes on after its chip and closes it, rather than to the page's top.
+  const match = row.getByRole("button", { name: text("factor.match.chip_match") });
+  await match.focus();
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog", { name: text("factor.match.title") });
+  await expect(dialog).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(dialog.getByRole("button", { name: text("common.close") })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(dialog).toHaveCount(0);
+  await expect(row.getByRole("button", { name: text("factor.settings.reset") })).toBeFocused();
+  // Shift+Tab from its start goes back to the chip.
+  await match.focus();
+  await page.keyboard.press("Enter");
+  await expect(dialog).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(dialog).toHaveCount(0);
+  await expect(match).toBeFocused();
+});
+
+test("a dataset the paper does not analyse names its settings after the ComFy report", async ({ page }) => {
+  await page.goto("/");
+  await openWith(page, "Heuristics miner", "standard");
+  const factors = stepSection(page, "factors");
+  // The report fits 4 factors to the 4 measures the MSA filter leaves; 3 is the most possible.
+  await expect(
+    factors.getByRole("radio", {
+      name: `${text("factor.factors.criterion.report")}: ${text("factor.factors.criterion_count_plural", { n: 3 })}`,
+    }),
+  ).toBeVisible();
+  await expect(factors.getByRole("radio", { name: pattern(`${text("factor.factors.criterion.paper")}:`) })).toHaveCount(0);
+  const source = text("factor.paper_notes.source_report", { source: "Important Factors, ATAED 2026" });
+  await expect(settingsRow(page).getByRole("button", { name: text("factor.settings.paper") })).toHaveAttribute(
+    "title",
+    text("factor.settings.paper_title", { source }),
+  );
+});
+
 test("a criterion tile sets the number of factors", async ({ page }) => {
   await page.goto("/");
   await openWith(page, "Inductive miner", "standard");
@@ -108,9 +162,12 @@ test("the assignment rule decides what happens to cross-loaded measures", async 
   await expect(rule("multi")).toBeChecked();
   await expect(loadings.getByText(pattern(text("factor.loadings.also", { i: 1 }))).first()).toBeVisible();
   await expect(loadings.getByText(pattern(text("factor.loadings.also", { i: 3 }))).first()).toBeVisible();
+  // The rule also puts average connector degree in F2, which Tab. 12 does not; a note says so.
+  await expect(loadings).toContainText(text("factor.paper_notes.rules.inductive_multi"));
 
   // Hair et al. (Tab. 17) leaves both out as cross-loaded.
   await rule("hair").check({ force: true });
+  await expect(loadings).not.toContainText(text("factor.paper_notes.rules.inductive_multi"));
   await expect(loadings).toContainText(text("factor.loadings.reason.cross_loading", { factors: "F1, F3" }));
   await expect(loadings.getByText(pattern(text("factor.loadings.also", { i: 1 })))).toHaveCount(0);
   // The step rail counts the cross-loaded measures.
