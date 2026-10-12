@@ -6,11 +6,11 @@ import io
 import json
 import zipfile
 from datetime import datetime, timezone
-from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
 import pandas as pd
 
+import provenance
 from config import APP_NAME
 from vendored.comfy_log import Constants as _C
 from zip_export import csv_cell
@@ -136,16 +136,50 @@ LIBRARIES = ("factor_analyzer", "numpy", "pandas", "scipy", "scikit-learn")
 
 
 def _library_versions() -> dict[str, str | None]:
-    versions: dict[str, str | None] = {}
-    for name in LIBRARIES:
-        try:
-            versions[name] = version(name)
-        except PackageNotFoundError:
-            versions[name] = None
-    return versions
+    return {name: provenance.package_version(name) for name in LIBRARIES}
 
 
 _TABS = {"model": "Model complexity", "log": "Log complexity"}
+
+
+def _provenance_lines(dataset: dict[str, Any], tool: dict[str, Any]) -> list[str]:
+    """The provenance of manifest.json in a few lines."""
+    origin = dataset.get("provenance") or {}
+    unknown = "not recorded"
+    lines = [
+        "Provenance (details in manifest.json)",
+        f"  {APP_NAME} {tool.get('version') or unknown}, commit {tool.get('commit') or unknown}.",
+    ]
+    bundled = origin.get("bundled")
+    if bundled:
+        source = bundled["copied_from"]
+        lines.append(
+            f"  Data: the bundled dataset {bundled['id']}, copied from {source['repository']}, "
+            f"commit {source['commit']}."
+        )
+    elif origin.get("source") == "csv":
+        lines.append("  Data: an uploaded CSV file; how its values were computed is not known to the tool.")
+    measures = origin.get("measures")
+    if measures:
+        lines.append(f"  Measures: {measures['name']}, {measures['repository']}, commit {measures['commit']}.")
+    discovery = origin.get("discovery")
+    if discovery:
+        lines.append(f"  Discovery: {discovery['name']} ({discovery['bundle']}), on every input:")
+        for miner in discovery["miners"]:
+            parameters = ", ".join(f"{k}={v}" for k, v in miner["parameters"].items()) or "defaults"
+            lines.append(f"    {miner['name']}: {miner['prom4py_call']}, {parameters}")
+    features = origin.get("features")
+    if features:
+        lines.append(f"  Features: feeed {features.get('version') or '(an earlier version)'}. {features['note']}")
+    libraries = origin.get("libraries") or {}
+    if libraries.get("pm4py"):
+        lines.append(f"  Inputs read with pm4py {libraries['pm4py']}.")
+    analysis = provenance.analysis()
+    lines.append(
+        f"  Analysis: {analysis['method']} ({analysis['library']}), measures assigned to the factor "
+        f"of their largest absolute loading ({analysis['assignment_rule']}), no random seed."
+    )
+    return lines
 
 
 def _readme(
@@ -154,6 +188,7 @@ def _readme(
     result: dict[str, Any],
     files: list[dict[str, str]],
     created_at: str,
+    tool: dict[str, Any],
 ) -> str:
     width = max(len(f["name"]) for f in files) + 2
     rotation = None if result["rotation"] == "none" else result["rotation"]
@@ -191,6 +226,8 @@ def _readme(
         "",
         "  manifest.json lists the library versions the analysis ran with; with the same versions",
         "  on the same platform the loadings are equal to those in analysis.json.",
+        "",
+        *_provenance_lines(dataset, tool),
     ]
     if result["structure_loadings"] is not None:
         lines += [
@@ -243,22 +280,25 @@ def analysis_zip(
 
     created_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     listing = [
-        {"name": "manifest.json", "description": "What was analysed, with which parameters and libraries."},
+        {"name": "manifest.json", "description": "What was analysed, with which parameters, code and libraries."},
         {"name": "README.txt", "description": "This overview and how to reproduce the analysis."},
         *({"name": name, "description": description} for name, _, description in files),
     ]
+    tool = provenance.tool()
     manifest = {
         "app": APP_NAME,
         "created_at": created_at,
+        "tool": tool,
         "dataset": dataset,
         "analysis_params": params,
+        "analysis": provenance.analysis(),
         "libraries": _library_versions(),
         "files": listing,
     }
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
-        archive.writestr("README.txt", _readme(dataset, params, result, listing, created_at))
+        archive.writestr("README.txt", _readme(dataset, params, result, listing, created_at, tool))
         for name, content, _ in files:
             archive.writestr(name, content)
     return buffer.getvalue()

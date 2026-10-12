@@ -22,6 +22,7 @@ from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 
 import jobs_db
+import provenance
 from algorithms._log_io import MAX_DECOMPRESSED_BYTES
 from config import MAX_FILE_SIZE, CodedHTTPException, broadcast_jobs_update, get_session_id, limiter, logger
 from env_config import positive_int, rate_limit
@@ -453,9 +454,14 @@ async def create_dataset(
         inputs: dict[str, Any] = {"files": 0 if source == "bundled" else 1}
         if measure_list:
             inputs["measures"] = measure_list
+        origin = provenance.dataset(
+            kind, source,
+            bundled=entry if source == "bundled" else None,
+            filename=None if source == "bundled" else filename,
+        )
         meta = storage.create(
             session_id, kind=kind, name=display, source=source, status="computing",
-            inputs=inputs, bundled_id=bundled_id,
+            inputs=inputs, bundled_id=bundled_id, provenance=origin,
         )
         try:
             meta = await run_in_threadpool(storage.store_matrix, session_id, meta["id"], table)
@@ -515,10 +521,14 @@ async def create_dataset(
     given = name or (sample["name"] if sample else None)
     display = given or f"{n_inputs} {noun}"
     chosen = {k: v for k, v in spec.items() if k in ("measures", "miners", "groups")}
+    names = [Path(f).name for f in sample["files"]] if sample else _unique_labels(
+        [_sanitize_filename(f.filename or "") for f in uploads]
+    )
+    origin = provenance.dataset(kind, source, inputs=names, miners=spec.get("miners"))
     meta = storage.create(
         session_id, kind=kind, name=display, source=source, status="computing",
         inputs={"files": n_inputs, **chosen, **({"sample_id": sample["id"]} if sample else {})},
-        params=chosen, name_auto=given is None,
+        params=chosen, name_auto=given is None, provenance=origin,
     )
     dataset_id = meta["id"]
     try:
@@ -898,6 +908,20 @@ class ArchiveRequest(AnalyzeRequest):
     language: Literal["en", "de"] = "en"
 
 
+def _provenance(meta: dict[str, Any], entry: dict[str, Any]) -> dict[str, Any]:
+    """How the dataset was made: as recorded when it was created, or for a dataset stored
+    before that was recorded, what its metadata still tell, with today's versions."""
+    if meta.get("provenance"):
+        return meta["provenance"]
+    inputs = _inputs(meta)
+    return {
+        **provenance.dataset(
+            meta["kind"], meta["source"], miners=inputs.get("miners"), bundled=entry or None,
+        ),
+        "recorded_at_creation": False,
+    }
+
+
 def _dataset_record(meta: dict[str, Any]) -> dict[str, Any]:
     """The dataset as the manifest of an archive describes it."""
     entry = (cat.bundled_entry(meta["bundled_id"]) if meta.get("bundled_id") else None) or {}
@@ -914,6 +938,7 @@ def _dataset_record(meta: dict[str, Any]) -> dict[str, Any]:
         "n_observations": meta["n_observations"],
         "measures": meta["measures"],
         "dropped": [{"name": d["measure"], "reason": d["reason"]} for d in meta["dropped"]],
+        "provenance": _provenance(meta, entry),
     }
 
 

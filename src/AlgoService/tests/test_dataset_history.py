@@ -437,7 +437,10 @@ def test_zip_of_a_bundled_dataset(client):
         "n_observations": 288,
         "measures": detail["measures"],
         "dropped": [{"name": "Number of empty sequence flows", "reason": "constant"}],
+        # Its fields are checked in test_provenance.py.
+        "provenance": manifest["dataset"]["provenance"],
     }
+    assert manifest["dataset"]["provenance"]["bundled"]["id"] == BUNDLED
     assert manifest["analysis_params"] == {
         "excluded": ["Density"], "auto_msa_filter": True, "msa_threshold": 0.6, "bartlett_alpha": 0.05,
         "n_factors": 3, "rotation": "varimax", "loading_threshold": 0.35, "communality_threshold": 0.0,
