@@ -1063,6 +1063,23 @@
       "invalid": "Der Link enthielt Einstellungen, die das Tool nicht lesen kann; der Datensatz wurde daher mit den Standardeinstellungen geöffnet.",
       "unknown": "Der Link nennt einen Datensatz, der auf diesem Reiter nicht mitgeliefert wird.",
       "failed": "Der verlinkte Datensatz ließ sich nicht öffnen."
+    },
+    "start": {
+      "title": "Hier starten",
+      "collapsed_hint": "Zwei Analysen mit einem Klick und eine Beispiel-CSV",
+      "intro": "Jede öffnet einen mitgelieferten Datensatz mit seinen Einstellungen; nichts muss hochgeladen oder berechnet werden.",
+      "scenario": {
+        "if_inductive": {
+          "title": "Important Factors: Inductive miner",
+          "text": "Mit den Paper-Einstellungen: 4 Faktoren und Mehrfachzuordnung wie in Tab. 10–12, abgeglichen mit dem ComFy-Report."
+        },
+        "log_standard": {
+          "title": "Log-Maße von 2.112 PDC-Logs",
+          "text": "Die Daten des Log-Papers mit dem Standard des Tools: feeed-Maße, Faktorzahl nach Kaiser, varimax."
+        }
+      },
+      "example_csv": "Beispiel-CSV",
+      "example_csv_hint": "120 synthetische Beobachtungen von 8 Maßen, im Format eines eigenen Uploads."
     }
   },
   "inspect": {

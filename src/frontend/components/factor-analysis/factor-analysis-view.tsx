@@ -55,6 +55,7 @@ import { LoadingsView } from "./loadings-step";
 import { InterpretationView } from "./interpretation-step";
 import { FactorTour } from "./factor-tour";
 import { SettingsRow } from "./settings-row";
+import { StartHere } from "./start-here";
 import {
   EmptyStep,
   StepBadge,
@@ -813,18 +814,21 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                 {t("common.loading")}
               </div>
             ) : formOpen ? (
-              <DataForm
-                kind={kind}
-                catalog={catalog}
-                datasets={datasets ?? []}
-                openId={datasetId}
-                submitting={submitting}
-                submitError={submitError}
-                onSubmit={submit}
-                onOpen={openChosen}
-                onDelete={removeDataset}
-                onCancel={dataset && choosing ? cancelChoice : undefined}
-              />
+              <div className="space-y-5">
+                <StartHere />
+                <DataForm
+                  kind={kind}
+                  catalog={catalog}
+                  datasets={datasets ?? []}
+                  openId={datasetId}
+                  submitting={submitting}
+                  submitError={submitError}
+                  onSubmit={submit}
+                  onOpen={openChosen}
+                  onDelete={removeDataset}
+                  onCancel={dataset && choosing ? cancelChoice : undefined}
+                />
+              </div>
             ) : dataset ? (
               <DataSummary
                 dataset={dataset}

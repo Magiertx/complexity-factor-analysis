@@ -153,7 +153,8 @@ export function LoadingsView({
           </div>
           <Legend threshold={threshold} crossed={secondary.size > 0} />
         </div>
-        <div className="rounded-md bg-tile/40 overflow-x-auto">
+        {/* relative: the screen-reader texts of the cells stay inside the scrolling table. */}
+        <div className="relative rounded-md bg-tile/40 overflow-x-auto">
           <table className="w-full text-xs">
             <caption className="sr-only">
               {countText(t, "factor.loadings.caption", k, { rotation: t(`factor.factors.rotation.${analysis.rotation}`) })}

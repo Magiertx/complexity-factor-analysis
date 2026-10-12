@@ -1063,6 +1063,23 @@
       "invalid": "The link had settings this tool cannot read, so the dataset opened with the standard settings.",
       "unknown": "The link names a dataset that is not bundled with this tab.",
       "failed": "The linked dataset could not be opened."
+    },
+    "start": {
+      "title": "Start here",
+      "collapsed_hint": "Two analyses to open in one click, and an example CSV",
+      "intro": "Each opens a bundled dataset with its settings; nothing needs to be uploaded or computed.",
+      "scenario": {
+        "if_inductive": {
+          "title": "Important Factors: Inductive miner",
+          "text": "With the paper settings: 4 factors and multiple membership as in Tab. 10–12, checked against the ComFy report."
+        },
+        "log_standard": {
+          "title": "Log measures of 2,112 PDC logs",
+          "text": "The data of the log paper with the tool standard: feeed measures, Kaiser's factor count, varimax."
+        }
+      },
+      "example_csv": "Example CSV",
+      "example_csv_hint": "120 synthetic observations of 8 measures, in the format of an own upload."
     }
   },
   "inspect": {

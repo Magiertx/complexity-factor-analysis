@@ -83,7 +83,8 @@ export function SettingsRow({
       aria-label={t("factor.settings.aria")}
       className="lg:sticky lg:top-3 z-20 rounded-lg bg-surface/95 backdrop-blur shadow-sm ring-1 ring-border/60"
     >
-      <div className="flex items-center gap-2 px-2 py-1.5 overflow-x-auto no-scrollbar">
+      {/* relative: screen-reader texts in the row stay inside it instead of widening the page. */}
+      <div className="relative flex items-center gap-2 px-2 py-1.5 overflow-x-auto no-scrollbar">
         <ul className="flex items-center text-xs whitespace-nowrap shrink-0">
           {chips.map((chip, i) => (
             <li key={chip.id} className="flex items-center">
