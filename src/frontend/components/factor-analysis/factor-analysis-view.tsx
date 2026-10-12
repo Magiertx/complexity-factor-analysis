@@ -46,7 +46,7 @@ import { UndoToast, type UndoNotice } from "@/components/ui/undo-toast";
 import { useJobsDrawer } from "@/components/jobs-drawer";
 import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
 import { PageHeader } from "@/components/page-header";
-import { DataForm, DataSummary } from "./data-step";
+import { DataForm, DataSummary, type OpenPreset } from "./data-step";
 import { DatasetView } from "./dataset-step";
 import { SuitabilityView } from "./suitability-step";
 import { FactorsView } from "./factors-step";
@@ -136,6 +136,14 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const [undo, setUndo] = useState<(UndoNotice & { previous: AnalysisOptions }) | null>(null);
   // The dataset whose saved options were applied, and the options the server has for it.
   const optionsAppliedFor = useRef<string | null>(null);
+  // Settings chosen for a dataset about to open (the paper's or the standard), which replace
+  // those saved with it.
+  const openWith = useRef<{ id: string; options: AnalysisOptions; message: string } | null>(null);
+  // The options of the moment, for callbacks that must not change with them.
+  const optionsRef = useRef(options);
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
   const savedOptions = useRef<{ id: string; json: string | null } | null>(null);
   // The last successful result stays visible while a new one is computed or after an error.
   const [analysis, setAnalysis] = useState<FactorAnalysis | null>(null);
@@ -255,7 +263,18 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           optionsAppliedFor.current = d.id;
           const saved = d.options ? JSON.stringify(optionsFromSaved(kind, d.options)) : null;
           savedOptions.current = { id: d.id, json: saved };
-          setOptions(initialOptions(kind, d.options, d.measures));
+          const own = initialOptions(kind, d.options, d.measures);
+          const chosen = openWith.current?.id === d.id ? openWith.current : null;
+          openWith.current = null;
+          if (chosen) {
+            setOptions(chosen.options);
+            // A copy reopened from the session had settings of its own; they are one click away.
+            if (d.options && !sameOptions(own, chosen.options)) {
+              setUndo({ id: Date.now(), message: chosen.message, previous: own });
+            }
+          } else {
+            setOptions(own);
+          }
         }
         setDataset(d);
         setDatasetError(null);
@@ -461,14 +480,48 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     setChoosing(false);
   };
 
-  const submit = async (input: CreateDatasetInput) => {
+  /** The settings a bundled dataset opens with, and what the toast says if they replace others. */
+  const presetOptions = useCallback(
+    (bundledId: string, preset: OpenPreset) => {
+      const paper =
+        preset === "published" ? publishedOptions(kind, rawCatalog?.bundled.find((b) => b.id === bundledId)) : null;
+      return paper
+        ? { options: paper, message: t("factor.data.opened_paper") }
+        : { options: defaultOptions(kind), message: t("factor.data.opened_standard") };
+    },
+    [kind, rawCatalog, t],
+  );
+
+  /**
+   * Opens a dataset the server created or, for a bundled one the session already has, handed
+   * back; with `preset`, a bundled dataset opens with those settings.
+   */
+  const openCreated = useCallback(
+    (id: string, preset: { options: AnalysisOptions; message: string } | null) => {
+      if (id === datasetIdRef.current) {
+        // The open dataset itself came back: it stays loaded, only the settings change.
+        const current = optionsRef.current;
+        if (preset && !sameOptions(current, preset.options)) {
+          setUndo({ id: Date.now(), message: preset.message, previous: current });
+          setOptions(preset.options);
+        }
+        setChoosing(false);
+        return;
+      }
+      openWith.current = preset && { id, ...preset };
+      selectDataset(id);
+      setChoosing(false);
+    },
+    [selectDataset],
+  );
+
+  const submit = async (input: CreateDatasetInput, preset: OpenPreset) => {
     setSubmitting(true);
     setSubmitError(null);
     try {
       const res = await createDataset(input);
       focusSummary.current = true;
-      selectDataset(res.dataset_id);
-      setChoosing(false);
+      openCreated(res.dataset_id, input.source === "bundled" && input.bundledId ? presetOptions(input.bundledId, preset) : null);
     } catch (e) {
       setSubmitError(errorText(e, t("factor.data.submit_failed")));
     } finally {

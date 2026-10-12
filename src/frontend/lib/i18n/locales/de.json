@@ -679,7 +679,15 @@
       "delete_failed": "Der Datensatz konnte nicht gelöscht werden.",
       "gone": "Der Datensatz, den du geöffnet hattest, ist nicht mehr verfügbar. Er wurde gelöscht, durch neuere ersetzt oder nach 7 Tagen ohne Nutzung entfernt.",
       "dismiss_aria": "Hinweis ausblenden",
-      "inputs_aria": "Woraus der Datensatz besteht"
+      "inputs_aria": "Woraus der Datensatz besteht",
+      "preset_label": "Öffnen mit",
+      "preset": {
+        "standard": "Standard des Tools",
+        "published": "Paper-Einstellungen"
+      },
+      "preset_standard_detail": "Faktorzahl nach Kaiser · größte Ladung",
+      "opened_standard": "Mit den Standardeinstellungen geöffnet.",
+      "opened_paper": "Mit den Paper-Einstellungen geöffnet."
     },
     "inputs": {
       "logs": "{n} Log",

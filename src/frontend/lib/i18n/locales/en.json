@@ -679,7 +679,15 @@
       "delete_failed": "The dataset could not be deleted.",
       "gone": "The dataset you had open is no longer available. It was deleted, replaced by newer datasets, or removed after 7 days without use.",
       "dismiss_aria": "Dismiss",
-      "inputs_aria": "What the dataset was built from"
+      "inputs_aria": "What the dataset was built from",
+      "preset_label": "Open with",
+      "preset": {
+        "standard": "Tool standard",
+        "published": "Paper settings"
+      },
+      "preset_standard_detail": "Kaiser's factor count · largest loading",
+      "opened_standard": "Opened with the standard settings.",
+      "opened_paper": "Opened with the paper settings."
     },
     "inputs": {
       "logs": "{n} log",

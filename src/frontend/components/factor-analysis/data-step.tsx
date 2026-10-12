@@ -32,7 +32,7 @@ import {
   type InputsSummary,
   type SampleInput,
 } from "@/lib/api";
-import { MIN_MEASURES, countText, datasetName, progressPercent } from "@/lib/factor-analysis";
+import { MIN_MEASURES, countText, datasetName, progressPercent, publishedOptions } from "@/lib/factor-analysis";
 import { formatDateTime, formatFileSize, formatNumber, formatPercent, formatRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
@@ -57,6 +57,9 @@ const ACCEPT: Record<Exclude<DatasetSource, "bundled">, { accept: string; test: 
   pnml: { accept: ".pnml", test: (n) => n.endsWith(".pnml"), ext: ".pnml" },
 };
 
+/** The settings a bundled dataset opens with: the tool's standard, or those of its paper. */
+export type OpenPreset = "standard" | "published";
+
 interface Props {
   kind: FactorKind;
   catalog: FactorCatalog;
@@ -66,7 +69,8 @@ interface Props {
   openId: string | null;
   submitting: boolean;
   submitError: string | null;
-  onSubmit: (input: CreateDatasetInput) => void;
+  /** `preset` says which settings a bundled dataset with published settings opens with. */
+  onSubmit: (input: CreateDatasetInput, preset: OpenPreset) => void;
   onOpen: (id: string) => void;
   /** Resolves to whether the dataset was deleted. */
   onDelete: (id: string) => Promise<boolean>;
@@ -101,6 +105,8 @@ export function DataForm({
   const [groups, setGroups] = useState<string[]>(catalog.defaults.groups ?? []);
   const [name, setName] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
+  // Kept across the bundled datasets, so several open alike.
+  const [preset, setPreset] = useState<OpenPreset>("standard");
   // Chosen sample per source; a sample replaces the uploaded files.
   const [sampleIds, setSampleIds] = useState<Partial<Record<DatasetSource, string>>>({});
 
@@ -198,7 +204,7 @@ export function DataForm({
       if (sample) input.bundledId = sample.id;
       input.measures = measures;
     }
-    onSubmit(input);
+    onSubmit(input, preset);
   };
 
   const submitLabel =
@@ -284,6 +290,15 @@ export function DataForm({
 
       {source === "bundled" && (
         <BundledList kind={kind} catalog={catalog} selected={bundledId} onSelect={setBundledId} />
+      )}
+
+      {source === "bundled" && (
+        <PresetChoice
+          kind={kind}
+          dataset={catalog.bundled.find((b) => b.id === bundledId)}
+          value={preset}
+          onChange={setPreset}
+        />
       )}
 
       {source === "csv" && (
@@ -468,6 +483,68 @@ function BundledList({
         );
       })}
       {loose.length > 0 && <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{loose.map((b) => tile(b, true))}</div>}
+    </div>
+  );
+}
+
+/**
+ * For a bundled dataset with published settings: whether it opens with the tool standard or
+ * with the settings of its paper. Nothing for other datasets, which open with the standard.
+ */
+function PresetChoice({
+  kind,
+  dataset,
+  value,
+  onChange,
+}: {
+  kind: FactorKind;
+  dataset: BundledDataset | undefined;
+  value: OpenPreset;
+  onChange: (preset: OpenPreset) => void;
+}) {
+  const t = useT();
+  const paper = publishedOptions(kind, dataset);
+  if (!paper) return null;
+  const details: Record<OpenPreset, string> = {
+    standard: t("factor.data.preset_standard_detail"),
+    published: [
+      paper.n_factors !== null ? countText(t, "factor.factors.criterion_count", paper.n_factors) : null,
+      t(`factor.settings.rotation.${paper.rotation}`),
+      t(`factor.settings.rule.${paper.assignment_rule}`),
+    ]
+      .filter(Boolean)
+      .join(" · "),
+  };
+  return (
+    <div className="space-y-1.5">
+      <div id={`fa-preset-${kind}`} className="text-xs font-medium text-muted">
+        {t("factor.data.preset_label")}
+      </div>
+      <div role="radiogroup" aria-labelledby={`fa-preset-${kind}`} className="grid gap-2 sm:grid-cols-2 max-w-2xl">
+        {(["standard", "published"] as const).map((p) => (
+          <label key={p} className={cn("flex items-start gap-2.5 rounded-md px-3 py-2", choiceTile(value === p))}>
+            <input
+              type="radio"
+              name="fa-open-preset"
+              value={p}
+              className="sr-only"
+              checked={value === p}
+              onChange={() => onChange(p)}
+              aria-describedby={`fa-preset-${kind}-${p}`}
+            />
+            <ChoiceMark type="radio" checked={value === p} className="mt-0.5" />
+            <span className="min-w-0">
+              <span className="block text-sm font-medium">{t(`factor.data.preset.${p}`)}</span>
+              <span id={`fa-preset-${kind}-${p}`} className="block text-[11px] text-muted">
+                {details[p]}
+                {p === "published" && dataset?.published_source && (
+                  <span className="block">{dataset.published_source}</span>
+                )}
+              </span>
+            </span>
+          </label>
+        ))}
+      </div>
     </div>
   );
 }
