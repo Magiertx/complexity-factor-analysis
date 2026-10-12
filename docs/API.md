@@ -146,7 +146,7 @@ the connection is `PROM4PY_START_WAIT` seconds (default 180).
 
 ## Notes & limits
 
-- **Rate limits** (per source IP, tunable via `RATE_LIMIT_*` in `.env`): `60/hour` for `POST /algorithms/{id}/analyze`, `60/hour` for `POST /factor-analysis/datasets` (`RATE_LIMIT_DATASETS`; choosing a bundled dataset counts too), `600/minute` for `GET /factor-analysis/datasets/{id}`, which the UI polls, and for listing datasets, saving their options and deleting them (`RATE_LIMIT_DATASET_STATUS`), `120/minute` for factor-analysis `analyze`, `export`, `export/zip` and `interpret` (`RATE_LIMIT_FA_ANALYZE`), `300/hour` for `POST /log-stats`, `120/minute` for everything else. A 429 carries `detail` and `"code": "rate_limited"`. Interpretations that call Claude are limited further, see [Interpretation by Claude](#interpretation-by-claude).
+- **Rate limits** (per source IP, tunable via `RATE_LIMIT_*` in `.env`): `60/hour` for `POST /algorithms/{id}/analyze`, `60/hour` for new datasets from `POST /factor-analysis/datasets` (`RATE_LIMIT_DATASETS`; a new copy of a bundled dataset counts too, the copy a session already has does not), `600/minute` for `GET /factor-analysis/datasets/{id}`, which the UI polls, and for listing datasets, saving their options and deleting them (`RATE_LIMIT_DATASET_STATUS`), `120/minute` for factor-analysis `analyze`, `export`, `export/zip` and `interpret` (`RATE_LIMIT_FA_ANALYZE`), `300/hour` for `POST /log-stats`, `120/minute` for everything else. A 429 carries `detail` and `"code": "rate_limited"`. Interpretations that call Claude are limited further, see [Interpretation by Claude](#interpretation-by-claude).
 - **Job quota:** at most 12 queued or running jobs per session (`MAX_ACTIVE_JOBS_PER_SESSION`), and at most 4 dataset jobs over all sessions (`MAX_ACTIVE_DATASET_JOBS`); both answer 429, with `"code": "job_quota"` and `params` `active`, `requested` and `limit`, or `"code": "dataset_jobs_busy"` and `params` `active`.
 - **Analyses:** at most 400 measures per analysis, counted after `excluded` (400 with `"code":
   "too_many_measures_for_analysis"`). At most two analyses compute at once; a newer analyze
@@ -206,7 +206,8 @@ If the session has a `ready` copy of the same bundled dataset with the same `mea
 none, or the same list) and, when `name` is given, the same name, a `bundled` request returns
 that copy, `{"dataset_id", "status": "ready", "reused": true}`, and marks it as used now for
 the pruning of the 30 datasets and the idle cleanup. Opening a link to a paper analysis ten
-times thus gives one dataset. The request still counts towards the rate limit. Send
+times thus gives one dataset. Such a request creates nothing and does not count towards the
+rate limit of 60 new datasets an hour, only towards the general one. Send
 `reuse=false` for a separate copy; the newest copy is the one reused from then on.
 
 A CSV may use `,`, `;` or tab as separator and decimal commas, with at most 100 000 rows and

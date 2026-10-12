@@ -95,3 +95,24 @@ def test_a_csv_is_never_reused(client):
     second = client.post("/factor-analysis/datasets", data={"kind": "model", "source": "csv"}, files=files).json()
     assert first["reused"] is False and second["reused"] is False
     assert first["dataset_id"] != second["dataset_id"]
+
+
+def test_only_a_new_copy_counts_against_the_rate_limit(client, monkeypatch):
+    """Links to a paper analysis open the copy at hand. Behind a proxy that does not pass on
+    the client's address every visitor shares the 60 new datasets an hour, so opening a copy,
+    which creates nothing, must not use them up."""
+    from config import limiter
+
+    monkeypatch.setattr(limiter, "enabled", True)
+    limiter.reset()
+    try:
+        first = _create(client)["dataset_id"]
+        for _ in range(65):
+            assert _create(client) == {"dataset_id": first, "status": "ready", "reused": True}
+        limiter.reset()
+        body = {"kind": "model", "source": "bundled", "bundled_id": INDUCTIVE, "reuse": "false"}
+        codes = [client.post("/factor-analysis/datasets", data=body).status_code for _ in range(61)]
+        assert codes == [200] * 60 + [429]
+        assert _create(client)["reused"]
+    finally:
+        limiter.reset()

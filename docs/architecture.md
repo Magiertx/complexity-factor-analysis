@@ -448,7 +448,7 @@ Every limit is overridable from the environment (`RATE_LIMIT_DEFAULT`, `_LOG_STA
 | any | `120/minute` |
 | `/log-stats` | `300/hour` |
 | `/algorithms/{id}/analyze` | `60/hour` |
-| `POST /factor-analysis/datasets` | `60/hour` |
+| `POST /factor-analysis/datasets`, for a new dataset (opening a session's copy of a bundled dataset counts as `any`) | `60/hour` |
 | `GET /factor-analysis/datasets/{id}` (polled while a dataset is computed); listing and deleting datasets, `PUT .../options` | `600/minute` |
 | `/factor-analysis/datasets/{id}/analyze`, `.../export`, `.../export/zip`, `.../interpret` | `120/minute` |
 

@@ -418,8 +418,23 @@ async def run_dataset_task(job_id: str, session_id: str, dataset_id: str, spec: 
 # --- datasets -----------------------------------------------------------------------------
 
 
+def _check_source(kind: str, source: str | None) -> None:
+    if source not in SOURCES or (source == "pnml" and kind != "model"):
+        raise _bad(f"Unknown source '{source}' for kind '{kind}'.")
+
+
+def _bundled_entry_or_400(kind: str, bundled_id: str | None) -> dict[str, Any]:
+    entry = cat.bundled_entry(bundled_id or "")
+    if entry is None or entry["kind"] != kind:
+        raise _bad(f"Unknown bundled dataset '{bundled_id}' for kind '{kind}'.")
+    return entry
+
+
+def _dataset_name(name: str | None) -> str | None:
+    return (name or "").strip()[:200] or None
+
+
 @router.post("/datasets")
-@limiter.limit(rate_limit("datasets", "60/hour"))
 async def create_dataset(
     request: Request,
     background_tasks: BackgroundTasks,
@@ -439,16 +454,54 @@ async def create_dataset(
 
     A bundled dataset the session already has, with the same measures and name, is returned
     instead of a new copy (``"reused": true``), unless ``reuse`` is false: links to a paper
-    analysis open the copy at hand rather than piling up copies that push out own data.
+    analysis open the copy at hand rather than piling up copies that push out own data. Such a
+    request creates nothing, so only new datasets count against the rate limit of this endpoint.
     """
     kind = _check_kind(kind)
-    if source not in SOURCES or (source == "pnml" and kind != "model"):
-        raise _bad(f"Unknown source '{source}' for kind '{kind}'.")
+    _check_source(kind, source)
+    if source == "bundled" and reuse:
+        entry = _bundled_entry_or_400(kind, bundled_id)
+        existing = await run_in_threadpool(
+            _reusable_copy, session_id, entry, _json_list(measures, "measures"), _dataset_name(name)
+        )
+        if existing is not None:
+            return {"dataset_id": existing["id"], "status": "ready", "reused": True}
+    return await _create_dataset(
+        request=request,
+        background_tasks=background_tasks,
+        kind=kind,
+        source=source,
+        bundled_id=bundled_id,
+        measures=measures,
+        miners=miners,
+        groups=groups,
+        name=name,
+        files=files,
+        session_id=session_id,
+    )
+
+
+@limiter.limit(rate_limit("datasets", "60/hour"))
+async def _create_dataset(
+    *,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    kind: str,
+    source: str,
+    bundled_id: str | None,
+    measures: str | None,
+    miners: str | None,
+    groups: str | None,
+    name: str | None,
+    files: list[UploadFile] | None,
+    session_id: str,
+) -> dict[str, Any]:
+    """A new dataset, for ``create_dataset``; ``request`` is the one the rate limit counts."""
     measure_list = _json_list(measures, "measures")
     miner_list = _json_list(miners, "miners")
     group_list = _json_list(groups, "groups")
     uploads = [f for f in (files or []) if f is not None and (f.filename or "").strip()]
-    name = (name or "").strip()[:200] or None
+    name = _dataset_name(name)
 
     # Datasets over the limit and those of idle sessions go with their jobs, as on a delete.
     pruned = await run_in_threadpool(storage.prune_session, session_id)
@@ -462,14 +515,8 @@ async def create_dataset(
 
     if source in ("bundled", "csv"):
         if source == "bundled":
-            entry = cat.bundled_entry(bundled_id or "")
-            if entry is None or entry["kind"] != kind:
-                raise _bad(f"Unknown bundled dataset '{bundled_id}' for kind '{kind}'.")
+            entry = _bundled_entry_or_400(kind, bundled_id)
             bundled_id = entry["id"]
-            if reuse:
-                existing = await run_in_threadpool(_reusable_copy, session_id, entry, measure_list, name)
-                if existing is not None:
-                    return {"dataset_id": existing["id"], "status": "ready", "reused": True}
             table = await run_in_threadpool(
                 lambda: _relabel(pd.read_csv(cat.DATASETS_DIR / entry["file"], index_col=0), entry.get("row_labels"))
             )
