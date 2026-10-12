@@ -558,7 +558,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     createDataset({ kind, source: "bundled", bundledId: entry.id }).then(
       (res) => {
         focusSummary.current = true;
-        openCreated(res.dataset_id, { options: paper ?? parsed.options, message: tRef.current("factor.link.opened") });
+        openCreated(res.dataset_id, {
+          options: paper ?? parsed.options,
+          message: tRef.current(invalid ? "factor.data.opened_standard" : "factor.link.opened"),
+        });
         setLinkNotice(invalid ? { tone: "info", text: tRef.current("factor.link.invalid") } : null);
       },
       (e) => setLinkNotice({ tone: "error", text: errorTextRef.current(e, tRef.current("factor.link.failed")) }),
