@@ -95,7 +95,13 @@ export function DatasetView({
             {t("factor.dataset.download_csv")}
           </a>
         </div>
-        <div className="rounded-md bg-tile/40 overflow-x-auto">
+        {/* Focusable, so the keyboard can scroll a preview wider than the page. */}
+        <div
+          tabIndex={0}
+          role="region"
+          aria-label={t("factor.dataset.preview_heading")}
+          className="rounded-md bg-tile/40 overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
           <table className="w-full text-xs">
             <caption className="sr-only">{t("factor.dataset.preview_heading")}</caption>
             <thead className="bg-bg">

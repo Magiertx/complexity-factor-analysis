@@ -520,9 +520,12 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const openCreated = useCallback(
     (id: string, preset: { options: AnalysisOptions; message: string } | null) => {
       if (id === datasetIdRef.current) {
-        // The open dataset itself came back: it stays loaded, only the settings change.
+        // The open dataset itself came back: it stays loaded, only the settings change. Still
+        // loading, it takes them instead of its saved ones, like a dataset opened anew.
         const current = optionsRef.current;
-        if (preset && !sameOptions(current, preset.options)) {
+        if (preset && optionsAppliedFor.current !== id) {
+          openWith.current = { id, ...preset };
+        } else if (preset && !sameOptions(current, preset.options)) {
           setUndo({ id: Date.now(), message: preset.message, previous: current, returnFocus: summaryTitle.current });
           setOptions(preset.options);
         }

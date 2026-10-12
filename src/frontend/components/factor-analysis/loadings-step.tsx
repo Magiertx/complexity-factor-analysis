@@ -153,8 +153,14 @@ export function LoadingsView({
           </div>
           <Legend threshold={threshold} crossed={secondary.size > 0} />
         </div>
-        {/* relative: the screen-reader texts of the cells stay inside the scrolling table. */}
-        <div className="relative rounded-md bg-tile/40 overflow-x-auto">
+        {/* relative: the screen-reader texts of the cells stay inside the scrolling table, which
+            is focusable so the keyboard can scroll it on a phone. */}
+        <div
+          tabIndex={0}
+          role="region"
+          aria-label={t("factor.loadings.table_heading")}
+          className="relative rounded-md bg-tile/40 overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
           <table className="w-full text-xs">
             <caption className="sr-only">
               {countText(t, "factor.loadings.caption", k, { rotation: t(`factor.factors.rotation.${analysis.rotation}`) })}
@@ -304,7 +310,12 @@ function FactorCorrelations({ values, pad }: { values: number[][]; pad: string }
   return (
     <div className="space-y-2">
       <HelpLabel label={t("factor.loadings.correlations_heading")} help={t("factor.help.factor_correlations")} />
-      <div className="rounded-md bg-tile/40 overflow-x-auto w-fit max-w-full">
+      <div
+        tabIndex={0}
+        role="region"
+        aria-label={t("factor.loadings.correlations_heading")}
+        className="rounded-md bg-tile/40 overflow-x-auto w-fit max-w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      >
         <table className="text-xs">
           <caption className="sr-only">{t("factor.loadings.correlations_heading")}</caption>
           <thead className="bg-bg text-muted">

@@ -216,7 +216,12 @@ function MatchChip({ match, publishedSource }: { match: PublishedMatch; publishe
           </ul>
         </div>
         {match.differences.length > 0 && (
-          <div className="max-h-40 overflow-auto rounded-md bg-tile/50">
+          <div
+            tabIndex={0}
+            role="region"
+            aria-label={t("factor.match.differences")}
+            className="max-h-40 overflow-auto rounded-md bg-tile/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
             <table className="w-full">
               <caption className="sr-only">{t("factor.match.differences")}</caption>
               <thead className="text-muted">

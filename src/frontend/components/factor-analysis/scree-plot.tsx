@@ -388,7 +388,15 @@ export function ScreePlot({
         </span>
       </div>
 
-      <div id={tableId} hidden={!tableOpen} className="max-h-64 overflow-auto rounded-md bg-tile/40">
+      {/* Focusable, so the keyboard can scroll the table of a hundred factors. */}
+      <div
+        id={tableId}
+        hidden={!tableOpen}
+        tabIndex={0}
+        role="region"
+        aria-label={t("factor.factors.table_caption")}
+        className="max-h-64 overflow-auto rounded-md bg-tile/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      >
         <table className="w-full text-xs">
           <caption className="sr-only">{t("factor.factors.table_caption")}</caption>
           <thead className="bg-bg sticky top-0">
