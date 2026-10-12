@@ -53,7 +53,6 @@ export function CopyLink({ query, className }: { query: string | null; className
         aria-controls={manual !== null ? panelId : undefined}
         title={query ? t("factor.link.copy_title") : t("factor.link.own_data")}
         className={className}
-        data-inactive={!query || undefined}
       >
         {copied ? <Check className="h-3.5 w-3.5 text-success-ink" aria-hidden /> : <Link2 className="h-3.5 w-3.5" aria-hidden />}
         <span aria-hidden className="hidden sm:inline">

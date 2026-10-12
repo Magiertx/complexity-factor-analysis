@@ -281,7 +281,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             setOptions(chosen.options);
             // A copy reopened from the session had settings of its own; they are one click away.
             if (d.options && !sameOptions(own, chosen.options)) {
-              setUndo({ id: Date.now(), message: chosen.message, previous: own });
+              setUndo({ id: Date.now(), message: chosen.message, previous: own, returnFocus: summaryTitle.current });
             }
           } else {
             setOptions(own);
@@ -476,6 +476,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       id: Date.now(),
       message: t(which === "standard" ? "factor.settings.reset_done" : "factor.settings.paper_done"),
       previous: options,
+      returnFocus: document.activeElement instanceof HTMLElement ? document.activeElement : null,
     });
     setOptions(next);
   };
@@ -522,7 +523,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         // The open dataset itself came back: it stays loaded, only the settings change.
         const current = optionsRef.current;
         if (preset && !sameOptions(current, preset.options)) {
-          setUndo({ id: Date.now(), message: preset.message, previous: current });
+          setUndo({ id: Date.now(), message: preset.message, previous: current, returnFocus: summaryTitle.current });
           setOptions(preset.options);
         }
         setChoosing(false);
@@ -758,14 +759,6 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   return (
     <div className="space-y-6">
       <OnboardingTour open={onboarding.open} onClose={onboarding.close} />
-      <UndoToast
-        notice={undo}
-        onUndo={() => {
-          if (undo) setOptions(undo.previous);
-          setUndo(null);
-        }}
-        onClose={() => setUndo(null)}
-      />
       <FactorTour kind={kind} run={tourOpen} onClose={() => setTourOpen(false)} />
       <Suspense fallback={null}>
         <LinkReader onDataset={openDataset} onBundled={setLinkRequest} />
@@ -926,8 +919,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             {ready && dataset ? <DatasetView dataset={dataset} measureName={measureName} measureTitle={measureTitle} /> : lockedHint}
           </StepSection>
 
-          {/* Steps 3 to 5 share the settings row, which stays in view while they scroll by. */}
-          <div className="space-y-6">
+          {/* Steps 3 to 5 share the settings row, which stays in view while they scroll by. A
+              flex column, since gaps leave out the toast, which is fixed to the window. */}
+          <div className="flex flex-col gap-6">
             {ready && dataset && (
               <SettingsRow
                 options={options}
@@ -941,6 +935,16 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                 linkQuery={linkQuery}
               />
             )}
+            {/* Shown at the bottom of the window, but next to the row in the tab order, so the
+                "Undo" of a reset is a Tab away from the buttons that caused it. */}
+            <UndoToast
+              notice={undo}
+              onUndo={() => {
+                if (undo) setOptions(undo.previous);
+                setUndo(null);
+              }}
+              onClose={() => setUndo(null)}
+            />
             <StepSection
               id="suitability"
               n={3}

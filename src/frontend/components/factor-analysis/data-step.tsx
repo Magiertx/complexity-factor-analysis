@@ -531,6 +531,7 @@ function PresetChoice({
               className="sr-only"
               checked={value === p}
               onChange={() => onChange(p)}
+              aria-label={t(`factor.data.preset.${p}`)}
               aria-describedby={`fa-preset-${kind}-${p}`}
             />
             <ChoiceMark type="radio" checked={value === p} className="mt-0.5" />

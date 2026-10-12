@@ -371,12 +371,15 @@ function AssignmentChoice({ value, onChange }: { value: AssignmentRule; onChange
                 className="sr-only"
                 checked={chosen}
                 onChange={() => onChange(rule)}
-                aria-describedby={`fa-assignment-${rule}`}
+                aria-label={t(`factor.loadings.rule.${rule}.title`)}
+                aria-describedby={`fa-assignment-${rule}-source fa-assignment-${rule}`}
               />
               <ChoiceMark type="radio" checked={chosen} className="mt-0.5" />
               <span className="min-w-0">
                 <span className="block text-sm font-medium">{t(`factor.loadings.rule.${rule}.title`)}</span>
-                <span className="block text-[11px] text-muted">{t(`factor.loadings.rule.${rule}.source`)}</span>
+                <span id={`fa-assignment-${rule}-source`} className="block text-[11px] text-muted">
+                  {t(`factor.loadings.rule.${rule}.source`)}
+                </span>
                 <span id={`fa-assignment-${rule}`} className="mt-1 block text-xs text-fg/80 leading-snug">
                   {t(`factor.loadings.rule.${rule}.text`, limits)}
                 </span>

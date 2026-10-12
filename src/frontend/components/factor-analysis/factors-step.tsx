@@ -148,6 +148,7 @@ export function FactorsView({ analysis, options, onOptions, paperFactors }: Prop
                       className="sr-only"
                       checked={on}
                       onChange={() => pick(c.id, c.k)}
+                      aria-label={`${t(`factor.factors.criterion.${c.id}`)}: ${countText(t, "factor.factors.criterion_count", c.k)}`}
                       aria-describedby={`fa-criterion-${c.id}`}
                     />
                     <ChoiceMark type="radio" checked={on} />
@@ -160,7 +161,6 @@ export function FactorsView({ analysis, options, onOptions, paperFactors }: Prop
                     <span className="font-mono text-lg font-semibold tabular-nums" aria-hidden>
                       {c.k}
                     </span>
-                    <span className="sr-only">{countText(t, "factor.factors.criterion_count", c.k)}</span>
                   </label>
                 );
               })}

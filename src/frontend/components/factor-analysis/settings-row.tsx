@@ -75,8 +75,10 @@ export function SettingsRow({
   const chips = settingsSummary(options, standard, analysis, measureCount, t);
   const isStandard = sameOptions(options, standard);
   const isPublished = !!published && sameOptions(options, published);
+  // Inactive buttons stay focusable (aria-disabled): the one just pressed would else drop the
+  // focus to the page, a Tab before the "Undo" of the toast.
   const action =
-    "h-7 px-2 inline-flex items-center gap-1.5 rounded-md text-xs font-medium whitespace-nowrap transition hover:bg-accent/[0.08] disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+    "h-7 px-2 inline-flex items-center gap-1.5 rounded-md text-xs font-medium whitespace-nowrap transition hover:bg-accent/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent aria-disabled:opacity-40 aria-disabled:cursor-default aria-disabled:hover:bg-transparent";
 
   return (
     <section
@@ -114,8 +116,8 @@ export function SettingsRow({
           <button
             type="button"
             className={action}
-            disabled={isStandard}
-            onClick={() => onApply(standard, "standard")}
+            aria-disabled={isStandard || undefined}
+            onClick={() => !isStandard && onApply(standard, "standard")}
             title={t("factor.settings.reset_title")}
             aria-label={t("factor.settings.reset")}
           >
@@ -128,8 +130,8 @@ export function SettingsRow({
             <button
               type="button"
               className={action}
-              disabled={isPublished}
-              onClick={() => onApply(published, "published")}
+              aria-disabled={isPublished || undefined}
+              onClick={() => !isPublished && onApply(published, "published")}
               title={publishedSource ? t("factor.settings.paper_title", { source: publishedSource }) : t("factor.settings.paper")}
               aria-label={t("factor.settings.paper")}
             >
@@ -141,7 +143,7 @@ export function SettingsRow({
           )}
           <CopyLink
             query={linkQuery}
-            className={cn(action, "data-[inactive]:opacity-40 data-[inactive]:cursor-not-allowed data-[inactive]:hover:bg-transparent")}
+            className={action}
           />
         </span>
       </div>
