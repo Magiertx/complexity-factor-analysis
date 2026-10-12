@@ -49,11 +49,16 @@ unless noted.
   full: Bartlett's chi-square and the overall MSA to 1e-9 relative, every MSA, loading,
   communality and scree value to the four decimals the report prints, and the MSA filter with
   its rounds. The Heuristics report asks for 4 factors with 4 measures left; its last column
-  is all 0.0, and the tool reproduces the other three with 3 factors. For the log measures
+  is all 0.0, and the tool reproduces the other three with 3 factors. The paper prints these
+  numbers rounded, with two exceptions found: the MSA of Density for the Inductive miner is
+  0.7559 in the report and 0.75 in Tab. 10, that of the duplicate tasks for the Heuristics
+  miner 0.5965 in the report and 0.59 in Tab. 13. For the log measures
   only the cleaning and Bartlett's chi-square are checked; KMO and MSA are kept for reference
   and marked platform dependent (see "Singular data" above).
 - **Used at runtime:** the seven datasets of Important Factors carry in `manifest.json` the
-  settings the paper analysed them with (`published_options`, `published_source`) and how the
+  settings of the paper (`published_options`, `published_source`), whether the paper analyses
+  the dataset with them or only the report in the ComFy repository does (`published_scope`:
+  Alpha Plus, Alpha Dollar and Heuristics are analysed in the reports only), and how the
   paper's tables relate to the reports (`paper_tables`). An analysis with exactly these
   settings compares itself with the numbers here that `verified` lists and reports the result
   as `published_match` (`factor_analysis/published.py`). The log dataset has no settings yet.

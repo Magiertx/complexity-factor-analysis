@@ -1208,6 +1208,7 @@ async def export_archive(
             published=None if match is None else {
                 "options": entry["published_options"],
                 "source": entry.get("published_source"),
+                "scope": entry.get("published_scope"),
                 "match": match,
             },
         )

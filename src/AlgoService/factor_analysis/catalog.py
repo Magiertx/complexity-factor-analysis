@@ -158,9 +158,16 @@ def format_row_label(label: str, style: str | None) -> str:
 #: that the wording can change without touching the data.
 PAPER_TABLE_NOTES = {
     "matches": "{tables} of the paper print the same numbers, rounded.",
+    "msa_only": (
+        "{tables} of the paper prints only the MSA values, and its text Bartlett's p-value and the "
+        "overall MSA; the paper does not describe the factor analysis and refers to the report in "
+        "the ComFy repository, whose numbers these are."
+    ),
     "extra_dup_column": (
         "{tables} of the paper also have the measure dup without τ, which the bundled data lack; "
-        "their loadings therefore differ from the report by up to 0.06."
+        "Bartlett's chi-square (10,965.18 in Tab. 7, 8,244.33 here), the overall MSA (0.81 and "
+        "0.73), the MSA of each measure and the loadings (by up to 0.06) therefore differ from "
+        "the paper. The groups of Tab. 9 stay the same."
     ),
     "other_data": (
         "{tables} of the paper rest on other data than the bundled ones: the descriptive "
@@ -180,7 +187,7 @@ def _public(entry: dict[str, Any], **extra: Any) -> dict[str, Any]:
     out = {"id": entry["id"], "name": entry["name"], "description": entry["description"], **extra}
     for key in (
         "citation", "license", "label", "collection", "venue", "note", "source_url",
-        "published_options", "published_source",
+        "published_options", "published_source", "published_scope",
     ):
         if entry.get(key):
             out[key] = entry[key]

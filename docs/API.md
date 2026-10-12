@@ -237,23 +237,30 @@ carry, in `catalog.bundled`, the settings the paper analysed them with and where
   "published_options": { "excluded": [], "auto_msa_filter": true, "msa_threshold": 0.6,
     "bartlett_alpha": 0.05, "n_factors": 4, "rotation": "varimax", "loading_threshold": 0.35,
     "communality_threshold": 0.3, "assignment_rule": "multi" },
-  "published_source": "Important Factors, ATAED 2026, Tab. 10–12",
+  "published_source": "Important Factors, ATAED 2026, Tab. 10–12", "published_scope": "paper",
   "paper_tables": { "key": "matches", "tables": "Tab. 10–11",
     "note": "Tab. 10–11 of the paper print the same numbers, rounded." } }
 ```
 
-- `published_options` is a complete body for `analyze`. The paper fixes k = 4 a priori; the
-  Heuristics miner has `n_factors` 3, because four measures are left after the MSA filter
-  (its report prints a fourth factor of zeros). The defaults of `analyze` stay those of the
-  tool; a client applies these options on purpose.
-- `published_source` names the tables of the paper; for the Alpha Plus and Alpha Dollar
-  miners, which the paper does not analyse, it says so.
+- `published_options` is a complete body for `analyze`. The paper fixes k = 4 a priori. The
+  defaults of `analyze` stay those of the tool; a client applies these options on purpose.
+- `published_source` is a plain citation: the paper with the tables of its analysis, or the
+  paper alone where `published_scope` is `report`.
+- `published_scope` says where the analysis with these settings is published: `paper` if the
+  paper analyses the dataset with them (Alpha, Directly Follows, Inductive, Hybrid ILP);
+  `report` if it does not, and the settings are the paper's as the reports in the ComFy
+  repository apply them (Alpha Plus and Alpha Dollar, which the paper leaves out, and
+  Heuristics, whose factor analysis the paper does not describe). The Heuristics report asks
+  for 4 factors with 4 measures left after the MSA filter and prints a fourth factor of zeros;
+  its `n_factors` is 3, the most these measures allow.
 - `paper_tables.key` says how the paper's tables relate to the ComFy reports the numbers are
   checked against, with `tables` the tables meant and `note` an English sentence:
-  `matches` (Alpha Tab. 4–5, Inductive Tab. 10–11, Heuristics Tab. 13), `extra_dup_column`
-  (Directly Follows Tab. 7–8 also have dup without τ, which the bundled data lack),
-  `other_data` (Hybrid ILP Tab. 14–16 rest on other data than the bundled CSV) and
-  `not_in_paper` (Alpha Plus, Alpha Dollar).
+  `matches` (Alpha Tab. 4–5, Inductive Tab. 10–11), `msa_only` (Heuristics: Tab. 13 prints
+  only the MSA values, the text Bartlett's p-value and the overall MSA), `extra_dup_column`
+  (Directly Follows Tab. 7–8 also have dup without τ, which the bundled data lack, so Bartlett's
+  chi-square, the KMO, the MSA values and the loadings differ), `other_data` (Hybrid ILP
+  Tab. 14–16 rest on other data than the bundled CSV) and `not_in_paper` (Alpha Plus, Alpha
+  Dollar).
 - The bundled log measures have none of these fields yet.
 
 ### The datasets of a session
@@ -470,7 +477,7 @@ report or reproduce the analysis. Its errors are those of `analyze`.
 
 | File | Content |
 |------|---------|
-| `manifest.json` | `app`, `created_at`, `tool` (`name`, `version` and `commit` of this tool, `null` where not recorded), `dataset` (`id`, `name`, `kind`, `source`, `bundled_id`; `collection`, `citation` and `license` for a bundled dataset, else `null`; `inputs`, `n_observations`, the `measures` left after cleaning, the `dropped` ones as `{name, reason}` and `provenance`, see below), `analysis_params` (the parameters used, with the factor count and rotation of the analysis, the thresholds of the kind and the `assignment_rule`; a single factor is not rotated), `analysis` (`method` minres of `library` factor_analyzer, the upstream code it `follows` with commits, the `assignment_rule` and the `assignment` as the result has it, the random `seed` 20261012 of parallel analysis, and `factor_count`: the factor count `used`, the `kaiser` and `parallel_analysis` suggestions, `method`, `seed`, `simulations` and `percentile`), `published` (only if the analysis used the `published_options` of a bundled dataset: these `options`, their `source` and the `match`, as `published_match`), `libraries` (versions of factor_analyzer, numpy, pandas, scipy and scikit-learn) and `files` (`{name, description}` of each file). |
+| `manifest.json` | `app`, `created_at`, `tool` (`name`, `version` and `commit` of this tool, `null` where not recorded), `dataset` (`id`, `name`, `kind`, `source`, `bundled_id`; `collection`, `citation` and `license` for a bundled dataset, else `null`; `inputs`, `n_observations`, the `measures` left after cleaning, the `dropped` ones as `{name, reason}` and `provenance`, see below), `analysis_params` (the parameters used, with the factor count and rotation of the analysis, the thresholds of the kind and the `assignment_rule`; a single factor is not rotated), `analysis` (`method` minres of `library` factor_analyzer, the upstream code it `follows` with commits, the `assignment_rule` and the `assignment` as the result has it, the random `seed` 20261012 of parallel analysis, and `factor_count`: the factor count `used`, the `kaiser` and `parallel_analysis` suggestions, `method`, `seed`, `simulations` and `percentile`), `published` (only if the analysis used the `published_options` of a bundled dataset: these `options`, their `source` and `scope` and the `match`, as `published_match`), `libraries` (versions of factor_analyzer, numpy, pandas, scipy and scikit-learn) and `files` (`{name, description}` of each file). |
 | `README.txt` | The files, how to reproduce the analysis in the UI or with factor_analyzer, and the provenance in short. |
 | `analysis.json` | The response of `analyze` for these parameters. |
 | `dataset.csv` | The cleaned matrix, the same file as `.../download`. |

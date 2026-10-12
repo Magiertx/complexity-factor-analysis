@@ -47,6 +47,7 @@
         "assignment_rule": "multi"
       },
       "published_source": "Important Factors, ATAED 2026, Tab. 10–12",
+      "published_scope": "paper",
       "paper_tables": {
         "key": "matches",
         "tables": "Tab. 10–11"
@@ -77,6 +78,7 @@
         "assignment_rule": "multi"
       },
       "published_source": "Important Factors, ATAED 2026, Tab. 4–6",
+      "published_scope": "paper",
       "paper_tables": {
         "key": "matches",
         "tables": "Tab. 4–5"
@@ -106,7 +108,8 @@
         "communality_threshold": 0.3,
         "assignment_rule": "multi"
       },
-      "published_source": "Settings of Important Factors, ATAED 2026; the dataset is analysed in the ComFy repository only",
+      "published_source": "Important Factors, ATAED 2026",
+      "published_scope": "report",
       "paper_tables": {
         "key": "not_in_paper",
         "tables": null
@@ -136,7 +139,8 @@
         "communality_threshold": 0.3,
         "assignment_rule": "multi"
       },
-      "published_source": "Settings of Important Factors, ATAED 2026; the dataset is analysed in the ComFy repository only",
+      "published_source": "Important Factors, ATAED 2026",
+      "published_scope": "report",
       "paper_tables": {
         "key": "not_in_paper",
         "tables": null
@@ -166,9 +170,10 @@
         "communality_threshold": 0.3,
         "assignment_rule": "multi"
       },
-      "published_source": "Important Factors, ATAED 2026, Tab. 13",
+      "published_source": "Important Factors, ATAED 2026",
+      "published_scope": "report",
       "paper_tables": {
-        "key": "matches",
+        "key": "msa_only",
         "tables": "Tab. 13"
       }
     },
@@ -197,6 +202,7 @@
         "assignment_rule": "multi"
       },
       "published_source": "Important Factors, ATAED 2026, Tab. 14–16",
+      "published_scope": "paper",
       "paper_tables": {
         "key": "other_data",
         "tables": "Tab. 14–16"
@@ -227,6 +233,7 @@
         "assignment_rule": "multi"
       },
       "published_source": "Important Factors, ATAED 2026, Tab. 7–9",
+      "published_scope": "paper",
       "paper_tables": {
         "key": "extra_dup_column",
         "tables": "Tab. 7–8"

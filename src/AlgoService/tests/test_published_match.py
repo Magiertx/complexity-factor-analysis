@@ -24,6 +24,9 @@ IF_DATASETS = [
     "comfy-paper-inductive-miner",
 ]
 LOG_DATASET = "comfy-log-pdc-training-logs"
+#: Analysed in the ComFy repository's reports only: Important Factors leaves out Alpha Plus
+#: and Alpha Dollar and prints only the MSA values of Heuristics.
+REPORT_ONLY = {"comfy-paper-alpha-plus-miner", "comfy-paper-alpha-dollar-miner", "comfy-paper-heuristics-miner"}
 
 # Important Factors, section 5: k = 4 a priori, varimax, MSA 0.6, alpha 0.05, |loading| > 0.35,
 # communality >= 0.3, cross-loaded measures in every dimension of their cross-loading.
@@ -56,7 +59,13 @@ def test_every_dataset_of_important_factors_has_the_published_settings():
         assert options["n_factors"] == published(dataset_id)["reproduce_with"]["n_factors"]
         # A complete body of analyze, as a client sends it.
         assert AnalyzeRequest(**options).model_dump() == options
-        assert entry["published_source"].startswith(("Important Factors, ATAED 2026, Tab. ", "Settings of Important Factors"))
+        # A plain citation; the client words the scope itself.
+        if dataset_id in REPORT_ONLY:
+            assert entry["published_scope"] == "report"
+            assert entry["published_source"] == "Important Factors, ATAED 2026"
+        else:
+            assert entry["published_scope"] == "paper"
+            assert entry["published_source"].startswith("Important Factors, ATAED 2026, Tab. ")
         assert entry["paper_tables"]["key"] in cat.PAPER_TABLE_NOTES
     assert "published_options" not in cat.bundled_entry(LOG_DATASET)
     assert "paper_tables" not in cat.bundled_entry(LOG_DATASET)
@@ -67,16 +76,23 @@ def test_the_catalog_names_the_settings_and_the_tables():
     inductive = bundled["comfy-paper-inductive-miner"]
     assert inductive["published_options"] == IF_OPTIONS
     assert inductive["published_source"] == "Important Factors, ATAED 2026, Tab. 10–12"
+    assert inductive["published_scope"] == "paper"
     assert inductive["paper_tables"] == {
         "key": "matches", "tables": "Tab. 10–11", "note": "Tab. 10–11 of the paper print the same numbers, rounded.",
     }
     assert bundled["comfy-paper-directly-follows-miner"]["paper_tables"]["key"] == "extra_dup_column"
+    assert "10,965.18 in Tab. 7" in bundled["comfy-paper-directly-follows-miner"]["paper_tables"]["note"]
+    heuristics = bundled["comfy-paper-heuristics-miner"]
+    assert heuristics["published_scope"] == "report" and heuristics["published_options"]["n_factors"] == 3
+    assert heuristics["paper_tables"] == {
+        "key": "msa_only", "tables": "Tab. 13", "note": cat.PAPER_TABLE_NOTES["msa_only"].format(tables="Tab. 13"),
+    }
     assert bundled["comfy-paper-hybrid-ilp-miner"]["paper_tables"]["key"] == "other_data"
     assert bundled["comfy-paper-alpha-plus-miner"]["paper_tables"] == {
         "key": "not_in_paper", "tables": None, "note": cat.PAPER_TABLE_NOTES["not_in_paper"],
     }
     log = cat.catalog("log")["bundled"][0]
-    assert not {"published_options", "published_source", "paper_tables"} & set(log)
+    assert not {"published_options", "published_source", "published_scope", "paper_tables"} & set(log)
 
 
 def test_options_count_as_published_only_if_every_one_is():
@@ -191,6 +207,7 @@ def test_the_zip_names_the_published_settings_when_used(client):
     manifest, readme = archive(IF_OPTIONS)
     assert manifest["published"]["options"] == IF_OPTIONS
     assert manifest["published"]["source"] == "Important Factors, ATAED 2026, Tab. 10–12"
+    assert manifest["published"]["scope"] == "paper"
     assert manifest["published"]["match"]["status"] == "match"
     assert (
         "Published settings: compared with output/paper-results/report-inductive-miner.tex of ComFy, "
