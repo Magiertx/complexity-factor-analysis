@@ -289,6 +289,25 @@ def _select_columns(table: pd.DataFrame, measures: list[str] | None) -> pd.DataF
     return table[measures]
 
 
+def _reusable_copy(
+    session_id: str, entry: dict[str, Any], measures: list[str] | None, name: str | None
+) -> dict[str, Any] | None:
+    """The newest ready copy of a bundled dataset in the session with the same selection of
+    measures and, if one is given, the same name; it counts as used now."""
+    for meta in storage.list_metas(session_id):
+        if (
+            meta.get("bundled_id") == entry["id"]
+            and meta["source"] == "bundled"
+            and meta["status"] == "ready"
+            and (meta.get("inputs") or {}).get("measures") == (measures or None)
+            and (name is None or meta["name"] == name)
+        ):
+            # Pruning and the idle cleanup go by the time a dataset was last touched.
+            storage.touch(session_id, meta["id"])
+            return meta
+    return None
+
+
 # --- dataset jobs -------------------------------------------------------------------------
 
 
@@ -411,11 +430,17 @@ async def create_dataset(
     miners: str | None = Form(None),
     groups: str | None = Form(None),
     name: str | None = Form(None),
+    reuse: bool = Form(True),
     files: list[UploadFile] | None = File(None),
     session_id: str = Depends(get_session_id),
 ) -> dict[str, Any]:
     """Create a dataset from bundled data or a CSV (ready at once), or compute one from
-    logs or PNML files in a background job."""
+    logs or PNML files in a background job.
+
+    A bundled dataset the session already has, with the same measures and name, is returned
+    instead of a new copy (``"reused": true``), unless ``reuse`` is false: links to a paper
+    analysis open the copy at hand rather than piling up copies that push out own data.
+    """
     kind = _check_kind(kind)
     if source not in SOURCES or (source == "pnml" and kind != "model"):
         raise _bad(f"Unknown source '{source}' for kind '{kind}'.")
@@ -441,6 +466,10 @@ async def create_dataset(
             if entry is None or entry["kind"] != kind:
                 raise _bad(f"Unknown bundled dataset '{bundled_id}' for kind '{kind}'.")
             bundled_id = entry["id"]
+            if reuse:
+                existing = await run_in_threadpool(_reusable_copy, session_id, entry, measure_list, name)
+                if existing is not None:
+                    return {"dataset_id": existing["id"], "status": "ready", "reused": True}
             table = await run_in_threadpool(
                 lambda: _relabel(pd.read_csv(cat.DATASETS_DIR / entry["file"], index_col=0), entry.get("row_labels"))
             )
@@ -482,7 +511,7 @@ async def create_dataset(
         if numeric < 2:
             shutil.rmtree(storage.dataset_dir(session_id, meta["id"]), ignore_errors=True)
             raise _bad("The CSV file has fewer than 2 numeric columns.")
-        return {"dataset_id": meta["id"], "status": "ready"}
+        return {"dataset_id": meta["id"], "status": "ready", "reused": False}
 
     # logs or pnml: validate the selection, then hand the files to a job.
     spec: dict[str, Any] = {"kind": kind, "source": source}
