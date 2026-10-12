@@ -16,7 +16,7 @@ from fastapi.concurrency import run_in_threadpool
 
 import jobs_db
 from config import CodedHTTPException, broadcast_jobs_update, MAX_FILE_SIZE, logger, get_session_id, limiter
-from env_config import rate_limit
+from env_config import rate_limit, text
 from algorithms import REGISTRY, get as get_algorithm
 from algorithms.base import ParameterValidationError, TOOL_CATEGORIES
 
@@ -42,7 +42,8 @@ async def _enforce_job_quota(session_id: str, requested: int = 1) -> None:
 
 
 
-UPLOADED_LOGS_DIR = Path("/app/uploaded_logs")
+# Recent uploads per session; a volume in the Docker image, settable like ARTIFACTS_DIR.
+UPLOADED_LOGS_DIR = Path(text("UPLOADED_LOGS_DIR", "/app/uploaded_logs"))
 if not UPLOADED_LOGS_DIR.exists():
     try:
         UPLOADED_LOGS_DIR.mkdir(parents=True, exist_ok=True)

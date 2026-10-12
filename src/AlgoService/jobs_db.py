@@ -21,14 +21,16 @@ import uuid
 import logging
 
 import models
-from env_config import positive_int
+from env_config import positive_int, text
 from database import AsyncSessionLocal, engine, Base
 from sqlalchemy import select, delete, func
 
 logger = logging.getLogger("algoservice")
 
 
-ARTIFACTS_DIR = Path("/app/artifacts")
+# Job artifacts and factor-analysis datasets. The Docker image mounts a volume here; outside of
+# it, e.g. for the end-to-end tests, ARTIFACTS_DIR points elsewhere.
+ARTIFACTS_DIR = Path(text("ARTIFACTS_DIR", "/app/artifacts"))
 
 
 async def init_db() -> None:

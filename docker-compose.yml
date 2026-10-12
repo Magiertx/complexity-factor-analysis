@@ -45,6 +45,7 @@ services:
       - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
       - PROM4PY_URL=http://prom4py:4040
       - PROM4PY_CALL_TIMEOUT=${PROM4PY_CALL_TIMEOUT:-}
+      - PROM4PY_START_WAIT=${PROM4PY_START_WAIT:-}
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-complexity}
       - REDIS_URL=redis://redis:6379/0
       - PYTHONPATH=/app
@@ -110,6 +111,7 @@ services:
     environment:
       - PROM4PY_URL=http://prom4py:4040
       - PROM4PY_CALL_TIMEOUT=${PROM4PY_CALL_TIMEOUT:-}
+      - PROM4PY_START_WAIT=${PROM4PY_START_WAIT:-}
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-complexity}
       - REDIS_URL=redis://redis:6379/0
       - PYTHONPATH=/app

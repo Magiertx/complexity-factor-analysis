@@ -15,6 +15,7 @@ import time
 from contextlib import contextmanager
 from typing import Any, Callable, Iterator
 
+from env_config import positive_int
 from vendored.comfy._shared_prom4py import (
     CALL_TIMEOUT_S,
     ProMTimeout,
@@ -44,8 +45,9 @@ __all__ = [
 ]
 
 #: How long to wait for ProM4Py to answer after it refused or dropped a connection. The first
-#: start of a new container takes about a minute.
-START_WAIT_S = 180.0
+#: start of a new container takes about a minute. The end-to-end tests, which run without ProM,
+#: set PROM4PY_START_WAIT to a few seconds.
+START_WAIT_S = float(positive_int("PROM4PY_START_WAIT", 180))
 
 #: How long to wait for ProM4Py to answer again after a call timed out. Its watchdog restarts
 #: ProM once no probe has been answered for CALL_TIMEOUT_S + 30 s. ProM answers probes until
