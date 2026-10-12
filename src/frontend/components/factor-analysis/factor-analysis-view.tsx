@@ -960,7 +960,6 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             <StepSection
               id="suitability"
               n={3}
-              stickyRow
               state={states.suitability}
               title={t("factor.steps.suitability")}
               description={t("factor.step_desc.suitability")}
@@ -996,7 +995,6 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             <StepSection
               id="factors"
               n={4}
-              stickyRow
               state={states.factors}
               title={t("factor.steps.factors")}
               description={t("factor.step_desc.factors")}
@@ -1022,7 +1020,6 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             <StepSection
               id="loadings"
               n={5}
-              stickyRow
               state={states.loadings}
               title={t("factor.steps.loadings")}
               description={t("factor.step_desc.loadings")}

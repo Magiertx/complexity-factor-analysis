@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import { AlertTriangle, BookOpen, Check, RotateCcw } from "lucide-react";
 import type { FactorAnalysis, PublishedDifference, PublishedMatch } from "@/lib/api";
 import { sameOptions, settingsSummary, type AnalysisOptions, type SettingChip } from "@/lib/factor-analysis";
@@ -41,6 +41,58 @@ function focusControl(id: string) {
   target?.focus({ preventScroll: true });
 }
 
+/** The top offset of the sticky row (lg:top-3) and some room below it, in pixels. */
+const STICKY_TOP = 12;
+const STICKY_GAP = 8;
+
+/**
+ * Keeps --settings-row-offset on the document at the height the row covers when it sticks,
+ * which globals.css turns into the scroll padding of a wide screen: a control the keyboard
+ * focuses then scrolls into view below the row, not under it (WCAG 2.4.11).
+ */
+function useStickyOffset(ref: RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const root = document.documentElement;
+    const update = () =>
+      root.style.setProperty(
+        "--settings-row-offset",
+        `${Math.ceil(el.getBoundingClientRect().height) + STICKY_TOP + STICKY_GAP}px`,
+      );
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--settings-row-offset");
+    };
+  }, [ref]);
+}
+
+/** Whether a container that scrolls sideways has more content to its right. */
+function useMoreToTheRight(ref: RefObject<HTMLElement | null>): boolean {
+  const [more, setMore] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => setMore(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(update);
+    observer?.observe(el);
+    if (el.firstElementChild) observer?.observe(el.firstElementChild);
+    return () => {
+      el.removeEventListener("scroll", update);
+      observer?.disconnect();
+    };
+  }, [ref]);
+  return more;
+}
+
+/** Fades the right edge of the chips while more of them lie beyond it, on a phone. */
+const FADE_RIGHT = "linear-gradient(to right, black calc(100% - 2rem), transparent)";
+
 interface Props {
   options: AnalysisOptions;
   standard: AnalysisOptions;
@@ -67,8 +119,9 @@ interface Props {
  * The settings of steps 3 to 5 in one line, with the chips that differ from the tool standard
  * tinted, the buttons to go back to the standard or to the paper's settings, and whether the
  * numbers equal the published report. Sticky on a wide screen, where the buttons move to a second
- * line when the first is full (German with the match chip is wider than 1400 px allow); on a
- * phone it scrolls sideways inside itself.
+ * line when the first is full (German with the match chip is wider than 1400 px allow). On a
+ * phone the chips scroll sideways, with a fade where more follow, and the buttons sit on a line
+ * of their own below them, where no swipe is needed to find them.
  */
 export function SettingsRow({
   options,
@@ -84,6 +137,10 @@ export function SettingsRow({
   linkQuery,
 }: Props) {
   const t = useT();
+  const rowRef = useRef<HTMLElement>(null);
+  const chipsRef = useRef<HTMLDivElement>(null);
+  useStickyOffset(rowRef);
+  const fade = useMoreToTheRight(chipsRef);
   const chips = settingsSummary(options, standard, analysis, measureCount, t);
   const source = settingsSourceText(publishedSource, publishedScope, t);
   const isStandard = sameOptions(options, standard);
@@ -95,35 +152,42 @@ export function SettingsRow({
 
   return (
     <section
+      ref={rowRef}
       aria-label={t("factor.settings.aria")}
       className="lg:sticky lg:top-3 z-20 rounded-lg bg-surface/95 backdrop-blur shadow-sm ring-1 ring-border/60"
     >
       {/* relative: screen-reader texts in the row stay inside it instead of widening the page. */}
-      <div className="relative flex items-center gap-2 px-2 py-1.5 overflow-x-auto no-scrollbar lg:flex-wrap lg:gap-y-1 lg:overflow-x-visible">
-        <ul className="flex items-center text-xs whitespace-nowrap shrink-0 lg:shrink lg:flex-wrap lg:min-w-0">
-          {chips.map((chip, i) => (
-            <li key={chip.id} className="flex items-center">
-              {i > 0 && (
-                <span aria-hidden className="px-0.5 text-muted">
-                  ·
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={() => focusControl(CONTROLS[chip.id])}
-                title={chip.differs ? t("factor.settings.chip_changed_title") : t("factor.settings.chip_title")}
-                className={cn(
-                  "rounded px-1.5 py-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-                  chip.differs ? "bg-accent/[0.12] text-fg font-medium hover:bg-accent/[0.18]" : "text-muted hover:text-fg hover:bg-tile",
+      <div className="relative flex flex-col gap-1 px-2 py-1.5 lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-2 lg:gap-y-1">
+        <div
+          ref={chipsRef}
+          className="relative min-w-0 overflow-x-auto no-scrollbar lg:overflow-x-visible"
+          style={fade ? { maskImage: FADE_RIGHT, WebkitMaskImage: FADE_RIGHT } : undefined}
+        >
+          <ul className="flex items-center text-xs whitespace-nowrap lg:flex-wrap">
+            {chips.map((chip, i) => (
+              <li key={chip.id} className="flex items-center">
+                {i > 0 && (
+                  <span aria-hidden className="px-0.5 text-muted">
+                    ·
+                  </span>
                 )}
-              >
-                {chip.text}
-                {chip.differs && <span className="sr-only"> ({t("factor.settings.changed")})</span>}
-              </button>
-            </li>
-          ))}
-        </ul>
-        <span className="ml-auto flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => focusControl(CONTROLS[chip.id])}
+                  title={chip.differs ? t("factor.settings.chip_changed_title") : t("factor.settings.chip_title")}
+                  className={cn(
+                    "rounded px-1.5 py-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                    chip.differs ? "bg-accent/[0.12] text-fg font-medium hover:bg-accent/[0.18]" : "text-muted hover:text-fg hover:bg-tile",
+                  )}
+                >
+                  {chip.text}
+                  {chip.differs && <span className="sr-only"> ({t("factor.settings.changed")})</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <span className="flex items-center gap-2 shrink-0 lg:ml-auto">
           {match && <MatchChip match={match} settingsSource={source} bundledId={bundledId} />}
           <span className="flex items-center gap-0.5">
             <button

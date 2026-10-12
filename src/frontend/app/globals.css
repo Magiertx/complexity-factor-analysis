@@ -56,6 +56,12 @@
   }
   html, body { @apply bg-bg text-fg; }
   body { @apply font-sans antialiased; }
+  /* The settings row of the factor analysis sticks to the top of a wide screen and sets
+     --settings-row-offset to the height it covers; a control the keyboard focuses then scrolls
+     into view below it, not under it (WCAG 2.4.11). */
+  @media (min-width: 1024px) {
+    html { scroll-padding-top: var(--settings-row-offset, 0px); }
+  }
   ::selection { background: rgb(var(--accent) / 0.3); }
   /* Safari ehrt Tailwind-Preflights `-webkit-appearance: button` und applied
      OS-Button-Metriken (extra Padding, Min-Height, abweichende Font-Metriken).
