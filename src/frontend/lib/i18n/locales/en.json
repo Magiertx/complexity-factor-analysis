@@ -230,7 +230,7 @@
       "analyze": "Run one algorithm on one log; returns a job_id.",
       "log_stats": "Quick descriptive statistics of a log: traces, events, variants, time range.",
       "fa_catalog": "Measures, miners or feature groups, bundled datasets with the settings their paper published (`published_options`), example inputs and the accepted sources.",
-      "fa_create": "Create a dataset from a bundled one or a CSV (ready at once), or from event logs or PNML files (computed as a run). A bundled dataset the session has already comes back as it is, with `reused`.",
+      "fa_create": "Create a dataset from a bundled one or a CSV (ready at once), or from event logs or PNML files (computed as a run). If the session already has the bundled dataset, it comes back unchanged, with `reused`.",
       "fa_list": "The datasets of your session, newest first; kind is optional.",
       "fa_get": "Status, progress, saved settings and the cleaned measure matrix (first 2,000 rows).",
       "fa_options": "Keep the settings of an analysis with the dataset.",

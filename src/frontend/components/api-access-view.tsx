@@ -259,7 +259,7 @@ export function ApiAccessView() {
                     <MethodBadge method={e.method} />
                     <code className="font-mono text-[12px] text-fg break-all md:break-normal md:whitespace-nowrap">{e.path}</code>
                     <span className="col-start-2 md:col-start-auto text-[12px] text-muted leading-snug">
-                      {t(`api_access.endpoints.${e.key}`)}
+                      <WithCode text={t(`api_access.endpoints.${e.key}`)} />
                     </span>
                   </li>
                 ))}
