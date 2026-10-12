@@ -243,7 +243,8 @@ function MsaTable({ dataset, analysis, options, onOptions, measureName, measureT
   const invert = () => onOptions({ excluded: dataset.measures.filter((m) => !excluded.has(m)) });
 
   return (
-    <div className="space-y-2">
+    // Its id is where the measures chip of the settings row leads.
+    <div id="fa-msa-table" className="space-y-2">
       <HelpLabel label={t("factor.suitability.msa_heading")} help={t("factor.help.msa")} />
       <div className="rounded-md bg-tile/40 overflow-x-auto">
         <table className="w-full text-xs">

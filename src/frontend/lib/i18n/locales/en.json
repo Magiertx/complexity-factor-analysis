@@ -15,7 +15,8 @@
     "error_title": "Something went wrong",
     "error_description": "This page ran into an unexpected error.",
     "error_unknown": "Unknown error",
-    "try_again": "Try again"
+    "try_again": "Try again",
+    "undo": "Undo"
   },
   "header": {
     "tagline": "Complexity measures of process models and event logs",
@@ -228,15 +229,15 @@
       "recent_logs": "Logs your session uploaded recently.",
       "analyze": "Run one algorithm on one log; returns a job_id.",
       "log_stats": "Quick descriptive statistics of a log: traces, events, variants, time range.",
-      "fa_catalog": "Measures, miners or feature groups, bundled datasets, example inputs and the accepted sources.",
-      "fa_create": "Create a dataset from a bundled one or a CSV (ready at once), or from event logs or PNML files (computed as a run).",
+      "fa_catalog": "Measures, miners or feature groups, bundled datasets with the settings their paper published (`published_options`), example inputs and the accepted sources.",
+      "fa_create": "Create a dataset from a bundled one or a CSV (ready at once), or from event logs or PNML files (computed as a run). A bundled dataset the session has already comes back as it is, with `reused`.",
       "fa_list": "The datasets of your session, newest first; kind is optional.",
       "fa_get": "Status, progress, saved settings and the cleaned measure matrix (first 2,000 rows).",
       "fa_options": "Keep the settings of an analysis with the dataset.",
       "fa_delete": "Delete a dataset with its run and its cached interpretations.",
       "fa_delete_all": "Delete every dataset of your session, or every one of a kind.",
       "fa_download": "The cleaned matrix as CSV.",
-      "fa_analyze": "Bartlett, KMO with the MSA filter, eigenvalues and rotated loadings for the given settings (JSON).",
+      "fa_analyze": "Bartlett, KMO with the MSA filter, eigenvalues with Kaiser and parallel analysis, rotated loadings and the factor groups by `assignment_rule` (`largest`, `multi`, `hair`) with cross-loadings; with the published settings, the comparison with the report (JSON).",
       "fa_export": "The loadings table as CSV or LaTeX; the body of analyze plus format.",
       "fa_export_zip": "The whole analysis as a ZIP: result, matrix, tables, parameters, library versions and provenance (tool version and commit, upstream commits, feeed, pm4py and ProM, miners with their parameters).",
       "fa_interpretation_status": "Whether Claude can interpret factors, and with which model.",
@@ -257,7 +258,8 @@
       "quota": "Runs: at most 12 queued or running per session, and at most 4 dataset runs at once over all sessions; more are answered with a 429.",
       "uploads": "Uploads: at most 100 MB per file. `POST /algorithms/{id}/analyze` and `POST /log-stats` take one event log (`.xes`, `.xes.gz`, `.xml`, `.json`). `POST /factor-analysis/datasets` takes one `.csv`, up to 50 event logs (`.xes`, `.xes.gz`) or up to 200 Petri nets (`.pnml`), at most 500 MB together.",
       "session": "Session: a signed cookie scopes every endpoint. Reuse it across requests (in Python with `requests.Session()`) to keep your runs and datasets visible.",
-      "schemas": "Parameter schemas come from `GET /algorithms`: read the `parameters_schema` of an algorithm before submitting."
+      "schemas": "Parameter schemas come from `GET /algorithms`: read the `parameters_schema` of an algorithm before submitting.",
+      "analysis": "Analyses: at most `400` measures per analysis, more give a 400 with the code `too_many_measures_for_analysis`. A newer analysis of the same dataset in a session replaces an older one that still waits; the older one gets a 409 `superseded`."
     }
   },
   "parameter_form": {
@@ -678,7 +680,15 @@
       "delete_failed": "The dataset could not be deleted.",
       "gone": "The dataset you had open is no longer available. It was deleted, replaced by newer datasets, or removed after 7 days without use.",
       "dismiss_aria": "Dismiss",
-      "inputs_aria": "What the dataset was built from"
+      "inputs_aria": "What the dataset was built from",
+      "preset_label": "Open with",
+      "preset": {
+        "standard": "Tool standard",
+        "published": "Paper settings"
+      },
+      "preset_standard_detail": "Kaiser's factor count · largest loading",
+      "opened_standard": "Opened with the standard settings.",
+      "opened_paper": "Opened with the paper settings."
     },
     "inputs": {
       "logs": "{n} log",
@@ -765,7 +775,7 @@
       "scree_title": "Scree plot",
       "notes_heading": "Notes on the factor solution",
       "scree_desc": "Eigenvalues in descending order; {n} are above 1.",
-      "scree_hint": "Click a point to keep that many factors. The dashed line marks an eigenvalue of 1.",
+      "scree_hint": "Click a point to keep that many factors. The dashed line marks an eigenvalue of 1, the dotted one the parallel analysis.",
       "axis_factor": "Factor",
       "axis_eigenvalue": "Eigenvalue",
       "kaiser_line": "eigenvalue 1",
@@ -777,7 +787,6 @@
       "increase": "One factor more",
       "range": "1 to {max}",
       "following_suggestion": "Follows the suggestion (eigenvalue > 1)",
-      "use_suggestion": "Back to the suggestion ({n})",
       "explained": "{n} factor explains {pct} of the variance.",
       "explained_plural": "Together, {n} factors explain {pct} of the variance.",
       "rotation_label": "Rotation",
@@ -792,7 +801,36 @@
         "orthogonal": "Keeps the factors uncorrelated. Loadings are correlations between measure and factor.",
         "oblique": "Allows the factors to correlate. Step 5 shows the loadings as regression weights (pattern matrix) or as correlations (structure matrix).",
         "none": "Unrotated solution. The first factor usually takes most of the variance, which makes the factors hard to interpret."
-      }
+      },
+      "criteria_label": "Criteria",
+      "criterion": {
+        "kaiser": "Kaiser",
+        "parallel": "Parallel analysis",
+        "paper": "Paper"
+      },
+      "criterion_detail": {
+        "kaiser": "eigenvalues above 1",
+        "parallel": "above the {percentile}th percentile of random data",
+        "paper": "chosen a priori"
+      },
+      "criterion_count": "{n} factor",
+      "criterion_count_plural": "{n} factors",
+      "criterion_capped": "{k} factors are more than the {max} these measures allow.",
+      "criteria_differ": "The criteria suggest different numbers of factors. The scree plot and the loadings help to decide.",
+      "criteria_differ_paper": "The criteria suggest different numbers of factors. Kaiser and parallel analysis follow from the data; the paper chose its number before the analysis.",
+      "random_point": "parallel analysis: {value}",
+      "cumulative_point": "cumulative share: {pct}",
+      "scree_desc_table": "A table with every series follows the plot.",
+      "legend_eigenvalues": "Eigenvalues",
+      "legend_parallel": "Parallel analysis ({percentile}th percentile)",
+      "legend_cumulative": "Cumulative share of the eigenvalues (right axis)",
+      "show_all": "Show all {n}",
+      "show_first": "Show the first {n}",
+      "show_table": "Show as table",
+      "hide_table": "Hide table",
+      "table_caption": "Eigenvalues, parallel analysis and cumulative share of the eigenvalues per factor",
+      "col_random": "Parallel analysis ({percentile}th pct.)",
+      "col_cumulative": "Cumulative share"
     },
     "loadings": {
       "threshold_label": "Loading threshold",
@@ -826,12 +864,40 @@
       "factor_variance": "{pct} of variance",
       "factor_empty": "No measure reaches the threshold on this factor.",
       "unassigned_heading": "Unassigned",
-      "unassigned_hint": "Below the loading threshold on every factor, or below the communality threshold.",
+      "unassigned_hint": "These measures join no factor under the chosen rule; the reason is next to each.",
       "communality_threshold_label": "Communality threshold",
       "matrix_label": "Matrix",
       "matrix_pattern": "Pattern",
       "matrix_structure": "Structure",
-      "correlations_heading": "Factor correlations"
+      "correlations_heading": "Factor correlations",
+      "assignment_label": "Assignment",
+      "rule": {
+        "largest": {
+          "title": "Largest loading",
+          "source": "ComFy report",
+          "text": "Each measure joins the one factor it loads on most, if |λ| reaches the threshold."
+        },
+        "multi": {
+          "title": "Multiple membership",
+          "source": "Important Factors, Tab. 6–16",
+          "text": "|λ| above the threshold and h² ≥ {h2_multi}; a loading at most {gap} below the largest counts as well."
+        },
+        "hair": {
+          "title": "Hair et al.",
+          "source": "Important Factors, Tab. 17",
+          "text": "h² ≥ {h2_hair}; a measure with a second loading at most {gap} below its largest is left out."
+        }
+      },
+      "cross_cell": "cross-loading",
+      "legend_cross": "ring: further loading of a cross-loaded measure",
+      "also": "also F{i}",
+      "also_title": "Loads on factor {i} as well: {value}",
+      "reason": {
+        "low_loading": "low loading, |λ| {value}",
+        "low_communality": "low communality, h² {value}",
+        "cross_loading": "cross-loads on {factors}",
+        "cross_loading_plain": "loads on several factors"
+      }
     },
     "help": {
       "cleaning": "Before the analysis, rows where most values are missing are dropped. Then columns that are not numeric, that have no variance, that have missing values, or that are perfect copies of an earlier column are removed, as in ComFy for log measures. Such columns would distort or break the correlation matrix.",
@@ -841,16 +907,18 @@
       "msa_filter": "As in ComFy, all measures below the threshold are removed and the MSA values are recomputed, until every remaining measure reaches the threshold.",
       "msa_threshold": "The filter removes measures whose MSA is below this value, and the overall KMO counts as adequate from this value on. ComFy and ComFy for log measures use 0.6.",
       "bartlett_alpha": "The significance level of Bartlett's test: the test passes when p is below α. ComFy and ComFy for log measures use 0.05.",
-      "scree": "The scree plot shows the eigenvalues of the correlation matrix in descending order. Look for the elbow where the curve flattens; factors after it add little. The elbow and the eigenvalue-above-1 rule can disagree, so treat both as starting points.",
+      "scree": "The scree plot shows the eigenvalues of the correlation matrix in descending order. Look for the elbow where the curve flattens; factors after it add little. The elbow, the eigenvalue-above-1 rule and the parallel analysis can disagree, so treat them as starting points. The thin line on the right axis adds up the eigenvalues: the share of the variance the first principal components explain. The factors of the analysis explain somewhat less, as step 5 shows.",
       "eigenvalue": "An eigenvalue is the variance a factor explains, in units of one standardized measure. The suggestion keeps every factor with an eigenvalue above 1 (Kaiser criterion), i.e. every factor that explains more than a single measure.",
       "rotation": "Rotation turns the factor solution so that each measure loads strongly on as few factors as possible, which makes the factors easier to name. It does not change how much variance the factors explain together. Varimax and quartimax keep the factors uncorrelated; promax and oblimin let them correlate, which is often more realistic for complexity measures.",
-      "threshold": "Loadings with an absolute value at or above this threshold count as substantial. Each measure is assigned to the factor where its absolute loading is highest, if that loading reaches the threshold. Common choices lie between 0.3 and 0.5; ComFy uses 0.35, ComFy for log measures 0.5.",
+      "threshold": "Loadings with an absolute value at or above this threshold count as substantial. Which factors a measure joins depends on the assignment rule above; with the largest loading, it joins the factor where its absolute loading is highest, if that loading reaches the threshold. Common choices lie between 0.3 and 0.5; ComFy uses 0.35, ComFy for log measures 0.5.",
       "loading": "A loading says how strongly a measure goes along with a factor. For orthogonal rotations it is the correlation between measure and factor. For oblique rotations the pattern matrix holds regression weights and the structure matrix the correlations. The sign gives the direction: measures with opposite signs on the same factor move in opposite directions.",
       "communality": "The communality h² is the share of a measure's variance that all kept factors explain together. A low value (below about 0.4) means the factors do not capture the measure well.",
       "variance": "SS loadings is the sum of squared loadings of a factor. Divided by the number of measures it gives the proportion of the total variance the factor explains; the cumulative row adds these up.",
-      "groups": "Each factor with the measures assigned to it, strongest loading first. Measures in one group capture a similar aspect of complexity; the name of the factor is up to your interpretation.",
+      "groups": "Each factor with the measures assigned to it, strongest loading first. Measures in one group capture a similar aspect of complexity; the name of the factor is up to your interpretation. Under multiple membership a measure can be in several groups; a chip names its other factors.",
       "communality_threshold": "Measures whose communality is below this value are left unassigned, because the factors explain too little of them. ComFy for log measures uses 0.5; 0 keeps every measure.",
-      "factor_correlations": "With an oblique rotation the factors may correlate. Values near 0 mean the factors are nearly independent; large values mean they measure related aspects."
+      "factor_correlations": "With an oblique rotation the factors may correlate. Values near 0 mean the factors are nearly independent; large values mean they measure related aspects.",
+      "assignment": "How the loadings turn into factor groups. ComFy's report gives each measure to the factor it loads on most. Important Factors uses two further rules: in Tab. 6–16 a measure also joins every factor whose loading is at most {gap} below its largest (multiple membership), with h² ≥ {h2_multi}; Tab. 17 follows Hair et al. with h² ≥ {h2_hair} and leaves cross-loaded measures out. The factor solution is the same under every rule; only the groups change.",
+      "criteria": "Kaiser keeps every factor with an eigenvalue above 1. Parallel analysis (Horn) keeps the factors whose eigenvalue is above the {percentile}th percentile of the eigenvalues of {simulations} random normal datasets of the same size, computed on principal components with the fixed seed {seed}; with many observations it comes close to Kaiser. A paper may also fix the number before the analysis. Choosing a criterion sets the number of factors."
     },
     "errors": {
       "unknown_rotation": "Unknown rotation “{rotation}”.",
@@ -875,7 +943,9 @@
       "interpretation_fallback_unavailable": "The model declined, and the fallback model could not run right now. Try again later.",
       "interpretation_rate_limited": "This session has reached its limit of interpretations ({limit}). Try again later.",
       "interpretation_limits_unavailable": "The server cannot count interpretations right now. Try again later.",
-      "interpretation_too_large": "This analysis is too large to interpret: at most {measures} measures, {factors} factors and measure names of {name_length} characters can be sent. Exclude measures or choose fewer factors."
+      "interpretation_too_large": "This analysis is too large to interpret: at most {measures} measures, {factors} factors and measure names of {name_length} characters can be sent. Exclude measures or choose fewer factors.",
+      "too_many_measures_for_analysis": "{n} measures are more than the {max} the server analyses at once. Exclude measures in the table of step 3.",
+      "superseded": "A newer analysis of this dataset, for example in another tab, replaced this one. Change a setting to run it again."
     },
     "warnings": {
       "bartlett_not_significant": "Bartlett's test is not significant (p = {p} ≥ {alpha}); the measures may be uncorrelated.",
@@ -914,6 +984,124 @@
       "ready": "The interpretation of {n} factor is ready.",
       "ready_plural": "The interpretation of {n} factors is ready.",
       "state_needs_key": "needs an API key"
+    },
+    "settings": {
+      "measures": "{used} of {total} measures",
+      "msa": "MSA ≥ {value}",
+      "msa_off": "no MSA filter",
+      "alpha": "α = {value}",
+      "factors": "{n} factor (Kaiser {kaiser})",
+      "factors_plural": "{n} factors (Kaiser {kaiser})",
+      "factors_kaiser": "{n} factor (Kaiser)",
+      "factors_kaiser_plural": "{n} factors (Kaiser)",
+      "rotation": {
+        "varimax": "varimax",
+        "promax": "promax",
+        "oblimin": "oblimin",
+        "quartimax": "quartimax",
+        "none": "no rotation"
+      },
+      "loading": "|λ| ≥ {value}",
+      "communality": "h² ≥ {value}",
+      "rule": {
+        "largest": "largest loading",
+        "multi": "multiple membership",
+        "hair": "Hair"
+      },
+      "aria": "Settings of the analysis",
+      "chip_title": "Go to this setting",
+      "chip_changed_title": "Differs from the tool standard; go to this setting",
+      "changed": "differs from the standard",
+      "reset": "Reset to standard",
+      "reset_short": "Standard",
+      "reset_title": "Back to the standard settings of the tool",
+      "paper": "Use paper settings",
+      "paper_short": "Paper settings",
+      "paper_title": "The settings of {source}",
+      "reset_done": "Standard settings restored.",
+      "paper_done": "Paper settings applied."
+    },
+    "match": {
+      "chip_match": "Numbers = ComFy report",
+      "chip_differs": "Differs from ComFy report",
+      "title": "Comparison with the published report",
+      "summary_match": "Every compared number equals the report to {tolerance}.",
+      "summary_differs": "Numbers that differ from the report by more than {tolerance}: {n}.",
+      "compared": "Compared",
+      "what": {
+        "bartlett": "Bartlett's test",
+        "kmo": "KMO",
+        "msa": "MSA per measure",
+        "msa_filter": "Removed measures",
+        "loadings": "Loadings",
+        "communalities": "Communalities"
+      },
+      "differences": "Differences",
+      "col_what": "Value",
+      "col_expected": "Report",
+      "col_actual": "Tool",
+      "numbers_only": "Only numbers are compared, not the factor groups.",
+      "source": "Report",
+      "settings_from": "Settings from"
+    },
+    "paper_notes": {
+      "tables": {
+        "matches": "Tab. {tables} of the paper prints the same numbers.",
+        "extra_dup": "Tab. 8 of the paper additionally uses dup without τ, which this dataset does not have; its loadings differ by up to 0.06, the groups of Tab. 9 stay the same.",
+        "other_data": "Tab. 14–16 of the paper are based on other data than this dataset.",
+        "not_in_paper": "The paper does not analyse this miner; the numbers are those of the report in the repository."
+      },
+      "datasets": {
+        "directly_follows": "Tab. 8 of the paper additionally uses dup without τ.",
+        "hybrid_ilp": "Not deterministic; the data differ from Tab. 14–16.",
+        "heuristics": "Not evaluated in the paper: 4 measures left after MSA.",
+        "alpha_plus": "Only in the repository, not in the paper.",
+        "alpha_dollar": "Values identical to the Alpha miner."
+      }
+    },
+    "link": {
+      "copy": "Copy link",
+      "copy_short": "Link",
+      "copy_title": "Copy a link that opens this dataset with these settings",
+      "copied": "Link copied",
+      "copied_short": "Copied",
+      "own_data": "Links work for bundled datasets only; your own data stays in your session.",
+      "fallback_title": "Link to this analysis",
+      "fallback_hint": "The browser did not allow copying; copy the link from the field.",
+      "field_label": "Link",
+      "opening": "Opening the linked analysis…",
+      "opened": "Opened the linked analysis.",
+      "invalid": "The link had settings this tool cannot read, so the dataset opened with the standard settings.",
+      "unknown": "The link names a dataset that is not bundled with this tab.",
+      "failed": "The linked dataset could not be opened."
+    },
+    "start": {
+      "title": "Start here",
+      "collapsed_hint": "Two analyses to open in one click, and an example CSV",
+      "intro": "Each opens a bundled dataset with its settings; nothing needs to be uploaded or computed.",
+      "scenario": {
+        "if_inductive": {
+          "title": "Important Factors: Inductive miner",
+          "text": "With the paper settings: 4 factors and multiple membership as in Tab. 10–12, checked against the ComFy report."
+        },
+        "log_standard": {
+          "title": "Log measures of 2,112 PDC logs",
+          "text": "The data of the log paper with the tool standard: feeed measures, Kaiser's factor count, varimax."
+        }
+      },
+      "example_csv": "Example CSV",
+      "example_csv_hint": "120 synthetic observations of 8 measures, in the format of an own upload."
+    },
+    "rail_summary": {
+      "removed": "{n} removed",
+      "removed_plural": "{n} removed",
+      "kmo": "KMO {value}",
+      "factors": "{n} factor · {pct}",
+      "factors_plural": "{n} factors · {pct}",
+      "dimensions": "{n} dimension",
+      "dimensions_plural": "{n} dimensions",
+      "cross": "{n} cross-loaded",
+      "unassigned": "{n} unassigned"
     }
   },
   "inspect": {

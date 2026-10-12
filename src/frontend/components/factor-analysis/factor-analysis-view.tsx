@@ -4,9 +4,11 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AlertCircle, HelpCircle, Info, Loader2, Microscope, RotateCcw, X } from "lucide-react";
+import { analysisLinkQuery, parseAnalysisLink } from "@/lib/analysis-link";
 import {
   HttpError,
   abortTask,
+  isSuperseded,
   analyzeDataset,
   createDataset,
   deleteDataset,
@@ -29,27 +31,37 @@ import {
 } from "@/lib/api";
 import {
   PREVIEW_ROWS,
+  countText,
+  datasetName,
   defaultOptions,
+  dimensionCount,
   downloadBlob,
   initialOptions,
   optionsFromSaved,
+  publishedOptions,
+  sameOptions,
   solutionNeedsAttention,
+  unassignedMeasures,
   type AnalysisOptions,
   type ExportFormat,
 } from "@/lib/factor-analysis";
+import { formatNumber, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { UndoToast, type UndoNotice } from "@/components/ui/undo-toast";
 import { useJobsDrawer } from "@/components/jobs-drawer";
 import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
 import { PageHeader } from "@/components/page-header";
-import { DataForm, DataSummary } from "./data-step";
+import { DataForm, DataSummary, type OpenPreset } from "./data-step";
 import { DatasetView } from "./dataset-step";
 import { SuitabilityView } from "./suitability-step";
 import { FactorsView } from "./factors-step";
 import { LoadingsView } from "./loadings-step";
 import { InterpretationView } from "./interpretation-step";
 import { FactorTour } from "./factor-tour";
+import { SettingsRow } from "./settings-row";
+import { StartHere } from "./start-here";
 import {
   EmptyStep,
   StepBadge,
@@ -118,6 +130,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // The dataset that was open answered 404; said instead of starting over silently.
   const [gone, setGone] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  // A link to an analysis of a bundled dataset, waiting for the catalog, and what became of it.
+  const [linkRequest, setLinkRequest] = useState<URLSearchParams | null>(null);
+  const [linkNotice, setLinkNotice] = useState<{ tone: "busy" | "info" | "error"; text: string } | null>(null);
   // The datasets of this kind in the session, offered for reopening in the data step.
   const [datasets, setDatasets] = useState<DatasetSummary[] | null>(null);
   const [choosing, setChoosing] = useState(false);
@@ -127,8 +142,19 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const { count: jobCount } = useJobsDrawer();
 
   const [options, setOptions] = useState<AnalysisOptions>(() => defaultOptions(kind));
+  const standard = useMemo(() => defaultOptions(kind), [kind]);
+  // "Reset to standard" and "Use paper settings" can be undone once, from a toast.
+  const [undo, setUndo] = useState<(UndoNotice & { previous: AnalysisOptions }) | null>(null);
   // The dataset whose saved options were applied, and the options the server has for it.
   const optionsAppliedFor = useRef<string | null>(null);
+  // Settings chosen for a dataset about to open (the paper's or the standard), which replace
+  // those saved with it.
+  const openWith = useRef<{ id: string; options: AnalysisOptions; message: string } | null>(null);
+  // The options of the moment, for callbacks that must not change with them.
+  const optionsRef = useRef(options);
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
   const savedOptions = useRef<{ id: string; json: string | null } | null>(null);
   // The last successful result stays visible while a new one is computed or after an error.
   const [analysis, setAnalysis] = useState<FactorAnalysis | null>(null);
@@ -197,6 +223,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       setAnalyzedOptions(null);
       setInterpretation(null);
       setInterpretError(null);
+      setUndo(null);
       // A request for the old dataset is aborted and would not reset this itself.
       setAnalyzing(false);
       // Every dataset has its own options; those saved with it are applied once it has loaded.
@@ -247,7 +274,18 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           optionsAppliedFor.current = d.id;
           const saved = d.options ? JSON.stringify(optionsFromSaved(kind, d.options)) : null;
           savedOptions.current = { id: d.id, json: saved };
-          setOptions(initialOptions(kind, d.options, d.measures));
+          const own = initialOptions(kind, d.options, d.measures);
+          const chosen = openWith.current?.id === d.id ? openWith.current : null;
+          openWith.current = null;
+          if (chosen) {
+            setOptions(chosen.options);
+            // A copy reopened from the session had settings of its own; they are one click away.
+            if (d.options && !sameOptions(own, chosen.options)) {
+              setUndo({ id: Date.now(), message: chosen.message, previous: own, returnFocus: summaryTitle.current });
+            }
+          } else {
+            setOptions(own);
+          }
         }
         setDataset(d);
         setDatasetError(null);
@@ -300,14 +338,23 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
 
   const ready = !!dataset && dataset.status === "ready" && dataset.id === datasetId;
 
-  // Re-run the analysis on every parameter change, debounced.
+  // Re-run the analysis on every parameter change, debounced. A change aborts the request before
+  // it, and the server drops a request that a newer one of the session replaced (409
+  // "superseded"). Replaced without a newer one of this page, e.g. by another tab on the same
+  // dataset, it is tried once more before that counts as an error.
   useEffect(() => {
     if (!ready || !datasetId) return;
     const ctrl = new AbortController();
+    const run = () =>
+      analyzeDataset(datasetId, options, ctrl.signal).catch(async (e) => {
+        if (!isSuperseded(e) || ctrl.signal.aborted) throw e;
+        await new Promise((resolve) => setTimeout(resolve, ANALYZE_DEBOUNCE_MS));
+        return analyzeDataset(datasetId, options, ctrl.signal);
+      });
     const timer = setTimeout(async () => {
       setAnalyzing(true);
       try {
-        const res = await analyzeDataset(datasetId, options, ctrl.signal);
+        const res = await run();
         setAnalysis(res);
         setAnalyzedOptions(options);
         setAnalysisError(null);
@@ -423,6 +470,17 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     [dataset],
   );
 
+  // All settings at once, from the settings row; the toast offers to go back.
+  const applyOptions = (next: AnalysisOptions, which: "standard" | "published") => {
+    setUndo({
+      id: Date.now(),
+      message: t(which === "standard" ? "factor.settings.reset_done" : "factor.settings.paper_done"),
+      previous: options,
+      returnFocus: document.activeElement instanceof HTMLElement ? document.activeElement : null,
+    });
+    setOptions(next);
+  };
+
   // Set when the form closes on a choice made in it: the focused button goes away with the
   // form, so the summary that replaces it takes the focus once it is shown.
   const focusSummary = useRef(false);
@@ -443,14 +501,76 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     setChoosing(false);
   };
 
-  const submit = async (input: CreateDatasetInput) => {
+  /** The settings a bundled dataset opens with, and what the toast says if they replace others. */
+  const presetOptions = useCallback(
+    (bundledId: string, preset: OpenPreset) => {
+      const paper =
+        preset === "published" ? publishedOptions(kind, rawCatalog?.bundled.find((b) => b.id === bundledId)) : null;
+      return paper
+        ? { options: paper, message: t("factor.data.opened_paper") }
+        : { options: defaultOptions(kind), message: t("factor.data.opened_standard") };
+    },
+    [kind, rawCatalog, t],
+  );
+
+  /**
+   * Opens a dataset the server created or, for a bundled one the session already has, handed
+   * back; with `preset`, a bundled dataset opens with those settings.
+   */
+  const openCreated = useCallback(
+    (id: string, preset: { options: AnalysisOptions; message: string } | null) => {
+      if (id === datasetIdRef.current) {
+        // The open dataset itself came back: it stays loaded, only the settings change. Still
+        // loading, it takes them instead of its saved ones, like a dataset opened anew.
+        const current = optionsRef.current;
+        if (preset && optionsAppliedFor.current !== id) {
+          openWith.current = { id, ...preset };
+        } else if (preset && !sameOptions(current, preset.options)) {
+          setUndo({ id: Date.now(), message: preset.message, previous: current, returnFocus: summaryTitle.current });
+          setOptions(preset.options);
+        }
+        setChoosing(false);
+        return;
+      }
+      openWith.current = preset && { id, ...preset };
+      selectDataset(id);
+      setChoosing(false);
+    },
+    [selectDataset],
+  );
+
+  // Opens the bundled dataset of a link (?bundled=...) with its settings, reusing the session's
+  // copy if there is one. Settings that cannot be read give the standard and a notice.
+  useEffect(() => {
+    if (!linkRequest || !rawCatalog) return;
+    setLinkRequest(null);
+    const parsed = parseAnalysisLink(linkRequest, defaultOptions(kind), new Set(rawCatalog.measures.map((m) => m.key)));
+    if (!parsed) return;
+    const entry = rawCatalog.bundled.find((b) => b.id === parsed.bundledId);
+    if (!entry) {
+      setLinkNotice({ tone: "error", text: tRef.current("factor.link.unknown") });
+      return;
+    }
+    const paper = parsed.preset === "published" ? publishedOptions(kind, entry) : null;
+    const invalid = parsed.invalid || (parsed.preset === "published" && !paper);
+    setLinkNotice({ tone: "busy", text: tRef.current("factor.link.opening") });
+    createDataset({ kind, source: "bundled", bundledId: entry.id }).then(
+      (res) => {
+        focusSummary.current = true;
+        openCreated(res.dataset_id, { options: paper ?? parsed.options, message: tRef.current("factor.link.opened") });
+        setLinkNotice(invalid ? { tone: "info", text: tRef.current("factor.link.invalid") } : null);
+      },
+      (e) => setLinkNotice({ tone: "error", text: errorTextRef.current(e, tRef.current("factor.link.failed")) }),
+    );
+  }, [linkRequest, rawCatalog, kind, openCreated]);
+
+  const submit = async (input: CreateDatasetInput, preset: OpenPreset) => {
     setSubmitting(true);
     setSubmitError(null);
     try {
       const res = await createDataset(input);
       focusSummary.current = true;
-      selectDataset(res.dataset_id);
-      setChoosing(false);
+      openCreated(res.dataset_id, input.source === "bundled" && input.bundledId ? presetOptions(input.bundledId, preset) : null);
     } catch (e) {
       setSubmitError(errorText(e, t("factor.data.submit_failed")));
     } finally {
@@ -528,6 +648,14 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   );
   const measureTitle = useCallback((key: string) => titles.get(key) ?? key, [titles]);
 
+  // The catalog entry of a bundled dataset, and the settings of its paper if it has them.
+  const bundled = dataset?.bundled_id ? catalog?.bundled.find((b) => b.id === dataset.bundled_id) : undefined;
+  const published = useMemo(() => publishedOptions(kind, bundled), [kind, bundled]);
+  // Only for the analysis on screen, and only while the settings are still those it ran with.
+  const match =
+    analysis && analyzedOptions && sameOptions(analyzedOptions, options) ? (analysis.published_match ?? null) : null;
+  const linkQuery = bundled ? analysisLinkQuery(bundled.id, options, standard, published) : null;
+
   const suitable = analysis ? analysis.bartlett.passed && analysis.kmo.passed : false;
   const interpretationStale =
     !!interpretation && (!datasetId || interpretation.key !== interpretationKey(datasetId, options, locale));
@@ -570,6 +698,47 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       ? { interpretation: t("factor.interpretation.state_needs_key") }
       : {};
 
+  // One line per finished step for the step rail; settings are in the settings row instead.
+  const summaries: Partial<Record<StepId, string>> = {};
+  const finished = (id: StepId) => states[id] === "done" || states[id] === "warn";
+  if (dataset && catalog && finished("data")) {
+    summaries.data = bundled?.label ?? datasetName(dataset, t, catalog);
+  }
+  if (dataset && finished("dataset")) {
+    summaries.dataset = [
+      `${formatNumber(dataset.n_observations, locale)} × ${formatNumber(dataset.measures.length, locale)}`,
+      dataset.dropped.length > 0 ? countText(t, "factor.rail_summary.removed", dataset.dropped.length) : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  }
+  if (analysis && finished("suitability")) {
+    summaries.suitability = [
+      t("factor.rail_summary.kmo", { value: formatNumber(analysis.kmo.overall, locale, 2) }),
+      analysis.msa_filter.removed.length > 0
+        ? countText(t, "factor.rail_summary.removed", analysis.msa_filter.removed.length)
+        : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  }
+  if (analysis && finished("factors")) {
+    summaries.factors = countText(t, "factor.rail_summary.factors", analysis.n_factors, {
+      pct: formatPercent(analysis.variance.explained, locale),
+    });
+  }
+  if (analysis && finished("loadings")) {
+    const cross = analysis.cross_loadings?.length ?? 0;
+    const unassigned = unassignedMeasures(analysis).length;
+    summaries.loadings = [
+      countText(t, "factor.rail_summary.dimensions", dimensionCount(analysis)),
+      cross > 0 ? t("factor.rail_summary.cross", { n: cross }) : null,
+      unassigned > 0 ? t("factor.rail_summary.unassigned", { n: unassigned }) : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  }
+
   const updating = analyzing ? (
     <span className="inline-flex items-center gap-1.5 text-xs text-muted" role="status">
       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -595,7 +764,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       <OnboardingTour open={onboarding.open} onClose={onboarding.close} />
       <FactorTour kind={kind} run={tourOpen} onClose={() => setTourOpen(false)} />
       <Suspense fallback={null}>
-        <DatasetLink onLink={openDataset} />
+        <LinkReader onDataset={openDataset} onBundled={setLinkRequest} />
       </Suspense>
 
       <PageHeader
@@ -622,7 +791,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       />
 
       <div className="lg:grid lg:grid-cols-[12.5rem_minmax(0,1fr)] lg:gap-8 lg:items-start">
-        <StepRail states={states} stateLabels={stateLabels} />
+        <StepRail states={states} stateLabels={stateLabels} summaries={summaries} />
 
         <div className="space-y-6 min-w-0">
           <StepSection
@@ -632,8 +801,35 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             title={t("factor.steps.data")}
             description={t(`factor.step_desc.data_${kind}`)}
           >
-            {/* Always rendered, so screen readers announce the notice that appears in it. */}
+            {/* Always rendered, so screen readers announce the notices that appear in it. */}
             <div role="status">
+              {linkNotice && (
+                <div
+                  className={cn(
+                    "mb-4 rounded-lg px-3.5 py-2.5 flex items-start gap-2.5 text-sm",
+                    linkNotice.tone === "error" ? "bg-danger/10" : "bg-tile",
+                  )}
+                >
+                  {linkNotice.tone === "busy" ? (
+                    <Loader2 className="h-4 w-4 text-accent-ink shrink-0 mt-0.5 animate-spin" />
+                  ) : linkNotice.tone === "error" ? (
+                    <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
+                  ) : (
+                    <Info className="h-4 w-4 text-muted shrink-0 mt-0.5" />
+                  )}
+                  <p className="flex-1 min-w-0">{linkNotice.text}</p>
+                  {linkNotice.tone !== "busy" && (
+                    <button
+                      type="button"
+                      onClick={() => setLinkNotice(null)}
+                      aria-label={t("factor.data.dismiss_aria")}
+                      className="h-6 w-6 -my-0.5 grid place-items-center rounded text-muted hover:text-fg hover:bg-accent/[0.08] transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              )}
               {gone && (
                 <div className="mb-4 rounded-lg bg-tile px-3.5 py-2.5 flex items-start gap-2.5 text-sm">
                   <Info className="h-4 w-4 text-muted shrink-0 mt-0.5" />
@@ -670,18 +866,21 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                 {t("common.loading")}
               </div>
             ) : formOpen ? (
-              <DataForm
-                kind={kind}
-                catalog={catalog}
-                datasets={datasets ?? []}
-                openId={datasetId}
-                submitting={submitting}
-                submitError={submitError}
-                onSubmit={submit}
-                onOpen={openChosen}
-                onDelete={removeDataset}
-                onCancel={dataset && choosing ? cancelChoice : undefined}
-              />
+              <div className="space-y-5">
+                <StartHere />
+                <DataForm
+                  kind={kind}
+                  catalog={catalog}
+                  datasets={datasets ?? []}
+                  openId={datasetId}
+                  submitting={submitting}
+                  submitError={submitError}
+                  onSubmit={submit}
+                  onOpen={openChosen}
+                  onDelete={removeDataset}
+                  onCancel={dataset && choosing ? cancelChoice : undefined}
+                />
+              </div>
             ) : dataset ? (
               <DataSummary
                 dataset={dataset}
@@ -723,94 +922,129 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             {ready && dataset ? <DatasetView dataset={dataset} measureName={measureName} measureTitle={measureTitle} /> : lockedHint}
           </StepSection>
 
-          <StepSection
-            id="suitability"
-            n={3}
-            state={states.suitability}
-            title={t("factor.steps.suitability")}
-            description={t("factor.step_desc.suitability")}
-            actions={updating}
-          >
-            {!ready || !dataset ? (
-              lockedHint
-            ) : (
-              <div className="space-y-4">
-                {analysisError && (
-                  <AnalysisError
-                    kind={kind}
-                    message={analysisError}
-                    stale={!!analysis}
-                    options={options}
-                    onOptions={updateOptions}
-                  />
-                )}
+          {/* Steps 3 to 5 share the settings row, which stays in view while they scroll by. A
+              flex column, since gaps leave out the toast, which is fixed to the window. */}
+          <div className="flex flex-col gap-6">
+            {ready && dataset && (
+              <SettingsRow
+                options={options}
+                standard={standard}
+                published={published}
+                publishedSource={bundled?.published_source}
+                analysis={analysis}
+                measureCount={dataset.measures.length}
+                match={match}
+                onApply={applyOptions}
+                linkQuery={linkQuery}
+              />
+            )}
+            {/* Shown at the bottom of the window, but next to the row in the tab order, so the
+                "Undo" of a reset is a Tab away from the buttons that caused it. */}
+            <UndoToast
+              notice={undo}
+              onUndo={() => {
+                if (undo) setOptions(undo.previous);
+                setUndo(null);
+              }}
+              onClose={() => setUndo(null)}
+            />
+            <StepSection
+              id="suitability"
+              n={3}
+              stickyRow
+              state={states.suitability}
+              title={t("factor.steps.suitability")}
+              description={t("factor.step_desc.suitability")}
+              actions={updating}
+            >
+              {!ready || !dataset ? (
+                lockedHint
+              ) : (
+                <div className="space-y-4">
+                  {analysisError && (
+                    <AnalysisError
+                      kind={kind}
+                      message={analysisError}
+                      stale={!!analysis}
+                      options={options}
+                      onOptions={updateOptions}
+                    />
+                  )}
+                  <div className={stale}>
+                    <SuitabilityView
+                      dataset={dataset}
+                      analysis={analysis}
+                      options={options}
+                      onOptions={updateOptions}
+                      measureName={measureName}
+                      measureTitle={measureTitle}
+                    />
+                  </div>
+                </div>
+              )}
+            </StepSection>
+
+            <StepSection
+              id="factors"
+              n={4}
+              stickyRow
+              state={states.factors}
+              title={t("factor.steps.factors")}
+              description={t("factor.step_desc.factors")}
+              actions={updating}
+            >
+              {!ready ? (
+                lockedHint
+              ) : analysis ? (
                 <div className={stale}>
-                  <SuitabilityView
-                    dataset={dataset}
+                  <FactorsView
                     analysis={analysis}
                     options={options}
                     onOptions={updateOptions}
-                    measureName={measureName}
-                    measureTitle={measureTitle}
+                    paperFactors={published?.n_factors ?? null}
                   />
                 </div>
-              </div>
-            )}
-          </StepSection>
+              ) : (
+                resultPlaceholder
+              )}
+            </StepSection>
 
-          <StepSection
-            id="factors"
-            n={4}
-            state={states.factors}
-            title={t("factor.steps.factors")}
-            description={t("factor.step_desc.factors")}
-            actions={updating}
-          >
-            {!ready ? (
-              lockedHint
-            ) : analysis ? (
-              <div className={stale}>
-                <FactorsView analysis={analysis} options={options} onOptions={updateOptions} />
-              </div>
-            ) : (
-              resultPlaceholder
-            )}
-          </StepSection>
-
-          <StepSection
-            id="loadings"
-            n={5}
-            state={states.loadings}
-            title={t("factor.steps.loadings")}
-            description={t("factor.step_desc.loadings")}
-            actions={updating}
-          >
-            {!ready ? (
-              lockedHint
-            ) : analysis ? (
-              <div className="space-y-3">
-                {exportError && (
-                  <p role="alert" className="text-xs text-danger-ink">
-                    {exportError}
-                  </p>
-                )}
-                <div className={stale}>
-                  <LoadingsView
-                    analysis={analysis}
-                    options={options}
-                    onOptions={updateOptions}
-                    measureName={measureName}
-                    measureTitle={measureTitle}
-                    onExport={runExport}
-                    exporting={exporting}
-                    zipReady={analysisCurrent}
-                  />
+            <StepSection
+              id="loadings"
+              n={5}
+              stickyRow
+              state={states.loadings}
+              title={t("factor.steps.loadings")}
+              description={t("factor.step_desc.loadings")}
+              actions={updating}
+            >
+              {!ready ? (
+                lockedHint
+              ) : analysis ? (
+                <div className="space-y-3">
+                  {exportError && (
+                    <p role="alert" className="text-xs text-danger-ink">
+                      {exportError}
+                    </p>
+                  )}
+                  <div className={stale}>
+                    <LoadingsView
+                      analysis={analysis}
+                      options={options}
+                      onOptions={updateOptions}
+                      measureName={measureName}
+                      measureTitle={measureTitle}
+                      onExport={runExport}
+                      exporting={exporting}
+                      zipReady={analysisCurrent}
+                    />
+                  </div>
                 </div>
-              </div>
-            ) : (
-              resultPlaceholder
-            )}
-          </StepSection>
+              ) : (
+                resultPlaceholder
+              )}
+            </StepSection>
+          </div>
 
           <StepSection
             id="interpretation"
@@ -845,19 +1079,30 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
 }
 
 /**
- * Opens the dataset of a link (?dataset=<id>), e.g. from a job card, also while the tab is
- * already shown, and removes it from the address, so a reload shows the dataset chosen last.
- * Its own component, so that only it waits for the search params on the client.
+ * Opens the dataset of a link, also while the tab is already shown: one of the session
+ * (?dataset=<id>, e.g. from a job card) or a bundled one with its settings (?bundled=<id>&...).
+ * Removes the link from the address, so a reload shows the dataset chosen last. Its own
+ * component, so that only it waits for the search params on the client.
  */
-function DatasetLink({ onLink }: { onLink: (id: string) => void }) {
-  const linked = useSearchParams().get("dataset");
+function LinkReader({
+  onDataset,
+  onBundled,
+}: {
+  onDataset: (id: string) => void;
+  onBundled: (params: URLSearchParams) => void;
+}) {
+  const params = useSearchParams();
+  const linked = params.get("dataset");
+  const bundled = params.get("bundled");
   useEffect(() => {
-    if (!linked) return;
+    if (!linked && !bundled) return;
+    const query = new URLSearchParams(window.location.search);
     // Without a state of its own, Next.js takes the new address over, so the same link opens
     // the dataset again later.
     window.history.replaceState(null, "", window.location.pathname);
-    onLink(linked);
-  }, [linked, onLink]);
+    if (linked) onDataset(linked);
+    else onBundled(query);
+  }, [linked, bundled, onDataset, onBundled]);
   return null;
 }
 
@@ -927,20 +1172,71 @@ function AnalysisError({
 
 const STEP_IDS: StepId[] = ["data", "dataset", "suitability", "factors", "loadings", "interpretation"];
 
+/**
+ * The step in view: the last one whose top has passed the upper third of the window, or the
+ * last one on screen once the page cannot scroll further.
+ */
+function useStepInView(): StepId {
+  const [active, setActive] = useState<StepId>("data");
+  useEffect(() => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const line = window.innerHeight / 3;
+      const atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+      let current: StepId = STEP_IDS[0];
+      for (const id of STEP_IDS) {
+        const top = document.getElementById(stepAnchor(id))?.getBoundingClientRect().top;
+        if (top !== undefined && (top <= line || (atEnd && top < window.innerHeight))) current = id;
+      }
+      setActive(current);
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+    };
+  }, []);
+  return active;
+}
+
 function StepRail({
   states,
   stateLabels,
+  summaries,
 }: {
   states: Record<StepId, StepState>;
   /** Replaces the generic text of a state for screen readers, e.g. why a step is locked. */
   stateLabels: Partial<Record<StepId, string>>;
+  /** What a finished step found, e.g. "KMO 0.75 · 2 removed"; else the step is described. */
+  summaries: Partial<Record<StepId, string>>;
 }) {
   const t = useT();
+  const active = useStepInView();
+  const listRef = useRef<HTMLOListElement>(null);
+  // On a phone the rail scrolls sideways: keep the step in view visible in it, without moving
+  // the page.
+  useEffect(() => {
+    const list = listRef.current;
+    const item = list?.querySelector<HTMLElement>('[aria-current="step"]');
+    if (!list || !item || list.scrollWidth <= list.clientWidth) return;
+    const left = item.offsetLeft - list.offsetLeft;
+    if (left < list.scrollLeft || left + item.offsetWidth > list.scrollLeft + list.clientWidth) {
+      list.scrollLeft = Math.max(0, left - 8);
+    }
+  }, [active]);
   return (
     <nav aria-label={t("factor.steps.aria")} className="mb-6 lg:mb-0 lg:sticky lg:top-6">
-      <ol className="flex lg:flex-col gap-1 overflow-x-auto no-scrollbar -mx-1 px-1 lg:mx-0 lg:px-0">
+      <ol ref={listRef} className="flex lg:flex-col gap-1 overflow-x-auto no-scrollbar -mx-1 px-1 lg:mx-0 lg:px-0">
         {STEP_IDS.map((id, i) => {
           const state = states[id];
+          const current = id === active;
           return (
             <li key={id} className="relative shrink-0">
               {i < STEP_IDS.length - 1 && (
@@ -948,16 +1244,27 @@ function StepRail({
               )}
               <a
                 href={`#${stepAnchor(id)}`}
+                aria-current={current ? "step" : undefined}
                 className={cn(
                   "flex items-center gap-2.5 rounded-md px-2 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
                   state === "locked" ? "text-muted hover:bg-surface/60" : "hover:bg-surface",
+                  current && "bg-surface",
                 )}
               >
                 <StepBadge n={i + 1} state={state} />
                 <span className="min-w-0">
                   <span className="block text-sm font-medium whitespace-nowrap">{t(`factor.steps.${id}`)}</span>
-                  <span className="hidden lg:block text-[11px] text-muted leading-snug">
-                    {t(`factor.rail.${id}`)}
+                  {/* A wrapper: line-clamp sets a display of its own, which would undo "hidden". */}
+                  <span className="hidden lg:block">
+                    <span
+                      className={cn(
+                        "block text-[11px] leading-snug max-w-[9.5rem]",
+                        summaries[id] ? "text-fg/80 line-clamp-2 break-words" : "text-muted",
+                      )}
+                      title={summaries[id]}
+                    >
+                      {summaries[id] ?? t(`factor.rail.${id}`)}
+                    </span>
                   </span>
                   <span className="sr-only"> ({stateLabels[id] ?? t(`factor.state.${state}`)})</span>
                 </span>

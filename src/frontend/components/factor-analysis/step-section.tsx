@@ -48,13 +48,20 @@ interface SectionProps {
   title: string;
   description: string;
   actions?: React.ReactNode;
+  /** The sticky settings row sits above the step on a wide screen, so a jump to it stops lower. */
+  stickyRow?: boolean;
   children: React.ReactNode;
 }
 
-export function StepSection({ id, n, state, title, description, actions, children }: SectionProps) {
+export function StepSection({ id, n, state, title, description, actions, stickyRow, children }: SectionProps) {
   const anchor = stepAnchor(id);
   return (
-    <section id={anchor} data-tour={`fa-${id}`} aria-labelledby={`${anchor}-title`} className="scroll-mt-6">
+    <section
+      id={anchor}
+      data-tour={`fa-${id}`}
+      aria-labelledby={`${anchor}-title`}
+      className={cn("scroll-mt-6", stickyRow && "lg:scroll-mt-16")}
+    >
       <Card className="overflow-hidden">
         <div className="px-4 sm:px-5 pt-5 pb-4 border-b border-border flex items-start gap-3 flex-wrap">
           <StepBadge n={n} state={state} className="mt-0.5" />

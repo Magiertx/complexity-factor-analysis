@@ -2,20 +2,28 @@
 
 import { useState } from "react";
 import { FileArchive, FileCode2, FileSpreadsheet, Loader2 } from "lucide-react";
-import type { FactorAnalysis } from "@/lib/api";
+import { ASSIGNMENT_RULES, type AssignmentRule, type FactorAnalysis } from "@/lib/api";
 import {
   ORTHOGONAL,
+  RULE_LIMITS,
   countText,
+  crossLoadingsByMeasure,
   loadingStyle,
   orderMeasures,
+  primaryFactor,
+  secondaryCells,
   signColor,
+  signInk,
+  unassignedMeasures,
   type AnalysisOptions,
   type ExportFormat,
+  type UnassignedMeasure,
 } from "@/lib/factor-analysis";
 import { formatNumber, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { Segmented } from "@/components/ui/segmented";
 import { FieldLabel, HelpLabel, ThresholdField } from "./step-section";
 
@@ -55,9 +63,14 @@ export function LoadingsView({
   const shown = structure ?? analysis.loadings;
   const { proportion, cumulative } = analysis.variance;
   const cellPad = "px-2.5 sm:px-3 py-1.5";
+  // The rule works on the pattern loadings, so only they get the ring of a cross-loading.
+  const secondary = structure ? new Set<string>() : secondaryCells(analysis);
+  const crossLabel = t("factor.loadings.cross_cell");
 
   return (
     <div className="space-y-6">
+      <AssignmentChoice value={options.assignment_rule} onChange={(rule) => onOptions({ assignment_rule: rule })} />
+
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div className="flex items-start gap-x-6 gap-y-3 flex-wrap">
           <ThresholdField
@@ -138,9 +151,16 @@ export function LoadingsView({
             <HelpLabel as="span" label={t("factor.loadings.col_communality")} help={t("factor.help.communality")} />
             <HelpLabel as="span" label={t("factor.loadings.variance_label")} help={t("factor.help.variance")} />
           </div>
-          <Legend threshold={threshold} />
+          <Legend threshold={threshold} crossed={secondary.size > 0} />
         </div>
-        <div className="rounded-md bg-tile/40 overflow-x-auto">
+        {/* relative: the screen-reader texts of the cells stay inside the scrolling table, which
+            is focusable so the keyboard can scroll it on a phone. */}
+        <div
+          tabIndex={0}
+          role="region"
+          aria-label={t("factor.loadings.table_heading")}
+          className="relative rounded-md bg-tile/40 overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
           <table className="w-full text-xs">
             <caption className="sr-only">
               {countText(t, "factor.loadings.caption", k, { rotation: t(`factor.factors.rotation.${analysis.rotation}`) })}
@@ -190,18 +210,22 @@ export function LoadingsView({
                       const v = values[i];
                       if (v === undefined) return <td key={i} className={cellPad} />;
                       const strong = Math.abs(v) >= threshold;
+                      const crossed = secondary.has(`${m}:${i}`);
+                      const title = `${measureName(m)} · ${t("factor.loadings.factor_n", { i: i + 1 })}: ${formatNumber(v, locale, 3)}`;
                       return (
                         <td
                           key={i}
                           style={loadingStyle(v)}
-                          title={`${measureName(m)} · ${t("factor.loadings.factor_n", { i: i + 1 })}: ${formatNumber(v, locale, 3)}`}
+                          title={crossed ? `${title} · ${crossLabel}` : title}
                           className={cn(
                             cellPad,
                             "text-right font-mono tabular-nums whitespace-nowrap",
                             strong ? "font-bold text-fg" : "text-fg/70",
+                            crossed && "ring-2 ring-inset ring-fg/55",
                           )}
                         >
                           {formatNumber(v, locale, 2)}
+                          {crossed && <span className="sr-only"> ({crossLabel})</span>}
                         </td>
                       );
                     })}
@@ -286,7 +310,12 @@ function FactorCorrelations({ values, pad }: { values: number[][]; pad: string }
   return (
     <div className="space-y-2">
       <HelpLabel label={t("factor.loadings.correlations_heading")} help={t("factor.help.factor_correlations")} />
-      <div className="rounded-md bg-tile/40 overflow-x-auto w-fit max-w-full">
+      <div
+        tabIndex={0}
+        role="region"
+        aria-label={t("factor.loadings.correlations_heading")}
+        className="rounded-md bg-tile/40 overflow-x-auto w-fit max-w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      >
         <table className="text-xs">
           <caption className="sr-only">{t("factor.loadings.correlations_heading")}</caption>
           <thead className="bg-bg text-muted">
@@ -323,7 +352,58 @@ function FactorCorrelations({ values, pad }: { values: number[][]; pad: string }
   );
 }
 
-function Legend({ threshold }: { threshold: number }) {
+/**
+ * The rule that turns loadings into factor groups, as tiles. The thresholds next to it stay in
+ * effect; the rules differ in what happens to a measure that loads on several factors and in
+ * the least communality.
+ */
+function AssignmentChoice({ value, onChange }: { value: AssignmentRule; onChange: (rule: AssignmentRule) => void }) {
+  const t = useT();
+  const { locale } = useLocale();
+  const limits = {
+    gap: formatNumber(RULE_LIMITS.gap, locale, 2),
+    h2_multi: formatNumber(RULE_LIMITS.multi_communality, locale, 1),
+    h2_hair: formatNumber(RULE_LIMITS.hair_communality, locale, 1),
+  };
+  const label = t("factor.loadings.assignment_label");
+  return (
+    // Its id is where the rule chip of the settings row leads.
+    <div id="fa-assignment" className="space-y-2 scroll-mt-24">
+      <HelpLabel as="span" label={label} help={t("factor.help.assignment", limits)} />
+      <div role="radiogroup" aria-label={label} className="grid gap-2 sm:grid-cols-3">
+        {ASSIGNMENT_RULES.map((rule) => {
+          const chosen = rule === value;
+          return (
+            <label key={rule} className={cn("flex items-start gap-2.5 rounded-md px-3 py-2.5 min-w-0", choiceTile(chosen))}>
+              <input
+                type="radio"
+                name="fa-assignment"
+                value={rule}
+                className="sr-only"
+                checked={chosen}
+                onChange={() => onChange(rule)}
+                aria-label={t(`factor.loadings.rule.${rule}.title`)}
+                aria-describedby={`fa-assignment-${rule}-source fa-assignment-${rule}`}
+              />
+              <ChoiceMark type="radio" checked={chosen} className="mt-0.5" />
+              <span className="min-w-0">
+                <span className="block text-sm font-medium">{t(`factor.loadings.rule.${rule}.title`)}</span>
+                <span id={`fa-assignment-${rule}-source`} className="block text-[11px] text-muted">
+                  {t(`factor.loadings.rule.${rule}.source`)}
+                </span>
+                <span id={`fa-assignment-${rule}`} className="mt-1 block text-xs text-fg/80 leading-snug">
+                  {t(`factor.loadings.rule.${rule}.text`, limits)}
+                </span>
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function Legend({ threshold, crossed }: { threshold: number; crossed: boolean }) {
   const t = useT();
   const { locale } = useLocale();
   return (
@@ -340,6 +420,12 @@ function Legend({ threshold }: { threshold: number }) {
         <b className="text-fg">{formatNumber(0, locale, 2)}</b>{" "}
         {t("factor.loadings.legend_bold", { threshold: formatNumber(threshold, locale, 2) })}
       </span>
+      {crossed && (
+        <span className="flex items-center gap-1.5">
+          <span className="h-3 w-3 rounded-sm ring-2 ring-inset ring-fg/55" />
+          {t("factor.loadings.legend_cross")}
+        </span>
+      )}
     </div>
   );
 }
@@ -355,6 +441,8 @@ function FactorGroups({
 }) {
   const t = useT();
   const { locale } = useLocale();
+  const cross = crossLoadingsByMeasure(analysis);
+  const unassigned = unassignedMeasures(analysis);
   return (
     <div className="space-y-2">
       <HelpLabel label={t("factor.loadings.groups_heading")} help={t("factor.help.groups")} />
@@ -374,41 +462,70 @@ function FactorGroups({
                 <p className="text-xs text-muted">{t("factor.loadings.factor_empty")}</p>
               ) : (
                 <ul className="space-y-1.5">
-                  {f.measures.map((m) => (
-                    <li key={m.measure} className="text-xs">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate" title={measureTitle(m.measure)}>
-                          {measureName(m.measure)}
-                        </span>
-                        <span className="font-mono tabular-nums shrink-0">{formatNumber(m.loading, locale, 2)}</span>
-                      </div>
-                      <div className="mt-1 h-1 rounded-full bg-bg/80 overflow-hidden" aria-hidden>
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${Math.min(1, Math.abs(m.loading)) * 100}%`,
-                            backgroundColor: signColor(m.loading),
-                            opacity: 0.75,
-                          }}
-                        />
-                      </div>
-                    </li>
-                  ))}
+                  {f.measures.map((m) => {
+                    // The other factors of a cross-loaded measure, e.g. "also F1 −0.46".
+                    const c = cross.get(m.measure);
+                    const others = c
+                      ? c.factors.map((i, j) => ({ i, loading: c.loadings[j] })).filter((o) => o.i !== f.index)
+                      : [];
+                    return (
+                      <li key={m.measure} className="text-xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="truncate" title={measureTitle(m.measure)}>
+                            {measureName(m.measure)}
+                          </span>
+                          <span className="font-mono tabular-nums shrink-0">{formatNumber(m.loading, locale, 2)}</span>
+                        </div>
+                        <div className="mt-1 h-1 rounded-full bg-bg/80 overflow-hidden" aria-hidden>
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${Math.min(1, Math.abs(m.loading)) * 100}%`,
+                              backgroundColor: signColor(m.loading),
+                              opacity: 0.75,
+                            }}
+                          />
+                        </div>
+                        {others.length > 0 && (
+                          <span className="mt-1 flex flex-wrap gap-1">
+                            {others.map((o) => (
+                              <span
+                                key={o.i}
+                                className="rounded bg-surface px-1.5 py-px text-[11px] text-muted"
+                                title={t("factor.loadings.also_title", {
+                                  i: o.i + 1,
+                                  value: formatNumber(o.loading, locale, 2),
+                                })}
+                              >
+                                {t("factor.loadings.also", { i: o.i + 1 })}{" "}
+                                <span className="font-mono tabular-nums font-medium" style={{ color: signInk(o.loading) }}>
+                                  {formatNumber(o.loading, locale, 2)}
+                                </span>
+                              </span>
+                            ))}
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
           );
         })}
-        {analysis.unassigned.length > 0 && (
-          <div className="rounded-lg border border-dashed border-border p-3.5 space-y-2 min-w-0">
+        {unassigned.length > 0 && (
+          <div className="rounded-lg bg-tile/50 p-3.5 space-y-2 min-w-0">
             <div>
               <h4 className="text-sm font-semibold">{t("factor.loadings.unassigned_heading")}</h4>
               <p className="text-[11px] text-muted">{t("factor.loadings.unassigned_hint")}</p>
             </div>
-            <ul className="flex flex-wrap gap-1.5">
-              {analysis.unassigned.map((m) => (
-                <li key={m} className="rounded bg-tile px-1.5 py-0.5 text-xs" title={measureTitle(m)}>
-                  {measureName(m)}
+            <ul className="space-y-1">
+              {unassigned.map((u) => (
+                <li key={u.measure} className="flex items-baseline justify-between gap-x-2 flex-wrap text-xs">
+                  <span className="min-w-0 truncate" title={measureTitle(u.measure)}>
+                    {measureName(u.measure)}
+                  </span>
+                  {u.reason && <span className="text-[11px] text-muted">{reasonText(u, analysis, t, locale)}</span>}
                 </li>
               ))}
             </ul>
@@ -417,4 +534,28 @@ function FactorGroups({
       </div>
     </div>
   );
+}
+
+/** Why a measure joined no factor, with the number that decided it. */
+function reasonText(
+  u: UnassignedMeasure,
+  analysis: FactorAnalysis,
+  t: (key: string, params?: Record<string, string | number>) => string,
+  locale: string,
+): string {
+  const row = analysis.loadings[u.measure] ?? [];
+  if (u.reason === "low_loading") {
+    const largest = row.length > 0 ? Math.abs(row[primaryFactor(row)]) : Number.NaN;
+    return t("factor.loadings.reason.low_loading", { value: formatNumber(largest, locale, 2) });
+  }
+  if (u.reason === "low_communality") {
+    return t("factor.loadings.reason.low_communality", {
+      value: formatNumber(analysis.communalities[u.measure] ?? Number.NaN, locale, 2),
+    });
+  }
+  const factors = (analysis.cross_loadings ?? []).find((c) => c.measure === u.measure)?.factors ?? [];
+  // Without the cross-loading listed, the reason is said without its factors.
+  return factors.length > 0
+    ? t("factor.loadings.reason.cross_loading", { factors: factors.map((i) => `F${i + 1}`).join(", ") })
+    : t("factor.loadings.reason.cross_loading_plain");
 }

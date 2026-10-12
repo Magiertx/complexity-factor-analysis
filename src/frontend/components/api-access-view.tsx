@@ -59,10 +59,14 @@ ds = s.post(
     data={"kind": "model", "source": "bundled", "bundled_id": "comfy-paper-inductive-miner"},
 ).json()
 
-# 2. Suitability, eigenvalues and rotated loadings for the chosen settings
-options = {"n_factors": 4, "rotation": "varimax"}
+# 2. Suitability, eigenvalues and rotated loadings, here with the settings of the paper
+catalog = s.get(f"{BASE}/factor-analysis/catalog", params={"kind": "model"}).json()
+paper = next(b for b in catalog["bundled"] if b["id"] == "comfy-paper-inductive-miner")
+options = paper["published_options"]  # 4 factors, varimax, assignment_rule "multi", ...
 result = s.post(f"{BASE}/factor-analysis/datasets/{ds['dataset_id']}/analyze", json=options).json()
 print("KMO", round(result["kmo"]["overall"], 2))
+print("Kaiser", result["factor_count"]["kaiser"], "parallel analysis", result["factor_count"]["parallel_analysis"])
+print("Same numbers as the report:", (result["published_match"] or {}).get("status"))
 for factor in result["factors"]:
     print(factor["index"] + 1, [m["measure"] for m in factor["measures"]])
 
@@ -164,7 +168,7 @@ const ENDPOINTS: { group: string; items: Endpoint[] }[] = [
   },
 ];
 
-const NOTES = ["rate_limits", "quota", "uploads", "session", "schemas"];
+const NOTES = ["rate_limits", "quota", "uploads", "analysis", "session", "schemas"];
 
 /** A text of the locale files in which `backticks` mark code. */
 function WithCode({ text }: { text: string }) {

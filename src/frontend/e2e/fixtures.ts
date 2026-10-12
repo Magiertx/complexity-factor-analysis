@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { inflateRawSync } from "node:zlib";
-import { expect, test as base, type Download, type Locator, type Page } from "@playwright/test";
+import { expect, test as base, type Browser, type BrowserContext, type Download, type Locator, type Page } from "@playwright/test";
 import de from "../lib/i18n/locales/de.json";
 import en from "../lib/i18n/locales/en.json";
 
@@ -20,29 +20,49 @@ export function pattern(value: string): RegExp {
   return new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
 }
 
+/** Prepares a page like the fixture does: no welcome tour, the UI language, a session cookie. */
+async function preparePage(page: Page, language: "en" | "de") {
+  // No welcome tour, and the UI language fixed whatever the browser's.
+  await page.addInitScript((lang) => {
+    try {
+      if (!localStorage.getItem("app.e2e-init")) {
+        localStorage.setItem("app.e2e-init", "1");
+        localStorage.setItem("app.onboarding-completed", "1");
+        localStorage.setItem("app.locale", lang);
+      }
+    } catch {
+      /* storage blocked; the tests then see the tour */
+    }
+  }, language);
+  // The session cookie before the first page: the page fires its first requests in parallel,
+  // and without a cookie each of them would start a session of its own.
+  expect((await page.request.get("/api/jobs")).ok()).toBeTruthy();
+}
+
 export const test = base.extend<{ language: "en" | "de" }>({
   // The UI language; "locale" is the browser's, which Playwright already names so.
   language: ["en", { option: true }],
   // "provide", not "use": the React hooks lint rule takes any call of use() for a hook.
   page: async ({ page, language }, provide) => {
-    // No welcome tour, and the UI language fixed whatever the browser's.
-    await page.addInitScript((lang) => {
-      try {
-        if (!localStorage.getItem("app.e2e-init")) {
-          localStorage.setItem("app.e2e-init", "1");
-          localStorage.setItem("app.onboarding-completed", "1");
-          localStorage.setItem("app.locale", lang);
-        }
-      } catch {
-        /* storage blocked; the tests then see the tour */
-      }
-    }, language);
-    // The session cookie before the first page: the page fires its first requests in parallel,
-    // and without a cookie each of them would start a session of its own.
-    expect((await page.request.get("/api/jobs")).ok()).toBeTruthy();
+    await preparePage(page, language);
     await provide(page);
   },
 });
+
+/**
+ * A page in a browser context of its own, so in a session of its own, e.g. to open a copied
+ * link as someone else would. Close the context when done.
+ */
+export async function freshPage(
+  browser: Browser,
+  baseURL: string | undefined,
+  language: "en" | "de" = "en",
+): Promise<{ context: BrowserContext; page: Page }> {
+  const context = await browser.newContext({ baseURL, locale: "en-US", acceptDownloads: true });
+  const page = await context.newPage();
+  await preparePage(page, language);
+  return { context, page };
+}
 
 export { expect };
 

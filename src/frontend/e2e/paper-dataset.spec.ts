@@ -65,7 +65,8 @@ test("IF Inductive goes through all six steps and exports the analysis as ZIP", 
   const manifest = JSON.parse(files.get("manifest.json")!.toString("utf8"));
   expect(manifest.dataset.bundled_id).toBe("comfy-paper-inductive-miner");
   expect(manifest.analysis_params).toMatchObject({ n_factors: 2, rotation: "varimax", msa_threshold: 0.6 });
-  expect(manifest.analysis.assignment_rule).toBe("largest_loading");
+  // The tool standard; named "largest" since the rule can be chosen, "largest_loading" before.
+  expect(["largest", "largest_loading"]).toContain(manifest.analysis.assignment_rule);
   expect(manifest.dataset.provenance.bundled.copied_from.commit).toBe("1dd6ea610017cbca65bb54735ac6db922af00e8d");
   expect(Object.keys(manifest.tool)).toEqual(["name", "version", "commit"]);
   const analysis = JSON.parse(files.get("analysis.json")!.toString("utf8"));

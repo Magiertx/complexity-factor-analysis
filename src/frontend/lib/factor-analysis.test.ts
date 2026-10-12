@@ -16,7 +16,12 @@ import {
   optionsFromSaved,
   orderMeasures,
   progressPercent,
+  publishedOptions,
+  differingOptions,
+  secondaryCells,
+  settingsSummary,
   solutionNeedsAttention,
+  unassignedMeasures,
 } from "./factor-analysis";
 import { formatNumber } from "./format";
 import de from "./i18n/locales/de.json";
@@ -214,5 +219,111 @@ describe("datasetName", () => {
       countText(t, "factor.data.auto_name.nets", 1),
     );
     expect(datasetName({ name: "mine.csv", source: "csv" }, t)).toBe("mine.csv");
+  });
+});
+
+describe("assignment rules", () => {
+  it("default to the largest loading, also for options saved before the rules", () => {
+    expect(defaultOptions("model").assignment_rule).toBe("largest");
+    expect(optionsFromSaved("model", { n_factors: 4 }).assignment_rule).toBe("largest");
+    expect(optionsFromSaved("model", { assignment_rule: "hair" }).assignment_rule).toBe("hair");
+    // A rule of a newer server that this UI does not know.
+    expect(optionsFromSaved("model", { assignment_rule: "other" as never }).assignment_rule).toBe("largest");
+  });
+
+  it("name unassigned measures with their reason, or without one from an older server", () => {
+    expect(unassignedMeasures(analysis())).toEqual([{ measure: "d", reason: null }]);
+    expect(unassignedMeasures(analysis({ unassigned: [{ measure: "d", reason: "cross_loading" }] }))).toEqual([
+      { measure: "d", reason: "cross_loading" },
+    ]);
+  });
+
+  it("mark the further loadings of a cross-loaded measure, not its largest", () => {
+    const crossed = analysis({
+      n_factors: 3,
+      loadings: { a: [-0.48, 0.46, 0.58], b: [0.1, 0.7, 0.2] },
+      cross_loadings: [{ measure: "a", factors: [0, 1, 2], loadings: [-0.48, 0.46, 0.58] }],
+    });
+    expect([...secondaryCells(crossed)].sort()).toEqual(["a:0", "a:1"]);
+    expect(secondaryCells(analysis()).size).toBe(0);
+  });
+});
+
+describe("published options", () => {
+  const bundled = {
+    id: "comfy-paper-inductive-miner",
+    name: "Inductive",
+    description: "",
+    observations: 288,
+    measures: 13,
+    published_options: {
+      n_factors: 4,
+      rotation: "varimax" as const,
+      msa_threshold: 0.6,
+      bartlett_alpha: 0.05,
+      loading_threshold: 0.35,
+      communality_threshold: 0.3,
+      assignment_rule: "multi" as const,
+    },
+  };
+
+  it("are completed like saved options; a dataset without them has none", () => {
+    const paper = publishedOptions("model", bundled)!;
+    expect(paper).toEqual({ ...defaultOptions("model"), n_factors: 4, communality_threshold: 0.3, assignment_rule: "multi" });
+    expect(Object.keys(paper)).toEqual(Object.keys(defaultOptions("model")));
+    expect(publishedOptions("model", { ...bundled, published_options: undefined })).toBeNull();
+    expect(publishedOptions("model", null)).toBeNull();
+  });
+
+  it("differ from the standard in the factor count, the communality and the rule", () => {
+    const paper = publishedOptions("model", bundled)!;
+    expect([...differingOptions(paper, defaultOptions("model"))].sort()).toEqual([
+      "assignment_rule",
+      "communality_threshold",
+      "n_factors",
+    ]);
+    // Excluded measures compare as a set.
+    expect(differingOptions({ ...paper, excluded: ["a", "b"] }, { ...paper, excluded: ["b", "a"] }).size).toBe(0);
+  });
+});
+
+describe("settingsSummary", () => {
+  const standard = defaultOptions("model");
+
+  it("says the settings in short and marks those that differ from the standard", () => {
+    const paper = { ...standard, n_factors: 4, communality_threshold: 0.3, assignment_rule: "multi" as const };
+    const result = analysis({
+      used_measures: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+      n_factors: 4,
+      factor_count: { kaiser: 2, parallel_analysis: 2, eigenvalues_random: [], seed: 1, simulations: 100, percentile: 95 },
+    });
+    const chips = settingsSummary(paper, standard, result, 12, t);
+    expect(chips.map((c) => c.text).join(" · ")).toBe(
+      "10 of 12 measures · MSA ≥ 0.6 · 4 factors (Kaiser 2) · varimax · |λ| ≥ 0.35 · h² ≥ 0.3 · multiple membership",
+    );
+    expect(chips.filter((c) => c.differs).map((c) => c.id)).toEqual(["factors", "communality", "rule"]);
+  });
+
+  it("follows Kaiser without a count of its own, and shows α only when it is not the standard", () => {
+    const chips = settingsSummary({ ...standard, bartlett_alpha: 0.01, auto_msa_filter: false }, standard, analysis(), 4, translator("de").t);
+    expect(chips.map((c) => c.text)).toEqual([
+      "4 von 4 Maßen",
+      "kein MSA-Filter",
+      "α = 0,01",
+      "2 Faktoren (Kaiser)",
+      "varimax",
+      "|λ| ≥ 0,35",
+      "h² ≥ 0",
+      "größte Ladung",
+    ]);
+    expect(chips.filter((c) => c.differs).map((c) => c.id)).toEqual(["msa", "alpha"]);
+  });
+
+  it("counts the measures left by the exclusions before the first analysis", () => {
+    expect(settingsSummary({ ...standard, excluded: ["a"] }, standard, null, 5, t)[0]).toEqual({
+      id: "measures",
+      text: "4 of 5 measures",
+      differs: true,
+    });
   });
 });

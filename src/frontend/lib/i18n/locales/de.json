@@ -15,7 +15,8 @@
     "error_title": "Etwas ist schiefgelaufen",
     "error_description": "Auf dieser Seite ist ein unerwarteter Fehler aufgetreten.",
     "error_unknown": "Unbekannter Fehler",
-    "try_again": "Erneut versuchen"
+    "try_again": "Erneut versuchen",
+    "undo": "Rückgängig"
   },
   "header": {
     "tagline": "Komplexitätsmaße von Prozessmodellen und Event-Logs",
@@ -228,15 +229,15 @@
       "recent_logs": "Logs, die deine Sitzung zuletzt hochgeladen hat.",
       "analyze": "Einen Algorithmus auf einem Log ausführen; liefert eine job_id.",
       "log_stats": "Schnelle beschreibende Statistiken eines Logs: Traces, Events, Varianten, Zeitraum.",
-      "fa_catalog": "Maße, Miner oder Feature-Gruppen, mitgelieferte Datensätze, Beispieleingaben und die angenommenen Quellen.",
-      "fa_create": "Einen Datensatz aus einem mitgelieferten oder einer CSV anlegen (sofort bereit) oder aus Event-Logs oder PNML-Dateien (als Run berechnet).",
+      "fa_catalog": "Maße, Miner oder Feature-Gruppen, mitgelieferte Datensätze mit den Einstellungen, die ihr Paper veröffentlicht hat (`published_options`), Beispieleingaben und die angenommenen Quellen.",
+      "fa_create": "Einen Datensatz aus einem mitgelieferten oder einer CSV anlegen (sofort bereit) oder aus Event-Logs oder PNML-Dateien (als Run berechnet). Einen mitgelieferten Datensatz, den die Sitzung schon hat, gibt es unverändert zurück, mit `reused`.",
       "fa_list": "Die Datensätze deiner Sitzung, neueste zuerst; kind ist optional.",
       "fa_get": "Status, Fortschritt, gespeicherte Einstellungen und die bereinigte Matrix der Maße (erste 2.000 Zeilen).",
       "fa_options": "Die Einstellungen einer Analyse beim Datensatz speichern.",
       "fa_delete": "Einen Datensatz mit seinem Run und seinen gespeicherten Interpretationen löschen.",
       "fa_delete_all": "Alle Datensätze deiner Sitzung löschen oder alle einer Art.",
       "fa_download": "Die bereinigte Matrix als CSV.",
-      "fa_analyze": "Bartlett, KMO mit MSA-Filter, Eigenwerte und rotierte Ladungen für die übergebenen Einstellungen (JSON).",
+      "fa_analyze": "Bartlett, KMO mit MSA-Filter, Eigenwerte mit Kaiser und Parallelanalyse, rotierte Ladungen und die Faktorgruppen nach `assignment_rule` (`largest`, `multi`, `hair`) mit Querladungen; mit den veröffentlichten Einstellungen den Abgleich mit dem Report (JSON).",
       "fa_export": "Die Ladungstabelle als CSV oder LaTeX; der Body von analyze plus format.",
       "fa_export_zip": "Die ganze Analyse als ZIP: Ergebnis, Matrix, Tabellen, Parameter, Bibliotheksversionen und Herkunft (Version und Commit des Tools, Commits der Vorlagen, feeed, pm4py und ProM, Miner mit ihren Parametern).",
       "fa_interpretation_status": "Ob Claude Faktoren interpretieren kann, und mit welchem Modell.",
@@ -257,7 +258,8 @@
       "quota": "Runs: höchstens 12 wartende oder laufende pro Sitzung und höchstens 4 Datensatz-Runs gleichzeitig über alle Sitzungen; weitere werden mit 429 beantwortet.",
       "uploads": "Uploads: höchstens 100 MB pro Datei. `POST /algorithms/{id}/analyze` und `POST /log-stats` nehmen ein Event-Log (`.xes`, `.xes.gz`, `.xml`, `.json`). `POST /factor-analysis/datasets` nimmt eine `.csv`, bis zu 50 Event-Logs (`.xes`, `.xes.gz`) oder bis zu 200 Petri-Netze (`.pnml`), zusammen höchstens 500 MB.",
       "session": "Sitzung: Ein signiertes Cookie grenzt jeden Endpoint ein. Verwende es für alle Anfragen (in Python mit `requests.Session()`), damit deine Runs und Datensätze sichtbar bleiben.",
-      "schemas": "Die Parameterschemas liefert `GET /algorithms`: Lies vor dem Absenden das `parameters_schema` eines Algorithmus."
+      "schemas": "Die Parameterschemas liefert `GET /algorithms`: Lies vor dem Absenden das `parameters_schema` eines Algorithmus.",
+      "analysis": "Analysen: höchstens `400` Maße pro Analyse, mehr ergeben 400 mit dem Code `too_many_measures_for_analysis`. Eine neuere Analyse desselben Datensatzes in einer Sitzung ersetzt eine ältere, die noch wartet; die ältere erhält 409 `superseded`."
     }
   },
   "parameter_form": {
@@ -678,7 +680,15 @@
       "delete_failed": "Der Datensatz konnte nicht gelöscht werden.",
       "gone": "Der Datensatz, den du geöffnet hattest, ist nicht mehr verfügbar. Er wurde gelöscht, durch neuere ersetzt oder nach 7 Tagen ohne Nutzung entfernt.",
       "dismiss_aria": "Hinweis ausblenden",
-      "inputs_aria": "Woraus der Datensatz besteht"
+      "inputs_aria": "Woraus der Datensatz besteht",
+      "preset_label": "Öffnen mit",
+      "preset": {
+        "standard": "Standard des Tools",
+        "published": "Paper-Einstellungen"
+      },
+      "preset_standard_detail": "Faktorzahl nach Kaiser · größte Ladung",
+      "opened_standard": "Mit den Standardeinstellungen geöffnet.",
+      "opened_paper": "Mit den Paper-Einstellungen geöffnet."
     },
     "inputs": {
       "logs": "{n} Log",
@@ -765,7 +775,7 @@
       "scree_title": "Screeplot",
       "notes_heading": "Hinweise zur Faktorlösung",
       "scree_desc": "Eigenwerte in absteigender Reihenfolge; {n} liegen über 1.",
-      "scree_hint": "Klicke auf einen Punkt, um so viele Faktoren zu behalten. Die gestrichelte Linie markiert den Eigenwert 1.",
+      "scree_hint": "Klicke auf einen Punkt, um so viele Faktoren zu behalten. Die gestrichelte Linie markiert den Eigenwert 1, die gepunktete die Parallelanalyse.",
       "axis_factor": "Faktor",
       "axis_eigenvalue": "Eigenwert",
       "kaiser_line": "Eigenwert 1",
@@ -777,7 +787,6 @@
       "increase": "Ein Faktor mehr",
       "range": "1 bis {max}",
       "following_suggestion": "Folgt dem Vorschlag (Eigenwert > 1)",
-      "use_suggestion": "Zurück zum Vorschlag ({n})",
       "explained": "{n} Faktor erklärt {pct} der Varianz.",
       "explained_plural": "Zusammen erklären {n} Faktoren {pct} der Varianz.",
       "rotation_label": "Rotation",
@@ -792,7 +801,36 @@
         "orthogonal": "Hält die Faktoren unkorreliert. Ladungen sind Korrelationen zwischen Maß und Faktor.",
         "oblique": "Erlaubt korrelierte Faktoren. Schritt 5 zeigt die Ladungen als Regressionsgewichte (Mustermatrix) oder als Korrelationen (Strukturmatrix).",
         "none": "Unrotierte Lösung. Der erste Faktor nimmt meist den Großteil der Varianz auf, was die Faktoren schwer deutbar macht."
-      }
+      },
+      "criteria_label": "Kriterien",
+      "criterion": {
+        "kaiser": "Kaiser",
+        "parallel": "Parallelanalyse",
+        "paper": "Paper"
+      },
+      "criterion_detail": {
+        "kaiser": "Eigenwerte über 1",
+        "parallel": "über dem {percentile}. Perzentil zufälliger Daten",
+        "paper": "a priori gewählt"
+      },
+      "criterion_count": "{n} Faktor",
+      "criterion_count_plural": "{n} Faktoren",
+      "criterion_capped": "{k} Faktoren sind mehr als die {max}, die diese Maße erlauben.",
+      "criteria_differ": "Die Kriterien legen unterschiedlich viele Faktoren nahe. Screeplot und Ladungen helfen bei der Entscheidung.",
+      "criteria_differ_paper": "Die Kriterien legen unterschiedlich viele Faktoren nahe. Kaiser und Parallelanalyse folgen aus den Daten; das Paper hat seine Zahl vor der Analyse gewählt.",
+      "random_point": "Parallelanalyse: {value}",
+      "cumulative_point": "kumulierter Anteil: {pct}",
+      "scree_desc_table": "Eine Tabelle mit allen Reihen folgt dem Diagramm.",
+      "legend_eigenvalues": "Eigenwerte",
+      "legend_parallel": "Parallelanalyse ({percentile}. Perzentil)",
+      "legend_cumulative": "Kumulierter Anteil der Eigenwerte (rechte Achse)",
+      "show_all": "Alle {n} zeigen",
+      "show_first": "Die ersten {n} zeigen",
+      "show_table": "Als Tabelle zeigen",
+      "hide_table": "Tabelle ausblenden",
+      "table_caption": "Eigenwerte, Parallelanalyse und kumulierter Anteil der Eigenwerte je Faktor",
+      "col_random": "Parallelanalyse ({percentile}. Perz.)",
+      "col_cumulative": "Kumulierter Anteil"
     },
     "loadings": {
       "threshold_label": "Ladungsschwelle",
@@ -826,12 +864,40 @@
       "factor_variance": "{pct} der Varianz",
       "factor_empty": "Kein Maß erreicht auf diesem Faktor die Schwelle.",
       "unassigned_heading": "Nicht zugeordnet",
-      "unassigned_hint": "Erreicht auf keinem Faktor die Ladungsschwelle oder liegt unter der Kommunalitätsschwelle.",
+      "unassigned_hint": "Diese Maße kommen nach der gewählten Regel zu keinem Faktor; der Grund steht jeweils daneben.",
       "communality_threshold_label": "Kommunalitätsschwelle",
       "matrix_label": "Matrix",
       "matrix_pattern": "Muster",
       "matrix_structure": "Struktur",
-      "correlations_heading": "Faktorkorrelationen"
+      "correlations_heading": "Faktorkorrelationen",
+      "assignment_label": "Zuordnung",
+      "rule": {
+        "largest": {
+          "title": "Größte Ladung",
+          "source": "ComFy-Report",
+          "text": "Jedes Maß kommt zu dem einen Faktor, auf dem es am stärksten lädt, wenn |λ| die Schwelle erreicht."
+        },
+        "multi": {
+          "title": "Mehrfachzuordnung",
+          "source": "Important Factors, Tab. 6–16",
+          "text": "|λ| über der Schwelle und h² ≥ {h2_multi}; eine Ladung höchstens {gap} unter der größten zählt mit."
+        },
+        "hair": {
+          "title": "Hair et al.",
+          "source": "Important Factors, Tab. 17",
+          "text": "h² ≥ {h2_hair}; ein Maß mit einer zweiten Ladung höchstens {gap} unter seiner größten fällt heraus."
+        }
+      },
+      "cross_cell": "Querladung",
+      "legend_cross": "Ring: weitere Ladung eines quergeladenen Maßes",
+      "also": "auch F{i}",
+      "also_title": "Lädt auch auf Faktor {i}: {value}",
+      "reason": {
+        "low_loading": "niedrige Ladung, |λ| {value}",
+        "low_communality": "niedrige Kommunalität, h² {value}",
+        "cross_loading": "lädt quer auf {factors}",
+        "cross_loading_plain": "lädt auf mehrere Faktoren"
+      }
     },
     "help": {
       "cleaning": "Vor der Analyse werden Zeilen entfernt, in denen die meisten Werte fehlen. Danach werden Spalten entfernt, die nicht numerisch sind, keine Varianz haben, fehlende Werte enthalten oder exakte Kopien einer früheren Spalte sind, wie in ComFy für Log-Maße. Solche Spalten würden die Korrelationsmatrix verzerren oder unbrauchbar machen.",
@@ -841,16 +907,18 @@
       "msa_filter": "Wie in ComFy werden alle Maße unter der Schwelle entfernt und die MSA-Werte neu berechnet, bis jedes verbleibende Maß die Schwelle erreicht.",
       "msa_threshold": "Der Filter entfernt Maße, deren MSA unter diesem Wert liegt, und der KMO-Gesamtwert gilt ab diesem Wert als ausreichend. ComFy und ComFy für Log-Maße nutzen 0,6.",
       "bartlett_alpha": "Das Signifikanzniveau des Tests nach Bartlett: Er ist bestanden, wenn p unter α liegt. ComFy und ComFy für Log-Maße nutzen 0,05.",
-      "scree": "Der Screeplot zeigt die Eigenwerte der Korrelationsmatrix in absteigender Reihenfolge. Suche den Knick, ab dem die Kurve flach wird; Faktoren danach tragen wenig bei. Knick und die Regel Eigenwert über 1 können sich widersprechen, nimm beide als Ausgangspunkt.",
+      "scree": "Der Screeplot zeigt die Eigenwerte der Korrelationsmatrix in absteigender Reihenfolge. Suche den Knick, ab dem die Kurve flach wird; Faktoren danach tragen wenig bei. Knick, die Regel Eigenwert über 1 und die Parallelanalyse können sich widersprechen, nimm sie als Ausgangspunkte. Die dünne Linie an der rechten Achse summiert die Eigenwerte auf: den Anteil der Varianz, den die ersten Hauptkomponenten erklären. Die Faktoren der Analyse erklären etwas weniger, wie Schritt 5 zeigt.",
       "eigenvalue": "Ein Eigenwert ist die Varianz, die ein Faktor erklärt, gemessen in Einheiten eines standardisierten Maßes. Der Vorschlag behält jeden Faktor mit Eigenwert über 1 (Kaiser-Kriterium), also jeden Faktor, der mehr erklärt als ein einzelnes Maß.",
       "rotation": "Die Rotation dreht die Faktorlösung so, dass jedes Maß auf möglichst wenigen Faktoren hoch lädt; das macht die Faktoren leichter benennbar. Wie viel Varianz die Faktoren zusammen erklären, ändert sie nicht. Varimax und Quartimax halten die Faktoren unkorreliert; Promax und Oblimin erlauben Korrelationen, was für Komplexitätsmaße oft realistischer ist.",
-      "threshold": "Ladungen, deren Betrag diese Schwelle erreicht, gelten als substanziell. Jedes Maß wird dem Faktor mit der betragsmäßig höchsten Ladung zugeordnet, wenn diese die Schwelle erreicht. Üblich sind Werte zwischen 0,3 und 0,5; ComFy nutzt 0,35, ComFy für Log-Maße 0,5.",
+      "threshold": "Ladungen, deren Betrag diese Schwelle erreicht, gelten als substanziell. Zu welchen Faktoren ein Maß kommt, bestimmt die Zuordnungsregel oben; bei der größten Ladung kommt es zu dem Faktor mit dem größten Betrag, wenn dieser die Schwelle erreicht. Üblich sind Werte zwischen 0,3 und 0,5; ComFy nutzt 0,35, ComFy for log measures 0,5.",
       "loading": "Eine Ladung gibt an, wie stark ein Maß mit einem Faktor zusammenhängt. Bei orthogonaler Rotation ist sie die Korrelation zwischen Maß und Faktor. Bei obliquer Rotation enthält die Mustermatrix Regressionsgewichte und die Strukturmatrix die Korrelationen. Das Vorzeichen gibt die Richtung an: Maße mit entgegengesetzten Vorzeichen auf demselben Faktor bewegen sich gegenläufig.",
       "communality": "Die Kommunalität h² ist der Anteil der Varianz eines Maßes, den alle behaltenen Faktoren zusammen erklären. Ein niedriger Wert (unter etwa 0,4) heißt, dass die Faktoren das Maß schlecht abbilden.",
       "variance": "SS-Ladungen sind die Summe der quadrierten Ladungen eines Faktors. Geteilt durch die Zahl der Maße ergibt sich der Anteil an der Gesamtvarianz, den der Faktor erklärt; die kumulierte Zeile summiert diese Anteile.",
-      "groups": "Jeder Faktor mit den ihm zugeordneten Maßen, stärkste Ladung zuerst. Maße einer Gruppe erfassen einen ähnlichen Aspekt von Komplexität; wie du den Faktor benennst, ist deine Interpretation.",
+      "groups": "Jeder Faktor mit den ihm zugeordneten Maßen, stärkste Ladung zuerst. Maße einer Gruppe erfassen einen ähnlichen Aspekt der Komplexität; wie der Faktor heißt, ist Sache der Interpretation. Bei Mehrfachzuordnung kann ein Maß in mehreren Gruppen stehen; ein Chip nennt seine anderen Faktoren.",
       "communality_threshold": "Maße mit einer Kommunalität unter diesem Wert bleiben unzugeordnet, weil die Faktoren zu wenig von ihnen erklären. ComFy für Log-Maße nutzt 0,5; 0 behält jedes Maß.",
-      "factor_correlations": "Bei obliquer Rotation dürfen die Faktoren korrelieren. Werte nahe 0 heißen, dass die Faktoren fast unabhängig sind; große Werte heißen, dass sie verwandte Aspekte messen."
+      "factor_correlations": "Bei obliquer Rotation dürfen die Faktoren korrelieren. Werte nahe 0 heißen, dass die Faktoren fast unabhängig sind; große Werte heißen, dass sie verwandte Aspekte messen.",
+      "assignment": "Wie aus den Ladungen Faktorgruppen werden. ComFys Report gibt jedes Maß dem Faktor, auf dem es am stärksten lädt. Important Factors nutzt zwei weitere Regeln: In Tab. 6–16 kommt ein Maß auch zu jedem Faktor, dessen Ladung höchstens {gap} unter seiner größten liegt (Mehrfachzuordnung), bei h² ≥ {h2_multi}; Tab. 17 folgt Hair et al. mit h² ≥ {h2_hair} und lässt quergeladene Maße weg. Die Faktorlösung ist bei jeder Regel dieselbe; nur die Gruppen ändern sich.",
+      "criteria": "Kaiser behält jeden Faktor mit einem Eigenwert über 1. Die Parallelanalyse (Horn) behält die Faktoren, deren Eigenwert über dem {percentile}. Perzentil der Eigenwerte von {simulations} zufälligen normalverteilten Datensätzen gleicher Größe liegt, berechnet auf Hauptkomponenten mit dem festen Seed {seed}; bei vielen Beobachtungen liegt sie nahe bei Kaiser. Ein Paper kann die Zahl auch vor der Analyse festlegen. Die Wahl eines Kriteriums setzt die Anzahl der Faktoren."
     },
     "errors": {
       "unknown_rotation": "Unbekannte Rotation „{rotation}“.",
@@ -875,7 +943,9 @@
       "interpretation_fallback_unavailable": "Das Modell hat abgelehnt, und das Ersatzmodell konnte gerade nicht laufen. Versuche es später noch einmal.",
       "interpretation_rate_limited": "Diese Sitzung hat ihr Limit an Interpretationen erreicht ({limit}). Versuche es später noch einmal.",
       "interpretation_limits_unavailable": "Der Server kann Interpretationen gerade nicht zählen. Versuche es später noch einmal.",
-      "interpretation_too_large": "Diese Analyse ist zu groß für eine Interpretation: gesendet werden höchstens {measures} Maße, {factors} Faktoren und Maßnamen mit {name_length} Zeichen. Schließe Maße aus oder wähle weniger Faktoren."
+      "interpretation_too_large": "Diese Analyse ist zu groß für eine Interpretation: gesendet werden höchstens {measures} Maße, {factors} Faktoren und Maßnamen mit {name_length} Zeichen. Schließe Maße aus oder wähle weniger Faktoren.",
+      "too_many_measures_for_analysis": "{n} Maße sind mehr als die {max}, die der Server auf einmal analysiert. Schließe in der Tabelle von Schritt 3 Maße aus.",
+      "superseded": "Eine neuere Analyse dieses Datensatzes, etwa in einem anderen Tab, hat diese ersetzt. Ändere eine Einstellung, um sie erneut zu starten."
     },
     "warnings": {
       "bartlett_not_significant": "Der Test nach Bartlett ist nicht signifikant (p = {p} ≥ {alpha}); die Maße sind womöglich unkorreliert.",
@@ -914,6 +984,124 @@
       "ready": "Die Interpretation von {n} Faktor ist fertig.",
       "ready_plural": "Die Interpretation von {n} Faktoren ist fertig.",
       "state_needs_key": "braucht einen API-Schlüssel"
+    },
+    "settings": {
+      "measures": "{used} von {total} Maßen",
+      "msa": "MSA ≥ {value}",
+      "msa_off": "kein MSA-Filter",
+      "alpha": "α = {value}",
+      "factors": "{n} Faktor (Kaiser {kaiser})",
+      "factors_plural": "{n} Faktoren (Kaiser {kaiser})",
+      "factors_kaiser": "{n} Faktor (Kaiser)",
+      "factors_kaiser_plural": "{n} Faktoren (Kaiser)",
+      "rotation": {
+        "varimax": "varimax",
+        "promax": "promax",
+        "oblimin": "oblimin",
+        "quartimax": "quartimax",
+        "none": "keine Rotation"
+      },
+      "loading": "|λ| ≥ {value}",
+      "communality": "h² ≥ {value}",
+      "rule": {
+        "largest": "größte Ladung",
+        "multi": "Mehrfachzuordnung",
+        "hair": "Hair"
+      },
+      "aria": "Einstellungen der Analyse",
+      "chip_title": "Zu dieser Einstellung",
+      "chip_changed_title": "Weicht vom Standard des Tools ab; zu dieser Einstellung",
+      "changed": "weicht vom Standard ab",
+      "reset": "Auf Standard zurücksetzen",
+      "reset_short": "Standard",
+      "reset_title": "Zurück zu den Standardeinstellungen des Tools",
+      "paper": "Paper-Einstellungen verwenden",
+      "paper_short": "Paper-Einstellungen",
+      "paper_title": "Die Einstellungen aus {source}",
+      "reset_done": "Standardeinstellungen wiederhergestellt.",
+      "paper_done": "Paper-Einstellungen übernommen."
+    },
+    "match": {
+      "chip_match": "Zahlen = ComFy-Report",
+      "chip_differs": "Weicht vom ComFy-Report ab",
+      "title": "Abgleich mit dem veröffentlichten Report",
+      "summary_match": "Jede verglichene Zahl stimmt auf {tolerance} mit dem Report überein.",
+      "summary_differs": "Zahlen, die um mehr als {tolerance} vom Report abweichen: {n}.",
+      "compared": "Verglichen",
+      "what": {
+        "bartlett": "Bartlett-Test",
+        "kmo": "KMO",
+        "msa": "MSA je Maß",
+        "msa_filter": "Entfernte Maße",
+        "loadings": "Ladungen",
+        "communalities": "Kommunalitäten"
+      },
+      "differences": "Abweichungen",
+      "col_what": "Wert",
+      "col_expected": "Report",
+      "col_actual": "Tool",
+      "numbers_only": "Verglichen werden nur Zahlen, nicht die Faktorgruppen.",
+      "source": "Report",
+      "settings_from": "Einstellungen aus"
+    },
+    "paper_notes": {
+      "tables": {
+        "matches": "Tab. {tables} des Papers enthält dieselben Zahlen.",
+        "extra_dup": "Tab. 8 des Papers nutzt zusätzlich dup ohne τ, das dieser Datensatz nicht hat; ihre Ladungen weichen um bis zu 0,06 ab, die Gruppen aus Tab. 9 bleiben gleich.",
+        "other_data": "Tab. 14–16 des Papers beruhen auf anderen Daten als dieser Datensatz.",
+        "not_in_paper": "Das Paper wertet diesen Miner nicht aus; die Zahlen sind die des Reports im Repository."
+      },
+      "datasets": {
+        "directly_follows": "Tab. 8 des Papers nutzt zusätzlich dup ohne τ.",
+        "hybrid_ilp": "Nicht deterministisch; die Daten weichen von Tab. 14–16 ab.",
+        "heuristics": "Im Paper nicht ausgewertet: nach MSA bleiben 4 Maße.",
+        "alpha_plus": "Nur im Repository, nicht im Paper.",
+        "alpha_dollar": "Werte identisch mit dem Alpha miner."
+      }
+    },
+    "link": {
+      "copy": "Link kopieren",
+      "copy_short": "Link",
+      "copy_title": "Einen Link kopieren, der diesen Datensatz mit diesen Einstellungen öffnet",
+      "copied": "Link kopiert",
+      "copied_short": "Kopiert",
+      "own_data": "Links gibt es nur für mitgelieferte Datensätze; eigene Daten bleiben in deiner Sitzung.",
+      "fallback_title": "Link zu dieser Analyse",
+      "fallback_hint": "Der Browser hat das Kopieren nicht erlaubt; kopiere den Link aus dem Feld.",
+      "field_label": "Link",
+      "opening": "Die verlinkte Analyse wird geöffnet…",
+      "opened": "Verlinkte Analyse geöffnet.",
+      "invalid": "Der Link enthielt Einstellungen, die das Tool nicht lesen kann; der Datensatz wurde daher mit den Standardeinstellungen geöffnet.",
+      "unknown": "Der Link nennt einen Datensatz, der auf diesem Reiter nicht mitgeliefert wird.",
+      "failed": "Der verlinkte Datensatz ließ sich nicht öffnen."
+    },
+    "start": {
+      "title": "Hier starten",
+      "collapsed_hint": "Zwei Analysen mit einem Klick und eine Beispiel-CSV",
+      "intro": "Jede öffnet einen mitgelieferten Datensatz mit seinen Einstellungen; nichts muss hochgeladen oder berechnet werden.",
+      "scenario": {
+        "if_inductive": {
+          "title": "Important Factors: Inductive miner",
+          "text": "Mit den Paper-Einstellungen: 4 Faktoren und Mehrfachzuordnung wie in Tab. 10–12, abgeglichen mit dem ComFy-Report."
+        },
+        "log_standard": {
+          "title": "Log-Maße von 2.112 PDC-Logs",
+          "text": "Die Daten des Log-Papers mit dem Standard des Tools: feeed-Maße, Faktorzahl nach Kaiser, varimax."
+        }
+      },
+      "example_csv": "Beispiel-CSV",
+      "example_csv_hint": "120 synthetische Beobachtungen von 8 Maßen, im Format eines eigenen Uploads."
+    },
+    "rail_summary": {
+      "removed": "{n} entfernt",
+      "removed_plural": "{n} entfernt",
+      "kmo": "KMO {value}",
+      "factors": "{n} Faktor · {pct}",
+      "factors_plural": "{n} Faktoren · {pct}",
+      "dimensions": "{n} Dimension",
+      "dimensions_plural": "{n} Dimensionen",
+      "cross": "{n} quergeladen",
+      "unassigned": "{n} ohne Faktor"
     }
   },
   "inspect": {
