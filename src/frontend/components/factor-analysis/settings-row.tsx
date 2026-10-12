@@ -23,16 +23,21 @@ const CONTROLS: Record<SettingChip["id"], string> = {
   rule: "fa-assignment",
 };
 
-/** Scrolls to a control and focuses it, or the chosen or first input inside it. */
+/**
+ * Scrolls to a control and focuses it, or the chosen or first input inside it. The selectors
+ * are tried in turn: one list would give the first match in document order, which is the "?"
+ * of the label above the inputs.
+ */
 function focusControl(id: string) {
   const el = document.getElementById(id);
   if (!el) return;
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   el.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
-  const target =
-    el.matches("input, button, output, [tabindex]")
-      ? el
-      : el.querySelector<HTMLElement>("input:checked, input:not([disabled]), button");
+  const target = el.matches("input, button, output, [tabindex]")
+    ? el
+    : (el.querySelector<HTMLElement>("input:checked") ??
+      el.querySelector<HTMLElement>("input:not([disabled])") ??
+      el.querySelector<HTMLElement>("button"));
   target?.focus({ preventScroll: true });
 }
 
