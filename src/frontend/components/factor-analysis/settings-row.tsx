@@ -57,8 +57,9 @@ interface Props {
 /**
  * The settings of steps 3 to 5 in one line, with the chips that differ from the tool standard
  * tinted, the buttons to go back to the standard or to the paper's settings, and whether the
- * numbers equal the published report. Sticky on a wide screen; on a phone it scrolls sideways
- * inside itself.
+ * numbers equal the published report. Sticky on a wide screen, where the buttons move to a second
+ * line when the first is full (German with the match chip is wider than 1400 px allow); on a
+ * phone it scrolls sideways inside itself.
  */
 export function SettingsRow({
   options,
@@ -86,8 +87,8 @@ export function SettingsRow({
       className="lg:sticky lg:top-3 z-20 rounded-lg bg-surface/95 backdrop-blur shadow-sm ring-1 ring-border/60"
     >
       {/* relative: screen-reader texts in the row stay inside it instead of widening the page. */}
-      <div className="relative flex items-center gap-2 px-2 py-1.5 overflow-x-auto no-scrollbar">
-        <ul className="flex items-center text-xs whitespace-nowrap shrink-0">
+      <div className="relative flex items-center gap-2 px-2 py-1.5 overflow-x-auto no-scrollbar lg:flex-wrap lg:gap-y-1 lg:overflow-x-visible">
+        <ul className="flex items-center text-xs whitespace-nowrap shrink-0 lg:shrink lg:flex-wrap lg:min-w-0">
           {chips.map((chip, i) => (
             <li key={chip.id} className="flex items-center">
               {i > 0 && (
@@ -110,41 +111,42 @@ export function SettingsRow({
             </li>
           ))}
         </ul>
-        <span className="flex-1" />
-        {match && <MatchChip match={match} publishedSource={publishedSource} />}
-        <span className="flex items-center gap-0.5 shrink-0">
-          <button
-            type="button"
-            className={action}
-            aria-disabled={isStandard || undefined}
-            onClick={() => !isStandard && onApply(standard, "standard")}
-            title={t("factor.settings.reset_title")}
-            aria-label={t("factor.settings.reset")}
-          >
-            <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-            <span aria-hidden className="hidden sm:inline">
-              {t("factor.settings.reset_short")}
-            </span>
-          </button>
-          {published && (
+        <span className="ml-auto flex items-center gap-2 shrink-0">
+          {match && <MatchChip match={match} publishedSource={publishedSource} />}
+          <span className="flex items-center gap-0.5">
             <button
               type="button"
               className={action}
-              aria-disabled={isPublished || undefined}
-              onClick={() => !isPublished && onApply(published, "published")}
-              title={publishedSource ? t("factor.settings.paper_title", { source: publishedSource }) : t("factor.settings.paper")}
-              aria-label={t("factor.settings.paper")}
+              aria-disabled={isStandard || undefined}
+              onClick={() => !isStandard && onApply(standard, "standard")}
+              title={t("factor.settings.reset_title")}
+              aria-label={t("factor.settings.reset")}
             >
-              <BookOpen className="h-3.5 w-3.5" aria-hidden />
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden />
               <span aria-hidden className="hidden sm:inline">
-                {t("factor.settings.paper_short")}
+                {t("factor.settings.reset_short")}
               </span>
             </button>
-          )}
-          <CopyLink
-            query={linkQuery}
-            className={action}
-          />
+            {published && (
+              <button
+                type="button"
+                className={action}
+                aria-disabled={isPublished || undefined}
+                onClick={() => !isPublished && onApply(published, "published")}
+                title={publishedSource ? t("factor.settings.paper_title", { source: publishedSource }) : t("factor.settings.paper")}
+                aria-label={t("factor.settings.paper")}
+              >
+                <BookOpen className="h-3.5 w-3.5" aria-hidden />
+                <span aria-hidden className="hidden sm:inline">
+                  {t("factor.settings.paper_short")}
+                </span>
+              </button>
+            )}
+            <CopyLink
+              query={linkQuery}
+              className={action}
+            />
+          </span>
         </span>
       </div>
     </section>
