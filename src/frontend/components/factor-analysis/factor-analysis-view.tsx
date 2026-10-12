@@ -30,16 +30,21 @@ import {
 } from "@/lib/api";
 import {
   PREVIEW_ROWS,
+  countText,
+  datasetName,
   defaultOptions,
+  dimensionCount,
   downloadBlob,
   initialOptions,
   optionsFromSaved,
   publishedOptions,
   sameOptions,
   solutionNeedsAttention,
+  unassignedMeasures,
   type AnalysisOptions,
   type ExportFormat,
 } from "@/lib/factor-analysis";
+import { formatNumber, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -679,6 +684,47 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       ? { interpretation: t("factor.interpretation.state_needs_key") }
       : {};
 
+  // One line per finished step for the step rail; settings are in the settings row instead.
+  const summaries: Partial<Record<StepId, string>> = {};
+  const finished = (id: StepId) => states[id] === "done" || states[id] === "warn";
+  if (dataset && catalog && finished("data")) {
+    summaries.data = bundled?.label ?? datasetName(dataset, t, catalog);
+  }
+  if (dataset && finished("dataset")) {
+    summaries.dataset = [
+      `${formatNumber(dataset.n_observations, locale)} × ${formatNumber(dataset.measures.length, locale)}`,
+      dataset.dropped.length > 0 ? countText(t, "factor.rail_summary.removed", dataset.dropped.length) : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  }
+  if (analysis && finished("suitability")) {
+    summaries.suitability = [
+      t("factor.rail_summary.kmo", { value: formatNumber(analysis.kmo.overall, locale, 2) }),
+      analysis.msa_filter.removed.length > 0
+        ? countText(t, "factor.rail_summary.removed", analysis.msa_filter.removed.length)
+        : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  }
+  if (analysis && finished("factors")) {
+    summaries.factors = countText(t, "factor.rail_summary.factors", analysis.n_factors, {
+      pct: formatPercent(analysis.variance.explained, locale),
+    });
+  }
+  if (analysis && finished("loadings")) {
+    const cross = analysis.cross_loadings?.length ?? 0;
+    const unassigned = unassignedMeasures(analysis).length;
+    summaries.loadings = [
+      countText(t, "factor.rail_summary.dimensions", dimensionCount(analysis)),
+      cross > 0 ? t("factor.rail_summary.cross", { n: cross }) : null,
+      unassigned > 0 ? t("factor.rail_summary.unassigned", { n: unassigned }) : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  }
+
   const updating = analyzing ? (
     <span className="inline-flex items-center gap-1.5 text-xs text-muted" role="status">
       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -739,7 +785,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       />
 
       <div className="lg:grid lg:grid-cols-[12.5rem_minmax(0,1fr)] lg:gap-8 lg:items-start">
-        <StepRail states={states} stateLabels={stateLabels} />
+        <StepRail states={states} stateLabels={stateLabels} summaries={summaries} />
 
         <div className="space-y-6 min-w-0">
           <StepSection
@@ -1109,20 +1155,71 @@ function AnalysisError({
 
 const STEP_IDS: StepId[] = ["data", "dataset", "suitability", "factors", "loadings", "interpretation"];
 
+/**
+ * The step in view: the last one whose top has passed the upper third of the window, or the
+ * last one on screen once the page cannot scroll further.
+ */
+function useStepInView(): StepId {
+  const [active, setActive] = useState<StepId>("data");
+  useEffect(() => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const line = window.innerHeight / 3;
+      const atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+      let current: StepId = STEP_IDS[0];
+      for (const id of STEP_IDS) {
+        const top = document.getElementById(stepAnchor(id))?.getBoundingClientRect().top;
+        if (top !== undefined && (top <= line || (atEnd && top < window.innerHeight))) current = id;
+      }
+      setActive(current);
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+    };
+  }, []);
+  return active;
+}
+
 function StepRail({
   states,
   stateLabels,
+  summaries,
 }: {
   states: Record<StepId, StepState>;
   /** Replaces the generic text of a state for screen readers, e.g. why a step is locked. */
   stateLabels: Partial<Record<StepId, string>>;
+  /** What a finished step found, e.g. "KMO 0.75 · 2 removed"; else the step is described. */
+  summaries: Partial<Record<StepId, string>>;
 }) {
   const t = useT();
+  const active = useStepInView();
+  const listRef = useRef<HTMLOListElement>(null);
+  // On a phone the rail scrolls sideways: keep the step in view visible in it, without moving
+  // the page.
+  useEffect(() => {
+    const list = listRef.current;
+    const item = list?.querySelector<HTMLElement>('[aria-current="step"]');
+    if (!list || !item || list.scrollWidth <= list.clientWidth) return;
+    const left = item.offsetLeft - list.offsetLeft;
+    if (left < list.scrollLeft || left + item.offsetWidth > list.scrollLeft + list.clientWidth) {
+      list.scrollLeft = Math.max(0, left - 8);
+    }
+  }, [active]);
   return (
     <nav aria-label={t("factor.steps.aria")} className="mb-6 lg:mb-0 lg:sticky lg:top-6">
-      <ol className="flex lg:flex-col gap-1 overflow-x-auto no-scrollbar -mx-1 px-1 lg:mx-0 lg:px-0">
+      <ol ref={listRef} className="flex lg:flex-col gap-1 overflow-x-auto no-scrollbar -mx-1 px-1 lg:mx-0 lg:px-0">
         {STEP_IDS.map((id, i) => {
           const state = states[id];
+          const current = id === active;
           return (
             <li key={id} className="relative shrink-0">
               {i < STEP_IDS.length - 1 && (
@@ -1130,16 +1227,24 @@ function StepRail({
               )}
               <a
                 href={`#${stepAnchor(id)}`}
+                aria-current={current ? "step" : undefined}
                 className={cn(
                   "flex items-center gap-2.5 rounded-md px-2 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
                   state === "locked" ? "text-muted hover:bg-surface/60" : "hover:bg-surface",
+                  current && "bg-surface",
                 )}
               >
                 <StepBadge n={i + 1} state={state} />
                 <span className="min-w-0">
                   <span className="block text-sm font-medium whitespace-nowrap">{t(`factor.steps.${id}`)}</span>
-                  <span className="hidden lg:block text-[11px] text-muted leading-snug">
-                    {t(`factor.rail.${id}`)}
+                  <span
+                    className={cn(
+                      "hidden lg:block text-[11px] leading-snug max-w-[9.5rem]",
+                      summaries[id] ? "text-fg/80 line-clamp-2 break-words" : "text-muted",
+                    )}
+                    title={summaries[id]}
+                  >
+                    {summaries[id] ?? t(`factor.rail.${id}`)}
                   </span>
                   <span className="sr-only"> ({stateLabels[id] ?? t(`factor.state.${state}`)})</span>
                 </span>

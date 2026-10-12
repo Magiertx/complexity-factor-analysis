@@ -1087,6 +1087,17 @@
       },
       "example_csv": "Example CSV",
       "example_csv_hint": "120 synthetic observations of 8 measures, in the format of an own upload."
+    },
+    "rail_summary": {
+      "removed": "{n} removed",
+      "removed_plural": "{n} removed",
+      "kmo": "KMO {value}",
+      "factors": "{n} factor · {pct}",
+      "factors_plural": "{n} factors · {pct}",
+      "dimensions": "{n} dimension",
+      "dimensions_plural": "{n} dimensions",
+      "cross": "{n} cross-loaded",
+      "unassigned": "{n} unassigned"
     }
   },
   "inspect": {

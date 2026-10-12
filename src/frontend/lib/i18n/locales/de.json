@@ -1087,6 +1087,17 @@
       },
       "example_csv": "Beispiel-CSV",
       "example_csv_hint": "120 synthetische Beobachtungen von 8 Maßen, im Format eines eigenen Uploads."
+    },
+    "rail_summary": {
+      "removed": "{n} entfernt",
+      "removed_plural": "{n} entfernt",
+      "kmo": "KMO {value}",
+      "factors": "{n} Faktor · {pct}",
+      "factors_plural": "{n} Faktoren · {pct}",
+      "dimensions": "{n} Dimension",
+      "dimensions_plural": "{n} Dimensionen",
+      "cross": "{n} quergeladen",
+      "unassigned": "{n} ohne Faktor"
     }
   },
   "inspect": {
