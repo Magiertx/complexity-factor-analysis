@@ -26,9 +26,9 @@ test("IF Inductive goes through all six steps and exports the analysis as ZIP", 
   // Kaiser's two factors leave a measure at the bound of the fit (a possible Heywood case),
   // which step 4 points out.
   await expectStep(page, "factors", "done|warn");
-  // Step 6 is reached: it asks for Claude (with an API key on the server), shows a
-  // precomputed interpretation, or says that the key is missing. It is never "not available
-  // yet" once the analysis is there. The test never asks Claude.
+  // Step 6 is reached: it offers an interpretation (with an API key on the server), shows a
+  // precomputed one, or says that the key is missing. It is never "not available yet" once
+  // the analysis is there. The test never starts an interpretation, which would cost money.
   await expect(stepLink(page, "interpretation")).not.toHaveAccessibleName(pattern(`(${text("factor.state.locked")})`));
   const interpretation = stepSection(page, "interpretation");
   await expect(interpretation.getByRole("button", { name: text("factor.interpretation.button") }).or(
