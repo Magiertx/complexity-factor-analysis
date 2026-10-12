@@ -161,7 +161,8 @@ export function signColor(value: number): string {
 
 /**
  * Measures in display order. "factor" groups them by assigned factor, strongest loading
- * first, with unassigned measures at the end; "original" keeps the dataset order.
+ * first, with unassigned measures at the end; "original" keeps the dataset order. For display
+ * only: the analysis always runs on the stored order, on which the KMO of singular data depends.
  */
 export function orderMeasures(analysis: FactorAnalysis, order: "factor" | "original"): string[] {
   if (order === "original") return analysis.used_measures;
