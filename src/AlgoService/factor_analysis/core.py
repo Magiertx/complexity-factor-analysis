@@ -51,6 +51,40 @@ LOADING_THRESHOLDS = {"model": 0.35, "log": _C.ignore_threshold}
 COMMUNALITY_THRESHOLDS = {"model": 0.0, "log": _C.communality_threshold}
 
 
+@dataclass(frozen=True)
+class AssignmentRule:
+    """How measures are assigned to factors once the loadings are known.
+
+    A loading counts for a factor if its absolute value reaches the loading threshold, or
+    exceeds it if ``strict``. A measure is cross-loaded if more than one of its loadings
+    counts and lies at most ``CROSS_LOADING_GAP`` below its largest one.
+    """
+
+    #: Measures with a lower communality stay unassigned, whatever communality_threshold says.
+    min_communality: float
+    strict: bool
+    #: What a cross-loaded measure gets: "largest" the factor of its largest loading only,
+    #: "all" every factor of the cross-loading, "none" no factor.
+    cross_loaded: str
+
+
+#: Loadings at most this far below a measure's largest one count as well (multi) or make it
+#: cross-loaded (hair); Important Factors, ATAED 2026, section 5.3.
+CROSS_LOADING_GAP = 0.15
+
+ASSIGNMENT_RULES = {
+    # ComFy's report: the largest absolute loading, if it reaches the threshold.
+    "largest": AssignmentRule(min_communality=0.0, strict=False, cross_loaded="largest"),
+    # Important Factors, Tab. 6-16, after Lieben et al.: |loading| > 0.35 and communality
+    # >= 0.3, a cross-loaded measure belongs to every factor of its cross-loading.
+    "multi": AssignmentRule(min_communality=0.3, strict=True, cross_loaded="all"),
+    # Important Factors, Tab. 17, after Hair et al.: communality >= 0.5, cross-loaded measures
+    # are left out.
+    "hair": AssignmentRule(min_communality=0.5, strict=True, cross_loaded="none"),
+}
+DEFAULT_ASSIGNMENT_RULE = "largest"
+
+
 def _check_array_compat(x, force_all_finite=None, **kwargs):
     # scikit-learn 1.6 renamed force_all_finite to ensure_all_finite and 1.8 removed the old
     # name; factor_analyzer 0.5.1 still passes it. Same patch as in ComFy for log measures.
@@ -405,25 +439,78 @@ def _factor_count_error(n_factors: int, p: int) -> AnalysisError:
     )
 
 
-def assign_factors(
+@dataclass
+class Assignment:
+    #: Per factor, ``index`` counting from 0 and its ``measures`` with their loadings, largest
+    #: absolute loading first; a measure can be in several factors under "multi".
+    factors: list[dict[str, Any]]
+    #: Measures in no factor, in the order of the loadings, each with the ``reason``:
+    #: low_communality, low_loading or cross_loading.
+    unassigned: list[dict[str, str]]
+    #: Measures with more than one loading within CROSS_LOADING_GAP of their largest, with the
+    #: factors and loadings of the cross-loading, largest absolute loading first.
+    cross_loadings: list[dict[str, Any]]
+    #: The communality a measure needs: communality_threshold, or the rule's minimum if higher.
+    communality_threshold: float
+
+
+#: Absolute differences of loadings this small count as equal; keeps a gap of exactly 0.15
+#: from turning on the last bit.
+_GAP_TOLERANCE = 1e-12
+
+
+def assign(
     loadings: pd.DataFrame,
     threshold: float,
     communalities: dict[str, float] | None = None,
     communality_threshold: float = 0.0,
-) -> tuple[list[dict[str, Any]], list[str]]:
-    """Put each measure on the factor with its largest absolute loading, if that reaches the
-    threshold and its communality reaches ``communality_threshold``. Within a factor, measures
-    are sorted by absolute loading, largest first. ``index`` counts the factors from 0."""
+    rule: str = DEFAULT_ASSIGNMENT_RULE,
+) -> Assignment:
+    """Assign each measure to factors by ``rule`` (``ASSIGNMENT_RULES``).
+
+    A measure is checked in this order: communality (``communality_threshold`` or the rule's
+    minimum, whichever is higher), then its largest absolute loading against ``threshold``,
+    then cross-loadings. Cross-loadings are reported under every rule, so that a client can
+    show them; only "multi" and "hair" act on them.
+    """
+    _check_rule(rule)
+    spec = ASSIGNMENT_RULES[rule]
+    min_communality = max(communality_threshold, spec.min_communality)
+
+    def counts(value: float) -> bool:
+        return value > threshold if spec.strict else value >= threshold
+
     groups: list[list[tuple[str, float]]] = [[] for _ in loadings.columns]
-    unassigned: list[str] = []
+    unassigned: list[dict[str, str]] = []
+    cross_loadings: list[dict[str, Any]] = []
     for measure, row in loadings.iterrows():
-        values = row.to_numpy()
-        best = int(np.argmax(np.abs(values)))
-        weak = communalities is not None and communalities[str(measure)] < communality_threshold
-        if abs(values[best]) >= threshold and not weak:
-            groups[best].append((str(measure), float(values[best])))
-        else:
-            unassigned.append(str(measure))
+        measure = str(measure)
+        values = row.to_numpy(dtype=float)
+        absolute = np.abs(values)
+        largest = float(absolute.max())
+        if communalities is not None and communalities[measure] < min_communality:
+            unassigned.append({"measure": measure, "reason": "low_communality"})
+            continue
+        if not counts(largest):
+            unassigned.append({"measure": measure, "reason": "low_loading"})
+            continue
+        # Largest first; a stable sort keeps the lower factor first among equal loadings.
+        gap = CROSS_LOADING_GAP + _GAP_TOLERANCE
+        close = sorted(
+            (j for j in range(len(values)) if counts(absolute[j]) and largest - absolute[j] <= gap),
+            key=lambda j: -absolute[j],
+        )
+        if len(close) > 1:
+            cross_loadings.append({
+                "measure": measure,
+                "factors": close,
+                "loadings": [float(values[j]) for j in close],
+            })
+            if spec.cross_loaded == "none":
+                unassigned.append({"measure": measure, "reason": "cross_loading"})
+                continue
+        for j in close if spec.cross_loaded == "all" else close[:1]:
+            groups[j].append((measure, float(values[j])))
     factors = [
         {
             "index": i,
@@ -433,7 +520,26 @@ def assign_factors(
         }
         for i, g in enumerate(groups)
     ]
-    return factors, unassigned
+    return Assignment(
+        factors=factors,
+        unassigned=unassigned,
+        cross_loadings=cross_loadings,
+        communality_threshold=min_communality,
+    )
+
+
+def assign_factors(
+    loadings: pd.DataFrame,
+    threshold: float,
+    communalities: dict[str, float] | None = None,
+    communality_threshold: float = 0.0,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Put each measure on the factor with its largest absolute loading, if that reaches the
+    threshold and its communality reaches ``communality_threshold`` (the rule "largest").
+    Within a factor, measures are sorted by absolute loading, largest first. ``index`` counts
+    the factors from 0."""
+    result = assign(loadings, threshold, communalities, communality_threshold, "largest")
+    return result.factors, [u["measure"] for u in result.unassigned]
 
 
 # --- the whole analysis -------------------------------------------------------------------
@@ -449,6 +555,7 @@ class AnalysisParams:
     rotation: str = "varimax"
     loading_threshold: float = LOADING_THRESHOLDS["model"]
     communality_threshold: float = COMMUNALITY_THRESHOLDS["model"]
+    assignment_rule: str = DEFAULT_ASSIGNMENT_RULE
 
 
 def _finite(value: float) -> float | None:
@@ -496,9 +603,15 @@ def _check_size(n: int, p: int) -> None:
         )
 
 
+def _check_rule(rule: str) -> None:
+    if rule not in ASSIGNMENT_RULES:
+        raise AnalysisError(f"Unknown assignment rule '{rule}'.", "unknown_assignment_rule", rule=rule)
+
+
 def check_params(measures: list[str], n_observations: int, params: AnalysisParams) -> None:
     """The checks of ``analyze`` that need no fit, with the same errors. The MSA filter can
     still leave too few measures, or too few for the factor count; only the analysis tells."""
+    _check_rule(params.assignment_rule)
     check_excluded(measures, params.excluded)
     p = len(measures) - len(set(params.excluded))
     _check_size(n_observations, p)
@@ -517,6 +630,7 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
     The measures keep the order of ``data``, which callers take as stored: on singular data
     the KMO depends on the column order, so nothing may sort the columns on the way here.
     """
+    _check_rule(params.assignment_rule)
     check_excluded(list(data.columns), params.excluded)
     data = data.drop(columns=list(params.excluded))
     n, p = data.shape
@@ -606,9 +720,14 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
             measures=names,
         )
 
-    factors, unassigned = assign_factors(
-        fit.loadings, params.loading_threshold, fit.communalities, params.communality_threshold
+    assignment = assign(
+        fit.loadings,
+        params.loading_threshold,
+        fit.communalities,
+        params.communality_threshold,
+        params.assignment_rule,
     )
+    rule = ASSIGNMENT_RULES[params.assignment_rule]
 
     def by_measure(frame: pd.DataFrame) -> dict[str, list[float]]:
         return {m: [float(v) for v in row] for m, row in zip(frame.index, frame.to_numpy())}
@@ -648,8 +767,19 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
             "cumulative": fit.cumulative,
             "explained": fit.explained,
         },
-        "factors": factors,
-        "unassigned": unassigned,
+        "assignment_rule": params.assignment_rule,
+        "assignment": {
+            "rule": params.assignment_rule,
+            "loading_threshold": params.loading_threshold,
+            "loading_strict": rule.strict,
+            "communality_threshold": assignment.communality_threshold,
+            "cross_loading_gap": CROSS_LOADING_GAP,
+            "cross_loaded": rule.cross_loaded,
+        },
+        "factors": assignment.factors,
+        "unassigned": [u["measure"] for u in assignment.unassigned],
+        "unassigned_details": assignment.unassigned,
+        "cross_loadings": assignment.cross_loadings,
         "warnings": [w["message"] for w in out.items],
         "warning_details": out.items,
     }

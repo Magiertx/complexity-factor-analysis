@@ -813,6 +813,8 @@ class AnalyzeRequest(BaseModel):
     #: Defaults depend on the kind: 0.35 and 0 for model, 0.5 and 0.5 for log measures.
     loading_threshold: float | None = Field(None, ge=0.0, le=1.0)
     communality_threshold: float | None = Field(None, ge=0.0, le=1.0)
+    #: core.ASSIGNMENT_RULES: "largest" as ComFy's report, "multi" and "hair" as Important Factors.
+    assignment_rule: Literal["largest", "multi", "hair"] = "largest"
 
     def params(self, kind: str) -> AnalysisParams:
         values = self.model_dump(include=set(AnalysisParams.__dataclass_fields__))

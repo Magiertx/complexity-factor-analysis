@@ -215,6 +215,7 @@ def test_options_round_trip(client):
         "rotation": "promax",
         "loading_threshold": 0.4,
         "communality_threshold": None,
+        "assignment_rule": "largest",
     }
     assert _list(client)[0]["has_options"] is True
 
@@ -412,7 +413,7 @@ def test_zip_of_a_bundled_dataset(client):
     names = archive.namelist()
     assert set(names) == {
         "manifest.json", "README.txt", "analysis.json", "dataset.csv", "loadings.csv", "loadings.tex",
-        "eigenvalues.csv", "msa.csv",
+        "assignment.csv", "eigenvalues.csv", "msa.csv",
     }
     analysis = client.post(f"{url}/analyze", json=body).json()
     assert json.loads(archive.read("analysis.json")) == analysis
@@ -444,6 +445,7 @@ def test_zip_of_a_bundled_dataset(client):
     assert manifest["analysis_params"] == {
         "excluded": ["Density"], "auto_msa_filter": True, "msa_threshold": 0.6, "bartlett_alpha": 0.05,
         "n_factors": 3, "rotation": "varimax", "loading_threshold": 0.35, "communality_threshold": 0.0,
+        "assignment_rule": "largest",
     }
     assert set(manifest["libraries"]) >= {"factor_analyzer", "numpy", "pandas", "scipy"}
     assert all(manifest["libraries"].values())

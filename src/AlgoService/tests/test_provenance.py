@@ -90,7 +90,7 @@ def _check_tool_and_analysis(manifest: dict) -> None:
     }
     analysis = manifest["analysis"]
     assert analysis["method"] == "minres" and analysis["library"] == "factor_analyzer"
-    assert analysis["assignment_rule"] == "largest_loading"
+    assert analysis["assignment_rule"] == "largest"
     assert analysis["seed"] is None
     assert [f["name"] for f in analysis["follows"]] == ["ComFy", "ComFy for log measures"]
     assert analysis["follows"][0]["commit"] == "1dd6ea610017cbca65bb54735ac6db922af00e8d"
@@ -119,7 +119,7 @@ def test_paper_dataset(client):
     }
     assert "Complexity Factor Analysis v0.9, commit 0123456789abcdef0123456789abcdef01234567." in readme
     assert "the bundled dataset comfy-paper-inductive-miner, copied from https://github.com/Pati-nets/ComFy" in readme
-    assert "largest absolute loading (largest_loading), no random seed" in readme
+    assert "assignment rule largest: each measure on the factor of its largest absolute loading (ComFy); no random seed." in readme
 
 
 def test_bundled_log_dataset_names_the_older_feeed(client):

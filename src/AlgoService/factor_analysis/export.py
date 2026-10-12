@@ -15,6 +15,8 @@ from config import APP_NAME
 from vendored.comfy_log import Constants as _C
 from zip_export import csv_cell
 
+from .core import CROSS_LOADING_GAP
+
 _LATEX_SPECIAL = {
     "\\": r"\textbackslash{}",
     "&": r"\&",
@@ -58,24 +60,55 @@ def matrix_csv(data: pd.DataFrame) -> str:
     return "".join(lines)
 
 
+#: How each rule of core.ASSIGNMENT_RULES assigns measures, for the notes of the exports.
+ASSIGNMENT_RULE_TEXTS = {
+    "largest": "each measure on the factor of its largest absolute loading (ComFy)",
+    "multi": (
+        f"each measure on every factor whose absolute loading exceeds the threshold and lies at most "
+        f"{CROSS_LOADING_GAP} below its largest (Important Factors, after Lieben et al.)"
+    ),
+    "hair": (
+        f"each measure on the factor of its largest absolute loading; measures with another loading "
+        f"at most {CROSS_LOADING_GAP} below it are left out (Important Factors, Tab. 17, after Hair et al.)"
+    ),
+}
+
+
+def _assignment(result: dict[str, Any]) -> dict[str, Any]:
+    """The assignment block of a result; results stored before it existed used "largest"."""
+    return result.get("assignment") or {
+        "rule": "largest",
+        "loading_threshold": result["loading_threshold"],
+        "loading_strict": False,
+        "communality_threshold": result.get("communality_threshold", 0.0),
+    }
+
+
 def loadings_latex(result: dict[str, Any]) -> str:
-    """A booktabs ``tabular``; loadings whose absolute value reaches the loading threshold are
-    bold, unless the communality of the measure is below the communality threshold."""
+    """A booktabs ``tabular``; loadings whose absolute value reaches the loading threshold (or
+    exceeds it, as the assignment rule asks) are bold, unless the communality of the measure
+    is below the communality the rule needs."""
     decimals = _C.number_of_decimals
     names = _factor_names(result)
-    threshold = result["loading_threshold"]
-    min_communality = result.get("communality_threshold", 0.0)
+    assignment = _assignment(result)
+    threshold = assignment["loading_threshold"]
+    strict = assignment["loading_strict"]
+    min_communality = assignment["communality_threshold"]
     matrix = "pattern loadings" if result.get("structure_loadings") else "loadings"
 
     def cell(value: float, bold: bool = False) -> str:
         number = f"{value:.{decimals}f}"
         return f"$\\mathbf{{{number}}}$" if bold else f"${number}$"
 
+    def counts(value: float) -> bool:
+        return abs(value) > threshold if strict else abs(value) >= threshold
+
     lines = [
         "% Requires \\usepackage{booktabs}.",
         f"% {result['rotation']} rotation, {matrix}, {result['n_factors']} factor(s), "
-        f"{result['n_observations']} observations; bold: |loading| >= {threshold}"
+        f"{result['n_observations']} observations; bold: |loading| {'>' if strict else '>='} {threshold}"
         + (f" and communality >= {min_communality}." if min_communality else "."),
+        f"% Assignment rule {assignment['rule']}: {ASSIGNMENT_RULE_TEXTS[assignment['rule']]}.",
         "\\begin{tabular}{l" + "r" * len(names) + "r}",
         "\\toprule",
         "Measure & " + " & ".join(names) + " & Communality \\\\",
@@ -83,7 +116,7 @@ def loadings_latex(result: dict[str, Any]) -> str:
     ]
     for measure, row in result["loadings"].items():
         communality = result["communalities"][measure]
-        cells = [cell(v, abs(v) >= threshold and communality >= min_communality) for v in row]
+        cells = [cell(v, counts(v) and communality >= min_communality) for v in row]
         cells.append(cell(communality))
         lines.append(latex_escape(measure) + " & " + " & ".join(cells) + " \\\\")
     lines += ["\\bottomrule", "\\end{tabular}", ""]
@@ -142,7 +175,28 @@ def _library_versions() -> dict[str, str | None]:
 _TABS = {"model": "Model complexity", "log": "Log complexity"}
 
 
-def _provenance_lines(dataset: dict[str, Any], tool: dict[str, Any]) -> list[str]:
+def assignment_csv(result: dict[str, Any]) -> str:
+    """One row per used measure: the factors the assignment rule put it on (counted from 1,
+    as in the loadings table), why it is on none, and the factors of its cross-loading,
+    largest absolute loading first."""
+    assigned: dict[str, list[int]] = {}
+    for factor in result["factors"]:
+        for entry in factor["measures"]:
+            assigned.setdefault(entry["measure"], []).append(factor["index"] + 1)
+    reasons = {u["measure"]: u["reason"] for u in result.get("unassigned_details", [])}
+    cross = {c["measure"]: c["factors"] for c in result.get("cross_loadings", [])}
+    lines = [_csv_line(["measure", "factors", "reason", "cross_loading"])]
+    for measure in result["used_measures"]:
+        lines.append(_csv_line([
+            measure,
+            " ".join(map(str, sorted(assigned.get(measure, [])))),
+            reasons.get(measure, ""),
+            " ".join(str(i + 1) for i in cross.get(measure, [])),
+        ]))
+    return "".join(lines)
+
+
+def _provenance_lines(dataset: dict[str, Any], result: dict[str, Any], tool: dict[str, Any]) -> list[str]:
     """The provenance of manifest.json in a few lines."""
     origin = dataset.get("provenance") or {}
     unknown = "not recorded"
@@ -174,10 +228,11 @@ def _provenance_lines(dataset: dict[str, Any], tool: dict[str, Any]) -> list[str
     libraries = origin.get("libraries") or {}
     if libraries.get("pm4py"):
         lines.append(f"  Inputs read with pm4py {libraries['pm4py']}.")
-    analysis = provenance.analysis()
+    analysis = provenance.analysis(result)
+    rule = analysis["assignment_rule"]
     lines.append(
-        f"  Analysis: {analysis['method']} ({analysis['library']}), measures assigned to the factor "
-        f"of their largest absolute loading ({analysis['assignment_rule']}), no random seed."
+        f"  Analysis: {analysis['method']} ({analysis['library']}), assignment rule {rule}: "
+        f"{ASSIGNMENT_RULE_TEXTS[rule]}; no random seed."
     )
     return lines
 
@@ -227,7 +282,7 @@ def _readme(
         "  manifest.json lists the library versions the analysis ran with; with the same versions",
         "  on the same platform the loadings are equal to those in analysis.json.",
         "",
-        *_provenance_lines(dataset, tool),
+        *_provenance_lines(dataset, result, tool),
     ]
     if result["structure_loadings"] is not None:
         lines += [
@@ -259,6 +314,9 @@ def analysis_zip(
          "Loadings per measure and factor with the communality"
          + ("; the pattern matrix." if result["structure_loadings"] is not None else ".")),
         ("loadings.tex", loadings_latex(result), "The loadings as a booktabs tabular for LaTeX."),
+        ("assignment.csv", assignment_csv(result),
+         f"The factors each measure is assigned to by the rule {result.get('assignment_rule', 'largest')}, "
+         "or why it is on none, and its cross-loadings."),
     ]
     if result["structure_loadings"] is not None:
         files += [
@@ -291,7 +349,7 @@ def analysis_zip(
         "tool": tool,
         "dataset": dataset,
         "analysis_params": params,
-        "analysis": provenance.analysis(),
+        "analysis": provenance.analysis(result),
         "libraries": _library_versions(),
         "files": listing,
     }
