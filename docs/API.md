@@ -333,9 +333,11 @@ The steps match ComFy:
    Next to it, Horn's parallel analysis on the same matrix: the eigenvalues of the
    correlation matrices of 100 samples of standard normal data of the same size, their 95th
    percentile per rank, drawn by numpy's default generator from the fixed seed 20261012 and
-   cached per size. It suggests the number of leading eigenvalues above their random
-   counterpart, at least 1. Like the scree plot it is PCA-based, so on large samples it lies
-   close to Kaiser.
+   cached per size; requests for the same size at the same time share one computation. It
+   suggests the number of leading eigenvalues above their random counterpart, at least 1.
+   Like the scree plot it is PCA-based, so on large samples it lies close to Kaiser. On the
+   bundled data it takes well under a second, on an upload of 100,000 rows about a minute,
+   which `elapsed_ms` then includes.
 4. `FactorAnalyzer` (minres) with `n_factors` (default: the Kaiser suggestion) and the rotation
    (`varimax`, `promax`, `oblimin`, `quartimax`, `none`).
 5. Measures go to factors by `assignment_rule`:
@@ -439,8 +441,9 @@ that is not ready answers 409.
 **Latest wins.** The UI sends an analyze request on every change and drops the answer to the
 one before. So the server gives up an analysis once a newer analyze request of the same
 session and dataset arrives with other parameters, and one whose client closed the
-connection: before and after waiting for one of the two analysis slots, and during the fit,
-which stops within milliseconds. Such a request answers 409 with `"code": "superseded"`. A
+connection: before and after waiting for one of the two analysis slots, and while it waits
+for parallel analysis and the fit, which stop once nobody waits for them any more. Such a
+request answers 409 with `"code": "superseded"` at once and frees its slot. A
 newer request with the same parameters replaces nothing; requests for the same fit, of any
 session, wait for the one that is running instead of fitting again. Clients that run several
 analyses of one dataset at once send `?latest_wins=false`; their requests are then given up

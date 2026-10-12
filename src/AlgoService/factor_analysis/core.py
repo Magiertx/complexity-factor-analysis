@@ -141,6 +141,90 @@ def _check_stop(should_stop: StopCheck | None) -> None:
         raise Superseded()
 
 
+@dataclass
+class _Flight:
+    """A computation in progress, which callers asking for the same result wait for instead
+    of running it again."""
+
+    #: The stop checks of everybody waiting for it; None for a caller that always wants it.
+    wanted: list[StopCheck | None]
+    done: threading.Event = field(default_factory=threading.Event)
+    value: Any = None
+    error: BaseException | None = None
+
+    def stale(self) -> bool:
+        """Given up only once nobody wants it any more."""
+        return all(check is not None and check() for check in self.wanted)
+
+
+#: How often a caller waiting for somebody else's computation asks whether it is still wanted.
+_FLIGHT_POLL_S = 0.05
+
+
+def _computed_once(
+    key: Any,
+    cache: OrderedDict,
+    lock: threading.Lock,
+    in_flight: dict,
+    size: int,
+    compute: Callable[[StopCheck], Any],
+    should_stop: StopCheck | None,
+) -> Any:
+    """``cache[key]``, else ``compute(stale)``, run once for all callers that ask for the same
+    key while it runs. The most recently used ``size`` results are kept.
+
+    It runs in a thread of its own, which every caller waits for, the first one included:
+    ``should_stop`` gives a caller up with ``Superseded`` within ``_FLIGHT_POLL_S``, so an
+    analysis nobody waits for any more frees its slot at once even while the computation goes
+    on for somebody else. The computation gets ``stale`` as its stop check: it is given up only
+    when every caller waiting for it is, and then nothing is cached."""
+    while True:
+        with lock:
+            if key in cache:
+                cache.move_to_end(key)
+                return cache[key]
+            flight = in_flight.get(key)
+            if flight is None:
+                flight = in_flight[key] = _Flight(wanted=[should_stop])
+                threading.Thread(
+                    target=_fly, args=(key, flight, cache, lock, in_flight, size, compute), daemon=True
+                ).start()
+            else:
+                flight.wanted.append(should_stop)
+        while not flight.done.wait(_FLIGHT_POLL_S):
+            _check_stop(should_stop)
+        if flight.error is None:
+            return flight.value
+        if not isinstance(flight.error, Superseded):
+            raise flight.error
+        # Given up just before this caller asked for it; it starts the computation again.
+        _check_stop(should_stop)
+
+
+def _fly(
+    key: Any,
+    flight: _Flight,
+    cache: OrderedDict,
+    lock: threading.Lock,
+    in_flight: dict,
+    size: int,
+    compute: Callable[[StopCheck], Any],
+) -> None:
+    """The thread of a computation of ``_computed_once``; its callers get the value or the
+    error from ``flight``."""
+    try:
+        flight.value = compute(flight.stale)
+    except BaseException as e:
+        flight.error = e
+    with lock:
+        if flight.error is None:
+            cache[key] = flight.value
+            if len(cache) > size:
+                cache.popitem(last=False)
+        del in_flight[key]
+    flight.done.set()
+
+
 # --- cleaning ----------------------------------------------------------------------------
 
 
@@ -346,35 +430,41 @@ def kaiser_criterion(values: list[float]) -> int:
 _RANDOM_EIGENVALUES: OrderedDict[tuple[int, int], list[float]] = OrderedDict()
 _RANDOM_EIGENVALUES_SIZE = 64
 _RANDOM_EIGENVALUES_LOCK = threading.Lock()
+_RANDOM_IN_FLIGHT: dict[tuple[int, int], _Flight] = {}
 
 
-def random_eigenvalues(n: int, p: int) -> list[float]:
+def random_eigenvalues(n: int, p: int, should_stop: StopCheck | None = None) -> list[float]:
     """The eigenvalues parallel analysis compares with, largest first: per rank, the
     ``PARALLEL_ANALYSIS_PERCENTILE``-th percentile over ``PARALLEL_ANALYSIS_SIMULATIONS``
     correlation matrices of n × p standard normal samples.
 
     They depend on n and p only, so they are cached per (n, p): the bundled log data take
     about half a second, and every analysis of a dataset has the same n and mostly the same p.
-    The samples come from numpy's default generator with ``PARALLEL_ANALYSIS_SEED``, which
-    draws the same samples on any platform with the same numpy version. The list is shared
-    by the cache; callers copy it before changing it.
+    An uploaded CSV of 100,000 rows takes a minute, so callers asking for the same (n, p) at
+    the same time wait for one computation, and ``should_stop`` is asked between the samples
+    like during a fit (``_computed_once``). The samples come from numpy's default generator
+    with ``PARALLEL_ANALYSIS_SEED``, which draws the same samples on any platform with the same
+    numpy version. The list is shared by the cache; callers copy it before changing it.
     """
-    key = (int(n), int(p))
-    with _RANDOM_EIGENVALUES_LOCK:
-        if key in _RANDOM_EIGENVALUES:
-            _RANDOM_EIGENVALUES.move_to_end(key)
-            return _RANDOM_EIGENVALUES[key]
-    rng = np.random.default_rng(PARALLEL_ANALYSIS_SEED)
-    samples = np.empty((PARALLEL_ANALYSIS_SIMULATIONS, p))
-    for i in range(PARALLEL_ANALYSIS_SIMULATIONS):
-        # The same correlation as for the data, so that the comparison is like with like.
-        samples[i] = np.linalg.eigvalsh(_corr(rng.standard_normal((n, p))))[::-1]
-    values = [float(v) for v in np.percentile(samples, PARALLEL_ANALYSIS_PERCENTILE, axis=0)]
-    with _RANDOM_EIGENVALUES_LOCK:
-        _RANDOM_EIGENVALUES[key] = values
-        if len(_RANDOM_EIGENVALUES) > _RANDOM_EIGENVALUES_SIZE:
-            _RANDOM_EIGENVALUES.popitem(last=False)
-    return values
+
+    def compute(stop: StopCheck) -> list[float]:
+        rng = np.random.default_rng(PARALLEL_ANALYSIS_SEED)
+        samples = np.empty((PARALLEL_ANALYSIS_SIMULATIONS, p))
+        for i in range(PARALLEL_ANALYSIS_SIMULATIONS):
+            _check_stop(stop)
+            # The same correlation as for the data, so that the comparison is like with like.
+            samples[i] = np.linalg.eigvalsh(_corr(rng.standard_normal((n, p))))[::-1]
+        return [float(v) for v in np.percentile(samples, PARALLEL_ANALYSIS_PERCENTILE, axis=0)]
+
+    return _computed_once(
+        (int(n), int(p)),
+        _RANDOM_EIGENVALUES,
+        _RANDOM_EIGENVALUES_LOCK,
+        _RANDOM_IN_FLIGHT,
+        _RANDOM_EIGENVALUES_SIZE,
+        compute,
+        should_stop,
+    )
 
 
 def parallel_analysis(values: list[float], random: list[float]) -> int:
@@ -422,26 +512,7 @@ def _fit_key(data: pd.DataFrame, n_factors: int, rotation: str) -> tuple:
     return digest.hexdigest(), n_factors, rotation
 
 
-@dataclass
-class _Flight:
-    """A fit in progress, which callers asking for the same fit wait for instead of running
-    it again."""
-
-    #: The stop checks of everybody waiting for it; None for a caller that always wants it.
-    wanted: list[StopCheck | None]
-    done: threading.Event = field(default_factory=threading.Event)
-    fit: FactorFit | None = None
-    error: BaseException | None = None
-
-    def stale(self) -> bool:
-        """Given up only once nobody wants it any more."""
-        return all(check is not None and check() for check in self.wanted)
-
-
 _IN_FLIGHT: dict[tuple, _Flight] = {}
-
-#: How often a caller waiting for somebody else's fit asks whether it is still wanted.
-_FLIGHT_POLL_S = 0.05
 
 
 def fit_factors(
@@ -454,43 +525,15 @@ def fit_factors(
     for twice, e.g. by a double click or by two people opening the same bundled dataset, costs
     one fit. ``should_stop`` gives the caller up with ``Superseded``; the fit itself is given
     up only when every caller waiting for it is, and then it is not cached."""
-    key = _fit_key(data, n_factors, rotation)
-    while True:
-        with _FIT_CACHE_LOCK:
-            if key in _FIT_CACHE:
-                _FIT_CACHE.move_to_end(key)
-                return _FIT_CACHE[key]
-            flight = _IN_FLIGHT.get(key)
-            runs_it = flight is None
-            if runs_it:
-                flight = _IN_FLIGHT[key] = _Flight(wanted=[should_stop])
-            else:
-                flight.wanted.append(should_stop)
-        if runs_it:
-            try:
-                fit = _fit_factors(data, n_factors, rotation, flight.stale)
-            except BaseException as e:
-                flight.error = e
-                raise
-            else:
-                flight.fit = fit
-                with _FIT_CACHE_LOCK:
-                    _FIT_CACHE[key] = fit
-                    if len(_FIT_CACHE) > _FIT_CACHE_SIZE:
-                        _FIT_CACHE.popitem(last=False)
-                return fit
-            finally:
-                with _FIT_CACHE_LOCK:
-                    del _IN_FLIGHT[key]
-                flight.done.set()
-        while not flight.done.wait(_FLIGHT_POLL_S):
-            _check_stop(should_stop)
-        if flight.fit is not None:
-            return flight.fit
-        if not isinstance(flight.error, Superseded):
-            raise flight.error
-        # Given up just before this caller asked for it; it runs the fit itself.
-        _check_stop(should_stop)
+    return _computed_once(
+        _fit_key(data, n_factors, rotation),
+        _FIT_CACHE,
+        _FIT_CACHE_LOCK,
+        _IN_FLIGHT,
+        _FIT_CACHE_SIZE,
+        lambda stop: _fit_factors(data, n_factors, rotation, stop),
+        should_stop,
+    )
 
 
 def max_factors(p: int) -> int:
@@ -849,7 +892,7 @@ def analyze(data: pd.DataFrame, params: AnalysisParams, should_stop: StopCheck |
     values = eigenvalues(data)
     suggested = min(kaiser_criterion(values), max_factors(p))
     # On the matrix of the scree plot, so the two criteria can be drawn on the same axes.
-    random = list(random_eigenvalues(n, p))
+    random = list(random_eigenvalues(n, p, should_stop))
     by_parallel_analysis = min(parallel_analysis(values, random), max_factors(p))
     n_factors = suggested if params.n_factors is None else int(params.n_factors)
     if n_factors < 1 or n_factors > max_factors(p):

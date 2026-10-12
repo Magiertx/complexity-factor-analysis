@@ -215,12 +215,15 @@ upstream does and reported as a warning. KMO then rests on a pseudo-inverse and 
 chi-square on clamped eigenvalues (`bartlett.regularised`), so measures with an MSA at the
 threshold can come out differently on different platforms. Fits are cached by data, factor
 count and rotation; at most two run at once per API process (`_ANALYSIS_SLOTS` in
-`routes/factor_analysis.py`). A request for a fit that is running waits for it rather than
-fitting again (`core.fit_factors`). The newest analyze request of a session and dataset wins:
-an older one for other parameters, or one whose client closed the connection, is given up
-before and after the wait for a slot, and the fit itself asks between two evaluations of the
-minres objective whether anybody still wants it, so it stops within milliseconds; the request
-answers 409 `superseded`. At most 400 measures go into one analysis. On the bundled paper
+`routes/factor_analysis.py`). A request for a fit or for the random eigenvalues of parallel
+analysis that are being computed waits for them rather than computing them again
+(`core._computed_once`); they are computed in a thread of their own, so a request that gives up
+frees its slot at once while the computation goes on for the others. The newest analyze
+request of a session and dataset wins: an older one for other parameters, or one whose client
+closed the connection, is given up before and after the wait for a slot and while it waits
+for parallel analysis or the fit. Each of these asks whether anybody still wants it, parallel
+analysis between two random samples and the fit between two evaluations of the minres
+objective, and stops once nobody does; the request answers 409 `superseded`. At most 400 measures go into one analysis. On the bundled paper
 scores the result equals ComFy's own reports to four decimals
 (`tests/test_published_numbers.py`), and an analysis with the published settings of a bundled
 dataset compares itself with them (`factor_analysis/published.py`); the bundled log measures

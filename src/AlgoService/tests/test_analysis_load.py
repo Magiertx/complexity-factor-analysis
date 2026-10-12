@@ -160,13 +160,53 @@ def test_a_fit_runs_on_while_anybody_waits_for_it(slow_fit):
     time.sleep(0.2)
     second.start()
     time.sleep(0.2)
-    # The first caller leaves; the fit goes on for the second.
+    # The first caller, which started the fit, leaves at once; the fit goes on for the second.
+    start = time.perf_counter()
     leave.set()
     first.join()
+    assert time.perf_counter() - start < FIT_S / 2
     second.join()
     assert slow_fit == ["varimax"]
-    assert fits["first"] is fits["second"] is core._FIT_CACHE[core._fit_key(data, 2, "varimax")]
+    assert fits["first"] is None
+    assert fits["second"] is core._FIT_CACHE[core._fit_key(data, 2, "varimax")]
     assert not core._IN_FLIGHT
+
+
+def test_a_superseded_analysis_does_not_wait_for_parallel_analysis(client, monkeypatch):
+    """Parallel analysis of an upload of 100,000 rows takes a minute. A request replaced while
+    it runs answers at once and frees its slot; the samples go on for the newer request, which
+    has the same size of data and so needs the same ones."""
+    import asyncio
+
+    from routes import factor_analysis as route
+
+    url = _inductive(client)
+    core._RANDOM_EIGENVALUES.clear()
+    real = core._corr
+
+    def slow_corr(x):
+        time.sleep(FIT_S / core.PARALLEL_ANALYSIS_SIMULATIONS)
+        return real(x)
+
+    monkeypatch.setattr(core, "_corr", slow_corr)
+    monkeypatch.setattr(route, "_ANALYSIS_SLOTS", asyncio.Semaphore(2))
+    answered: dict[int, tuple[int, float]] = {}
+
+    def send(i: int, delay: float) -> None:
+        time.sleep(delay)
+        start = time.perf_counter()
+        r = client.post(f"{url}/analyze", json={"n_factors": i + 1})
+        answered[i] = (r.status_code, time.perf_counter() - start)
+
+    threads = [threading.Thread(target=send, args=(i, 0.2 * i)) for i in range(2)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert answered[0][0] == 409 and answered[0][1] < FIT_S / 2, answered
+    assert answered[1][0] == 200
+    assert core._RANDOM_EIGENVALUES[(288, 10)]
+    core._RANDOM_EIGENVALUES.clear()
 
 
 def test_latest_wins_false_computes_every_analysis(client, slow_fit):

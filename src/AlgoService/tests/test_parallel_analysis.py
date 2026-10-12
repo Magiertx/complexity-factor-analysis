@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import io
 import json
+import threading
+import time
 import zipfile
 
 import pandas as pd
@@ -34,6 +36,83 @@ def test_the_random_eigenvalues_are_cached_per_shape(monkeypatch):
     assert core.random_eigenvalues(50, 4) is first
     core.random_eigenvalues(51, 4)
     assert calls == [core.PARALLEL_ANALYSIS_SEED] * 2
+
+
+def _counting_corr(monkeypatch, pause_s: float = 0.0) -> list[int]:
+    """Counts the random samples drawn, each optionally slowed down; returns the counter."""
+    calls = []
+    real = core._corr
+
+    def corr(x):
+        calls.append(1)
+        time.sleep(pause_s)
+        return real(x)
+
+    monkeypatch.setattr(core, "_corr", corr)
+    return calls
+
+
+def test_parallel_analysis_stops_between_samples_and_caches_nothing_then(monkeypatch):
+    """An upload of 100,000 rows takes a minute of samples; an analysis nobody waits for any
+    more must not hold its slot for that long."""
+    core._RANDOM_EIGENVALUES.clear()
+    calls = _counting_corr(monkeypatch)
+    with pytest.raises(core.Superseded):
+        core.random_eigenvalues(40, 4, should_stop=lambda: len(calls) >= 3)
+    assert len(calls) == 3
+    assert (40, 4) not in core._RANDOM_EIGENVALUES and not core._RANDOM_IN_FLIGHT
+    # Asked again, it runs to the end, with the same values as without a stop check.
+    values = core.random_eigenvalues(40, 4, should_stop=lambda: False)
+    assert len(calls) == 3 + core.PARALLEL_ANALYSIS_SIMULATIONS
+    core._RANDOM_EIGENVALUES.clear()
+    assert core.random_eigenvalues(40, 4) == values
+
+
+def test_parallel_analysis_asked_for_twice_at_once_runs_once(monkeypatch):
+    core._RANDOM_EIGENVALUES.clear()
+    calls = _counting_corr(monkeypatch, pause_s=0.005)
+    results = {}
+
+    def ask(name: str) -> None:
+        results[name] = core.random_eigenvalues(30, 5, should_stop=lambda: False)
+
+    threads = [threading.Thread(target=ask, args=(name,)) for name in ("first", "second")]
+    for t in threads:
+        t.start()
+        time.sleep(0.05)
+    for t in threads:
+        t.join()
+    assert len(calls) == core.PARALLEL_ANALYSIS_SIMULATIONS
+    assert results["first"] is results["second"] is core._RANDOM_EIGENVALUES[(30, 5)]
+
+
+def test_parallel_analysis_goes_on_while_anybody_waits_for_it(monkeypatch):
+    core._RANDOM_EIGENVALUES.clear()
+    calls = _counting_corr(monkeypatch, pause_s=0.005)
+    leave = threading.Event()
+    results = {}
+
+    def ask(name: str, should_stop) -> None:
+        try:
+            results[name] = core.random_eigenvalues(30, 6, should_stop)
+        except core.Superseded:
+            results[name] = None
+
+    first = threading.Thread(target=ask, args=("first", leave.is_set))
+    second = threading.Thread(target=ask, args=("second", None))
+    first.start()
+    time.sleep(0.05)
+    second.start()
+    time.sleep(0.05)
+    # The first caller, which started the samples, leaves at once and frees its analysis slot;
+    # the samples go on for the second.
+    leave.set()
+    first.join(timeout=0.3)
+    assert not first.is_alive() and results["first"] is None
+    second.join()
+    assert results["second"] is core._RANDOM_EIGENVALUES[(30, 6)]
+    assert len(calls) == core.PARALLEL_ANALYSIS_SIMULATIONS
+    assert not core._RANDOM_IN_FLIGHT
 
 
 def test_parallel_analysis_counts_the_leading_eigenvalues_above_random_ones():
