@@ -1082,7 +1082,7 @@
       "datasets": {
         "directly_follows": "Tab. 7–8 des Papers nutzen zusätzlich dup ohne τ.",
         "hybrid_ilp": "Nicht deterministisch; die Daten weichen von Tab. 14–16 ab.",
-        "heuristics": "Tab. 13 des Papers druckt nur die MSA-Werte: Nach dem Filter bleiben 4 Maße. Der Report im ComFy-Repository passt ihnen 4 Faktoren an, das Tool höchstens 3.",
+        "heuristics": "Tab. 13 des Papers druckt nur die MSA-Werte: Nach dem Filter bleiben 4 Maße. Der Report im ComFy-Repository setzt für sie 4 Faktoren an, das Tool höchstens 3.",
         "alpha_plus": "Nur im Repository, nicht im Paper.",
         "alpha_dollar": "Werte identisch mit dem Alpha miner."
       }
