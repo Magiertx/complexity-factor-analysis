@@ -414,8 +414,11 @@ chi-square reflects the floor more than the data), `kmo` (overall and per measur
   chi-square and p-value, the overall KMO, the MSA of every measure left and of every removed
   one with its step, and the loadings of the report's factors with the communalities) and
   `differences` lists each value off by more than `tolerance` (times the value for values
-  above 1) as `{key, what, expected, actual}`, with `measure` and `factor` (from 0) where they
-  apply. Only numbers are compared, never the factor groups. `paper_tables` and its `_ref` and
+  above 1) as `{key, code, what, expected, actual}`, with `measure` and `factor` (from 0) where
+  they apply. `code` names the value for a client that words it itself (`bartlett_chi_square`,
+  `bartlett_p_value`, `kmo`, `msa`, `msa_at_removal`, `loading`, `communality`, or, where a set
+  rather than a number differs, `msa_measures`, `msa_removed` and `loadings_shape`, whose
+  `expected` and `actual` are lists or objects); `what` says it in English. Only numbers are compared, never the factor groups. `paper_tables` and its `_ref` and
   `_note` are those of the catalog.
 - `elapsed_ms` is the time the server spent on the request, the wait for a free slot
   included.

@@ -164,9 +164,10 @@ def test_differences_are_listed(client, monkeypatch):
     differences = {d["what"]: d for d in match["differences"]}
     assert set(differences) == {"Bartlett's chi-square", "MSA of Density", "loading of Size on factor 2"}
     loading = differences["loading of Size on factor 2"]
-    assert (loading["key"], loading["measure"], loading["factor"]) == ("loadings", "Size", 1)
+    assert (loading["key"], loading["code"], loading["measure"], loading["factor"]) == ("loadings", "loading", "Size", 1)
     assert loading["expected"] == pytest.approx(-0.1415) and loading["actual"] == pytest.approx(-0.1515, abs=1e-4)
-    assert differences["MSA of Density"]["key"] == "msa"
+    assert (differences["MSA of Density"]["key"], differences["MSA of Density"]["code"]) == ("msa", "msa")
+    assert differences["Bartlett's chi-square"]["code"] == "bartlett_chi_square"
 
 
 def test_a_different_set_of_removed_measures_is_one_difference(client, monkeypatch):
@@ -175,7 +176,9 @@ def test_a_different_set_of_removed_measures_is_one_difference(client, monkeypat
     monkeypatch.setattr(published_module, "published", lambda dataset_id: numbers)
     url = _bundled(client, "comfy-paper-inductive-miner")
     match = client.post(f"{url}/analyze", json=IF_OPTIONS).json()["published_match"]
-    assert [d["what"] for d in match["differences"]] == ["measures removed by the MSA filter, with their step"]
+    assert [(d["code"], d["what"]) for d in match["differences"]] == [
+        ("msa_removed", "measures removed by the MSA filter, with their step"),
+    ]
 
 
 def test_the_zip_names_the_published_settings_when_used(client):

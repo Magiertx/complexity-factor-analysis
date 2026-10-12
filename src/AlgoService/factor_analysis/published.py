@@ -80,39 +80,40 @@ def _differences(numbers: dict[str, Any], result: dict[str, Any]) -> tuple[list[
     compared: list[str] = []
     out: list[dict[str, Any]] = []
 
-    def check(key: str, what: str, actual: float | None, expected: float, **where: Any) -> None:
+    # ``code`` names the value for a client that words it itself; ``what`` says it in English.
+    def check(key: str, code: str, what: str, actual: float | None, expected: float, **where: Any) -> None:
         if not _close(actual, expected):
-            out.append({"key": key, "what": what, **where, "expected": expected, "actual": actual})
+            out.append({"key": key, "code": code, "what": what, **where, "expected": expected, "actual": actual})
 
     if "bartlett" in verified:
         compared.append("bartlett")
-        check("bartlett", "Bartlett's chi-square", result["bartlett"]["chi_square"], numbers["bartlett"]["chi_square"])
-        check("bartlett", "Bartlett's p-value", result["bartlett"]["p_value"], numbers["bartlett"]["p_value"])
+        check("bartlett", "bartlett_chi_square", "Bartlett's chi-square", result["bartlett"]["chi_square"], numbers["bartlett"]["chi_square"])
+        check("bartlett", "bartlett_p_value", "Bartlett's p-value", result["bartlett"]["p_value"], numbers["bartlett"]["p_value"])
     if "kmo" in verified:
         compared.append("kmo")
-        check("kmo", "overall MSA (KMO)", result["kmo"]["overall"], numbers["kmo"]["overall"])
+        check("kmo", "kmo", "overall MSA (KMO)", result["kmo"]["overall"], numbers["kmo"]["overall"])
     if {"kmo", "msa_filter"} <= verified:
         compared.append("msa")
         expected_msa, actual_msa = numbers["kmo"]["per_measure"], result["kmo"]["per_measure"]
         if set(expected_msa) != set(actual_msa):
             out.append({
-                "key": "msa", "what": "measures left after the MSA filter",
+                "key": "msa", "code": "msa_measures", "what": "measures left after the MSA filter",
                 "expected": sorted(expected_msa), "actual": sorted(actual_msa),
             })
         else:
             for measure, value in expected_msa.items():
-                check("msa", f"MSA of {measure}", actual_msa[measure], value, measure=measure)
+                check("msa", "msa", f"MSA of {measure}", actual_msa[measure], value, measure=measure)
         expected_removed = {r["measure"]: r for r in numbers["msa_filter"]["removed"]}
         actual_removed = {r["measure"]: r for r in result["msa_filter"]["removed"]}
         if {m: r["round"] for m, r in expected_removed.items()} != {m: r["step"] for m, r in actual_removed.items()}:
             out.append({
-                "key": "msa", "what": "measures removed by the MSA filter, with their step",
+                "key": "msa", "code": "msa_removed", "what": "measures removed by the MSA filter, with their step",
                 "expected": {m: r["round"] for m, r in expected_removed.items()},
                 "actual": {m: r["step"] for m, r in actual_removed.items()},
             })
         else:
             for measure, entry in expected_removed.items():
-                check("msa", f"MSA of {measure} when it was removed", actual_removed[measure]["msa"], entry["msa"],
+                check("msa", "msa_at_removal", f"MSA of {measure} when it was removed", actual_removed[measure]["msa"], entry["msa"],
                       measure=measure)
     if "loadings" in verified:
         compared.append("loadings")
@@ -124,18 +125,18 @@ def _differences(numbers: dict[str, Any], result: dict[str, Any]) -> tuple[list[
         extra_empty = all(all(v == 0.0 for v in row[k:]) for row in printed.values())
         if set(printed) != set(result["loadings"]) or k > columns or not extra_empty:
             out.append({
-                "key": "loadings", "what": "measures and factors of the loadings",
+                "key": "loadings", "code": "loadings_shape", "what": "measures and factors of the loadings",
                 "expected": {"measures": sorted(printed), "factors": columns},
                 "actual": {"measures": sorted(result["loadings"]), "factors": k},
             })
         else:
             for measure, row in printed.items():
                 for j, value in enumerate(row[:k]):
-                    check("loadings", f"loading of {measure} on factor {j + 1}", result["loadings"][measure][j], value,
+                    check("loadings", "loading", f"loading of {measure} on factor {j + 1}", result["loadings"][measure][j], value,
                           measure=measure, factor=j)
             if "communalities" in verified:
                 for measure, value in numbers["communalities"].items():
-                    check("loadings", f"communality of {measure}", result["communalities"].get(measure), value,
+                    check("loadings", "communality", f"communality of {measure}", result["communalities"].get(measure), value,
                           measure=measure)
     return compared, out
 
