@@ -544,8 +544,10 @@ export interface FactorAnalysis {
   };
   /** `index` counts from 0, like the columns of `loadings`. Under "multi" a measure can be in several. */
   factors: { index: number; measures: { measure: string; loading: number }[] }[];
-  /** Names before the assignment rules, with the reason since; see `unassignedMeasures`. */
-  unassigned: (string | { measure: string; reason?: UnassignedReason | null })[];
+  /** The measures without a factor; their reasons are in `unassigned_details`. */
+  unassigned: string[];
+  /** Why each measure of `unassigned` joined no factor; absent before the assignment rules. */
+  unassigned_details?: { measure: string; reason: UnassignedReason }[];
   /** Absent before the assignment rules, which is "largest". */
   assignment_rule?: AssignmentRule;
   cross_loadings?: CrossLoading[];

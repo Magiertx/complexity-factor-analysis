@@ -233,9 +233,9 @@ describe("assignment rules", () => {
 
   it("name unassigned measures with their reason, or without one from an older server", () => {
     expect(unassignedMeasures(analysis())).toEqual([{ measure: "d", reason: null }]);
-    expect(unassignedMeasures(analysis({ unassigned: [{ measure: "d", reason: "cross_loading" }] }))).toEqual([
-      { measure: "d", reason: "cross_loading" },
-    ]);
+    expect(
+      unassignedMeasures(analysis({ unassigned_details: [{ measure: "d", reason: "cross_loading" }] })),
+    ).toEqual([{ measure: "d", reason: "cross_loading" }]);
   });
 
   it("mark the further loadings of a cross-loaded measure, not its largest", () => {

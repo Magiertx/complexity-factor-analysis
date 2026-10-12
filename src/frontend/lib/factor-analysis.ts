@@ -119,9 +119,8 @@ export interface UnassignedMeasure {
 
 /** The measures without a factor, with the reason where the server gives one. */
 export function unassignedMeasures(analysis: FactorAnalysis): UnassignedMeasure[] {
-  return analysis.unassigned.map((u) =>
-    typeof u === "string" ? { measure: u, reason: null } : { measure: u.measure, reason: u.reason ?? null },
-  );
+  const reasons = new Map((analysis.unassigned_details ?? []).map((u) => [u.measure, u.reason]));
+  return analysis.unassigned.map((measure) => ({ measure, reason: reasons.get(measure) ?? null }));
 }
 
 /** The factor a measure loads on most, counting from 0. */
