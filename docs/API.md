@@ -133,6 +133,11 @@ Details in [Factor analysis](#factor-analysis) below.
 | DELETE | `/jobs` | Delete every job visible to your session, with the datasets the dataset jobs computed. |
 | PATCH | `/jobs/{job_id}/notes` | Set or clear a free-text note on a job. |
 
+A failed job has its message in `error` and, for a cause the server knows, a code in
+`error_code` (else `null`), which the UI shows in its own language: `prom_unavailable` when
+ProM4Py could not be reached for any miner of a single run. The wait for a ProM that refuses
+the connection is `PROM4PY_START_WAIT` seconds (default 180).
+
 ### Diagnostics
 
 | Method | Path | Description |
