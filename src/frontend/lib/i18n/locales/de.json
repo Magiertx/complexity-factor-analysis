@@ -895,7 +895,7 @@
         }
       },
       "cross_cell": "Querladung",
-      "legend_cross": "Ring: weitere Ladung eines quergeladenen Maßes",
+      "legend_cross": "Ring: weitere Ladung eines Maßes mit Querladung",
       "also": "auch F{i}",
       "also_title": "Lädt auch auf Faktor {i}: {value}",
       "reason": {
@@ -916,7 +916,7 @@
       "scree": "Der Screeplot zeigt die Eigenwerte der Korrelationsmatrix in absteigender Reihenfolge. Suche den Knick, ab dem die Kurve flach wird; Faktoren danach tragen wenig bei. Knick, die Regel Eigenwert über 1 und die Parallelanalyse können sich widersprechen, nimm sie als Ausgangspunkte. Die dünne Linie an der rechten Achse summiert die Eigenwerte auf: den Anteil der Varianz, den die ersten Hauptkomponenten erklären. Die Faktoren der Analyse erklären etwas weniger, wie Schritt 5 zeigt.",
       "eigenvalue": "Ein Eigenwert ist die Varianz, die ein Faktor erklärt, gemessen in Einheiten eines standardisierten Maßes. Der Vorschlag behält jeden Faktor mit Eigenwert über 1 (Kaiser-Kriterium), also jeden Faktor, der mehr erklärt als ein einzelnes Maß.",
       "rotation": "Die Rotation dreht die Faktorlösung so, dass jedes Maß auf möglichst wenigen Faktoren hoch lädt; das macht die Faktoren leichter benennbar. Wie viel Varianz die Faktoren zusammen erklären, ändert sie nicht. Varimax und Quartimax halten die Faktoren unkorreliert; Promax und Oblimin erlauben Korrelationen, was für Komplexitätsmaße oft realistischer ist.",
-      "threshold": "Ladungen, deren Betrag diese Schwelle erreicht, gelten als substanziell. Zu welchen Faktoren ein Maß kommt, bestimmt die Zuordnungsregel oben; bei der größten Ladung kommt es zu dem Faktor mit dem größten Betrag, wenn dieser die Schwelle erreicht. Üblich sind Werte zwischen 0,3 und 0,5; ComFy nutzt 0,35, ComFy for log measures 0,5.",
+      "threshold": "Ladungen, deren Betrag diese Schwelle erreicht, gelten als substanziell. Zu welchen Faktoren ein Maß kommt, bestimmt die Zuordnungsregel oben; bei der größten Ladung kommt es zu dem Faktor mit dem größten Betrag, wenn dieser die Schwelle erreicht. Üblich sind Werte zwischen 0,3 und 0,5; ComFy nutzt 0,35, ComFy für Log-Maße 0,5.",
       "loading": "Eine Ladung gibt an, wie stark ein Maß mit einem Faktor zusammenhängt. Bei orthogonaler Rotation ist sie die Korrelation zwischen Maß und Faktor. Bei obliquer Rotation enthält die Mustermatrix Regressionsgewichte und die Strukturmatrix die Korrelationen. Das Vorzeichen gibt die Richtung an: Maße mit entgegengesetzten Vorzeichen auf demselben Faktor bewegen sich gegenläufig.",
       "communality": "Die Kommunalität h² ist der Anteil der Varianz eines Maßes, den alle behaltenen Faktoren zusammen erklären. Ein niedriger Wert (unter etwa 0,4) heißt, dass die Faktoren das Maß schlecht abbilden.",
       "variance": "SS-Ladungen sind die Summe der quadrierten Ladungen eines Faktors. Geteilt durch die Zahl der Maße ergibt sich der Anteil an der Gesamtvarianz, den der Faktor erklärt; die kumulierte Zeile summiert diese Anteile.",
@@ -1032,7 +1032,7 @@
       "chip_match": "Zahlen = ComFy-Report",
       "chip_differs": "Weicht vom ComFy-Report ab",
       "title": "Abgleich mit dem veröffentlichten Report",
-      "summary_match": "Jede verglichene Zahl stimmt auf {tolerance} mit dem Report überein.",
+      "summary_match": "Jede verglichene Zahl stimmt bis auf {tolerance} mit dem Report überein.",
       "summary_differs": "Zahlen, die um mehr als {tolerance} vom Report abweichen: {n}.",
       "compared": "Verglichen",
       "what": {
@@ -1128,7 +1128,7 @@
       "factors_plural": "{n} Faktoren · {pct}",
       "dimensions": "{n} Dimension",
       "dimensions_plural": "{n} Dimensionen",
-      "cross": "{n} quergeladen",
+      "cross": "{n} mit Querladung",
       "unassigned": "{n} ohne Faktor"
     }
   },
