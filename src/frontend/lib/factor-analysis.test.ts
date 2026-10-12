@@ -307,7 +307,9 @@ describe("settingsSummary", () => {
   it("shows the communality the rule asks for when it is above the threshold", () => {
     const chip = (options: typeof standard) =>
       settingsSummary(options, standard, null, 12, t).find((c) => c.id === "communality");
-    expect(chip({ ...standard, assignment_rule: "multi" })).toEqual({ id: "communality", text: "h² ≥ 0.3", differs: false });
+    // Tinted like a threshold set by hand: the standard asks for h² ≥ 0.
+    expect(chip({ ...standard, assignment_rule: "multi" })).toEqual({ id: "communality", text: "h² ≥ 0.3", differs: true });
+    expect(chip(standard)?.differs).toBe(false);
     expect(chip({ ...standard, assignment_rule: "hair", communality_threshold: 0.3 })?.text).toBe("h² ≥ 0.5");
     expect(chip({ ...standard, assignment_rule: "multi", communality_threshold: 0.4 })?.text).toBe("h² ≥ 0.4");
   });
@@ -340,5 +342,14 @@ describe("settingsSummary", () => {
       text: "4 of 5 measures",
       differs: true,
     });
+  });
+
+  it("names Kaiser's count while the analysis on screen still has the count left behind", () => {
+    const paperResult = analysis({
+      n_factors: 4,
+      factor_count: { kaiser: 2, parallel_analysis: 2, eigenvalues_random: [], seed: 1, simulations: 100, percentile: 95 },
+    });
+    const chip = settingsSummary(standard, standard, paperResult, 4, t).find((c) => c.id === "factors");
+    expect(chip).toEqual({ id: "factors", text: "2 factors (Kaiser)", differs: false });
   });
 });

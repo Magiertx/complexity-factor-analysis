@@ -34,15 +34,16 @@ export function FactorsView({ analysis, options, onOptions, paperFactors, paperS
     .filter(isSolutionNotice)
     .map((n) => noticeText(n, tMaybe));
   const max = Math.max(1, analysis.used_measures.length - 1);
-  // The pending choice wins over the last result, so quick clicks add up before re-analysis.
-  const current = Math.min(options.n_factors ?? analysis.n_factors, max);
+  const counts = analysis.factor_count;
+  const kaiser = counts?.kaiser ?? analysis.suggested_n_factors;
+  // The pending choice wins over the last result, so quick clicks add up before re-analysis;
+  // following Kaiser, that is Kaiser's count even while the result on screen has another.
+  const current = Math.min(options.n_factors ?? kaiser, max);
   const setCount = (n: number) => onOptions({ n_factors: Math.max(1, Math.min(max, n)) });
   const explained = current === analysis.n_factors ? analysis.variance.explained : undefined;
   const rotationKind =
     options.rotation === "none" ? "none" : ORTHOGONAL.includes(options.rotation) ? "orthogonal" : "oblique";
 
-  const counts = analysis.factor_count;
-  const kaiser = counts?.kaiser ?? analysis.suggested_n_factors;
   const parallel = counts?.parallel_analysis ?? null;
   const published: Criterion = paperScope === "report" ? "report" : "paper";
   const criteria: { id: Criterion; k: number }[] = [

@@ -226,7 +226,9 @@ export function settingsSummary(
   const changed = differingOptions(options, standard);
   const used = analysis?.used_measures.length ?? measureCount - options.excluded.length;
   const kaiser = analysis?.factor_count?.kaiser ?? analysis?.suggested_n_factors ?? null;
-  const n = options.n_factors ?? analysis?.n_factors ?? kaiser;
+  // Following Kaiser, the count is Kaiser's even while the analysis on screen still has another
+  // count, e.g. that of the paper settings just left.
+  const n = options.n_factors ?? kaiser;
   const chips: SettingChip[] = [
     {
       id: "measures",
@@ -265,9 +267,10 @@ export function settingsSummary(
     },
     {
       id: "communality",
-      // What applies: "multiple membership" with a threshold of 0 still asks for h² ≥ 0.3.
+      // What applies: "multiple membership" with a threshold of 0 still asks for h² ≥ 0.3, which
+      // differs from the standard's 0 as much as a threshold set by hand.
       text: t("factor.settings.communality", { value: effectiveCommunality(options) }),
-      differs: changed.has("communality_threshold"),
+      differs: effectiveCommunality(options) !== effectiveCommunality(standard),
     },
     { id: "rule", text: t(`factor.settings.rule.${options.assignment_rule}`), differs: changed.has("assignment_rule") },
   );
