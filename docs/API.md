@@ -457,10 +457,12 @@ and kept on another; the bundled log measures show this for `trace_len_hist6`.
 `POST /factor-analysis/datasets/{id}/export` takes the same body plus
 `"format": "csv" | "latex"` and returns the loadings table as a file: one row per measure
 with its loadings (the pattern matrix for oblique rotations) and communality; in LaTeX a
-booktabs `tabular` with the loadings that count under the assignment rule in bold (at or
-above the threshold for `largest`, above it for `multi` and `hair`), unless the communality is
-below the one the rule needs, and a comment naming the rule. The CSV keeps its columns; the
-assignment of each measure is in `assignment.csv` of the ZIP.
+booktabs `tabular` and a comment naming the rule. In bold are, for `largest`, the loadings at
+or above the threshold of measures whose communality reaches the communality threshold, as
+ComFy's report leaves them black; for `multi` and `hair`, the loadings by which the rule put a
+measure on a factor, as the dimension tables of Important Factors list them, with a comment
+naming the measures in no factor and why. The CSV keeps its columns; the assignment of each
+measure is in `assignment.csv` of the ZIP.
 
 `POST /factor-analysis/datasets/{id}/export/zip` takes the same body plus `"language": "en" |
 "de"` (default `en`) and returns `<dataset name>-factor-analysis.zip`, everything needed to

@@ -268,8 +268,16 @@ def test_exports_name_the_rule(client):
     body = {**PAPER, "assignment_rule": "multi"}
 
     tex = client.post(f"{base}/export", json={**body, "format": "latex"}).text
-    assert "bold: |loading| > 0.35 and communality >= 0.3." in tex
+    assert "bold: the loadings by which the rule puts a measure on a factor (|loading| > 0.35 and communality >= 0.3)." in tex
     assert "% Assignment rule multi: each measure on every factor whose absolute loading exceeds" in tex
+    # Bold where the rule assigned: CNC only on F2, though 0.4778 on F4 exceeds 0.35 too; acd
+    # on F1 to F3, not on F4, which lies more than 0.15 below its largest loading.
+    assert "Coefficient of network connectivity & $-0.4728$ & $\\mathbf{0.6628}$ & $0.2911$ & $0.4778$" in tex
+    assert "Average connector degree & $\\mathbf{-0.4835}$ & $\\mathbf{0.4608}$ & $\\mathbf{0.5830}$ & $0.4128$" in tex
+    assert "% In no factor: Connector Mismatch (low communality)." in tex
+    hair = client.post(f"{base}/export", json={**body, "assignment_rule": "hair", "format": "latex"}).text
+    assert "Average connector degree & $-0.4835$ & $0.4608$ & $0.5830$ & $0.4128$" in hair
+    assert "(cross-loading)" in hair and "Density (cross-loading)" in hair
     # The CSV keeps its columns.
     csv = client.post(f"{base}/export", json={**body, "format": "csv"}).text
     assert csv.splitlines()[0] == "measure,Factor 1,Factor 2,Factor 3,Factor 4,communality"

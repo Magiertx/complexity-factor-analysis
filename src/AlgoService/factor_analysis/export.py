@@ -84,10 +84,24 @@ def _assignment(result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+#: Rules that put a measure on factors other than that of its largest loading, or on none
+#: although a loading counts. Under them the bold cells are those the rule assigned, as the
+#: dimension tables of Important Factors mark them; under "largest" every loading that counts
+#: is bold, as ComFy's report leaves only those black.
+_BOLD_BY_ASSIGNMENT = {"multi", "hair"}
+
+_UNASSIGNED_REASONS = {
+    "low_communality": "low communality",
+    "low_loading": "no loading counts",
+    "cross_loading": "cross-loading",
+}
+
+
 def loadings_latex(result: dict[str, Any]) -> str:
-    """A booktabs ``tabular``; loadings whose absolute value reaches the loading threshold (or
-    exceeds it, as the assignment rule asks) are bold, unless the communality of the measure
-    is below the communality the rule needs."""
+    """A booktabs ``tabular``. Under the rule "largest", loadings whose absolute value reaches
+    the loading threshold are bold, unless the communality of the measure is below the
+    communality threshold. Under "multi" and "hair" the loadings by which the rule put a measure
+    on a factor are bold, and a comment names the measures it left out."""
     decimals = _C.number_of_decimals
     names = _factor_names(result)
     assignment = _assignment(result)
@@ -95,6 +109,8 @@ def loadings_latex(result: dict[str, Any]) -> str:
     strict = assignment["loading_strict"]
     min_communality = assignment["communality_threshold"]
     matrix = "pattern loadings" if result.get("structure_loadings") else "loadings"
+    by_assignment = assignment["rule"] in _BOLD_BY_ASSIGNMENT
+    assigned = {(m["measure"], f["index"]) for f in result.get("factors", []) for m in f["measures"]}
 
     def cell(value: float, bold: bool = False) -> str:
         number = f"{value:.{decimals}f}"
@@ -103,12 +119,28 @@ def loadings_latex(result: dict[str, Any]) -> str:
     def counts(value: float) -> bool:
         return abs(value) > threshold if strict else abs(value) >= threshold
 
+    criterion = f"|loading| {'>' if strict else '>='} {threshold}" + (
+        f" and communality >= {min_communality}" if min_communality else ""
+    )
+    if by_assignment:
+        bold = f"bold: the loadings by which the rule puts a measure on a factor ({criterion})."
+    else:
+        bold = f"bold: {criterion}."
     lines = [
         "% Requires \\usepackage{booktabs}.",
         f"% {result['rotation']} rotation, {matrix}, {result['n_factors']} factor(s), "
-        f"{result['n_observations']} observations; bold: |loading| {'>' if strict else '>='} {threshold}"
-        + (f" and communality >= {min_communality}." if min_communality else "."),
+        f"{result['n_observations']} observations; {bold}",
         f"% Assignment rule {assignment['rule']}: {ASSIGNMENT_RULE_TEXTS[assignment['rule']]}.",
+    ]
+    left_out = [u for u in result.get("unassigned_details", []) if u["measure"] in result["loadings"]]
+    if by_assignment and left_out:
+        lines.append(
+            "% In no factor: "
+            # One line: a line break in a measure name of an upload would end the comment.
+            + "; ".join(f"{' '.join(u['measure'].split())} ({_UNASSIGNED_REASONS.get(u['reason'], u['reason'])})" for u in left_out)
+            + "."
+        )
+    lines += [
         "\\begin{tabular}{l" + "r" * len(names) + "r}",
         "\\toprule",
         "Measure & " + " & ".join(names) + " & Communality \\\\",
@@ -116,7 +148,10 @@ def loadings_latex(result: dict[str, Any]) -> str:
     ]
     for measure, row in result["loadings"].items():
         communality = result["communalities"][measure]
-        cells = [cell(v, counts(v) and communality >= min_communality) for v in row]
+        if by_assignment:
+            cells = [cell(v, (measure, j) in assigned) for j, v in enumerate(row)]
+        else:
+            cells = [cell(v, counts(v) and communality >= min_communality) for v in row]
         cells.append(cell(communality))
         lines.append(latex_escape(measure) + " & " + " & ".join(cells) + " \\\\")
     lines += ["\\bottomrule", "\\end{tabular}", ""]
