@@ -278,14 +278,14 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           const own = initialOptions(kind, d.options, d.measures);
           const chosen = openWith.current?.id === d.id ? openWith.current : null;
           openWith.current = null;
-          if (chosen) {
-            setOptions(chosen.options);
-            // A copy reopened from the session had settings of its own; they are one click away.
-            if (d.options && !sameOptions(own, chosen.options)) {
-              setUndo({ id: Date.now(), message: chosen.message, previous: own, returnFocus: summaryTitle.current });
-            }
-          } else {
-            setOptions(own);
+          const applied = chosen ? chosen.options : own;
+          // In the ref at once, not after the next render: a link to this dataset answered in
+          // between compares its settings with these, and would else leave them in place.
+          optionsRef.current = applied;
+          setOptions(applied);
+          // A copy reopened from the session had settings of its own; they are one click away.
+          if (chosen && d.options && !sameOptions(own, chosen.options)) {
+            setUndo({ id: Date.now(), message: chosen.message, previous: own, returnFocus: summaryTitle.current });
           }
         }
         setDataset(d);
