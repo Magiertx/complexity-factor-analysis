@@ -248,8 +248,9 @@ Optional, in `interpretation/` with the endpoints in `routes/interpretation.py`
    used, the language, the model, the effort and `client.PROMPT_DIGEST`, a hash of the
    prompt, the output schema and the payload format.
 3. Otherwise, with `ANTHROPIC_API_KEY` set, `payload.build_payload` reduces the result to the
-   measure names, their catalog definitions and aggregates, and `client.check_size` refuses
-   it if it is too large. Then, one request per cache key at a time, the per-session and
+   measure names, their catalog definitions and aggregates, with the assignment rule as it was
+   applied (the communality it needed, cross-loadings, why measures stayed unassigned), and
+   `client.check_size` refuses it if it is too large. Then, one request per cache key at a time, the per-session and
    daily limits are counted (`interpretation/quota.py`, counters in Redis) and
    `client.interpret` calls `client.beta.messages.create` with `output_config` (effort and a
    JSON schema from `schema.Interpretation`) and `fallbacks: "default"`, within the time the

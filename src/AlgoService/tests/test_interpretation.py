@@ -258,6 +258,28 @@ def test_payload_never_quotes_dropped_values():
     assert payload["removed_measures"]["dataset_cleaning"] == [{"measure": "d", "reason": "non_numeric"}]
 
 
+def test_payload_names_the_assignment_rule_as_applied():
+    """Under multiple membership a measure is in several factors and needs h² >= 0.3 even
+    with the threshold 0 of the request; the model is told so, and why measures are left out."""
+    import pandas as pd
+
+    from factor_analysis import catalog as cat
+    from factor_analysis.core import AnalysisParams, analyze, clean_matrix
+    from interpretation.payload import build_payload
+
+    entry = cat.bundled_entry("comfy-paper-inductive-miner")
+    data = clean_matrix(pd.read_csv(cat.DATASETS_DIR / entry["file"], index_col=0)).data
+    params = AnalysisParams(n_factors=4, assignment_rule="multi", communality_threshold=0.0)
+    assignment = build_payload("model", analyze(data, params), params)["assignment"]
+    assert assignment["rule"] == "multi" and "Lieben" in assignment["rule_description"]
+    assert assignment["loading_must_exceed_threshold"] is True
+    assert assignment["communality_threshold"] == 0.3
+    acd = next(c for c in assignment["cross_loadings"] if c["measure"] == "Average connector degree")
+    assert acd["factors"] == ["Factor 3", "Factor 1", "Factor 2"] and len(acd["loadings"]) == 3
+    assert {"measure": "Average connector degree", "loading": acd["loadings"][2]} in assignment["factors"]["Factor 2"]
+    assert assignment["unassigned"] == [{"measure": "Connector Mismatch", "reason": "low_communality"}]
+
+
 def test_log_groups_are_sent_once():
     from factor_analysis import catalog as cat
     from interpretation.payload import measure_definitions

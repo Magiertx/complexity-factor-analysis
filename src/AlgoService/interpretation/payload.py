@@ -15,10 +15,17 @@ import numpy as np
 import pandas as pd
 
 from factor_analysis import catalog as cat
-from factor_analysis.core import COMMUNALITY_THRESHOLDS, LOADING_THRESHOLDS, AnalysisParams
+from factor_analysis.core import (
+    COMMUNALITY_THRESHOLDS,
+    CROSS_LOADING_GAP,
+    DEFAULT_ASSIGNMENT_RULE,
+    LOADING_THRESHOLDS,
+    AnalysisParams,
+)
+from factor_analysis.export import ASSIGNMENT_RULE_TEXTS
 
 #: Raise with every change of what build_payload sends; it is part of the cache key.
-PAYLOAD_FORMAT = 2
+PAYLOAD_FORMAT = 3
 
 KIND_DESCRIPTIONS = {
     "model": (
@@ -67,6 +74,36 @@ def measure_definitions(kind: str, measures: list[str]) -> tuple[dict[str, str |
 
 def _factor_label(i: int) -> str:
     return f"Factor {i + 1}"
+
+
+def _assignment(result: dict[str, Any]) -> dict[str, Any]:
+    """How the measures were assigned, as the rule applied it: under "multi" a measure can be in
+    several factors, and the communality it needs can be higher than the one asked for.
+    Results from before the rules carry neither and used "largest"."""
+    rule = result.get("assignment_rule") or DEFAULT_ASSIGNMENT_RULE
+    applied = result.get("assignment") or {}
+    reasons = {u["measure"]: u["reason"] for u in result.get("unassigned_details") or []}
+    return {
+        "rule": rule,
+        "rule_description": ASSIGNMENT_RULE_TEXTS[rule],
+        "loading_threshold": result["loading_threshold"],
+        "loading_must_exceed_threshold": applied.get("loading_strict", False),
+        "communality_threshold": applied.get("communality_threshold", result["communality_threshold"]),
+        "factors": {
+            _factor_label(f["index"]): [{"measure": m["measure"], "loading": m["loading"]} for m in f["measures"]]
+            for f in result["factors"]
+        },
+        "cross_loading_gap": applied.get("cross_loading_gap", CROSS_LOADING_GAP),
+        "cross_loadings": [
+            {
+                "measure": c["measure"],
+                "factors": [_factor_label(i) for i in c["factors"]],
+                "loadings": c["loadings"],
+            }
+            for c in result.get("cross_loadings") or []
+        ],
+        "unassigned": [{"measure": m, "reason": reasons.get(m)} for m in result["unassigned"]],
+    }
 
 
 def build_payload(
@@ -128,15 +165,7 @@ def build_payload(
             "proportion": None if variance["proportion"] is None else dict(zip(labels, variance["proportion"])),
             "explained_total": variance["explained"],
         },
-        "assignment": {
-            "loading_threshold": result["loading_threshold"],
-            "communality_threshold": result["communality_threshold"],
-            "factors": {
-                _factor_label(f["index"]): [{"measure": m["measure"], "loading": m["loading"]} for m in f["measures"]]
-                for f in result["factors"]
-            },
-            "unassigned": result["unassigned"],
-        },
+        "assignment": _assignment(result),
         "warnings": [w["message"] for w in result.get("warning_details", [])],
     }
     if result.get("structure_loadings") is not None:
