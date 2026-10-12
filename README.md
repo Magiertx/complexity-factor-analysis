@@ -23,13 +23,23 @@ Schalk do it, but interactively in the browser.
 - **Suitability first.** Data cleaning with reasons, Bartlett's test of sphericity (the
   numerically stable variant), KMO with ComFy's iterative MSA filter, and a per-measure MSA
   table with manual exclusion.
-- **Factors and loadings.** Scree plot with the Kaiser suggestion, factor count and rotation
-  (varimax, promax, oblimin, quartimax, none), a loading heatmap with communalities and
-  explained variance, factor groups by loading threshold. Every change re-runs the analysis.
+- **Factors and loadings.** Scree plot with the Kaiser line, a parallel analysis with a fixed
+  seed and the cumulative share of the eigenvalues; tiles for the factor count of each criterion
+  (Kaiser, parallel analysis, and the paper's count chosen a priori); rotation (varimax, promax,
+  oblimin, quartimax, none); a loading heatmap with communalities and explained variance; factor
+  groups by one of three assignment rules: the largest loading as in ComFy's report, multiple
+  membership as in Important Factors (Tab. 6-16) or Hair et al. (Tab. 17), with cross-loadings
+  marked. A settings row above steps 3 to 5 sums up every choice and tints those that differ
+  from the standard. Every change re-runs the analysis.
 - **Same numbers as upstream.** On the bundled paper scores of all seven miners the analysis
   equals ComFy's own reports to the four decimals they print; tests check every published
   number. Oblique rotations report correct communalities, the structure matrix and the factor
   correlations.
+- **Published analyses in one click.** The Important Factors datasets open with the tool
+  standard or with the paper's settings, and with the paper's settings a chip says whether the
+  numbers equal the ComFy report and how the paper's own tables relate to it. "Start here" on
+  the data step opens such an analysis directly, and "Copy link" shares an analysis of any
+  bundled dataset with its settings.
 - **Come back to a dataset.** The datasets of a session are listed on the data step, reopen
   with the parameters of their last analysis and can be deleted one by one or all at once;
   deleting a dataset job in the run history deletes its dataset too.
