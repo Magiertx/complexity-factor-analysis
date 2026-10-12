@@ -70,6 +70,8 @@ test("an uploaded CSV reopens from My datasets with its excluded measure", async
 });
 
 test("the PNML sample computes a model dataset without ProM", async ({ page }) => {
+  // A job, like the log sample: in the Docker stack it waits for a free Celery worker.
+  test.slow();
   await page.goto("/");
   await chooseSource(page, "pnml");
   const data = stepSection(page, "data");
