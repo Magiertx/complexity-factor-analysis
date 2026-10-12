@@ -295,6 +295,14 @@ export type DatasetSource = "bundled" | "csv" | "logs" | "pnml";
 export type Rotation = "varimax" | "promax" | "oblimin" | "quartimax" | "none";
 export const ROTATIONS: Rotation[] = ["varimax", "promax", "oblimin", "quartimax", "none"];
 
+/**
+ * How measures join factors: "largest" each to the factor it loads on most (ComFy's report),
+ * "multi" also to every factor within a small gap of the largest loading (Important Factors,
+ * Tab. 6-16), "hair" without the measures that load on more than one factor (Tab. 17).
+ */
+export type AssignmentRule = "largest" | "multi" | "hair";
+export const ASSIGNMENT_RULES: AssignmentRule[] = ["largest", "multi", "hair"];
+
 /** Upload limits per source, as enforced by the backend. */
 export const MAX_DATASET_FILES: Partial<Record<DatasetSource, number>> = { logs: 50, pnml: 200 };
 /** Budget over all files of one dataset request. */
@@ -320,6 +328,10 @@ export interface BundledDataset {
   label?: string;
   /** Id of the paper (collection) the dataset belongs to. */
   collection?: string;
+  /** The settings the paper analysed the dataset with; "Paper settings" in the UI. */
+  published_options?: AnalyzeOptions;
+  /** Where the paper reports them, e.g. "Important Factors, ATAED 2026, Tab. 5/6". */
+  published_source?: string;
 }
 
 /** A paper whose bundled datasets the data step lists together. */
@@ -429,7 +441,8 @@ export interface CreateDatasetInput {
 }
 
 export type CreateDatasetResponse =
-  | { dataset_id: string; status: "ready" }
+  /** `reused`: the session had a ready copy of the bundled dataset, and this is it. */
+  | { dataset_id: string; status: "ready"; reused?: boolean }
   | { dataset_id: string; status: "computing"; job_id: string };
 
 export interface AnalyzeOptions {
@@ -444,6 +457,46 @@ export interface AnalyzeOptions {
   loading_threshold?: number | null;
   /** null uses the default of the kind: 0 for model, 0.5 for log measures. */
   communality_threshold?: number | null;
+  /** Default "largest". */
+  assignment_rule?: AssignmentRule;
+}
+
+/** Why a measure joined no factor. */
+export type UnassignedReason = "low_loading" | "low_communality" | "cross_loading";
+
+/** A measure whose loadings on several factors count under the assignment rule. */
+export interface CrossLoading {
+  measure: string;
+  /** Counting from 0, like the columns of `loadings`. */
+  factors: number[];
+  /** One per factor in `factors`. */
+  loadings: number[];
+}
+
+/** The factor counts the criteria suggest, on the eigenvalues of the scree plot. */
+export interface FactorCount {
+  /** Eigenvalues above 1. */
+  kaiser: number;
+  /** Horn's parallel analysis: eigenvalues above `percentile` of random normal data. */
+  parallel_analysis: number;
+  /** The percentile of the random eigenvalues, one per eigenvalue of the data. */
+  eigenvalues_random: number[];
+  seed: number;
+  simulations: number;
+  percentile: number;
+}
+
+/** How the numbers compare with the report the dataset was published with. */
+export interface PublishedMatch {
+  status: "match" | "differs";
+  /** What was compared, e.g. "bartlett", "kmo", "msa", "loadings". */
+  compared: string[];
+  differences: { what: string; expected: number | string | null; actual: number | string | null }[];
+  tolerance: number;
+  /** The report and its commit. */
+  source: string;
+  /** A key for how the paper's own tables relate to the report, e.g. "matches_tab_11". */
+  paper_tables?: string | null;
 }
 
 /** A message of the analysis; `code` and `params` select the translation. */
@@ -489,9 +542,18 @@ export interface FactorAnalysis {
     /** Share of the total variance all factors explain together. */
     explained: number;
   };
-  /** `index` counts from 0, like the columns of `loadings`. */
+  /** `index` counts from 0, like the columns of `loadings`. Under "multi" a measure can be in several. */
   factors: { index: number; measures: { measure: string; loading: number }[] }[];
-  unassigned: string[];
+  /** Names before the assignment rules, with the reason since; see `unassignedMeasures`. */
+  unassigned: (string | { measure: string; reason?: UnassignedReason | null })[];
+  /** Absent before the assignment rules, which is "largest". */
+  assignment_rule?: AssignmentRule;
+  cross_loadings?: CrossLoading[];
+  factor_count?: FactorCount;
+  /** Only when the dataset has published numbers and the analysis used the published settings. */
+  published_match?: PublishedMatch | null;
+  /** Time the server took for the analysis. */
+  elapsed_ms?: number;
   warnings: string[];
   warning_details?: AnalysisNotice[];
 }
@@ -512,6 +574,14 @@ export class HttpError extends Error {
     this.code = code;
     this.params = params;
   }
+}
+
+/**
+ * A newer analysis of the same dataset in the same session replaced this one before it ran
+ * (409 "superseded"); its answer is the one that counts.
+ */
+export function isSuperseded(e: unknown): boolean {
+  return e instanceof HttpError && e.status === 409 && (e.code === "superseded" || /superseded/i.test(e.message));
 }
 
 async function httpError(r: Response, fallback: string): Promise<HttpError> {

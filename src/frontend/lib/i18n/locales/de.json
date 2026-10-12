@@ -914,6 +914,30 @@
       "ready": "Die Interpretation von {n} Faktor ist fertig.",
       "ready_plural": "Die Interpretation von {n} Faktoren ist fertig.",
       "state_needs_key": "braucht einen API-Schlüssel"
+    },
+    "settings": {
+      "measures": "{used} von {total} Maßen",
+      "msa": "MSA ≥ {value}",
+      "msa_off": "kein MSA-Filter",
+      "alpha": "α = {value}",
+      "factors": "{n} Faktor (Kaiser {kaiser})",
+      "factors_plural": "{n} Faktoren (Kaiser {kaiser})",
+      "factors_kaiser": "{n} Faktor (Kaiser)",
+      "factors_kaiser_plural": "{n} Faktoren (Kaiser)",
+      "rotation": {
+        "varimax": "varimax",
+        "promax": "promax",
+        "oblimin": "oblimin",
+        "quartimax": "quartimax",
+        "none": "keine Rotation"
+      },
+      "loading": "|λ| ≥ {value}",
+      "communality": "h² ≥ {value}",
+      "rule": {
+        "largest": "größte Ladung",
+        "multi": "Mehrfachzuordnung",
+        "hair": "Hair"
+      }
     }
   },
   "inspect": {

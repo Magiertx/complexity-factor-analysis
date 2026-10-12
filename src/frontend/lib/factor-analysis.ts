@@ -1,15 +1,20 @@
 // Helpers for the factor analysis view. Kept free of React so they stay easy to reuse.
 
 import type { CSSProperties } from "react";
-import type {
-  AnalysisNotice,
-  AnalyzeOptions,
-  FactorAnalysis,
-  FactorCatalog,
-  FactorKind,
-  InputsSummary,
-  Job,
-  Rotation,
+import {
+  ASSIGNMENT_RULES,
+  type AnalysisNotice,
+  type AnalyzeOptions,
+  type AssignmentRule,
+  type BundledDataset,
+  type CrossLoading,
+  type FactorAnalysis,
+  type FactorCatalog,
+  type FactorKind,
+  type InputsSummary,
+  type Job,
+  type Rotation,
+  type UnassignedReason,
 } from "./api";
 
 type Translate = (key: string, params?: Record<string, string | number>) => string;
@@ -26,6 +31,7 @@ export interface AnalysisOptions {
   loading_threshold: number;
   /** Measures below this communality stay unassigned. */
   communality_threshold: number;
+  assignment_rule: AssignmentRule;
 }
 
 /** Same defaults as the backend: ComFy for model, ComFy for log measures for log measures. */
@@ -39,6 +45,7 @@ export function defaultOptions(kind: FactorKind): AnalysisOptions {
     rotation: "varimax",
     loading_threshold: kind === "log" ? 0.5 : 0.35,
     communality_threshold: kind === "log" ? 0.5 : 0,
+    assignment_rule: "largest",
   };
 }
 
@@ -57,7 +64,95 @@ export function optionsFromSaved(kind: FactorKind, saved: AnalyzeOptions): Analy
     rotation: saved.rotation ?? defaults.rotation,
     loading_threshold: saved.loading_threshold ?? defaults.loading_threshold,
     communality_threshold: saved.communality_threshold ?? defaults.communality_threshold,
+    // Saved before the rules existed, or by a newer server with a rule this UI does not know.
+    assignment_rule:
+      saved.assignment_rule && ASSIGNMENT_RULES.includes(saved.assignment_rule)
+        ? saved.assignment_rule
+        : defaults.assignment_rule,
   };
+}
+
+/**
+ * The settings a paper analysed a bundled dataset with ("Paper settings"), completed with the
+ * defaults like saved options; null for a dataset without them.
+ */
+export function publishedOptions(kind: FactorKind, bundled: BundledDataset | null | undefined): AnalysisOptions | null {
+  const published = bundled?.published_options;
+  return published ? optionsFromSaved(kind, published) : null;
+}
+
+/** The settings in which two sets of options differ; excluded measures compare as a set. */
+export function differingOptions(a: AnalysisOptions, b: AnalysisOptions): Set<keyof AnalysisOptions> {
+  const out = new Set<keyof AnalysisOptions>();
+  for (const key of Object.keys(a) as (keyof AnalysisOptions)[]) {
+    if (key === "excluded") {
+      const other = new Set(b.excluded);
+      if (a.excluded.length !== other.size || a.excluded.some((m) => !other.has(m))) out.add(key);
+    } else if (a[key] !== b[key]) {
+      out.add(key);
+    }
+  }
+  return out;
+}
+
+export function sameOptions(a: AnalysisOptions, b: AnalysisOptions): boolean {
+  return differingOptions(a, b).size === 0;
+}
+
+/**
+ * Limits of the assignment rules other than the thresholds of the options, as the server
+ * applies them; only for the texts that explain the rules.
+ */
+export const RULE_LIMITS = {
+  /** A loading at most this far below the largest one of a measure counts as well. */
+  gap: 0.15,
+  /** Least communality of an assigned measure under "multi" and "hair". */
+  multi_communality: 0.3,
+  hair_communality: 0.5,
+};
+
+export interface UnassignedMeasure {
+  measure: string;
+  /** null from a server before the assignment rules, which named no reason. */
+  reason: UnassignedReason | null;
+}
+
+/** The measures without a factor, with the reason where the server gives one. */
+export function unassignedMeasures(analysis: FactorAnalysis): UnassignedMeasure[] {
+  return analysis.unassigned.map((u) =>
+    typeof u === "string" ? { measure: u, reason: null } : { measure: u.measure, reason: u.reason ?? null },
+  );
+}
+
+/** The factor a measure loads on most, counting from 0. */
+export function primaryFactor(loadings: number[]): number {
+  let best = 0;
+  for (let i = 1; i < loadings.length; i++) if (Math.abs(loadings[i]) > Math.abs(loadings[best])) best = i;
+  return best;
+}
+
+/** The cross-loadings of an analysis by measure. */
+export function crossLoadingsByMeasure(analysis: FactorAnalysis): Map<string, CrossLoading> {
+  return new Map((analysis.cross_loadings ?? []).map((c) => [c.measure, c]));
+}
+
+/**
+ * The cells of the loadings table that hold a further loading of a cross-loaded measure, as
+ * "measure:factor"; the measure's largest loading is not one of them.
+ */
+export function secondaryCells(analysis: FactorAnalysis): Set<string> {
+  const out = new Set<string>();
+  for (const c of analysis.cross_loadings ?? []) {
+    const row = analysis.loadings[c.measure];
+    const primary = row ? primaryFactor(row) : null;
+    for (const f of c.factors) if (f !== primary) out.add(`${c.measure}:${f}`);
+  }
+  return out;
+}
+
+/** Factors that have at least one measure: the dimensions of the solution. */
+export function dimensionCount(analysis: FactorAnalysis): number {
+  return analysis.factors.filter((f) => f.measures.length > 0).length;
 }
 
 /**
@@ -72,6 +167,74 @@ export function initialOptions(
   if (!saved) return defaultOptions(kind);
   const options = optionsFromSaved(kind, saved);
   return { ...options, excluded: options.excluded.filter((m) => measures.includes(m)) };
+}
+
+/** One part of the settings row above steps 3 to 5, e.g. "MSA ≥ 0.6". */
+export interface SettingChip {
+  id: "measures" | "msa" | "alpha" | "factors" | "rotation" | "loading" | "communality" | "rule";
+  text: string;
+  /** Differs from the tool standard. */
+  differs: boolean;
+}
+
+/**
+ * The settings of an analysis in short, e.g. "10 of 12 measures · MSA ≥ 0.6 · 4 factors
+ * (Kaiser 2) · varimax · |λ| ≥ 0.35 · h² ≥ 0.3 · multiple membership". The counts come from the
+ * analysis on screen where there is one. The significance level shows only when it is not the
+ * standard: it changes no number of the analysis, only whether Bartlett's test passes.
+ */
+export function settingsSummary(
+  options: AnalysisOptions,
+  standard: AnalysisOptions,
+  analysis: FactorAnalysis | null,
+  measureCount: number,
+  t: Translate,
+): SettingChip[] {
+  const changed = differingOptions(options, standard);
+  const used = analysis?.used_measures.length ?? measureCount - options.excluded.length;
+  const kaiser = analysis?.factor_count?.kaiser ?? analysis?.suggested_n_factors ?? null;
+  const n = options.n_factors ?? analysis?.n_factors ?? kaiser;
+  const chips: SettingChip[] = [
+    {
+      id: "measures",
+      text: t("factor.settings.measures", { used, total: measureCount }),
+      differs: changed.has("excluded"),
+    },
+    {
+      id: "msa",
+      text: options.auto_msa_filter
+        ? t("factor.settings.msa", { value: options.msa_threshold })
+        : t("factor.settings.msa_off"),
+      differs: changed.has("auto_msa_filter") || (options.auto_msa_filter && changed.has("msa_threshold")),
+    },
+  ];
+  if (changed.has("bartlett_alpha")) {
+    chips.push({ id: "alpha", text: t("factor.settings.alpha", { value: options.bartlett_alpha }), differs: true });
+  }
+  if (n !== null) {
+    // "4 factors (Kaiser 2)" for a count of one's own, "2 factors (Kaiser)" when following it.
+    const own = options.n_factors !== null && kaiser !== null;
+    chips.push({
+      id: "factors",
+      text: countText(t, own ? "factor.settings.factors" : "factor.settings.factors_kaiser", n, own ? { kaiser } : {}),
+      differs: changed.has("n_factors"),
+    });
+  }
+  chips.push(
+    { id: "rotation", text: t(`factor.settings.rotation.${options.rotation}`), differs: changed.has("rotation") },
+    {
+      id: "loading",
+      text: t("factor.settings.loading", { value: options.loading_threshold }),
+      differs: changed.has("loading_threshold"),
+    },
+    {
+      id: "communality",
+      text: t("factor.settings.communality", { value: options.communality_threshold }),
+      differs: changed.has("communality_threshold"),
+    },
+    { id: "rule", text: t(`factor.settings.rule.${options.assignment_rule}`), differs: changed.has("assignment_rule") },
+  );
+  return chips;
 }
 
 /** localStorage keys of the factor analysis tabs, cleared with the datasets in the settings. */

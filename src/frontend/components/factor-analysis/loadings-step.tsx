@@ -9,6 +9,7 @@ import {
   loadingStyle,
   orderMeasures,
   signColor,
+  unassignedMeasures,
   type AnalysisOptions,
   type ExportFormat,
 } from "@/lib/factor-analysis";
@@ -406,7 +407,7 @@ function FactorGroups({
               <p className="text-[11px] text-muted">{t("factor.loadings.unassigned_hint")}</p>
             </div>
             <ul className="flex flex-wrap gap-1.5">
-              {analysis.unassigned.map((m) => (
+              {unassignedMeasures(analysis).map(({ measure: m }) => (
                 <li key={m} className="rounded bg-tile px-1.5 py-0.5 text-xs" title={measureTitle(m)}>
                   {measureName(m)}
                 </li>
