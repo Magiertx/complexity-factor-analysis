@@ -25,7 +25,7 @@ function ErrorFallback({ error, onRetry }: { error: Error | null; onRetry: () =>
         </div>
         <div>
           <CardTitle className="text-lg font-bold text-danger-ink">{t("common.error_title")}</CardTitle>
-          <CardDescription className="text-sm mt-1 text-muted/80">
+          <CardDescription className="text-sm mt-1 text-muted">
             {t("common.error_description")}
           </CardDescription>
         </div>

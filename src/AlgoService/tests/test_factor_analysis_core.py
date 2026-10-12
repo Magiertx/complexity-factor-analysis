@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import itertools
 import math
 import os
 
@@ -295,93 +294,8 @@ def test_analyze_without_rotation():
     assert result["rotation"] == "none"
 
 
-# --- regression against ComFy's published results -----------------------------------------
-
-# From ComFy, output/paper-results/report-inductive-miner.tex (commit 1dd6ea6): the Inductive
-# miner scores of the paper, 4 factors, varimax.
-REPORT_BARTLETT = 6822.441421227026
-REPORT_OVERALL_MSA = 0.7466686435594551
-REPORT_MSA = {
-    "Size": 0.6913, "Connector Mismatch": 0.7634, "Connector Heterogeneity": 0.7023,
-    "Token split": 0.8338, "Separability": 0.6196, "Average connector degree": 0.7744,
-    "Maximum connector degree": 0.6671, "Coefficient of network connectivity": 0.7982,
-    "Density": 0.7559, "Number of duplicate tasks": 0.7438,
-}
-REPORT_SCREE = [0.5462, 0.2197, 0.0909, 0.0707, 0.0519, 0.0103, 0.0058, 0.0028, 0.001, 0.0006]
-REPORT_LOADINGS = {
-    "Size": [0.9712, -0.1515, -0.1211, 0.1158],
-    "Connector Mismatch": [0.2446, -0.2312, -0.2256, 0.2028],
-    "Connector Heterogeneity": [-0.0123, -0.1617, -0.9338, -0.206],
-    "Token split": [0.9516, -0.2, -0.074, 0.0142],
-    "Separability": [0.2051, 0.152, 0.2582, 0.6252],
-    "Average connector degree": [-0.4835, 0.4608, 0.583, 0.4128],
-    "Maximum connector degree": [-0.1844, 0.9532, 0.1908, 0.1303],
-    "Coefficient of network connectivity": [-0.4728, 0.6628, 0.2911, 0.4778],
-    "Density": [-0.5808, 0.3288, 0.6126, 0.401],
-    "Number of duplicate tasks": [0.9721, -0.1978, -0.0557, 0.0831],
-}
-REPORT_COMMUNALITIES = {
-    "Size": 0.9943, "Connector Mismatch": 0.2053, "Connector Heterogeneity": 0.9407,
-    "Token split": 0.9513, "Separability": 0.5228, "Average connector degree": 0.9564,
-    "Maximum connector degree": 0.9961, "Coefficient of network connectivity": 0.9759,
-    "Density": 0.9815, "Number of duplicate tasks": 0.9941,
-}
-
-
-def _match_up_to_sign_and_order(ours: np.ndarray, expected: np.ndarray, atol: float) -> bool:
-    for perm in itertools.permutations(range(expected.shape[1])):
-        candidate = ours[:, perm]
-        signs = np.sign((candidate * expected).sum(axis=0))
-        if np.allclose(candidate * signs, expected, atol=atol):
-            return True
-    return False
-
-
-def test_matches_comfy_report_for_the_inductive_miner():
-    result = core.analyze(_inductive(), core.AnalysisParams(n_factors=4, rotation="varimax"))
-
-    assert result["n_observations"] == 288
-    assert result["bartlett"]["chi_square"] == pytest.approx(REPORT_BARTLETT, rel=1e-10)
-    assert result["bartlett"]["p_value"] == 0.0
-    assert result["kmo"]["overall"] == pytest.approx(REPORT_OVERALL_MSA, rel=1e-10)
-    assert {m: round(v, 4) for m, v in result["kmo"]["per_measure"].items()} == REPORT_MSA
-    assert result["used_measures"] == list(REPORT_LOADINGS)
-    # ComFy's scree plot shows PCA's explained variance ratio, i.e. eigenvalue / measures.
-    assert [round(v / 10, 4) for v in result["eigenvalues"]] == REPORT_SCREE
-
-    ours = np.array([result["loadings"][m] for m in REPORT_LOADINGS])
-    expected = np.array(list(REPORT_LOADINGS.values()))
-    assert _match_up_to_sign_and_order(ours, expected, atol=1e-4)
-    assert {m: round(v, 4) for m, v in result["communalities"].items()} == REPORT_COMMUNALITIES
-
-
-# From ComFy for log measures, output/paper-results/analysis-info-10-factors-oblimax.tex
-# (commit 70837ce): the measures excluded before the analysis and Bartlett's chi-square.
-LOG_REPORT_BARTLETT = 1321643.419324327
-LOG_REPORT_EXCLUDED = {
-    "missing": {
-        "trace_len_skewness", "trace_len_kurtosis", "skewness_variant_occurrence",
-        "kurtosis_variant_occurrence", "start_activities_skewness", "start_activities_kurtosis",
-        "end_activities_skewness", "end_activities_kurtosis",
-    },
-    "constant": {"n_traces", "coverage_variants"},
-    "duplicate": {
-        "ratio_variants_per_number_of_traces", "trace_len_mean", "rel_coverage_variants",
-        "n_nodes_dfg", "eventropy_k_block_ratio_1", "avg_traces_with_loop",
-        "avg_traces_with_repetition", "avg_node_degree_dfg",
-    },
-}
-
-
-def test_matches_comfy_for_log_measures_cleaning_and_bartlett():
-    raw = pd.read_csv(os.path.join(DATASETS, "log", "log_measures_all_pdc_training_logs.csv"), index_col=0)
-    cleaned = core.clean_matrix(raw)
-    by_reason: dict[str, set[str]] = {}
-    for d in cleaned.dropped:
-        by_reason.setdefault(d["reason"], set()).add(d["measure"])
-    assert by_reason == LOG_REPORT_EXCLUDED
-    assert cleaned.data.shape == (2112, 128)
-    assert core.bartlett_sphericity(cleaned.data)["chi_square"] == pytest.approx(LOG_REPORT_BARTLETT, rel=1e-9)
+# The published results of ComFy and ComFy for log measures are checked in
+# test_published_numbers.py.
 
 
 # --- export -------------------------------------------------------------------------------

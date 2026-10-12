@@ -58,7 +58,7 @@ export function LogOverviewCard({ stats, filename }: Props) {
         <FileBarChart className="h-3 w-3" />
         <span>{t("log_overview.heading")}</span>
         {filename && (
-          <span className="font-mono text-muted/70 truncate" title={filename}>
+          <span className="font-mono text-muted truncate" title={filename}>
             · {filename}
           </span>
         )}
@@ -169,7 +169,7 @@ function Stat({
       <span className="text-xs text-muted">{label}</span>
       {hint && (
         <>
-          <span className="text-muted/40 text-xs">·</span>
+          <span aria-hidden className="text-muted/40 text-xs">·</span>
           <span className="text-xs text-muted">{hint}</span>
         </>
       )}

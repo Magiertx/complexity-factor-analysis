@@ -251,6 +251,8 @@ export interface Job {
   progress_status: string;
   created_at: number;
   error?: string | null;
+  /** A known cause of the failure, e.g. "prom_unavailable"; the UI says it in its language. */
+  error_code?: string | null;
   notes?: string | null;
   result?: AnalysisResult | null;
 }

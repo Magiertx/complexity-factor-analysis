@@ -238,7 +238,7 @@
       "fa_download": "Die bereinigte Matrix als CSV.",
       "fa_analyze": "Bartlett, KMO mit MSA-Filter, Eigenwerte und rotierte Ladungen für die übergebenen Einstellungen (JSON).",
       "fa_export": "Die Ladungstabelle als CSV oder LaTeX; der Body von analyze plus format.",
-      "fa_export_zip": "Die ganze Analyse als ZIP: Ergebnis, Matrix, Tabellen, Parameter und Bibliotheksversionen.",
+      "fa_export_zip": "Die ganze Analyse als ZIP: Ergebnis, Matrix, Tabellen, Parameter, Bibliotheksversionen und Herkunft (Version und Commit des Tools, Commits der Vorlagen, feeed, pm4py und ProM, Miner mit ihren Parametern).",
       "fa_interpretation_status": "Ob Claude Faktoren interpretieren kann, und mit welchem Modell.",
       "fa_interpret": "Namen und kurze Interpretationen der Faktoren durch Claude; der Body von analyze plus language. Optional, braucht einen API-Schlüssel auf dem Server.",
       "jobs": "Alle Runs deiner Sitzung.",
@@ -942,6 +942,7 @@
   "errors": {
     "rate_limited": "Zu viele Anfragen. Warte kurz und versuche es noch einmal.",
     "job_quota": "Du hast schon {active} wartende oder laufende Runs, und das käme mit {requested} dazu; erlaubt sind höchstens {limit}. Warte, bis sie fertig sind, oder brich einige unter Letzte Runs ab.",
-    "dataset_jobs_busy": "Der Server berechnet schon {active} Datensätze, mehr gleichzeitig nicht. Versuche es in ein paar Minuten noch einmal."
+    "dataset_jobs_busy": "Der Server berechnet schon {active} Datensätze, mehr gleichzeitig nicht. Versuche es in ein paar Minuten noch einmal.",
+    "prom_unavailable": "ProM, das die Miner ausführt, ist gerade nicht erreichbar, daher konnte kein Petri-Netz entdeckt werden. Versuche es in ein paar Minuten noch einmal; bleibt es dabei, muss auf dem Server der Dienst prom4py gestartet werden."
   }
 }

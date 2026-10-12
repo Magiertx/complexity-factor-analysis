@@ -74,7 +74,7 @@ export function JobNotesField({ jobId, initialNotes, variant = "panel", onSaved 
             <span
               className={cn(
                 "flex-1 line-clamp-2 break-words",
-                isEmpty ? "text-muted/50 italic" : "text-muted",
+                isEmpty ? "text-muted italic" : "text-muted",
               )}
               title={savedNotes || undefined}
             >
@@ -139,7 +139,7 @@ export function JobNotesField({ jobId, initialNotes, variant = "panel", onSaved 
         <div
           className={cn(
             "text-sm leading-relaxed whitespace-pre-wrap break-words",
-            isEmpty ? "text-muted/60 italic" : "text-fg",
+            isEmpty ? "text-muted italic" : "text-fg",
           )}
         >
           {savedNotes || t("job_notes.panel_empty_text")}
@@ -154,7 +154,7 @@ export function JobNotesField({ jobId, initialNotes, variant = "panel", onSaved 
             rows={4}
             className="w-full text-sm px-3 py-2 rounded-md bg-tile focus:outline-none focus:ring-2 focus:ring-accent/50 transition resize-y"
           />
-          <div className="flex items-center justify-between gap-2 text-[10px] text-muted/60">
+          <div className="flex items-center justify-between gap-2 text-[10px] text-muted">
             <span>{t("job_notes.char_count", { n: notes.length, max: MAX_NOTES })}</span>
             <div className="flex items-center gap-1.5">
               <Button size="sm" variant="ghost" onClick={handleCancel} disabled={saving}>

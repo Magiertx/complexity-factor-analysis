@@ -161,7 +161,8 @@ export function signColor(value: number): string {
 
 /**
  * Measures in display order. "factor" groups them by assigned factor, strongest loading
- * first, with unassigned measures at the end; "original" keeps the dataset order.
+ * first, with unassigned measures at the end; "original" keeps the dataset order. For display
+ * only: the analysis always runs on the stored order, on which the KMO of singular data depends.
  */
 export function orderMeasures(analysis: FactorAnalysis, order: "factor" | "original"): string[] {
   if (order === "original") return analysis.used_measures;
@@ -205,6 +206,11 @@ export function downloadBlob(blob: Blob, filename: string) {
 function datasetJobKind(job: Job): FactorKind | null {
   if (!job.algorithm_id.startsWith("_dataset:")) return null;
   return job.algorithm_id.slice("_dataset:".length) === "log" ? "log" : "model";
+}
+
+/** Why a job failed: in the UI language where the server names a known cause, else its message. */
+export function jobErrorText(job: Pick<Job, "error" | "error_code">, tMaybe: TranslateMaybe): string | undefined {
+  return (job.error_code && tMaybe(`errors.${job.error_code}`)) || job.error || undefined;
 }
 
 /** The name of a job's algorithm in the UI language; the backend names dataset jobs in English. */

@@ -22,6 +22,7 @@ from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 
 import jobs_db
+import provenance
 from algorithms._log_io import MAX_DECOMPRESSED_BYTES
 from config import MAX_FILE_SIZE, CodedHTTPException, broadcast_jobs_update, get_session_id, limiter, logger
 from env_config import positive_int, rate_limit
@@ -41,6 +42,7 @@ from interpretation import store
 from interpretation.payload import data_hash, effective_params
 from routes.algorithms import (
     _enforce_job_quota,
+    _LoopCalls,
     _make_status_cache,
     _ProgressThrottle,
     _sanitize_filename,
@@ -297,6 +299,7 @@ async def run_dataset_task(job_id: str, session_id: str, dataset_id: str, spec: 
     from algorithms.base import stat, table, text
 
     loop = asyncio.get_running_loop()
+    updates = _LoopCalls(loop)
 
     def fail_dataset(error: str) -> None:
         try:
@@ -319,12 +322,13 @@ async def run_dataset_task(job_id: str, session_id: str, dataset_id: str, spec: 
             if check_aborted():
                 raise RuntimeError("Task aborted by user")
             if throttle.should_persist(pct):
-                asyncio.run_coroutine_threadsafe(
-                    jobs_db.update_job_progress(job_id, pct, msg, status="running"), loop
-                )
-                asyncio.run_coroutine_threadsafe(broadcast_jobs_update(), loop)
+                updates.submit(jobs_db.update_job_progress(job_id, pct, msg, status="running"))
+                updates.submit(broadcast_jobs_update())
 
-        result = await asyncio.to_thread(_compute, spec, progress_cb)
+        try:
+            result = await asyncio.to_thread(_compute, spec, progress_cb)
+        finally:
+            await updates.settle()
         if result.table.empty:
             first = result.failures[0][1] if result.failures else "no input produced values"
             raise RuntimeError(f"No observation could be computed. First error: {first}")
@@ -453,9 +457,14 @@ async def create_dataset(
         inputs: dict[str, Any] = {"files": 0 if source == "bundled" else 1}
         if measure_list:
             inputs["measures"] = measure_list
+        origin = provenance.dataset(
+            kind, source,
+            bundled=entry if source == "bundled" else None,
+            filename=None if source == "bundled" else filename,
+        )
         meta = storage.create(
             session_id, kind=kind, name=display, source=source, status="computing",
-            inputs=inputs, bundled_id=bundled_id,
+            inputs=inputs, bundled_id=bundled_id, provenance=origin,
         )
         try:
             meta = await run_in_threadpool(storage.store_matrix, session_id, meta["id"], table)
@@ -515,10 +524,14 @@ async def create_dataset(
     given = name or (sample["name"] if sample else None)
     display = given or f"{n_inputs} {noun}"
     chosen = {k: v for k, v in spec.items() if k in ("measures", "miners", "groups")}
+    names = [Path(f).name for f in sample["files"]] if sample else _unique_labels(
+        [_sanitize_filename(f.filename or "") for f in uploads]
+    )
+    origin = provenance.dataset(kind, source, inputs=names, miners=spec.get("miners"))
     meta = storage.create(
         session_id, kind=kind, name=display, source=source, status="computing",
         inputs={"files": n_inputs, **chosen, **({"sample_id": sample["id"]} if sample else {})},
-        params=chosen, name_auto=given is None,
+        params=chosen, name_auto=given is None, provenance=origin,
     )
     dataset_id = meta["id"]
     try:
@@ -898,6 +911,20 @@ class ArchiveRequest(AnalyzeRequest):
     language: Literal["en", "de"] = "en"
 
 
+def _provenance(meta: dict[str, Any], entry: dict[str, Any]) -> dict[str, Any]:
+    """How the dataset was made: as recorded when it was created, or for a dataset stored
+    before that was recorded, what its metadata still tell, with today's versions."""
+    if meta.get("provenance"):
+        return meta["provenance"]
+    inputs = _inputs(meta)
+    return {
+        **provenance.dataset(
+            meta["kind"], meta["source"], miners=inputs.get("miners"), bundled=entry or None,
+        ),
+        "recorded_at_creation": False,
+    }
+
+
 def _dataset_record(meta: dict[str, Any]) -> dict[str, Any]:
     """The dataset as the manifest of an archive describes it."""
     entry = (cat.bundled_entry(meta["bundled_id"]) if meta.get("bundled_id") else None) or {}
@@ -914,6 +941,7 @@ def _dataset_record(meta: dict[str, Any]) -> dict[str, Any]:
         "n_observations": meta["n_observations"],
         "measures": meta["measures"],
         "dropped": [{"name": d["measure"], "reason": d["reason"]} for d in meta["dropped"]],
+        "provenance": _provenance(meta, entry),
     }
 
 

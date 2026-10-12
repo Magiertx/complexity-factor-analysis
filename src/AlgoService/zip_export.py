@@ -13,6 +13,7 @@ from fastapi import HTTPException
 from fastapi.responses import StreamingResponse
 
 import jobs_db
+import provenance
 from config import APP_NAME, validate_job_id
 
 
@@ -78,6 +79,7 @@ def _build_manifest(job: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "schema_version": 1,
+        "tool": provenance.tool(),
         "job_id": job.get("id"),
         "status": job.get("status"),
         "algorithm": {

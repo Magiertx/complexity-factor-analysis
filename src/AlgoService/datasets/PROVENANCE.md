@@ -39,6 +39,20 @@ unless noted.
   in the same environment, not necessarily the published upstream output.
 - **Licence:** MIT (`vendored/comfy_log/LICENSE`).
 
+## `published/` — the numbers the bundled datasets were published with
+
+- **Files:** `<dataset id>.json` for every bundled dataset, extracted once by
+  `scripts/extract_published.py` from `output/paper-results/report-*-miner.tex` of ComFy and
+  `output/paper-results/analysis-info-10-factors-oblimax.tex` of ComFy for log measures, at the
+  commits above. `factor_analysis/published.py` describes the fields.
+- **Checked by:** `tests/test_published_numbers.py`. The seven ComFy reports reproduce in
+  full: Bartlett's chi-square and the overall MSA to 1e-9 relative, every MSA, loading,
+  communality and scree value to the four decimals the report prints, and the MSA filter with
+  its rounds. The Heuristics report asks for 4 factors with 4 measures left; its last column
+  is all 0.0, and the tool reproduces the other three with 3 factors. For the log measures
+  only the cleaning and Bartlett's chi-square are checked; KMO and MSA are kept for reference
+  and marked platform dependent (see "Singular data" above).
+
 ## `samples/logs/` — sample event logs
 
 - **Files:** `pdc_2020_1001010.xes`, `pdc2023_00101000.xes`, `pdc2024_00001100.xes`,

@@ -69,10 +69,12 @@ def create(
     params: dict[str, Any] | None = None,
     bundled_id: str | None = None,
     name_auto: bool = False,
+    provenance: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """``inputs`` says what the dataset is made from: the number of files and the measures,
     miners, feature groups or sample chosen for it. ``name_auto`` marks a name made up from
-    them, which the UI replaces with one in its language."""
+    them, which the UI replaces with one in its language. ``provenance`` records the code and
+    library versions it is computed with (``provenance.dataset``)."""
     dataset_id = str(uuid.uuid4())
     directory = dataset_dir(session_id, dataset_id)
     directory.mkdir(parents=True)
@@ -97,6 +99,8 @@ def create(
         meta["bundled_id"] = bundled_id
     if name_auto:
         meta["name_auto"] = True
+    if provenance:
+        meta["provenance"] = provenance
     _write_json(directory / "meta.json", meta)
     return meta
 

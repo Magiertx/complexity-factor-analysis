@@ -244,8 +244,9 @@ sudo chown -R 10001:10001 /path/to/host/artifacts
 Use the following commands to build and run the services in production mode:
 
 ```bash
-# 1. Build the images
-docker compose build
+# 1. Build the images. The tag and commit go into the manifest of every export; without them
+#    it says "not recorded".
+APP_VERSION=$(git describe --tags --always) APP_COMMIT=$(git rev-parse HEAD) docker compose build
 
 # 2. Run the services in detached mode (background)
 docker compose up -d

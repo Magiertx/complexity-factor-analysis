@@ -16,7 +16,7 @@ from fastapi.concurrency import run_in_threadpool
 
 import jobs_db
 from config import CodedHTTPException, broadcast_jobs_update, MAX_FILE_SIZE, logger, get_session_id, limiter
-from env_config import rate_limit
+from env_config import rate_limit, text
 from algorithms import REGISTRY, get as get_algorithm
 from algorithms.base import ParameterValidationError, TOOL_CATEGORIES
 
@@ -42,7 +42,8 @@ async def _enforce_job_quota(session_id: str, requested: int = 1) -> None:
 
 
 
-UPLOADED_LOGS_DIR = Path("/app/uploaded_logs")
+# Recent uploads per session; a volume in the Docker image, settable like ARTIFACTS_DIR.
+UPLOADED_LOGS_DIR = Path(text("UPLOADED_LOGS_DIR", "/app/uploaded_logs"))
 if not UPLOADED_LOGS_DIR.exists():
     try:
         UPLOADED_LOGS_DIR.mkdir(parents=True, exist_ok=True)
@@ -91,6 +92,30 @@ def _make_status_cache(job_id: str, loop: asyncio.AbstractEventLoop, *, max_age_
         return state["cached"]
 
     return is_aborted
+
+
+class _LoopCalls:
+    """Coroutines a worker thread hands to the event loop of its task, without waiting.
+
+    The task settles them before it ends. Under Celery the loop runs only while a task runs,
+    so an update still in flight when the task returned stayed suspended inside its
+    transaction: its row lock held every later write to that run, a delete as well, until
+    the worker process ran its next task.
+    """
+
+    def __init__(self, loop: asyncio.AbstractEventLoop) -> None:
+        self.loop = loop
+        self.futures: list[Any] = []
+
+    def submit(self, coro: Any) -> None:
+        self.futures.append(asyncio.run_coroutine_threadsafe(coro, self.loop))
+
+    async def settle(self) -> None:
+        """Wait for everything submitted so far; their errors are logged, not raised."""
+        pending, self.futures = self.futures, []
+        for result in await asyncio.gather(*(asyncio.wrap_future(f) for f in pending), return_exceptions=True):
+            if isinstance(result, Exception):
+                logger.warning(f"A progress update failed: {result}")
 
 
 class _ProgressThrottle:
@@ -349,7 +374,8 @@ async def run_analysis_task(job_id: str, t_path: str, coerced_params: dict[str, 
     if not algorithm:
         logger.error(f"Cannot run task {job_id}: algorithm {algorithm_id} not found.")
         return
-        
+    updates = _LoopCalls(loop)
+
     try:
         job_state = await jobs_db.read_job(job_id)
         if not job_state or job_state.get("status") == "aborted":
@@ -367,11 +393,8 @@ async def run_analysis_task(job_id: str, t_path: str, coerced_params: dict[str, 
             # DB write to land. Persistence + broadcast are coalesced by the
             # same throttle so they always move together.
             if throttle.should_persist(pct):
-                asyncio.run_coroutine_threadsafe(
-                    jobs_db.update_job_progress(job_id, pct, msg, status="running"),
-                    loop,
-                )
-                asyncio.run_coroutine_threadsafe(broadcast_jobs_update(), loop)
+                updates.submit(jobs_db.update_job_progress(job_id, pct, msg, status="running"))
+                updates.submit(broadcast_jobs_update())
 
         ctx = RunContext(
             run_id=job_id,
@@ -382,7 +405,10 @@ async def run_analysis_task(job_id: str, t_path: str, coerced_params: dict[str, 
         )
         
         # Run the blocking algorithm
-        result = await asyncio.to_thread(algorithm.analyze, t_path, coerced_params, ctx)
+        try:
+            result = await asyncio.to_thread(algorithm.analyze, t_path, coerced_params, ctx)
+        finally:
+            await updates.settle()
         
         # Save results
         js = await jobs_db.read_job(job_id)
@@ -395,7 +421,7 @@ async def run_analysis_task(job_id: str, t_path: str, coerced_params: dict[str, 
         if js and ("Task aborted by user" in str(e) or js.get("status") == "aborted"):
             await jobs_db.update_job_progress(job_id, js.get("percentage", 0.0), "Aborted by user", status="aborted")
         else:
-            await jobs_db.set_job_failed(job_id, str(e))
+            await jobs_db.set_job_failed(job_id, str(e), getattr(e, "code", None))
         await broadcast_jobs_update()
     except Exception as e:
         await jobs_db.set_job_failed(job_id, f"Algorithm failed: {e}")

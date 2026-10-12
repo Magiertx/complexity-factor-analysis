@@ -51,6 +51,7 @@ import {
   fetchFactorCatalog,
   FactorCatalog,
 } from "@/lib/api";
+import { jobErrorText } from "@/lib/factor-analysis";
 import { AlgorithmList } from "./algorithm-list";
 import { FileDrop, LOG_EXTENSIONS } from "./file-drop";
 import { ParameterForm, choiceList, type OptionInfo } from "./parameter-form";
@@ -403,7 +404,7 @@ export function Workbench() {
     } else if (jobSummary.status === "failed") {
       setSelectedJobDetail(jobSummary);
       setResult(null);
-      setError(jobSummary.error || t("workbench.errors.analysis_failed"));
+      setError(jobErrorText(jobSummary, tMaybe) || t("workbench.errors.analysis_failed"));
       setProgress(null);
     } else if (jobSummary.status === "aborted") {
       setSelectedJobDetail(jobSummary);
@@ -788,7 +789,7 @@ export function Workbench() {
                 <div className="flex flex-wrap sm:flex-col items-center sm:items-end gap-x-4 gap-y-1.5 shrink-0 sm:text-right">
                   {selected.author && (
                     <span
-                      className="text-xs text-muted/80 flex items-center gap-1.5 shrink-0"
+                      className="text-xs text-muted flex items-center gap-1.5 shrink-0"
                       title={t("workbench.algo_card.implemented_by", { author: selected.author ?? "" })}
                     >
                       <User className="h-3.5 w-3.5" />
@@ -858,7 +859,7 @@ export function Workbench() {
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-muted/90 italic leading-relaxed pr-2">
+                  <p className="text-xs text-muted italic leading-relaxed pr-2">
                     {selected.formatted_citation || selected.citation}
                   </p>
                 </div>

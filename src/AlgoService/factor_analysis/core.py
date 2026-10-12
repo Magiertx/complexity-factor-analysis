@@ -513,6 +513,9 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
     and everything after describe the measures that are left. A singular correlation matrix
     is analysed like ComFy for log measures does (clamped eigenvalues, pseudo-inverse in the
     MSA) and reported as a warning; it is an error only if the factor analysis then fails.
+
+    The measures keep the order of ``data``, which callers take as stored: on singular data
+    the KMO depends on the column order, so nothing may sort the columns on the way here.
     """
     check_excluded(list(data.columns), params.excluded)
     data = data.drop(columns=list(params.excluded))
