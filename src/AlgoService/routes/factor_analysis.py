@@ -67,7 +67,7 @@ PREVIEW_ROWS = 2000
 # Factor fits of large datasets take seconds of CPU; at most this many run at once per process.
 _ANALYSIS_SLOTS = asyncio.Semaphore(2)
 
-#: How often an analysis asks whether its client is still connected.
+#: Pause after an ASGI message other than a disconnect, while waiting for the client to leave.
 _DISCONNECT_POLL_S = 0.25
 
 # Dataset jobs queued or running over all sessions. The session quota alone does not bound
@@ -936,15 +936,17 @@ class _Watch:
             return True
         return self.key is not None and not _LATEST.is_newest(self.key, self.number, self.parameters)
 
-    async def check(self) -> bool:
-        if not self._gone.is_set() and await self.request.is_disconnected():
-            self._gone.set()
-        return self.stale()
-
-    async def poll(self) -> None:
-        # Behind a proxy that does not pass on a closed connection this never fires; then
-        # only a newer request stops the analysis.
-        while not await self.check():
+    async def listen(self) -> None:
+        """Wait until the client closes the connection. ``Request.is_disconnected`` only
+        peeks at the next message and misses it behind Starlette's BaseHTTPMiddleware, which
+        slowapi and srv_main use; waiting for the message sees it. Behind a proxy that keeps
+        the connection open this never returns; then only a newer request stops the analysis."""
+        while True:
+            message = await self.request.receive()
+            if message["type"] == "http.disconnect":
+                self._gone.set()
+                return
+            # The body, if nothing read it; the next message can only be the disconnect.
             await asyncio.sleep(_DISCONNECT_POLL_S)
 
     def close(self) -> None:
@@ -956,21 +958,27 @@ async def _analyze(data: pd.DataFrame, params: AnalysisParams, watch: _Watch | N
     """Run the analysis in one of the slots. With a ``watch``, an analysis nobody waits for
     any more is given up before and after waiting for a slot and during the fit, with
     ``Superseded``."""
+    if watch is None:
+        try:
+            async with _ANALYSIS_SLOTS:
+                return await run_in_threadpool(run_analysis, data, params)
+        except AnalysisError as e:
+            raise _AnalysisFailed(e) from None
+    # Cancelled before the response goes out, so it never takes a message the server needs.
+    listening = asyncio.create_task(watch.listen())
     try:
-        if watch is not None and await watch.check():
+        # One turn of the loop, so that a client gone already is noticed.
+        await asyncio.sleep(0)
+        if watch.stale():
             raise Superseded()
         async with _ANALYSIS_SLOTS:
-            if watch is None:
-                return await run_in_threadpool(run_analysis, data, params)
-            if await watch.check():
+            if watch.stale():
                 raise Superseded()
-            poll = asyncio.create_task(watch.poll())
-            try:
-                return await run_in_threadpool(run_analysis, data, params, watch.stale)
-            finally:
-                poll.cancel()
+            return await run_in_threadpool(run_analysis, data, params, watch.stale)
     except AnalysisError as e:
         raise _AnalysisFailed(e) from None
+    finally:
+        listening.cancel()
 
 
 def _superseded() -> JSONResponse:

@@ -226,15 +226,13 @@ def test_a_request_whose_client_left_is_not_fitted(slow_fit):
     params = core.AnalysisParams(n_factors=1, auto_msa_filter=False)
 
     class Left:
-        async def is_disconnected(self) -> bool:
-            return True
+        async def receive(self) -> dict:
+            return {"type": "http.disconnect"}
 
     class LeavesDuringTheFit:
-        calls = 0
-
-        async def is_disconnected(self) -> bool:
-            self.calls += 1
-            return self.calls > 3
+        async def receive(self) -> dict:
+            await asyncio.sleep(0.3)
+            return {"type": "http.disconnect"}
 
     with pytest.raises(core.Superseded):
         asyncio.run(route._analyze(data, params, route._Watch(Left())))
