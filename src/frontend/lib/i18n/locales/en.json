@@ -1037,6 +1037,18 @@
         "communalities": "Communalities"
       },
       "differences": "Differences",
+      "diff": {
+        "bartlett_chi_square": "Bartlett's chi-square",
+        "bartlett_p_value": "Bartlett's p-value",
+        "kmo": "Overall MSA (KMO)",
+        "msa": "MSA of {measure}",
+        "msa_at_removal": "MSA of {measure} when it was removed",
+        "msa_measures": "Measures left after the MSA filter",
+        "msa_removed": "Measures removed by the MSA filter, with their step",
+        "loading": "Loading of {measure} on F{factor}",
+        "communality": "Communality of {measure}",
+        "loadings_shape": "Measures and factors of the loadings"
+      },
       "col_what": "Value",
       "col_expected": "Report",
       "col_actual": "Tool",
@@ -1046,7 +1058,7 @@
     },
     "paper_notes": {
       "tables": {
-        "matches": "Tab. {tables} of the paper prints the same numbers.",
+        "matches": "The paper prints these numbers, rounded, in {tables}.",
         "extra_dup": "Tab. 8 of the paper additionally uses dup without τ, which this dataset does not have; its loadings differ by up to 0.06, the groups of Tab. 9 stay the same.",
         "other_data": "Tab. 14–16 of the paper are based on other data than this dataset.",
         "not_in_paper": "The paper does not analyse this miner; the numbers are those of the report in the repository."

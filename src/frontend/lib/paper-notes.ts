@@ -5,33 +5,28 @@
 
 type Translate = (key: string, params?: Record<string, string | number>) => string;
 
-/**
- * Keys the server may send as `published_match.paper_tables`, and the text each stands for.
- * Spellings vary on purpose: the key names a fact about the paper, not a fixed vocabulary.
- */
-const PAPER_TABLES: { pattern: RegExp; key: string; params?: (m: RegExpExecArray) => Record<string, string> }[] = [
-  {
-    // "matches_tab_11", "same_as_tab_4_5": the paper prints the numbers of the report.
-    pattern: /^(?:matches|same_as|identical)(?:_tab(?:les?)?)?_(\d+(?:_\d+)*)$/,
-    key: "matches",
-    params: (m) => ({ tables: m[1].split("_").join("/") }),
-  },
-  { pattern: /^(?:tab_8_)?extra_dup(?:_column)?$/, key: "extra_dup" },
-  { pattern: /^(?:tab_14_16_)?other_data$/, key: "other_data" },
-  { pattern: /^(?:not_in_paper|repository_only)$/, key: "not_in_paper" },
-];
+/** Keys the server sends as `published_match.paper_tables`, and the text each stands for. */
+const PAPER_TABLES: Record<string, string> = {
+  matches: "matches",
+  extra_dup_column: "extra_dup",
+  other_data: "other_data",
+  not_in_paper: "not_in_paper",
+};
 
 /**
- * The sentence on the paper's own tables for a key of the server; a text the server sent as
- * such is shown as it is, an unknown key not at all.
+ * The sentence on the paper's own tables: for a known key in the UI language with the tables
+ * the server names (`ref`, e.g. "Tab. 10–11"), else the server's English note, if any.
  */
-export function paperTablesText(key: string | null | undefined, t: Translate): string | null {
-  if (!key) return null;
-  for (const { pattern, key: text, params } of PAPER_TABLES) {
-    const m = pattern.exec(key);
-    if (m) return t(`factor.paper_notes.tables.${text}`, params?.(m));
-  }
-  return /\s/.test(key) ? key : null;
+export function paperTablesText(
+  key: string | null | undefined,
+  ref: string | null | undefined,
+  note: string | null | undefined,
+  t: Translate,
+): string | null {
+  const text = key ? PAPER_TABLES[key] : undefined;
+  // "matches" needs the tables to say anything; the other texts name theirs.
+  if (text && (text !== "matches" || ref)) return t(`factor.paper_notes.tables.${text}`, { tables: ref ?? "" });
+  return note || null;
 }
 
 /**

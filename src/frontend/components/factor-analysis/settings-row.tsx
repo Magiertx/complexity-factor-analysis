@@ -2,7 +2,7 @@
 
 import { useId, useRef, useState } from "react";
 import { AlertTriangle, BookOpen, Check, RotateCcw } from "lucide-react";
-import type { FactorAnalysis, PublishedMatch } from "@/lib/api";
+import type { FactorAnalysis, PublishedDifference, PublishedMatch } from "@/lib/api";
 import { sameOptions, settingsSummary, type AnalysisOptions, type SettingChip } from "@/lib/factor-analysis";
 import { formatNumber } from "@/lib/format";
 import { paperTablesText } from "@/lib/paper-notes";
@@ -164,9 +164,27 @@ function MatchChip({ match, publishedSource }: { match: PublishedMatch; publishe
   const panelId = useId();
   const titleId = useId();
   const ok = match.status === "match";
-  const tables = paperTablesText(match.paper_tables, t);
-  const value = (v: number | string | null) =>
-    typeof v === "number" ? formatNumber(v, locale, 4) : v === null ? "–" : String(v);
+  const tables = paperTablesText(match.paper_tables, match.paper_tables_ref, match.paper_tables_note, t);
+  // A number, or where a set differs the measures (with their filter step) as a list.
+  const value = (v: unknown): string => {
+    if (typeof v === "number") return formatNumber(v, locale, 4);
+    if (v === null || v === undefined) return "–";
+    if (Array.isArray(v)) return v.map(value).join(", ");
+    if (typeof v === "object") {
+      return Object.entries(v as Record<string, unknown>)
+        .map(([k, x]) => `${k}: ${value(x)}`)
+        .join(", ");
+    }
+    return String(v);
+  };
+  // In the UI language where the server names the value, else the server's English.
+  const what = (d: PublishedDifference) =>
+    (d.code &&
+      tMaybe(`factor.match.diff.${d.code}`, {
+        measure: d.measure ?? "",
+        factor: d.factor === undefined ? "" : d.factor + 1,
+      })) ||
+    d.what;
   const close = (refocus: boolean) => {
     setOpen(false);
     if (refocus) triggerRef.current?.focus();
@@ -240,8 +258,8 @@ function MatchChip({ match, publishedSource }: { match: PublishedMatch; publishe
               <tbody>
                 {match.differences.map((d, i) => (
                   <tr key={i}>
-                    <th scope="row" className="px-2 py-0.5 text-left font-normal break-all">
-                      {d.what}
+                    <th scope="row" className="px-2 py-0.5 text-left font-normal break-words">
+                      {what(d)}
                     </th>
                     <td className="px-2 py-0.5 text-right font-mono tabular-nums">{value(d.expected)}</td>
                     <td className="px-2 py-0.5 text-right font-mono tabular-nums">{value(d.actual)}</td>

@@ -1037,6 +1037,18 @@
         "communalities": "Kommunalitäten"
       },
       "differences": "Abweichungen",
+      "diff": {
+        "bartlett_chi_square": "Chi-Quadrat des Bartlett-Tests",
+        "bartlett_p_value": "p-Wert des Bartlett-Tests",
+        "kmo": "Gesamt-MSA (KMO)",
+        "msa": "MSA von {measure}",
+        "msa_at_removal": "MSA von {measure} beim Entfernen",
+        "msa_measures": "Maße nach dem MSA-Filter",
+        "msa_removed": "Vom MSA-Filter entfernte Maße mit ihrem Schritt",
+        "loading": "Ladung von {measure} auf F{factor}",
+        "communality": "Kommunalität von {measure}",
+        "loadings_shape": "Maße und Faktoren der Ladungen"
+      },
       "col_what": "Wert",
       "col_expected": "Report",
       "col_actual": "Tool",
@@ -1046,7 +1058,7 @@
     },
     "paper_notes": {
       "tables": {
-        "matches": "Tab. {tables} des Papers enthält dieselben Zahlen.",
+        "matches": "Das Paper druckt diese Zahlen gerundet in {tables}.",
         "extra_dup": "Tab. 8 des Papers nutzt zusätzlich dup ohne τ, das dieser Datensatz nicht hat; ihre Ladungen weichen um bis zu 0,06 ab, die Gruppen aus Tab. 9 bleiben gleich.",
         "other_data": "Tab. 14–16 des Papers beruhen auf anderen Daten als dieser Datensatz.",
         "not_in_paper": "Das Paper wertet diesen Miner nicht aus; die Zahlen sind die des Reports im Repository."

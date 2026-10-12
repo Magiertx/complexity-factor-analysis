@@ -486,17 +486,39 @@ export interface FactorCount {
   percentile: number;
 }
 
+/** A value of the analysis that differs from the published report. */
+export interface PublishedDifference {
+  /** What it belongs to: "bartlett", "kmo", "msa" or "loadings". */
+  key: string;
+  /** Names the value, e.g. "loading" or "msa_removed"; see factor.match.diff in the locales. */
+  code?: string;
+  /** The same in English, for a code this UI does not know. */
+  what: string;
+  measure?: string;
+  /** Counting from 0. */
+  factor?: number;
+  /** Numbers, or lists and objects where a set of measures differs. */
+  expected: unknown;
+  actual: unknown;
+}
+
+/** How the paper's own tables relate to the report: "matches" prints the same numbers. */
+export type PaperTables = "matches" | "extra_dup_column" | "other_data" | "not_in_paper";
+
 /** How the numbers compare with the report the dataset was published with. */
 export interface PublishedMatch {
   status: "match" | "differs";
   /** What was compared, e.g. "bartlett", "kmo", "msa", "loadings". */
   compared: string[];
-  differences: { what: string; expected: number | string | null; actual: number | string | null }[];
+  differences: PublishedDifference[];
   tolerance: number;
   /** The report and its commit. */
   source: string;
-  /** A key for how the paper's own tables relate to the report, e.g. "matches_tab_11". */
-  paper_tables?: string | null;
+  paper_tables?: PaperTables | string | null;
+  /** The tables meant, e.g. "Tab. 10–11". */
+  paper_tables_ref?: string | null;
+  /** The same in English, for a key this UI does not know. */
+  paper_tables_note?: string | null;
 }
 
 /** A message of the analysis; `code` and `params` select the translation. */
