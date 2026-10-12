@@ -322,6 +322,11 @@ export function signColor(value: number): string {
   return `rgb(${signToken(value)})`;
 }
 
+/** Text in the colour of a value's sign, dark enough for small text on a tile. */
+export function signInk(value: number): string {
+  return value >= 0 ? "rgb(var(--positive-ink))" : "rgb(var(--negative-ink))";
+}
+
 /**
  * Measures in display order. "factor" groups them by assigned factor, strongest loading
  * first, with unassigned measures at the end; "original" keeps the dataset order. For display

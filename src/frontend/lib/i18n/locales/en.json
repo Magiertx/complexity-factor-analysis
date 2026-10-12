@@ -826,12 +826,39 @@
       "factor_variance": "{pct} of variance",
       "factor_empty": "No measure reaches the threshold on this factor.",
       "unassigned_heading": "Unassigned",
-      "unassigned_hint": "Below the loading threshold on every factor, or below the communality threshold.",
+      "unassigned_hint": "These measures join no factor under the chosen rule; the reason is next to each.",
       "communality_threshold_label": "Communality threshold",
       "matrix_label": "Matrix",
       "matrix_pattern": "Pattern",
       "matrix_structure": "Structure",
-      "correlations_heading": "Factor correlations"
+      "correlations_heading": "Factor correlations",
+      "assignment_label": "Assignment",
+      "rule": {
+        "largest": {
+          "title": "Largest loading",
+          "source": "ComFy report",
+          "text": "Each measure joins the one factor it loads on most, if |λ| reaches the threshold."
+        },
+        "multi": {
+          "title": "Multiple membership",
+          "source": "Important Factors, Tab. 6–16",
+          "text": "|λ| above the threshold and h² ≥ {h2_multi}; a loading at most {gap} below the largest counts as well."
+        },
+        "hair": {
+          "title": "Hair et al.",
+          "source": "Important Factors, Tab. 17",
+          "text": "h² ≥ {h2_hair}; a measure with a second loading at most {gap} below its largest is left out."
+        }
+      },
+      "cross_cell": "cross-loading",
+      "legend_cross": "ring: further loading of a cross-loaded measure",
+      "also": "also F{i}",
+      "also_title": "Loads on factor {i} as well: {value}",
+      "reason": {
+        "low_loading": "low loading, |λ| {value}",
+        "low_communality": "low communality, h² {value}",
+        "cross_loading": "cross-loads on {factors}"
+      }
     },
     "help": {
       "cleaning": "Before the analysis, rows where most values are missing are dropped. Then columns that are not numeric, that have no variance, that have missing values, or that are perfect copies of an earlier column are removed, as in ComFy for log measures. Such columns would distort or break the correlation matrix.",
@@ -844,13 +871,14 @@
       "scree": "The scree plot shows the eigenvalues of the correlation matrix in descending order. Look for the elbow where the curve flattens; factors after it add little. The elbow and the eigenvalue-above-1 rule can disagree, so treat both as starting points.",
       "eigenvalue": "An eigenvalue is the variance a factor explains, in units of one standardized measure. The suggestion keeps every factor with an eigenvalue above 1 (Kaiser criterion), i.e. every factor that explains more than a single measure.",
       "rotation": "Rotation turns the factor solution so that each measure loads strongly on as few factors as possible, which makes the factors easier to name. It does not change how much variance the factors explain together. Varimax and quartimax keep the factors uncorrelated; promax and oblimin let them correlate, which is often more realistic for complexity measures.",
-      "threshold": "Loadings with an absolute value at or above this threshold count as substantial. Each measure is assigned to the factor where its absolute loading is highest, if that loading reaches the threshold. Common choices lie between 0.3 and 0.5; ComFy uses 0.35, ComFy for log measures 0.5.",
+      "threshold": "Loadings with an absolute value at or above this threshold count as substantial. Which factors a measure joins depends on the assignment rule above; with the largest loading, it joins the factor where its absolute loading is highest, if that loading reaches the threshold. Common choices lie between 0.3 and 0.5; ComFy uses 0.35, ComFy for log measures 0.5.",
       "loading": "A loading says how strongly a measure goes along with a factor. For orthogonal rotations it is the correlation between measure and factor. For oblique rotations the pattern matrix holds regression weights and the structure matrix the correlations. The sign gives the direction: measures with opposite signs on the same factor move in opposite directions.",
       "communality": "The communality h² is the share of a measure's variance that all kept factors explain together. A low value (below about 0.4) means the factors do not capture the measure well.",
       "variance": "SS loadings is the sum of squared loadings of a factor. Divided by the number of measures it gives the proportion of the total variance the factor explains; the cumulative row adds these up.",
-      "groups": "Each factor with the measures assigned to it, strongest loading first. Measures in one group capture a similar aspect of complexity; the name of the factor is up to your interpretation.",
+      "groups": "Each factor with the measures assigned to it, strongest loading first. Measures in one group capture a similar aspect of complexity; the name of the factor is up to your interpretation. Under multiple membership a measure can be in several groups; a chip names its other factors.",
       "communality_threshold": "Measures whose communality is below this value are left unassigned, because the factors explain too little of them. ComFy for log measures uses 0.5; 0 keeps every measure.",
-      "factor_correlations": "With an oblique rotation the factors may correlate. Values near 0 mean the factors are nearly independent; large values mean they measure related aspects."
+      "factor_correlations": "With an oblique rotation the factors may correlate. Values near 0 mean the factors are nearly independent; large values mean they measure related aspects.",
+      "assignment": "How the loadings turn into factor groups. ComFy's report gives each measure to the factor it loads on most. Important Factors uses two further rules: in Tab. 6–16 a measure also joins every factor whose loading is at most {gap} below its largest (multiple membership), with h² ≥ {h2_multi}; Tab. 17 follows Hair et al. with h² ≥ {h2_hair} and leaves cross-loaded measures out. The factor solution is the same under every rule; only the groups change."
     },
     "errors": {
       "unknown_rotation": "Unknown rotation “{rotation}”.",

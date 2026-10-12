@@ -26,6 +26,9 @@
        negative value looks neither like an error (red) nor like the accent. */
     --positive: 37 99 235;
     --negative: 234 88 12;
+    /* The same hues for small text such as "also F1 −0.46", at 4.5:1 on a light chip. */
+    --positive-ink: 29 78 216;
+    --negative-ink: 194 65 12;
     --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
     --font-mono: ui-monospace, "SFMono-Regular", "Menlo", "Consolas", monospace;
   }
@@ -48,6 +51,8 @@
     --danger-ink: 248 113 113;
     --positive: 59 130 246;
     --negative: 249 115 22;
+    --positive-ink: 96 165 250;
+    --negative-ink: 251 146 60;
   }
   html, body { @apply bg-bg text-fg; }
   body { @apply font-sans antialiased; }
