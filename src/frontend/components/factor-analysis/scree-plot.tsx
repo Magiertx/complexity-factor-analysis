@@ -368,8 +368,8 @@ export function ScreePlot({
           {truncated && (
             <button
               type="button"
+              // The label says what a press does; aria-pressed as well would read as the opposite state.
               onClick={() => setShowAll((v) => !v)}
-              aria-pressed={showAll}
               className="rounded text-accent-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               {showAll ? t("factor.factors.show_first", { n: limit }) : t("factor.factors.show_all", { n: total })}
