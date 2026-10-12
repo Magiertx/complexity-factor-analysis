@@ -1046,6 +1046,13 @@
         "extra_dup": "Tab. 8 des Papers nutzt zusätzlich dup ohne τ, das dieser Datensatz nicht hat; ihre Ladungen weichen um bis zu 0,06 ab, die Gruppen aus Tab. 9 bleiben gleich.",
         "other_data": "Tab. 14–16 des Papers beruhen auf anderen Daten als dieser Datensatz.",
         "not_in_paper": "Das Paper wertet diesen Miner nicht aus; die Zahlen sind die des Reports im Repository."
+      },
+      "datasets": {
+        "directly_follows": "Tab. 8 des Papers nutzt zusätzlich dup ohne τ.",
+        "hybrid_ilp": "Nicht deterministisch; die Daten weichen von Tab. 14–16 ab.",
+        "heuristics": "Im Paper nicht ausgewertet: nach MSA bleiben 4 Maße.",
+        "alpha_plus": "Nur im Repository, nicht im Paper.",
+        "alpha_dollar": "Werte identisch mit dem Alpha miner."
       }
     },
     "link": {

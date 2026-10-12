@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   BookOpen,
@@ -34,6 +34,7 @@ import {
 } from "@/lib/api";
 import { MIN_MEASURES, countText, datasetName, progressPercent, publishedOptions } from "@/lib/factor-analysis";
 import { formatDateTime, formatFileSize, formatNumber, formatPercent, formatRelative } from "@/lib/format";
+import { datasetNote, orderCollection } from "@/lib/paper-notes";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -457,7 +458,7 @@ function BundledList({
   }
   const collections = catalog.collections ?? [];
   const grouped = collections
-    .map((c) => ({ collection: c, items: catalog.bundled.filter((b) => b.collection === c.id) }))
+    .map((c) => ({ collection: c, items: orderCollection(c.id, catalog.bundled.filter((b) => b.collection === c.id)) }))
     .filter((g) => g.items.length > 0);
   const loose = catalog.bundled.filter((b) => !collections.some((c) => c.id === b.collection));
   const tile = (b: BundledDataset, showSize: boolean) => (
@@ -630,18 +631,35 @@ function BundledTile({
   onSelect: () => void;
 }) {
   const t = useT();
+  const noteId = useId();
+  const label = dataset.label ?? dataset.name;
+  const note = datasetNote(dataset.id, t);
   return (
     <label
       title={dataset.description}
       className={cn("flex items-center gap-2.5 rounded-md px-3 py-2.5", choiceTile(chosen))}
     >
-      <input type="radio" name={name} className="sr-only" checked={chosen} onChange={onSelect} />
+      {/* Named by the label alone, so the note describes the choice rather than renaming it. */}
+      <input
+        type="radio"
+        name={name}
+        className="sr-only"
+        checked={chosen}
+        onChange={onSelect}
+        aria-label={label}
+        aria-describedby={note ? noteId : undefined}
+      />
       <ChoiceMark type="radio" checked={chosen} />
       <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium truncate">{dataset.label ?? dataset.name}</span>
+        <span className="block text-sm font-medium truncate">{label}</span>
         {showSize && (
           <span className="block text-[11px] text-muted">
             {t("factor.data.bundled_size", { rows: dataset.observations, cols: dataset.measures })}
+          </span>
+        )}
+        {note && (
+          <span id={noteId} className="block text-[11px] text-muted leading-snug">
+            {note}
           </span>
         )}
       </span>

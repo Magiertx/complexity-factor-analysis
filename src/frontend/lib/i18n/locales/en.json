@@ -1046,6 +1046,13 @@
         "extra_dup": "Tab. 8 of the paper additionally uses dup without τ, which this dataset does not have; its loadings differ by up to 0.06, the groups of Tab. 9 stay the same.",
         "other_data": "Tab. 14–16 of the paper are based on other data than this dataset.",
         "not_in_paper": "The paper does not analyse this miner; the numbers are those of the report in the repository."
+      },
+      "datasets": {
+        "directly_follows": "Tab. 8 of the paper additionally uses dup without τ.",
+        "hybrid_ilp": "Not deterministic; the data differ from Tab. 14–16.",
+        "heuristics": "Not evaluated in the paper: 4 measures left after MSA.",
+        "alpha_plus": "Only in the repository, not in the paper.",
+        "alpha_dollar": "Values identical to the Alpha miner."
       }
     },
     "link": {
