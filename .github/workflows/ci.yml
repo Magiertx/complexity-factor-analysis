@@ -72,6 +72,13 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # en.json and de.json alike, and every key the code names exists.
+      - name: Check translations
+        run: npm run check:i18n
+
+      - name: Unit tests
+        run: npm test
+
       # Next.js build cache, keyed on the lock file and the sources (not node_modules).
       - uses: actions/cache@v6
         with:
