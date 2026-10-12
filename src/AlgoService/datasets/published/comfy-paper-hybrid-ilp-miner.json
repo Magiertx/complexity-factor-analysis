@@ -1,0 +1,266 @@
+{
+  "schema": 1,
+  "dataset_id": "comfy-paper-hybrid-ilp-miner",
+  "source": {
+    "repository": "https://github.com/Pati-nets/ComFy",
+    "commit": "1dd6ea610017cbca65bb54735ac6db922af00e8d",
+    "file": "output/paper-results/report-hybrid-ilp-miner.tex"
+  },
+  "reproduce_with": {
+    "n_factors": 4,
+    "rotation": "varimax",
+    "msa_threshold": 0.6,
+    "bartlett_alpha": 0.05,
+    "loading_threshold": 0.35
+  },
+  "decimals": 4,
+  "verified": [
+    "n_observations",
+    "bartlett",
+    "kmo",
+    "msa_filter",
+    "explained_variance_ratio",
+    "loadings",
+    "communalities",
+    "descriptives"
+  ],
+  "n_observations": 288,
+  "measures": [
+    "Size",
+    "Connector Mismatch",
+    "Connector Heterogeneity",
+    "Token split",
+    "Control flow complexity",
+    "Separability",
+    "Average connector degree",
+    "Maximum connector degree",
+    "Sequentiality",
+    "Coefficient of network connectivity",
+    "Density",
+    "Number of duplicate tasks",
+    "Number of empty sequence flows"
+  ],
+  "n_factors": 4,
+  "bartlett": {
+    "chi_square": 7211.515281373223,
+    "p_value": 0.0
+  },
+  "kmo": {
+    "overall": 0.8128721611971956,
+    "per_measure": {
+      "Size": 0.7221,
+      "Connector Mismatch": 0.9055,
+      "Connector Heterogeneity": 0.7717,
+      "Token split": 0.8656,
+      "Control flow complexity": 0.8119,
+      "Separability": 0.6119,
+      "Average connector degree": 0.8143,
+      "Maximum connector degree": 0.8903,
+      "Sequentiality": 0.7376,
+      "Coefficient of network connectivity": 0.7759,
+      "Number of empty sequence flows": 0.9328
+    }
+  },
+  "msa_filter": {
+    "threshold": 0.6,
+    "removed": [
+      {
+        "measure": "Density",
+        "msa": 0.4359,
+        "round": 1
+      }
+    ]
+  },
+  "explained_variance_ratio": [
+    0.6727,
+    0.1334,
+    0.0874,
+    0.0473,
+    0.0252,
+    0.0137,
+    0.0123,
+    0.006,
+    0.0011,
+    0.0006,
+    0.0002
+  ],
+  "loadings": {
+    "Size": [
+      0.4497,
+      0.8453,
+      0.0672,
+      0.1977
+    ],
+    "Connector Mismatch": [
+      0.5577,
+      0.2894,
+      0.1865,
+      0.3795
+    ],
+    "Connector Heterogeneity": [
+      0.1453,
+      0.0563,
+      0.6586,
+      0.0811
+    ],
+    "Token split": [
+      0.9658,
+      0.205,
+      0.1302,
+      -0.0089
+    ],
+    "Control flow complexity": [
+      0.9129,
+      0.333,
+      0.1795,
+      0.0679
+    ],
+    "Separability": [
+      0.1538,
+      0.8154,
+      0.2957,
+      -0.0145
+    ],
+    "Average connector degree": [
+      0.9748,
+      0.1091,
+      0.1373,
+      0.0891
+    ],
+    "Maximum connector degree": [
+      0.8569,
+      0.2817,
+      0.2683,
+      0.2847
+    ],
+    "Sequentiality": [
+      0.2479,
+      0.4965,
+      0.7874,
+      -0.0595
+    ],
+    "Coefficient of network connectivity": [
+      0.9505,
+      0.2216,
+      0.2071,
+      0.021
+    ],
+    "Number of empty sequence flows": [
+      0.7481,
+      0.3148,
+      0.429,
+      0.0465
+    ]
+  },
+  "communalities": {
+    "Size": 0.9604,
+    "Connector Mismatch": 0.5735,
+    "Connector Heterogeneity": 0.4647,
+    "Token split": 0.9918,
+    "Control flow complexity": 0.9811,
+    "Separability": 0.7763,
+    "Average connector degree": 0.9889,
+    "Maximum connector degree": 0.9667,
+    "Sequentiality": 0.9315,
+    "Coefficient of network connectivity": 0.9959,
+    "Number of empty sequence flows": 0.8449
+  },
+  "descriptives": {
+    "Size": {
+      "mean": 38.90625,
+      "median": 39.0,
+      "std": 12.791884,
+      "min": 20.0,
+      "max": 72.0
+    },
+    "Connector Mismatch": {
+      "mean": 2.041667,
+      "median": 0.0,
+      "std": 3.664264,
+      "min": 0.0,
+      "max": 23.0
+    },
+    "Connector Heterogeneity": {
+      "mean": 0.853992,
+      "median": 0.979369,
+      "std": 0.296551,
+      "min": 0.0,
+      "max": 1.0
+    },
+    "Token split": {
+      "mean": 13.496528,
+      "median": 6.0,
+      "std": 24.197647,
+      "min": 0.0,
+      "max": 184.0
+    },
+    "Control flow complexity": {
+      "mean": 30.440972,
+      "median": 20.0,
+      "std": 36.09545,
+      "min": 4.0,
+      "max": 246.0
+    },
+    "Separability": {
+      "mean": 0.74638,
+      "median": 0.842105,
+      "std": 0.242786,
+      "min": 0.190476,
+      "max": 0.971014
+    },
+    "Average connector degree": {
+      "mean": 4.092147,
+      "median": 3.684211,
+      "std": 1.442107,
+      "min": 3.0,
+      "max": 13.090909
+    },
+    "Maximum connector degree": {
+      "mean": 6.892361,
+      "median": 6.0,
+      "std": 4.295554,
+      "min": 3.0,
+      "max": 30.0
+    },
+    "Sequentiality": {
+      "mean": 0.818131,
+      "median": 0.882308,
+      "std": 0.17113,
+      "min": 0.363636,
+      "max": 1.0
+    },
+    "Coefficient of network connectivity": {
+      "mean": 1.566615,
+      "median": 1.333333,
+      "std": 0.745693,
+      "min": 1.047619,
+      "max": 6.289855
+    },
+    "Density": {
+      "mean": 0.083268,
+      "median": 0.078002,
+      "std": 0.023989,
+      "min": 0.036654,
+      "max": 0.18672
+    },
+    "Number of duplicate tasks": {
+      "mean": 1.0,
+      "median": 1.0,
+      "std": 0.0,
+      "min": 1.0,
+      "max": 1.0
+    },
+    "Number of empty sequence flows": {
+      "mean": 6.576389,
+      "median": 5.0,
+      "std": 6.106579,
+      "min": 0.0,
+      "max": 32.0
+    }
+  },
+  "notes": [
+    "Rotation: the report does not name it; the paper uses varimax, and only varimax reproduces the loadings.",
+    "Eigenvalues: the report plots PCA's explained variance ratio, the eigenvalues of the correlation matrix divided by the number of measures.",
+    "MSA rounds: the report lists the removed measures in the order ComFy removed them but does not number the rounds; the rounds were reconstructed with ComFy's loop."
+  ]
+}
