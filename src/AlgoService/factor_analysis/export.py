@@ -241,6 +241,13 @@ def _provenance_lines(dataset: dict[str, Any], result: dict[str, Any], tool: dic
         f"  Analysis: {analysis['method']} ({analysis['library']}), assignment rule {rule}: "
         f"{ASSIGNMENT_RULE_TEXTS[rule]}."
     )
+    match = result.get("published_match")
+    if match:
+        found = "they match" if match["status"] == "match" else f"{len(match['differences'])} differ"
+        lines.append(
+            f"  Published settings: compared with {match['source']} ({', '.join(match['compared'])}, "
+            f"tolerance {match['tolerance']}): {found}."
+        )
     counts = analysis["factor_count"]
     if "parallel_analysis" in counts:
         lines.append(
@@ -313,12 +320,15 @@ def analysis_zip(
     result: dict[str, Any],
     matrix: str,
     interpretation: tuple[str, dict[str, Any]] | None = None,
+    published: dict[str, Any] | None = None,
 ) -> bytes:
     """Everything needed to report and reproduce one analysis.
 
     ``dataset`` describes the dataset for the manifest, ``params`` are the parameters the
     analysis ran with, ``matrix`` is ``matrix_csv`` of its data and ``interpretation`` a
-    stored interpretation with its language.
+    stored interpretation with its language. ``published`` holds the published options of a
+    bundled dataset, their source and the comparison with the published numbers, if the
+    analysis ran with these options.
     """
     files = [
         ("analysis.json", json.dumps(result, ensure_ascii=False, indent=2),
@@ -368,6 +378,8 @@ def analysis_zip(
         "libraries": _library_versions(),
         "files": listing,
     }
+    if published is not None:
+        manifest["published"] = published
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))

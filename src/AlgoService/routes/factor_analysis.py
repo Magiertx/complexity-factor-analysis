@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import csv
+import dataclasses
 import gzip
 import io
 import json
@@ -29,7 +30,7 @@ from algorithms._log_io import MAX_DECOMPRESSED_BYTES
 from config import MAX_FILE_SIZE, CodedHTTPException, broadcast_jobs_update, get_session_id, limiter, logger
 from env_config import positive_int, rate_limit
 from factor_analysis import catalog as cat
-from factor_analysis import compute, storage
+from factor_analysis import compute, published, storage
 from factor_analysis.core import (
     COMMUNALITY_THRESHOLDS,
     LOADING_THRESHOLDS,
@@ -835,6 +836,19 @@ class ExportRequest(AnalyzeRequest):
     format: Literal["csv", "latex"] = "csv"
 
 
+def _published_match(meta: dict[str, Any], params: AnalysisParams, result: dict[str, Any]) -> dict[str, Any] | None:
+    """``published.match`` for a whole copy of a bundled dataset; a selection of its measures
+    has numbers of its own."""
+    entry = cat.bundled_entry(meta.get("bundled_id") or "")
+    if entry is None:
+        return None
+    selected = _inputs(meta).get("measures")
+    if selected and list(selected) != list(cat.bundled_columns(entry["file"])):
+        return None
+    used = {**dataclasses.asdict(params), "n_factors": result["n_factors"]}
+    return published.match(entry["id"], used, result)
+
+
 class _AnalysisFailed(Exception):
     def __init__(self, error: AnalysisError) -> None:
         self.response = JSONResponse(
@@ -968,13 +982,15 @@ async def analyze_dataset(
     watch = _Watch(request, key if latest_wins else None, parameters)
     try:
         meta, data = await _ready_matrix(dataset_id, session_id)
-        result = await _analyze(data, body.params(meta["kind"]), watch)
+        params = body.params(meta["kind"])
+        result = await _analyze(data, params, watch)
     except _AnalysisFailed as e:
         return e.response
     except Superseded:
         return _superseded()
     finally:
         watch.close()
+    result["published_match"] = _published_match(meta, params, result)
     result["elapsed_ms"] = round((time.perf_counter() - started) * 1000, 1)
     return result
 
@@ -1084,9 +1100,11 @@ async def export_archive(
         return e.response
     except Superseded:
         return _superseded()
+    result["published_match"] = match = _published_match(meta, params, result)
     used = effective_params(params, result["n_factors"])
     digest = await run_in_threadpool(data_hash, data)
     stored = store.lookup(session_id, meta, digest, used, body.language)
+    entry = cat.bundled_entry(meta.get("bundled_id") or "") or {}
     archive = await run_in_threadpool(
         lambda: analysis_zip(
             dataset=_dataset_record(meta),
@@ -1095,6 +1113,11 @@ async def export_archive(
             result=result,
             matrix=matrix_csv(data),
             interpretation=(body.language, stored[0]) if stored else None,
+            published=None if match is None else {
+                "options": entry["published_options"],
+                "source": entry.get("published_source"),
+                "match": match,
+            },
         )
     )
     return _attachment(archive, f"{_slug(meta['name'])}-factor-analysis.zip", "application/zip")

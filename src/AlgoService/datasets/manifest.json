@@ -34,7 +34,23 @@
       "license": "No license file upstream; permission of the author pending",
       "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
       "collection": "comfy-paper",
-      "label": "Inductive miner"
+      "label": "Inductive miner",
+      "published_options": {
+        "excluded": [],
+        "auto_msa_filter": true,
+        "msa_threshold": 0.6,
+        "bartlett_alpha": 0.05,
+        "n_factors": 4,
+        "rotation": "varimax",
+        "loading_threshold": 0.35,
+        "communality_threshold": 0.3,
+        "assignment_rule": "multi"
+      },
+      "published_source": "Important Factors, ATAED 2026, Tab. 10–12",
+      "paper_tables": {
+        "key": "matches",
+        "tables": "Tab. 10–11"
+      }
     },
     {
       "id": "comfy-paper-alpha-miner",
@@ -48,7 +64,23 @@
       "license": "No license file upstream; permission of the author pending",
       "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
       "collection": "comfy-paper",
-      "label": "Alpha miner"
+      "label": "Alpha miner",
+      "published_options": {
+        "excluded": [],
+        "auto_msa_filter": true,
+        "msa_threshold": 0.6,
+        "bartlett_alpha": 0.05,
+        "n_factors": 4,
+        "rotation": "varimax",
+        "loading_threshold": 0.35,
+        "communality_threshold": 0.3,
+        "assignment_rule": "multi"
+      },
+      "published_source": "Important Factors, ATAED 2026, Tab. 4–6",
+      "paper_tables": {
+        "key": "matches",
+        "tables": "Tab. 4–5"
+      }
     },
     {
       "id": "comfy-paper-alpha-plus-miner",
@@ -62,7 +94,23 @@
       "license": "No license file upstream; permission of the author pending",
       "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
       "collection": "comfy-paper",
-      "label": "Alpha Plus miner"
+      "label": "Alpha Plus miner",
+      "published_options": {
+        "excluded": [],
+        "auto_msa_filter": true,
+        "msa_threshold": 0.6,
+        "bartlett_alpha": 0.05,
+        "n_factors": 4,
+        "rotation": "varimax",
+        "loading_threshold": 0.35,
+        "communality_threshold": 0.3,
+        "assignment_rule": "multi"
+      },
+      "published_source": "Settings of Important Factors, ATAED 2026; the dataset is analysed in the ComFy repository only",
+      "paper_tables": {
+        "key": "not_in_paper",
+        "tables": null
+      }
     },
     {
       "id": "comfy-paper-alpha-dollar-miner",
@@ -76,7 +124,23 @@
       "license": "No license file upstream; permission of the author pending",
       "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
       "collection": "comfy-paper",
-      "label": "Alpha Dollar miner"
+      "label": "Alpha Dollar miner",
+      "published_options": {
+        "excluded": [],
+        "auto_msa_filter": true,
+        "msa_threshold": 0.6,
+        "bartlett_alpha": 0.05,
+        "n_factors": 4,
+        "rotation": "varimax",
+        "loading_threshold": 0.35,
+        "communality_threshold": 0.3,
+        "assignment_rule": "multi"
+      },
+      "published_source": "Settings of Important Factors, ATAED 2026; the dataset is analysed in the ComFy repository only",
+      "paper_tables": {
+        "key": "not_in_paper",
+        "tables": null
+      }
     },
     {
       "id": "comfy-paper-heuristics-miner",
@@ -90,7 +154,23 @@
       "license": "No license file upstream; permission of the author pending",
       "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
       "collection": "comfy-paper",
-      "label": "Heuristics miner"
+      "label": "Heuristics miner",
+      "published_options": {
+        "excluded": [],
+        "auto_msa_filter": true,
+        "msa_threshold": 0.6,
+        "bartlett_alpha": 0.05,
+        "n_factors": 3,
+        "rotation": "varimax",
+        "loading_threshold": 0.35,
+        "communality_threshold": 0.3,
+        "assignment_rule": "multi"
+      },
+      "published_source": "Important Factors, ATAED 2026, Tab. 13",
+      "paper_tables": {
+        "key": "matches",
+        "tables": "Tab. 13"
+      }
     },
     {
       "id": "comfy-paper-hybrid-ilp-miner",
@@ -104,7 +184,23 @@
       "license": "No license file upstream; permission of the author pending",
       "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
       "collection": "comfy-paper",
-      "label": "Hybrid ILP miner"
+      "label": "Hybrid ILP miner",
+      "published_options": {
+        "excluded": [],
+        "auto_msa_filter": true,
+        "msa_threshold": 0.6,
+        "bartlett_alpha": 0.05,
+        "n_factors": 4,
+        "rotation": "varimax",
+        "loading_threshold": 0.35,
+        "communality_threshold": 0.3,
+        "assignment_rule": "multi"
+      },
+      "published_source": "Important Factors, ATAED 2026, Tab. 14–16",
+      "paper_tables": {
+        "key": "other_data",
+        "tables": "Tab. 14–16"
+      }
     },
     {
       "id": "comfy-paper-directly-follows-miner",
@@ -118,7 +214,23 @@
       "license": "No license file upstream; permission of the author pending",
       "citation": "Data of the paper \"Important Factors: Complexity Dimensions for Petri Nets\" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy",
       "collection": "comfy-paper",
-      "label": "Directly Follows miner"
+      "label": "Directly Follows miner",
+      "published_options": {
+        "excluded": [],
+        "auto_msa_filter": true,
+        "msa_threshold": 0.6,
+        "bartlett_alpha": 0.05,
+        "n_factors": 4,
+        "rotation": "varimax",
+        "loading_threshold": 0.35,
+        "communality_threshold": 0.3,
+        "assignment_rule": "multi"
+      },
+      "published_source": "Important Factors, ATAED 2026, Tab. 7–9",
+      "paper_tables": {
+        "key": "extra_dup_column",
+        "tables": "Tab. 7–8"
+      }
     },
     {
       "id": "comfy-log-pdc-training-logs",
