@@ -51,7 +51,7 @@ def test_other_selections_names_and_kinds_get_their_own_copy(client):
     assert not named["reused"]
     assert _create(client, name="My copy")["dataset_id"] == named["dataset_id"]
     # The name a copy got by default counts like no name.
-    assert _create(client, name="ComFy paper scores: Inductive miner")["dataset_id"] == plain
+    assert _create(client, name="Important Factors: Inductive miner")["dataset_id"] == plain
     other = _create(client, bundled_id="comfy-paper-alpha-miner")
     assert not other["reused"]
     assert len(_ids(client)) == 4

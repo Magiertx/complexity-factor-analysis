@@ -57,7 +57,7 @@ test("IF Inductive goes through all six steps and exports the analysis as ZIP", 
     page.waitForEvent("download"),
     loadings.getByRole("button", { name: text("factor.loadings.export_zip") }).click(),
   ]);
-  expect(download.suggestedFilename()).toBe("ComFy-paper-scores-Inductive-miner-factor-analysis.zip");
+  expect(download.suggestedFilename()).toBe("Important-Factors-Inductive-miner-factor-analysis.zip");
   const files = unzip(await downloaded(download));
   for (const name of ["manifest.json", "README.txt", "analysis.json", "dataset.csv", "loadings.csv", "msa.csv"]) {
     expect(files.has(name), name).toBeTruthy();

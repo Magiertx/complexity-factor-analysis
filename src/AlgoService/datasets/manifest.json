@@ -25,7 +25,7 @@
     {
       "id": "comfy-paper-inductive-miner",
       "kind": "model",
-      "name": "ComFy paper scores: Inductive miner",
+      "name": "Important Factors: Inductive miner",
       "description": "ComFy model measures of the nets the Inductive miner discovered from the 288 training logs of the Process Discovery Contest 2025, as used in the paper.",
       "file": "model/complexity_scores-inductive-miner.csv",
       "row_labels": "comfy_tuple",
@@ -56,7 +56,7 @@
     {
       "id": "comfy-paper-alpha-miner",
       "kind": "model",
-      "name": "ComFy paper scores: Alpha miner",
+      "name": "Important Factors: Alpha miner",
       "description": "ComFy model measures of the nets the Alpha miner discovered from the 288 training logs of the Process Discovery Contest 2025, as used in the paper.",
       "file": "model/complexity_scores-alpha-miner.csv",
       "row_labels": "comfy_tuple",
@@ -87,7 +87,7 @@
     {
       "id": "comfy-paper-alpha-plus-miner",
       "kind": "model",
-      "name": "ComFy paper scores: Alpha Plus miner",
+      "name": "Important Factors: Alpha Plus miner",
       "description": "ComFy model measures of the nets the Alpha Plus miner discovered from the 288 training logs of the Process Discovery Contest 2025, as used in the paper.",
       "file": "model/complexity_scores-alpha-plus-miner.csv",
       "row_labels": "comfy_tuple",
@@ -118,7 +118,7 @@
     {
       "id": "comfy-paper-alpha-dollar-miner",
       "kind": "model",
-      "name": "ComFy paper scores: Alpha Dollar miner",
+      "name": "Important Factors: Alpha Dollar miner",
       "description": "ComFy model measures of the nets the Alpha Dollar miner discovered from the 288 training logs of the Process Discovery Contest 2025, as used in the paper.",
       "file": "model/complexity_scores-alpha-dollar-miner.csv",
       "row_labels": "comfy_tuple",
@@ -149,7 +149,7 @@
     {
       "id": "comfy-paper-heuristics-miner",
       "kind": "model",
-      "name": "ComFy paper scores: Heuristics miner",
+      "name": "Important Factors: Heuristics miner",
       "description": "ComFy model measures of the nets the Heuristics miner discovered from the 288 training logs of the Process Discovery Contest 2025, as used in the paper.",
       "file": "model/complexity_scores-heuristics-miner.csv",
       "row_labels": "comfy_tuple",
@@ -180,7 +180,7 @@
     {
       "id": "comfy-paper-hybrid-ilp-miner",
       "kind": "model",
-      "name": "ComFy paper scores: Hybrid ILP miner",
+      "name": "Important Factors: Hybrid ILP miner",
       "description": "ComFy model measures of the nets the Hybrid ILP miner discovered from the 288 training logs of the Process Discovery Contest 2025, as used in the paper.",
       "file": "model/complexity_scores-hybrid-ilp-miner.csv",
       "row_labels": "comfy_tuple",
@@ -211,7 +211,7 @@
     {
       "id": "comfy-paper-directly-follows-miner",
       "kind": "model",
-      "name": "ComFy paper scores: Directly Follows miner",
+      "name": "Important Factors: Directly Follows miner",
       "description": "ComFy model measures of the nets the Directly Follows miner discovered from the 288 training logs of the Process Discovery Contest 2025, as used in the paper.",
       "file": "model/complexity_scores-directly-follows-miner.csv",
       "row_labels": "comfy_tuple",

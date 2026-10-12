@@ -69,13 +69,6 @@ const DE: CatalogContent = {
     "Number of empty sequence flows": "Stellen zwischen einem parallelen Split und einem parallelen Join.",
   },
   names: {
-    "comfy-paper-inductive-miner": "Maßwerte aus dem ComFy-Paper: Inductive miner",
-    "comfy-paper-alpha-miner": "Maßwerte aus dem ComFy-Paper: Alpha miner",
-    "comfy-paper-alpha-plus-miner": "Maßwerte aus dem ComFy-Paper: Alpha Plus miner",
-    "comfy-paper-alpha-dollar-miner": "Maßwerte aus dem ComFy-Paper: Alpha Dollar miner",
-    "comfy-paper-heuristics-miner": "Maßwerte aus dem ComFy-Paper: Heuristics miner",
-    "comfy-paper-hybrid-ilp-miner": "Maßwerte aus dem ComFy-Paper: Hybrid ILP miner",
-    "comfy-paper-directly-follows-miner": "Maßwerte aus dem ComFy-Paper: Directly Follows miner",
     "comfy-log-pdc-training-logs": "Log-Maße der PDC-Trainingslogs",
     "pdc-sample-logs": "Vier PDC-Trainingslogs",
     "pdc-sample-models": "Petri-Netze der vier PDC-Logs",

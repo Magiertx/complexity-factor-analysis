@@ -113,7 +113,7 @@ test("a deleted dataset is gone from My datasets", async ({ page }) => {
   await openBundled(page, "Alpha miner");
   await stepSection(page, "data").getByRole("button", { name: text("factor.data.change") }).click();
   const mine = stepSection(page, "data").getByRole("radiogroup", { name: text("factor.data.source.mine") });
-  const name = "ComFy paper scores: Alpha miner";
+  const name = "Important Factors: Alpha miner";
   await expect(mine.getByRole("radio", { name })).toBeVisible();
 
   await mine.getByRole("button", { name: text("factor.data.delete_aria", { name }) }).click();

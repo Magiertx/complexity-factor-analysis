@@ -143,7 +143,7 @@ def inductive(client) -> str:
 def test_bundled_dataset(client, inductive):
     d = client.get(f"/factor-analysis/datasets/{inductive}").json()
     assert d["status"] == "ready" and d["kind"] == "model" and d["source"] == "bundled"
-    assert d["name"] == "ComFy paper scores: Inductive miner"
+    assert d["name"] == "Important Factors: Inductive miner"
     assert d["bundled_id"] == "comfy-paper-inductive-miner"
     assert d["n_observations"] == 288 and len(d["observations"]) == 288
     assert d["observations"][0] == "pdc2025_02000100.xes / Inductive miner"
@@ -257,7 +257,7 @@ def test_download(client, inductive):
     r = client.get(f"/factor-analysis/datasets/{inductive}/download")
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("text/csv")
-    assert 'filename="ComFy-paper-scores-Inductive-miner.csv"' in r.headers["content-disposition"]
+    assert 'filename="Important-Factors-Inductive-miner.csv"' in r.headers["content-disposition"]
     lines = r.text.splitlines()
     assert lines[0].startswith("observation,Size,Connector Mismatch")
     assert len(lines) == 289
@@ -376,7 +376,7 @@ def test_export_csv_and_latex(client, inductive):
     body = {"n_factors": 4, "rotation": "varimax"}
     r = client.post(f"/factor-analysis/datasets/{inductive}/export", json={**body, "format": "csv"})
     assert r.status_code == 200
-    assert 'filename="ComFy-paper-scores-Inductive-miner-loadings.csv"' in r.headers["content-disposition"]
+    assert 'filename="Important-Factors-Inductive-miner-loadings.csv"' in r.headers["content-disposition"]
     lines = r.text.splitlines()
     assert lines[0] == "measure,Factor 1,Factor 2,Factor 3,Factor 4,communality"
     assert len(lines) == 11

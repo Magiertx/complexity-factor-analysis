@@ -109,7 +109,7 @@ def test_list_is_newest_first_and_filters_by_kind(client):
     assert bundled == {
         "id": third,
         "kind": "model",
-        "name": "ComFy paper scores: Inductive miner",
+        "name": "Important Factors: Inductive miner",
         "name_auto": False,
         "source": "bundled",
         "status": "ready",
@@ -407,7 +407,7 @@ def test_zip_of_a_bundled_dataset(client):
     url = f"/factor-analysis/datasets/{dataset_id}"
     body = {"n_factors": 3, "excluded": ["Density"]}
     r = client.post(f"{url}/export/zip", json=body)
-    assert 'filename="ComFy-paper-scores-Inductive-miner-factor-analysis.zip"' in r.headers["content-disposition"]
+    assert 'filename="Important-Factors-Inductive-miner-factor-analysis.zip"' in r.headers["content-disposition"]
     archive = zipfile.ZipFile(io.BytesIO(r.content))
 
     names = archive.namelist()
@@ -429,7 +429,7 @@ def test_zip_of_a_bundled_dataset(client):
     assert manifest["app"] == APP_NAME and manifest["created_at"].endswith("+00:00")
     assert manifest["dataset"] == {
         "id": dataset_id,
-        "name": "ComFy paper scores: Inductive miner",
+        "name": "Important Factors: Inductive miner",
         "kind": "model",
         "source": "bundled",
         "bundled_id": BUNDLED,
