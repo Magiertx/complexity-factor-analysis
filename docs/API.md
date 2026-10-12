@@ -364,7 +364,10 @@ The steps match ComFy:
    largest; this is reported under every rule. With the paper's settings, `multi` gives Tab. 9
    of the paper exactly and Tab. 6 and 12 with one assignment more each (CH also in factor 2,
    acd also in factor 2: their loadings there lie within 0.15 of the largest), and `hair` gives
-   the rows of Tab. 17 for the Directly Follows and the Inductive miner.
+   the rows of Tab. 17 for the Directly Follows and the Inductive miner. The Alpha row of
+   Tab. 17 keeps MM (communality 0.37) and the cross-loaded CH, which `hair` leaves out, so
+   factor 4 stays empty there. The UI notes these differences next to the rules for the
+   bundled datasets.
 
 The response holds `bartlett` (with `regularised: true` when eigenvalues were clamped, so
 chi-square reflects the floor more than the data), `kmo` (overall and per measure),
