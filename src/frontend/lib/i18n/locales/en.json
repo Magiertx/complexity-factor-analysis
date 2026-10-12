@@ -1055,6 +1055,7 @@
       "col_actual": "Tool",
       "numbers_only": "Only numbers are compared, not the factor groups.",
       "source": "Report",
+      "report_at": "{file} of {repository}, commit {commit}",
       "settings_from": "Settings from"
     },
     "paper_notes": {

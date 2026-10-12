@@ -179,6 +179,14 @@ function MatchChip({ match, publishedSource }: { match: PublishedMatch; publishe
     }
     return String(v);
   };
+  // The report in the UI language where the server names its parts, else the server's English.
+  const source = match.report
+    ? t("factor.match.report_at", {
+        file: match.report.file,
+        repository: match.report.repository.replace(/\/+$/, "").split("/").pop() ?? match.report.repository,
+        commit: match.report.commit.slice(0, 7),
+      })
+    : match.source;
   // In the UI language where the server names the value, else the server's English.
   const what = (d: PublishedDifference) =>
     (d.code &&
@@ -276,7 +284,7 @@ function MatchChip({ match, publishedSource }: { match: PublishedMatch; publishe
         <dl className="space-y-0.5 text-[11px] text-muted">
           <div>
             <dt className="inline">{t("factor.match.source")}: </dt>
-            <dd className="inline break-all font-mono">{match.source}</dd>
+            <dd className="inline break-all font-mono">{source}</dd>
           </div>
           {publishedSource && (
             <div>

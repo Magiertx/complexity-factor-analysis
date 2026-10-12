@@ -512,8 +512,10 @@ export interface PublishedMatch {
   compared: string[];
   differences: PublishedDifference[];
   tolerance: number;
-  /** The report and its commit. */
+  /** The report and its commit, in English. */
   source: string;
+  /** The same in parts. */
+  report?: { repository: string; commit: string; file: string };
   paper_tables?: PaperTables | string | null;
   /** The tables meant, e.g. "Tab. 10–11". */
   paper_tables_ref?: string | null;
