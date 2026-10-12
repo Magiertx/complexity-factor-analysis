@@ -194,11 +194,15 @@ parameter change:
    recomputed until all remaining measures pass, as ComFy's
    `repeat_calculate_measure_of_sampling_adequacy` does.
 4. Eigenvalues of the correlation matrix for the scree plot; the suggestion is the Kaiser
-   criterion (eigenvalue > 1).
-5. `factor_analyzer` with the chosen rotation, then each measure is assigned to the factor with
-   its largest absolute loading if that reaches the loading threshold and its communality the
-   communality threshold (defaults per kind: ComFy's 0.35 and none for model measures,
-   ComFy for log measures' 0.5 and 0.5 for log measures).
+   criterion (eigenvalue > 1). Next to it, Horn's parallel analysis on the same matrix (95th
+   percentile of 100 standard normal samples from the seed 20261012, cached per size).
+5. `factor_analyzer` with the chosen rotation, then the measures are assigned to factors by the
+   chosen rule (`core.ASSIGNMENT_RULES`): by default the factor with the largest absolute
+   loading if that reaches the loading threshold and the communality the communality threshold
+   (defaults per kind: ComFy's 0.35 and none for model measures, ComFy for log measures' 0.5
+   and 0.5 for log measures); or, as in Important Factors, every factor within 0.15 of the
+   largest loading (`multi`, communality at least 0.3) or only measures without such a
+   cross-loading (`hair`, communality at least 0.5).
 
 For oblique rotations factor_analyzer's own communalities sum the squared pattern loadings,
 which is wrong once the factors correlate; `core` computes them as `rowsum(P * S)` from the
@@ -210,11 +214,18 @@ A singular correlation matrix (common with log measures, e.g. `iqr = q3 - q1`) i
 upstream does and reported as a warning. KMO then rests on a pseudo-inverse and Bartlett's
 chi-square on clamped eigenvalues (`bartlett.regularised`), so measures with an MSA at the
 threshold can come out differently on different platforms. Fits are cached by data, factor
-count and rotation; at most two run at once per API process. On the bundled Inductive-miner
-scores the result equals ComFy's own report to four decimals
-(`tests/test_factor_analysis_core.py`); the bundled log measures equal the upstream code run
-in the same environment, but not necessarily its published output (see
-`datasets/PROVENANCE.md`).
+count and rotation; at most two run at once per API process (`_ANALYSIS_SLOTS` in
+`routes/factor_analysis.py`). A request for a fit that is running waits for it rather than
+fitting again (`core.fit_factors`). The newest analyze request of a session and dataset wins:
+an older one for other parameters, or one whose client closed the connection, is given up
+before and after the wait for a slot, and the fit itself asks between two evaluations of the
+minres objective whether anybody still wants it, so it stops within milliseconds; the request
+answers 409 `superseded`. At most 400 measures go into one analysis. On the bundled paper
+scores the result equals ComFy's own reports to four decimals
+(`tests/test_published_numbers.py`), and an analysis with the published settings of a bundled
+dataset compares itself with them (`factor_analysis/published.py`); the bundled log measures
+equal the upstream code run in the same environment, but not necessarily its published output
+(see `datasets/PROVENANCE.md`).
 
 A dataset whose job is still running 70 minutes after it started outlived Celery's time limit
 (for example because the worker restarted); reading it marks the job and the dataset failed,

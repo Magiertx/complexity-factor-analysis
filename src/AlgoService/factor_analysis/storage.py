@@ -126,6 +126,11 @@ def update_meta(session_id: str, dataset_id: str, **changes: Any) -> dict[str, A
     return meta
 
 
+def touch(session_id: str, dataset_id: str) -> None:
+    """Mark a dataset as used now, so that pruning and the idle cleanup keep it longest."""
+    os.utime(dataset_dir(session_id, dataset_id) / "meta.json")
+
+
 def list_metas(session_id: str) -> list[dict[str, Any]]:
     """The metadata of every dataset of the session, newest first."""
     session_root = root() / session_id

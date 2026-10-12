@@ -21,7 +21,7 @@ import threading
 import warnings
 from collections import OrderedDict
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
 import pandas as pd
@@ -34,6 +34,10 @@ from sklearn.utils import check_array as _sklearn_check_array
 from vendored.comfy_log import Constants as _C
 
 MIN_MEASURES = 3
+#: More measures than this make a single analysis too heavy for a shared server: each round
+#: of the MSA filter inverts a p × p matrix, and minres optimises p uniquenesses with a
+#: numerical gradient, one p × p eigendecomposition per uniqueness and step.
+MAX_MEASURES = 400
 ROTATIONS = ("varimax", "promax", "oblimin", "quartimax", "none")
 MISSING_MARKERS = {"", "nan", "none", "null", "na", "n/a", "-"}
 
@@ -49,6 +53,47 @@ MAX_MISSING_SHARE = 0.0
 # Default loading and communality thresholds per kind, as in ComFy and ComFy for log measures.
 LOADING_THRESHOLDS = {"model": 0.35, "log": _C.ignore_threshold}
 COMMUNALITY_THRESHOLDS = {"model": 0.0, "log": _C.communality_threshold}
+
+
+@dataclass(frozen=True)
+class AssignmentRule:
+    """How measures are assigned to factors once the loadings are known.
+
+    A loading counts for a factor if its absolute value reaches the loading threshold, or
+    exceeds it if ``strict``. A measure is cross-loaded if more than one of its loadings
+    counts and lies at most ``CROSS_LOADING_GAP`` below its largest one.
+    """
+
+    #: Measures with a lower communality stay unassigned, whatever communality_threshold says.
+    min_communality: float
+    strict: bool
+    #: What a cross-loaded measure gets: "largest" the factor of its largest loading only,
+    #: "all" every factor of the cross-loading, "none" no factor.
+    cross_loaded: str
+
+
+#: Loadings at most this far below a measure's largest one count as well (multi) or make it
+#: cross-loaded (hair); Important Factors, ATAED 2026, section 5.3.
+CROSS_LOADING_GAP = 0.15
+
+ASSIGNMENT_RULES = {
+    # ComFy's report: the largest absolute loading, if it reaches the threshold.
+    "largest": AssignmentRule(min_communality=0.0, strict=False, cross_loaded="largest"),
+    # Important Factors, Tab. 6-16, after Lieben et al.: |loading| > 0.35 and communality
+    # >= 0.3, a cross-loaded measure belongs to every factor of its cross-loading.
+    "multi": AssignmentRule(min_communality=0.3, strict=True, cross_loaded="all"),
+    # Important Factors, Tab. 17, after Hair et al.: communality >= 0.5, cross-loaded measures
+    # are left out.
+    "hair": AssignmentRule(min_communality=0.5, strict=True, cross_loaded="none"),
+}
+DEFAULT_ASSIGNMENT_RULE = "largest"
+
+#: Horn's parallel analysis: the eigenvalues of the correlation matrices of this many samples
+#: of standard normal data, at this percentile per rank (Glorfeld's variant of Horn), drawn
+#: from a fixed seed so that every run suggests the same.
+PARALLEL_ANALYSIS_SEED = 20261012
+PARALLEL_ANALYSIS_SIMULATIONS = 100
+PARALLEL_ANALYSIS_PERCENTILE = 95
 
 
 def _check_array_compat(x, force_all_finite=None, **kwargs):
@@ -80,6 +125,20 @@ class AnalysisError(ValueError):
         super().__init__(message)
         self.code = code
         self.params = params
+
+
+class Superseded(Exception):
+    """The analysis was given up because nobody waits for its result any more."""
+
+
+#: Asked between the steps of an analysis and before every evaluation of the minres
+#: objective; True gives the analysis up with ``Superseded``.
+StopCheck = Callable[[], bool]
+
+
+def _check_stop(should_stop: StopCheck | None) -> None:
+    if should_stop is not None and should_stop():
+        raise Superseded()
 
 
 # --- cleaning ----------------------------------------------------------------------------
@@ -284,6 +343,51 @@ def kaiser_criterion(values: list[float]) -> int:
     return max(1, sum(1 for v in values if v > 1.0))
 
 
+_RANDOM_EIGENVALUES: OrderedDict[tuple[int, int], list[float]] = OrderedDict()
+_RANDOM_EIGENVALUES_SIZE = 64
+_RANDOM_EIGENVALUES_LOCK = threading.Lock()
+
+
+def random_eigenvalues(n: int, p: int) -> list[float]:
+    """The eigenvalues parallel analysis compares with, largest first: per rank, the
+    ``PARALLEL_ANALYSIS_PERCENTILE``-th percentile over ``PARALLEL_ANALYSIS_SIMULATIONS``
+    correlation matrices of n × p standard normal samples.
+
+    They depend on n and p only, so they are cached per (n, p): the bundled log data take
+    about half a second, and every analysis of a dataset has the same n and mostly the same p.
+    The samples come from numpy's default generator with ``PARALLEL_ANALYSIS_SEED``, which
+    draws the same samples on any platform with the same numpy version. The list is shared
+    by the cache; callers copy it before changing it.
+    """
+    key = (int(n), int(p))
+    with _RANDOM_EIGENVALUES_LOCK:
+        if key in _RANDOM_EIGENVALUES:
+            _RANDOM_EIGENVALUES.move_to_end(key)
+            return _RANDOM_EIGENVALUES[key]
+    rng = np.random.default_rng(PARALLEL_ANALYSIS_SEED)
+    samples = np.empty((PARALLEL_ANALYSIS_SIMULATIONS, p))
+    for i in range(PARALLEL_ANALYSIS_SIMULATIONS):
+        # The same correlation as for the data, so that the comparison is like with like.
+        samples[i] = np.linalg.eigvalsh(_corr(rng.standard_normal((n, p))))[::-1]
+    values = [float(v) for v in np.percentile(samples, PARALLEL_ANALYSIS_PERCENTILE, axis=0)]
+    with _RANDOM_EIGENVALUES_LOCK:
+        _RANDOM_EIGENVALUES[key] = values
+        if len(_RANDOM_EIGENVALUES) > _RANDOM_EIGENVALUES_SIZE:
+            _RANDOM_EIGENVALUES.popitem(last=False)
+    return values
+
+
+def parallel_analysis(values: list[float], random: list[float]) -> int:
+    """Horn's criterion: the number of leading eigenvalues of the data above those of random
+    data of the same size, at least 1 like the Kaiser criterion."""
+    count = 0
+    for observed, reference in zip(values, random):
+        if observed <= reference:
+            break
+        count += 1
+    return max(1, count)
+
+
 # --- factor analysis ----------------------------------------------------------------------
 
 
@@ -318,20 +422,75 @@ def _fit_key(data: pd.DataFrame, n_factors: int, rotation: str) -> tuple:
     return digest.hexdigest(), n_factors, rotation
 
 
-def fit_factors(data: pd.DataFrame, n_factors: int, rotation: str = "varimax") -> FactorFit:
+@dataclass
+class _Flight:
+    """A fit in progress, which callers asking for the same fit wait for instead of running
+    it again."""
+
+    #: The stop checks of everybody waiting for it; None for a caller that always wants it.
+    wanted: list[StopCheck | None]
+    done: threading.Event = field(default_factory=threading.Event)
+    fit: FactorFit | None = None
+    error: BaseException | None = None
+
+    def stale(self) -> bool:
+        """Given up only once nobody wants it any more."""
+        return all(check is not None and check() for check in self.wanted)
+
+
+_IN_FLIGHT: dict[tuple, _Flight] = {}
+
+#: How often a caller waiting for somebody else's fit asks whether it is still wanted.
+_FLIGHT_POLL_S = 0.05
+
+
+def fit_factors(
+    data: pd.DataFrame, n_factors: int, rotation: str = "varimax", should_stop: StopCheck | None = None
+) -> FactorFit:
     """``FactorAnalyzer`` with its defaults. The minres fit takes seconds for a hundred
-    measures, so recent fits are cached; a new loading threshold does not refit."""
+    measures, so recent fits are cached; a new loading threshold does not refit.
+
+    A caller asking for a fit that is already running waits for it: the same analysis asked
+    for twice, e.g. by a double click or by two people opening the same bundled dataset, costs
+    one fit. ``should_stop`` gives the caller up with ``Superseded``; the fit itself is given
+    up only when every caller waiting for it is, and then it is not cached."""
     key = _fit_key(data, n_factors, rotation)
-    with _FIT_CACHE_LOCK:
-        if key in _FIT_CACHE:
-            _FIT_CACHE.move_to_end(key)
-            return _FIT_CACHE[key]
-    fit = _fit_factors(data, n_factors, rotation)
-    with _FIT_CACHE_LOCK:
-        _FIT_CACHE[key] = fit
-        if len(_FIT_CACHE) > _FIT_CACHE_SIZE:
-            _FIT_CACHE.popitem(last=False)
-    return fit
+    while True:
+        with _FIT_CACHE_LOCK:
+            if key in _FIT_CACHE:
+                _FIT_CACHE.move_to_end(key)
+                return _FIT_CACHE[key]
+            flight = _IN_FLIGHT.get(key)
+            runs_it = flight is None
+            if runs_it:
+                flight = _IN_FLIGHT[key] = _Flight(wanted=[should_stop])
+            else:
+                flight.wanted.append(should_stop)
+        if runs_it:
+            try:
+                fit = _fit_factors(data, n_factors, rotation, flight.stale)
+            except BaseException as e:
+                flight.error = e
+                raise
+            else:
+                flight.fit = fit
+                with _FIT_CACHE_LOCK:
+                    _FIT_CACHE[key] = fit
+                    if len(_FIT_CACHE) > _FIT_CACHE_SIZE:
+                        _FIT_CACHE.popitem(last=False)
+                return fit
+            finally:
+                with _FIT_CACHE_LOCK:
+                    del _IN_FLIGHT[key]
+                flight.done.set()
+        while not flight.done.wait(_FLIGHT_POLL_S):
+            _check_stop(should_stop)
+        if flight.fit is not None:
+            return flight.fit
+        if not isinstance(flight.error, Superseded):
+            raise flight.error
+        # Given up just before this caller asked for it; it runs the fit itself.
+        _check_stop(should_stop)
 
 
 def max_factors(p: int) -> int:
@@ -339,7 +498,22 @@ def max_factors(p: int) -> int:
     return p - 1
 
 
-def _fit_factors(data: pd.DataFrame, n_factors: int, rotation: str) -> FactorFit:
+class _StoppableFactorAnalyzer(FactorAnalyzer):
+    """``FactorAnalyzer`` that asks ``should_stop`` before each evaluation of the minres
+    objective. The optimiser evaluates it p + 1 times per step for its numerical gradient, so
+    a fit of a hundred measures stops within milliseconds instead of running on for seconds.
+    The objective itself is factor_analyzer's, so the loadings are the same to the last bit."""
+
+    should_stop: StopCheck | None = None
+
+    def _fit_uls_objective(self, psi, corr_mtx, n_factors):  # type: ignore[override]
+        _check_stop(self.should_stop)
+        return FactorAnalyzer._fit_uls_objective(psi, corr_mtx, n_factors)
+
+
+def _fit_factors(
+    data: pd.DataFrame, n_factors: int, rotation: str, should_stop: StopCheck | None = None
+) -> FactorFit:
     if rotation not in ROTATIONS:
         raise AnalysisError(f"Unknown rotation '{rotation}'.", "unknown_rotation", rotation=rotation)
     p = data.shape[1]
@@ -348,7 +522,8 @@ def _fit_factors(data: pd.DataFrame, n_factors: int, rotation: str) -> FactorFit
     # factor_analyzer skips the rotation for a single factor; say so in the result.
     used_rotation = "none" if rotation == "none" or n_factors == 1 else rotation
 
-    fa = FactorAnalyzer(n_factors=n_factors, rotation=None if used_rotation == "none" else used_rotation)
+    fa = _StoppableFactorAnalyzer(n_factors=n_factors, rotation=None if used_rotation == "none" else used_rotation)
+    fa.should_stop = should_stop
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         try:
@@ -405,25 +580,78 @@ def _factor_count_error(n_factors: int, p: int) -> AnalysisError:
     )
 
 
-def assign_factors(
+@dataclass
+class Assignment:
+    #: Per factor, ``index`` counting from 0 and its ``measures`` with their loadings, largest
+    #: absolute loading first; a measure can be in several factors under "multi".
+    factors: list[dict[str, Any]]
+    #: Measures in no factor, in the order of the loadings, each with the ``reason``:
+    #: low_communality, low_loading or cross_loading.
+    unassigned: list[dict[str, str]]
+    #: Measures with more than one loading within CROSS_LOADING_GAP of their largest, with the
+    #: factors and loadings of the cross-loading, largest absolute loading first.
+    cross_loadings: list[dict[str, Any]]
+    #: The communality a measure needs: communality_threshold, or the rule's minimum if higher.
+    communality_threshold: float
+
+
+#: Absolute differences of loadings this small count as equal; keeps a gap of exactly 0.15
+#: from turning on the last bit.
+_GAP_TOLERANCE = 1e-12
+
+
+def assign(
     loadings: pd.DataFrame,
     threshold: float,
     communalities: dict[str, float] | None = None,
     communality_threshold: float = 0.0,
-) -> tuple[list[dict[str, Any]], list[str]]:
-    """Put each measure on the factor with its largest absolute loading, if that reaches the
-    threshold and its communality reaches ``communality_threshold``. Within a factor, measures
-    are sorted by absolute loading, largest first. ``index`` counts the factors from 0."""
+    rule: str = DEFAULT_ASSIGNMENT_RULE,
+) -> Assignment:
+    """Assign each measure to factors by ``rule`` (``ASSIGNMENT_RULES``).
+
+    A measure is checked in this order: communality (``communality_threshold`` or the rule's
+    minimum, whichever is higher), then its largest absolute loading against ``threshold``,
+    then cross-loadings. Cross-loadings are reported under every rule, so that a client can
+    show them; only "multi" and "hair" act on them.
+    """
+    _check_rule(rule)
+    spec = ASSIGNMENT_RULES[rule]
+    min_communality = max(communality_threshold, spec.min_communality)
+
+    def counts(value: float) -> bool:
+        return value > threshold if spec.strict else value >= threshold
+
     groups: list[list[tuple[str, float]]] = [[] for _ in loadings.columns]
-    unassigned: list[str] = []
+    unassigned: list[dict[str, str]] = []
+    cross_loadings: list[dict[str, Any]] = []
     for measure, row in loadings.iterrows():
-        values = row.to_numpy()
-        best = int(np.argmax(np.abs(values)))
-        weak = communalities is not None and communalities[str(measure)] < communality_threshold
-        if abs(values[best]) >= threshold and not weak:
-            groups[best].append((str(measure), float(values[best])))
-        else:
-            unassigned.append(str(measure))
+        measure = str(measure)
+        values = row.to_numpy(dtype=float)
+        absolute = np.abs(values)
+        largest = float(absolute.max())
+        if communalities is not None and communalities[measure] < min_communality:
+            unassigned.append({"measure": measure, "reason": "low_communality"})
+            continue
+        if not counts(largest):
+            unassigned.append({"measure": measure, "reason": "low_loading"})
+            continue
+        # Largest first; a stable sort keeps the lower factor first among equal loadings.
+        gap = CROSS_LOADING_GAP + _GAP_TOLERANCE
+        close = sorted(
+            (j for j in range(len(values)) if counts(absolute[j]) and largest - absolute[j] <= gap),
+            key=lambda j: -absolute[j],
+        )
+        if len(close) > 1:
+            cross_loadings.append({
+                "measure": measure,
+                "factors": close,
+                "loadings": [float(values[j]) for j in close],
+            })
+            if spec.cross_loaded == "none":
+                unassigned.append({"measure": measure, "reason": "cross_loading"})
+                continue
+        for j in close if spec.cross_loaded == "all" else close[:1]:
+            groups[j].append((measure, float(values[j])))
     factors = [
         {
             "index": i,
@@ -433,7 +661,26 @@ def assign_factors(
         }
         for i, g in enumerate(groups)
     ]
-    return factors, unassigned
+    return Assignment(
+        factors=factors,
+        unassigned=unassigned,
+        cross_loadings=cross_loadings,
+        communality_threshold=min_communality,
+    )
+
+
+def assign_factors(
+    loadings: pd.DataFrame,
+    threshold: float,
+    communalities: dict[str, float] | None = None,
+    communality_threshold: float = 0.0,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Put each measure on the factor with its largest absolute loading, if that reaches the
+    threshold and its communality reaches ``communality_threshold`` (the rule "largest").
+    Within a factor, measures are sorted by absolute loading, largest first. ``index`` counts
+    the factors from 0."""
+    result = assign(loadings, threshold, communalities, communality_threshold, "largest")
+    return result.factors, [u["measure"] for u in result.unassigned]
 
 
 # --- the whole analysis -------------------------------------------------------------------
@@ -449,6 +696,7 @@ class AnalysisParams:
     rotation: str = "varimax"
     loading_threshold: float = LOADING_THRESHOLDS["model"]
     communality_threshold: float = COMMUNALITY_THRESHOLDS["model"]
+    assignment_rule: str = DEFAULT_ASSIGNMENT_RULE
 
 
 def _finite(value: float) -> float | None:
@@ -477,13 +725,22 @@ def check_excluded(measures: list[str], excluded: list[str]) -> None:
 
 
 def _check_size(n: int, p: int) -> None:
-    """Enough measures for a factor analysis, and more observations than measures."""
+    """Enough measures for a factor analysis but not too many, and more observations than
+    measures."""
     if p < MIN_MEASURES:
         raise AnalysisError(
             f"At least {MIN_MEASURES} measures are needed for a factor analysis; {p} are left.",
             "too_few_measures",
             min=MIN_MEASURES,
             left=p,
+        )
+    if p > MAX_MEASURES:
+        raise AnalysisError(
+            f"{p} measures are too many for one analysis; at most {MAX_MEASURES} are possible. "
+            "Exclude measures.",
+            "too_many_measures_for_analysis",
+            max=MAX_MEASURES,
+            n=p,
         )
     if n < p + 1:
         raise AnalysisError(
@@ -496,9 +753,15 @@ def _check_size(n: int, p: int) -> None:
         )
 
 
+def _check_rule(rule: str) -> None:
+    if rule not in ASSIGNMENT_RULES:
+        raise AnalysisError(f"Unknown assignment rule '{rule}'.", "unknown_assignment_rule", rule=rule)
+
+
 def check_params(measures: list[str], n_observations: int, params: AnalysisParams) -> None:
     """The checks of ``analyze`` that need no fit, with the same errors. The MSA filter can
     still leave too few measures, or too few for the factor count; only the analysis tells."""
+    _check_rule(params.assignment_rule)
     check_excluded(measures, params.excluded)
     p = len(measures) - len(set(params.excluded))
     _check_size(n_observations, p)
@@ -506,7 +769,7 @@ def check_params(measures: list[str], n_observations: int, params: AnalysisParam
         raise _factor_count_error(params.n_factors, p)
 
 
-def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
+def analyze(data: pd.DataFrame, params: AnalysisParams, should_stop: StopCheck | None = None) -> dict[str, Any]:
     """Run all steps on a cleaned matrix and return the result as plain JSON values.
 
     Bartlett's test runs on the measures before the MSA filter, as in ComFy; the KMO values
@@ -516,7 +779,12 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
 
     The measures keep the order of ``data``, which callers take as stored: on singular data
     the KMO depends on the column order, so nothing may sort the columns on the way here.
+
+    ``should_stop`` is asked between the steps and during the fit; once it says True, the
+    analysis is given up with ``Superseded``.
     """
+    _check_stop(should_stop)
+    _check_rule(params.assignment_rule)
     check_excluded(list(data.columns), params.excluded)
     data = data.drop(columns=list(params.excluded))
     n, p = data.shape
@@ -577,8 +845,12 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
             recommended=5 * p,
         )
 
+    _check_stop(should_stop)
     values = eigenvalues(data)
     suggested = min(kaiser_criterion(values), max_factors(p))
+    # On the matrix of the scree plot, so the two criteria can be drawn on the same axes.
+    random = list(random_eigenvalues(n, p))
+    by_parallel_analysis = min(parallel_analysis(values, random), max_factors(p))
     n_factors = suggested if params.n_factors is None else int(params.n_factors)
     if n_factors < 1 or n_factors > max_factors(p):
         raise _factor_count_error(n_factors, p)
@@ -591,7 +863,8 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
             measures=p,
         )
 
-    fit = fit_factors(data, n_factors, params.rotation)
+    _check_stop(should_stop)
+    fit = fit_factors(data, n_factors, params.rotation, should_stop)
     for note in fit.notes:
         out.add("fit_not_converged", f"The factor fit: {note}", message=note)
     if fit.rotation != params.rotation:
@@ -606,9 +879,14 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
             measures=names,
         )
 
-    factors, unassigned = assign_factors(
-        fit.loadings, params.loading_threshold, fit.communalities, params.communality_threshold
+    assignment = assign(
+        fit.loadings,
+        params.loading_threshold,
+        fit.communalities,
+        params.communality_threshold,
+        params.assignment_rule,
     )
+    rule = ASSIGNMENT_RULES[params.assignment_rule]
 
     def by_measure(frame: pd.DataFrame) -> dict[str, list[float]]:
         return {m: [float(v) for v in row] for m, row in zip(frame.index, frame.to_numpy())}
@@ -633,6 +911,15 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
         "msa_filter": {"enabled": params.auto_msa_filter, "removed": removed},
         "eigenvalues": values,
         "suggested_n_factors": suggested,
+        "factor_count": {
+            "kaiser": suggested,
+            "parallel_analysis": by_parallel_analysis,
+            "eigenvalues_random": random,
+            "method": "pca",
+            "seed": PARALLEL_ANALYSIS_SEED,
+            "simulations": PARALLEL_ANALYSIS_SIMULATIONS,
+            "percentile": PARALLEL_ANALYSIS_PERCENTILE,
+        },
         "n_factors": n_factors,
         "rotation": fit.rotation,
         "loading_threshold": params.loading_threshold,
@@ -648,8 +935,19 @@ def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
             "cumulative": fit.cumulative,
             "explained": fit.explained,
         },
-        "factors": factors,
-        "unassigned": unassigned,
+        "assignment_rule": params.assignment_rule,
+        "assignment": {
+            "rule": params.assignment_rule,
+            "loading_threshold": params.loading_threshold,
+            "loading_strict": rule.strict,
+            "communality_threshold": assignment.communality_threshold,
+            "cross_loading_gap": CROSS_LOADING_GAP,
+            "cross_loaded": rule.cross_loaded,
+        },
+        "factors": assignment.factors,
+        "unassigned": [u["measure"] for u in assignment.unassigned],
+        "unassigned_details": assignment.unassigned,
+        "cross_loadings": assignment.cross_loadings,
         "warnings": [w["message"] for w in out.items],
         "warning_details": out.items,
     }

@@ -153,12 +153,47 @@ def format_row_label(label: str, style: str | None) -> str:
     return label
 
 
+#: How the tables of a paper relate to the numbers of the report a bundled dataset reproduces,
+#: by the key ``paper_tables.key`` of the manifest; ``{tables}`` names the tables. Kept here so
+#: that the wording can change without touching the data.
+PAPER_TABLE_NOTES = {
+    "matches": "{tables} of the paper print the same numbers, rounded.",
+    "extra_dup_column": (
+        "{tables} of the paper also have the measure dup without τ, which the bundled data lack; "
+        "their loadings therefore differ from the report by up to 0.06."
+    ),
+    "other_data": (
+        "{tables} of the paper rest on other data than the bundled ones: the descriptive "
+        "statistics differ for 11 of 12 measures."
+    ),
+    "not_in_paper": "The paper does not analyse this dataset; the numbers are those of the report in the ComFy repository.",
+}
+
+
+def paper_tables_note(tables: dict[str, Any]) -> str | None:
+    """The note of ``PAPER_TABLE_NOTES`` for the ``paper_tables`` entry of the manifest."""
+    text = PAPER_TABLE_NOTES.get(tables.get("key") or "")
+    return text.format(tables=tables.get("tables") or "") if text else None
+
+
 def _public(entry: dict[str, Any], **extra: Any) -> dict[str, Any]:
     out = {"id": entry["id"], "name": entry["name"], "description": entry["description"], **extra}
-    for key in ("citation", "license", "label", "collection", "venue", "note", "source_url"):
+    for key in (
+        "citation", "license", "label", "collection", "venue", "note", "source_url",
+        "published_options", "published_source",
+    ):
         if entry.get(key):
             out[key] = entry[key]
+    if entry.get("paper_tables"):
+        out["paper_tables"] = {**entry["paper_tables"], "note": paper_tables_note(entry["paper_tables"])}
     return out
+
+
+@lru_cache(maxsize=None)
+def bundled_columns(file: str) -> tuple[str, ...]:
+    """The measures of a bundled CSV, in its order."""
+    with open(DATASETS_DIR / file, encoding="utf-8", newline="") as f:
+        return tuple(next(csv.reader(f))[1:])
 
 
 def collections(kind: str) -> list[dict[str, Any]]:

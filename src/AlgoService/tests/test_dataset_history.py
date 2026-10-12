@@ -215,6 +215,7 @@ def test_options_round_trip(client):
         "rotation": "promax",
         "loading_threshold": 0.4,
         "communality_threshold": None,
+        "assignment_rule": "largest",
     }
     assert _list(client)[0]["has_options"] is True
 
@@ -412,9 +413,11 @@ def test_zip_of_a_bundled_dataset(client):
     names = archive.namelist()
     assert set(names) == {
         "manifest.json", "README.txt", "analysis.json", "dataset.csv", "loadings.csv", "loadings.tex",
-        "eigenvalues.csv", "msa.csv",
+        "assignment.csv", "eigenvalues.csv", "msa.csv",
     }
     analysis = client.post(f"{url}/analyze", json=body).json()
+    # The time the request took is not part of the analysis.
+    del analysis["elapsed_ms"]
     assert json.loads(archive.read("analysis.json")) == analysis
     assert archive.read("dataset.csv") == client.get(f"{url}/download").content
     assert archive.read("loadings.csv") == client.post(f"{url}/export", json={**body, "format": "csv"}).content
@@ -444,6 +447,7 @@ def test_zip_of_a_bundled_dataset(client):
     assert manifest["analysis_params"] == {
         "excluded": ["Density"], "auto_msa_filter": True, "msa_threshold": 0.6, "bartlett_alpha": 0.05,
         "n_factors": 3, "rotation": "varimax", "loading_threshold": 0.35, "communality_threshold": 0.0,
+        "assignment_rule": "largest",
     }
     assert set(manifest["libraries"]) >= {"factor_analyzer", "numpy", "pandas", "scipy"}
     assert all(manifest["libraries"].values())
@@ -452,8 +456,9 @@ def test_zip_of_a_bundled_dataset(client):
     assert all(name in readme for name in names)
 
     eigenvalues = _read_csv(archive, "eigenvalues.csv")
-    assert list(eigenvalues.columns) == ["factor", "eigenvalue"]
+    assert list(eigenvalues.columns) == ["factor", "eigenvalue", "parallel_analysis"]
     assert eigenvalues["eigenvalue"].tolist() == analysis["eigenvalues"]
+    assert eigenvalues["parallel_analysis"].tolist() == analysis["factor_count"]["eigenvalues_random"]
     msa = _read_csv(archive, "msa.csv", keep_default_na=False).set_index("measure")
     assert list(msa.index) == detail["measures"]
     assert msa.loc["Density", "status"] == "excluded" and msa.loc["Density", "msa"] == ""

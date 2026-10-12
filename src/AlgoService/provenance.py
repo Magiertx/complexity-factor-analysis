@@ -51,9 +51,6 @@ FEEED_NOTE = (
     "differ from those of later versions."
 )
 
-#: How the analysis assigns measures to factors; the only rule so far.
-ASSIGNMENT_RULE = "largest_loading"
-
 _REPO = Path(__file__).resolve().parent.parent.parent
 
 
@@ -151,14 +148,24 @@ def dataset(
     return out
 
 
-def analysis() -> dict[str, Any]:
-    """How the analysis turns the matrix into factors, beyond its parameters."""
+def analysis(result: dict[str, Any]) -> dict[str, Any]:
+    """How the analysis turns the matrix into factors, beyond its parameters; ``result`` is
+    the analysis as ``core.analyze`` returns it."""
+    counts = result.get("factor_count") or {}
     return {
         "method": "minres",
         "library": "factor_analyzer",
         # factor_analysis/core.py follows the factor analysis of both, with their thresholds.
         "follows": [dict(COMFY), dict(COMFY_LOG)],
-        "assignment_rule": ASSIGNMENT_RULE,
-        # No step draws random numbers yet; a seed appears here once one does.
-        "seed": None,
+        "assignment_rule": result.get("assignment_rule", "largest"),
+        # The rule with the thresholds it applied, e.g. the communality "multi" asks for.
+        "assignment": result.get("assignment"),
+        # Parallel analysis is the only step that draws random numbers.
+        "seed": counts.get("seed"),
+        # The criteria for the number of factors and the one used; the random eigenvalues
+        # are in eigenvalues.csv.
+        "factor_count": {
+            "used": result.get("n_factors"),
+            **{k: v for k, v in counts.items() if k != "eigenvalues_random"},
+        },
     }

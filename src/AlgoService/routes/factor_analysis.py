@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import csv
+import dataclasses
 import gzip
 import io
 import json
@@ -11,6 +12,8 @@ import os
 import re
 import shutil
 import tempfile
+import threading
+import time
 import uuid
 from pathlib import Path
 from typing import Any, Literal
@@ -27,13 +30,14 @@ from algorithms._log_io import MAX_DECOMPRESSED_BYTES
 from config import MAX_FILE_SIZE, CodedHTTPException, broadcast_jobs_update, get_session_id, limiter, logger
 from env_config import positive_int, rate_limit
 from factor_analysis import catalog as cat
-from factor_analysis import compute, storage
+from factor_analysis import compute, published, storage
 from factor_analysis.core import (
     COMMUNALITY_THRESHOLDS,
     LOADING_THRESHOLDS,
     MISSING_MARKERS,
     AnalysisError,
     AnalysisParams,
+    Superseded,
     analyze as run_analysis,
     check_params,
 )
@@ -62,6 +66,9 @@ PREVIEW_ROWS = 2000
 
 # Factor fits of large datasets take seconds of CPU; at most this many run at once per process.
 _ANALYSIS_SLOTS = asyncio.Semaphore(2)
+
+#: Pause after an ASGI message other than a disconnect, while waiting for the client to leave.
+_DISCONNECT_POLL_S = 0.25
 
 # Dataset jobs queued or running over all sessions. The session quota alone does not bound
 # the load: a client without the session cookie gets a new session with every request.
@@ -282,6 +289,25 @@ def _select_columns(table: pd.DataFrame, measures: list[str] | None) -> pd.DataF
     return table[measures]
 
 
+def _reusable_copy(
+    session_id: str, entry: dict[str, Any], measures: list[str] | None, name: str | None
+) -> dict[str, Any] | None:
+    """The newest ready copy of a bundled dataset in the session with the same selection of
+    measures and, if one is given, the same name; it counts as used now."""
+    for meta in storage.list_metas(session_id):
+        if (
+            meta.get("bundled_id") == entry["id"]
+            and meta["source"] == "bundled"
+            and meta["status"] == "ready"
+            and (meta.get("inputs") or {}).get("measures") == (measures or None)
+            and (name is None or meta["name"] == name)
+        ):
+            # Pruning and the idle cleanup go by the time a dataset was last touched.
+            storage.touch(session_id, meta["id"])
+            return meta
+    return None
+
+
 # --- dataset jobs -------------------------------------------------------------------------
 
 
@@ -404,11 +430,17 @@ async def create_dataset(
     miners: str | None = Form(None),
     groups: str | None = Form(None),
     name: str | None = Form(None),
+    reuse: bool = Form(True),
     files: list[UploadFile] | None = File(None),
     session_id: str = Depends(get_session_id),
 ) -> dict[str, Any]:
     """Create a dataset from bundled data or a CSV (ready at once), or compute one from
-    logs or PNML files in a background job."""
+    logs or PNML files in a background job.
+
+    A bundled dataset the session already has, with the same measures and name, is returned
+    instead of a new copy (``"reused": true``), unless ``reuse`` is false: links to a paper
+    analysis open the copy at hand rather than piling up copies that push out own data.
+    """
     kind = _check_kind(kind)
     if source not in SOURCES or (source == "pnml" and kind != "model"):
         raise _bad(f"Unknown source '{source}' for kind '{kind}'.")
@@ -434,6 +466,10 @@ async def create_dataset(
             if entry is None or entry["kind"] != kind:
                 raise _bad(f"Unknown bundled dataset '{bundled_id}' for kind '{kind}'.")
             bundled_id = entry["id"]
+            if reuse:
+                existing = await run_in_threadpool(_reusable_copy, session_id, entry, measure_list, name)
+                if existing is not None:
+                    return {"dataset_id": existing["id"], "status": "ready", "reused": True}
             table = await run_in_threadpool(
                 lambda: _relabel(pd.read_csv(cat.DATASETS_DIR / entry["file"], index_col=0), entry.get("row_labels"))
             )
@@ -475,7 +511,7 @@ async def create_dataset(
         if numeric < 2:
             shutil.rmtree(storage.dataset_dir(session_id, meta["id"]), ignore_errors=True)
             raise _bad("The CSV file has fewer than 2 numeric columns.")
-        return {"dataset_id": meta["id"], "status": "ready"}
+        return {"dataset_id": meta["id"], "status": "ready", "reused": False}
 
     # logs or pnml: validate the selection, then hand the files to a job.
     spec: dict[str, Any] = {"kind": kind, "source": source}
@@ -813,6 +849,8 @@ class AnalyzeRequest(BaseModel):
     #: Defaults depend on the kind: 0.35 and 0 for model, 0.5 and 0.5 for log measures.
     loading_threshold: float | None = Field(None, ge=0.0, le=1.0)
     communality_threshold: float | None = Field(None, ge=0.0, le=1.0)
+    #: core.ASSIGNMENT_RULES: "largest" as ComFy's report, "multi" and "hair" as Important Factors.
+    assignment_rule: Literal["largest", "multi", "hair"] = "largest"
 
     def params(self, kind: str) -> AnalysisParams:
         values = self.model_dump(include=set(AnalysisParams.__dataclass_fields__))
@@ -827,6 +865,19 @@ class ExportRequest(AnalyzeRequest):
     format: Literal["csv", "latex"] = "csv"
 
 
+def _published_match(meta: dict[str, Any], params: AnalysisParams, result: dict[str, Any]) -> dict[str, Any] | None:
+    """``published.match`` for a whole copy of a bundled dataset; a selection of its measures
+    has numbers of its own."""
+    entry = cat.bundled_entry(meta.get("bundled_id") or "")
+    if entry is None:
+        return None
+    selected = _inputs(meta).get("measures")
+    if selected and list(selected) != list(cat.bundled_columns(entry["file"])):
+        return None
+    used = {**dataclasses.asdict(params), "n_factors": result["n_factors"]}
+    return published.match(entry["id"], used, result)
+
+
 class _AnalysisFailed(Exception):
     def __init__(self, error: AnalysisError) -> None:
         self.response = JSONResponse(
@@ -835,12 +886,110 @@ class _AnalysisFailed(Exception):
         )
 
 
-async def _analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
+class _Latest:
+    """The newest analyze request per session and dataset. The UI sends a new request on
+    every change of a parameter and drops the answer to the one before; the server stops
+    working on that one as soon as the next arrives, so that clicking through rotations
+    costs one fit rather than one per click. A newer request for the same parameters does
+    not replace an older one: both wait for the same fit (core.fit_factors)."""
+
+    def __init__(self) -> None:
+        #: Per session and dataset: the number and the parameters of the newest request.
+        self._newest: dict[tuple[str, str], tuple[int, str]] = {}
+        self._count = 0
+
+    def take(self, key: tuple[str, str], parameters: str) -> int:
+        # Called on the event loop only, so the count needs no lock.
+        self._count += 1
+        self._newest[key] = (self._count, parameters)
+        return self._count
+
+    def is_newest(self, key: tuple[str, str], number: int, parameters: str) -> bool:
+        # Also read from the thread of the fit; a dict lookup is atomic.
+        newest = self._newest.get(key)
+        return newest is not None and (newest[0] == number or newest[1] == parameters)
+
+    def release(self, key: tuple[str, str], number: int) -> None:
+        newest = self._newest.get(key)
+        if newest is not None and newest[0] == number:
+            del self._newest[key]
+
+
+_LATEST = _Latest()
+
+
+class _Watch:
+    """Whether anybody still waits for an analysis: its client is connected and, with a
+    ``key``, no newer analyze request of the same session and dataset has come in for other
+    ``parameters``."""
+
+    def __init__(self, request: Request, key: tuple[str, str] | None = None, parameters: str = "") -> None:
+        self.request = request
+        self.key = key
+        self.parameters = parameters
+        self.number = _LATEST.take(key, parameters) if key else 0
+        self._gone = threading.Event()
+
+    def stale(self) -> bool:
+        """Safe to call from the thread of the fit."""
+        if self._gone.is_set():
+            return True
+        return self.key is not None and not _LATEST.is_newest(self.key, self.number, self.parameters)
+
+    async def listen(self) -> None:
+        """Wait until the client closes the connection. ``Request.is_disconnected`` only
+        peeks at the next message and misses it behind Starlette's BaseHTTPMiddleware, which
+        slowapi and srv_main use; waiting for the message sees it. Behind a proxy that keeps
+        the connection open this never returns; then only a newer request stops the analysis."""
+        while True:
+            message = await self.request.receive()
+            if message["type"] == "http.disconnect":
+                self._gone.set()
+                return
+            # The body, if nothing read it; the next message can only be the disconnect.
+            await asyncio.sleep(_DISCONNECT_POLL_S)
+
+    def close(self) -> None:
+        if self.key:
+            _LATEST.release(self.key, self.number)
+
+
+async def _analyze(data: pd.DataFrame, params: AnalysisParams, watch: _Watch | None = None) -> dict[str, Any]:
+    """Run the analysis in one of the slots. With a ``watch``, an analysis nobody waits for
+    any more is given up before and after waiting for a slot and during the fit, with
+    ``Superseded``."""
+    if watch is None:
+        try:
+            async with _ANALYSIS_SLOTS:
+                return await run_in_threadpool(run_analysis, data, params)
+        except AnalysisError as e:
+            raise _AnalysisFailed(e) from None
+    # Cancelled before the response goes out, so it never takes a message the server needs.
+    listening = asyncio.create_task(watch.listen())
     try:
+        # One turn of the loop, so that a client gone already is noticed.
+        await asyncio.sleep(0)
+        if watch.stale():
+            raise Superseded()
         async with _ANALYSIS_SLOTS:
-            return await run_in_threadpool(run_analysis, data, params)
+            if watch.stale():
+                raise Superseded()
+            return await run_in_threadpool(run_analysis, data, params, watch.stale)
     except AnalysisError as e:
         raise _AnalysisFailed(e) from None
+    finally:
+        listening.cancel()
+
+
+def _superseded() -> JSONResponse:
+    return JSONResponse(
+        status_code=409,
+        content={
+            "detail": "A newer analysis of this dataset replaced this one, or the client left.",
+            "code": "superseded",
+            "params": {},
+        },
+    )
 
 
 @router.post("/datasets/{dataset_id}/analyze")
@@ -849,17 +998,38 @@ async def analyze_dataset(
     request: Request,
     dataset_id: str,
     body: AnalyzeRequest | None = None,
+    latest_wins: bool = Query(
+        True,
+        description="Give this analysis up with a 409 once a newer one of the same session and dataset "
+        "arrives. False for clients that run several analyses of one dataset at once.",
+    ),
     session_id: str = Depends(get_session_id),
 ) -> dict[str, Any]:
     """Bartlett, KMO with the MSA filter, eigenvalues, the factor analysis and factor groups.
 
     A 400 for data that cannot be analysed carries ``code`` and ``params`` next to ``detail``.
+    A 409 with the code ``superseded`` answers a request that a newer one of the same session
+    and dataset replaced, or whose client left; it was not computed to the end.
     """
-    meta, data = await _ready_matrix(dataset_id, session_id)
+    started = time.perf_counter()
+    body = body or AnalyzeRequest()
+    # Numbered on arrival, before anything is awaited, so that the newest request wins.
+    key = (session_id, _validate_dataset_id(dataset_id))
+    parameters = json.dumps({**body.model_dump(), "excluded": sorted(body.excluded)}, sort_keys=True)
+    watch = _Watch(request, key if latest_wins else None, parameters)
     try:
-        return await _analyze(data, (body or AnalyzeRequest()).params(meta["kind"]))
+        meta, data = await _ready_matrix(dataset_id, session_id)
+        params = body.params(meta["kind"])
+        result = await _analyze(data, params, watch)
     except _AnalysisFailed as e:
         return e.response
+    except Superseded:
+        return _superseded()
+    finally:
+        watch.close()
+    result["published_match"] = _published_match(meta, params, result)
+    result["elapsed_ms"] = round((time.perf_counter() - started) * 1000, 1)
+    return result
 
 
 @router.put("/datasets/{dataset_id}/options", status_code=204)
@@ -897,9 +1067,11 @@ async def export_loadings(
     body = body or ExportRequest()
     meta, data = await _ready_matrix(dataset_id, session_id)
     try:
-        result = await _analyze(data, body.params(meta["kind"]))
+        result = await _analyze(data, body.params(meta["kind"]), _Watch(request))
     except _AnalysisFailed as e:
         return e.response
+    except Superseded:
+        return _superseded()
     stem = f"{_slug(meta['name'])}-loadings"
     if body.format == "latex":
         return _attachment(loadings_latex(result), f"{stem}.tex", "application/x-latex; charset=utf-8")
@@ -960,12 +1132,16 @@ async def export_archive(
     meta, data = await _ready_matrix(dataset_id, session_id)
     params = body.params(meta["kind"])
     try:
-        result = await _analyze(data, params)
+        result = await _analyze(data, params, _Watch(request))
     except _AnalysisFailed as e:
         return e.response
+    except Superseded:
+        return _superseded()
+    result["published_match"] = match = _published_match(meta, params, result)
     used = effective_params(params, result["n_factors"])
     digest = await run_in_threadpool(data_hash, data)
     stored = store.lookup(session_id, meta, digest, used, body.language)
+    entry = cat.bundled_entry(meta.get("bundled_id") or "") or {}
     archive = await run_in_threadpool(
         lambda: analysis_zip(
             dataset=_dataset_record(meta),
@@ -974,6 +1150,11 @@ async def export_archive(
             result=result,
             matrix=matrix_csv(data),
             interpretation=(body.language, stored[0]) if stored else None,
+            published=None if match is None else {
+                "options": entry["published_options"],
+                "source": entry.get("published_source"),
+                "match": match,
+            },
         )
     )
     return _attachment(archive, f"{_slug(meta['name'])}-factor-analysis.zip", "application/zip")
