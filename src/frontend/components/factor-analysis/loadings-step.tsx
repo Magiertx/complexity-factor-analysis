@@ -553,7 +553,10 @@ function reasonText(
       value: formatNumber(analysis.communalities[u.measure] ?? Number.NaN, locale, 2),
     });
   }
-  const factors = (analysis.cross_loadings ?? []).find((c) => c.measure === u.measure)?.factors ?? [];
+  // The server lists the factors by loading, largest first; read as a list they go in order.
+  const factors = [...((analysis.cross_loadings ?? []).find((c) => c.measure === u.measure)?.factors ?? [])].sort(
+    (a, b) => a - b,
+  );
   // Without the cross-loading listed, the reason is said without its factors.
   return factors.length > 0
     ? t("factor.loadings.reason.cross_loading", { factors: factors.map((i) => `F${i + 1}`).join(", ") })
