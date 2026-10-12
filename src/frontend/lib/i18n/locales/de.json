@@ -1047,6 +1047,22 @@
         "other_data": "Tab. 14–16 des Papers beruhen auf anderen Daten als dieser Datensatz.",
         "not_in_paper": "Das Paper wertet diesen Miner nicht aus; die Zahlen sind die des Reports im Repository."
       }
+    },
+    "link": {
+      "copy": "Link kopieren",
+      "copy_short": "Link",
+      "copy_title": "Einen Link kopieren, der diesen Datensatz mit diesen Einstellungen öffnet",
+      "copied": "Link kopiert",
+      "copied_short": "Kopiert",
+      "own_data": "Links gibt es nur für mitgelieferte Datensätze; eigene Daten bleiben in deiner Sitzung.",
+      "fallback_title": "Link zu dieser Analyse",
+      "fallback_hint": "Der Browser hat das Kopieren nicht erlaubt; kopiere den Link aus dem Feld.",
+      "field_label": "Link",
+      "opening": "Die verlinkte Analyse wird geöffnet…",
+      "opened": "Verlinkte Analyse geöffnet.",
+      "invalid": "Der Link enthielt Einstellungen, die das Tool nicht lesen kann; der Datensatz wurde daher mit den Standardeinstellungen geöffnet.",
+      "unknown": "Der Link nennt einen Datensatz, der auf diesem Reiter nicht mitgeliefert wird.",
+      "failed": "Der verlinkte Datensatz ließ sich nicht öffnen."
     }
   },
   "inspect": {

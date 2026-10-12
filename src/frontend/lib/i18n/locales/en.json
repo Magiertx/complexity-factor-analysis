@@ -1047,6 +1047,22 @@
         "other_data": "Tab. 14–16 of the paper are based on other data than this dataset.",
         "not_in_paper": "The paper does not analyse this miner; the numbers are those of the report in the repository."
       }
+    },
+    "link": {
+      "copy": "Copy link",
+      "copy_short": "Link",
+      "copy_title": "Copy a link that opens this dataset with these settings",
+      "copied": "Link copied",
+      "copied_short": "Copied",
+      "own_data": "Links work for bundled datasets only; your own data stays in your session.",
+      "fallback_title": "Link to this analysis",
+      "fallback_hint": "The browser did not allow copying; copy the link from the field.",
+      "field_label": "Link",
+      "opening": "Opening the linked analysis…",
+      "opened": "Opened the linked analysis.",
+      "invalid": "The link had settings this tool cannot read, so the dataset opened with the standard settings.",
+      "unknown": "The link names a dataset that is not bundled with this tab.",
+      "failed": "The linked dataset could not be opened."
     }
   },
   "inspect": {

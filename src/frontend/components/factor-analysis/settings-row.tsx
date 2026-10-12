@@ -1,14 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { AlertTriangle, BookOpen, Check, RotateCcw, X } from "lucide-react";
+import { useId, useRef, useState } from "react";
+import { AlertTriangle, BookOpen, Check, RotateCcw } from "lucide-react";
 import type { FactorAnalysis, PublishedMatch } from "@/lib/api";
 import { sameOptions, settingsSummary, type AnalysisOptions, type SettingChip } from "@/lib/factor-analysis";
 import { formatNumber } from "@/lib/format";
 import { paperTablesText } from "@/lib/paper-notes";
 import { cn } from "@/lib/utils";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
+import { Popover } from "@/components/ui/popover";
+import { CopyLink } from "./copy-link";
 
 /** The control each chip of the row leads to; see the ids in the steps. */
 const CONTROLS: Record<SettingChip["id"], string> = {
@@ -49,8 +50,8 @@ interface Props {
   /** The comparison with the report, for the analysis on screen if it used the published settings. */
   match: PublishedMatch | null;
   onApply: (options: AnalysisOptions, which: "standard" | "published") => void;
-  /** Further actions at the end of the row, e.g. the link to this analysis. */
-  extra?: React.ReactNode;
+  /** The query of a link to this analysis; null for own data, which links cannot reach. */
+  linkQuery: string | null;
 }
 
 /**
@@ -68,7 +69,7 @@ export function SettingsRow({
   measureCount,
   match,
   onApply,
-  extra,
+  linkQuery,
 }: Props) {
   const t = useT();
   const chips = settingsSummary(options, standard, analysis, measureCount, t);
@@ -137,7 +138,10 @@ export function SettingsRow({
               </span>
             </button>
           )}
-          {extra}
+          <CopyLink
+            query={linkQuery}
+            className={cn(action, "data-[inactive]:opacity-40 data-[inactive]:cursor-not-allowed data-[inactive]:hover:bg-transparent")}
+          />
         </span>
       </div>
     </section>
@@ -153,56 +157,24 @@ function MatchChip({ match, publishedSource }: { match: PublishedMatch; publishe
   const tMaybe = useTMaybe();
   const { locale } = useLocale();
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
   const titleId = useId();
   const ok = match.status === "match";
   const tables = paperTablesText(match.paper_tables, t);
   const value = (v: number | string | null) =>
     typeof v === "number" ? formatNumber(v, locale, 4) : v === null ? "–" : String(v);
-
-  const place = useCallback(() => {
-    const r = triggerRef.current?.getBoundingClientRect();
-    if (!r) return;
-    const width = Math.min(360, window.innerWidth - 16);
-    setPos({ left: Math.max(8, Math.min(r.right - width, window.innerWidth - width - 8)), top: r.bottom + 6 });
-  }, []);
-
-  const close = useCallback((refocus = true) => {
+  const close = (refocus: boolean) => {
     setOpen(false);
     if (refocus) triggerRef.current?.focus();
-  }, []);
-
-  useLayoutEffect(() => {
-    if (open) place();
-  }, [open, place]);
-
-  const shown = open && pos !== null;
-  useEffect(() => {
-    if (!shown) return;
-    panelRef.current?.focus();
-    const onDown = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (!panelRef.current?.contains(target) && !triggerRef.current?.contains(target)) close(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    window.addEventListener("resize", place);
-    window.addEventListener("scroll", place, true);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      window.removeEventListener("resize", place);
-      window.removeEventListener("scroll", place, true);
-    };
-  }, [shown, place, close]);
+  };
 
   return (
     <>
       <button
         ref={triggerRef}
         type="button"
-        onClick={() => (open ? close() : setOpen(true))}
+        onClick={() => (open ? close(true) : setOpen(true))}
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         aria-haspopup="dialog"
@@ -214,103 +186,78 @@ function MatchChip({ match, publishedSource }: { match: PublishedMatch; publishe
         {ok ? <Check className="h-3.5 w-3.5" aria-hidden /> : <AlertTriangle className="h-3.5 w-3.5" aria-hidden />}
         {t(ok ? "factor.match.chip_match" : "factor.match.chip_differs")}
       </button>
-      {open &&
-        pos &&
-        createPortal(
-          <div
-            ref={panelRef}
-            id={panelId}
-            role="dialog"
-            aria-labelledby={titleId}
-            tabIndex={-1}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                e.stopPropagation();
-                close();
-              }
-            }}
-            style={{ position: "fixed", left: pos.left, top: pos.top, width: Math.min(360, window.innerWidth - 16) }}
-            className="z-50 rounded-lg bg-surface p-3.5 text-xs shadow-xl ring-1 ring-border/70 space-y-2.5 focus:outline-none"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <h3 id={titleId} className="text-sm font-semibold">
-                {t("factor.match.title")}
-              </h3>
-              <button
-                type="button"
-                onClick={() => close()}
-                aria-label={t("common.close")}
-                className="-mt-1 -mr-1 h-6 w-6 grid place-items-center rounded text-muted hover:text-fg hover:bg-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                <X className="h-3.5 w-3.5" aria-hidden />
-              </button>
-            </div>
-            <p className={ok ? "text-success-ink" : "text-warn-ink"}>
-              {ok
-                ? t("factor.match.summary_match", { tolerance: formatNumber(match.tolerance, locale) })
-                : t("factor.match.summary_differs", {
-                    n: match.differences.length,
-                    tolerance: formatNumber(match.tolerance, locale),
-                  })}
-            </p>
-            <div>
-              <div className="text-muted">{t("factor.match.compared")}</div>
-              <ul className="mt-1 flex flex-wrap gap-1">
-                {match.compared.map((c) => (
-                  <li key={c} className="rounded bg-tile px-1.5 py-0.5">
-                    {tMaybe(`factor.match.what.${c}`) ?? c}
-                  </li>
+      <Popover
+        open={open}
+        onClose={close}
+        anchor={triggerRef}
+        title={t("factor.match.title")}
+        titleId={titleId}
+        id={panelId}
+      >
+        <p className={ok ? "text-success-ink" : "text-warn-ink"}>
+          {ok
+            ? t("factor.match.summary_match", { tolerance: formatNumber(match.tolerance, locale) })
+            : t("factor.match.summary_differs", {
+                n: match.differences.length,
+                tolerance: formatNumber(match.tolerance, locale),
+              })}
+        </p>
+        <div>
+          <div className="text-muted">{t("factor.match.compared")}</div>
+          <ul className="mt-1 flex flex-wrap gap-1">
+            {match.compared.map((c) => (
+              <li key={c} className="rounded bg-tile px-1.5 py-0.5">
+                {tMaybe(`factor.match.what.${c}`) ?? c}
+              </li>
+            ))}
+          </ul>
+        </div>
+        {match.differences.length > 0 && (
+          <div className="max-h-40 overflow-auto rounded-md bg-tile/50">
+            <table className="w-full">
+              <caption className="sr-only">{t("factor.match.differences")}</caption>
+              <thead className="text-muted">
+                <tr>
+                  <th scope="col" className="px-2 py-1 text-left font-medium">
+                    {t("factor.match.col_what")}
+                  </th>
+                  <th scope="col" className="px-2 py-1 text-right font-medium">
+                    {t("factor.match.col_expected")}
+                  </th>
+                  <th scope="col" className="px-2 py-1 text-right font-medium">
+                    {t("factor.match.col_actual")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {match.differences.map((d, i) => (
+                  <tr key={i}>
+                    <th scope="row" className="px-2 py-0.5 text-left font-normal break-all">
+                      {d.what}
+                    </th>
+                    <td className="px-2 py-0.5 text-right font-mono tabular-nums">{value(d.expected)}</td>
+                    <td className="px-2 py-0.5 text-right font-mono tabular-nums">{value(d.actual)}</td>
+                  </tr>
                 ))}
-              </ul>
-            </div>
-            {match.differences.length > 0 && (
-              <div className="max-h-40 overflow-auto rounded-md bg-tile/50">
-                <table className="w-full">
-                  <caption className="sr-only">{t("factor.match.differences")}</caption>
-                  <thead className="text-muted">
-                    <tr>
-                      <th scope="col" className="px-2 py-1 text-left font-medium">
-                        {t("factor.match.col_what")}
-                      </th>
-                      <th scope="col" className="px-2 py-1 text-right font-medium">
-                        {t("factor.match.col_expected")}
-                      </th>
-                      <th scope="col" className="px-2 py-1 text-right font-medium">
-                        {t("factor.match.col_actual")}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {match.differences.map((d, i) => (
-                      <tr key={i}>
-                        <th scope="row" className="px-2 py-0.5 text-left font-normal break-all">
-                          {d.what}
-                        </th>
-                        <td className="px-2 py-0.5 text-right font-mono tabular-nums">{value(d.expected)}</td>
-                        <td className="px-2 py-0.5 text-right font-mono tabular-nums">{value(d.actual)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            <p className="text-muted">{t("factor.match.numbers_only")}</p>
-            {tables && <p>{tables}</p>}
-            <dl className="space-y-0.5 text-[11px] text-muted">
-              <div>
-                <dt className="inline">{t("factor.match.source")}: </dt>
-                <dd className="inline break-all font-mono">{match.source}</dd>
-              </div>
-              {publishedSource && (
-                <div>
-                  <dt className="inline">{t("factor.match.settings_from")}: </dt>
-                  <dd className="inline">{publishedSource}</dd>
-                </div>
-              )}
-            </dl>
-          </div>,
-          document.body,
+              </tbody>
+            </table>
+          </div>
         )}
+        <p className="text-muted">{t("factor.match.numbers_only")}</p>
+        {tables && <p>{tables}</p>}
+        <dl className="space-y-0.5 text-[11px] text-muted">
+          <div>
+            <dt className="inline">{t("factor.match.source")}: </dt>
+            <dd className="inline break-all font-mono">{match.source}</dd>
+          </div>
+          {publishedSource && (
+            <div>
+              <dt className="inline">{t("factor.match.settings_from")}: </dt>
+              <dd className="inline">{publishedSource}</dd>
+            </div>
+          )}
+        </dl>
+      </Popover>
     </>
   );
 }

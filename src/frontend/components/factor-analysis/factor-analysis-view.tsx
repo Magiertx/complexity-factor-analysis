@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AlertCircle, HelpCircle, Info, Loader2, Microscope, RotateCcw, X } from "lucide-react";
+import { analysisLinkQuery, parseAnalysisLink } from "@/lib/analysis-link";
 import {
   HttpError,
   abortTask,
@@ -122,6 +123,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // The dataset that was open answered 404; said instead of starting over silently.
   const [gone, setGone] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  // A link to an analysis of a bundled dataset, waiting for the catalog, and what became of it.
+  const [linkRequest, setLinkRequest] = useState<URLSearchParams | null>(null);
+  const [linkNotice, setLinkNotice] = useState<{ tone: "busy" | "info" | "error"; text: string } | null>(null);
   // The datasets of this kind in the session, offered for reopening in the data step.
   const [datasets, setDatasets] = useState<DatasetSummary[] | null>(null);
   const [choosing, setChoosing] = useState(false);
@@ -515,6 +519,31 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     [selectDataset],
   );
 
+  // Opens the bundled dataset of a link (?bundled=...) with its settings, reusing the session's
+  // copy if there is one. Settings that cannot be read give the standard and a notice.
+  useEffect(() => {
+    if (!linkRequest || !rawCatalog) return;
+    setLinkRequest(null);
+    const parsed = parseAnalysisLink(linkRequest, defaultOptions(kind), new Set(rawCatalog.measures.map((m) => m.key)));
+    if (!parsed) return;
+    const entry = rawCatalog.bundled.find((b) => b.id === parsed.bundledId);
+    if (!entry) {
+      setLinkNotice({ tone: "error", text: tRef.current("factor.link.unknown") });
+      return;
+    }
+    const paper = parsed.preset === "published" ? publishedOptions(kind, entry) : null;
+    const invalid = parsed.invalid || (parsed.preset === "published" && !paper);
+    setLinkNotice({ tone: "busy", text: tRef.current("factor.link.opening") });
+    createDataset({ kind, source: "bundled", bundledId: entry.id }).then(
+      (res) => {
+        focusSummary.current = true;
+        openCreated(res.dataset_id, { options: paper ?? parsed.options, message: tRef.current("factor.link.opened") });
+        setLinkNotice(invalid ? { tone: "info", text: tRef.current("factor.link.invalid") } : null);
+      },
+      (e) => setLinkNotice({ tone: "error", text: errorTextRef.current(e, tRef.current("factor.link.failed")) }),
+    );
+  }, [linkRequest, rawCatalog, kind, openCreated]);
+
   const submit = async (input: CreateDatasetInput, preset: OpenPreset) => {
     setSubmitting(true);
     setSubmitError(null);
@@ -605,6 +634,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // Only for the analysis on screen, and only while the settings are still those it ran with.
   const match =
     analysis && analyzedOptions && sameOptions(analyzedOptions, options) ? (analysis.published_match ?? null) : null;
+  const linkQuery = bundled ? analysisLinkQuery(bundled.id, options, standard, published) : null;
 
   const suitable = analysis ? analysis.bartlett.passed && analysis.kmo.passed : false;
   const interpretationStale =
@@ -681,7 +711,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       />
       <FactorTour kind={kind} run={tourOpen} onClose={() => setTourOpen(false)} />
       <Suspense fallback={null}>
-        <DatasetLink onLink={openDataset} />
+        <LinkReader onDataset={openDataset} onBundled={setLinkRequest} />
       </Suspense>
 
       <PageHeader
@@ -718,8 +748,35 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             title={t("factor.steps.data")}
             description={t(`factor.step_desc.data_${kind}`)}
           >
-            {/* Always rendered, so screen readers announce the notice that appears in it. */}
+            {/* Always rendered, so screen readers announce the notices that appear in it. */}
             <div role="status">
+              {linkNotice && (
+                <div
+                  className={cn(
+                    "mb-4 rounded-lg px-3.5 py-2.5 flex items-start gap-2.5 text-sm",
+                    linkNotice.tone === "error" ? "bg-danger/10" : "bg-tile",
+                  )}
+                >
+                  {linkNotice.tone === "busy" ? (
+                    <Loader2 className="h-4 w-4 text-accent-ink shrink-0 mt-0.5 animate-spin" />
+                  ) : linkNotice.tone === "error" ? (
+                    <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
+                  ) : (
+                    <Info className="h-4 w-4 text-muted shrink-0 mt-0.5" />
+                  )}
+                  <p className="flex-1 min-w-0">{linkNotice.text}</p>
+                  {linkNotice.tone !== "busy" && (
+                    <button
+                      type="button"
+                      onClick={() => setLinkNotice(null)}
+                      aria-label={t("factor.data.dismiss_aria")}
+                      className="h-6 w-6 -my-0.5 grid place-items-center rounded text-muted hover:text-fg hover:bg-accent/[0.08] transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              )}
               {gone && (
                 <div className="mb-4 rounded-lg bg-tile px-3.5 py-2.5 flex items-start gap-2.5 text-sm">
                   <Info className="h-4 w-4 text-muted shrink-0 mt-0.5" />
@@ -821,6 +878,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                 measureCount={dataset.measures.length}
                 match={match}
                 onApply={applyOptions}
+                linkQuery={linkQuery}
               />
             )}
             <StepSection
@@ -954,19 +1012,30 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
 }
 
 /**
- * Opens the dataset of a link (?dataset=<id>), e.g. from a job card, also while the tab is
- * already shown, and removes it from the address, so a reload shows the dataset chosen last.
- * Its own component, so that only it waits for the search params on the client.
+ * Opens the dataset of a link, also while the tab is already shown: one of the session
+ * (?dataset=<id>, e.g. from a job card) or a bundled one with its settings (?bundled=<id>&...).
+ * Removes the link from the address, so a reload shows the dataset chosen last. Its own
+ * component, so that only it waits for the search params on the client.
  */
-function DatasetLink({ onLink }: { onLink: (id: string) => void }) {
-  const linked = useSearchParams().get("dataset");
+function LinkReader({
+  onDataset,
+  onBundled,
+}: {
+  onDataset: (id: string) => void;
+  onBundled: (params: URLSearchParams) => void;
+}) {
+  const params = useSearchParams();
+  const linked = params.get("dataset");
+  const bundled = params.get("bundled");
   useEffect(() => {
-    if (!linked) return;
+    if (!linked && !bundled) return;
+    const query = new URLSearchParams(window.location.search);
     // Without a state of its own, Next.js takes the new address over, so the same link opens
     // the dataset again later.
     window.history.replaceState(null, "", window.location.pathname);
-    onLink(linked);
-  }, [linked, onLink]);
+    if (linked) onDataset(linked);
+    else onBundled(query);
+  }, [linked, bundled, onDataset, onBundled]);
   return null;
 }
 
