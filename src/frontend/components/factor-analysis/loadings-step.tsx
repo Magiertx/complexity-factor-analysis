@@ -8,6 +8,7 @@ import {
   RULE_LIMITS,
   countText,
   crossLoadingsByMeasure,
+  effectiveCommunality,
   loadingStyle,
   orderMeasures,
   primaryFactor,
@@ -92,6 +93,13 @@ export function LoadingsView({
             max={1}
             step={0.05}
             onChange={(v) => onOptions({ communality_threshold: v })}
+            note={
+              effectiveCommunality(options) > options.communality_threshold
+                ? t("factor.loadings.communality_raised", {
+                    value: formatNumber(effectiveCommunality(options), locale, 1),
+                  })
+                : null
+            }
           />
           {oblique && analysis.structure_loadings && (
             <div className="space-y-1.5">

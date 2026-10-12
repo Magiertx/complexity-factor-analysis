@@ -191,6 +191,7 @@ export function NumberField({
   max,
   step,
   className,
+  describedBy,
 }: {
   id: string;
   value: number;
@@ -199,6 +200,8 @@ export function NumberField({
   max: number;
   step: number;
   className?: string;
+  /** Id of a note on the value, read out with the field. */
+  describedBy?: string;
 }) {
   const { locale } = useLocale();
   const shown = formatInputNumber(value, locale);
@@ -239,6 +242,7 @@ export function NumberField({
       aria-valuetext={shown}
       value={draft}
       aria-invalid={invalid || undefined}
+      aria-describedby={describedBy}
       onChange={(e) => {
         setDraft(e.target.value);
         const v = parseInputNumber(e.target.value);
@@ -264,6 +268,7 @@ export function ThresholdField({
   id,
   label,
   help,
+  note,
   ...field
 }: {
   id: string;
@@ -274,11 +279,18 @@ export function ThresholdField({
   min: number;
   max: number;
   step: number;
+  /** A short note below the field, e.g. that another setting overrides its value. */
+  note?: string | null;
 }) {
   return (
     <div className="space-y-1.5">
       <HelpLabel htmlFor={id} label={label} help={help} />
-      <NumberField id={id} {...field} />
+      <NumberField id={id} {...field} describedBy={note ? `${id}-note` : undefined} />
+      {note && (
+        <p id={`${id}-note`} className="max-w-[11rem] text-[11px] text-muted">
+          {note}
+        </p>
+      )}
     </div>
   );
 }

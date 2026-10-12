@@ -304,6 +304,14 @@ describe("settingsSummary", () => {
     expect(chips.filter((c) => c.differs).map((c) => c.id)).toEqual(["factors", "communality", "rule"]);
   });
 
+  it("shows the communality the rule asks for when it is above the threshold", () => {
+    const chip = (options: typeof standard) =>
+      settingsSummary(options, standard, null, 12, t).find((c) => c.id === "communality");
+    expect(chip({ ...standard, assignment_rule: "multi" })).toEqual({ id: "communality", text: "h² ≥ 0.3", differs: false });
+    expect(chip({ ...standard, assignment_rule: "hair", communality_threshold: 0.3 })?.text).toBe("h² ≥ 0.5");
+    expect(chip({ ...standard, assignment_rule: "multi", communality_threshold: 0.4 })?.text).toBe("h² ≥ 0.4");
+  });
+
   it("follows Kaiser without a count of its own, and shows α only when it is not the standard", () => {
     const chips = settingsSummary({ ...standard, bartlett_alpha: 0.01, auto_msa_filter: false }, standard, analysis(), 4, translator("de").t);
     expect(chips.map((c) => c.text)).toEqual([

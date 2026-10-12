@@ -111,6 +111,21 @@ export const RULE_LIMITS = {
   hair_communality: 0.5,
 };
 
+/** The least communality the rule itself asks for of an assigned measure. */
+export function ruleCommunality(rule: AssignmentRule): number {
+  if (rule === "multi") return RULE_LIMITS.multi_communality;
+  if (rule === "hair") return RULE_LIMITS.hair_communality;
+  return 0;
+}
+
+/**
+ * The communality an assigned measure needs: the threshold of the options or the rule's own
+ * minimum, whichever is higher, as the server applies it.
+ */
+export function effectiveCommunality(options: Pick<AnalysisOptions, "communality_threshold" | "assignment_rule">): number {
+  return Math.max(options.communality_threshold, ruleCommunality(options.assignment_rule));
+}
+
 export interface UnassignedMeasure {
   measure: string;
   /** null from a server before the assignment rules, which named no reason. */
@@ -228,7 +243,8 @@ export function settingsSummary(
     },
     {
       id: "communality",
-      text: t("factor.settings.communality", { value: options.communality_threshold }),
+      // What applies: "multiple membership" with a threshold of 0 still asks for h² ≥ 0.3.
+      text: t("factor.settings.communality", { value: effectiveCommunality(options) }),
       differs: changed.has("communality_threshold"),
     },
     { id: "rule", text: t(`factor.settings.rule.${options.assignment_rule}`), differs: changed.has("assignment_rule") },

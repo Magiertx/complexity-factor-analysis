@@ -866,6 +866,7 @@
       "unassigned_heading": "Unassigned",
       "unassigned_hint": "These measures join no factor under the chosen rule; the reason is next to each.",
       "communality_threshold_label": "Communality threshold",
+      "communality_raised": "The rule asks for at least {value}.",
       "matrix_label": "Matrix",
       "matrix_pattern": "Pattern",
       "matrix_structure": "Structure",

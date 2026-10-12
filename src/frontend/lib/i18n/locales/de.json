@@ -866,6 +866,7 @@
       "unassigned_heading": "Nicht zugeordnet",
       "unassigned_hint": "Diese Maße kommen nach der gewählten Regel zu keinem Faktor; der Grund steht jeweils daneben.",
       "communality_threshold_label": "Kommunalitätsschwelle",
+      "communality_raised": "Die Regel verlangt mindestens {value}.",
       "matrix_label": "Matrix",
       "matrix_pattern": "Muster",
       "matrix_structure": "Struktur",
