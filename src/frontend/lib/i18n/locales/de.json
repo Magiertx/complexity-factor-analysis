@@ -806,18 +806,21 @@
       "criterion": {
         "kaiser": "Kaiser",
         "parallel": "Parallelanalyse",
-        "paper": "Paper"
+        "paper": "Paper",
+        "report": "Report"
       },
       "criterion_detail": {
         "kaiser": "Eigenwerte über 1",
         "parallel": "über dem {percentile}. Perzentil zufälliger Daten",
-        "paper": "a priori gewählt"
+        "paper": "a priori gewählt",
+        "report": "wie im ComFy-Report, höchstens eins weniger als die Maße"
       },
       "criterion_count": "{n} Faktor",
       "criterion_count_plural": "{n} Faktoren",
       "criterion_capped": "{k} Faktoren sind mehr als die {max}, die diese Maße erlauben.",
       "criteria_differ": "Die Kriterien legen unterschiedlich viele Faktoren nahe. Screeplot und Ladungen helfen bei der Entscheidung.",
       "criteria_differ_paper": "Die Kriterien legen unterschiedlich viele Faktoren nahe. Kaiser und Parallelanalyse folgen aus den Daten; das Paper hat seine Zahl vor der Analyse gewählt.",
+      "criteria_differ_report": "Die Kriterien legen unterschiedlich viele Faktoren nahe. Kaiser und Parallelanalyse folgen aus den Daten; der ComFy-Report legt seine Zahl vor der Analyse fest.",
       "random_point": "Parallelanalyse: {value}",
       "cumulative_point": "kumulierter Anteil: {pct}",
       "scree_desc_table": "Eine Tabelle mit allen Reihen folgt dem Diagramm.",
@@ -918,7 +921,7 @@
       "groups": "Jeder Faktor mit den ihm zugeordneten Maßen, stärkste Ladung zuerst. Maße einer Gruppe erfassen einen ähnlichen Aspekt der Komplexität; wie der Faktor heißt, ist Sache der Interpretation. Bei Mehrfachzuordnung kann ein Maß in mehreren Gruppen stehen; ein Chip nennt seine anderen Faktoren.",
       "communality_threshold": "Maße mit einer Kommunalität unter diesem Wert bleiben unzugeordnet, weil die Faktoren zu wenig von ihnen erklären. ComFy für Log-Maße nutzt 0,5; 0 behält jedes Maß.",
       "factor_correlations": "Bei obliquer Rotation dürfen die Faktoren korrelieren. Werte nahe 0 heißen, dass die Faktoren fast unabhängig sind; große Werte heißen, dass sie verwandte Aspekte messen.",
-      "assignment": "Wie aus den Ladungen Faktorgruppen werden. ComFys Report gibt jedes Maß dem Faktor, auf dem es am stärksten lädt. Important Factors nutzt zwei weitere Regeln: In Tab. 6–16 kommt ein Maß auch zu jedem Faktor, dessen Ladung höchstens {gap} unter seiner größten liegt (Mehrfachzuordnung), bei h² ≥ {h2_multi}; Tab. 17 folgt Hair et al. mit h² ≥ {h2_hair} und lässt quergeladene Maße weg. Die Faktorlösung ist bei jeder Regel dieselbe; nur die Gruppen ändern sich.",
+      "assignment": "Wie aus den Ladungen Faktorgruppen werden. ComFys Report ordnet jedes Maß dem Faktor zu, auf dem es am stärksten lädt. Important Factors nennt zwei weitere Regeln: Für Tab. 6–16 kommt ein Maß auch zu jedem Faktor, dessen Ladung höchstens {gap} unter seiner größten liegt (Mehrfachzuordnung), bei h² ≥ {h2_multi}; für Tab. 17 folgt es Hair et al. mit h² ≥ {h2_hair} und lässt Maße mit Querladung weg. Das Tool wendet die Regeln so an, wie sie dort stehen; wo eine Tabelle des Papers davon abweicht, sagt das bei den mitgelieferten Datensätzen ein Hinweis unter den Regeln. Die Faktorlösung ist bei jeder Regel dieselbe; nur die Gruppen ändern sich.",
       "criteria": "Kaiser behält jeden Faktor mit einem Eigenwert über 1. Die Parallelanalyse (Horn) behält die Faktoren, deren Eigenwert über dem {percentile}. Perzentil der Eigenwerte von {simulations} zufälligen normalverteilten Datensätzen gleicher Größe liegt, berechnet auf Hauptkomponenten mit dem festen Seed {seed}; bei vielen Beobachtungen liegt sie nahe bei Kaiser. Ein Paper kann die Zahl auch vor der Analyse festlegen. Die Wahl eines Kriteriums setzt die Anzahl der Faktoren."
     },
     "errors": {
@@ -1061,14 +1064,22 @@
     "paper_notes": {
       "tables": {
         "matches": "Das Paper druckt diese Zahlen gerundet in {tables}.",
-        "extra_dup": "Tab. 8 des Papers nutzt zusätzlich dup ohne τ, das dieser Datensatz nicht hat; ihre Ladungen weichen um bis zu 0,06 ab, die Gruppen aus Tab. 9 bleiben gleich.",
+        "msa_only": "{tables} des Papers druckt nur die MSA-Werte, sein Text den p-Wert des Bartlett-Tests und den Gesamt-MSA; die Faktoranalyse beschreibt das Paper nicht und verweist auf den Report im ComFy-Repository.",
+        "extra_dup": "{tables} des Papers nutzen zusätzlich dup ohne τ, das dieser Datensatz nicht hat. Daher weichen das Chi-Quadrat des Bartlett-Tests ({chi_paper} in Tab. 7, hier {chi_report}), der KMO ({kmo_paper} und {kmo_report}), der MSA jedes Maßes und die Ladungen (um bis zu {loading_gap}) ab; die Gruppen aus Tab. 9 bleiben gleich.",
         "other_data": "Tab. 14–16 des Papers beruhen auf anderen Daten als dieser Datensatz.",
         "not_in_paper": "Das Paper wertet diesen Miner nicht aus; die Zahlen sind die des Reports im Repository."
       },
+      "rounding": "Ein Wert ist ein Hundertstel niedriger gedruckt, als die Rundung ergibt: der MSA von {measure}, {printed} im Paper und {report} im Report.",
+      "source_report": "{source}, wie der Report im ComFy-Repository sie anwendet; eine Faktoranalyse dieses Datensatzes beschreibt das Paper nicht",
+      "rules": {
+        "alpha_multi": "Mit den Paper-Einstellungen ordnet diese Regel Connector Heterogeneity (CH) auch Faktor 2 zu; Tab. 6 des Papers führt es nur in Dimension 4.",
+        "inductive_multi": "Mit den Paper-Einstellungen ordnet diese Regel Average connector degree (acd) auch Faktor 2 zu; Tab. 12 des Papers führt es nur in den Dimensionen 1 und 3.",
+        "alpha_hair": "Mit den Paper-Einstellungen lässt diese Regel Connector Mismatch (MM, h² unter {h2_hair}) und Connector Heterogeneity (CH) wegen seiner Querladung weg, sodass Faktor 4 leer bleibt; die Alpha-Zeile von Tab. 17 des Papers enthält beide."
+      },
       "datasets": {
-        "directly_follows": "Tab. 8 des Papers nutzt zusätzlich dup ohne τ.",
+        "directly_follows": "Tab. 7–8 des Papers nutzen zusätzlich dup ohne τ.",
         "hybrid_ilp": "Nicht deterministisch; die Daten weichen von Tab. 14–16 ab.",
-        "heuristics": "Im Paper nicht ausgewertet: nach MSA bleiben 4 Maße.",
+        "heuristics": "Tab. 13 des Papers druckt nur die MSA-Werte: Nach dem Filter bleiben 4 Maße. Der Report im ComFy-Repository passt ihnen 4 Faktoren an, das Tool höchstens 3.",
         "alpha_plus": "Nur im Repository, nicht im Paper.",
         "alpha_dollar": "Werte identisch mit dem Alpha miner."
       }
@@ -1096,7 +1107,7 @@
       "scenario": {
         "if_inductive": {
           "title": "Important Factors: Inductive miner",
-          "text": "Mit den Paper-Einstellungen: 4 Faktoren und Mehrfachzuordnung wie in Tab. 10–12, abgeglichen mit dem ComFy-Report."
+          "text": "Mit den Paper-Einstellungen: 4 Faktoren und Mehrfachzuordnung, abgeglichen mit dem ComFy-Report. Die Zahlen sind die aus Tab. 10–11, die Gruppen die aus Tab. 12 mit einer Zuordnung mehr (Average connector degree auch in Faktor 2)."
         },
         "log_standard": {
           "title": "Log-Maße von 2.112 PDC-Logs",

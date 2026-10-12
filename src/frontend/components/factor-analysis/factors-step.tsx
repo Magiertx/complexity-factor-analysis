@@ -15,13 +15,18 @@ interface Props {
   analysis: FactorAnalysis;
   options: AnalysisOptions;
   onOptions: (patch: Partial<AnalysisOptions>) => void;
-  /** The factor count the paper chose for the dataset, if it is a published one. */
+  /** The factor count of the paper settings of the dataset, if it is a published one. */
   paperFactors: number | null;
+  /**
+   * "report" if the paper does not describe a factor analysis of the dataset and its settings
+   * are those the ComFy report applies; the count is then named after the report.
+   */
+  paperScope?: string;
 }
 
-type Criterion = "kaiser" | "parallel" | "paper";
+type Criterion = "kaiser" | "parallel" | "paper" | "report";
 
-export function FactorsView({ analysis, options, onOptions, paperFactors }: Props) {
+export function FactorsView({ analysis, options, onOptions, paperFactors, paperScope }: Props) {
   const t = useT();
   const tMaybe = useTMaybe();
   const { locale } = useLocale();
@@ -39,18 +44,19 @@ export function FactorsView({ analysis, options, onOptions, paperFactors }: Prop
   const counts = analysis.factor_count;
   const kaiser = counts?.kaiser ?? analysis.suggested_n_factors;
   const parallel = counts?.parallel_analysis ?? null;
+  const published: Criterion = paperScope === "report" ? "report" : "paper";
   const criteria: { id: Criterion; k: number }[] = [
     { id: "kaiser", k: kaiser },
     ...(parallel !== null ? [{ id: "parallel" as const, k: parallel }] : []),
-    ...(paperFactors !== null ? [{ id: "paper" as const, k: paperFactors }] : []),
+    ...(paperFactors !== null ? [{ id: published, k: paperFactors }] : []),
   ];
   // Kaiser is the count the analysis follows on its own; an own count is shown as the criterion
-  // that gives it, the paper's first when two give the same.
+  // that gives it, the paper's (or report's) first when two give the same.
   const chosen: Criterion | null =
     options.n_factors === null
       ? "kaiser"
       : options.n_factors === paperFactors
-        ? "paper"
+        ? published
         : options.n_factors === parallel
           ? "parallel"
           : null;
@@ -169,7 +175,13 @@ export function FactorsView({ analysis, options, onOptions, paperFactors }: Prop
               <p className="flex items-start gap-1.5 text-xs text-muted">
                 <Info className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
                 <span>
-                  {t(paperFactors !== null ? "factor.factors.criteria_differ_paper" : "factor.factors.criteria_differ")}
+                  {t(
+                    paperFactors === null
+                      ? "factor.factors.criteria_differ"
+                      : published === "report"
+                        ? "factor.factors.criteria_differ_report"
+                        : "factor.factors.criteria_differ_paper",
+                  )}
                 </span>
               </p>
             )}

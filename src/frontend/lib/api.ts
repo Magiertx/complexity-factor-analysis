@@ -328,11 +328,18 @@ export interface BundledDataset {
   label?: string;
   /** Id of the paper (collection) the dataset belongs to. */
   collection?: string;
-  /** The settings the paper analysed the dataset with; "Paper settings" in the UI. */
+  /** The settings of the paper the dataset comes from; "Paper settings" in the UI. */
   published_options?: AnalyzeOptions;
-  /** Where the paper reports them, e.g. "Important Factors, ATAED 2026, Tab. 5/6". */
+  /** The paper, as a citation, e.g. "Important Factors, ATAED 2026, Tab. 10–12". */
   published_source?: string;
+  /**
+   * "paper" if the paper analyses the dataset with these settings, "report" if only the report
+   * in the tool's repository does, with the paper's settings; absent from older servers.
+   */
+  published_scope?: PublishedScope | string;
 }
+
+export type PublishedScope = "paper" | "report";
 
 /** A paper whose bundled datasets the data step lists together. */
 export interface DatasetCollection {
@@ -503,7 +510,7 @@ export interface PublishedDifference {
 }
 
 /** How the paper's own tables relate to the report: "matches" prints the same numbers. */
-export type PaperTables = "matches" | "extra_dup_column" | "other_data" | "not_in_paper";
+export type PaperTables = "matches" | "msa_only" | "extra_dup_column" | "other_data" | "not_in_paper";
 
 /** How the numbers compare with the report the dataset was published with. */
 export interface PublishedMatch {

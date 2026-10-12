@@ -46,6 +46,7 @@ import {
   type ExportFormat,
 } from "@/lib/factor-analysis";
 import { formatNumber, formatPercent } from "@/lib/format";
+import { ruleNote } from "@/lib/paper-notes";
 import { cn } from "@/lib/utils";
 import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -655,6 +656,12 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const match =
     analysis && analyzedOptions && sameOptions(analyzedOptions, options) ? (analysis.published_match ?? null) : null;
   const linkQuery = bundled ? analysisLinkQuery(bundled.id, options, standard, published) : null;
+  // Where the paper's dimension tables differ from the rule chosen, under the paper settings the
+  // tables were made with; with other settings the paper says nothing about the groups.
+  const assignmentNote =
+    bundled && published && sameOptions({ ...options, assignment_rule: published.assignment_rule }, published)
+      ? ruleNote(bundled.id, options.assignment_rule, t, locale)
+      : null;
 
   const suitable = analysis ? analysis.bartlett.passed && analysis.kmo.passed : false;
   const interpretationStale =
@@ -931,6 +938,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                 standard={standard}
                 published={published}
                 publishedSource={bundled?.published_source}
+                publishedScope={bundled?.published_scope}
+                bundledId={bundled?.id}
                 analysis={analysis}
                 measureCount={dataset.measures.length}
                 match={match}
@@ -1002,6 +1011,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                     options={options}
                     onOptions={updateOptions}
                     paperFactors={published?.n_factors ?? null}
+                    paperScope={bundled?.published_scope}
                   />
                 </div>
               ) : (
@@ -1037,6 +1047,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                       onExport={runExport}
                       exporting={exporting}
                       zipReady={analysisCurrent}
+                      assignmentNote={assignmentNote}
                     />
                   </div>
                 </div>

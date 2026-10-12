@@ -34,7 +34,7 @@ import {
 } from "@/lib/api";
 import { MIN_MEASURES, countText, datasetName, progressPercent, publishedOptions } from "@/lib/factor-analysis";
 import { formatDateTime, formatFileSize, formatNumber, formatPercent, formatRelative } from "@/lib/format";
-import { datasetNote, orderCollection } from "@/lib/paper-notes";
+import { datasetNote, orderCollection, settingsSourceText } from "@/lib/paper-notes";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -506,6 +506,7 @@ function PresetChoice({
   const t = useT();
   const paper = publishedOptions(kind, dataset);
   if (!paper) return null;
+  const source = settingsSourceText(dataset?.published_source, dataset?.published_scope, t);
   const details: Record<OpenPreset, string> = {
     standard: t("factor.data.preset_standard_detail"),
     published: [
@@ -539,9 +540,7 @@ function PresetChoice({
               <span className="block text-sm font-medium">{t(`factor.data.preset.${p}`)}</span>
               <span id={`fa-preset-${kind}-${p}`} className="block text-[11px] text-muted">
                 {details[p]}
-                {p === "published" && dataset?.published_source && (
-                  <span className="block">{dataset.published_source}</span>
-                )}
+                {p === "published" && source && <span className="block">{source}</span>}
               </span>
             </span>
           </label>

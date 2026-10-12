@@ -5,7 +5,7 @@ import { AlertTriangle, BookOpen, Check, RotateCcw } from "lucide-react";
 import type { FactorAnalysis, PublishedDifference, PublishedMatch } from "@/lib/api";
 import { sameOptions, settingsSummary, type AnalysisOptions, type SettingChip } from "@/lib/factor-analysis";
 import { formatNumber } from "@/lib/format";
-import { paperTablesText } from "@/lib/paper-notes";
+import { paperTablesText, settingsSourceText } from "@/lib/paper-notes";
 import { cn } from "@/lib/utils";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Popover } from "@/components/ui/popover";
@@ -46,8 +46,12 @@ interface Props {
   standard: AnalysisOptions;
   /** The settings of the paper the dataset comes from, if any. */
   published: AnalysisOptions | null;
-  /** Where the paper reports them. */
+  /** Where the paper reports them, as the catalog cites it. */
   publishedSource?: string;
+  /** "report" if only the ComFy report analyses the dataset, with the paper's settings. */
+  publishedScope?: string;
+  /** The bundled dataset, for notes on how its paper prints the numbers. */
+  bundledId?: string | null;
   /** The analysis on screen; its counts fill in the chips. */
   analysis: FactorAnalysis | null;
   /** Measures of the dataset after the cleaning. */
@@ -71,6 +75,8 @@ export function SettingsRow({
   standard,
   published,
   publishedSource,
+  publishedScope,
+  bundledId,
   analysis,
   measureCount,
   match,
@@ -79,6 +85,7 @@ export function SettingsRow({
 }: Props) {
   const t = useT();
   const chips = settingsSummary(options, standard, analysis, measureCount, t);
+  const source = settingsSourceText(publishedSource, publishedScope, t);
   const isStandard = sameOptions(options, standard);
   const isPublished = !!published && sameOptions(options, published);
   // Inactive buttons stay focusable (aria-disabled): the one just pressed would else drop the
@@ -117,7 +124,7 @@ export function SettingsRow({
           ))}
         </ul>
         <span className="ml-auto flex items-center gap-2 shrink-0">
-          {match && <MatchChip match={match} publishedSource={publishedSource} />}
+          {match && <MatchChip match={match} settingsSource={source} bundledId={bundledId} />}
           <span className="flex items-center gap-0.5">
             <button
               type="button"
@@ -138,7 +145,7 @@ export function SettingsRow({
                 className={action}
                 aria-disabled={isPublished || undefined}
                 onClick={() => !isPublished && onApply(published, "published")}
-                title={publishedSource ? t("factor.settings.paper_title", { source: publishedSource }) : t("factor.settings.paper")}
+                title={source ? t("factor.settings.paper_title", { source }) : t("factor.settings.paper")}
                 aria-label={t("factor.settings.paper")}
               >
                 <BookOpen className="h-3.5 w-3.5" aria-hidden />
@@ -162,7 +169,16 @@ export function SettingsRow({
  * Whether the numbers of the analysis equal the published report, as a chip; a click shows what
  * was compared, the differences and how the paper's own tables relate to the report.
  */
-function MatchChip({ match, publishedSource }: { match: PublishedMatch; publishedSource?: string }) {
+function MatchChip({
+  match,
+  settingsSource,
+  bundledId,
+}: {
+  match: PublishedMatch;
+  /** Where the settings come from, in the UI language. */
+  settingsSource: string | null;
+  bundledId?: string | null;
+}) {
   const t = useT();
   const tMaybe = useTMaybe();
   const { locale } = useLocale();
@@ -171,7 +187,10 @@ function MatchChip({ match, publishedSource }: { match: PublishedMatch; publishe
   const panelId = useId();
   const titleId = useId();
   const ok = match.status === "match";
-  const tables = paperTablesText(match.paper_tables, match.paper_tables_ref, match.paper_tables_note, t);
+  const tables = paperTablesText(match.paper_tables, match.paper_tables_ref, match.paper_tables_note, t, {
+    locale,
+    datasetId: bundledId ?? undefined,
+  });
   // A number, or where a set differs the measures (with their filter step) as a list.
   const value = (v: unknown): string => {
     if (typeof v === "number") return formatNumber(v, locale, 4);
@@ -291,10 +310,10 @@ function MatchChip({ match, publishedSource }: { match: PublishedMatch; publishe
             <dt className="inline">{t("factor.match.source")}: </dt>
             <dd className="inline break-all font-mono">{source}</dd>
           </div>
-          {publishedSource && (
+          {settingsSource && (
             <div>
               <dt className="inline">{t("factor.match.settings_from")}: </dt>
-              <dd className="inline">{publishedSource}</dd>
+              <dd className="inline">{settingsSource}</dd>
             </div>
           )}
         </dl>

@@ -806,18 +806,21 @@
       "criterion": {
         "kaiser": "Kaiser",
         "parallel": "Parallel analysis",
-        "paper": "Paper"
+        "paper": "Paper",
+        "report": "Report"
       },
       "criterion_detail": {
         "kaiser": "eigenvalues above 1",
         "parallel": "above the {percentile}th percentile of random data",
-        "paper": "chosen a priori"
+        "paper": "chosen a priori",
+        "report": "as in the ComFy report, at most one less than the measures"
       },
       "criterion_count": "{n} factor",
       "criterion_count_plural": "{n} factors",
       "criterion_capped": "{k} factors are more than the {max} these measures allow.",
       "criteria_differ": "The criteria suggest different numbers of factors. The scree plot and the loadings help to decide.",
       "criteria_differ_paper": "The criteria suggest different numbers of factors. Kaiser and parallel analysis follow from the data; the paper chose its number before the analysis.",
+      "criteria_differ_report": "The criteria suggest different numbers of factors. Kaiser and parallel analysis follow from the data; the ComFy report fixes its number before the analysis.",
       "random_point": "parallel analysis: {value}",
       "cumulative_point": "cumulative share: {pct}",
       "scree_desc_table": "A table with every series follows the plot.",
@@ -918,7 +921,7 @@
       "groups": "Each factor with the measures assigned to it, strongest loading first. Measures in one group capture a similar aspect of complexity; the name of the factor is up to your interpretation. Under multiple membership a measure can be in several groups; a chip names its other factors.",
       "communality_threshold": "Measures whose communality is below this value are left unassigned, because the factors explain too little of them. ComFy for log measures uses 0.5; 0 keeps every measure.",
       "factor_correlations": "With an oblique rotation the factors may correlate. Values near 0 mean the factors are nearly independent; large values mean they measure related aspects.",
-      "assignment": "How the loadings turn into factor groups. ComFy's report gives each measure to the factor it loads on most. Important Factors uses two further rules: in Tab. 6–16 a measure also joins every factor whose loading is at most {gap} below its largest (multiple membership), with h² ≥ {h2_multi}; Tab. 17 follows Hair et al. with h² ≥ {h2_hair} and leaves cross-loaded measures out. The factor solution is the same under every rule; only the groups change.",
+      "assignment": "How the loadings turn into factor groups. ComFy's report gives each measure to the factor it loads on most. Important Factors states two further rules: for Tab. 6–16, a measure also joins every factor whose loading is at most {gap} below its largest (multiple membership), with h² ≥ {h2_multi}; for Tab. 17, it follows Hair et al. with h² ≥ {h2_hair} and leaves cross-loaded measures out. The tool applies the rules as stated; where a table of the paper differs from them, a note below the rules says so for the bundled datasets. The factor solution is the same under every rule; only the groups change.",
       "criteria": "Kaiser keeps every factor with an eigenvalue above 1. Parallel analysis (Horn) keeps the factors whose eigenvalue is above the {percentile}th percentile of the eigenvalues of {simulations} random normal datasets of the same size, computed on principal components with the fixed seed {seed}; with many observations it comes close to Kaiser. A paper may also fix the number before the analysis. Choosing a criterion sets the number of factors."
     },
     "errors": {
@@ -1061,14 +1064,22 @@
     "paper_notes": {
       "tables": {
         "matches": "The paper prints these numbers, rounded, in {tables}.",
-        "extra_dup": "Tab. 8 of the paper additionally uses dup without τ, which this dataset does not have; its loadings differ by up to 0.06, the groups of Tab. 9 stay the same.",
+        "msa_only": "{tables} of the paper prints only the MSA values, and its text Bartlett's p-value and the overall MSA; the paper does not describe the factor analysis and refers to the report in the ComFy repository.",
+        "extra_dup": "{tables} of the paper also use dup without τ, which this dataset does not have. Bartlett's chi-square ({chi_paper} in Tab. 7, {chi_report} here), the KMO ({kmo_paper} and {kmo_report}), the MSA of each measure and the loadings (by up to {loading_gap}) therefore differ; the groups of Tab. 9 stay the same.",
         "other_data": "Tab. 14–16 of the paper are based on other data than this dataset.",
         "not_in_paper": "The paper does not analyse this miner; the numbers are those of the report in the repository."
       },
+      "rounding": "One value is printed a hundredth lower than rounding gives: the MSA of {measure}, {printed} in the paper and {report} in the report.",
+      "source_report": "{source}, as the report in the ComFy repository applies them; the paper does not describe a factor analysis of this dataset",
+      "rules": {
+        "alpha_multi": "With the paper settings this rule also puts Connector Heterogeneity (CH) in factor 2; Tab. 6 of the paper lists it in dimension 4 only.",
+        "inductive_multi": "With the paper settings this rule also puts Average connector degree (acd) in factor 2; Tab. 12 of the paper lists it in dimensions 1 and 3 only.",
+        "alpha_hair": "With the paper settings this rule leaves out Connector Mismatch (MM, h² below {h2_hair}) and the cross-loaded Connector Heterogeneity (CH), so factor 4 stays empty; the Alpha row of Tab. 17 of the paper keeps both."
+      },
       "datasets": {
-        "directly_follows": "Tab. 8 of the paper additionally uses dup without τ.",
+        "directly_follows": "Tab. 7–8 of the paper also use dup without τ.",
         "hybrid_ilp": "Not deterministic; the data differ from Tab. 14–16.",
-        "heuristics": "Not evaluated in the paper: 4 measures left after MSA.",
+        "heuristics": "Tab. 13 of the paper prints only the MSA values: 4 measures are left after the filter. The report in the ComFy repository fits 4 factors to them, the tool at most 3.",
         "alpha_plus": "Only in the repository, not in the paper.",
         "alpha_dollar": "Values identical to the Alpha miner."
       }
@@ -1096,7 +1107,7 @@
       "scenario": {
         "if_inductive": {
           "title": "Important Factors: Inductive miner",
-          "text": "With the paper settings: 4 factors and multiple membership as in Tab. 10–12, checked against the ComFy report."
+          "text": "With the paper settings: 4 factors and multiple membership, checked against the ComFy report. The numbers are those of Tab. 10–11, the groups those of Tab. 12 with one assignment more (Average connector degree also in factor 2)."
         },
         "log_standard": {
           "title": "Log measures of 2,112 PDC logs",

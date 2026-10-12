@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileArchive, FileCode2, FileSpreadsheet, Loader2 } from "lucide-react";
+import { FileArchive, FileCode2, FileSpreadsheet, Info, Loader2 } from "lucide-react";
 import { ASSIGNMENT_RULES, type AssignmentRule, type FactorAnalysis } from "@/lib/api";
 import {
   ORTHOGONAL,
@@ -39,6 +39,8 @@ interface Props {
   exporting: ExportFormat | null;
   /** The analysis on screen matches the settings, so the ZIP holds what is shown. */
   zipReady: boolean;
+  /** Where the paper's dimension tables differ from the chosen rule, for a bundled dataset. */
+  assignmentNote?: string | null;
 }
 
 export function LoadingsView({
@@ -50,6 +52,7 @@ export function LoadingsView({
   onExport,
   exporting,
   zipReady,
+  assignmentNote,
 }: Props) {
   const t = useT();
   const { locale } = useLocale();
@@ -70,7 +73,11 @@ export function LoadingsView({
 
   return (
     <div className="space-y-6">
-      <AssignmentChoice value={options.assignment_rule} onChange={(rule) => onOptions({ assignment_rule: rule })} />
+      <AssignmentChoice
+        value={options.assignment_rule}
+        onChange={(rule) => onOptions({ assignment_rule: rule })}
+        note={assignmentNote ?? null}
+      />
 
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div className="flex items-start gap-x-6 gap-y-3 flex-wrap">
@@ -365,7 +372,16 @@ function FactorCorrelations({ values, pad }: { values: number[][]; pad: string }
  * effect; the rules differ in what happens to a measure that loads on several factors and in
  * the least communality.
  */
-function AssignmentChoice({ value, onChange }: { value: AssignmentRule; onChange: (rule: AssignmentRule) => void }) {
+function AssignmentChoice({
+  value,
+  onChange,
+  note,
+}: {
+  value: AssignmentRule;
+  onChange: (rule: AssignmentRule) => void;
+  /** Where the paper's tables differ from the chosen rule; read with the tiles. */
+  note: string | null;
+}) {
   const t = useT();
   const { locale } = useLocale();
   const limits = {
@@ -378,7 +394,12 @@ function AssignmentChoice({ value, onChange }: { value: AssignmentRule; onChange
     // Its id is where the rule chip of the settings row leads.
     <div id="fa-assignment" className="space-y-2 scroll-mt-24">
       <HelpLabel as="span" label={label} help={t("factor.help.assignment", limits)} />
-      <div role="radiogroup" aria-label={label} className="grid gap-2 sm:grid-cols-3">
+      <div
+        role="radiogroup"
+        aria-label={label}
+        aria-describedby={note ? "fa-assignment-note" : undefined}
+        className="grid gap-2 sm:grid-cols-3"
+      >
         {ASSIGNMENT_RULES.map((rule) => {
           const chosen = rule === value;
           return (
@@ -407,6 +428,12 @@ function AssignmentChoice({ value, onChange }: { value: AssignmentRule; onChange
           );
         })}
       </div>
+      {note && (
+        <p id="fa-assignment-note" className="flex items-start gap-1.5 text-xs text-muted max-w-prose">
+          <Info className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
+          <span>{note}</span>
+        </p>
+      )}
     </div>
   );
 }
