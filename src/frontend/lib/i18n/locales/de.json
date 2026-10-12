@@ -229,15 +229,15 @@
       "recent_logs": "Logs, die deine Sitzung zuletzt hochgeladen hat.",
       "analyze": "Einen Algorithmus auf einem Log ausführen; liefert eine job_id.",
       "log_stats": "Schnelle beschreibende Statistiken eines Logs: Traces, Events, Varianten, Zeitraum.",
-      "fa_catalog": "Maße, Miner oder Feature-Gruppen, mitgelieferte Datensätze, Beispieleingaben und die angenommenen Quellen.",
-      "fa_create": "Einen Datensatz aus einem mitgelieferten oder einer CSV anlegen (sofort bereit) oder aus Event-Logs oder PNML-Dateien (als Run berechnet).",
+      "fa_catalog": "Maße, Miner oder Feature-Gruppen, mitgelieferte Datensätze mit den Einstellungen, die ihr Paper veröffentlicht hat (`published_options`), Beispieleingaben und die angenommenen Quellen.",
+      "fa_create": "Einen Datensatz aus einem mitgelieferten oder einer CSV anlegen (sofort bereit) oder aus Event-Logs oder PNML-Dateien (als Run berechnet). Einen mitgelieferten Datensatz, den die Sitzung schon hat, gibt es unverändert zurück, mit `reused`.",
       "fa_list": "Die Datensätze deiner Sitzung, neueste zuerst; kind ist optional.",
       "fa_get": "Status, Fortschritt, gespeicherte Einstellungen und die bereinigte Matrix der Maße (erste 2.000 Zeilen).",
       "fa_options": "Die Einstellungen einer Analyse beim Datensatz speichern.",
       "fa_delete": "Einen Datensatz mit seinem Run und seinen gespeicherten Interpretationen löschen.",
       "fa_delete_all": "Alle Datensätze deiner Sitzung löschen oder alle einer Art.",
       "fa_download": "Die bereinigte Matrix als CSV.",
-      "fa_analyze": "Bartlett, KMO mit MSA-Filter, Eigenwerte und rotierte Ladungen für die übergebenen Einstellungen (JSON).",
+      "fa_analyze": "Bartlett, KMO mit MSA-Filter, Eigenwerte mit Kaiser und Parallelanalyse, rotierte Ladungen und die Faktorgruppen nach `assignment_rule` (`largest`, `multi`, `hair`) mit Querladungen; mit den veröffentlichten Einstellungen den Abgleich mit dem Report (JSON).",
       "fa_export": "Die Ladungstabelle als CSV oder LaTeX; der Body von analyze plus format.",
       "fa_export_zip": "Die ganze Analyse als ZIP: Ergebnis, Matrix, Tabellen, Parameter, Bibliotheksversionen und Herkunft (Version und Commit des Tools, Commits der Vorlagen, feeed, pm4py und ProM, Miner mit ihren Parametern).",
       "fa_interpretation_status": "Ob Claude Faktoren interpretieren kann, und mit welchem Modell.",
@@ -258,7 +258,8 @@
       "quota": "Runs: höchstens 12 wartende oder laufende pro Sitzung und höchstens 4 Datensatz-Runs gleichzeitig über alle Sitzungen; weitere werden mit 429 beantwortet.",
       "uploads": "Uploads: höchstens 100 MB pro Datei. `POST /algorithms/{id}/analyze` und `POST /log-stats` nehmen ein Event-Log (`.xes`, `.xes.gz`, `.xml`, `.json`). `POST /factor-analysis/datasets` nimmt eine `.csv`, bis zu 50 Event-Logs (`.xes`, `.xes.gz`) oder bis zu 200 Petri-Netze (`.pnml`), zusammen höchstens 500 MB.",
       "session": "Sitzung: Ein signiertes Cookie grenzt jeden Endpoint ein. Verwende es für alle Anfragen (in Python mit `requests.Session()`), damit deine Runs und Datensätze sichtbar bleiben.",
-      "schemas": "Die Parameterschemas liefert `GET /algorithms`: Lies vor dem Absenden das `parameters_schema` eines Algorithmus."
+      "schemas": "Die Parameterschemas liefert `GET /algorithms`: Lies vor dem Absenden das `parameters_schema` eines Algorithmus.",
+      "analysis": "Analysen: höchstens `400` Maße pro Analyse, mehr ergeben 400 mit dem Code `too_many_measures_for_analysis`. Eine neuere Analyse desselben Datensatzes in einer Sitzung ersetzt eine ältere, die noch wartet; die ältere erhält 409 `superseded`."
     }
   },
   "parameter_form": {
