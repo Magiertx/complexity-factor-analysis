@@ -34,6 +34,10 @@ from sklearn.utils import check_array as _sklearn_check_array
 from vendored.comfy_log import Constants as _C
 
 MIN_MEASURES = 3
+#: More measures than this make a single analysis too heavy for a shared server: each round
+#: of the MSA filter inverts a p × p matrix, and minres optimises p uniquenesses with a
+#: numerical gradient, one p × p eigendecomposition per uniqueness and step.
+MAX_MEASURES = 400
 ROTATIONS = ("varimax", "promax", "oblimin", "quartimax", "none")
 MISSING_MARKERS = {"", "nan", "none", "null", "na", "n/a", "-"}
 
@@ -635,13 +639,22 @@ def check_excluded(measures: list[str], excluded: list[str]) -> None:
 
 
 def _check_size(n: int, p: int) -> None:
-    """Enough measures for a factor analysis, and more observations than measures."""
+    """Enough measures for a factor analysis but not too many, and more observations than
+    measures."""
     if p < MIN_MEASURES:
         raise AnalysisError(
             f"At least {MIN_MEASURES} measures are needed for a factor analysis; {p} are left.",
             "too_few_measures",
             min=MIN_MEASURES,
             left=p,
+        )
+    if p > MAX_MEASURES:
+        raise AnalysisError(
+            f"{p} measures are too many for one analysis; at most {MAX_MEASURES} are possible. "
+            "Exclude measures.",
+            "too_many_measures_for_analysis",
+            max=MAX_MEASURES,
+            n=p,
         )
     if n < p + 1:
         raise AnalysisError(
