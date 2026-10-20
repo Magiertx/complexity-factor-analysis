@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { IconButton } from "@/components/ui/icon-button";
 import { Popover } from "@/components/ui/popover";
+import { TableFrame } from "@/components/ui/table";
+import { useTip } from "@/components/ui/tip";
 
 /** The control each chip of the row leads to; see the ids in the steps. */
 export const SETTING_CONTROLS: Record<SettingChip["id"], string> = {
@@ -169,18 +171,7 @@ export function SettingsRow({
                     ·
                   </span>
                 )}
-                <button
-                  type="button"
-                  onClick={() => onGoToSetting(chip.id)}
-                  title={chip.differs ? t("factor.settings.chip_changed_title") : t("factor.settings.chip_title")}
-                  className={cn(
-                    "rounded px-1.5 py-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-                    chip.differs ? "bg-accent/[0.12] text-fg font-medium hover:bg-accent/[0.18]" : "text-muted hover:text-fg hover:bg-tile",
-                  )}
-                >
-                  {chip.text}
-                  {chip.differs && <span className="sr-only"> ({t("factor.settings.changed")})</span>}
-                </button>
+                <SettingChipButton chip={chip} onGo={() => onGoToSetting(chip.id)} />
               </li>
             ))}
           </ul>
@@ -210,6 +201,31 @@ export function SettingsRow({
         </span>
       </div>
     </section>
+  );
+}
+
+/**
+ * One setting of the row: a press goes to its control. Settings that differ from the tool standard
+ * stand out on a neutral tile, the others are muted text.
+ */
+function SettingChipButton({ chip, onGo }: { chip: SettingChip; onGo: () => void }) {
+  const t = useT();
+  const tip = useTip<HTMLButtonElement>({
+    more: chip.differs ? t("factor.settings.chip_changed_title") : t("factor.settings.chip_title"),
+  });
+  return (
+    <button
+      ref={tip}
+      type="button"
+      onClick={onGo}
+      className={cn(
+        "rounded px-1.5 py-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+        chip.differs ? "bg-tile text-fg font-medium hover:bg-accent/[0.08]" : "text-muted hover:text-fg hover:bg-tile",
+      )}
+    >
+      {chip.text}
+      {chip.differs && <span className="sr-only"> ({t("factor.settings.changed")})</span>}
+    </button>
   );
 }
 
@@ -316,23 +332,16 @@ function MatchChip({
           </ul>
         </div>
         {match.differences.length > 0 && (
-          <div
-            tabIndex={0}
-            role="region"
-            aria-label={t("factor.match.differences")}
-            className="max-h-40 overflow-auto rounded-md bg-tile/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            <table className="w-full">
+          <TableFrame label={t("factor.match.differences")} boxed className="max-h-40">
+            <table className="data-table">
               <caption className="sr-only">{t("factor.match.differences")}</caption>
-              <thead className="text-muted">
+              <thead>
                 <tr>
-                  <th scope="col" className="px-2 py-1 text-left font-medium">
-                    {t("factor.match.col_what")}
-                  </th>
-                  <th scope="col" className="px-2 py-1 text-right font-medium">
+                  <th scope="col">{t("factor.match.col_what")}</th>
+                  <th scope="col" className="num">
                     {t("factor.match.col_expected")}
                   </th>
-                  <th scope="col" className="px-2 py-1 text-right font-medium">
+                  <th scope="col" className="num">
                     {t("factor.match.col_actual")}
                   </th>
                 </tr>
@@ -340,16 +349,16 @@ function MatchChip({
               <tbody>
                 {match.differences.map((d, i) => (
                   <tr key={i}>
-                    <th scope="row" className="px-2 py-0.5 text-left font-normal break-words">
+                    <th scope="row" className="break-words">
                       {what(d)}
                     </th>
-                    <td className="px-2 py-0.5 text-right font-mono tabular-nums">{value(d.expected)}</td>
-                    <td className="px-2 py-0.5 text-right font-mono tabular-nums">{value(d.actual)}</td>
+                    <td className="num">{value(d.expected)}</td>
+                    <td className="num">{value(d.actual)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableFrame>
         )}
         <p className="text-muted">{t("factor.match.numbers_only")}</p>
         {tables && <p>{tables}</p>}

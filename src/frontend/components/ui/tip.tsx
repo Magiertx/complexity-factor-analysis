@@ -40,7 +40,7 @@ export const TIP_ID = "app-tip";
 
 /** What counts as a control: a tooltip with only an explanation waits the full 2 s on one. */
 const CONTROL =
-  'button, a[href], summary, input, select, textarea, [tabindex]:not([tabindex="-1"]):not(.term), [role="button"],' +
+  'button, a[href], summary, input, select, textarea, label, [tabindex]:not([tabindex="-1"]):not(.term), [role="button"],' +
   ' [role="link"], [role="menuitem"], [role="tab"], [role="option"], [role="switch"], [role="checkbox"], [role="radio"]';
 
 let controller: TipController<HTMLElement> | null = null;

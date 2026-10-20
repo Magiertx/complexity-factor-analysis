@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { Select } from "@/components/ui/select";
+import { Tip } from "@/components/ui/tip";
 import { HelpLabel, NoticeList } from "./step-section";
 import { ScreePlot } from "./scree-plot";
 
@@ -96,15 +97,17 @@ export function FactorsView({ analysis, options, onOptions, paperFactors, paperS
           <div className="space-y-2">
             <HelpLabel label={t("factor.factors.count_label")} help={t("factor.help.eigenvalue")} />
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className={stepButton}
-                onClick={() => setCount(current - 1)}
-                disabled={current <= 1}
-                aria-label={t("factor.factors.decrease")}
-              >
-                <Minus className="h-4 w-4" />
-              </button>
+              <Tip name={t("factor.factors.decrease")}>
+                <button
+                  type="button"
+                  className={stepButton}
+                  onClick={() => setCount(current - 1)}
+                  disabled={current <= 1}
+                  aria-label={t("factor.factors.decrease")}
+                >
+                  <Minus className="h-4 w-4" aria-hidden />
+                </button>
+              </Tip>
               {/* Its id is where the factor chip of the settings row leads. */}
               <output
                 id="fa-factor-count"
@@ -114,20 +117,22 @@ export function FactorsView({ analysis, options, onOptions, paperFactors, paperS
               >
                 {current}
               </output>
-              <button
-                type="button"
-                className={stepButton}
-                onClick={() => setCount(current + 1)}
-                disabled={current >= max}
-                aria-label={t("factor.factors.increase")}
-              >
-                <Plus className="h-4 w-4" />
-              </button>
+              <Tip name={t("factor.factors.increase")}>
+                <button
+                  type="button"
+                  className={stepButton}
+                  onClick={() => setCount(current + 1)}
+                  disabled={current >= max}
+                  aria-label={t("factor.factors.increase")}
+                >
+                  <Plus className="h-4 w-4" aria-hidden />
+                </button>
+              </Tip>
               <span className="text-xs text-muted">{t("factor.factors.range", { max })}</span>
             </div>
             {options.n_factors === null && (
               <div className="text-xs text-muted inline-flex items-center gap-1">
-                <Sparkles className="h-3.5 w-3.5 text-accent-ink" />
+                <Sparkles className="h-3.5 w-3.5" aria-hidden />
                 {t("factor.factors.following_suggestion")}
               </div>
             )}
@@ -143,32 +148,30 @@ export function FactorsView({ analysis, options, onOptions, paperFactors, paperS
                 const on = chosen === c.id;
                 const capped = c.k > max;
                 return (
-                  <label
-                    key={c.id}
-                    className={cn("flex items-center gap-2.5 rounded-md px-3 py-2", choiceTile(on))}
-                    title={capped ? t("factor.factors.criterion_capped", { k: c.k, max }) : undefined}
-                  >
-                    <input
-                      type="radio"
-                      name="fa-criterion"
-                      value={c.id}
-                      className="sr-only"
-                      checked={on}
-                      onChange={() => pick(c.id, c.k)}
-                      aria-label={`${t(`factor.factors.criterion.${c.id}`)}: ${countText(t, "factor.factors.criterion_count", c.k)}`}
-                      aria-describedby={`fa-criterion-${c.id}`}
-                    />
-                    <ChoiceMark type="radio" checked={on} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-medium">{t(`factor.factors.criterion.${c.id}`)}</span>
-                      <span id={`fa-criterion-${c.id}`} className="block text-[11px] text-muted leading-snug">
-                        {t(`factor.factors.criterion_detail.${c.id}`, helpParams)}
+                  <Tip key={c.id} more={capped ? t("factor.factors.criterion_capped", { k: c.k, max }) : undefined}>
+                    <label className={cn("flex items-center gap-2.5 rounded-md px-3 py-2", choiceTile(on))}>
+                      <input
+                        type="radio"
+                        name="fa-criterion"
+                        value={c.id}
+                        className="sr-only"
+                        checked={on}
+                        onChange={() => pick(c.id, c.k)}
+                        aria-label={`${t(`factor.factors.criterion.${c.id}`)}: ${countText(t, "factor.factors.criterion_count", c.k)}`}
+                        aria-describedby={`fa-criterion-${c.id}`}
+                      />
+                      <ChoiceMark type="radio" checked={on} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-medium">{t(`factor.factors.criterion.${c.id}`)}</span>
+                        <span id={`fa-criterion-${c.id}`} className="block text-[11px] text-muted leading-snug">
+                          {t(`factor.factors.criterion_detail.${c.id}`, helpParams)}
+                        </span>
                       </span>
-                    </span>
-                    <span className="font-mono text-lg font-semibold tabular-nums" aria-hidden>
-                      {c.k}
-                    </span>
-                  </label>
+                      <span className="font-mono text-lg font-semibold tabular-nums" aria-hidden>
+                        {c.k}
+                      </span>
+                    </label>
+                  </Tip>
                 );
               })}
             </div>

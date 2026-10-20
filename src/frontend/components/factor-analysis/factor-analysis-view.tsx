@@ -51,6 +51,7 @@ import { CONTROL_STEPS, parseStep, stepFromHash, stepHref } from "@/lib/steps";
 import { cn } from "@/lib/utils";
 import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { UndoToast, type UndoNotice } from "@/components/ui/undo-toast";
 import { useJobsDrawer } from "@/components/jobs-drawer";
 import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
@@ -672,13 +673,6 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
 
   const names = useMemo(() => new Map((catalog?.measures ?? []).map((m) => [m.key, m.name])), [catalog]);
   const measureName = useCallback((key: string) => names.get(key) ?? key, [names]);
-  // The tooltip of a measure: its full name, which a cell may cut off, and what it measures.
-  const titles = useMemo(
-    () =>
-      new Map((catalog?.measures ?? []).map((m) => [m.key, m.description ? `${m.name}\n${m.description}` : m.name])),
-    [catalog],
-  );
-  const measureTitle = useCallback((key: string) => titles.get(key) ?? key, [titles]);
   // What a measure measures, for the tooltip of its name, which a cell no longer cuts off.
   const descriptions = useMemo(
     () => new Map((catalog?.measures ?? []).map((m) => [m.key, m.description || undefined])),
@@ -1012,14 +1006,13 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                   )}
                   <p className="flex-1 min-w-0">{linkNotice.text}</p>
                   {linkNotice.tone !== "busy" && (
-                    <button
-                      type="button"
+                    <IconButton
+                      size="sm"
+                      icon={X}
+                      name={t("factor.data.dismiss_aria")}
                       onClick={() => setLinkNotice(null)}
-                      aria-label={t("factor.data.dismiss_aria")}
-                      className="h-6 w-6 -my-0.5 grid place-items-center rounded text-muted hover:text-fg hover:bg-accent/[0.08] transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
+                      className="h-6 w-6 -my-0.5"
+                    />
                   )}
                 </div>
               )}
@@ -1027,18 +1020,17 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                 <div className="mb-4 rounded-lg bg-tile px-3.5 py-2.5 flex items-start gap-2.5 text-sm">
                   <Info className="h-4 w-4 text-muted shrink-0 mt-0.5" />
                   <p className="flex-1 min-w-0">{t("factor.data.gone")}</p>
-                  <button
-                    type="button"
+                  <IconButton
+                    size="sm"
+                    icon={X}
+                    name={t("factor.data.dismiss_aria")}
                     onClick={() => {
                       // The button goes with the notice; the form below takes the focus.
                       focusForm.current = true;
                       setGone(false);
                     }}
-                    aria-label={t("factor.data.dismiss_aria")}
-                    className="h-6 w-6 -my-0.5 grid place-items-center rounded text-muted hover:text-fg hover:bg-accent/[0.08] transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
+                    className="h-6 w-6 -my-0.5"
+                  />
                 </div>
               )}
             </div>
@@ -1237,7 +1229,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                   canRun={analysisCurrent}
                   onInterpret={runInterpretation}
                   measureName={measureName}
-                  measureTitle={measureTitle}
+                  measureDescription={measureDescription}
                 />
               ) : (
                 resultPlaceholder

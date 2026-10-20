@@ -62,7 +62,7 @@ export function StartHere({ request, onRequestHandled }: { request?: number; onR
   }, [request, onRequestHandled, remember]);
 
   return (
-    <section aria-labelledby={`${panelId}-title`} className="rounded-lg bg-accent/[0.05]">
+    <section aria-labelledby={`${panelId}-title`} className="rounded-lg bg-tile/50">
       <h3 id={`${panelId}-title`}>
         <button
           ref={toggleRef}
@@ -70,7 +70,7 @@ export function StartHere({ request, onRequestHandled }: { request?: number; onR
           onClick={toggle}
           aria-expanded={open}
           aria-controls={panelId}
-          className="w-full flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left transition hover:bg-accent/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="w-full flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left transition hover:bg-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           <Signpost className="h-4 w-4 text-accent-ink shrink-0" aria-hidden />
           <span className="flex-1 min-w-0">

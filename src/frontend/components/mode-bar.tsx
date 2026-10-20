@@ -7,6 +7,7 @@ import { Network, ScrollText, History, ListChecks } from "lucide-react";
 import { hasJobsPanel, useJobsDrawer } from "./jobs-drawer";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
+import { useTip } from "./ui/tip";
 
 type Mode = {
   href: string;
@@ -57,6 +58,7 @@ export function ModeBar() {
   );
 
   const showJobs = hasJobsPanel(pathname);
+  const jobsTip = useTip<HTMLButtonElement>({ more: t("mode_bar.jobs_title") });
 
   // On a phone the bar scrolls sideways; the tab of the open page is scrolled into view, so
   // /runs does not open with its tab hidden past the edge. Not scrollIntoView, which would
@@ -102,12 +104,12 @@ export function ModeBar() {
           <div className="ml-auto flex items-stretch">
             {showJobs && (
               <button
+                ref={jobsTip}
                 type="button"
                 onClick={toggle}
                 aria-expanded={open}
                 aria-controls="jobs-drawer"
                 className={toggleClass(open)}
-                title={t("mode_bar.jobs_title")}
               >
                 <History className={iconClass(open)} />
                 <div className="flex flex-col items-start leading-tight">
