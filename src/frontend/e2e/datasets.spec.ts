@@ -4,6 +4,7 @@ import {
   deleteSessionDatasets,
   expect,
   expectStep,
+  goToStep,
   openBundled,
   stepSection,
   test,
@@ -44,9 +45,11 @@ test("an uploaded CSV reopens from My datasets with its excluded measure", async
   });
   await data.getByRole("button", { name: text("factor.data.submit_csv") }).click();
   await expectStep(page, "suitability", "done");
+  // Loading the CSV opens the dataset step.
   await expect(stepSection(page, "dataset")).toContainText("80");
 
   // Excluding a measure runs the analysis again and keeps the setting with the dataset.
+  await goToStep(page, "suitability");
   const suitability = stepSection(page, "suitability");
   const exclude = suitability.getByRole("checkbox", { name: text("factor.suitability.exclude_aria", { measure: "m3" }) });
   const saved = page.waitForResponse(
@@ -58,11 +61,12 @@ test("an uploaded CSV reopens from My datasets with its excluded measure", async
 
   // Without the open dataset remembered, the data step offers the session's datasets.
   await page.evaluate(() => localStorage.removeItem("app.factor-dataset-model"));
-  await page.reload();
+  await page.goto("/");
   const mine = stepSection(page, "data").getByRole("radiogroup", { name: text("factor.data.source.mine") });
   await mine.getByRole("radio", { name: /measures\.csv/ }).check({ force: true });
   await stepSection(page, "data").getByRole("button", { name: text("factor.data.submit_open") }).click();
   await expectStep(page, "suitability", "done");
+  await goToStep(page, "suitability");
   await expect(
     stepSection(page, "suitability").getByRole("checkbox", { name: text("factor.suitability.exclude_aria", { measure: "m3" }) }),
   ).toBeChecked();
@@ -80,6 +84,7 @@ test("the PNML sample computes a model dataset without ProM", async ({ page }) =
   await expectStep(page, "dataset", "done", "en", COMPUTE_TIMEOUT);
   await expectStep(page, "loadings", "done");
   // 32 nets, one observation each.
+  await goToStep(page, "dataset");
   await expect(stepSection(page, "dataset")).toContainText("32");
 });
 
@@ -93,6 +98,7 @@ test("the log sample computes feeed measures without ProM", async ({ page }) => 
   await expectStep(page, "dataset", "done", "en", COMPUTE_TIMEOUT);
   await expectStep(page, "suitability", "done|warn");
   // One observation per log.
+  await goToStep(page, "dataset");
   await expect(stepSection(page, "dataset")).toContainText("pdc2025_02001100.xes");
 });
 
@@ -105,12 +111,14 @@ test("the log sample mined with the default miner gives a model dataset", { tag:
   await data.getByRole("button", { name: text("factor.data.submit_compute") }).click();
   await expectStep(page, "dataset", "done", "en", COMPUTE_TIMEOUT);
   // Four logs with the Inductive miner, one row each.
+  await goToStep(page, "dataset");
   await expect(stepSection(page, "dataset")).toContainText("Inductive miner");
 });
 
 test("a deleted dataset is gone from My datasets", async ({ page }) => {
   await page.goto("/");
   await openBundled(page, "Alpha miner");
+  await goToStep(page, "data");
   await stepSection(page, "data").getByRole("button", { name: text("factor.data.change") }).click();
   const mine = stepSection(page, "data").getByRole("radiogroup", { name: text("factor.data.source.mine") });
   const name = "Important Factors: Alpha miner";

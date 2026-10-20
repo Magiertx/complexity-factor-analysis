@@ -946,6 +946,37 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
 
         <div ref={stepArea} className="min-w-0 flex flex-col gap-4">
           <StepBar {...navProps} />
+          {/* What became of a link, above every step: a link opens the dataset step, not the data
+              step. Always rendered, so screen readers announce the notices that appear in it;
+              empty, it takes back the gap before it. */}
+          <div role="status" className="empty:-mt-4">
+            {linkNotice && (
+              <div
+                className={cn(
+                  "rounded-lg px-3.5 py-2.5 flex items-start gap-2.5 text-sm",
+                  linkNotice.tone === "error" ? "bg-danger/10" : "bg-surface",
+                )}
+              >
+                {linkNotice.tone === "busy" ? (
+                  <Loader2 className="h-4 w-4 text-accent-ink shrink-0 mt-0.5 animate-spin" />
+                ) : linkNotice.tone === "error" ? (
+                  <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
+                ) : (
+                  <Info className="h-4 w-4 text-muted shrink-0 mt-0.5" />
+                )}
+                <p className="flex-1 min-w-0">{linkNotice.text}</p>
+                {linkNotice.tone !== "busy" && (
+                  <IconButton
+                    size="sm"
+                    icon={X}
+                    name={t("factor.data.dismiss_aria")}
+                    onClick={() => setLinkNotice(null)}
+                    className="h-6 w-6 -my-0.5"
+                  />
+                )}
+          </div>
+          )}
+          </div>
           {exportError && (
             <p role="alert" className="flex items-start gap-1.5 text-xs text-danger-ink">
               <AlertCircle className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
@@ -988,34 +1019,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             description={t(`factor.step_desc.data_${kind}`)}
             footer={footer("data")}
           >
-            {/* Always rendered, so screen readers announce the notices that appear in it. */}
+            {/* Always rendered, so screen readers announce the notice that appears in it. */}
             <div role="status">
-              {linkNotice && (
-                <div
-                  className={cn(
-                    "mb-4 rounded-lg px-3.5 py-2.5 flex items-start gap-2.5 text-sm",
-                    linkNotice.tone === "error" ? "bg-danger/10" : "bg-tile",
-                  )}
-                >
-                  {linkNotice.tone === "busy" ? (
-                    <Loader2 className="h-4 w-4 text-accent-ink shrink-0 mt-0.5 animate-spin" />
-                  ) : linkNotice.tone === "error" ? (
-                    <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
-                  ) : (
-                    <Info className="h-4 w-4 text-muted shrink-0 mt-0.5" />
-                  )}
-                  <p className="flex-1 min-w-0">{linkNotice.text}</p>
-                  {linkNotice.tone !== "busy" && (
-                    <IconButton
-                      size="sm"
-                      icon={X}
-                      name={t("factor.data.dismiss_aria")}
-                      onClick={() => setLinkNotice(null)}
-                      className="h-6 w-6 -my-0.5"
-                    />
-                  )}
-                </div>
-              )}
               {gone && (
                 <div className="mb-4 rounded-lg bg-tile px-3.5 py-2.5 flex items-start gap-2.5 text-sm">
                   <Info className="h-4 w-4 text-muted shrink-0 mt-0.5" />

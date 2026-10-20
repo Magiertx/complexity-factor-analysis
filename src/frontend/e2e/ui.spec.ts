@@ -1,5 +1,14 @@
 import AxeBuilder from "@axe-core/playwright";
-import { deleteSessionDatasets, expect, expectStep, openBundled, stepSection, test, text } from "./fixtures";
+import type { Page } from "@playwright/test";
+import { deleteSessionDatasets, expect, expectStep, goToStep, openBundled, stepSection, test, text } from "./fixtures";
+
+/** The serious and critical problems axe finds on the page, one line each. */
+async function seriousProblems(page: Page): Promise<string[]> {
+  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+  return results.violations
+    .filter((v) => v.impact === "serious" || v.impact === "critical")
+    .map((v) => `${v.id}: ${v.help} (${v.nodes.map((n) => n.target.join(" ")).join(", ")})`);
+}
 
 test.describe("German", () => {
   test.use({ language: "de" });
@@ -10,6 +19,7 @@ test.describe("German", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(text("factor.model.title", {}, "de"));
     await openBundled(page, "Inductive miner", "de");
     await expectStep(page, "suitability", "done", "de");
+    await goToStep(page, "suitability", "de");
     const suitability = stepSection(page, "suitability");
     // KMO 0.7467 and chi-square 6822.44, as the German UI writes them.
     await expect(suitability).toContainText("0,75");
@@ -48,14 +58,41 @@ for (const scheme of ["light", "dark"] as const) {
       await expect(page.locator("html")).toHaveClass(scheme === "dark" ? /\bdark\b/ : /^(?!.*\bdark\b)/);
       // Wait until the page has loaded what it fetches, e.g. the catalog or the runs.
       await page.waitForLoadState("networkidle");
-      const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
-      const serious = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
-      expect(
-        serious.map((v) => `${v.id}: ${v.help} (${v.nodes.map((n) => n.target.join(" ")).join(", ")})`),
-      ).toEqual([]);
+      expect(await seriousProblems(page)).toEqual([]);
     });
   }
+
+  test(`axe finds no serious problem on any step of an open analysis (${scheme})`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.goto("/?bundled=comfy-paper-inductive-miner&preset=published");
+    await expectStep(page, "loadings", "done");
+    for (const step of ["data", "dataset", "suitability", "factors", "loadings", "interpretation"]) {
+      await goToStep(page, step);
+      await page.waitForLoadState("networkidle");
+      expect(await seriousProblems(page), step).toEqual([]);
+    }
+    // The other look of the loadings, and the download menu open.
+    await goToStep(page, "loadings");
+    await stepSection(page, "loadings").getByRole("button", { name: text("factor.loadings.look_dimensions") }).click();
+    await page.getByRole("button", { name: text("factor.toolbar.export") }).click();
+    expect(await seriousProblems(page), "dimensions and menu").toEqual([]);
+    await page.keyboard.press("Escape");
+    await deleteSessionDatasets(page);
+  });
 }
+
+test("axe finds no serious problem in the long lists of the log tab", async ({ page }) => {
+  await page.goto("/log?bundled=comfy-log-pdc-training-logs&preset=standard&step=suitability");
+  await expectStep(page, "loadings", "done");
+  const suitability = stepSection(page, "suitability");
+  await suitability.getByRole("button", { name: text("factor.measures.group_aria") }).click();
+  await page.getByRole("option", { name: text("factor.measures.grouping.group") }).click();
+  await expect(suitability.locator("tr.table-group").first()).toBeVisible();
+  expect(await seriousProblems(page), "suitability").toEqual([]);
+  await goToStep(page, "loadings");
+  expect(await seriousProblems(page), "loadings").toEqual([]);
+  await deleteSessionDatasets(page);
+});
 
 test("a single run without ProM fails with the coded error", { tag: "@no-prom" }, async ({ page }) => {
   test.slow();
