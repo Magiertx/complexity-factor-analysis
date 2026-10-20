@@ -8,8 +8,8 @@ import { formatNumber } from "@/lib/format";
 import { paperTablesText, settingsSourceText } from "@/lib/paper-notes";
 import { cn } from "@/lib/utils";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
+import { IconButton } from "@/components/ui/icon-button";
 import { Popover } from "@/components/ui/popover";
-import { CopyLink } from "./copy-link";
 
 /** The control each chip of the row leads to; see the ids in the steps. */
 export const SETTING_CONTROLS: Record<SettingChip["id"], string> = {
@@ -113,8 +113,6 @@ interface Props {
   onApply: (options: AnalysisOptions, which: "standard" | "published") => void;
   /** A chip was pressed: open the step of its control and focus the control. */
   onGoToSetting: (chip: SettingChip["id"]) => void;
-  /** The query of a link to this analysis; null for own data, which links cannot reach. */
-  linkQuery: string | null;
 }
 
 /**
@@ -137,7 +135,6 @@ export function SettingsRow({
   match,
   onApply,
   onGoToSetting,
-  linkQuery,
 }: Props) {
   const t = useT();
   const rowRef = useRef<HTMLElement>(null);
@@ -148,10 +145,8 @@ export function SettingsRow({
   const source = settingsSourceText(publishedSource, publishedScope, t);
   const isStandard = sameOptions(options, standard);
   const isPublished = !!published && sameOptions(options, published);
-  // Inactive buttons stay focusable (aria-disabled): the one just pressed would else drop the
-  // focus to the page, a Tab before the "Undo" of the toast.
-  const action =
-    "h-7 px-2 inline-flex items-center gap-1.5 rounded-md text-xs font-medium whitespace-nowrap transition hover:bg-accent/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent aria-disabled:opacity-40 aria-disabled:cursor-default aria-disabled:hover:bg-transparent";
+  // Inactive buttons stay focusable (aria-disabled, with the reason in their tooltip): the one
+  // just pressed would else drop the focus to the page, a Tab before the "Undo" of the toast.
 
   return (
     <section
@@ -193,38 +188,24 @@ export function SettingsRow({
         <span className="flex items-center gap-2 shrink-0 lg:ml-auto">
           {match && <MatchChip match={match} settingsSource={source} bundledId={bundledId} />}
           <span className="flex items-center gap-0.5">
-            <button
-              type="button"
-              className={action}
-              aria-disabled={isStandard || undefined}
-              onClick={() => !isStandard && onApply(standard, "standard")}
-              title={t("factor.settings.reset_title")}
-              aria-label={t("factor.settings.reset")}
-            >
-              <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-              <span aria-hidden className="hidden sm:inline">
-                {t("factor.settings.reset_short")}
-              </span>
-            </button>
-            {published && (
-              <button
-                type="button"
-                className={action}
-                aria-disabled={isPublished || undefined}
-                onClick={() => !isPublished && onApply(published, "published")}
-                title={source ? t("factor.settings.paper_title", { source }) : t("factor.settings.paper")}
-                aria-label={t("factor.settings.paper")}
-              >
-                <BookOpen className="h-3.5 w-3.5" aria-hidden />
-                <span aria-hidden className="hidden sm:inline">
-                  {t("factor.settings.paper_short")}
-                </span>
-              </button>
-            )}
-            <CopyLink
-              query={linkQuery}
-              className={action}
+            <IconButton
+              size="sm"
+              icon={RotateCcw}
+              name={t("factor.settings.reset")}
+              more={t("factor.settings.reset_title")}
+              reason={isStandard ? t("factor.settings.reset_none") : null}
+              onClick={() => onApply(standard, "standard")}
             />
+            {published && (
+              <IconButton
+                size="sm"
+                icon={BookOpen}
+                name={t("factor.settings.paper")}
+                more={source ? t("factor.settings.paper_title", { source }) : undefined}
+                reason={isPublished ? t("factor.settings.paper_none") : null}
+                onClick={() => onApply(published, "published")}
+              />
+            )}
           </span>
         </span>
       </div>

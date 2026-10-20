@@ -10,7 +10,7 @@ import {
   ExternalLink,
   FileSpreadsheet,
   FileText,
-  History,
+  FolderOpen,
   Loader2,
   Network,
   Package,
@@ -77,6 +77,9 @@ interface Props {
   onDelete: (id: string) => Promise<boolean>;
   /** Shown when a dataset already exists, to return to it without building a new one. */
   onCancel?: () => void;
+  /** Set by the toolbar: show My datasets with the focus on its list; `onRequestHandled` says it did. */
+  showMine?: number;
+  onRequestHandled?: () => void;
 }
 
 export function DataForm({
@@ -90,6 +93,8 @@ export function DataForm({
   onOpen,
   onDelete,
   onCancel,
+  showMine,
+  onRequestHandled,
 }: Props) {
   const t = useT();
   const sources = catalog.sources.filter((s) => kind === "model" || s !== "pnml");
@@ -110,6 +115,16 @@ export function DataForm({
   const [preset, setPreset] = useState<OpenPreset>("standard");
   // Chosen sample per source; a sample replaces the uploaded files.
   const [sampleIds, setSampleIds] = useState<Partial<Record<DatasetSource, string>>>({});
+
+  const [focusMine, setFocusMine] = useState(false);
+  useEffect(() => {
+    if (!showMine) return;
+    if (datasets.length > 0) {
+      setMineChosen(true);
+      setFocusMine(true);
+    }
+    onRequestHandled?.();
+  }, [showMine, datasets.length, onRequestHandled]);
 
   const files = source === "logs" ? logFiles : pnmlFiles;
   const setFiles = source === "logs" ? setLogFiles : setPnmlFiles;
@@ -234,7 +249,7 @@ export function DataForm({
                     value: "mine" as const,
                     label: (
                       <>
-                        <History className="h-3.5 w-3.5" />
+                        <FolderOpen className="h-3.5 w-3.5" />
                         <span>{t("factor.data.source.mine")}</span>
                       </>
                     ),
@@ -280,6 +295,8 @@ export function DataForm({
           onOpen={onOpen}
           onDelete={onDelete}
           onCancel={onCancel}
+          focus={focusMine}
+          onFocused={() => setFocusMine(false)}
         />
       </div>
     );
@@ -676,6 +693,8 @@ function DatasetPicker({
   onOpen,
   onDelete,
   onCancel,
+  focus,
+  onFocused,
 }: {
   kind: FactorKind;
   catalog: FactorCatalog;
@@ -684,6 +703,9 @@ function DatasetPicker({
   onOpen: (id: string) => void;
   onDelete: (id: string) => Promise<boolean>;
   onCancel?: () => void;
+  /** Give the chosen tile the focus, e.g. when the toolbar asked for My datasets. */
+  focus?: boolean;
+  onFocused?: () => void;
 }) {
   const t = useT();
   // The newest dataset that is not open already; opening the open one only closes the form.
@@ -706,6 +728,14 @@ function DatasetPicker({
     refocus.current = true;
     if (!(await onDelete(id))) refocus.current = false;
   };
+
+  useEffect(() => {
+    if (!focus) return;
+    const input = listRef.current?.querySelector<HTMLInputElement>("input:checked");
+    input?.focus({ preventScroll: true });
+    listRef.current?.scrollIntoView({ block: "nearest" });
+    onFocused?.();
+  }, [focus, onFocused]);
 
   return (
     <div className="space-y-5">

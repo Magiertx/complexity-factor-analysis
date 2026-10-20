@@ -1,7 +1,7 @@
 "use client";
 
-import { AlertCircle, FileSpreadsheet } from "lucide-react";
-import { datasetDownloadUrl, type FactorDataset } from "@/lib/api";
+import { AlertCircle } from "lucide-react";
+import type { FactorDataset } from "@/lib/api";
 import { PREVIEW_ROWS, countText } from "@/lib/factor-analysis";
 import { NO_VALUE, formatNumber } from "@/lib/format";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
@@ -83,18 +83,7 @@ export function DatasetView({
       )}
 
       <div className="space-y-2">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <h3 className="text-sm font-semibold">{t("factor.dataset.preview_heading")}</h3>
-          {/* A link, so the browser downloads it directly; looks like the download buttons of step 5. */}
-          <a
-            href={datasetDownloadUrl(dataset.id)}
-            download
-            className="h-8 px-3 inline-flex items-center justify-center gap-2 rounded-md bg-tile hover:bg-accent/[0.08] text-fg text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-          >
-            <FileSpreadsheet className="h-3.5 w-3.5" />
-            {t("factor.dataset.download_csv")}
-          </a>
-        </div>
+        <h3 className="text-sm font-semibold">{t("factor.dataset.preview_heading")}</h3>
         {/* Focusable, so the keyboard can scroll a preview wider than the page. */}
         <div
           tabIndex={0}

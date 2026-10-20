@@ -722,7 +722,6 @@
       "dropped_rows_note_plural": "{n} Zeilen mit fehlenden Werten wurden entfernt.",
       "preview_heading": "Vorschau",
       "observation": "Beobachtung",
-      "download_csv": "Datensatz herunterladen (CSV)",
       "preview_note": "Die ersten {n} von {total} Beobachtungen.",
       "detail": {
         "non_numeric": "enthält den Wert „{value}“",
@@ -840,10 +839,6 @@
       "order_label": "Reihenfolge",
       "order_factor": "Nach Faktor",
       "order_original": "Wie im Datensatz",
-      "export_csv": "Ladungen herunterladen (CSV)",
-      "export_latex": "Ladungen herunterladen (LaTeX)",
-      "export_zip": "Analyse herunterladen (ZIP)",
-      "export_zip_title": "Der Datensatz, alle Ergebnisse, die Ladungen als CSV und LaTeX, eine gespeicherte Interpretation, falls vorhanden, und ein Manifest, um die Analyse zu reproduzieren",
       "export_failed": "Der Download ist fehlgeschlagen.",
       "table_heading": "Ladungen",
       "caption": "Faktorladungen, {n} Faktor, Rotation {rotation}",
@@ -1020,13 +1015,13 @@
       "chip_changed_title": "Weicht vom Standard des Tools ab; zu dieser Einstellung",
       "changed": "weicht vom Standard ab",
       "reset": "Auf Standard zurücksetzen",
-      "reset_short": "Standard",
       "reset_title": "Zurück zu den Standardeinstellungen des Tools",
       "paper": "Paper-Einstellungen verwenden",
-      "paper_short": "Paper-Einstellungen",
       "paper_title": "Die Einstellungen aus {source}",
       "reset_done": "Standardeinstellungen wiederhergestellt.",
-      "paper_done": "Paper-Einstellungen übernommen."
+      "paper_done": "Paper-Einstellungen übernommen.",
+      "reset_none": "Das sind bereits die Standardeinstellungen.",
+      "paper_none": "Die Paper-Einstellungen sind bereits übernommen."
     },
     "match": {
       "chip_match": "Zahlen = ComFy-Report",
@@ -1089,10 +1084,8 @@
     },
     "link": {
       "copy": "Link kopieren",
-      "copy_short": "Link",
       "copy_title": "Einen Link kopieren, der diesen Datensatz mit diesen Einstellungen öffnet",
       "copied": "Link kopiert",
-      "copied_short": "Kopiert",
       "own_data": "Links gibt es nur für mitgelieferte Datensätze; eigene Daten bleiben in deiner Sitzung.",
       "fallback_title": "Link zu dieser Analyse",
       "fallback_hint": "Der Browser hat das Kopieren nicht erlaubt; kopiere den Link aus dem Feld.",
@@ -1145,6 +1138,22 @@
         "computing": "Die Maße werden noch berechnet.",
         "failed": "Der Datensatz ließ sich nicht erstellen. Wähle im Schritt Daten andere Daten."
       }
+    },
+    "toolbar": {
+      "aria": "Werkzeuge",
+      "export": "Herunterladen",
+      "export_more": "Die Analyse als ZIP, die Ladungen als CSV oder LaTeX oder den bereinigten Datensatz als CSV.",
+      "export_zip": "Analyse (ZIP)",
+      "export_zip_hint": "Datensatz, Ergebnisse, Ladungen und ein Manifest zum Nachrechnen der Analyse",
+      "export_loadings_csv": "Ladungen (CSV)",
+      "export_loadings_latex": "Ladungen (LaTeX)",
+      "export_dataset": "Datensatz (CSV)",
+      "export_dataset_hint": "Die bereinigte Matrix",
+      "wait_analysis": "Die Analyse läuft noch.",
+      "wait_update": "Die Analyse wird gerade aktualisiert.",
+      "mine_more": "Datensätze dieser Sitzung wieder öffnen oder löschen.",
+      "mine_none": "In dieser Sitzung gibt es noch keine Datensätze.",
+      "more": "Mehr"
     }
   },
   "inspect": {

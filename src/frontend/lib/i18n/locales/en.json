@@ -722,7 +722,6 @@
       "dropped_rows_note_plural": "{n} rows with missing values were dropped.",
       "preview_heading": "Preview",
       "observation": "Observation",
-      "download_csv": "Download dataset (CSV)",
       "preview_note": "First {n} of {total} observations.",
       "detail": {
         "non_numeric": "contains the value “{value}”",
@@ -840,10 +839,6 @@
       "order_label": "Order",
       "order_factor": "By factor",
       "order_original": "As in dataset",
-      "export_csv": "Download loadings (CSV)",
-      "export_latex": "Download loadings (LaTeX)",
-      "export_zip": "Download analysis (ZIP)",
-      "export_zip_title": "The dataset, all results, the loadings as CSV and LaTeX, a stored interpretation if there is one, and a manifest to reproduce the analysis",
       "export_failed": "The download failed.",
       "table_heading": "Loadings",
       "caption": "Factor loadings, {n} factor, rotation {rotation}",
@@ -1020,13 +1015,13 @@
       "chip_changed_title": "Differs from the tool standard; go to this setting",
       "changed": "differs from the standard",
       "reset": "Reset to standard",
-      "reset_short": "Standard",
       "reset_title": "Back to the standard settings of the tool",
       "paper": "Use paper settings",
-      "paper_short": "Paper settings",
       "paper_title": "The settings of {source}",
       "reset_done": "Standard settings restored.",
-      "paper_done": "Paper settings applied."
+      "paper_done": "Paper settings applied.",
+      "reset_none": "These are the standard settings already.",
+      "paper_none": "The paper settings are applied already."
     },
     "match": {
       "chip_match": "Numbers = ComFy report",
@@ -1089,10 +1084,8 @@
     },
     "link": {
       "copy": "Copy link",
-      "copy_short": "Link",
       "copy_title": "Copy a link that opens this dataset with these settings",
       "copied": "Link copied",
-      "copied_short": "Copied",
       "own_data": "Links work for bundled datasets only; your own data stays in your session.",
       "fallback_title": "Link to this analysis",
       "fallback_hint": "The browser did not allow copying; copy the link from the field.",
@@ -1145,6 +1138,22 @@
         "computing": "The measures are still being computed.",
         "failed": "The dataset could not be built. Choose other data in the data step."
       }
+    },
+    "toolbar": {
+      "aria": "Tools",
+      "export": "Download",
+      "export_more": "The analysis as ZIP, the loadings as CSV or LaTeX, or the cleaned dataset as CSV.",
+      "export_zip": "Analysis (ZIP)",
+      "export_zip_hint": "Dataset, results, loadings and a manifest to reproduce the analysis",
+      "export_loadings_csv": "Loadings (CSV)",
+      "export_loadings_latex": "Loadings (LaTeX)",
+      "export_dataset": "Dataset (CSV)",
+      "export_dataset_hint": "The cleaned matrix",
+      "wait_analysis": "The analysis is still running.",
+      "wait_update": "The analysis is being updated.",
+      "mine_more": "Reopen or delete the datasets of this session.",
+      "mine_none": "No datasets in this session yet.",
+      "more": "More"
     }
   },
   "inspect": {

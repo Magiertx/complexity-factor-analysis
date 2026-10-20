@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, type ComponentType, type ButtonHTMLAttributes, type Ref } from "react";
+import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { mergeRefs, useTip } from "./tip";
@@ -73,6 +74,36 @@ export function IconButton({
         <Icon className={size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"} aria-hidden />
       )}
     </button>
+  );
+}
+
+/** A link that shows only its icon, named by its tooltip, e.g. to another page of the app. */
+export function IconLink({
+  icon: Icon,
+  name,
+  more,
+  href,
+  className,
+}: {
+  icon: IconButtonProps["icon"];
+  name: string;
+  more?: string;
+  href: string;
+  className?: string;
+}) {
+  const tip = useTip<HTMLAnchorElement>({ name, more });
+  return (
+    <Link
+      ref={tip}
+      href={href}
+      aria-label={name}
+      className={cn(
+        "shrink-0 h-8 w-8 grid place-items-center rounded-md text-muted hover:text-fg hover:bg-tile transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+        className,
+      )}
+    >
+      <Icon className="h-4 w-4" aria-hidden />
+    </Link>
   );
 }
 

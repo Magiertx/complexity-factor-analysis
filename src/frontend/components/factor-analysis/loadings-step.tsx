@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileArchive, FileCode2, FileSpreadsheet, Info, Loader2 } from "lucide-react";
+import { Info } from "lucide-react";
 import { ASSIGNMENT_RULES, type AssignmentRule, type FactorAnalysis } from "@/lib/api";
 import {
   ORTHOGONAL,
@@ -19,13 +19,11 @@ import {
   signInk,
   unassignedMeasures,
   type AnalysisOptions,
-  type ExportFormat,
   type UnassignedMeasure,
 } from "@/lib/factor-analysis";
 import { formatNumber, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
-import { Button } from "@/components/ui/button";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { Segmented } from "@/components/ui/segmented";
 import { FieldLabel, HelpLabel, ThresholdField } from "./step-section";
@@ -37,10 +35,6 @@ interface Props {
   measureName: (key: string) => string;
   /** Name and description of a measure, for its tooltip. */
   measureTitle: (key: string) => string;
-  onExport: (format: ExportFormat) => void;
-  exporting: ExportFormat | null;
-  /** The analysis on screen matches the settings, so the ZIP holds what is shown. */
-  zipReady: boolean;
   /** Where the paper's dimension tables differ from the chosen rule, for a bundled dataset. */
   assignmentNote?: string | null;
 }
@@ -54,9 +48,6 @@ export function LoadingsView({
   onOptions,
   measureName,
   measureTitle,
-  onExport,
-  exporting,
-  zipReady,
   assignmentNote,
 }: Props) {
   const t = useT();
@@ -152,26 +143,6 @@ export function LoadingsView({
               ]}
             />
           </div>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={() => onExport("csv")} disabled={exporting !== null}>
-            {exporting === "csv" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileSpreadsheet className="h-3.5 w-3.5" />}
-            {t("factor.loadings.export_csv")}
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => onExport("latex")} disabled={exporting !== null}>
-            {exporting === "latex" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileCode2 className="h-3.5 w-3.5" />}
-            {t("factor.loadings.export_latex")}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onExport("zip")}
-            disabled={exporting !== null || !zipReady}
-            title={t("factor.loadings.export_zip_title")}
-          >
-            {exporting === "zip" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileArchive className="h-3.5 w-3.5" />}
-            {t("factor.loadings.export_zip")}
-          </Button>
         </div>
       </div>
 

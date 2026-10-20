@@ -1,9 +1,8 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { AlertCircle, HelpCircle, Info, Loader2, Microscope, RotateCcw, X } from "lucide-react";
+import { AlertCircle, Info, Loader2, RotateCcw, X } from "lucide-react";
 import { analysisLinkQuery, parseAnalysisLink } from "@/lib/analysis-link";
 import {
   HttpError,
@@ -11,6 +10,7 @@ import {
   isSuperseded,
   analyzeDataset,
   createDataset,
+  datasetDownloadUrl,
   deleteDataset,
   downloadAnalysisZip,
   exportLoadings,
@@ -63,6 +63,7 @@ import { LoadingsView } from "./loadings-step";
 import { InterpretationView } from "./interpretation-step";
 import { FactorTour } from "./factor-tour";
 import { SETTING_CONTROLS, SettingsRow, focusControl } from "./settings-row";
+import { FactorToolbar, type ExportState } from "./toolbar";
 import { StartHere } from "./start-here";
 import { EmptyStep, StepSection, stepAnchor, type StepId, type StepState } from "./step-section";
 import { StepBar, StepFooter, StepNavBar, StepRail, useStepNavigation, type StepLocks } from "./step-nav";
@@ -846,6 +847,15 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     else go(step, { focus: { control } });
   };
 
+  // Start here and My datasets of the toolbar: the data step with its form open there.
+  const [formRequest, setFormRequest] = useState<{ kind: "start" | "mine"; n: number } | null>(null);
+  const formRequestHandled = useCallback(() => setFormRequest(null), []);
+  const openForm = (which: "start" | "mine") => {
+    go("data", { focus: null });
+    if (dataset && !formOpen) setChoosing(true);
+    setFormRequest({ kind: which, n: Date.now() });
+  };
+
   // The tour opens the step of each stop, without an entry in the history for each.
   const tourStep = useCallback((step: StepId) => go(step, { replace: true, focus: null }), [go]);
 
@@ -888,6 +898,17 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   );
   const navProps = { current, states, locks, stateLabels, onGo: go };
 
+  const loadingsReason = !ready ? lockReason : !analysis ? t("factor.toolbar.wait_analysis") : null;
+  const exports: ExportState = {
+    datasetReason: ready ? null : lockReason,
+    loadingsReason,
+    // The ZIP holds what is on screen, so not while the analysis catches up with a change.
+    zipReason: loadingsReason ?? (analysisCurrent ? null : t("factor.toolbar.wait_update")),
+    datasetHref: ready && datasetId ? datasetDownloadUrl(datasetId) : null,
+    exporting,
+    onExport: runExport,
+  };
+
   return (
     <div className="space-y-6">
       <OnboardingTour open={onboarding.open} onClose={onboarding.close} />
@@ -900,22 +921,15 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         title={t(`factor.${kind}.title`)}
         subtitle={t(`factor.${kind}.subtitle`)}
         actions={
-          <>
-            {kind === "model" && (
-              <Link
-                href="/inspect"
-                title={t("factor.model.inspect_title")}
-                className="h-8 px-3 inline-flex items-center gap-1.5 rounded-md bg-tile hover:bg-accent/[0.08] transition text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                <Microscope className="h-3.5 w-3.5" />
-                {t("factor.model.inspect_link")}
-              </Link>
-            )}
-            <Button variant="outline" size="sm" onClick={() => setTourOpen(true)} title={t("factor.tour_title")}>
-              <HelpCircle className="h-3.5 w-3.5" />
-              {t("factor.tour_button")}
-            </Button>
-          </>
+          <FactorToolbar
+            kind={kind}
+            linkQuery={linkQuery && current !== "data" ? `${linkQuery}&step=${current}` : linkQuery}
+            exports={exports}
+            onStartHere={() => openForm("start")}
+            onMyDatasets={() => openForm("mine")}
+            myDatasetsReason={datasets && datasets.length > 0 ? null : t("factor.toolbar.mine_none")}
+            onTour={() => setTourOpen(true)}
+          />
         }
       />
 
@@ -924,6 +938,12 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
 
         <div ref={stepArea} className="min-w-0 flex flex-col gap-4">
           <StepBar {...navProps} />
+          {exportError && (
+            <p role="alert" className="flex items-start gap-1.5 text-xs text-danger-ink">
+              <AlertCircle className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
+              {exportError}
+            </p>
+          )}
           {/* At the top of every step once a dataset is ready, and in view while a step scrolls. */}
           {ready && dataset && (
             <SettingsRow
@@ -938,7 +958,6 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               match={match}
               onApply={applyOptions}
               onGoToSetting={goToSetting}
-              linkQuery={linkQuery}
             />
           )}
           {/* Shown at the bottom of the window, but next to the row in the tab order, so the
@@ -1027,7 +1046,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               </div>
             ) : formOpen ? (
               <div className="space-y-5">
-                <StartHere />
+                <StartHere
+                  request={formRequest?.kind === "start" ? formRequest.n : undefined}
+                  onRequestHandled={formRequestHandled}
+                />
                 <DataForm
                   kind={kind}
                   catalog={catalog}
@@ -1039,6 +1061,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                   onOpen={openChosen}
                   onDelete={removeDataset}
                   onCancel={dataset && choosing ? cancelChoice : undefined}
+                  showMine={formRequest?.kind === "mine" ? formRequest.n : undefined}
+                  onRequestHandled={formRequestHandled}
                 />
               </div>
             ) : dataset ? (
@@ -1160,25 +1184,15 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               {!ready ? (
                 lockedHint
               ) : analysis ? (
-                <div className="space-y-3">
-                  {exportError && (
-                    <p role="alert" className="text-xs text-danger-ink">
-                      {exportError}
-                    </p>
-                  )}
-                  <div className={stale}>
-                    <LoadingsView
-                      analysis={analysis}
-                      options={options}
-                      onOptions={updateOptions}
-                      measureName={measureName}
-                      measureTitle={measureTitle}
-                      onExport={runExport}
-                      exporting={exporting}
-                      zipReady={analysisCurrent}
-                      assignmentNote={assignmentNote}
-                    />
-                  </div>
+                <div className={stale}>
+                  <LoadingsView
+                    analysis={analysis}
+                    options={options}
+                    onOptions={updateOptions}
+                    measureName={measureName}
+                    measureTitle={measureTitle}
+                    assignmentNote={assignmentNote}
+                  />
                 </div>
               ) : (
                 resultPlaceholder
