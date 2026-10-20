@@ -175,6 +175,15 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     },
     [goTo],
   );
+  // The browser's back and forward count as navigation by hand as well.
+  const { fromUrl } = nav;
+  const followUrl = useCallback(
+    (step: StepId, initial: boolean) => {
+      if (!initial) setAdvance(null);
+      fromUrl(step, initial);
+    },
+    [fromUrl],
+  );
   // The options of the analysis on screen; a stored interpretation is looked up for them.
   const [analyzedOptions, setAnalyzedOptions] = useState<AnalysisOptions | null>(null);
 
@@ -922,7 +931,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       <OnboardingTour open={onboarding.open} onClose={onboarding.close} />
       <FactorTour kind={kind} run={tourOpen} onClose={() => setTourOpen(false)} onStep={tourStep} />
       <Suspense fallback={null}>
-        <UrlReader onDataset={openLinked} onBundled={openBundledLink} onStep={nav.fromUrl} />
+        <UrlReader onDataset={openLinked} onBundled={openBundledLink} onStep={followUrl} />
       </Suspense>
 
       <PageHeader
