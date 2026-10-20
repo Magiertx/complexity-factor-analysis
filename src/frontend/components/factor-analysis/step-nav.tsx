@@ -111,6 +111,7 @@ function StepLink({
   lock,
   stateLabel,
   onGo,
+  iconOnly,
   className,
   children,
 }: {
@@ -120,12 +121,15 @@ function StepLink({
   lock: string | null;
   stateLabel: string;
   onGo: (step: StepId) => void;
+  /** Shows only its sign and number, so its tooltip names it. */
+  iconOnly?: boolean;
   className: string;
   children: React.ReactNode;
 }) {
   const t = useT();
   const pathname = usePathname();
-  const tip = useTip<HTMLAnchorElement>(lock ? { name: t(`factor.steps.${id}`), reason: lock } : null);
+  const name = t(`factor.steps.${id}`);
+  const tip = useTip<HTMLAnchorElement>(lock ? { name, reason: lock } : iconOnly ? { name } : null);
   return (
     <a
       ref={tip}
@@ -235,6 +239,7 @@ export function StepBar({ current, states, locks, stateLabels, onGo }: NavProps)
                 lock={lock}
                 stateLabel={stateLabels[id] ?? t(`factor.state.${state}`)}
                 onGo={onGo}
+                iconOnly={!here}
                 className={cn(
                   "h-11 flex items-center rounded-md transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
                   here ? "w-full gap-2 px-2.5 bg-accent/[0.08]" : "w-9 flex-col justify-center gap-0.5",
