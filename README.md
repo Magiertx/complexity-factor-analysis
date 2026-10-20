@@ -15,14 +15,17 @@ Schalk do it, but interactively in the browser.
   density, control-flow complexity, separability, ...); *Log complexity* on the event-log
   measures of [feeed](https://github.com/andreamalhera/feeed), grouped as in ComFy for log
   measures. Both walk through the same five steps: data, dataset, suitability, factors,
-  loadings, followed by an optional interpretation.
+  loadings, followed by an optional interpretation. One step is on screen at a time, with its
+  own address (`?step=loadings`), a step list that shows what each step found, and Back and Next;
+  a toolbar of icons holds Start here, My datasets, the link, the downloads and the tour.
 - **Data from anywhere.** Bundled datasets (the scores of the ComFy paper for seven miners,
   and the measures of 2112 Process Discovery Contest logs), an own CSV, up to 50 event logs
   (`.xes`, `.xes.gz`) that are mined with any of ComFy's nine ProM miners, or up to 200 PNML
   models. Sample logs and nets are bundled, so the demo works without own files and offline.
 - **Suitability first.** Data cleaning with reasons, Bartlett's test of sphericity (the
   numerically stable variant), KMO with ComFy's iterative MSA filter, and a per-measure MSA
-  table with manual exclusion.
+  list with manual exclusion that shows the measures worth a look first and can be searched,
+  sorted and grouped by feature group.
 - **Factors and loadings.** Scree plot with the Kaiser line, a parallel analysis with a fixed
   seed and the cumulative share of the eigenvalues; tiles for the factor count of each criterion
   (Kaiser, parallel analysis, and the paper's count chosen a priori, or the ComFy report's for
@@ -30,8 +33,9 @@ Schalk do it, but interactively in the browser.
   a loading heatmap with communalities and explained variance; factor groups by one of three
   assignment rules: the largest loading as in ComFy's report (default), multiple membership as in
   Important Factors (Tab. 6-16) or Hair et al. (Tab. 17), with cross-loadings reported under
-  each and a note where a table of the paper differs from the rule it states. A settings row above steps 3 to 5 sums up every choice and
-  tints those that differ from the standard. Every change re-runs the analysis; a newer change
+  each and a note where a table of the paper differs from the rule it states. The loadings show as
+  a matrix or as one card per dimension. A settings row above every step sums up every choice and
+  marks those that differ from the standard. Every change re-runs the analysis; a newer change
   replaces the analysis still running for the one before.
 - **Same numbers as upstream.** On the bundled paper scores of all seven miners the analysis
   equals ComFy's own reports to the four decimals they print; tests check every published
@@ -41,7 +45,8 @@ Schalk do it, but interactively in the browser.
   standard or with the paper's settings, and with the paper's settings every analysis checks
   itself against the ComFy report: a chip says whether the numbers are equal, what was compared
   and how the paper's own tables relate to it. "Start here" on the data step opens such an
-  analysis directly, and "Copy link" shares an analysis of any bundled dataset with its settings.
+  analysis directly, and "Copy link" shares an analysis of any bundled dataset with its settings
+  and the step on screen.
 - **Come back to a dataset.** The datasets of a session are listed on the data step, reopen
   with the parameters of their last analysis and can be deleted one by one or all at once;
   deleting a dataset job in the run history deletes its dataset too.

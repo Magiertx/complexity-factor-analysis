@@ -379,7 +379,18 @@ under `/jobs` and `/progress`.
 ## Frontend flow
 
 The two main tabs, **Model complexity** (`/`) and **Log complexity** (`/log`), are the same
-five-step view (`components/factor-analysis/`) for the two kinds:
+five-step view (`components/factor-analysis/`) for the two kinds. One step is on screen at a
+time (`step-nav.tsx`): its address is `?step=<id>` (none for the data step), written with
+`history.pushState`, so the browser's back and forward move between steps and an old anchor
+`#fa-step-<id>` opens its step. The step rail of a wide screen and the row of steps on a phone
+navigate; a step whose dataset is not ready is listed but locked, with the reason in its tooltip.
+Back and Next end each step (fixed at the bottom on a phone). "Use dataset" and a link without a
+step open the dataset step once the dataset is ready, and the focus moves to the heading of
+every step that is opened. The settings row stays at the top of the steps, and a chip opens the
+step of its control. A toolbar in the page header (`toolbar.tsx`) holds Start here, My datasets,
+the copy link (with the step), one download menu and the tour. Every icon-only control is named
+by the two-stage tooltip (`components/ui/tip.tsx`, timing in `lib/tip.ts`), and every table uses
+one style (`components/ui/table.tsx`, `.data-table` in `globals.css`).
 
 1. **Data**: the datasets of the session (`GET /factor-analysis/datasets?kind=...`) to reopen
    or delete, and the sources of the catalog (`GET /factor-analysis/catalog?kind=...`):
@@ -388,12 +399,15 @@ five-step view (`components/factor-analysis/`) for the two kinds:
    calls `POST /factor-analysis/datasets`; a job is polled through `GET /datasets/{id}` and can
    be cancelled with the abort endpoint.
 2. **Dataset**: size, dropped measures with reasons, a preview, the CSV download.
-3. **Suitability**: Bartlett and KMO, the MSA filter and a per-measure MSA table with manual
-   exclusion.
+3. **Suitability**: Bartlett and KMO, the MSA filter and a per-measure MSA list with manual
+   exclusion; notable measures (removed, linearly dependent, below the threshold) come first,
+   and a long list can be searched, sorted and grouped by feature group (`lib/measure-list.ts`),
+   which changes the display only, never the column order or the excluded measures.
 4. **Factors**: hand-written SVG scree plot, factor count and rotation.
-5. **Loadings**: heatmap table, communalities, variance, factor groups, CSV/LaTeX export and
-   the whole analysis as a ZIP (`POST /datasets/{id}/export/zip`, with the options and the
-   language on screen).
+5. **Loadings**: the assignment rule and thresholds, then a matrix (loadings, communalities,
+   variance) or the dimensions (factor groups). The downloads of the toolbar give the loadings as
+   CSV/LaTeX, the dataset as CSV and the whole analysis as a ZIP
+   (`POST /datasets/{id}/export/zip`, with the options and the language on screen).
 
 Every parameter change re-runs `POST /datasets/{id}/analyze`, debounced by 300 ms. The options
 of each new analysis are saved with the dataset (`PUT /datasets/{id}/options`, debounced, fire
