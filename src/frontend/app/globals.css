@@ -110,6 +110,143 @@
   }
 }
 
+@layer components {
+  /* The one tooltip (components/ui/tip.tsx). Stage 1 is the name with a key cap and, for a blocked
+     element, the reason; stage 2 unfolds the explanation in the same box, downwards, while the name
+     stays where it is. While stage 2 is on its way a hairline under the name fills (--tip-wait).
+     The script writes the place; the box never covers its element. A bare name lets the pointer
+     through; a box with something to read can be entered. */
+  .tip {
+    position: fixed;
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+    max-width: min(22rem, calc(100vw - 16px));
+    padding: 6px 10px 7px;
+    border-radius: 6px;
+    background: rgb(var(--surface));
+    color: rgb(var(--fg));
+    box-shadow: 0 8px 24px -6px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(var(--border) / 0.8);
+    font-size: 12px;
+    line-height: 1.45;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-2px);
+    transition: opacity 120ms ease, transform 120ms ease;
+  }
+  .tip.is-open {
+    opacity: 1;
+    transform: none;
+  }
+  .tip.is-open.tip--enterable {
+    pointer-events: auto;
+  }
+  .tip__name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+  }
+  .tip__key {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: rgb(var(--muted));
+    background: rgb(var(--tile));
+  }
+  .tip__reason {
+    color: rgb(var(--warn-ink));
+    font-weight: 500;
+  }
+  /* Folded, the explanation does not count for the width, so stage 1 is a small box around the
+     name; unfolded, the box takes the width of its sentence. --measure is the unfolded look
+     without the ease, for the script to measure the room stage 2 will need. */
+  .tip__more {
+    display: grid;
+    grid-template-rows: 0fr;
+    contain: inline-size;
+    transition: grid-template-rows 160ms ease;
+  }
+  .tip__more > span {
+    overflow: hidden;
+    min-height: 0;
+    color: rgb(var(--fg) / 0.8);
+  }
+  .tip--stage2 .tip__more,
+  .tip--measure .tip__more {
+    grid-template-rows: 1fr;
+    contain: none;
+  }
+  .tip--stage2 .tip__more > span,
+  .tip--measure .tip__more > span {
+    padding-top: 3px;
+  }
+  .tip--measure .tip__more {
+    transition: none;
+  }
+  .tip--only-more .tip__more > span {
+    padding-top: 0;
+  }
+  .tip__wait {
+    display: none;
+    height: 2px;
+    margin: 5px -10px -7px;
+    border-radius: 0 0 6px 6px;
+    background: rgb(var(--accent) / 0.45);
+    transform-origin: left center;
+    transform: scaleX(0);
+  }
+  .tip--waiting .tip__wait {
+    display: block;
+    animation: tip-wait var(--tip-wait, 1300ms) linear forwards;
+  }
+  @keyframes tip-wait {
+    to {
+      transform: scaleX(1);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tip,
+    .tip__more {
+      transition: none;
+    }
+    .tip {
+      transform: none;
+    }
+    /* Still says that more is coming, without moving. */
+    .tip--waiting .tip__wait {
+      animation: none;
+      transform: none;
+      opacity: 0.5;
+    }
+  }
+
+  /* A word with an explanation in its tooltip. */
+  .term {
+    text-decoration-line: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: rgb(var(--muted) / 0.7);
+    text-underline-offset: 3px;
+    cursor: help;
+    border-radius: 2px;
+  }
+  .term:hover {
+    text-decoration-color: rgb(var(--fg) / 0.8);
+  }
+  .term:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgb(var(--accent));
+  }
+}
+
 @layer utilities {
   /* Hide scrollbar for Chrome, Safari and Opera */
   .no-scrollbar::-webkit-scrollbar {
