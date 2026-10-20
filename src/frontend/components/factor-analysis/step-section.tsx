@@ -1,9 +1,11 @@
 "use client";
 
 import { useId, useState } from "react";
-import { AlertTriangle, Check, HelpCircle } from "lucide-react";
+import { AlertTriangle, Check, Info } from "lucide-react";
 import { stepAnchor, type StepId } from "@/lib/steps";
 import { Card } from "@/components/ui/card";
+import { IconButton } from "@/components/ui/icon-button";
+import { Term, useTip } from "@/components/ui/tip";
 import { formatInputNumber, parseInputNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
@@ -71,9 +73,13 @@ export function EmptyStep({ icon, children }: { icon?: React.ReactNode; children
   );
 }
 
+/** Explanations up to this length are a tooltip of their label; longer ones unfold below it. */
+const LONG_HELP = 400;
+
 /**
- * A label with a "?" button that unfolds a short explanation below it. With `htmlFor` the
- * label is a <label> of that control.
+ * A label with its explanation: as the tooltip of the label (dotted under), or for a long
+ * reference text as a panel that an info button unfolds below it. With `htmlFor` the label is a
+ * <label> of that control.
  */
 export function HelpLabel({
   label,
@@ -93,67 +99,69 @@ export function HelpLabel({
   const t = useT();
   const [open, setOpen] = useState(false);
   const panelId = useId();
+  const long = help.length > LONG_HELP;
+  const text = long ? label : <Term more={help}>{label}</Term>;
   return (
     <div className={className}>
       <div className="flex items-center gap-1.5 flex-wrap">
         {htmlFor ? (
           <label htmlFor={htmlFor} className="text-sm font-semibold">
-            {label}
+            {text}
           </label>
         ) : as === "span" ? (
-          <span className="text-sm font-semibold">{label}</span>
+          <span className="text-sm font-semibold">{text}</span>
         ) : (
-          <h3 className="text-sm font-semibold">{label}</h3>
+          <h3 className="text-sm font-semibold">{text}</h3>
         )}
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          aria-controls={panelId}
-          aria-label={t("factor.help_aria", { topic: label })}
-          title={t("factor.help_aria", { topic: label })}
-          className={cn(
-            "h-6 w-6 rounded-full grid place-items-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-            open ? "text-accent-ink bg-accent/10" : "text-muted hover:text-fg hover:bg-tile",
-          )}
-        >
-          <HelpCircle className="h-3.5 w-3.5" />
-        </button>
+        {long && (
+          <IconButton
+            size="sm"
+            icon={Info}
+            name={t("factor.help_aria", { topic: label })}
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-controls={panelId}
+            className={cn("h-6 w-6", open && "text-accent-ink hover:text-accent-ink")}
+          />
+        )}
         {extra}
       </div>
-      <p
-        id={panelId}
-        hidden={!open}
-        className="mt-2 text-xs leading-relaxed text-fg/80 bg-tile/60 rounded-md px-3 py-2 max-w-prose"
-      >
-        {help}
-      </p>
+      {long && (
+        <p
+          id={panelId}
+          hidden={!open}
+          className="mt-2 text-xs leading-relaxed text-fg/80 bg-tile/60 rounded-md px-3 py-2 max-w-prose"
+        >
+          {help}
+        </p>
+      )}
     </div>
   );
 }
 
 /**
- * Pass/fail chip with an icon, so the state never depends on colour alone. A failed test is a
- * warning: the analysis still runs.
+ * Whether a test passed, as an icon and a word, so the state never depends on colour alone. A
+ * failed test is a warning: the analysis still runs.
  */
 export function PassBadge({ passed }: { passed: boolean }) {
   const t = useT();
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
-        passed ? "bg-success/15 text-success-ink" : "bg-warn/15 text-warn-ink",
+        "inline-flex items-center gap-1 text-[11px] font-medium",
+        passed ? "text-success-ink" : "text-warn-ink",
       )}
     >
-      {passed ? <Check className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
+      {passed ? <Check className="h-3 w-3" aria-hidden /> : <AlertTriangle className="h-3 w-3" aria-hidden />}
       {passed ? t("factor.suitability.passed") : t("factor.suitability.failed")}
     </span>
   );
 }
 
 export function StatTile({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
+  const tip = useTip<HTMLDivElement>(hint ? { more: hint } : null);
   return (
-    <div className="rounded-lg bg-tile px-3.5 py-3 min-w-0" title={hint}>
+    <div ref={tip} className="rounded-lg bg-tile px-3.5 py-3 min-w-0">
       <div className="text-[11px] text-muted truncate">{label}</div>
       <div className="mt-1 text-xl font-semibold font-mono tabular-nums">{value}</div>
     </div>

@@ -57,7 +57,7 @@ import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
 import { PageHeader } from "@/components/page-header";
 import { DataForm, DataSummary, type OpenPreset } from "./data-step";
 import { DatasetView } from "./dataset-step";
-import { SuitabilityView } from "./suitability-step";
+import { DEFAULT_MEASURE_VIEW, SuitabilityView, type MeasureGroups, type MeasureView } from "./suitability-step";
 import { FactorsView } from "./factors-step";
 import { LoadingsView } from "./loadings-step";
 import { InterpretationView } from "./interpretation-step";
@@ -679,6 +679,20 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     [catalog],
   );
   const measureTitle = useCallback((key: string) => titles.get(key) ?? key, [titles]);
+  // What a measure measures, for the tooltip of its name, which a cell no longer cuts off.
+  const descriptions = useMemo(
+    () => new Map((catalog?.measures ?? []).map((m) => [m.key, m.description || undefined])),
+    [catalog],
+  );
+  const measureDescription = useCallback((key: string) => descriptions.get(key), [descriptions]);
+  // The feature groups of the log measures, for grouping the list of step 3; model measures have none.
+  const measureGroups = useMemo<MeasureGroups | null>(() => {
+    if (!catalog?.groups?.length) return null;
+    const of = new Map(catalog.measures.map((m) => [m.key, m.group ?? null]));
+    return { order: catalog.groups.map((g) => ({ key: g.key, name: g.name })), of: (m) => of.get(m) ?? null };
+  }, [catalog]);
+  // How the list of step 3 is shown, kept while other steps are open.
+  const [measureView, setMeasureView] = useState<MeasureView>(DEFAULT_MEASURE_VIEW);
 
   // The catalog entry of a bundled dataset, and the settings of its paper if it has them.
   const bundled = dataset?.bundled_id ? catalog?.bundled.find((b) => b.id === dataset.bundled_id) : undefined;
@@ -1104,7 +1118,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               footer={footer("dataset")}
             >
               {ready && dataset ? (
-                <DatasetView dataset={dataset} measureName={measureName} measureTitle={measureTitle} />
+                <DatasetView dataset={dataset} measureName={measureName} measureDescription={measureDescription} />
               ) : (
                 lockedHint
               )}
@@ -1139,7 +1153,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                       options={options}
                       onOptions={updateOptions}
                       measureName={measureName}
-                      measureTitle={measureTitle}
+                      measureDescription={measureDescription}
+                      groups={measureGroups}
+                      view={measureView}
+                      onView={setMeasureView}
                     />
                   </div>
                 </div>
@@ -1190,7 +1207,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                     options={options}
                     onOptions={updateOptions}
                     measureName={measureName}
-                    measureTitle={measureTitle}
+                    measureDescription={measureDescription}
                     assignmentNote={assignmentNote}
                   />
                 </div>

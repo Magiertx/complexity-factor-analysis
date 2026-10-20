@@ -727,7 +727,9 @@
         "non_numeric": "contains the value “{value}”",
         "missing": "{missing} of {total} values missing",
         "duplicate": "perfectly correlated with {kept}"
-      }
+      },
+      "col_reason": "Reason",
+      "col_detail": "Detail"
     },
     "suitability": {
       "passed": "passed",
@@ -751,9 +753,6 @@
       "msa_threshold": "MSA threshold",
       "bartlett_alpha": "Bartlett α",
       "removed_none": "The filter removed no measures.",
-      "removed_heading": "The filter removed {n} measure:",
-      "removed_heading_plural": "The filter removed {n} measures:",
-      "round": "Round {step}",
       "msa_heading": "Sampling adequacy per measure (MSA)",
       "col_measure": "Measure",
       "col_status": "Status",
@@ -768,7 +767,9 @@
       "regularised_title": "Some eigenvalues of the correlation matrix are practically zero and were clamped, so χ² reflects that floor more than the data. Read the test together with KMO.",
       "exclude_aria": "Exclude {measure}",
       "invert": "Invert selection",
-      "invert_title": "Exclude the included measures and include the excluded ones"
+      "invert_title": "Exclude the included measures and include the excluded ones",
+      "removed_summary": "The filter removed {n} measure; the list below marks it.",
+      "removed_summary_plural": "The filter removed {n} measures; the list below marks them."
     },
     "factors": {
       "scree_title": "Scree plot",
@@ -856,7 +857,6 @@
       "structure_note": "The structure matrix holds the correlations between measures and factors; sums of squared loadings are given for the pattern matrix.",
       "oblique_note": "With an oblique rotation the factors correlate, so their shares do not add up; together they explain {pct} of the variance.",
       "legend_negative": "negative",
-      "legend_positive": "positive",
       "legend_bold": "bold: |loading| ≥ {threshold}",
       "legend_bold_strict": "bold: |loading| > {threshold}",
       "legend_bold_assigned": "bold: the loadings by which the rule assigns a measure",
@@ -898,7 +898,12 @@
         "low_communality": "low communality, h² {value}",
         "cross_loading": "cross-loads on {factors}",
         "cross_loading_plain": "loads on several factors"
-      }
+      },
+      "look_label": "Show",
+      "look_matrix": "Matrix",
+      "look_dimensions": "Dimensions",
+      "legend_faded": "faded: |loading| < {threshold}",
+      "legend_faded_strict": "faded: |loading| ≤ {threshold}"
     },
     "help": {
       "cleaning": "Before the analysis, rows where most values are missing are dropped. Then columns that are not numeric, that have no variance, that have missing values, or that are perfect copies of an earlier column are removed, as in ComFy for log measures. Such columns would distort or break the correlation matrix.",
@@ -1154,6 +1159,29 @@
       "mine_more": "Reopen or delete the datasets of this session.",
       "mine_none": "No datasets in this session yet.",
       "more": "More"
+    },
+    "measures": {
+      "search": "Search measures",
+      "search_placeholder": "Search measures",
+      "sort_aria": "Order of the measures",
+      "sort": {
+        "dataset": "Dataset order",
+        "name": "By name",
+        "msa": "By MSA, lowest first"
+      },
+      "group_aria": "Grouping of the measures",
+      "grouping": {
+        "none": "No grouping",
+        "group": "By feature group"
+      },
+      "only_notable": "Only notable ({n})",
+      "section_notable": "Worth a look",
+      "section_other": "The other measures",
+      "section_no_group": "Without a group",
+      "status_dependent": "linearly dependent",
+      "dependent_with": "Linearly dependent with {measures}. Excluding one measure of the group resolves it.",
+      "status_below": "below {threshold}",
+      "none_match": "No measure matches the search."
     }
   },
   "inspect": {

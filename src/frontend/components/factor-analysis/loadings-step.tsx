@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Info } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Grid3x3, Info, LayoutGrid } from "lucide-react";
 import { ASSIGNMENT_RULES, type AssignmentRule, type FactorAnalysis } from "@/lib/api";
 import {
   ORTHOGONAL,
@@ -10,6 +10,7 @@ import {
   countText,
   crossLoadingsByMeasure,
   effectiveCommunality,
+  loadingCounts,
   loadingStyle,
   orderMeasures,
   primaryFactor,
@@ -26,6 +27,8 @@ import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { Segmented } from "@/components/ui/segmented";
+import { MeasureName, TableFrame } from "@/components/ui/table";
+import { Term, useTipZone } from "@/components/ui/tip";
 import { FieldLabel, HelpLabel, ThresholdField } from "./step-section";
 
 interface Props {
@@ -33,8 +36,8 @@ interface Props {
   options: AnalysisOptions;
   onOptions: (patch: Partial<AnalysisOptions>) => void;
   measureName: (key: string) => string;
-  /** Name and description of a measure, for its tooltip. */
-  measureTitle: (key: string) => string;
+  /** What a measure measures, for its tooltip. */
+  measureDescription: (key: string) => string | undefined;
   /** Where the paper's dimension tables differ from the chosen rule, for a bundled dataset. */
   assignmentNote?: string | null;
 }
@@ -42,41 +45,45 @@ interface Props {
 /** What makes a loading bold: the rule's assignment, or the threshold reached or exceeded. */
 type BoldBy = "assigned" | "exceeds" | "reaches";
 
-export function LoadingsView({
-  analysis,
-  options,
-  onOptions,
-  measureName,
-  measureTitle,
-  assignmentNote,
-}: Props) {
+/** The loadings as one table or as one card per factor; one or the other, never both. */
+type LoadingsLook = "matrix" | "dimensions";
+type MeasureOrder = "factor" | "original";
+
+const LOOK_KEY = "app.factor-loadings-look";
+
+/** The look and order chosen last, remembered in the browser. */
+function useLoadingsLook(): [{ look: LoadingsLook; order: MeasureOrder }, (patch: Partial<{ look: LoadingsLook; order: MeasureOrder }>) => void] {
+  const [state, setState] = useState<{ look: LoadingsLook; order: MeasureOrder }>({ look: "matrix", order: "factor" });
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(LOOK_KEY) ?? "null");
+      if (saved && (saved.look === "matrix" || saved.look === "dimensions")) {
+        setState({ look: saved.look, order: saved.order === "original" ? "original" : "factor" });
+      }
+    } catch {
+      /* storage blocked or unreadable */
+    }
+  }, []);
+  const update = (patch: Partial<{ look: LoadingsLook; order: MeasureOrder }>) =>
+    setState((s) => {
+      const next = { ...s, ...patch };
+      try {
+        localStorage.setItem(LOOK_KEY, JSON.stringify(next));
+      } catch {
+        /* storage blocked */
+      }
+      return next;
+    });
+  return [state, update];
+}
+
+export function LoadingsView({ analysis, options, onOptions, measureName, measureDescription, assignmentNote }: Props) {
   const t = useT();
   const { locale } = useLocale();
-  const [order, setOrder] = useState<"factor" | "original">("factor");
+  const [{ look, order }, setLook] = useLoadingsLook();
   const [matrix, setMatrix] = useState<"pattern" | "structure">("pattern");
-  const k = analysis.n_factors;
-  const factorIdx = Array.from({ length: k }, (_, i) => i);
-  const rows = orderMeasures(analysis, order);
-  const threshold = options.loading_threshold;
   const oblique = analysis.rotation !== "none" && !(ORTHOGONAL as string[]).includes(analysis.rotation);
-  const structure = oblique && matrix === "structure" ? analysis.structure_loadings : null;
-  const shown = structure ?? analysis.loadings;
-  const { proportion, cumulative } = analysis.variance;
-  const cellPad = "px-2.5 sm:px-3 py-1.5";
-  // The rule works on the pattern loadings, so only they get the ring of a cross-loading.
-  const secondary = structure ? new Set<string>() : secondaryCells(analysis);
-  const crossLabel = t("factor.loadings.cross_cell");
-  // Under "multi" and "hair" the cells the rule assigned are bold, as the paper's dimension
-  // tables mark them and the LaTeX export does; under "largest" every loading that counts, as in
-  // ComFy's report. The structure matrix, which no rule reads, keeps the threshold.
-  const assigned = !structure && (analysis.assignment_rule ?? "largest") !== "largest" ? assignedCells(analysis) : null;
-  const boldBy: BoldBy = assigned ? "assigned" : ruleStrict(options.assignment_rule) ? "exceeds" : "reaches";
-  const isBold = (measure: string, factor: number, value: number) =>
-    assigned
-      ? assigned.has(`${measure}:${factor}`)
-      : boldBy === "exceeds"
-        ? Math.abs(value) > threshold
-        : Math.abs(value) >= threshold;
+  const threshold = options.loading_threshold;
 
   return (
     <div className="space-y-6">
@@ -86,196 +93,267 @@ export function LoadingsView({
         note={assignmentNote ?? null}
       />
 
-      <div className="flex items-end justify-between gap-4 flex-wrap">
-        <div className="flex items-start gap-x-6 gap-y-3 flex-wrap">
-          <ThresholdField
-            id="fa-loading-threshold"
-            label={t("factor.loadings.threshold_label")}
-            help={t("factor.help.threshold")}
-            value={threshold}
-            min={0}
-            max={1}
-            step={0.05}
-            onChange={(v) => onOptions({ loading_threshold: v })}
-          />
-          <ThresholdField
-            id="fa-communality-threshold"
-            label={t("factor.loadings.communality_threshold_label")}
-            help={t("factor.help.communality_threshold")}
-            value={options.communality_threshold}
-            min={0}
-            max={1}
-            step={0.05}
-            onChange={(v) => onOptions({ communality_threshold: v })}
-            note={
-              effectiveCommunality(options) > options.communality_threshold
-                ? t("factor.loadings.communality_raised", {
-                    value: formatNumber(effectiveCommunality(options), locale, 1),
-                  })
-                : null
-            }
-          />
-          {oblique && analysis.structure_loadings && (
+      <div className="flex items-start gap-x-6 gap-y-3 flex-wrap">
+        <ThresholdField
+          id="fa-loading-threshold"
+          label={t("factor.loadings.threshold_label")}
+          help={t("factor.help.threshold")}
+          value={threshold}
+          min={0}
+          max={1}
+          step={0.05}
+          onChange={(v) => onOptions({ loading_threshold: v })}
+        />
+        <ThresholdField
+          id="fa-communality-threshold"
+          label={t("factor.loadings.communality_threshold_label")}
+          help={t("factor.help.communality_threshold")}
+          value={options.communality_threshold}
+          min={0}
+          max={1}
+          step={0.05}
+          onChange={(v) => onOptions({ communality_threshold: v })}
+          note={
+            effectiveCommunality(options) > options.communality_threshold
+              ? t("factor.loadings.communality_raised", {
+                  value: formatNumber(effectiveCommunality(options), locale, 1),
+                })
+              : null
+          }
+        />
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-end justify-between gap-x-6 gap-y-3 flex-wrap">
+          <div className="flex items-end gap-x-6 gap-y-3 flex-wrap">
             <div className="space-y-1.5">
-              <FieldLabel id="fa-matrix-label">{t("factor.loadings.matrix_label")}</FieldLabel>
-              <Segmented
+              <FieldLabel id="fa-look-label">{t("factor.loadings.look_label")}</FieldLabel>
+              <Segmented<LoadingsLook>
                 size="sm"
-                aria-labelledby="fa-matrix-label"
-                value={matrix}
-                onChange={setMatrix}
+                aria-labelledby="fa-look-label"
+                value={look}
+                onChange={(v) => setLook({ look: v })}
                 options={[
-                  { value: "pattern", label: t("factor.loadings.matrix_pattern") },
-                  { value: "structure", label: t("factor.loadings.matrix_structure") },
+                  {
+                    value: "matrix",
+                    label: (
+                      <>
+                        <Grid3x3 className="h-3.5 w-3.5" aria-hidden />
+                        {t("factor.loadings.look_matrix")}
+                      </>
+                    ),
+                  },
+                  {
+                    value: "dimensions",
+                    label: (
+                      <>
+                        <LayoutGrid className="h-3.5 w-3.5" aria-hidden />
+                        {t("factor.loadings.look_dimensions")}
+                      </>
+                    ),
+                  },
                 ]}
               />
             </div>
-          )}
-          <div className="space-y-1.5">
-            <FieldLabel id="fa-order-label">{t("factor.loadings.order_label")}</FieldLabel>
-            <Segmented
-              size="sm"
-              aria-labelledby="fa-order-label"
-              value={order}
-              onChange={setOrder}
-              options={[
-                { value: "factor", label: t("factor.loadings.order_factor") },
-                { value: "original", label: t("factor.loadings.order_original") },
-              ]}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-start gap-4 flex-wrap">
-            <HelpLabel label={t("factor.loadings.table_heading")} help={t("factor.help.loading")} />
-            <HelpLabel as="span" label={t("factor.loadings.col_communality")} help={t("factor.help.communality")} />
-            <HelpLabel as="span" label={t("factor.loadings.variance_label")} help={t("factor.help.variance")} />
-          </div>
-          <Legend threshold={threshold} boldBy={boldBy} crossed={secondary.size > 0} />
-        </div>
-        {/* relative: the screen-reader texts of the cells stay inside the scrolling table, which
-            is focusable so the keyboard can scroll it on a phone. */}
-        <div
-          tabIndex={0}
-          role="region"
-          aria-label={t("factor.loadings.table_heading")}
-          className="relative rounded-md bg-tile/40 overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-        >
-          <table className="w-full text-xs">
-            <caption className="sr-only">
-              {countText(t, "factor.loadings.caption", k, { rotation: t(`factor.factors.rotation.${analysis.rotation}`) })}
-              {oblique && ` (${t(`factor.loadings.matrix_${structure ? "structure" : "pattern"}`)})`}
-            </caption>
-            <thead className="bg-bg">
-              <tr className="text-muted">
-                <th
-                  scope="col"
-                  className={cn(cellPad, "py-2 sticky left-0 z-10 bg-bg text-left font-medium border-b border-border")}
-                >
-                  {t("factor.loadings.col_measure")}
-                </th>
-                {factorIdx.map((i) => (
-                  <th
-                    key={i}
-                    scope="col"
-                    title={t("factor.loadings.factor_n", { i: i + 1 })}
-                    className={cn(cellPad, "py-2 text-right font-medium border-b border-border whitespace-nowrap")}
-                  >
-                    F{i + 1}
-                  </th>
-                ))}
-                <th
-                  scope="col"
-                  title={t("factor.loadings.col_communality")}
-                  className={cn(cellPad, "py-2 text-right font-medium border-b border-l border-border whitespace-nowrap")}
-                >
-                  h²
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((m) => {
-                const values = shown[m] ?? [];
-                const h2 = analysis.communalities[m];
-                return (
-                  <tr key={m} className="border-b border-border last:border-0">
-                    <th
-                      scope="row"
-                      className={cn(cellPad, "sticky left-0 z-10 bg-surface text-left font-medium max-w-[14rem] truncate")}
-                      title={measureTitle(m)}
-                    >
-                      {measureName(m)}
-                    </th>
-                    {factorIdx.map((i) => {
-                      const v = values[i];
-                      if (v === undefined) return <td key={i} className={cellPad} />;
-                      const strong = isBold(m, i, v);
-                      const crossed = secondary.has(`${m}:${i}`);
-                      const title = `${measureName(m)} · ${t("factor.loadings.factor_n", { i: i + 1 })}: ${formatNumber(v, locale, 3)}`;
-                      return (
-                        <td
-                          key={i}
-                          style={loadingStyle(v)}
-                          title={crossed ? `${title} · ${crossLabel}` : title}
-                          className={cn(
-                            cellPad,
-                            "text-right font-mono tabular-nums whitespace-nowrap",
-                            strong ? "font-bold text-fg" : "text-fg/70",
-                            crossed && "ring-2 ring-inset ring-fg/55",
-                          )}
-                        >
-                          {formatNumber(v, locale, 2)}
-                          {crossed && <span className="sr-only"> ({crossLabel})</span>}
-                        </td>
-                      );
-                    })}
-                    <td className={cn(cellPad, "border-l border-border")}>
-                      {h2 !== undefined && (
-                        <span className="flex items-center justify-end gap-2">
-                          <span className="hidden sm:block h-1.5 w-12 rounded-full bg-tile overflow-hidden" aria-hidden>
-                            <span
-                              className="block h-full bg-muted/70 rounded-full"
-                              style={{ width: `${Math.min(1, Math.max(0, h2)) * 100}%` }}
-                            />
-                          </span>
-                          <span className="font-mono tabular-nums">{formatNumber(h2, locale, 2)}</span>
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            {/* The sums of squares are those of the pattern matrix; the structure matrix has none. */}
-            {!structure && (
-              <tfoot className="bg-bg/60 text-muted">
-                <VarianceRow label={t("factor.loadings.ss_loadings")} values={analysis.variance.ss_loadings} format={(v) => formatNumber(v, locale, 2)} pad={cellPad} />
-                {proportion && (
-                  <VarianceRow label={t("factor.loadings.proportion")} values={proportion} format={(v) => formatPercent(v, locale)} pad={cellPad} />
-                )}
-                {cumulative && (
-                  <VarianceRow label={t("factor.loadings.cumulative")} values={cumulative} format={(v) => formatPercent(v, locale)} pad={cellPad} />
-                )}
-              </tfoot>
+            {look === "matrix" && oblique && analysis.structure_loadings && (
+              <div className="space-y-1.5">
+                <FieldLabel id="fa-matrix-label">{t("factor.loadings.matrix_label")}</FieldLabel>
+                <Segmented
+                  size="sm"
+                  aria-labelledby="fa-matrix-label"
+                  value={matrix}
+                  onChange={setMatrix}
+                  options={[
+                    { value: "pattern", label: t("factor.loadings.matrix_pattern") },
+                    { value: "structure", label: t("factor.loadings.matrix_structure") },
+                  ]}
+                />
+              </div>
             )}
-          </table>
+            {look === "matrix" && (
+              <div className="space-y-1.5">
+                <FieldLabel id="fa-order-label">{t("factor.loadings.order_label")}</FieldLabel>
+                <Segmented<MeasureOrder>
+                  size="sm"
+                  aria-labelledby="fa-order-label"
+                  value={order}
+                  onChange={(v) => setLook({ order: v })}
+                  options={[
+                    { value: "factor", label: t("factor.loadings.order_factor") },
+                    { value: "original", label: t("factor.loadings.order_original") },
+                  ]}
+                />
+              </div>
+            )}
+          </div>
         </div>
-        <p className="text-[11px] text-muted max-w-prose">
-          {t("factor.loadings.h2_note")}{" "}
-          {!oblique
-            ? t("factor.loadings.footer_rows")
-            : structure
-              ? t("factor.loadings.structure_note")
-              : t("factor.loadings.footer_row_pattern")}
-          {oblique && ` ${t("factor.loadings.oblique_note", { pct: formatPercent(analysis.variance.explained, locale) })}`}
-        </p>
+
+        {look === "matrix" ? (
+          <LoadingsMatrix
+            analysis={analysis}
+            options={options}
+            order={order}
+            structureShown={oblique && matrix === "structure"}
+            measureName={measureName}
+            measureDescription={measureDescription}
+          />
+        ) : (
+          <FactorGroups analysis={analysis} measureName={measureName} measureDescription={measureDescription} />
+        )}
       </div>
+    </div>
+  );
+}
 
-      {analysis.factor_correlations && <FactorCorrelations values={analysis.factor_correlations} pad={cellPad} />}
+function LoadingsMatrix({
+  analysis,
+  options,
+  order,
+  structureShown,
+  measureName,
+  measureDescription,
+}: {
+  analysis: FactorAnalysis;
+  options: AnalysisOptions;
+  order: MeasureOrder;
+  structureShown: boolean;
+  measureName: (key: string) => string;
+  measureDescription: (key: string) => string | undefined;
+}) {
+  const t = useT();
+  const { locale } = useLocale();
+  const zone = useTipZone<HTMLTableElement>();
+  const k = analysis.n_factors;
+  const factorIdx = Array.from({ length: k }, (_, i) => i);
+  const rows = orderMeasures(analysis, order);
+  const threshold = options.loading_threshold;
+  const oblique = analysis.rotation !== "none" && !(ORTHOGONAL as string[]).includes(analysis.rotation);
+  const structure = structureShown ? analysis.structure_loadings : null;
+  const shown = structure ?? analysis.loadings;
+  const { proportion, cumulative } = analysis.variance;
+  // Fifteen factors still fit a wide screen with tighter cells.
+  const dense = k > 8;
+  const cell = dense ? "px-2" : undefined;
+  // The rule works on the pattern loadings, so only they get the ring of a cross-loading.
+  const secondary = structure ? new Set<string>() : secondaryCells(analysis);
+  const crossLabel = t("factor.loadings.cross_cell");
+  // Under "multi" and "hair" the cells the rule assigned are bold, as the paper's dimension
+  // tables mark them and the LaTeX export does; under "largest" every loading that counts, as in
+  // ComFy's report. The structure matrix, which no rule reads, keeps the threshold.
+  const assigned = !structure && (analysis.assignment_rule ?? "largest") !== "largest" ? assignedCells(analysis) : null;
+  const strict = ruleStrict(options.assignment_rule);
+  const boldBy: BoldBy = assigned ? "assigned" : strict ? "exceeds" : "reaches";
+  const isBold = (measure: string, factor: number, value: number) =>
+    assigned ? assigned.has(`${measure}:${factor}`) : loadingCounts(value, threshold, strict);
 
-      <FactorGroups analysis={analysis} measureName={measureName} measureTitle={measureTitle} />
+  return (
+    <div className="space-y-2">
+      <Legend threshold={threshold} boldBy={boldBy} crossed={secondary.size > 0} strict={strict} />
+      <TableFrame label={t("factor.loadings.table_heading")}>
+        <table ref={zone} className="data-table">
+          <caption className="sr-only">
+            {countText(t, "factor.loadings.caption", k, { rotation: t(`factor.factors.rotation.${analysis.rotation}`) })}
+            {oblique && ` (${t(`factor.loadings.matrix_${structure ? "structure" : "pattern"}`)})`}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col" className="sticky-col">
+                {t("factor.loadings.col_measure")}
+              </th>
+              {factorIdx.map((i) => (
+                <th key={i} scope="col" className={cn("num", cell)} data-tip={t("factor.loadings.factor_n", { i: i + 1 })}>
+                  F{i + 1}
+                </th>
+              ))}
+              <th scope="col" className="num border-l border-border" data-tip={t("factor.loadings.col_communality")}>
+                h²
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((m) => {
+              const values = shown[m] ?? [];
+              const h2 = analysis.communalities[m];
+              const name = measureName(m);
+              return (
+                <tr key={m}>
+                  <th scope="row" className="sticky-col font-medium break-words min-w-[9rem] max-w-[16rem]">
+                    <span data-tip-more={measureDescription(m)}>
+                      <MeasureName name={name} />
+                    </span>
+                  </th>
+                  {factorIdx.map((i) => {
+                    const v = values[i];
+                    if (v === undefined) return <td key={i} className={cell} />;
+                    const strong = isBold(m, i, v);
+                    // Loadings that do not count are faded, so the ones that do stand out.
+                    const counts = loadingCounts(v, threshold, strict) || strong;
+                    const crossed = secondary.has(`${m}:${i}`);
+                    const tip = `${name} · ${t("factor.loadings.factor_n", { i: i + 1 })}: ${formatNumber(v, locale, 3)}`;
+                    return (
+                      <td
+                        key={i}
+                        style={counts ? loadingStyle(v) : undefined}
+                        data-tip={crossed ? `${tip} · ${crossLabel}` : tip}
+                        className={cn(
+                          "num",
+                          cell,
+                          strong ? "font-bold text-fg" : counts ? "text-fg/80" : "text-muted",
+                          crossed && "ring-2 ring-inset ring-fg/55",
+                        )}
+                      >
+                        {formatNumber(v, locale, 2)}
+                        {crossed && <span className="sr-only"> ({crossLabel})</span>}
+                      </td>
+                    );
+                  })}
+                  <td className="num border-l border-border">
+                    {h2 !== undefined && (
+                      <span className="flex items-center justify-end gap-2">
+                        <span className="hidden sm:block h-1.5 w-10 rounded-full bg-tile overflow-hidden" aria-hidden>
+                          <span
+                            className="block h-full bg-muted/60 rounded-full"
+                            style={{ width: `${Math.min(1, Math.max(0, h2)) * 100}%` }}
+                          />
+                        </span>
+                        {formatNumber(h2, locale, 2)}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+          {/* The sums of squares are those of the pattern matrix; the structure matrix has none. */}
+          {!structure && (
+            <tfoot>
+              <VarianceRow label={t("factor.loadings.ss_loadings")} values={analysis.variance.ss_loadings} format={(v) => formatNumber(v, locale, 2)} cell={cell} />
+              {proportion && (
+                <VarianceRow label={t("factor.loadings.proportion")} values={proportion} format={(v) => formatPercent(v, locale)} cell={cell} />
+              )}
+              {cumulative && (
+                <VarianceRow label={t("factor.loadings.cumulative")} values={cumulative} format={(v) => formatPercent(v, locale)} cell={cell} />
+              )}
+            </tfoot>
+          )}
+        </table>
+      </TableFrame>
+      <p className="text-[11px] text-muted max-w-prose">
+        <span className="inline-flex gap-x-3 flex-wrap mr-1.5">
+          <Term more={t("factor.help.loading")}>{t("factor.loadings.table_heading")}</Term>
+          <Term more={t("factor.help.communality")}>{t("factor.loadings.col_communality")}</Term>
+          <Term more={t("factor.help.variance")}>{t("factor.loadings.variance_label")}</Term>
+        </span>
+        {t("factor.loadings.h2_note")}{" "}
+        {!oblique
+          ? t("factor.loadings.footer_rows")
+          : structure
+            ? t("factor.loadings.structure_note")
+            : t("factor.loadings.footer_row_pattern")}
+        {oblique && ` ${t("factor.loadings.oblique_note", { pct: formatPercent(analysis.variance.explained, locale) })}`}
+      </p>
+
+      {analysis.factor_correlations && <FactorCorrelations values={analysis.factor_correlations} />}
     </div>
   );
 }
@@ -284,47 +362,42 @@ function VarianceRow({
   label,
   values,
   format,
-  pad,
+  cell,
 }: {
   label: string;
   values: number[];
   format: (v: number) => string;
-  pad: string;
+  cell?: string;
 }) {
   return (
-    <tr className="border-t border-border">
-      <th scope="row" className={cn(pad, "sticky left-0 z-10 bg-bg text-left font-medium")}>
+    <tr>
+      <th scope="row" className="sticky-col font-medium">
         {label}
       </th>
       {values.map((v, i) => (
-        <td key={i} className={cn(pad, "text-right font-mono tabular-nums whitespace-nowrap")}>
+        <td key={i} className={cn("num", cell)}>
           {format(v)}
         </td>
       ))}
-      <td className={cn(pad, "border-l border-border")} />
+      <td className="border-l border-border" />
     </tr>
   );
 }
 
-function FactorCorrelations({ values, pad }: { values: number[][]; pad: string }) {
+function FactorCorrelations({ values }: { values: number[][] }) {
   const t = useT();
   const { locale } = useLocale();
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 pt-2">
       <HelpLabel label={t("factor.loadings.correlations_heading")} help={t("factor.help.factor_correlations")} />
-      <div
-        tabIndex={0}
-        role="region"
-        aria-label={t("factor.loadings.correlations_heading")}
-        className="rounded-md bg-tile/40 overflow-x-auto w-fit max-w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-      >
-        <table className="text-xs">
+      <TableFrame label={t("factor.loadings.correlations_heading")} className="w-fit max-w-full">
+        <table className="data-table w-auto">
           <caption className="sr-only">{t("factor.loadings.correlations_heading")}</caption>
-          <thead className="bg-bg text-muted">
+          <thead>
             <tr>
-              <td className={cn(pad, "border-b border-border")} />
+              <td />
               {values.map((_, j) => (
-                <th key={j} scope="col" className={cn(pad, "text-right font-medium border-b border-border")}>
+                <th key={j} scope="col" className="num">
                   F{j + 1}
                 </th>
               ))}
@@ -332,16 +405,12 @@ function FactorCorrelations({ values, pad }: { values: number[][]; pad: string }
           </thead>
           <tbody>
             {values.map((row, i) => (
-              <tr key={i} className="border-b border-border last:border-0">
-                <th scope="row" className={cn(pad, "text-left font-medium text-muted")}>
+              <tr key={i}>
+                <th scope="row" className="font-medium text-muted">
                   F{i + 1}
                 </th>
                 {row.map((v, j) => (
-                  <td
-                    key={j}
-                    style={i === j ? undefined : loadingStyle(v)}
-                    className={cn(pad, "text-right font-mono tabular-nums", i === j && "text-muted")}
-                  >
+                  <td key={j} style={i === j ? undefined : loadingStyle(v)} className={cn("num", i === j && "text-muted")}>
                     {formatNumber(v, locale, 2)}
                   </td>
                 ))}
@@ -349,7 +418,7 @@ function FactorCorrelations({ values, pad }: { values: number[][]; pad: string }
             ))}
           </tbody>
         </table>
-      </div>
+      </TableFrame>
     </div>
   );
 }
@@ -425,25 +494,36 @@ function AssignmentChoice({
   );
 }
 
-function Legend({ threshold, boldBy, crossed }: { threshold: number; boldBy: BoldBy; crossed: boolean }) {
+function Legend({
+  threshold,
+  boldBy,
+  crossed,
+  strict,
+}: {
+  threshold: number;
+  boldBy: BoldBy;
+  crossed: boolean;
+  strict: boolean;
+}) {
   const t = useT();
   const { locale } = useLocale();
+  const value = formatNumber(threshold, locale, 2);
   return (
-    <div className="flex items-center gap-3 text-[11px] text-muted flex-wrap" aria-hidden>
+    <div className="flex items-center gap-x-4 gap-y-1 text-[11px] text-muted flex-wrap" aria-hidden>
       <span className="flex items-center gap-1.5">
         <span className="h-3 w-3 rounded-sm" style={loadingStyle(-0.9)} />
         {t("factor.loadings.legend_negative")}
       </span>
       <span className="flex items-center gap-1.5">
-        <span className="h-3 w-3 rounded-sm" style={loadingStyle(0.9)} />
-        {t("factor.loadings.legend_positive")}
+        <span className="font-mono text-muted">{formatNumber(0.1, locale, 2)}</span>
+        {t(strict ? "factor.loadings.legend_faded_strict" : "factor.loadings.legend_faded", { threshold: value })}
       </span>
       <span>
-        <b className="text-fg">{formatNumber(0, locale, 2)}</b>{" "}
+        <b className="font-mono text-fg">{formatNumber(0, locale, 2)}</b>{" "}
         {boldBy === "assigned"
           ? t("factor.loadings.legend_bold_assigned")
           : t(boldBy === "exceeds" ? "factor.loadings.legend_bold_strict" : "factor.loadings.legend_bold", {
-              threshold: formatNumber(threshold, locale, 2),
+              threshold: value,
             })}
       </span>
       {crossed && (
@@ -459,20 +539,21 @@ function Legend({ threshold, boldBy, crossed }: { threshold: number; boldBy: Bol
 function FactorGroups({
   analysis,
   measureName,
-  measureTitle,
+  measureDescription,
 }: {
   analysis: FactorAnalysis;
   measureName: (key: string) => string;
-  measureTitle: (key: string) => string;
+  measureDescription: (key: string) => string | undefined;
 }) {
   const t = useT();
   const { locale } = useLocale();
+  const zone = useTipZone<HTMLDivElement>();
   const cross = crossLoadingsByMeasure(analysis);
   const unassigned = unassignedMeasures(analysis);
   return (
     <div className="space-y-2">
       <HelpLabel label={t("factor.loadings.groups_heading")} help={t("factor.help.groups")} />
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div ref={zone} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {analysis.factors.map((f) => {
           // index counts from 0; shares only exist for orthogonal rotations.
           const share = analysis.variance.proportion?.[f.index];
@@ -496,11 +577,13 @@ function FactorGroups({
                       : [];
                     return (
                       <li key={m.measure} className="text-xs">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="truncate" title={measureTitle(m.measure)}>
-                            {measureName(m.measure)}
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="min-w-0 break-words" data-tip-more={measureDescription(m.measure)}>
+                            <MeasureName name={measureName(m.measure)} />
                           </span>
-                          <span className="font-mono tabular-nums shrink-0">{formatNumber(m.loading, locale, 2)}</span>
+                          <span className="font-mono tabular-nums shrink-0" style={m.loading < 0 ? { color: signInk(m.loading) } : undefined}>
+                            {formatNumber(m.loading, locale, 2)}
+                          </span>
                         </div>
                         <div className="mt-1 h-1 rounded-full bg-bg/80 overflow-hidden" aria-hidden>
                           <div
@@ -508,23 +591,23 @@ function FactorGroups({
                             style={{
                               width: `${Math.min(1, Math.abs(m.loading)) * 100}%`,
                               backgroundColor: signColor(m.loading),
-                              opacity: 0.75,
+                              opacity: 0.7,
                             }}
                           />
                         </div>
                         {others.length > 0 && (
-                          <span className="mt-1 flex flex-wrap gap-1">
-                            {others.map((o) => (
+                          <span className="mt-1 block text-[11px] text-muted">
+                            {others.map((o, j) => (
                               <span
                                 key={o.i}
-                                className="rounded bg-surface px-1.5 py-px text-[11px] text-muted"
-                                title={t("factor.loadings.also_title", {
+                                data-tip-more={t("factor.loadings.also_title", {
                                   i: o.i + 1,
                                   value: formatNumber(o.loading, locale, 2),
                                 })}
                               >
+                                {j > 0 && " · "}
                                 {t("factor.loadings.also", { i: o.i + 1 })}{" "}
-                                <span className="font-mono tabular-nums font-medium" style={{ color: signInk(o.loading) }}>
+                                <span className="font-mono tabular-nums" style={{ color: signInk(o.loading) }}>
                                   {formatNumber(o.loading, locale, 2)}
                                 </span>
                               </span>
@@ -548,8 +631,8 @@ function FactorGroups({
             <ul className="space-y-1">
               {unassigned.map((u) => (
                 <li key={u.measure} className="flex items-baseline justify-between gap-x-2 flex-wrap text-xs">
-                  <span className="min-w-0 truncate" title={measureTitle(u.measure)}>
-                    {measureName(u.measure)}
+                  <span className="min-w-0 break-words" data-tip-more={measureDescription(u.measure)}>
+                    <MeasureName name={measureName(u.measure)} />
                   </span>
                   {u.reason && <span className="text-[11px] text-muted">{reasonText(u, analysis, t, locale)}</span>}
                 </li>

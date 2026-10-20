@@ -22,12 +22,10 @@
     --success-ink: 22 101 52;
     --warn-ink: 146 64 14;
     --danger-ink: 185 28 28;
-    /* Signs of values such as loadings: blue for positive, orange for negative, so that a
-       negative value looks neither like an error (red) nor like the accent. */
-    --positive: 37 99 235;
+    /* The sign of values such as loadings: orange for negative, so that a negative value looks
+       neither like an error (red) nor like the accent; a positive one stays neutral. */
     --negative: 234 88 12;
-    /* The same hues for small text such as "also F1 −0.46", at 4.5:1 on a light chip. */
-    --positive-ink: 29 78 216;
+    /* The same hue for small text such as "also F1 −0.46", at 4.5:1 on a light chip. */
     --negative-ink: 194 65 12;
     --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
     --font-mono: ui-monospace, "SFMono-Regular", "Menlo", "Consolas", monospace;
@@ -49,9 +47,7 @@
     --success-ink: 34 197 94;
     --warn-ink: 234 179 8;
     --danger-ink: 248 113 113;
-    --positive: 59 130 246;
     --negative: 249 115 22;
-    --positive-ink: 96 165 250;
     --negative-ink: 251 146 60;
   }
   html, body { @apply bg-bg text-fg; }
@@ -233,6 +229,102 @@
       transform: none;
       opacity: 0.5;
     }
+  }
+
+  /* One style for every table (components/ui/table.tsx): the same header, row height, numbers
+     right-aligned in tabular figures, a header that stays in view, a tint on the row under the
+     pointer, no zebra and no lines but the separators between rows. The colours are opaque
+     mixes, so a sticky header or first column hides what scrolls under it. */
+  .table-frame {
+    --table-bg: color-mix(in srgb, rgb(var(--tile)) 40%, rgb(var(--surface)));
+    --table-head: rgb(var(--bg));
+    --table-hover: color-mix(in srgb, rgb(var(--tile)) 85%, rgb(var(--surface)));
+    --table-group: color-mix(in srgb, rgb(var(--tile)) 65%, rgb(var(--surface)));
+    border-radius: 6px;
+    background: var(--table-bg);
+  }
+  /* :where keeps these rules as weak as a single class, so a utility on a cell wins over them. */
+  .data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .data-table :where(thead th, thead td) {
+    position: sticky;
+    top: var(--table-top, 0px);
+    z-index: 2;
+    height: 32px;
+    padding: 0 12px;
+    background: var(--table-head);
+    border-bottom: 1px solid rgb(var(--border));
+    color: rgb(var(--muted));
+    font-weight: 500;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .data-table :where(thead tr:first-child > :first-child) {
+    border-top-left-radius: 6px;
+  }
+  .data-table :where(thead tr:first-child > :last-child) {
+    border-top-right-radius: 6px;
+  }
+  .data-table :where(tbody > tr > *, tfoot > tr > *) {
+    height: 32px;
+    padding: 6px 12px;
+    border-bottom: 1px solid rgb(var(--border) / 0.6);
+    text-align: left;
+    font-weight: 400;
+  }
+  .data-table :where(tbody > tr:last-child > *) {
+    border-bottom: 0;
+  }
+  .data-table :where(tfoot > tr:first-child > *) {
+    border-top: 1px solid rgb(var(--border));
+  }
+  .data-table :where(tfoot > tr > *) {
+    color: rgb(var(--muted));
+  }
+  .data-table :where(tbody > tr:hover > *) {
+    background-color: var(--table-hover);
+  }
+  .data-table :where(.num) {
+    text-align: right;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .data-table :where(.sticky-col) {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--table-bg);
+  }
+  .data-table :where(thead .sticky-col) {
+    z-index: 3;
+    background: var(--table-head);
+  }
+  .data-table :where(tbody > tr:hover > .sticky-col) {
+    background: var(--table-hover);
+  }
+  /* A plain light row that heads a group of rows, with its count. */
+  .data-table :where(tbody > tr.table-group > *) {
+    height: 28px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    background: var(--table-group);
+    color: rgb(var(--muted));
+    font-weight: 500;
+  }
+  /* The header sticks under the settings row of a wide screen; in a box of its own, at its top. */
+  @media (min-width: 1024px) {
+    .table-frame {
+      --table-top: calc(var(--settings-row-offset, 0px) - 8px);
+    }
+  }
+  .table-frame.table-frame--boxed {
+    --table-top: 0px;
   }
 
   /* A word with an explanation in its tooltip. */

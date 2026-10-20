@@ -5,20 +5,25 @@ import type { FactorDataset } from "@/lib/api";
 import { PREVIEW_ROWS, countText } from "@/lib/factor-analysis";
 import { NO_VALUE, formatNumber } from "@/lib/format";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
+import { MeasureName, TableFrame } from "@/components/ui/table";
+import { useTipZone } from "@/components/ui/tip";
 import { HelpLabel, StatTile } from "./step-section";
 
 export function DatasetView({
   dataset,
   measureName,
-  measureTitle,
+  measureDescription,
 }: {
   dataset: FactorDataset;
   measureName: (key: string) => string;
-  measureTitle: (key: string) => string;
+  /** What a measure measures, for its tooltip. */
+  measureDescription: (key: string) => string | undefined;
 }) {
   const t = useT();
   const tMaybe = useTMaybe();
   const { locale } = useLocale();
+  const cleaningZone = useTipZone<HTMLTableSectionElement>();
+  const previewZone = useTipZone<HTMLTableElement>();
   const preview = dataset.values.slice(0, PREVIEW_ROWS);
   // Decimals per column, not per cell, so a column lines up at the decimal separator.
   const digits = dataset.measures.map((_, j) =>
@@ -30,7 +35,7 @@ export function DatasetView({
   const failures = dataset.failures ?? [];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatTile label={t("factor.dataset.observations")} value={formatNumber(dataset.n_observations, locale)} />
         <StatTile label={t("factor.dataset.measures")} value={formatNumber(dataset.measures.length, locale)} />
@@ -43,21 +48,33 @@ export function DatasetView({
         {dataset.dropped.length === 0 ? (
           <p className="text-xs text-muted">{t("factor.dataset.dropped_none")}</p>
         ) : (
-          <ul className="flex flex-wrap gap-1.5">
-            {dataset.dropped.map((d) => (
-              <li
-                key={`${d.measure}:${d.reason}`}
-                className="inline-flex items-center gap-1.5 rounded-md bg-tile px-2 py-1 text-xs"
-                title={measureTitle(d.measure)}
-              >
-                <span className="font-medium">{measureName(d.measure)}</span>
-                <span className="rounded bg-bg/70 px-1 text-[10px] text-muted">
-                  {t(`factor.dataset.reason.${d.reason}`)}
-                </span>
-                {detailOf(d) && <span className="text-[10px] text-muted">{detailOf(d)}</span>}
-              </li>
-            ))}
-          </ul>
+          <TableFrame label={t("factor.dataset.cleaning_heading")}>
+            <table className="data-table">
+              <caption className="sr-only">{t("factor.dataset.cleaning_heading")}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">{t("factor.suitability.col_measure")}</th>
+                  <th scope="col">{t("factor.dataset.col_reason")}</th>
+                  <th scope="col" className="w-full">
+                    {t("factor.dataset.col_detail")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody ref={cleaningZone}>
+                {dataset.dropped.map((d) => (
+                  <tr key={`${d.measure}:${d.reason}`}>
+                    <th scope="row" className="font-medium break-words min-w-[10rem]">
+                      <span data-tip-more={measureDescription(d.measure)}>
+                        <MeasureName name={measureName(d.measure)} />
+                      </span>
+                    </th>
+                    <td className="whitespace-nowrap">{t(`factor.dataset.reason.${d.reason}`)}</td>
+                    <td className="text-muted break-words">{detailOf(d) ?? NO_VALUE}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableFrame>
         )}
         {dataset.dropped_rows > 0 && (
           <p className="text-xs text-muted">{countText(t, "factor.dataset.dropped_rows_note", dataset.dropped_rows)}</p>
@@ -84,55 +101,45 @@ export function DatasetView({
 
       <div className="space-y-2">
         <h3 className="text-sm font-semibold">{t("factor.dataset.preview_heading")}</h3>
-        {/* Focusable, so the keyboard can scroll a preview wider than the page. */}
-        <div
-          tabIndex={0}
-          role="region"
-          aria-label={t("factor.dataset.preview_heading")}
-          className="rounded-md bg-tile/40 overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-        >
-          <table className="w-full text-xs">
+        <TableFrame label={t("factor.dataset.preview_heading")}>
+          <table ref={previewZone} className="data-table">
             <caption className="sr-only">{t("factor.dataset.preview_heading")}</caption>
-            <thead className="bg-bg">
+            <thead>
               <tr>
-                <th
-                  scope="col"
-                  className="sticky left-0 z-10 bg-bg px-3 py-2 text-left font-medium text-muted border-b border-border"
-                >
+                <th scope="col" className="sticky-col">
                   {t("factor.dataset.observation")}
                 </th>
                 {dataset.measures.map((m) => (
-                  <th
-                    key={m}
-                    scope="col"
-                    className="px-3 py-2 text-right font-medium text-muted border-b border-border whitespace-nowrap"
-                    title={measureTitle(m)}
-                  >
+                  <th key={m} scope="col" className="num" data-tip-more={measureDescription(m)}>
                     {measureName(m)}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {preview.map((row, i) => (
-                <tr key={i} className="border-b border-border last:border-0">
-                  <th
-                    scope="row"
-                    className="sticky left-0 z-10 bg-surface px-3 py-1.5 text-left font-normal max-w-[16rem] truncate"
-                    title={dataset.observations[i]}
-                  >
-                    {dataset.observations[i] ?? i + 1}
-                  </th>
-                  {row.map((v, j) => (
-                    <td key={j} className="px-3 py-1.5 text-right font-mono tabular-nums whitespace-nowrap">
-                      {v === null ? <span className="text-muted">{NO_VALUE}</span> : formatNumber(v, locale, digits[j])}
-                    </td>
-                  ))}
-                </tr>
-              ))}
+              {preview.map((row, i) => {
+                const label = dataset.observations[i];
+                return (
+                  <tr key={i}>
+                    {/* A long label is cut; its tooltip has all of it. */}
+                    <th
+                      scope="row"
+                      className="sticky-col max-w-[16rem] truncate"
+                      data-tip={label && label.length > 36 ? label : undefined}
+                    >
+                      {label ?? i + 1}
+                    </th>
+                    {row.map((v, j) => (
+                      <td key={j} className="num">
+                        {v === null ? <span className="text-muted">{NO_VALUE}</span> : formatNumber(v, locale, digits[j])}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
-        </div>
+        </TableFrame>
         <p className="text-[11px] text-muted">
           {t("factor.dataset.preview_note", {
             n: Math.min(PREVIEW_ROWS, dataset.n_observations),

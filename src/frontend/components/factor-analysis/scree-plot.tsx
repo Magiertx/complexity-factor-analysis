@@ -189,7 +189,7 @@ export function ScreePlot({
             y={yShare(share)}
             dy="0.32em"
             fontSize={10}
-            style={{ fill: "rgb(var(--positive-ink))" }}
+            className="fill-muted"
           >
             {formatPercent(share, locale, 0)}
           </text>
@@ -212,8 +212,8 @@ export function ScreePlot({
         <polyline
           points={line(cumulative, yShare)}
           fill="none"
-          style={{ stroke: "rgb(var(--positive))" }}
-          strokeOpacity={0.75}
+          className="stroke-muted"
+          strokeOpacity={0.9}
           strokeWidth={1.25}
           strokeLinejoin="round"
         />
@@ -359,7 +359,7 @@ export function ScreePlot({
           )}
           <li className="flex items-center gap-1.5">
             <svg width="18" height="8">
-              <line x1="0" x2="18" y1="4" y2="4" style={{ stroke: "rgb(var(--positive))" }} strokeWidth={1.25} />
+              <line x1="0" x2="18" y1="4" y2="4" className="stroke-muted" strokeWidth={1.25} />
             </svg>
             {t("factor.factors.legend_cumulative")}
           </li>

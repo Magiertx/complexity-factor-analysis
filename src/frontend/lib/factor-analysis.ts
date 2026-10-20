@@ -348,23 +348,31 @@ export function kmoGrade(value: number): KmoGrade {
   return "unacceptable";
 }
 
-// Diverging blue/orange pair over the surface colour (tokens in globals.css); the surface
-// itself is the neutral midpoint.
-const signToken = (value: number) => (value >= 0 ? "var(--positive)" : "var(--negative)");
+// Colour carries one meaning in the loadings: orange for a negative sign (the token in
+// globals.css). A positive loading is neutral, a shade of the text colour; the surface itself is
+// the midpoint, and the shade grows with the magnitude.
 
-/** Background of a loading cell: hue by sign, opacity by magnitude. */
+/** Background of a loading cell: orange for a negative loading, neutral for a positive one. */
 export function loadingStyle(value: number): CSSProperties {
-  const alpha = Math.min(Math.abs(value), 1) * 0.55;
-  return { backgroundColor: `rgb(${signToken(value)} / ${alpha.toFixed(3)})` };
+  const m = Math.min(Math.abs(value), 1);
+  return {
+    backgroundColor: value >= 0 ? `rgb(var(--fg) / ${(m * 0.16).toFixed(3)})` : `rgb(var(--negative) / ${(m * 0.45).toFixed(3)})`,
+  };
 }
 
+/** The colour of a bar for a value: orange when negative, else neutral. */
 export function signColor(value: number): string {
-  return `rgb(${signToken(value)})`;
+  return value >= 0 ? "rgb(var(--muted))" : "rgb(var(--negative))";
 }
 
 /** Text in the colour of a value's sign, dark enough for small text on a tile. */
 export function signInk(value: number): string {
-  return value >= 0 ? "rgb(var(--positive-ink))" : "rgb(var(--negative-ink))";
+  return value >= 0 ? "rgb(var(--fg))" : "rgb(var(--negative-ink))";
+}
+
+/** Whether a loading counts under the threshold: reaches it, or exceeds it for the rules that ask so. */
+export function loadingCounts(value: number, threshold: number, strict: boolean): boolean {
+  return strict ? Math.abs(value) > threshold : Math.abs(value) >= threshold;
 }
 
 /**

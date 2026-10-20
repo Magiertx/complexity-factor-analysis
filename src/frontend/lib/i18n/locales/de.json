@@ -727,7 +727,9 @@
         "non_numeric": "enthält den Wert „{value}“",
         "missing": "{missing} von {total} Werten fehlen",
         "duplicate": "perfekt korreliert mit {kept}"
-      }
+      },
+      "col_reason": "Grund",
+      "col_detail": "Detail"
     },
     "suitability": {
       "passed": "bestanden",
@@ -751,9 +753,6 @@
       "msa_threshold": "MSA-Schwelle",
       "bartlett_alpha": "Bartlett α",
       "removed_none": "Der Filter hat keine Maße entfernt.",
-      "removed_heading": "Der Filter hat {n} Maß entfernt:",
-      "removed_heading_plural": "Der Filter hat {n} Maße entfernt:",
-      "round": "Runde {step}",
       "msa_heading": "Stichprobeneignung je Maß (MSA)",
       "col_measure": "Maß",
       "col_status": "Status",
@@ -768,7 +767,9 @@
       "regularised_title": "Einige Eigenwerte der Korrelationsmatrix sind praktisch null und wurden nach unten begrenzt, daher spiegelt χ² eher diese Grenze als die Daten. Lies den Test zusammen mit KMO.",
       "exclude_aria": "{measure} ausschließen",
       "invert": "Auswahl umkehren",
-      "invert_title": "Die einbezogenen Maße ausschließen und die ausgeschlossenen einbeziehen"
+      "invert_title": "Die einbezogenen Maße ausschließen und die ausgeschlossenen einbeziehen",
+      "removed_summary": "Der Filter hat {n} Maß entfernt; die Liste unten markiert es.",
+      "removed_summary_plural": "Der Filter hat {n} Maße entfernt; die Liste unten markiert sie."
     },
     "factors": {
       "scree_title": "Screeplot",
@@ -856,7 +857,6 @@
       "structure_note": "Die Strukturmatrix enthält die Korrelationen zwischen Maßen und Faktoren; die Summen der quadrierten Ladungen gibt es für die Mustermatrix.",
       "oblique_note": "Bei obliquer Rotation korrelieren die Faktoren, ihre Anteile lassen sich daher nicht addieren; zusammen erklären sie {pct} der Varianz.",
       "legend_negative": "negativ",
-      "legend_positive": "positiv",
       "legend_bold": "fett: |Ladung| ≥ {threshold}",
       "legend_bold_strict": "fett: |Ladung| > {threshold}",
       "legend_bold_assigned": "fett: die Ladungen, über die die Regel ein Maß zuordnet",
@@ -898,7 +898,12 @@
         "low_communality": "niedrige Kommunalität, h² {value}",
         "cross_loading": "lädt quer auf {factors}",
         "cross_loading_plain": "lädt auf mehrere Faktoren"
-      }
+      },
+      "look_label": "Ansicht",
+      "look_matrix": "Matrix",
+      "look_dimensions": "Dimensionen",
+      "legend_faded": "blass: |Ladung| < {threshold}",
+      "legend_faded_strict": "blass: |Ladung| ≤ {threshold}"
     },
     "help": {
       "cleaning": "Vor der Analyse werden Zeilen entfernt, in denen die meisten Werte fehlen. Danach werden Spalten entfernt, die nicht numerisch sind, keine Varianz haben, fehlende Werte enthalten oder exakte Kopien einer früheren Spalte sind, wie in ComFy für Log-Maße. Solche Spalten würden die Korrelationsmatrix verzerren oder unbrauchbar machen.",
@@ -1154,6 +1159,29 @@
       "mine_more": "Datensätze dieser Sitzung wieder öffnen oder löschen.",
       "mine_none": "In dieser Sitzung gibt es noch keine Datensätze.",
       "more": "Mehr"
+    },
+    "measures": {
+      "search": "Maße durchsuchen",
+      "search_placeholder": "Maße durchsuchen",
+      "sort_aria": "Reihenfolge der Maße",
+      "sort": {
+        "dataset": "Wie im Datensatz",
+        "name": "Nach Name",
+        "msa": "Nach MSA, niedrigste zuerst"
+      },
+      "group_aria": "Gruppierung der Maße",
+      "grouping": {
+        "none": "Ohne Gruppierung",
+        "group": "Nach Feature-Gruppe"
+      },
+      "only_notable": "Nur auffällige ({n})",
+      "section_notable": "Einen Blick wert",
+      "section_other": "Die übrigen Maße",
+      "section_no_group": "Ohne Gruppe",
+      "status_dependent": "linear abhängig",
+      "dependent_with": "Linear abhängig mit {measures}. Ein Maß der Gruppe auszuschließen löst das.",
+      "status_below": "unter {threshold}",
+      "none_match": "Kein Maß passt zur Suche."
     }
   },
   "inspect": {

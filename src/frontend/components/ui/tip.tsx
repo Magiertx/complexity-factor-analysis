@@ -281,7 +281,7 @@ export function Term({ more, children, className }: { more: string; children: Re
 
 /**
  * Tooltips for the cells of a table without one listener per cell: an element inside the container
- * with `data-tip` (the name) and `data-tip-more` (the explanation) shows them for the pointer. For
+ * with `data-tip` (the name) and/or `data-tip-more` (the explanation) shows them for the pointer. For
  * numbers a screen reader already reads from the table, so the cells get no description.
  */
 export function useTipZone<T extends HTMLElement = HTMLElement>(): RefCallback<T> {
@@ -297,7 +297,7 @@ export function useTipZone<T extends HTMLElement = HTMLElement>(): RefCallback<T
     };
     const over = (e: PointerEvent) => {
       if (e.pointerType === "touch" || e.buttons !== 0) return;
-      const el = (e.target as Element | null)?.closest<HTMLElement>("[data-tip]");
+      const el = (e.target as Element | null)?.closest<HTMLElement>("[data-tip], [data-tip-more]");
       if (!el || !zone.contains(el)) return leave();
       if (current?.el === el) return;
       leave();
