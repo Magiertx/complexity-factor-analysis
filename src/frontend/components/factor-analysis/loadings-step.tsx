@@ -338,12 +338,13 @@ function LoadingsMatrix({
           )}
         </table>
       </TableFrame>
+      {/* What the numbers mean, in the tooltips of these words. */}
+      <p className="flex gap-x-3 gap-y-1 flex-wrap text-[11px] text-muted">
+        <Term more={t("factor.help.loading")}>{t("factor.loadings.table_heading")}</Term>
+        <Term more={t("factor.help.communality")}>{t("factor.loadings.col_communality")}</Term>
+        <Term more={t("factor.help.variance")}>{t("factor.loadings.variance_label")}</Term>
+      </p>
       <p className="text-[11px] text-muted max-w-prose">
-        <span className="inline-flex gap-x-3 flex-wrap mr-1.5">
-          <Term more={t("factor.help.loading")}>{t("factor.loadings.table_heading")}</Term>
-          <Term more={t("factor.help.communality")}>{t("factor.loadings.col_communality")}</Term>
-          <Term more={t("factor.help.variance")}>{t("factor.loadings.variance_label")}</Term>
-        </span>
         {t("factor.loadings.h2_note")}{" "}
         {!oblique
           ? t("factor.loadings.footer_rows")

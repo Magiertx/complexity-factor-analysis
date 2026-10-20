@@ -46,8 +46,8 @@ export function TableFrame({
       className={cn(
         // relative: screen-reader texts of the cells stay inside a frame that scrolls.
         "table-frame relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-        boxed && "table-frame--boxed overflow-auto",
-        wide && !boxed && "overflow-x-auto",
+        scrolls && "table-frame--scrolls",
+        boxed ? "overflow-auto" : wide && "overflow-x-auto",
         className,
       )}
     >

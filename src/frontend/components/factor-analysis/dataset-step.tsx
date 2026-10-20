@@ -55,15 +55,13 @@ export function DatasetView({
                 <tr>
                   <th scope="col">{t("factor.suitability.col_measure")}</th>
                   <th scope="col">{t("factor.dataset.col_reason")}</th>
-                  <th scope="col" className="w-full">
-                    {t("factor.dataset.col_detail")}
-                  </th>
+                  <th scope="col">{t("factor.dataset.col_detail")}</th>
                 </tr>
               </thead>
               <tbody ref={cleaningZone}>
                 {dataset.dropped.map((d) => (
                   <tr key={`${d.measure}:${d.reason}`}>
-                    <th scope="row" className="font-medium break-words min-w-[10rem]">
+                    <th scope="row" className="font-medium break-words">
                       <span data-tip-more={measureDescription(d.measure)}>
                         <MeasureName name={measureName(d.measure)} />
                       </span>

@@ -295,6 +295,10 @@
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
+  /* A header over numbers is aligned with them but stays in the text face. */
+  .data-table :where(thead .num) {
+    font-family: inherit;
+  }
   .data-table :where(.sticky-col) {
     position: sticky;
     left: 0;
@@ -323,7 +327,8 @@
       --table-top: calc(var(--settings-row-offset, 0px) - 8px);
     }
   }
-  .table-frame.table-frame--boxed {
+  /* A frame that scrolls itself (sideways or in a box) holds its header at its own top. */
+  .table-frame.table-frame--scrolls {
     --table-top: 0px;
   }
 
