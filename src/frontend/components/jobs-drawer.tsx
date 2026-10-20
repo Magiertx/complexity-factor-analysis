@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDateTime, formatPercent } from "@/lib/format";
 import { Button } from "./ui/button";
+import { Tip } from "./ui/tip";
 
 // How a job was started, derived from the `algorithm_id` prefix: runs of the
 // removed batch mode are stored as "_batch:<algo>", factor analysis datasets as
@@ -410,25 +411,28 @@ export function JobsDrawer() {
               </div>
               <div className="flex items-center gap-2">
                 {jobs.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleClearAll}
-                    title={t("jobs.clear_all_title")}
-                    className="h-6 px-1.5 inline-flex items-center gap-1 rounded text-[10px] font-medium text-muted hover:text-danger-ink hover:bg-danger/10 transition appearance-none"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    <span>{t("jobs.clear_button")}</span>
-                  </button>
+                  <Tip more={t("jobs.clear_all_title")}>
+                    <button
+                      type="button"
+                      onClick={handleClearAll}
+                      className="h-6 px-1.5 inline-flex items-center gap-1 rounded text-[10px] font-medium text-muted hover:text-danger-ink hover:bg-danger/10 transition appearance-none"
+                    >
+                      <Trash2 className="h-3 w-3" aria-hidden />
+                      <span>{t("jobs.clear_button")}</span>
+                    </button>
+                  </Tip>
                 )}
-                <button
-                  ref={closeRef}
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  aria-label={t("jobs.close_drawer_aria")}
-                  className="h-6 w-6 grid place-items-center rounded hover:bg-tile text-muted hover:text-fg transition appearance-none"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
+                <Tip name={t("jobs.close_drawer_aria")}>
+                  <button
+                    ref={closeRef}
+                    type="button"
+                    onClick={() => setOpen(false)}
+                    aria-label={t("jobs.close_drawer_aria")}
+                    className="h-6 w-6 grid place-items-center rounded hover:bg-tile text-muted hover:text-fg transition appearance-none"
+                  >
+                    <X className="h-3.5 w-3.5" aria-hidden />
+                  </button>
+                </Tip>
               </div>
             </div>
 
@@ -545,56 +549,58 @@ function JobCard({
     >
       <div className="flex items-start gap-2">
         <div className="flex items-center gap-1 shrink-0 mt-0.5">
-          <span
-            className="h-5 w-5 rounded grid place-items-center bg-accent/[0.18] text-accent-ink"
-            title={t("jobs.run_mode_title", { mode: t(MODE_META[info.mode].label) })}
-          >
-            <ModeIcon className="h-3 w-3" />
-          </span>
+          <Tip name={t("jobs.run_mode_title", { mode: t(MODE_META[info.mode].label) })}>
+            <span className="h-5 w-5 rounded grid place-items-center bg-accent/[0.18] text-accent-ink">
+              <ModeIcon className="h-3 w-3" aria-hidden />
+            </span>
+          </Tip>
         </div>
+        {/* Cut to one line each; the tooltips have all of it. */}
         <div className="min-w-0 flex-1">
-          <div className="text-xs font-semibold text-fg truncate" title={shortAlgo}>
-            {shortAlgo}
-          </div>
-          <div className="text-[11px] text-muted truncate" title={subtitle}>
-            {subtitle}
-          </div>
+          <Tip more={shortAlgo}>
+            <div className="text-xs font-semibold text-fg truncate">{shortAlgo}</div>
+          </Tip>
+          <Tip more={subtitle}>
+            <div className="text-[11px] text-muted truncate">{subtitle}</div>
+          </Tip>
         </div>
         {/* Visible without hovering: the job limit tells users to abort jobs here. */}
         {activeJob && (
+          <Tip name={t("jobs.abort_job_aria")}>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onAbort();
+              }}
+              aria-label={t("jobs.abort_job_aria")}
+              className="shrink-0 text-muted hover:text-danger-ink transition p-0.5 rounded hover:bg-danger/10"
+            >
+              <CircleStop className="h-3.5 w-3.5" aria-hidden />
+            </button>
+          </Tip>
+        )}
+        <Tip name={t(confirmDelete ? "jobs.delete_dataset_job_aria" : "jobs.delete_job_aria")}>
           <button
+            ref={askRef}
             type="button"
             onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onAbort();
+              stop(e);
+              if (confirmDelete) setConfirming((c) => !c);
+              else onDelete();
             }}
-            aria-label={t("jobs.abort_job_aria")}
-            title={t("jobs.abort_job_aria")}
-            className="shrink-0 text-muted hover:text-danger-ink transition p-0.5 rounded hover:bg-danger/10"
+            aria-label={t(confirmDelete ? "jobs.delete_dataset_job_aria" : "jobs.delete_job_aria")}
+            aria-expanded={confirmDelete ? confirming : undefined}
+            className={cn(
+              // Without hover, as on a touch screen, it is always shown.
+              "shrink-0 text-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 hover:text-danger-ink transition p-0.5 rounded hover:bg-danger/10",
+              confirming && "opacity-100",
+            )}
           >
-            <CircleStop className="h-3.5 w-3.5" />
+            <Trash2 className="h-3.5 w-3.5" aria-hidden />
           </button>
-        )}
-        <button
-          ref={askRef}
-          type="button"
-          onClick={(e) => {
-            stop(e);
-            if (confirmDelete) setConfirming((c) => !c);
-            else onDelete();
-          }}
-          aria-label={t(confirmDelete ? "jobs.delete_dataset_job_aria" : "jobs.delete_job_aria")}
-          aria-expanded={confirmDelete ? confirming : undefined}
-          title={confirmDelete ? t("jobs.delete_dataset_job_aria") : undefined}
-          className={cn(
-            // Without hover, as on a touch screen, it is always shown.
-            "shrink-0 text-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 hover:text-danger-ink transition p-0.5 rounded hover:bg-danger/10",
-            confirming && "opacity-100",
-          )}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+        </Tip>
       </div>
       {confirming && (
         <div className="flex items-center justify-end gap-2 flex-wrap">

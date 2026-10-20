@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Undo2, X } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { Button } from "./button";
+import { Tip } from "./tip";
 
 const SHOW_MS = 10_000;
 
@@ -76,14 +77,16 @@ export function UndoToast({
             <Undo2 className="h-3.5 w-3.5" aria-hidden />
             {t("common.undo")}
           </Button>
-          <button
-            type="button"
-            onClick={() => leave(onClose)}
-            aria-label={t("common.close")}
-            className="h-7 w-7 grid place-items-center rounded-md text-muted hover:text-fg hover:bg-tile transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            <X className="h-3.5 w-3.5" aria-hidden />
-          </button>
+          <Tip name={t("common.close")} keyCap="Esc">
+            <button
+              type="button"
+              onClick={() => leave(onClose)}
+              aria-label={t("common.close")}
+              className="h-7 w-7 grid place-items-center rounded-md text-muted hover:text-fg hover:bg-tile transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <X className="h-3.5 w-3.5" aria-hidden />
+            </button>
+          </Tip>
         </div>
       )}
     </div>
