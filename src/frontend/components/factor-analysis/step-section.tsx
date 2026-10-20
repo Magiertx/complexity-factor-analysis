@@ -1,66 +1,53 @@
 "use client";
 
 import { useId, useState } from "react";
-import { AlertTriangle, Check, HelpCircle, Loader2 } from "lucide-react";
+import { AlertTriangle, Check, HelpCircle } from "lucide-react";
+import { stepAnchor, type StepId } from "@/lib/steps";
 import { Card } from "@/components/ui/card";
 import { formatInputNumber, parseInputNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
+import { STEP_ICONS } from "./step-nav";
 
-export type StepId = "data" | "dataset" | "suitability" | "factors" | "loadings" | "interpretation";
-export type StepState = "locked" | "active" | "done" | "warn" | "busy";
-
-export function stepAnchor(id: StepId) {
-  return `fa-step-${id}`;
-}
-
-export function StepBadge({ n, state, className }: { n: number; state: StepState; className?: string }) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        "h-7 w-7 shrink-0 rounded-full grid place-items-center text-xs font-semibold",
-        state === "done" && "bg-success/15 text-success-ink",
-        state === "warn" && "bg-warn/15 text-warn-ink",
-        state === "busy" && "bg-accent/15 text-accent-ink",
-        state === "active" && "bg-accent text-accent-fg",
-        state === "locked" && "bg-tile text-muted",
-        className,
-      )}
-    >
-      {state === "done" ? (
-        <Check className="h-3.5 w-3.5" />
-      ) : state === "warn" ? (
-        <AlertTriangle className="h-3.5 w-3.5" />
-      ) : state === "busy" ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      ) : (
-        n
-      )}
-    </span>
-  );
-}
+export type { StepId, StepState } from "@/lib/steps";
+export { stepAnchor } from "@/lib/steps";
 
 interface SectionProps {
   id: StepId;
-  n: number;
-  state: StepState;
   title: string;
   description: string;
   actions?: React.ReactNode;
+  /** Back and Next, under the step. */
+  footer?: React.ReactNode;
+  /** Kept on the page but not shown, e.g. the data step with a form half filled in. */
+  hidden?: boolean;
   children: React.ReactNode;
 }
 
-export function StepSection({ id, n, state, title, description, actions, children }: SectionProps) {
+/**
+ * One step of the analysis as a card: its sign, its name (which takes the focus when the step is
+ * opened) and what it is for, then its content and Back and Next.
+ */
+export function StepSection({ id, title, description, actions, footer, hidden, children }: SectionProps) {
   const anchor = stepAnchor(id);
-  // A jump to the step stops clear of the sticky settings row by the scroll padding of globals.css.
+  const Icon = STEP_ICONS[id];
   return (
-    <section id={anchor} data-tour={`fa-${id}`} aria-labelledby={`${anchor}-title`} className="scroll-mt-6">
-      <Card className="overflow-hidden">
-        <div className="px-4 sm:px-5 pt-5 pb-4 border-b border-border flex items-start gap-3 flex-wrap">
-          <StepBadge n={n} state={state} className="mt-0.5" />
+    <section id={anchor} aria-labelledby={`${anchor}-title`} hidden={hidden}>
+      <Card>
+        {/* The tour points at the heading of the step, which is in view when the step opens. */}
+        <div
+          data-tour={`fa-${id}`}
+          className="px-4 sm:px-5 pt-5 pb-4 border-b border-border flex items-start gap-3 flex-wrap"
+        >
+          <span aria-hidden className="h-8 w-8 rounded-md bg-tile text-muted grid place-items-center shrink-0">
+            <Icon className="h-4 w-4" />
+          </span>
           <div className="flex-1 min-w-[12rem]">
-            <h2 id={`${anchor}-title`} className="text-base font-semibold tracking-tight">
+            <h2
+              id={`${anchor}-title`}
+              tabIndex={-1}
+              className="w-fit text-base font-semibold tracking-tight rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+            >
               {title}
             </h2>
             <p className="text-sm text-muted mt-0.5">{description}</p>
@@ -68,6 +55,7 @@ export function StepSection({ id, n, state, title, description, actions, childre
           {actions && <div className="flex items-center gap-2 flex-wrap">{actions}</div>}
         </div>
         <div className="px-4 sm:px-5 py-5">{children}</div>
+        {footer}
       </Card>
     </section>
   );

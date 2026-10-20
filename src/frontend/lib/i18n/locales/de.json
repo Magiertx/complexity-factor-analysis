@@ -84,9 +84,9 @@
       "step1_title": "Zwei Reiter: Modelle und Logs",
       "step1_p1": "Modellkomplexität analysiert Maße von Petri-Netzen, die aus Event-Logs gefunden und mit ComFy vermessen werden. Log-Komplexität analysiert Maße der Event-Logs selbst, berechnet mit feeed.",
       "step1_p2": "Beide Reiter funktionieren gleich.",
-      "step2_title": "Schritt für Schritt, von oben nach unten",
-      "step2_p1": "Daten, Datensatz, Eignung, Faktoren, Ladungen. Jede Änderung einer Einstellung startet die Analyse sofort neu, und die Ladungen lassen sich als CSV oder LaTeX exportieren. In einem optionalen sechsten Schritt schlägt Claude Namen für die Faktoren vor.",
-      "step2_p2": "Das ? neben einer Überschrift erklärt die Kennzahl; der Tour-Knopf führt durch die Seite.",
+      "step2_title": "Ein Schritt nach dem anderen",
+      "step2_p1": "Daten, Datensatz, Eignung, Faktoren, Ladungen: Die Liste der Schritte zeigt, was jeder ergeben hat, und öffnet ihn; Zurück und Weiter führen hindurch. Jede Änderung einer Einstellung startet die Analyse sofort neu, und die Analyse lässt sich als CSV, LaTeX oder ZIP herunterladen. In einem optionalen sechsten Schritt schlägt Claude Namen für die Faktoren vor.",
+      "step2_p2": "Halte den Zeiger über ein Bedienelement oder ein gepunktet unterstrichenes Wort, um zu sehen, was es tut; der Tour-Knopf führt durch die Schritte.",
       "step3_title": "Mehr, wenn du es brauchst",
       "step3_api": "API: alles per Python oder curl steuern; siehe die API-Seite im Header.",
       "progress_aria": "Fortschritt",
@@ -94,7 +94,7 @@
       "step3_inspect": "Einzelnes Log untersuchen: ComFy auf einem Log ausführen und die gefundenen Modelle ansehen."
     },
     "factor": {
-      "intro": "Fünf Schritte von den Rohmaßen zu den Faktoren und eine optionale Interpretation. Jeder Schritt erklärt seine Zahlen; die ?-Knöpfe neben einer Überschrift sagen mehr. Esc oder Überspringen beendet die Tour jederzeit.",
+      "intro": "Fünf Schritte von den Rohmaßen zu den Faktoren und eine optionale Interpretation, einer nach dem anderen: Die Liste der Schritte links (am Telefon die Zeile oben) und Zurück und Weiter wechseln zwischen ihnen. Halte den Zeiger über ein Bedienelement oder ein gepunktet unterstrichenes Wort, um zu sehen, was es tut. Esc oder Überspringen beendet die Tour jederzeit.",
       "data": "Hier geht es los: Wähle einen mitgelieferten Datensatz, lade eine CSV hoch oder berechne die Maße aus eigenen Dateien. Große Berechnungen laufen im Hintergrund.",
       "dataset": "Prüfe die Größe der Matrix und was die Bereinigung entfernt hat. Die bereinigten Daten kannst du als CSV herunterladen.",
       "suitability": "Bartlett und KMO zeigen, ob eine Faktorenanalyse überhaupt sinnvoll ist. Schließe hier Maße mit niedrigem MSA aus, von Hand oder per Filter.",
@@ -565,10 +565,10 @@
       "busy": "läuft"
     },
     "empty": {
-      "no_dataset": "Wähle zuerst in Schritt 1 Daten aus.",
+      "no_dataset": "Wähle zuerst im Schritt Daten Daten aus.",
       "computing": "Die Maße werden noch berechnet. Dieser Schritt füllt sich, sobald der Datensatz fertig ist.",
       "analyzing": "Analyse läuft…",
-      "after_error": "Noch kein Ergebnis. Behebe das Problem in Schritt 3."
+      "after_error": "Noch kein Ergebnis. Behebe das Problem im Schritt Eignung."
     },
     "analysis": {
       "updating": "Wird aktualisiert…",
@@ -1130,6 +1130,21 @@
       "dimensions_plural": "{n} Dimensionen",
       "cross": "{n} mit Querladung",
       "unassigned": "{n} ohne Faktor"
+    },
+    "nav": {
+      "aria": "Schrittnavigation",
+      "back": "Zurück",
+      "next": "Weiter",
+      "back_to": "Zurück: {step}",
+      "next_to": "Weiter: {step}",
+      "position": "Schritt {n} von {total}",
+      "to_data": "Zum Schritt Daten",
+      "locked": {
+        "no_dataset": "Öffne zuerst im Schritt Daten einen Datensatz.",
+        "loading": "Der Datensatz lädt noch.",
+        "computing": "Die Maße werden noch berechnet.",
+        "failed": "Der Datensatz ließ sich nicht erstellen. Wähle im Schritt Daten andere Daten."
+      }
     }
   },
   "inspect": {

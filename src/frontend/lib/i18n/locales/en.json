@@ -84,9 +84,9 @@
       "step1_title": "Two tabs: models and logs",
       "step1_p1": "Model complexity analyzes measures of Petri nets discovered from event logs, computed with ComFy. Log complexity analyzes measures of the event logs themselves, computed with feeed.",
       "step1_p2": "Both tabs work the same way.",
-      "step2_title": "Step by step, top to bottom",
-      "step2_p1": "Data, dataset, suitability, factors, loadings. Every change to a setting re-runs the analysis right away, and the loadings can be exported as CSV or LaTeX. An optional sixth step lets Claude propose names for the factors.",
-      "step2_p2": "The ? next to a heading explains the statistic; the Tour button walks you through the page.",
+      "step2_title": "One step at a time",
+      "step2_p1": "Data, dataset, suitability, factors, loadings: the list of steps shows what each one found and opens it; Back and Next lead through them. Every change to a setting re-runs the analysis right away, and the analysis can be downloaded as CSV, LaTeX or ZIP. An optional sixth step lets Claude propose names for the factors.",
+      "step2_p2": "Hover a control or a dotted word for what it does; the Tour button walks you through the steps.",
       "step3_title": "More when you need it",
       "step3_api": "API: drive everything from Python or curl; see the API page in the header.",
       "progress_aria": "Progress",
@@ -94,7 +94,7 @@
       "step3_inspect": "Inspect a single log: run ComFy on one log and look at the discovered models."
     },
     "factor": {
-      "intro": "Five steps from raw measures to factors, and an optional interpretation. Each step explains its numbers; the ? buttons next to a heading say more. Esc or Skip ends the tour at any time.",
+      "intro": "Five steps from raw measures to factors, and an optional interpretation, one at a time: the list of steps on the left (on a phone the row at the top) and Back and Next move between them. Hover a control or a dotted word for what it does. Esc or Skip ends the tour at any time.",
       "data": "Start here: pick a bundled dataset, upload a CSV, or compute the measures from your own files. Large computations run in the background.",
       "dataset": "Check the size of the matrix and what the cleaning removed. You can download the cleaned data as CSV.",
       "suitability": "Bartlett and KMO tell you whether a factor analysis makes sense at all. Exclude measures with low MSA here, by hand or with the filter.",
@@ -565,10 +565,10 @@
       "busy": "in progress"
     },
     "empty": {
-      "no_dataset": "Choose data in step 1 first.",
+      "no_dataset": "Choose data in the data step first.",
       "computing": "The measures are still being computed. This step fills in once the dataset is ready.",
       "analyzing": "Running the analysis…",
-      "after_error": "No result yet. Fix the problem shown in step 3."
+      "after_error": "No result yet. Fix the problem shown in the suitability step."
     },
     "analysis": {
       "updating": "Updating…",
@@ -1130,6 +1130,21 @@
       "dimensions_plural": "{n} dimensions",
       "cross": "{n} cross-loaded",
       "unassigned": "{n} unassigned"
+    },
+    "nav": {
+      "aria": "Step navigation",
+      "back": "Back",
+      "next": "Next",
+      "back_to": "Back: {step}",
+      "next_to": "Next: {step}",
+      "position": "Step {n} of {total}",
+      "to_data": "Go to the data step",
+      "locked": {
+        "no_dataset": "Open a dataset in the data step first.",
+        "loading": "The dataset is still loading.",
+        "computing": "The measures are still being computed.",
+        "failed": "The dataset could not be built. Choose other data in the data step."
+      }
     }
   },
   "inspect": {

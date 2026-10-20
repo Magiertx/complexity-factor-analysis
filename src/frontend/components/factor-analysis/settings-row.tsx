@@ -12,7 +12,7 @@ import { Popover } from "@/components/ui/popover";
 import { CopyLink } from "./copy-link";
 
 /** The control each chip of the row leads to; see the ids in the steps. */
-const CONTROLS: Record<SettingChip["id"], string> = {
+export const SETTING_CONTROLS: Record<SettingChip["id"], string> = {
   measures: "fa-msa-table",
   msa: "fa-msa-threshold",
   alpha: "fa-bartlett-alpha",
@@ -28,7 +28,7 @@ const CONTROLS: Record<SettingChip["id"], string> = {
  * are tried in turn: one list would give the first match in document order, which is the "?"
  * of the label above the inputs.
  */
-function focusControl(id: string) {
+export function focusControl(id: string) {
   const el = document.getElementById(id);
   if (!el) return;
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -111,6 +111,8 @@ interface Props {
   /** The comparison with the report, for the analysis on screen if it used the published settings. */
   match: PublishedMatch | null;
   onApply: (options: AnalysisOptions, which: "standard" | "published") => void;
+  /** A chip was pressed: open the step of its control and focus the control. */
+  onGoToSetting: (chip: SettingChip["id"]) => void;
   /** The query of a link to this analysis; null for own data, which links cannot reach. */
   linkQuery: string | null;
 }
@@ -134,6 +136,7 @@ export function SettingsRow({
   measureCount,
   match,
   onApply,
+  onGoToSetting,
   linkQuery,
 }: Props) {
   const t = useT();
@@ -173,7 +176,7 @@ export function SettingsRow({
                 )}
                 <button
                   type="button"
-                  onClick={() => focusControl(CONTROLS[chip.id])}
+                  onClick={() => onGoToSetting(chip.id)}
                   title={chip.differs ? t("factor.settings.chip_changed_title") : t("factor.settings.chip_title")}
                   className={cn(
                     "rounded px-1.5 py-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
