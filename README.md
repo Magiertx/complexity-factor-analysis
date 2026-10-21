@@ -234,6 +234,19 @@ cd src/frontend
 BASE_URL=http://localhost:3000 PW_CHANNEL=msedge E2E_PROM=1 npx playwright test
 ```
 
+The suite opens many sessions from one address, so a stack with the default request limits
+answers some of them with 429. For a local run, start the stack with the e2e override, which
+sets `RATE_LIMIT_DISABLED=1` for the backend and nothing else, and go back to the default file
+afterwards:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build   # limits off
+docker compose up -d                                                           # limits on again
+```
+
+`docker-compose.yml` keeps the limits; the override is for a machine you test on, never for a
+deployment.
+
 `E2E_PROM=1` says that the stack has ProM: it adds the specs tagged `@prom` (the sample logs
 mined with the default miner) and skips those tagged `@no-prom`. The `e2e` job in CI runs the
 suite without ProM, against `uvicorn` on SQLite (`TESTING=1`, `RATE_LIMIT_DISABLED=1`,
