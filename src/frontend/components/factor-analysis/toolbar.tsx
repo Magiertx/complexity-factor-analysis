@@ -289,7 +289,7 @@ export function CompareToolbar({
         className={shortCodes.on ? "bg-tile" : undefined}
       />
       <ToolSeparator />
-      <CopyLink query={linkQuery} />
+      <CopyLink query={linkQuery} more={t("compare.link_more")} />
       <Menu
         icon={Download}
         name={t("factor.toolbar.export")}

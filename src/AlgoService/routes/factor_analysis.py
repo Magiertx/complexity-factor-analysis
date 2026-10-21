@@ -1524,6 +1524,13 @@ async def _comparison(request: Request, body: CompareRequest) -> dict[str, Any] 
             specs.append(spec)
     finally:
         listening.cancel()
+    if all("error" in spec for spec in specs):
+        # Nothing to compare, and nothing a download could say.
+        return _compare_error(
+            "compare_nothing_analysed",
+            "None of the columns could be analysed with these settings.",
+            reasons=", ".join(sorted({spec["error"]["code"] for spec in specs if spec["error"].get("code")})),
+        )
     return await run_in_threadpool(compare.build, specs, body.assignment_rule)
 
 
@@ -1533,11 +1540,14 @@ async def compare_analyses(request: Request, body: CompareRequest) -> Any:
     """The factor structures of 2 to 8 analyses of bundled datasets side by side, like Tab. 17
     of Important Factors: a header per column (n, measures after the MSA filter, KMO, factors,
     rotation, cumulative variance), every measure with the dimensions the shared assignment
-    rule puts it in per column, and the dimensions per column. The factors of the columns are
-    matched by the measures they share, so that the same dimension has the same number.
+    rule puts it in per column, the dimensions per column, and for every pair of measures in
+    how many columns both are in the same dimension (``co_assignment``). The factors of the
+    columns are matched by the measures they share, so that most measures in common get the same
+    number.
 
-    Needs no dataset of the session. A 400 with ``code`` names an unknown dataset or columns of
-    two kinds; a column whose analysis fails has its ``error``.
+    Needs no dataset of the session. A 400 with ``code`` names an unknown dataset, columns of
+    two kinds, or that no column could be analysed; a column whose analysis fails has its
+    ``error`` and the others are compared without it.
     """
     started = time.perf_counter()
     try:
@@ -1554,8 +1564,8 @@ async def compare_analyses(request: Request, body: CompareRequest) -> Any:
 @limiter.limit(rate_limit("fa_analyze", "120/minute"))
 async def export_comparison(request: Request, body: CompareExportRequest) -> Response:
     """The comparison as CSV (one row per measure, one column per analysis), as a LaTeX
-    tabular laid out like Tab. 17 of Important Factors, or as a ZIP with both, the full result
-    and a manifest."""
+    tabular laid out like Tab. 17 of Important Factors, or as a ZIP with both, the pairs of
+    measures that share a dimension, the full result and a manifest."""
     try:
         result = await _comparison(request, body)
     except Superseded:

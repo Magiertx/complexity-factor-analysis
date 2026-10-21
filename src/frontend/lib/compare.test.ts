@@ -4,10 +4,13 @@ import {
   MAX_COLUMNS,
   TABLE_17,
   cellInRow,
+  columnKey,
   compareQuery,
   compareRequest,
   dimensionLabel,
   groupRows,
+  pairTint,
+  parseColumnKey,
   parseCompareQuery,
   sameState,
   toggleColumn,
@@ -61,6 +64,72 @@ describe("the link of a comparison", () => {
     });
     expect(sameState({ columns: ["a", "b"], rule: "hair" }, { columns: ["a", "b"], rule: "hair" })).toBe(true);
     expect(sameState({ columns: ["a", "b"], rule: "hair" }, { columns: ["b", "a"], rule: "hair" })).toBe(false);
+  });
+});
+
+describe("a factor count per column", () => {
+  const INDUCTIVE = "comfy-paper-inductive-miner";
+  const six = `${INDUCTIVE}~k6`;
+
+  it("names a column by its dataset and its factor count", () => {
+    expect(columnKey(INDUCTIVE)).toBe(INDUCTIVE);
+    expect(columnKey(INDUCTIVE, 6)).toBe(six);
+    expect(parseColumnKey(INDUCTIVE)).toEqual({ id: INDUCTIVE, k: null });
+    expect(parseColumnKey(six)).toEqual({ id: INDUCTIVE, k: 6 });
+    expect(parseColumnKey(`${INDUCTIVE}~k12`)).toEqual({ id: INDUCTIVE, k: 12 });
+    for (const bad of ["", "~k6", `${INDUCTIVE}~k0`, `${INDUCTIVE}~k100`, `${INDUCTIVE}~kx`, `${INDUCTIVE}~6`, `${INDUCTIVE}~k6~k7`]) {
+      expect(parseColumnKey(bad), bad).toBeNull();
+    }
+  });
+
+  it("opens the same dataset twice when the factor counts differ", () => {
+    const q = new URLSearchParams(`cols=${INDUCTIVE},${six}&rule=multi`);
+    const { state, invalid } = parseCompareQuery(q, KNOWN);
+    expect(state).toEqual({ columns: [INDUCTIVE, six], rule: "multi" });
+    expect(invalid).toBe(false);
+    // ... and writes the link as it read it.
+    expect(compareQuery(state)).toBe(`cols=${INDUCTIVE},${INDUCTIVE}~k6&rule=multi`);
+  });
+
+  it("leaves out a repeated column, an unknown dataset and a count it cannot read", () => {
+    const q = new URLSearchParams(`cols=${INDUCTIVE}~k06,${six},${INDUCTIVE}~kx,nope~k4,comfy-paper-alpha-miner&rule=hair`);
+    const { state, invalid } = parseCompareQuery(q, KNOWN);
+    // "~k06" is no count either, and "~k6" stands once.
+    expect(state.columns).toEqual([six, "comfy-paper-alpha-miner"]);
+    expect(invalid).toBe(true);
+    expect(parseCompareQuery(new URLSearchParams(`cols=${six},${six}`), KNOWN).invalid).toBe(true);
+  });
+
+  it("asks for a count with the title of its column", () => {
+    const state = { columns: [INDUCTIVE, six], rule: "multi" as const };
+    expect(compareRequest(state).columns).toEqual([{ bundled_id: INDUCTIVE }, { bundled_id: INDUCTIVE, options: { n_factors: 6 } }]);
+    expect(compareRequest(state, (id, k) => `${id}, k = ${k}`).columns[1]).toEqual({
+      bundled_id: INDUCTIVE,
+      options: { n_factors: 6 },
+      label: `${INDUCTIVE}, k = 6`,
+    });
+    // A column of the paper has no title of its own.
+    expect(compareRequest(state, () => "x").columns[0]).toEqual({ bundled_id: INDUCTIVE });
+  });
+
+  it("puts a count after the dataset's own column when columns are switched", () => {
+    const order = ["a", "b", "c"];
+    expect(toggleColumn(["a", "c"], "b~k6", order)).toEqual(["a", "b~k6", "c"]);
+    expect(toggleColumn(["a", "a~k6", "c"], "a", order)).toEqual(["a~k6", "c"]);
+    expect(toggleColumn(["a~k6", "c"], "a", order)).toEqual(["a", "a~k6", "c"]);
+    expect(toggleColumn(["a", "a~k8"], "a~k6", order)).toEqual(["a", "a~k6", "a~k8"]);
+  });
+});
+
+describe("the tint of a pair", () => {
+  it("is none for a pair never in one dimension or never analysed, and darker the more often", () => {
+    expect(pairTint(0, 3)).toBe(0);
+    expect(pairTint(2, 0)).toBe(0);
+    expect(pairTint(1, 4)).toBeGreaterThan(0);
+    expect(pairTint(2, 4)).toBeGreaterThan(pairTint(1, 4));
+    expect(pairTint(4, 4)).toBeGreaterThan(pairTint(2, 4));
+    expect(pairTint(9, 4)).toBe(pairTint(4, 4));
+    expect(pairTint(4, 4)).toBeLessThanOrEqual(0.3);
   });
 });
 

@@ -243,8 +243,13 @@ precomputed paper-settings fits serve it and no dataset of the session is made. 
 share one assignment rule. The factors of the columns are matched by shared measures: each
 measure counts for the factor of its largest absolute loading, the first column keeps its
 numbers, and every further column is matched to the dimensions of the columns before it with
-`scipy.optimize.linear_sum_assignment` on the number of shared measures, a factor keeping its
-own number in a tie. The rows of the matrix are grouped by the dimension most columns agree on.
+`scipy.optimize.linear_sum_assignment` on the number of shared measures; among matches that
+share as many, the one whose loadings are more alike (Tucker's congruence with the factors
+before it) wins, and only then a factor keeps its own number. The result says which measures
+each match rests on (`matched_by`). The rows of the matrix are grouped by the dimension most
+columns agree on, and `co_assignment` counts for every pair of measures in how many columns both
+are in one dimension, which does not depend on the numbering at all. A column may carry its own
+factor count (`options`).
 
 A dataset whose job is still running 70 minutes after it started outlived Celery's time limit
 (for example because the worker restarted); reading it marks the job and the dataset failed,
@@ -468,9 +473,10 @@ to print or save as PDF (the download menu opens it in a new tab), `/guide` the 
 `/compare` puts the factor structures of 2 to 8 bundled datasets side by side
 (`compare-view.tsx`, `lib/compare.ts`; the column icon of the model tab's toolbar and Start
 here open it with the four miners of Tab. 17 under Hair et al.). The datasets and the rule are
-its address (`?cols=<ids>&rule=<rule>`), every change asks `POST /factor-analysis/compare`
-again, and its toolbar has the short codes, the link and the downloads of
-`POST /factor-analysis/compare/export`.
+its address (`?cols=<ids>&rule=<rule>`, an id with `~k6` after it asks for 6 factors, so the
+same dataset can stand twice), every change asks `POST /factor-analysis/compare` again, and its
+toolbar has the short codes, the link and the downloads of `POST /factor-analysis/compare/export`.
+The result has three looks: by measure, by dimension (Tab. 17) and the pairs of measures.
 
 ## Input safety
 

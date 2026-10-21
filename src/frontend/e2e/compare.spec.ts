@@ -49,9 +49,66 @@ test("Start here opens the four miners of Tab. 17 under Hair et al., without a d
   await expect(cells(page, "Separability")).toHaveText([/^D3/, /^D3/, /^D3/, /^D3/]);
   await expect(cells(page, "Connector Heterogeneity").first()).toHaveText(/D4 · D2/);
   await expect(cells(page, "Connector Heterogeneity").first()).toContainText(text("factor.loadings.cross_cell"));
+  // The one rule is in the tiles and the caption, not in a row of its own; the possible Heywood
+  // cases of three miners are in the notes below the table, not marked in the headers.
+  await expect(matrix(page).getByRole("row", { name: /^Rule\b/ })).toHaveCount(0);
+  await expect(matrix(page).locator("thead").getByRole("img")).toHaveCount(0);
+  await expect(page.getByText(text("compare.column_notes"), { exact: true })).toBeVisible();
+  // A group says what its number counts.
+  await expect(matrix(page).locator("tr.table-group th").filter({ hasText: /^Dimension 1 · \d+ measures$/ })).toHaveCount(1);
 
   const datasets = await page.request.get("/api/factor-analysis/datasets");
   expect((await datasets.json()).datasets).toEqual([]);
+});
+
+test("the card of Important Factors in the data step leads to the comparison of its four miners", async ({ page }) => {
+  await page.goto("/");
+  await stepSection(page, "data").getByRole("link", { name: text("factor.data.compare_miners") }).click();
+  await expect(page).toHaveURL(new RegExp(`/compare\\?cols=${TABLE_17.join(",")}&rule=hair$`));
+  await expect(matrix(page)).toBeVisible({ timeout: FIT_TIMEOUT });
+});
+
+test("Start here opens the Inductive miner with 4 and with 6 factors, as section 6 does", async ({ page }) => {
+  await page.goto("/");
+  await stepSection(page, "data")
+    .getByRole("link", { name: pattern(text("factor.start.scenario.if_k4_k6.title")) })
+    .click();
+  await expect(page).toHaveURL(/\/compare\?cols=comfy-paper-inductive-miner,comfy-paper-inductive-miner~k6&rule=multi$/);
+  await expect(matrix(page)).toBeVisible({ timeout: FIT_TIMEOUT });
+  const second = "Inductive miner, k = 6";
+  await expect(matrix(page).locator("thead").getByRole("columnheader")).toHaveText([text("factor.loadings.col_measure"), "Inductive miner", second]);
+  await expect(cells(page, text("compare.header.factors"))).toHaveText(["4", "6"]);
+  // Only MM has its largest loading beyond the fourth factor, 0.50 on the fifth; with four
+  // factors its communality is too low for any dimension.
+  await expect(cells(page, "Connector Mismatch").nth(0)).toHaveText(/^h² 0\.21/);
+  await expect(cells(page, "Connector Mismatch").nth(1)).toHaveText(/^D5\s*0\.50/);
+  // The note on the rule is about the settings of the paper: the first column has it, the one
+  // with a factor count of its own does not.
+  const ruleNote = pattern(text("factor.paper_notes.rules.inductive_multi"));
+  await expect(page.getByText(ruleNote)).toHaveCount(1);
+  await expect(page.getByText(new RegExp(`^Inductive miner: ${ruleNote.source}`))).toHaveCount(1);
+
+  // The column has a tile of its own, which a comparison cannot lose below two columns.
+  const tiles = page.getByRole("group", { name: text("compare.columns.label") });
+  const variant = tiles.getByRole("checkbox", { name: second, exact: true });
+  await expect(variant).toBeChecked();
+  await expect(variant).toHaveAttribute("aria-disabled", "true");
+
+  // Its title tells the two columns of one dataset apart in the downloads.
+  const wait = page.waitForEvent("download");
+  await chooseDownload(page, "compare.export.csv");
+  const csv = readFileSync(await downloaded(await wait), "utf8").split(/\r?\n/);
+  expect(csv[0]).toBe(`measure,code,dimension,Inductive miner,"${second}"`);
+
+  // With a third dataset the column can go, and the link follows.
+  await tiles.getByRole("checkbox", { name: "Alpha miner", exact: true }).click({ force: true });
+  await expect(page).toHaveURL(/cols=comfy-paper-alpha-miner,comfy-paper-inductive-miner,comfy-paper-inductive-miner~k6&rule=multi$/);
+  await variant.click({ force: true });
+  await expect(variant).toHaveCount(0);
+  await expect(page).toHaveURL(/cols=comfy-paper-alpha-miner,comfy-paper-inductive-miner&rule=multi$/);
+  await expect(matrix(page).locator("thead").getByRole("columnheader")).toHaveText([text("factor.loadings.col_measure"), "Alpha miner", "Inductive miner"], {
+    timeout: FIT_TIMEOUT,
+  });
 });
 
 test("the rule and the datasets change the comparison and its link", async ({ page }) => {
@@ -107,6 +164,87 @@ test("the dimensions look like Tab. 17, with the names or the short codes", asyn
   });
 });
 
+test("a match of dimensions says which measures it rests on, and the first dataset keeps its numbers", async ({ page }) => {
+  await openCompare(page);
+  await page.getByRole("button", { name: text("compare.look.dimensions") }).click();
+  const table = page.getByRole("table", { name: pattern(text("compare.dimensions_caption", { rule: "Hair et al." })) });
+  const row = (name: string) => table.getByRole("row", { name: new RegExp("^" + pattern(name).source) }).getByRole("cell");
+  await expect(row("Alpha miner").nth(0)).toHaveAttribute("data-tip-more", text("compare.tip.kept"));
+  // The factor of seq of the Hybrid ILP miner shares one measure with the dimension before it, CH.
+  await expect(row("Hybrid ILP miner").nth(3)).toHaveText("Sequentiality");
+  await expect(row("Hybrid ILP miner").nth(3)).toHaveAttribute("data-tip-more", /^Matched to this dimension by 1 shared measure \(Connector Heterogeneity\); congruence of the loadings 0\.\d\d\.$/);
+  await expect(row("Hybrid ILP miner").nth(3)).toHaveAttribute("data-tip", text("compare.tip.factor_of", { factor: text("factor.loadings.factor_n", { i: 3 }), column: "Hybrid ILP miner" }));
+});
+
+test("the pairs of measures count the datasets in which two share a dimension, whatever the numbers", async ({ page }) => {
+  await openCompare(page);
+  await page.getByRole("button", { name: text("compare.look.pairs") }).click();
+  const table = page.getByRole("table", { name: pattern(text("compare.pairs.caption", { rule: "", columns: "" }).split(":")[0]) });
+  await expect(table).toBeVisible();
+  const codes = (await table.locator("thead th").allTextContents()).slice(1);
+  expect(codes.sort()).toEqual(["CFC", "CH", "CNC", "MM", "acd", "dens", "dup", "esf", "mcd", "sep", "seq", "size", "ts"]);
+  const header = (await table.locator("thead th").allTextContents()).slice(1);
+  /** The cell of a pair: its row by the code of the first measure, its column by the code of the second. */
+  const pair = (a: string, b: string) =>
+    table.getByRole("row").filter({ has: page.getByRole("rowheader", { name: a, exact: true }) }).getByRole("cell").nth(header.indexOf(b));
+  const fraction = (a: string, b: string) => pair(a, b).locator("[aria-hidden]");
+
+  // ts and CFC: in the same dimension in both datasets that analysed both. mcd and CNC: in four
+  // datasets that analysed both, together in three; the fourth leaves both out as cross-loaded.
+  await expect(fraction("ts", "CFC")).toHaveText("2/2");
+  await expect(fraction("CFC", "ts")).toHaveText("2/2");
+  await expect(fraction("mcd", "CNC")).toHaveText("3/4");
+  // Size goes with sep in the Hybrid ILP miner only.
+  await expect(fraction("size", "sep")).toHaveText("1/4");
+  // On the diagonal: in a dimension in how many of the datasets that analysed the measure.
+  await expect(fraction("CH", "CH")).toHaveText("1/3");
+  // CH is alone (section 6 of the paper): with no other measure in one dimension.
+  for (const other of header.filter((c) => c !== "CH")) await expect(fraction("CH", other)).toHaveText(/^0\//);
+  // The words for the screen reader and the tooltip.
+  await expect(pair("ts", "CFC")).toContainText(text("compare.pairs.fraction", { together: 2, analysed: 2 }));
+  await expect(pair("mcd", "CNC")).toHaveAttribute("data-tip-more", text("compare.pairs.pair_plural", { together: 3, n: 4, assigned: 3 }));
+
+  // Another rule changes who is in a dimension, not the way the pairs are counted.
+  await page.getByRole("radio", { name: text("factor.loadings.rule.multi.title") }).click({ force: true });
+  await expect(page).toHaveURL(/rule=multi/);
+  await expect(fraction("mcd", "CNC")).toHaveText("4/4", { timeout: FIT_TIMEOUT });
+  await expect(fraction("ts", "CFC")).toHaveText("2/2");
+});
+
+test("a failed update leaves the old table dimmed and blocks the downloads until it works", async ({ page }) => {
+  await openCompare(page);
+  let broken = true;
+  await page.route("**/api/factor-analysis/compare", (route) =>
+    broken ? route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ detail: "The server broke." }) }) : route.continue(),
+  );
+  const tiles = page.getByRole("group", { name: text("compare.columns.label") });
+  await tiles.getByRole("checkbox", { name: "Hybrid ILP miner", exact: true }).click({ force: true });
+  await expect(page.getByRole("alert").filter({ hasText: "The server broke." })).toBeVisible();
+  // The tiles show three datasets, the table four: it is dimmed, and a download would be of three.
+  await expect(matrix(page).locator("thead").getByRole("columnheader")).toHaveCount(5);
+  await expect(page.locator("section[aria-labelledby=cmp-result] .opacity-60")).toBeVisible();
+  await page.getByRole("button", { name: text("factor.toolbar.export"), exact: true }).click();
+  const csv = page.getByRole("menuitem", { name: pattern(text("compare.export.csv")) });
+  await expect(csv).toHaveAttribute("aria-disabled", "true");
+  await expect(csv).toContainText(text("compare.stale"));
+  await page.keyboard.press("Escape");
+
+  // The retry works; the table is the one of the tiles again.
+  broken = false;
+  await page.getByRole("button", { name: text("common.try_again") }).click();
+  await expect(matrix(page).locator("thead").getByRole("columnheader")).toHaveCount(4, { timeout: FIT_TIMEOUT });
+  await expect(page.locator("section[aria-labelledby=cmp-result] .opacity-60")).toHaveCount(0);
+  await page.getByRole("button", { name: text("factor.toolbar.export"), exact: true }).click();
+  await expect(page.getByRole("menuitem", { name: pattern(text("compare.export.csv")) })).not.toHaveAttribute("aria-disabled", "true");
+});
+
+test("the link says that it opens a comparison", async ({ page }) => {
+  await openCompare(page);
+  const link = page.getByRole("button", { name: text("factor.link.copy"), exact: true });
+  await link.hover();
+  await expect(link).toHaveAttribute("aria-description", new RegExp(pattern(text("compare.link_more")).source));
+});
+
 test("the comparison downloads as CSV, as LaTeX like Tab. 17 and as a ZIP with a manifest", async ({ page }) => {
   await openCompare(page);
   await page.getByRole("button", { name: text("factor.toolbar.codes"), exact: true }).click();
@@ -130,9 +268,13 @@ test("the comparison downloads as CSV, as LaTeX like Tab. 17 and as a ZIP with a
   await chooseDownload(page, "compare.export.zip");
   download = await wait;
   const files = unzip(await downloaded(download));
-  expect([...files.keys()].sort()).toEqual(["README.txt", "comparison.json", "dimensions.tex", "manifest.json", "membership.csv"]);
+  expect([...files.keys()].sort()).toEqual(["README.txt", "co_assignment.csv", "comparison.json", "dimensions.tex", "manifest.json", "membership.csv"]);
   const manifest = JSON.parse(files.get("manifest.json")!.toString("utf8"));
   expect(manifest.assignment_rule).toBe("hair");
+  // What the rule applied, which the parameter (0.3) does not say.
+  expect(manifest.columns[0].assignment.communality_threshold).toBe(0.5);
+  // One row per pair of the 13 measures.
+  expect(files.get("co_assignment.csv")!.toString("utf8").trim().split(/\r?\n/)).toHaveLength(1 + (13 * 12) / 2);
   expect(manifest.columns.map((c: { bundled_id: string }) => c.bundled_id)).toEqual(TABLE_17);
   expect(manifest.measure_labels).toBe("short_codes");
 });

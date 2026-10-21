@@ -68,14 +68,15 @@ jobs:
             src/AlgoService/requirements-dev.txt
             src/AlgoService/constraints.txt
 
-      # booktabs, longtable, needspace, paralist, pgfplots, tikz and amsmath of the report; cm-super
-      # has the T1 fonts as outlines, without it pdflatex draws them with Metafont, slowly.
+      # booktabs, longtable, needspace, paralist, pgfplots, tikz and amsmath of the report, tabularx
+      # and geometry of the table of a comparison; cm-super has the T1 fonts as outlines, without
+      # it pdflatex draws them with Metafont, slowly.
       - name: Install TeX
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-pictures texlive-fonts-recommended cm-super
           pdflatex --version | head -1
-          kpsewhich needspace.sty booktabs.sty longtable.sty paralist.sty pgfplots.sty tikz.sty
+          kpsewhich needspace.sty booktabs.sty longtable.sty paralist.sty pgfplots.sty tikz.sty tabularx.sty geometry.sty
 
       - name: Install dependencies
         run: pip install -r requirements-dev.txt -c constraints.txt

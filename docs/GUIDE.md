@@ -70,7 +70,9 @@ the column icon in the toolbar of Model complexity and from Start here, with the
 Tab. 17 (Alpha, Directly Follows, Inductive, Hybrid ILP) under Hair et al.
 
 - **Datasets**: choose 2 to 8 of the miners of Important Factors; each is analysed with the
-  settings of its paper. "As in Tab. 17" goes back to the four miners and Hair et al.
+  settings of its paper. "As in Tab. 17" goes back to the four miners and Hair et al. A link can
+  also ask for a dataset with a factor count of its own, such as the Inductive miner with 4 and
+  with 6 factors (a Start here entry opens it); that column has a tile of its own.
 - **Assignment rule**: one rule for every dataset, so that a difference between two columns is
   one of the data.
 - **By measure**: a row per measure, grouped by dimension, and above them per dataset n, the
@@ -79,14 +81,21 @@ Tab. 17 (Alpha, Directly Follows, Inductive, Hybrid ILP) under Hair et al.
   outline a measure the MSA filter removed, and a faded cell says why the rule leaves the measure
   out.
 - **By dimension**: a row per dataset with the measures of each dimension, laid out like Tab. 17.
+- **Pairs**: a square of the measures; each cell says in how many of the datasets that analysed
+  both the two share a dimension, and the tint is that share. It does not depend on how the
+  dimensions are numbered, so it shows without matching that, say, ts and CFC always go together
+  and CH goes with no other measure.
 - **Download**: the matrix as CSV, the dimensions as a LaTeX table like Tab. 17, and both in a ZIP
   with a manifest.
 
 The factors of every analysis are numbered by the analysis, so they are matched first: the first
 dataset keeps its numbers, and the factors of every further one go to the dimension with which
-they share the most measures. Tab. 17 renumbered its dimensions by hand; a number can differ
-from the paper's while the groups are the same. The notes under the table say where the bundled
-data differ from the paper, e.g. for the Hybrid ILP miner.
+they share the most measures; where two are equally good, the one with the more alike loadings
+wins. Tab. 17 renumbered its dimensions by hand, so a number can differ from the paper's, and a
+match that rests on one shared measure is a guess: the tooltip of a cell in the dimension view
+names the measures it rests on. How the measures are grouped within a dataset does not depend on
+the numbers. The notes under the table say where the bundled data differ from the paper, e.g. for
+the Hybrid ILP miner.
 
 ## Take the results into a paper
 

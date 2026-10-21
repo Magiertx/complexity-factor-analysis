@@ -631,15 +631,21 @@ the session and counts against no dataset limit. JSON body:
 An unknown dataset is a 400 with `"code": "compare_unknown_dataset"`, columns of two kinds a 400
 with `"code": "compare_mixed_kinds"`. A column whose analysis fails, e.g. with more factors than
 its measures allow, carries `error` (`code`, `message`, `params`, as an analysis error) and the
-others are compared without it.
+others are compared without it; if none can be analysed, there is nothing to compare, and the
+answer is a 400 with `"code": "compare_nothing_analysed"` (`params.reasons` lists the codes of
+their errors), from `compare/export` as well.
 
 The factors of every analysis are numbered by the analysis, so they are matched first: the first
 column keeps the numbers of its factors, and the factors of each further column are matched one
 to one to the dimensions of the columns before it, so that the most measures fall into the same
-dimension (the Hungarian method on the number of shared measures). Each measure counts for the
-factor of its largest absolute loading, whatever the rule, so switching the rule never
-renumbers the dimensions. Tab. 17 renumbered its dimensions by hand "for easier
-comparability"; the tool's numbers can differ from the paper's while the groups are the same.
+dimension (the Hungarian method on the number of shared measures). Where two matches share as
+many measures, the one whose loadings are more alike wins (Tucker's congruence with the factors
+before it in the dimension), and only if that does not tell them apart too does a factor keep its
+own number. Each measure counts for the factor of its largest absolute loading, whatever the
+rule, so switching the rule never renumbers the dimensions. Tab. 17 renumbered its dimensions by
+hand "for easier comparability"; the tool's numbers can differ from the paper's, and a match that
+rests on a single shared measure is a guess, which `matched_by` shows. The grouping of the
+measures within a column does not depend on the numbers.
 
 The response has:
 
@@ -650,11 +656,17 @@ The response has:
   (`paper` or `standard`, as used), `options` (the parameters of the analysis, with the factor
   count it used), `published_source`, `paper_tables` (the key of the manifest, e.g.
   `other_data`), `n_measures` (of the CSV), `n_observations`, `used_measures`, `msa_removed`,
-  `kmo`, `n_factors`, `rotation`, `cumulative_variance` (`null` for an oblique rotation),
+  `kmo`, `n_factors`, `rotation`, `assignment` (what the rule applied: `rule`,
+  `loading_threshold`, `loading_strict`, the `communality_threshold` it used and
+  `cross_loading_gap`, `cross_loaded`; the communality threshold is the higher of the parameter
+  and the rule's own minimum, so 0.5 under `hair` whatever `options` say), `cumulative_variance`
+  (`null` for an oblique rotation),
   `explained_variance`, `factor_count` (`kaiser`, `parallel_analysis`), `warnings` (as
   `warning_details` of `analyze`), `timings`, `factor_dimensions` (the dimension of each factor,
   from 0), `shared_measures` (how many measures each factor shares with its dimension in the
-  columns before it) and `same_as` (an earlier column with the same loadings, e.g. the Alpha
+  columns before it), `matched_by` (those measures per factor, in the order of the data),
+  `congruence` (Tucker's congruence of each factor with the factors before it in its dimension,
+  from 0 to 1, averaged; `null` in the first column and where there are none) and `same_as` (an earlier column with the same loadings, e.g. the Alpha
   Dollar miner of the Alpha miner, else `null`);
 - `measures`, one row per measure of any column, grouped by `dimension` (the one most columns
   put it in first, the leftmost column deciding a tie; `null` for none, last), with `short`,
@@ -665,6 +677,17 @@ The response has:
   `cross_loading`), `msa_removed` (`msa`, `step`), `dropped` (`reason` of the cleaning, e.g.
   `constant`), `excluded`, `absent` (not in the dataset) or `failed`. A cross-loaded cell also
   has `cross_dimensions` and `cross_loadings`;
+- `co_assignment`, for every pair of measures in how many columns both are in the same
+  dimension, which needs no matching of the dimensions: `measures` (the keys, in the order of
+  `measures` above) and three square, symmetric matrices indexed by them. `together` counts the
+  columns in which both are in one dimension (under `multi`, in one they have in common),
+  `both_assigned` those in which both are in some dimension, so that the difference to
+  `together` is where they are apart, and `both_analysed` those that analysed both, in a
+  dimension or not. A column that dropped, excluded or MSA-removed one of them, lacks it or
+  failed, counts for none. On the diagonal a measure is paired with itself: the columns that put
+  it in a dimension, and the columns that analysed it. With the paper settings and `hair`, ts and
+  CFC share a dimension wherever both are in one (2 of 2), as do mcd and CNC (3 of 3, in 4
+  columns that analysed both), and CH shares one with no other measure (section 6 of the paper);
 - `dimensions`, per dimension and column the `factor` of the column (or `null`) and its
   `measures` with their loadings, in the order of the data, as Tab. 17 lists them (`null` for a
   column that failed);
@@ -685,14 +708,18 @@ by the codes of the papers, as Tab. 17 does) and returns `factor-structures.csv`
 - CSV: `measure`, `code`, `dimension` (of the row) and one column per dataset with `D1` (or
   `D1 D3` under `multi`), `unassigned:<reason>`, `msa_removed`, `excluded`, `dropped:<reason>`,
   `failed`, or nothing for a measure the dataset does not have.
-- LaTeX: a booktabs `tabular` (needs `booktabs` and `array`) with one row per dataset and one
-  column per dimension, laid out like Tab. 17; comments name the rule, how the dimensions were
-  matched and the measures in no dimension.
+- LaTeX: a booktabs `tabularx` (needs `booktabs`, `array` and `tabularx`) as wide as the line
+  (`\linewidth`), so it fits a one- or a two-column page without a width to set: the names of the
+  datasets take what they need and the dimensions share the rest. One row per dataset and one
+  column per dimension, laid out like Tab. 17; comments name the rule, the thresholds it
+  applied, how the dimensions were matched and the measures in no dimension.
 - ZIP: `comparison.json` (the response of `compare`), `membership.csv`, `dimensions.tex`,
-  `README.txt` and `manifest.json` with `app`, `created_at`, `tool`, the `request` as sent (with
-  the rule and `short_codes`), `assignment_rule`, `alignment`, `columns` (per column the
-  `bundled_id`, `label`, `settings`, `analysis_params`, `published_source`, `citation`,
-  `license`, `source_url` and `source_commit`), `measure_labels`, `libraries` and `files`.
+  `co_assignment.csv` (one row per pair of measures, each once: `measure_a`, `code_a`,
+  `measure_b`, `code_b`, `together`, `both_assigned`, `both_analysed`), `README.txt` and
+  `manifest.json` with `app`, `created_at`, `tool`, the `request` as sent (with the rule and
+  `short_codes`), `assignment_rule`, `alignment`, `columns` (per column the `bundled_id`,
+  `label`, `settings`, `analysis_params`, `assignment`, `published_source`, `citation`, `license`,
+  `source_url` and `source_commit`), `measure_labels`, `libraries` and `files`.
 
 ### Interpretation by Claude
 

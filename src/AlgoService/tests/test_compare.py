@@ -30,6 +30,7 @@ import json
 import shutil
 import subprocess
 import zipfile
+from collections.abc import Callable
 
 import pytest
 
@@ -97,9 +98,13 @@ def test_primary_groups_put_each_measure_on_its_largest_loading():
 def test_align_keeps_the_first_column_and_finds_a_permutation():
     first = [{"a", "b"}, {"c"}, {"d", "e"}]
     permuted = [{"d", "e"}, {"a", "b"}, {"c"}]
-    dimensions, shared = compare.align([first, permuted])
-    assert dimensions == [[0, 1, 2], [2, 0, 1]]
-    assert shared == [[0, 0, 0], [2, 2, 1]]
+    matched = compare.align([first, permuted])
+    assert matched.dimensions == [[0, 1, 2], [2, 0, 1]]
+    assert matched.shared == [[0, 0, 0], [2, 2, 1]]
+    # The measures shared with the dimension, each once.
+    assert matched.shared_names == [[[], [], []], [["d", "e"], ["a", "b"], ["c"]]]
+    # Nothing before the first column to be alike.
+    assert matched.congruence[0] == [None, None, None]
 
 
 def test_align_counts_the_columns_before_and_keeps_numbers_in_a_tie():
@@ -109,18 +114,43 @@ def test_align_counts_the_columns_before_and_keeps_numbers_in_a_tie():
         # "x" shares nothing: it keeps its own number where that is free.
         [{"c"}, {"a"}, {"x"}],
     ]
-    dimensions, _ = compare.align(columns)
-    assert dimensions == [[0, 1], [1, 0], [1, 0, 2]]
+    assert compare.align(columns).dimensions == [[0, 1], [1, 0], [1, 0, 2]]
 
 
 def test_align_with_unequal_factor_counts_and_a_failed_column():
     columns = [[{"a"}, {"b"}, {"c"}], [], [{"c", "b"}, {"a"}], [{"b"}, {"a"}, {"c"}, {"z"}]]
-    dimensions, shared = compare.align(columns)
+    matched = compare.align(columns)
     # Four dimensions, as the column with the most factors has.
-    assert dimensions[1] == [] and shared[1] == []
-    assert dimensions[0] == [0, 1, 2]
-    assert dimensions[2][1] == 0
-    assert dimensions[3] == [1, 0, 2, 3]
+    assert matched.dimensions[1] == [] and matched.shared[1] == [] and matched.shared_names[1] == []
+    assert matched.dimensions[0] == [0, 1, 2]
+    assert matched.dimensions[2][1] == 0
+    assert matched.dimensions[3] == [1, 0, 2, 3]
+
+
+def test_congruence_ignores_the_sign_and_the_measures_only_one_has():
+    x = {"a": 0.8, "b": 0.6, "only_x": 0.9}
+    assert compare.congruence(x, {"a": 0.8, "b": 0.6}) == pytest.approx(1.0)
+    assert compare.congruence(x, {"a": -0.8, "b": -0.6, "only_y": 0.5}) == pytest.approx(1.0)
+    assert compare.congruence({"a": 1.0, "b": 0.0}, {"a": 0.0, "b": 1.0}) == pytest.approx(0.0)
+    assert compare.congruence(x, {"c": 0.5}) == 0.0
+    assert compare.congruence({"a": 0.0}, {"a": 0.4}) == 0.0
+
+
+def test_align_settles_a_tie_by_the_loadings_before_the_number():
+    # The first factor of the second column shares one measure with each of the first two
+    # dimensions; on the numbers alone it keeps its own.
+    first = [{"a"}, {"b"}, {"c"}]
+    second = [{"a", "b"}, set(), set()]
+    assert compare.align([first, second]).dimensions[1][0] == 0
+    profiles = [
+        [{"a": 0.9, "b": 0.1, "c": 0.0}, {"a": 0.1, "b": 0.9, "c": 0.0}, {"a": 0.0, "b": 0.1, "c": 0.9}],
+        # The first factor looks like the second dimension.
+        [{"a": 0.2, "b": 0.8, "c": 0.0}, {"a": 0.7, "b": 0.0, "c": 0.7}, {"a": 0.0, "b": 0.0, "c": 0.1}],
+    ]
+    matched = compare.align([first, second], profiles)
+    assert matched.dimensions[1][0] == 1
+    assert matched.shared[1][0] == 1 and matched.shared_names[1][0] == ["b"]
+    assert matched.congruence[1][0] > 0.9
 
 
 # --- Tab. 17 ------------------------------------------------------------------------------
@@ -149,6 +179,30 @@ def test_four_miners_under_hair_have_the_groups_of_table_17(compared):
     hybrid = [TAB_17["hybrid-ilp"][0] | {"MM"}, {"size", "sep"}, {"seq"}]
     assert _partition(groups["hybrid-ilp"]) == _partition(hybrid)
     assert {SHORT[u["measure"]]: u["reason"] for u in comparison["unassigned"][3]} == {"CH": "low_communality"}
+
+
+def test_a_tie_in_the_matching_is_settled_by_the_loadings_and_says_what_it_rests_on(compared):
+    """The Hybrid ILP factor of seq shares one measure, CH, with each of three dimensions. It used
+    to land with acd and dens only because the empty factor after it kept its own number; now the
+    loadings decide, and the column says which measures the match rests on."""
+    comparison = compared(_body(FOUR))
+    hybrid = comparison["columns"][3]
+    factor = next(f for f, measures in enumerate(hybrid["matched_by"]) if measures and SHORT[measures[0]] == "CH")
+    seq = next(r for r in comparison["measures"] if SHORT[r["measure"]] == "seq")["cells"][3]
+    assert seq["status"] == "assigned" and seq["factors"] == [factor]
+    assert hybrid["shared_measures"][factor] == 1
+    assert [SHORT[m] for m in hybrid["matched_by"][factor]] == ["CH"]
+    # With the dimension of the Alpha miner's CH, not the one of acd and dens.
+    dimension = hybrid["factor_dimensions"][factor]
+    assert dimension == comparison["columns"][0]["factor_dimensions"][3]
+    assert "acd" not in _groups(comparison, 3)[dimension]
+    # How alike the factor is to the factors before it in that dimension, from 0 to 1.
+    assert 0.0 < hybrid["congruence"][factor] <= 1.0
+    # The first column has nothing to be matched with.
+    assert comparison["columns"][0]["congruence"] == [None] * 4 and comparison["columns"][0]["matched_by"] == [[]] * 4
+    # The measures come in the order of the data, with one for every factor.
+    inductive = comparison["columns"][2]
+    assert [[SHORT[m] for m in names] for names in inductive["matched_by"]] == [["size", "MM", "ts", "dup"], ["CNC"], ["acd", "dens"], ["sep"]]
 
 
 def test_four_miners_line_up_like_table_17_where_its_dimensions_share_measures(compared):
@@ -216,6 +270,12 @@ def test_column_headers(compared):
     assert {SHORT[m] for m in hybrid["msa_removed"]} == {"dens"}
     assert alpha["published_source"].startswith("Important Factors")
     assert hybrid["paper_tables"] == "other_data"
+    # What the rule applied: Hair et al. leave out a communality below 0.5, whatever the parameter says.
+    for column in columns:
+        assert column["assignment"] == {
+            "rule": "hair", "loading_threshold": 0.35, "loading_strict": True, "communality_threshold": 0.5,
+            "cross_loading_gap": 0.15, "cross_loaded": "none",
+        }
 
 
 def test_cells_say_why_a_measure_is_in_no_dimension(compared):
@@ -250,6 +310,64 @@ def test_rows_are_grouped_by_dimension(compared):
     assert assigned == sorted(assigned)
     assert all(d is None for d in order[len(assigned):])
     assert {SHORT[r["measure"]] for r in rows} == set(SHORT.values())
+
+
+def _pairs(comparison: dict) -> tuple[dict[str, int], Callable[[str, str], tuple[int, int, int]]]:
+    """The index of each measure by short name, and the three counts of a pair."""
+    pairs = comparison["co_assignment"]
+    index = {SHORT[m]: i for i, m in enumerate(pairs["measures"])}
+
+    def pair(a: str, b: str) -> tuple[int, int, int]:
+        return tuple(pairs[k][index[a]][index[b]] for k in ("together", "both_assigned", "both_analysed"))
+
+    return index, pair
+
+
+def test_pairs_count_in_how_many_columns_two_measures_share_a_dimension(compared):
+    comparison = compared(_body(FOUR))
+    pairs = comparison["co_assignment"]
+    # The measures in the order of the matrix, three square matrices.
+    assert pairs["measures"] == [r["measure"] for r in comparison["measures"]]
+    for key in ("together", "both_assigned", "both_analysed"):
+        matrix = pairs[key]
+        assert len(matrix) == 13 and all(len(row) == 13 for row in matrix)
+        assert all(matrix[i][j] == matrix[j][i] for i in range(13) for j in range(13))
+    index, pair = _pairs(comparison)
+    # ts and CFC are both analysed by the Alpha and the Hybrid ILP miner (the other two drop or
+    # remove one) and share a dimension in both; mcd and CNC are cross-loaded in the Directly
+    # Follows miner and so in no dimension there: together wherever both are in a dimension.
+    assert pair("ts", "CFC") == (2, 2, 2)
+    assert pair("mcd", "CNC") == (3, 3, 4)
+    # sep is with size in the Hybrid ILP miner only.
+    assert pair("sep", "size") == (1, 4, 4)
+    # On the diagonal: the columns with the measure in a dimension, and the columns with it at all.
+    assert pair("CH", "CH") == (1, 1, 3)
+    assert pair("size", "size") == (4, 4, 4)
+    # Apart is told from left out: size and ts are both in a dimension in three columns and
+    # together in two, being apart in the Hybrid ILP miner, where size goes with sep.
+    assert pair("size", "ts") == (2, 3, 3)
+
+
+def test_ch_shares_a_dimension_with_nothing_under_hair_and_a_pair_that_needs_no_numbers(compared):
+    """IF, section 6: CH is alone. Under the rule of Tab. 17 it is in a dimension in one column
+    only, and with no other measure there."""
+    index, pair = _pairs(compared(_body(FOUR, "hair")))
+    for other in index:
+        if other != "CH":
+            assert pair("CH", other)[0] == 0, other
+    # The pairs do not depend on how the dimensions are numbered, nor on whether they were matched.
+    assert [pair("ts", "CFC")[0], pair("mcd", "CNC")[0]] == [2, 3]
+
+
+def test_pairs_under_multi_count_a_shared_dimension_of_a_cross_loaded_measure(compared):
+    index, pair = _pairs(compared(_body(FOUR, "multi")))
+    # Wherever ts and CFC, mcd and CNC are both in a dimension, they share one.
+    for a, b in (("ts", "CFC"), ("mcd", "CNC")):
+        together, both_assigned, both_analysed = pair(a, b)
+        assert together == both_assigned > 0
+        assert both_analysed >= both_assigned
+    # acd is in three dimensions of the Inductive miner, one of them with CH.
+    assert pair("acd", "CH")[0] >= 1
 
 
 def test_alpha_dollar_is_named_the_same_as_alpha_and_heuristics_has_three_factors(compared):
@@ -301,6 +419,22 @@ def test_the_same_dataset_with_four_and_six_factors(client):
     assert [d["columns"][1]["measures"] for d in comparison["dimensions"][4:]] == [[], []]
 
 
+def test_the_latex_names_the_thresholds_of_each_analysis_where_they_differ(client):
+    body = {
+        "columns": [
+            {"bundled_id": "comfy-paper-alpha-miner"},
+            {"bundled_id": "comfy-paper-inductive-miner", "options": {"communality_threshold": 0.6}},
+        ],
+        "assignment_rule": "hair",
+        "format": "latex",
+    }
+    tex = client.post("/factor-analysis/compare/export", json=body).text
+    assert "% Thresholds applied, Alpha miner: communality >= 0.5, |loading| > 0.35." in tex
+    assert "% Thresholds applied, Inductive miner: communality >= 0.6, |loading| > 0.35." in tex
+    largest = client.post("/factor-analysis/compare/export", json={**body, "assignment_rule": "largest"}).text
+    assert "% Thresholds applied, Alpha miner: communality >= 0.3, |loading| >= 0.35." in largest
+
+
 def test_standard_settings_and_kaiser(client):
     body = {
         "columns": [
@@ -346,6 +480,12 @@ def test_a_column_that_cannot_be_analysed_carries_its_error(client):
             400,
             "compare_mixed_kinds",
         ),
+        # Nothing can be analysed with 50 factors: no comparison, rather than an empty one.
+        (
+            {"columns": [{"bundled_id": "comfy-paper-alpha-miner", "options": {"n_factors": 50}}] * 2},
+            400,
+            "compare_nothing_analysed",
+        ),
         ({**_body(["alpha", "inductive"]), "assignment_rule": "lieben"}, 422, None),
         ({"columns": [{"bundled_id": "comfy-paper-alpha-miner", "options": {"assignment_rule": "multi"}}] * 2}, 422, None),
     ],
@@ -355,6 +495,17 @@ def test_bad_requests(client, body, status, code):
     assert r.status_code == status, r.text
     if code:
         assert r.json()["code"] == code
+
+
+def test_nothing_analysed_is_no_download_either(client):
+    body = {"columns": [{"bundled_id": "comfy-paper-alpha-miner", "options": {"n_factors": 50}}] * 2}
+    for format in ("csv", "latex", "zip"):
+        r = client.post("/factor-analysis/compare/export", json={**body, "format": format})
+        assert r.status_code == 400 and r.json()["code"] == "compare_nothing_analysed", format
+    assert r.json()["params"] == {"reasons": "n_factors_range"}
+    # One column that can be analysed is enough: the other carries its error.
+    mixed = {"columns": [{"bundled_id": "comfy-paper-alpha-miner"}, body["columns"][0]]}
+    assert client.post("/factor-analysis/compare", json=mixed).status_code == 200
 
 
 # --- exports ------------------------------------------------------------------------------
@@ -380,6 +531,8 @@ def test_latex_is_laid_out_like_table_17(client):
     assert "Inductive miner & size, ts, dup & CH & sep & mcd, CNC \\\\" in tex
     assert "Directly Follows miner & size, CFC, acd, dup & dens & sep &  \\\\" in tex
     assert "% Assignment rule hair:" in tex
+    # The least communality the rule used, not the 0.3 of the parameters.
+    assert "% Thresholds applied: communality >= 0.5, |loading| > 0.35." in tex
     assert "% In no dimension, Alpha miner: Connector Mismatch (low communality); Connector Heterogeneity (cross-loading)." in tex
     names = client.post("/factor-analysis/compare/export", json={**_body(FOUR), "format": "latex", "short_codes": False}).text
     assert "Inductive miner & Size, Token split, Number of duplicate tasks &" in names
@@ -394,33 +547,55 @@ def test_zip_has_the_request_and_the_parameters_of_every_column(client):
         manifest = json.loads(archive.read("manifest.json"))
         comparison = json.loads(archive.read("comparison.json"))
         readme = archive.read("README.txt").decode()
-    assert names == {"manifest.json", "README.txt", "comparison.json", "membership.csv", "dimensions.tex"}
+        pairs = archive.read("co_assignment.csv").decode().splitlines()
+    assert names == {
+        "manifest.json", "README.txt", "comparison.json", "membership.csv", "dimensions.tex", "co_assignment.csv",
+    }
     # The request as sent, with the rule and the labels it used.
     assert manifest["request"] == {**body, "short_codes": True}
     assert manifest["assignment_rule"] == "hair"
     assert manifest["alignment"]["method"] == "shared_measures"
     assert [c["bundled_id"] for c in manifest["columns"]] == [f"comfy-paper-{m}-miner" for m in FOUR]
     assert manifest["columns"][0]["analysis_params"]["n_factors"] == 4
+    # The parameter says 0.3; the rule used 0.5.
+    assert manifest["columns"][0]["analysis_params"]["communality_threshold"] == 0.3
+    assert manifest["columns"][0]["assignment"]["communality_threshold"] == 0.5
+    assert manifest["columns"][0]["assignment"]["rule"] == "hair"
     assert manifest["columns"][0]["citation"].startswith("Data of the paper")
     assert manifest["libraries"]["factor_analyzer"]
     assert manifest["measure_labels"] == "short_codes"
     assert comparison["columns"][2]["label"] == "Inductive miner"
     assert "POST the request of manifest.json to /factor-analysis/compare" in readme
+    # One row per pair of measures, each once; the manifest lists the file.
+    assert pairs[0] == "measure_a,code_a,measure_b,code_b,together,both_assigned,both_analysed"
+    assert len(pairs) == 1 + 13 * 12 // 2
+    assert "Token split,ts,Control flow complexity,CFC,2,2,2" in pairs or "Control flow complexity,CFC,Token split,ts,2,2,2" in pairs
+    assert "co_assignment.csv" in {f["name"] for f in manifest["files"]}
+    assert "co_assignment.csv" in readme
 
 
 def _pdflatex() -> str | None:
     return shutil.which("pdflatex")
 
 
-def _document(table: str) -> str:
+#: The text width of the CEUR-WS template (ceurart), where Tab. 17 of Important Factors is set;
+#: the table is as wide as the line, so it must fit this and any other.
+CEUR_TEXT_WIDTH = "452.97pt"
+
+
+def _document(table: str, text_width: str = CEUR_TEXT_WIDTH) -> str:
     return "\n".join([
         "\\documentclass{article}",
+        f"\\usepackage[textwidth={text_width},left=2cm]{{geometry}}",
         "\\usepackage[T1]{fontenc}",
         "\\usepackage{booktabs}",
         "\\usepackage{array}",
+        "\\usepackage{tabularx}",
         "\\usepackage{amsmath}",
         "\\begin{document}",
+        "\\begin{table}",
         table,
+        "\\end{table}",
         "\\end{document}",
         "",
     ])
@@ -448,6 +623,16 @@ def test_the_latex_tables_compile(client, tmp_path):
     }
     tables["log"] = compare.dimensions_latex(log, short=True)
     assert "$C_{\\text{mag}}$" in tables["log"]
+    # Every analysis failed: no dimension, but a table that still compiles.
+    failed = {
+        "kind": "model",
+        "assignment_rule": "hair",
+        "alignment": {"dimensions": 0},
+        "columns": [{"label": "A", "error": {"message": "n"}}, {"label": "B", "error": {"message": "n"}}],
+        "unassigned": [None, None],
+        "dimensions": [],
+    }
+    tables["failed"] = compare.dimensions_latex(failed, short=True)
     for name, table in tables.items():
         (tmp_path / f"{name}.tex").write_text(_document(table), encoding="utf-8")
         done = subprocess.run(
@@ -455,3 +640,6 @@ def test_the_latex_tables_compile(client, tmp_path):
             cwd=tmp_path, capture_output=True, text=True, timeout=300,
         )
         assert done.returncode == 0, (name, done.stdout[-3000:])
+        # As wide as the line: nothing sticks out of it, with the codes or the names.
+        overfull = [line for line in (tmp_path / f"{name}.log").read_text(errors="replace").splitlines() if line.startswith("Overfull")]
+        assert overfull == [], (name, overfull)

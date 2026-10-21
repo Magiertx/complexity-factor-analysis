@@ -7,16 +7,21 @@ data, not of the rule.
 
 The numbering of factors is arbitrary in every analysis, so the factors of the columns are
 matched first: the first column keeps its numbers, and the factors of each further column are
-matched one to one to the dimensions of the columns before it by the measures they share
-(the Hungarian method on the number of shared measures; ``align``). Each measure counts for the
-factor of its largest absolute loading, whatever the rule, so that switching the rule never
-renumbers the dimensions. Important Factors renumbered its dimensions by hand for Tab. 17; the
-tool's numbers can differ from the paper's, the groups do not.
+matched one to one to the dimensions of the columns before it by the measures they share (the
+Hungarian method on the number of shared measures; ``align``). Where two matches share as many
+measures, the one whose loadings are more alike wins (Tucker's congruence), and only after that
+a factor keeps its own number. Each measure counts for the factor of its largest absolute
+loading, whatever the rule, so that switching the rule never renumbers the dimensions. Important
+Factors renumbered its dimensions by hand for Tab. 17: the tool's numbers can differ from the
+paper's, and so can a match that rests on one shared measure; the grouping of the measures
+within a column does not depend on the numbers.
 
 ``build`` turns the analyses into what the API returns: a header per column, a matrix with one
-row per measure and the dimensions of the measure in every column, and the dimensions per
-column as Tab. 17 lists them. ``membership_csv``, ``dimensions_latex`` and ``comparison_zip``
-are its exports.
+row per measure and the dimensions of the measure in every column, the dimensions per column as
+Tab. 17 lists them, and for every pair of measures in how many columns both are in the same
+dimension (``co_assignment``), which needs no matching of the dimensions at all.
+``membership_csv``, ``dimensions_latex``, ``co_assignment_csv`` and ``comparison_zip`` are its
+exports.
 """
 
 from __future__ import annotations
@@ -28,7 +33,7 @@ import zipfile
 from collections import Counter
 from datetime import datetime, timezone
 from functools import lru_cache
-from typing import Any
+from typing import Any, NamedTuple
 
 import numpy as np
 import pandas as pd
@@ -52,7 +57,9 @@ ALIGNMENT = {
         "The first column keeps the numbers of its factors. The factors of each further column are "
         "matched one to one to the dimensions of the columns before it, so that the most measures "
         "fall into the same dimension (Hungarian method on the number of shared measures); each "
-        "measure counts for the factor of its largest absolute loading, whatever the rule."
+        "measure counts for the factor of its largest absolute loading, whatever the rule. Among "
+        "matches that share as many measures, the one with the more alike loadings wins (Tucker's "
+        "congruence with the factors before it), then the factor keeps its own number."
     ),
 }
 
@@ -103,41 +110,89 @@ def primary_groups(loadings: dict[str, list[float]], n_factors: int) -> list[set
     return groups
 
 
-def align(columns: list[list[set[str]]]) -> tuple[list[list[int]], list[list[int]]]:
-    """The dimension of each factor of each column, and the number of measures each factor
-    shares with the dimension it was matched to (over the columns before it).
+class Alignment(NamedTuple):
+    """How the factors of the columns were matched to dimensions (``align``)."""
+
+    #: The dimension of each factor of each column.
+    dimensions: list[list[int]]
+    #: How many measures each factor shares with the dimension it was matched to, counted over
+    #: the columns before it (a measure in two of them counts twice).
+    shared: list[list[int]]
+    #: Those measures, each once, in alphabetical order.
+    shared_names: list[list[list[str]]]
+    #: Tucker's congruence of each factor with the factors before it in its dimension, in
+    #: absolute value and averaged over them; ``None`` where there are none.
+    congruence: list[list[float | None]]
+
+
+def congruence(x: dict[str, float], y: dict[str, float]) -> float:
+    """Tucker's congruence coefficient of two loading vectors over the measures both have, in
+    absolute value because the sign of a factor is arbitrary; 0 if they share none."""
+    common = sorted(x.keys() & y.keys())
+    if not common:
+        return 0.0
+    a = np.array([x[m] for m in common], dtype=float)
+    b = np.array([y[m] for m in common], dtype=float)
+    denominator = float(np.sqrt((a @ a) * (b @ b)))
+    return 0.0 if denominator == 0.0 else abs(float(a @ b)) / denominator
+
+
+def align(columns: list[list[set[str]]], profiles: list[list[dict[str, float]]] | None = None) -> Alignment:
+    """The dimension of each factor of each column.
 
     ``columns`` holds the groups of each column (``primary_groups``); a column that failed has
     none. The dimensions are as many as the most factors of a column. The first column with
     factors keeps their numbers; each further column is matched to the measures the columns
     before it put into each dimension, so that the shared measures add up to the most. Among
-    equally good matches a factor keeps its own number.
+    equally good matches, the one whose loadings are the more alike wins (Tucker's congruence
+    with the factors before it in the dimension, from ``profiles``: the loadings of each factor
+    by measure, as ``primary_groups`` has them), and only when that tells them apart too a
+    factor keeps its own number.
     """
     n_dimensions = max((len(groups) for groups in columns), default=0)
     counts: list[Counter[str]] = [Counter() for _ in range(n_dimensions)]
+    before: list[list[dict[str, float]]] = [[] for _ in range(n_dimensions)]
     dimensions: list[list[int]] = []
     shared: list[list[int]] = []
-    for groups in columns:
+    names: list[list[list[str]]] = []
+    similar: list[list[float | None]] = []
+    for position, groups in enumerate(columns):
         if not groups:
             dimensions.append([])
             shared.append([])
+            names.append([])
+            similar.append([])
             continue
+        loadings = profiles[position] if profiles else [{} for _ in groups]
         overlap = np.array(
             [[sum(counts[d][m] for m in group) for d in range(n_dimensions)] for group in groups], dtype=float
         )
-        # Integers scaled up, plus 1 where a factor keeps its own number: that wins only a tie.
+        likeness = np.zeros_like(overlap)
+        has_before = np.zeros_like(overlap, dtype=bool)
+        for f in range(len(groups)):
+            for d in range(n_dimensions):
+                if before[d]:
+                    has_before[f, d] = True
+                    likeness[f, d] = sum(congruence(loadings[f], earlier) for earlier in before[d]) / len(before[d])
+        # Lexicographic: the shared measures (integers, scaled up so that the likeness of all
+        # factors together stays below one), then the likeness (rounded, so that a difference
+        # in the last digits does not count), then the factor's own number.
         keep = np.zeros_like(overlap)
         for f in range(len(groups)):
-            keep[f, f] = 1.0
-        rows, cols = linear_sum_assignment(overlap * (len(groups) + 1) + keep, maximize=True)
+            keep[f, f] = 1e-9
+        score = overlap * (len(groups) + 1) + np.round(likeness, 6) + keep
+        rows, cols = linear_sum_assignment(score, maximize=True)
         mapping = [0] * len(groups)
         for f, d in zip(rows, cols):
             mapping[int(f)] = int(d)
         dimensions.append(mapping)
         shared.append([int(overlap[f, mapping[f]]) for f in range(len(groups))])
+        names.append([sorted(m for m in groups[f] if counts[mapping[f]][m] > 0) for f in range(len(groups))])
+        similar.append([float(likeness[f, mapping[f]]) if has_before[f, mapping[f]] else None for f in range(len(groups))])
         for f, group in enumerate(groups):
             counts[mapping[f]].update(group)
-    return dimensions, shared
+            before[mapping[f]].append(loadings[f])
+    return Alignment(dimensions, shared, names, similar)
 
 
 # --- the comparison -----------------------------------------------------------------------
@@ -172,6 +227,9 @@ def _column_header(spec: dict[str, Any], result: dict[str, Any] | None) -> dict[
     cumulative = result["variance"]["cumulative"]
     header.update({
         "n_observations": result["n_observations"],
+        # What the rule applied: communality_threshold is the higher of the parameter and the
+        # rule's own minimum (0.5 under "hair" whatever ``options`` say).
+        "assignment": result["assignment"],
         "used_measures": result["used_measures"],
         "msa_removed": [r["measure"] for r in result["msa_filter"]["removed"]],
         "kmo": result["kmo"]["overall"],
@@ -243,6 +301,43 @@ def _cell(measure: str, spec: dict[str, Any], result: dict[str, Any] | None, dim
     }
 
 
+def co_assignment(rows: list[dict[str, Any]], n_dimensions: int) -> dict[str, Any]:
+    """For every pair of measures, in how many columns both are in the same dimension.
+
+    ``rows`` are the rows of the matrix, in their order. A measure is in the dimensions its cell
+    lists (several under "multi"); two share a dimension in a column if they have one in common.
+    The matrices are square and symmetric, indexed by ``measures``:
+
+    - ``together``: the columns in which both are in one dimension;
+    - ``both_assigned``: the columns in which both are in some dimension, so that the difference
+      to ``together`` is where they are apart;
+    - ``both_analysed``: the columns that analysed both, in a dimension or not (a column that
+      dropped, excluded or MSA-removed one of them, lacks it, or failed, does not count).
+
+    On the diagonal a measure is paired with itself: the columns that put it in a dimension, and
+    the columns that analysed it. Nothing here depends on how the dimensions are numbered.
+    """
+    columns = len(rows[0]["cells"]) if rows else 0
+    analysed = np.zeros((len(rows), columns), dtype=int)
+    assigned = np.zeros((len(rows), columns), dtype=int)
+    together = np.zeros((len(rows), len(rows)), dtype=int)
+    for c in range(columns):
+        member = np.zeros((len(rows), max(n_dimensions, 1)), dtype=int)
+        for i, row in enumerate(rows):
+            cell = row["cells"][c]
+            analysed[i, c] = cell["status"] in ("assigned", "unassigned")
+            if cell["status"] == "assigned":
+                assigned[i, c] = 1
+                member[i, cell["dimensions"]] = 1
+        together += (member @ member.T > 0).astype(int)
+    return {
+        "measures": [row["measure"] for row in rows],
+        "together": together.tolist(),
+        "both_assigned": (assigned @ assigned.T).tolist(),
+        "both_analysed": (analysed @ analysed.T).tolist(),
+    }
+
+
 def build(specs: list[dict[str, Any]], rule: str) -> dict[str, Any]:
     """The comparison of analysed columns.
 
@@ -254,7 +349,11 @@ def build(specs: list[dict[str, Any]], rule: str) -> dict[str, Any]:
     """
     results = [spec.get("result") for spec in specs]
     groups = [primary_groups(r["loadings"], r["n_factors"]) if r else [] for r in results]
-    dimension_of, shared = align(groups)
+    profiles = [
+        [{m: row[f] for m, row in r["loadings"].items()} for f in range(r["n_factors"])] if r else [] for r in results
+    ]
+    alignment = align(groups, profiles)
+    dimension_of = alignment.dimensions
     n_dimensions = max((len(d) for d in dimension_of), default=0)
     kind = specs[0]["entry"]["kind"]
 
@@ -264,8 +363,12 @@ def build(specs: list[dict[str, Any]], rule: str) -> dict[str, Any]:
         if result is None:
             header["error"] = spec.get("error")
         else:
+            rank = {m: p for p, m in enumerate(spec["measures"])}
             header["factor_dimensions"] = dimension_of[i]
-            header["shared_measures"] = shared[i]
+            header["shared_measures"] = alignment.shared[i]
+            # In the order of the data, as the rows are.
+            header["matched_by"] = [sorted(names, key=lambda m: rank.get(m, len(rank))) for names in alignment.shared_names[i]]
+            header["congruence"] = [None if c is None else round(c, 4) for c in alignment.congruence[i]]
             header["same_as"] = next(
                 (j for j in range(i) if results[j] is not None and _same(results[j], result)), None
             )
@@ -323,6 +426,7 @@ def build(specs: list[dict[str, Any]], rule: str) -> dict[str, Any]:
         "alignment": {**ALIGNMENT, "dimensions": n_dimensions},
         "columns": columns,
         "measures": rows,
+        "co_assignment": co_assignment(rows, n_dimensions),
         "dimensions": dimensions,
         "unassigned": [
             None if result is None else [
@@ -367,25 +471,63 @@ def membership_csv(comparison: dict[str, Any]) -> str:
     return "".join(lines)
 
 
+def co_assignment_csv(comparison: dict[str, Any]) -> str:
+    """One row per pair of measures (each pair once, in the order of the matrix): in how many
+    analyses both are in the same dimension (``together``), in some dimension (``both_assigned``)
+    and were analysed at all (``both_analysed``)."""
+    pairs = comparison["co_assignment"]
+    codes = {row["measure"]: row["short"] or "" for row in comparison["measures"]}
+    lines = [_csv_line(["measure_a", "code_a", "measure_b", "code_b", "together", "both_assigned", "both_analysed"])]
+    for i, a in enumerate(pairs["measures"]):
+        for j in range(i + 1, len(pairs["measures"])):
+            b = pairs["measures"][j]
+            lines.append(_csv_line([
+                a, codes[a], b, codes[b], pairs["together"][i][j], pairs["both_assigned"][i][j], pairs["both_analysed"][i][j],
+            ]))
+    return "".join(lines)
+
+
+def _thresholds(assignment: dict[str, Any]) -> str:
+    """What the rule applied to one analysis, e.g. "communality >= 0.5, |loading| > 0.35"."""
+    compare = ">" if assignment["loading_strict"] else ">="
+    return (
+        f"communality >= {assignment['communality_threshold']:g}, "
+        f"|loading| {compare} {assignment['loading_threshold']:g}"
+    )
+
+
 _UNASSIGNED = {"low_communality": "low communality", "low_loading": "no loading counts", "cross_loading": "cross-loading"}
 
 
 def dimensions_latex(comparison: dict[str, Any], short: bool = True) -> str:
-    """The dimensions of each analysis as a booktabs tabular in the layout of Tab. 17 of
-    Important Factors: one row per analysis, one column per dimension. Comments name the rule,
-    how the dimensions were matched, and the measures in no dimension."""
+    """The dimensions of each analysis as a booktabs tabularx in the layout of Tab. 17 of
+    Important Factors: one row per analysis, one column per dimension, as wide as the line so
+    that it fits whatever the page (the analyses' names take what they need, the dimensions
+    share the rest). Comments name the rule, the thresholds, how the dimensions were matched,
+    and the measures in no dimension."""
     from .export import ASSIGNMENT_RULE_TEXTS
     from .report import _RAGGED, _Labels, tex
 
     label = _Labels(comparison["kind"], short)
     rule = comparison["assignment_rule"]
     n = comparison["alignment"]["dimensions"]
-    width = max(1.6, round(11.0 / max(n, 1), 1))
     lines = [
-        "% Requires \\usepackage{booktabs} and \\usepackage{array}.",
+        "% Requires \\usepackage{booktabs}, \\usepackage{array} and \\usepackage{tabularx}; as wide as the line.",
         f"% Assignment rule {rule}: {ASSIGNMENT_RULE_TEXTS[rule]}.",
-        "% Dimensions matched across the analyses by shared measures; the first analysis keeps the numbers of its factors.",
     ]
+    # The thresholds the rule applied, which can differ from the parameters (the least
+    # communality of "hair" is 0.5 whatever the parameter says); per analysis only if they differ.
+    applied: dict[str, list[str]] = {}
+    for column in comparison["columns"]:
+        if column.get("assignment"):
+            applied.setdefault(_thresholds(column["assignment"]), []).append(" ".join(column["label"].split()))
+    if len(applied) == 1:
+        lines.append(f"% Thresholds applied: {next(iter(applied))}.")
+    else:
+        lines += [f"% Thresholds applied, {', '.join(labels)}: {text}." for text, labels in applied.items()]
+    lines.append(
+        "% Dimensions matched across the analyses by shared measures; the first analysis keeps the numbers of its factors."
+    )
     for column, unassigned in zip(comparison["columns"], comparison["unassigned"]):
         if unassigned:
             listed = "; ".join(
@@ -395,9 +537,10 @@ def dimensions_latex(comparison: dict[str, Any], short: bool = True) -> str:
         if column.get("error"):
             lines.append(f"% {' '.join(column['label'].split())} could not be analysed: {' '.join(column['error']['message'].split())}")
     lines += [
-        f"\\begin{{tabular}}{{l{(_RAGGED + f'p{{{width}cm}}') * n}}}",
+        # Without a dimension (every analysis failed) there is still a column, so that it compiles.
+        f"\\begin{{tabularx}}{{\\linewidth}}{{l{(_RAGGED + 'X') * max(n, 1)}}}",
         "\\toprule",
-        " & " + " & ".join(f"Dimension {d + 1}" for d in range(n)) + " \\\\",
+        " & " + (" & ".join(f"Dimension {d + 1}" for d in range(n)) if n else "") + " \\\\",
         "\\midrule",
     ]
     for i, column in enumerate(comparison["columns"]):
@@ -405,8 +548,8 @@ def dimensions_latex(comparison: dict[str, Any], short: bool = True) -> str:
         for dimension in comparison["dimensions"]:
             entry = dimension["columns"][i]
             cells.append(", ".join(label(m["measure"]) for m in entry["measures"]) if entry else "--")
-        lines.append(f"{tex(column['label'])} & " + " & ".join(cells) + " \\\\")
-    lines += ["\\bottomrule", "\\end{tabular}", ""]
+        lines.append(f"{tex(column['label'])} & " + (" & ".join(cells) if cells else "--") + " \\\\")
+    lines += ["\\bottomrule", "\\end{tabularx}", ""]
     return "\n".join(lines)
 
 
@@ -430,8 +573,8 @@ def _readme(comparison: dict[str, Any], files: list[dict[str, str]], created_at:
 
 
 def comparison_zip(comparison: dict[str, Any], request: dict[str, Any], short: bool = True) -> bytes:
-    """The comparison as a ZIP: the full result, the matrix as CSV, the dimensions as LaTeX, a
-    README and a manifest with the request, the parameters of each column, where the data come
+    """The comparison as a ZIP: the full result, the matrix and the pairs of measures as CSV, the
+    dimensions as LaTeX, a README and a manifest with the request, the parameters of each column, where the data come
     from, the tool and the library versions."""
     from .export import library_versions
 
@@ -442,7 +585,9 @@ def comparison_zip(comparison: dict[str, Any], request: dict[str, Any], short: b
         ("membership.csv", membership_csv(comparison),
          "One row per measure: the dimensions each analysis puts it in, or why none."),
         ("dimensions.tex", dimensions_latex(comparison, short),
-         "The dimensions of each analysis as a booktabs tabular, laid out like Tab. 17 of Important Factors."),
+         "The dimensions of each analysis as a booktabs tabularx as wide as the line, laid out like Tab. 17 of Important Factors."),
+        ("co_assignment.csv", co_assignment_csv(comparison),
+         "One row per pair of measures: in how many analyses both are in the same dimension."),
     ]
     listing = [
         {"name": "manifest.json", "description": "What was compared, with which parameters, code and libraries."},
@@ -457,6 +602,7 @@ def comparison_zip(comparison: dict[str, Any], request: dict[str, Any], short: b
             "label": column["label"],
             "settings": column["settings"],
             "analysis_params": column["options"],
+            "assignment": column.get("assignment"),
             "published_source": column.get("published_source"),
             "citation": entry.get("citation"),
             "license": entry.get("license"),
