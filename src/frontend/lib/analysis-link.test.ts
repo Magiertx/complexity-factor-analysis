@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analysisLinkQuery, parseAnalysisLink } from "./analysis-link";
+import { analysisLinkQuery, parseAnalysisLink, parsePrintLink, printHref } from "./analysis-link";
 import { defaultOptions, type AnalysisOptions } from "./factor-analysis";
 
 const standard = defaultOptions("model");
@@ -51,5 +51,25 @@ describe("analysis links", () => {
     }
     // Readable parameters next to a bad one count for nothing.
     expect(parse(`bundled=${id}&rule=multi&k=0`)?.options).toEqual(standard);
+  });
+});
+
+describe("print view links", () => {
+  const defaults = (kind: "model" | "log") => defaultOptions(kind);
+
+  it("carry the dataset, every setting and the view, and read them back", () => {
+    const own: AnalysisOptions = { ...paper, rotation: "oblimin", excluded: ["Density"] };
+    const href = printHref("model", "abc", own, standard, { codes: true, order: "dataset" });
+    expect(href).toBe("/print?kind=model&dataset=abc&k=4&rot=oblimin&msa=0.6&lt=0.35&h2=0.3&rule=multi&ex=Density&codes=1&order=dataset");
+    const parsed = parsePrintLink(new URLSearchParams(href.split("?")[1]), defaults);
+    expect(parsed).toEqual({ kind: "model", datasetId: "abc", options: own, view: { codes: true, order: "dataset" } });
+  });
+
+  it("start from the standard of the kind and need a dataset", () => {
+    const log = parsePrintLink(new URLSearchParams("kind=log&dataset=x"), defaults);
+    expect(log?.options).toEqual(defaultOptions("log"));
+    expect(log?.view).toEqual({ codes: false, order: "factor" });
+    expect(parsePrintLink(new URLSearchParams("kind=model"), defaults)).toBeNull();
+    expect(parsePrintLink(new URLSearchParams("dataset=x&rot=spin"), defaults)).toBeNull();
   });
 });
