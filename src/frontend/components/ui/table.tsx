@@ -9,21 +9,46 @@ import { cn } from "@/lib/utils";
  */
 const MeasureIndexes = createContext<ReadonlyMap<string, string> | null>(null);
 
-/** A block of the page whose measure names are set with these indexes (`MeasureName`). */
+/** What opens the fact sheet of a measure: the view that has the sheet provides it (`MeasureScope`). */
+export interface MeasureOpener {
+  /**
+   * Opens the sheet of `measure`. `list` is the measures of the list the name stands in, in its order,
+   * which the arrow keys of the sheet page through; null for the measures of the dataset. `from` is
+   * the element the focus returns to when the sheet closes.
+   */
+  open: (measure: string, list: readonly string[] | null, from: HTMLElement) => void;
+}
+
+const MeasureOpenerContext = createContext<MeasureOpener | null>(null);
+const MeasureListContext = createContext<readonly string[] | null>(null);
+
+/**
+ * A block of the page whose measure names are set with these indexes (`MeasureName`), and, with an
+ * `opener`, whose names open the fact sheet of the measure.
+ */
 export function MeasureScope({
   indexes,
+  opener,
   className,
   children,
 }: {
   indexes: ReadonlyMap<string, string>;
+  opener?: MeasureOpener | null;
   className?: string;
   children: React.ReactNode;
 }) {
   return (
     <MeasureIndexes.Provider value={indexes}>
-      <div className={className}>{children}</div>
+      <MeasureOpenerContext.Provider value={opener ?? null}>
+        <div className={className}>{children}</div>
+      </MeasureOpenerContext.Provider>
     </MeasureIndexes.Provider>
   );
+}
+
+/** A list of measures (the rows of a table or the cards of a view): the sheet of one of its names pages through them. */
+export function MeasureListScope({ measures, children }: { measures: readonly string[]; children: React.ReactNode }) {
+  return <MeasureListContext.Provider value={measures}>{children}</MeasureListContext.Provider>;
 }
 
 /**
@@ -87,31 +112,50 @@ export function TableFrame({
 /**
  * A measure's full name, with places to break after underscores: "epa_normalized_sequence_entropy"
  * wraps between its parts rather than being cut off. The code of a log measure is written as the
- * papers write it: C with the code as index.
+ * papers write it: C with the code as index. With the `measure` it is the name of (its key) and a
+ * sheet to open, the name is a button that opens the fact sheet of the measure.
  */
-export function MeasureName({ name }: { name: string }) {
+export function MeasureName({ name, measure }: { name: string; measure?: string }) {
   const index = useContext(MeasureIndexes)?.get(name);
+  const opener = useContext(MeasureOpenerContext);
+  const list = useContext(MeasureListContext);
+  let text: React.ReactNode;
   if (index !== undefined) {
-    return (
+    text = (
       <>
         C<sub>{index}</sub>
       </>
     );
+  } else {
+    const parts = name.split("_");
+    text =
+      parts.length === 1 ? (
+        <>{name}</>
+      ) : (
+        <>
+          {parts.map((part, i) => (
+            <Fragment key={i}>
+              {i > 0 && (
+                <>
+                  _<wbr />
+                </>
+              )}
+              {part}
+            </Fragment>
+          ))}
+        </>
+      );
   }
-  const parts = name.split("_");
-  if (parts.length === 1) return <>{name}</>;
+  if (!measure || !opener) return text;
   return (
-    <>
-      {parts.map((part, i) => (
-        <Fragment key={i}>
-          {i > 0 && (
-            <>
-              _<wbr />
-            </>
-          )}
-          {part}
-        </Fragment>
-      ))}
-    </>
+    <button
+      type="button"
+      data-measure-link={measure}
+      aria-haspopup="dialog"
+      onClick={(e) => opener.open(measure, list, e.currentTarget)}
+      className="measure-link inline text-left font-[inherit] rounded-sm hover:underline hover:decoration-dotted underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+    >
+      {text}
+    </button>
   );
 }

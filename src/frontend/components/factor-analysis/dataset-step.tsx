@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { ActionLink } from "@/components/ui/action-link";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
-import { MeasureName, TableFrame } from "@/components/ui/table";
+import { MeasureListScope, MeasureName, TableFrame } from "@/components/ui/table";
 import { Term, useTip, useTipZone } from "@/components/ui/tip";
 import { FoldButton } from "./measure-fold";
 import { HelpLabel, StatTile } from "./step-section";
@@ -54,7 +54,6 @@ export function DatasetView({
   const detailOf = (d: FactorDataset["dropped"][number]) =>
     (d.params && tMaybe(`factor.dataset.detail.${d.reason}`, d.params)) || d.detail;
   const failures = dataset.failures ?? [];
-
   return (
     <div className="space-y-6">
       {minerChoice && dataset.miners && dataset.miners.length > 1 && (
@@ -73,31 +72,33 @@ export function DatasetView({
         {dataset.dropped.length === 0 ? (
           <p className="text-xs text-muted">{t("factor.dataset.dropped_none")}</p>
         ) : (
-          <TableFrame label={t("factor.dataset.cleaning_heading")}>
-            <table className="data-table">
-              <caption className="sr-only">{t("factor.dataset.cleaning_heading")}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">{t("factor.suitability.col_measure")}</th>
-                  <th scope="col">{t("factor.dataset.col_reason")}</th>
-                  <th scope="col">{t("factor.dataset.col_detail")}</th>
-                </tr>
-              </thead>
-              <tbody ref={cleaningZone}>
-                {dataset.dropped.map((d) => (
-                  <tr key={`${d.measure}:${d.reason}`}>
-                    <th scope="row" className="font-medium break-words">
-                      <span data-tip-more={measureDescription(d.measure)}>
-                        <MeasureName name={measureName(d.measure)} />
-                      </span>
-                    </th>
-                    <td className="whitespace-nowrap">{t(`factor.dataset.reason.${d.reason}`)}</td>
-                    <td className="text-muted break-words">{detailOf(d) ?? NO_VALUE}</td>
+          <MeasureListScope measures={dataset.dropped.map((d) => d.measure)}>
+            <TableFrame label={t("factor.dataset.cleaning_heading")}>
+              <table className="data-table">
+                <caption className="sr-only">{t("factor.dataset.cleaning_heading")}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">{t("factor.suitability.col_measure")}</th>
+                    <th scope="col">{t("factor.dataset.col_reason")}</th>
+                    <th scope="col">{t("factor.dataset.col_detail")}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableFrame>
+                </thead>
+                <tbody ref={cleaningZone}>
+                  {dataset.dropped.map((d) => (
+                    <tr key={`${d.measure}:${d.reason}`}>
+                      <th scope="row" className="font-medium break-words">
+                        <span data-tip-more={measureDescription(d.measure)}>
+                          <MeasureName name={measureName(d.measure)} measure={d.measure} />
+                        </span>
+                      </th>
+                      <td className="whitespace-nowrap">{t(`factor.dataset.reason.${d.reason}`)}</td>
+                      <td className="text-muted break-words">{detailOf(d) ?? NO_VALUE}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TableFrame>
+          </MeasureListScope>
         )}
         {dataset.dropped_rows > 0 && (
           <p className="text-xs text-muted">{countText(t, "factor.dataset.dropped_rows_note", dataset.dropped_rows)}</p>
@@ -346,55 +347,57 @@ function DescriptivesTable({
       </div>
       {open && (
         <>
-          <TableFrame label={heading} boxed={long} className={long ? "max-h-[28rem]" : undefined}>
-            <table ref={zone} className="data-table">
-              <caption className="sr-only">{heading}</caption>
-              <thead>
-                <tr>
-                  <th scope="col" className="sticky-col">
-                    {t("factor.suitability.col_measure")}
-                  </th>
-                  <th scope="col" className="num" data-tip-more={t("factor.dataset.col_n_more")}>
-                    n
-                  </th>
-                  <th scope="col" className="num">
-                    {t("factor.dataset.col_mean")}
-                  </th>
-                  <th scope="col" className="num">
-                    {t("factor.dataset.col_median")}
-                  </th>
-                  <th scope="col" className="num" data-tip-more={t("factor.dataset.col_sd_more")}>
-                    {t("factor.dataset.col_sd")}
-                  </th>
-                  <th scope="col" className="num">
-                    {t("factor.dataset.col_min")}
-                  </th>
-                  <th scope="col" className="num">
-                    {t("factor.dataset.col_max")}
-                  </th>
-                  <th scope="col">{t("factor.dataset.col_cleaning")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.measure} className={row.dropped ? "text-muted" : undefined}>
-                    <th scope="row" className="sticky-col font-medium break-words min-w-[9rem] max-w-[16rem]">
-                      <span data-tip-more={measureDescription(row.measure)}>
-                        <MeasureName name={measureName(row.measure)} />
-                      </span>
+          <MeasureListScope measures={rows.map((row) => row.measure)}>
+            <TableFrame label={heading} boxed={long} className={long ? "max-h-[28rem]" : undefined}>
+              <table ref={zone} className="data-table">
+                <caption className="sr-only">{heading}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col" className="sticky-col">
+                      {t("factor.suitability.col_measure")}
                     </th>
-                    <td className="num">{formatNumber(row.n, locale)}</td>
-                    <td className="num">{statistic(row.mean, locale)}</td>
-                    <td className="num">{statistic(row.median, locale)}</td>
-                    <td className="num">{statistic(row.std, locale)}</td>
-                    <td className="num">{statistic(row.min, locale)}</td>
-                    <td className="num">{statistic(row.max, locale)}</td>
-                    <td className="whitespace-nowrap">{row.dropped ? t(`factor.dataset.reason.${row.dropped}`) : ""}</td>
+                    <th scope="col" className="num" data-tip-more={t("factor.dataset.col_n_more")}>
+                      n
+                    </th>
+                    <th scope="col" className="num">
+                      {t("factor.dataset.col_mean")}
+                    </th>
+                    <th scope="col" className="num">
+                      {t("factor.dataset.col_median")}
+                    </th>
+                    <th scope="col" className="num" data-tip-more={t("factor.dataset.col_sd_more")}>
+                      {t("factor.dataset.col_sd")}
+                    </th>
+                    <th scope="col" className="num">
+                      {t("factor.dataset.col_min")}
+                    </th>
+                    <th scope="col" className="num">
+                      {t("factor.dataset.col_max")}
+                    </th>
+                    <th scope="col">{t("factor.dataset.col_cleaning")}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableFrame>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.measure} className={row.dropped ? "text-muted" : undefined}>
+                      <th scope="row" className="sticky-col font-medium break-words min-w-[9rem] max-w-[16rem]">
+                        <span data-tip-more={measureDescription(row.measure)}>
+                          <MeasureName name={measureName(row.measure)} measure={row.measure} />
+                        </span>
+                      </th>
+                      <td className="num">{formatNumber(row.n, locale)}</td>
+                      <td className="num">{statistic(row.mean, locale)}</td>
+                      <td className="num">{statistic(row.median, locale)}</td>
+                      <td className="num">{statistic(row.std, locale)}</td>
+                      <td className="num">{statistic(row.min, locale)}</td>
+                      <td className="num">{statistic(row.max, locale)}</td>
+                      <td className="whitespace-nowrap">{row.dropped ? t(`factor.dataset.reason.${row.dropped}`) : ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TableFrame>
+          </MeasureListScope>
           <p className="text-[11px] text-muted max-w-prose">
             {descriptives.basis === "input"
               ? t("factor.dataset.descriptives_note", { n: descriptives.n_rows })

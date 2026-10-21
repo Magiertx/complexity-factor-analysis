@@ -7,7 +7,7 @@ import { countText } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
-import { MeasureName } from "@/components/ui/table";
+import { MeasureListScope, MeasureName } from "@/components/ui/table";
 import { useTip, useTipZone } from "@/components/ui/tip";
 
 interface Props {
@@ -121,60 +121,62 @@ export function InterpretationView({
               {t("factor.interpretation.precomputed")}
             </span>
           )}
-          <ol ref={zone} className="grid gap-3 md:grid-cols-2">
-            {interpretation.factors.map((f) => (
-              <li key={f.index} className="rounded-lg bg-tile p-4 space-y-2 min-w-0">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-xs text-muted">{t("factor.interpretation.factor", { n: f.index })}</div>
-                    <h3 className="text-sm font-semibold leading-snug break-words">{f.name}</h3>
+          <MeasureListScope measures={[...new Set(interpretation.factors.flatMap((f) => f.driving_measures))]}>
+            <ol ref={zone} className="grid gap-3 md:grid-cols-2">
+              {interpretation.factors.map((f) => (
+                <li key={f.index} className="rounded-lg bg-tile p-4 space-y-2 min-w-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-xs text-muted">{t("factor.interpretation.factor", { n: f.index })}</div>
+                      <h3 className="text-sm font-semibold leading-snug break-words">{f.name}</h3>
+                    </div>
+                    <span className={cn("shrink-0 text-xs", CONFIDENCE_INK[f.confidence])}>
+                      {t("factor.interpretation.confidence", {
+                        level: t(`factor.interpretation.confidence_level.${f.confidence}`),
+                      })}
+                    </span>
                   </div>
-                  <span className={cn("shrink-0 text-xs", CONFIDENCE_INK[f.confidence])}>
-                    {t("factor.interpretation.confidence", {
-                      level: t(`factor.interpretation.confidence_level.${f.confidence}`),
-                    })}
-                  </span>
-                </div>
-                <p className="text-sm leading-relaxed">{f.summary}</p>
-                {f.driving_measures.length > 0 && (
-                  <p className="text-xs text-muted">
-                    <span className="font-medium">{t("factor.interpretation.driving")}:</span>{" "}
-                    {f.driving_measures.map((m, i) => (
-                      <span key={m}>
-                        {i > 0 && " · "}
-                        <span className="text-fg/80" data-tip-more={measureDescription(m)}>
-                          <MeasureName name={measureName(m)} />
+                  <p className="text-sm leading-relaxed">{f.summary}</p>
+                  {f.driving_measures.length > 0 && (
+                    <p className="text-xs text-muted">
+                      <span className="font-medium">{t("factor.interpretation.driving")}:</span>{" "}
+                      {f.driving_measures.map((m, i) => (
+                        <span key={m}>
+                          {i > 0 && " · "}
+                          <span className="text-fg/80" data-tip-more={measureDescription(m)}>
+                            <MeasureName name={measureName(m)} measure={m} />
+                          </span>
                         </span>
-                      </span>
-                    ))}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ol>
+                      ))}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ol>
+            </MeasureListScope>
 
-          {interpretation.overall && (
-            <div className="space-y-1">
-              <h3 className="text-sm font-semibold">{t("factor.interpretation.overall")}</h3>
-              <p className="text-sm leading-relaxed max-w-3xl">{interpretation.overall}</p>
-            </div>
-          )}
-          {interpretation.caveats.length > 0 && (
-            <div className="space-y-1">
-              <h3 className="text-sm font-semibold">{t("factor.interpretation.caveats")}</h3>
-              <ul className="list-disc pl-5 space-y-1 text-sm max-w-3xl">
-                {interpretation.caveats.map((c, i) => (
-                  <li key={i}>{c}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+            {interpretation.overall && (
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold">{t("factor.interpretation.overall")}</h3>
+                <p className="text-sm leading-relaxed max-w-3xl">{interpretation.overall}</p>
+              </div>
+            )}
+            {interpretation.caveats.length > 0 && (
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold">{t("factor.interpretation.caveats")}</h3>
+                <ul className="list-disc pl-5 space-y-1 text-sm max-w-3xl">
+                  {interpretation.caveats.map((c, i) => (
+                    <li key={i}>{c}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-          <p className="text-xs text-muted border-t border-border pt-3">
-            {t("factor.interpretation.footer", { model: interpretation.model })}
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
+            <p className="text-xs text-muted border-t border-border pt-3">
+              {t("factor.interpretation.footer", { model: interpretation.model })}
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }

@@ -632,7 +632,7 @@ function MapTable({
                 {layout.measures.map((m) => (
                   <th key={m} scope="col" className="num align-bottom">
                     <span className="inline-block max-h-40 overflow-hidden [writing-mode:vertical-rl] rotate-180 text-ellipsis whitespace-nowrap">
-                      <MeasureName name={measureName(m)} />
+                      <MeasureName name={measureName(m)} measure={m} />
                     </span>
                   </th>
                 ))}
@@ -642,7 +642,7 @@ function MapTable({
               {layout.measures.map((m, i) => (
                 <tr key={m}>
                   <th scope="row" className="sticky-col font-medium break-words min-w-[9rem] max-w-[16rem]">
-                    <MeasureName name={measureName(m)} />
+                    <MeasureName name={measureName(m)} measure={m} />
                   </th>
                   {layout.measures.map((other, j) => {
                     const r = layoutValue(data, layout, i, j);

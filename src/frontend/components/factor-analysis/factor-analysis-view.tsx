@@ -51,6 +51,7 @@ import {
   sameOptions,
   solutionKey,
   solutionNeedsAttention,
+  MIN_MEASURES,
   suggestedNames,
   trimNames,
   unassignedMeasures,
@@ -72,7 +73,7 @@ import {
   type Pins,
 } from "@/lib/compare";
 import { formatNumber, formatPercent } from "@/lib/format";
-import { measureInfo, type MeasureInfo } from "@/lib/measure-list";
+import { measureInfo, toggleExcluded, type MeasureInfo } from "@/lib/measure-list";
 import { ruleNote } from "@/lib/paper-notes";
 import { codeIndexes, codesOf, hasCodes, loadShortCodes, measureLabels, saveShortCodes } from "@/lib/short-codes";
 import { CONTROL_STEPS, parseStep, stepFromHash, stepHref } from "@/lib/steps";
@@ -80,13 +81,14 @@ import { cn } from "@/lib/utils";
 import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
-import { MeasureScope } from "@/components/ui/table";
+import { MeasureScope, type MeasureOpener } from "@/components/ui/table";
 import { UndoToast, type UndoNotice } from "@/components/ui/undo-toast";
 import { useJobsDrawer } from "@/components/jobs-drawer";
 import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
 import { PageHeader } from "@/components/page-header";
 import { DataForm, DataSummary, type OpenPreset } from "./data-step";
 import { useMapOrder, type CorrelationMapProps, type CorrelationsState } from "./correlation-map";
+import { MeasureSheet } from "./measure-sheet";
 import { DatasetView, type MinerChoiceProps } from "./dataset-step";
 import { DEFAULT_MEASURE_VIEW, SuitabilityView, type MeasureGroups, type MeasureView } from "./suitability-step";
 import { FactorsView } from "./factors-step";
@@ -231,6 +233,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const [corrWanted, setCorrWanted] = useState(false);
   const [corr, setCorr] = useState<{ key: string; data: Correlations | null; error: string | null } | null>(null);
   const [corrAttempt, setCorrAttempt] = useState(0);
+  // The fact sheet of a measure: which one, the list its name stood in, and where it was opened from.
+  const [sheet, setSheet] = useState<{ measure: string; list: readonly string[] | null; from: HTMLElement | null } | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
   const onboarding = useOnboarding();
@@ -324,6 +328,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       setNaming(NO_NAMES);
       setCorrWanted(false);
       setCorr(null);
+      setSheet(null);
       // A request for the old dataset is aborted and would not reset this itself.
       setAnalyzing(false);
       // Every dataset has its own options; those saved with it are applied once it has loaded.
@@ -895,6 +900,21 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     () => (dataset ? measureInfo(dataset.measures, analysis, options) : new Map<string, MeasureInfo>()),
     [dataset, analysis, options],
   );
+  const catalogMeasures = useMemo(() => new Map((catalog?.measures ?? []).map((m) => [m.key, m])), [catalog]);
+  const groupName = useCallback(
+    (key: string) => catalog?.groups?.find((g) => g.key === key)?.name,
+    [catalog],
+  );
+  // Any name of a measure on the page opens its fact sheet; the correlations it shows are asked for then.
+  const opener = useMemo<MeasureOpener>(
+    () => ({
+      open: (measure, list, from) => {
+        setCorrWanted(true);
+        setSheet({ measure, list, from });
+      },
+    }),
+    [],
+  );
   // The feature groups of the log measures, for grouping the list of step 3; model measures have none.
   const measureGroups = useMemo<MeasureGroups | null>(() => {
     if (!catalog?.groups?.length) return null;
@@ -1290,7 +1310,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       : null;
 
   return (
-    <MeasureScope indexes={indexes} className="space-y-6">
+    <MeasureScope indexes={indexes} opener={opener} className="space-y-6">
       <OnboardingTour open={onboarding.open} onClose={onboarding.close} />
       <FactorTour kind={kind} run={tourOpen} onClose={endTour} onStep={tourStep} />
       <Suspense fallback={null}>
@@ -1638,6 +1658,28 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         </div>
       </div>
       <StepNavBar step={current} locks={locks} onGo={go} />
+      {ready && dataset && sheet && (
+        <MeasureSheet
+          measure={sheet.measure}
+          list={sheet.list ?? dataset.measures}
+          from={sheet.from}
+          onMeasure={(measure) =>
+            setSheet((s) => s && { ...s, measure, list: s.list && !s.list.includes(measure) ? null : s.list })
+          }
+          onClose={() => setSheet(null)}
+          dataset={dataset}
+          analysis={analysis}
+          options={options}
+          info={measureInfos}
+          catalog={catalogMeasures}
+          groupName={groupName}
+          measureName={measureName}
+          correlations={correlations}
+          names={shownNames}
+          locked={dataset.measures.length - options.excluded.length <= MIN_MEASURES}
+          onToggleExcluded={(measure) => updateOptions({ excluded: toggleExcluded(options.excluded, measure) })}
+        />
+      )}
     </MeasureScope>
   );
 }
