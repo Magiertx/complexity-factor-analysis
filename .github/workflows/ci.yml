@@ -81,8 +81,9 @@ jobs:
         run: pip install -r requirements-dev.txt -c constraints.txt
 
       # -rs lists a skip; without pdflatex the tests would skip, so the step above checks for it.
+      # The reports, and the table of a comparison of factor structures.
       - name: Compile the reports
-        run: python -m pytest -q -rs tests/test_report.py -k compile
+        run: python -m pytest -q -rs tests/test_report.py tests/test_compare.py -k compile
 
   frontend:
     runs-on: ubuntu-24.04

@@ -236,6 +236,16 @@ dataset compares itself with them (`factor_analysis/published.py`); the bundled 
 equal the upstream code run in the same environment, but not necessarily its published output
 (see `datasets/PROVENANCE.md`).
 
+The **comparison of factor structures** (`factor_analysis/compare.py`, `POST
+/factor-analysis/compare`, the page `/compare`) analyses 2 to 8 bundled datasets in the slots
+of the requests, one after the other, on the matrix `precompute.bundled_matrix` makes, so the
+precomputed paper-settings fits serve it and no dataset of the session is made. All columns
+share one assignment rule. The factors of the columns are matched by shared measures: each
+measure counts for the factor of its largest absolute loading, the first column keeps its
+numbers, and every further column is matched to the dimensions of the columns before it with
+`scipy.optimize.linear_sum_assignment` on the number of shared measures, a factor keeping its
+own number in a tie. The rows of the matrix are grouped by the dimension most columns agree on.
+
 A dataset whose job is still running 70 minutes after it started outlived Celery's time limit
 (for example because the worker restarted); reading it marks the job and the dataset failed,
 and pruning removes such datasets with their inputs.
@@ -455,6 +465,12 @@ The single-log ComFy workbench lives at `/inspect` ("Inspect a single log" on th
 `/api-access` shows scripting examples. `/print` shows the analysis of its address on A4 pages
 to print or save as PDF (the download menu opens it in a new tab), `/guide` the user guide of
 `docs/GUIDE.md` in the language of the UI (the help icon of the toolbar opens it).
+`/compare` puts the factor structures of 2 to 8 bundled datasets side by side
+(`compare-view.tsx`, `lib/compare.ts`; the column icon of the model tab's toolbar and Start
+here open it with the four miners of Tab. 17 under Hair et al.). The datasets and the rule are
+its address (`?cols=<ids>&rule=<rule>`), every change asks `POST /factor-analysis/compare`
+again, and its toolbar has the short codes, the link and the downloads of
+`POST /factor-analysis/compare/export`.
 
 ## Input safety
 

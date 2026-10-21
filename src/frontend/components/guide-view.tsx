@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { APP_NAME } from "@/lib/app-config";
+import { COMPARE_HREF } from "@/lib/compare";
 import { useT } from "@/lib/i18n";
 import { PageHeader } from "@/components/page-header";
 
@@ -48,6 +49,13 @@ const SECTIONS: GuideSection[] = [
     before: 0,
     items: ["dataset", "suitability", "factors", "loadings", "interpretation"],
     links: [{ href: "/?step=dataset", key: "results" }],
+  },
+  {
+    id: "compare",
+    before: 1,
+    items: ["columns", "rule", "matrix", "dimensions", "export"],
+    after: 1,
+    links: [{ href: COMPARE_HREF, key: "compare" }],
   },
   {
     id: "export",

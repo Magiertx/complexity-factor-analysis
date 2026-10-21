@@ -255,7 +255,9 @@
       "health": "Bereitschaftsprüfung: 200, wenn die Datenbank erreichbar ist.",
       "session_start": "Startet die Sitzung (das Cookie `session_id`), wenn die Anfrage keines hat oder eines, das der Server nicht lesen kann. Die Seite erledigt das selbst; ein Skript, das mehrere Anfragen gleichzeitig sendet, ruft es zuerst auf.",
       "fa_export_report": "Die Analyse als LaTeX-Report, aufgebaut wie der von ComFy (report.tex); der Body von analyze plus `short_codes` und `language`.",
-      "fa_export_figure": "Der Scree-Plot oder die Ladungs-Heatmap als SVG oder PNG (300 dpi) im Druckstil; der Body von analyze plus `figure`, `format`, `short_codes`, `order` und `language` (`en` oder `de`)."
+      "fa_export_figure": "Der Scree-Plot oder die Ladungs-Heatmap als SVG oder PNG (300 dpi) im Druckstil; der Body von analyze plus `figure`, `format`, `short_codes`, `order` und `language` (`en` oder `de`).",
+      "fa_compare": "Die Faktorstrukturen von 2 bis 8 mitgelieferten Datensätzen nebeneinander, wie Tab. 17 von Important Factors: je Spalte n, die Maße nach dem MSA-Filter, KMO, Faktoren, Rotation und erklärte Varianz, jedes Maß mit seiner Dimension je Spalte unter einer `assignment_rule`, und die Dimensionen je Spalte. Braucht keinen Datensatz der Session.",
+      "fa_compare_export": "Der Vergleich als CSV, als LaTeX-Tabelle wie Tab. 17 oder als ZIP mit beidem, dem vollständigen Ergebnis und einem Manifest; der Body von compare plus `format` und `short_codes`."
     },
     "notes": {
       "rate_limits": "Ratenlimits pro IP: `60/hour` für `POST /algorithms/{id}/analyze` und für neue Datensätze aus `POST /factor-analysis/datasets`, `600/minute` für das Lesen, Auflisten und Löschen von Datensätzen und das Speichern ihrer Optionen, `300/hour` für `POST /log-stats` und `120/minute` überall sonst. Interpretationen durch Claude: `10/hour` pro Sitzung und `200/day` für den Server. Über einem Limit lautet die Antwort 429 mit einem `code`.",
@@ -1137,7 +1139,7 @@
     },
     "start": {
       "title": "Hier starten",
-      "collapsed_hint": "Zwei Analysen mit einem Klick und eine Beispiel-CSV",
+      "collapsed_hint": "Drei Analysen mit einem Klick und eine Beispiel-CSV",
       "intro": "Jede öffnet einen mitgelieferten Datensatz mit seinen Einstellungen; nichts muss hochgeladen oder berechnet werden.",
       "scenario": {
         "if_inductive": {
@@ -1147,6 +1149,10 @@
         "log_standard": {
           "title": "Log-Maße von 2.112 PDC-Logs",
           "text": "Die Daten des Log-Papers mit dem Standard des Tools: feeed-Maße, Faktorzahl nach Kaiser, varimax."
+        },
+        "if_four_miners": {
+          "title": "Important Factors: vier Miner im Vergleich",
+          "text": "Die Dimensionen von Alpha, Directly Follows, Inductive und Hybrid ILP miner nebeneinander nach Hair et al., wie in Tab. 17."
         }
       },
       "example_csv": "Beispiel-CSV",
@@ -1205,7 +1211,9 @@
       "codes_more": "Nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder C_mag, in den Listen, den Ladungen, den Abbildungen und dem Report. Der volle Name steht im Tooltip.",
       "codes_on": "Kurzzeichen zeigen",
       "codes_off": "Volle Namen zeigen",
-      "codes_none": "Kein Maß dieses Datensatzes hat ein Kurzzeichen."
+      "codes_none": "Kein Maß dieses Datensatzes hat ein Kurzzeichen.",
+      "compare": "Miner vergleichen",
+      "compare_more": "Die Faktorstrukturen mehrerer Miner nebeneinander, wie in Tab. 17 von Important Factors."
     },
     "measures": {
       "search": "Maße durchsuchen",
@@ -1304,7 +1312,8 @@
       "data": "Zum Schritt Daten",
       "results": "Zum Schritt Datensatz",
       "loadings": "Zu den Ladungen",
-      "api": "API-Zugang"
+      "api": "API-Zugang",
+      "compare": "Die vier Miner aus Tab. 17 vergleichen"
     },
     "steps": {
       "title": "Die sechs Schritte",
@@ -1356,6 +1365,113 @@
     "api": {
       "title": "Die API nutzen",
       "p1": "Alles, was die App kann, geht auch über die REST-API, auch der Report und die Abbildungen. Die Seite API-Zugang nennt die Endpunkte mit Beispielen."
+    },
+    "compare": {
+      "title": "Miner vergleichen",
+      "p1": "Miner vergleichen stellt die Faktorstrukturen mehrerer veröffentlichter Datensätze nebeneinander, wie Tab. 17 von Important Factors: welche Maße für welchen Miner welche Dimension bilden. Es öffnet sich über das Spalten-Icon in der Werkzeugleiste von Modellkomplexität und über Hier starten.",
+      "items": {
+        "columns": "Datensätze: Wähle 2 bis 8 der Miner von Important Factors; jeder wird mit den Einstellungen seines Papers analysiert. Die ersten vier sind die aus Tab. 17.",
+        "rule": "Zuordnungsregel: eine Regel für jeden Datensatz, zu Beginn Hair et al. wie in Tab. 17.",
+        "matrix": "Nach Maß: eine Zeile je Maß, nach Dimension gruppiert, und darüber je Datensatz n, die Maße nach dem MSA-Filter, der KMO, die Faktoren, die Rotation und die erklärte Varianz. Eine getönte Zelle liegt in der Dimension ihrer Zeile; ein Ring markiert eine Querladung, eine gestrichelte Kontur ein Maß, das der MSA-Filter entfernt hat.",
+        "dimensions": "Nach Dimension: eine Zeile je Datensatz mit den Maßen jeder Dimension, aufgebaut wie Tab. 17.",
+        "export": "Das Download-Menü hat die Matrix als CSV, die Dimensionen als LaTeX-Tabelle wie Tab. 17 und beides in einem ZIP mit Manifest."
+      },
+      "p2": "Die Faktoren jeder Analyse sind von der Analyse nummeriert, deshalb werden sie zuerst einander zugeordnet: Der erste Datensatz behält seine Nummern, und die Faktoren jedes weiteren kommen zu der Dimension, mit der sie die meisten Maße teilen. Tab. 17 hat seine Dimensionen von Hand umbenannt; eine Nummer kann von der des Papers abweichen, die Gruppen sind dieselben."
+    }
+  },
+  "compare": {
+    "title": "Faktorstrukturen vergleichen",
+    "subtitle": "Welche Maße für welchen Miner welche Dimension bilden, wie in Tab. 17 von Important Factors. Jede Spalte ist ein veröffentlichter Datensatz mit den Einstellungen seines Papers; eine Zuordnungsregel gilt für alle.",
+    "wait": "Der Vergleich wird noch berechnet.",
+    "wait_update": "Der Vergleich wird aktualisiert.",
+    "computing": "Wird verglichen…",
+    "link_invalid": "Ein Teil des Links ließ sich nicht verwenden: Ein Vergleich nimmt {min} bis {max} veröffentlichte Datensätze und eine der drei Regeln. Gezeigt wird der Rest davon oder Tab. 17.",
+    "result": "Faktorstrukturen",
+    "look": {
+      "matrix": "Nach Maß",
+      "dimensions": "Nach Dimension"
+    },
+    "columns": {
+      "label": "Datensätze",
+      "reset": "Wie in Tab. 17",
+      "min": "Ein Vergleich braucht mindestens {min} Datensätze.",
+      "max": "Höchstens {max} Datensätze passen nebeneinander."
+    },
+    "matrix_label": "Maße nach Datensatz",
+    "matrix_caption": "Dimension jedes Maßes je Datensatz unter der Regel {rule}: {columns}",
+    "dimensions_label": "Dimensionen nach Datensatz",
+    "dimensions_caption": "Maße jeder Dimension je Datensatz unter der Regel {rule}, aufgebaut wie Tab. 17",
+    "dimensions_analysis": "Datensatz",
+    "dimensions_none": "In keiner Dimension",
+    "dimension_n": "Dimension {d}",
+    "group_dimension": "Dimension {d} · {n}",
+    "group_none": "In keiner Dimension · {n}",
+    "alignment_note": "D1, D2, … sind die Dimensionen nach dem Abgleich: Der erste Datensatz behält die Nummern seiner Faktoren, die Faktoren jedes weiteren werden ihnen über die gemeinsamen Maße zugeordnet. Tab. 17 des Papers hat seine Dimensionen von Hand umbenannt; eine Nummer kann deshalb von der des Papers abweichen, die Gruppen sind dieselben.",
+    "same_as": "dieselben Ladungen wie {other}.",
+    "column_notes": "Hinweise zu den Datensätzen",
+    "codes_more": "Nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder dens, in den Tabellen und in der LaTeX-Tabelle. Der volle Name steht im Tooltip.",
+    "header": {
+      "group": "Analyse",
+      "n": "n",
+      "measures": "Maße",
+      "measures_value": "{used} von {total}",
+      "factors": "Faktoren",
+      "rotation": "Rotation",
+      "rule": "Regel",
+      "variance": "Erklärte Varianz"
+    },
+    "help": {
+      "columns": "Jede Kachel ist ein veröffentlichter Datensatz, analysiert mit den Einstellungen seines Papers. Wähle {min} bis {max}. Die ersten vier sind die Miner aus Tab. 17; der erste gewählte behält die Nummern seiner Faktoren.",
+      "result": "Die Dimensionen jedes Datensatzes unter der gewählten Regel. Die Faktoren der Datensätze werden über ihre gemeinsamen Maße einander zugeordnet, sodass dieselbe Dimension in jeder Spalte dieselbe Nummer hat.",
+      "n": "Beobachtungen: die Netze des Datensatzes, eines je Log.",
+      "measures": "Die Maße, die nach der Bereinigung und dem MSA-Filter bleiben, von denen des Datensatzes.",
+      "kmo": "Das Gesamtmaß der Stichprobeneignung (Kaiser-Meyer-Olkin) der verbliebenen Maße.",
+      "factors": "Die Zahl der Faktoren, wie die Paper-Einstellungen des Datensatzes sie festlegen.",
+      "rule": "Die Zuordnungsregel, für jeden Datensatz dieselbe.",
+      "variance": "Der Anteil der Varianz der Maße, den die Faktoren zusammen erklären."
+    },
+    "legend": {
+      "in_row": "in der Dimension der Zeile",
+      "cross": "Querladung",
+      "msa": "vom MSA-Filter entfernt",
+      "faded": "blass: unter dieser Regel in keiner Dimension"
+    },
+    "cell": {
+      "constant": "keine Varianz",
+      "dropped": "entfernt",
+      "excluded": "ausgeschlossen",
+      "absent": "nicht im Datensatz"
+    },
+    "tip": {
+      "assigned": "{d} ({factor} des Datensatzes), Ladung {loading}",
+      "cross": "lädt quer auf {dims} ({loadings})",
+      "unassigned": "in keiner Dimension: {why}",
+      "msa": "vom MSA-Filter in Runde {step} entfernt, MSA {msa}",
+      "constant": "vor der Analyse entfernt: in jedem Netz derselbe Wert",
+      "dropped": "vor der Analyse entfernt",
+      "failed": "Dieser Datensatz ließ sich mit diesen Einstellungen nicht analysieren.",
+      "factor_of": "{factor} von {column}"
+    },
+    "reason": {
+      "low_communality": "niedrige Kommunalität",
+      "low_loading": "keine Ladung zählt",
+      "cross_loading": "Querladung"
+    },
+    "export": {
+      "more": "Der Vergleich als CSV, als LaTeX-Tabelle wie Tab. 17 oder beides in einem ZIP mit Manifest.",
+      "csv": "Matrix (CSV)",
+      "csv_hint": "Eine Zeile je Maß, eine Spalte je Datensatz",
+      "latex": "Dimensionen (LaTeX)",
+      "latex_hint": "Eine booktabs-Tabelle, aufgebaut wie Tab. 17",
+      "zip": "Vergleich (ZIP)",
+      "zip_hint": "CSV, LaTeX, das vollständige Ergebnis und ein Manifest zum Nachrechnen"
+    },
+    "errors": {
+      "catalog": "Die veröffentlichten Datensätze ließen sich nicht laden.",
+      "failed": "Der Vergleich ist fehlgeschlagen.",
+      "export": "Der Download ist fehlgeschlagen.",
+      "compare_unknown_dataset": "Der Link nennt einen Datensatz, den dieser Server nicht hat: {dataset}.",
+      "compare_mixed_kinds": "Ein Vergleich nimmt nur Datensätze einer Art."
     }
   }
 }

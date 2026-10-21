@@ -51,6 +51,11 @@ Schalk do it, but interactively in the browser.
   and how the paper's own tables relate to it. "Start here" on the data step opens such an
   analysis directly, and "Copy link" shares an analysis of any bundled dataset with its settings
   and the step on screen.
+- **Compare miners.** A page puts the factor structures of up to eight bundled datasets side by
+  side, like Tab. 17 of Important Factors: per miner n, the measures after the MSA filter, KMO,
+  factors and explained variance, every measure with its dimension under one shared assignment
+  rule, and the dimensions per miner as in Tab. 17. The factors are matched across the miners by
+  the measures they share. Downloads as CSV, as a LaTeX table and as a ZIP with a manifest.
 - **Come back to a dataset.** The datasets of a session are listed on the data step, reopen
   with the parameters of their last analysis and can be deleted one by one or all at once;
   deleting a dataset job in the run history deletes its dataset too.
@@ -183,7 +188,8 @@ log measures, the cleaning and Bartlett's chi-square. `tests/test_column_order.p
 the analysis, the MSA filter and the exports keep the stored column order, on which the KMO of
 singular data depends. `tests/test_assignment_rules.py` checks the three assignment rules
 against the dimension tables of Important Factors (Tab. 6, 9 and 12 with the two documented
-deviations, and two rows of Tab. 17), `tests/test_published_match.py` the published settings
+deviations, and two rows of Tab. 17), `tests/test_compare.py` the comparison of the miners
+against all four rows of Tab. 17 with its documented deviations, `tests/test_published_match.py` the published settings
 and the check against the reports at runtime, `tests/test_parallel_analysis.py` the values of
 parallel analysis with its seed, and `tests/test_analysis_load.py` the measure cap and how a
 newer request replaces an analysis, with a stand-in fit.
@@ -202,8 +208,8 @@ npx next build
 
 Playwright drives the UI in a browser (`src/frontend/e2e/`): a paper dataset through all six
 steps with its ZIP, a CSV upload reopened from "My datasets" with its excluded measure, the
-PNML and log samples, deleting a dataset, decimal commas in German, the theme switch, axe on
-every route in light and dark, and a single run without ProM, which has to fail with the
+PNML and log samples, deleting a dataset, the comparison of the four miners of Tab. 17 with its
+downloads, decimal commas in German, the theme switch, axe on every route in light and dark, and a single run without ProM, which has to fail with the
 coded error. They check text, roles and downloads, no pixels.
 
 Against the Docker stack, with a browser installed on the machine (here Microsoft Edge;

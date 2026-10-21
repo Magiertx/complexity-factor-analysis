@@ -50,7 +50,7 @@ export function ModeBar() {
         label: t("mode_bar.model_label"),
         description: t("mode_bar.model_desc"),
         icon: Network,
-        also: ["/inspect"],
+        also: ["/inspect", "/compare"],
       },
       { href: "/log", label: t("mode_bar.log_label"), description: t("mode_bar.log_desc"), icon: ScrollText },
     ],

@@ -931,6 +931,142 @@ export async function exportFigure(
   return attachment(r, `${figure}.${format}`);
 }
 
+// ----------------------- Comparing factor structures -----------------------
+
+/** One column of a comparison: a bundled dataset with the settings of its paper or the standard. */
+export interface CompareColumnRequest {
+  bundled_id: string;
+  settings?: "paper" | "standard";
+  /** Changes to those settings, e.g. another factor count; the rule is the comparison's. */
+  options?: Partial<Omit<AnalyzeOptions, "assignment_rule">>;
+  label?: string;
+}
+
+export interface CompareRequest {
+  columns: CompareColumnRequest[];
+  assignment_rule: AssignmentRule;
+}
+
+export type CompareExportFormat = "csv" | "latex" | "zip";
+
+/** The header of a column; without `error` it has every field of an analysis. */
+export interface CompareColumn {
+  bundled_id: string;
+  label: string;
+  name: string;
+  collection?: string | null;
+  settings: "paper" | "standard";
+  options: AnalyzeOptions;
+  published_source: string | null;
+  paper_tables: PaperTables | string | null;
+  /** The measures of the dataset, before cleaning and the MSA filter. */
+  n_measures: number;
+  n_observations?: number;
+  used_measures?: string[];
+  msa_removed?: string[];
+  kmo?: number;
+  n_factors?: number;
+  rotation?: Rotation;
+  /** Null for an oblique rotation, whose shares do not add up. */
+  cumulative_variance?: number | null;
+  explained_variance?: number;
+  factor_count?: { kaiser: number; parallel_analysis: number };
+  warnings?: AnalysisNotice[];
+  timings?: AnalysisTimings;
+  /** The dimension of each factor of the column, from 0. */
+  factor_dimensions?: number[];
+  /** How many measures each factor shares with its dimension in the columns before it. */
+  shared_measures?: number[];
+  /** An earlier column with the same loadings, e.g. the Alpha Dollar miner of the Alpha miner. */
+  same_as?: number | null;
+  error?: AnalysisNotice;
+}
+
+/** What a column says about a measure. Dimensions count from 0. */
+export type CompareCell =
+  | {
+      status: "assigned";
+      factors: number[];
+      dimensions: number[];
+      loadings: number[];
+      communality: number;
+      cross_loading: boolean;
+      cross_dimensions?: number[];
+      cross_loadings?: number[];
+    }
+  | {
+      status: "unassigned";
+      reason: UnassignedReason | null;
+      factor: number;
+      dimension: number;
+      loading: number;
+      communality: number;
+      cross_loading: boolean;
+      cross_dimensions?: number[];
+      cross_loadings?: number[];
+    }
+  | { status: "msa_removed"; msa: number; step: number }
+  | { status: "dropped"; reason: DropReason | string }
+  | { status: "excluded" | "absent" | "failed" };
+
+export interface CompareRow {
+  measure: string;
+  short: string | null;
+  /** The dimension most columns put the measure in; null if none does. */
+  dimension: number | null;
+  /** How many columns put it there. */
+  agreement: number;
+  cells: CompareCell[];
+}
+
+export interface Comparison {
+  kind: FactorKind;
+  assignment_rule: AssignmentRule;
+  cross_loading_gap: number;
+  alignment: { method: string; reference: number; description: string; dimensions: number };
+  columns: CompareColumn[];
+  /** Grouped by dimension, those in none last. */
+  measures: CompareRow[];
+  /** Per dimension and column: the factor of the column and its measures, in the order of the data. */
+  dimensions: {
+    index: number;
+    columns: ({ factor: number | null; measures: { measure: string; loading: number }[] } | null)[];
+  }[];
+  /** Per column the measures in no dimension, or null for a column that failed. */
+  unassigned: ({ measure: string; reason: UnassignedReason }[] | null)[];
+  elapsed_ms?: number;
+}
+
+/** The factor structures of 2 to 8 bundled datasets side by side, like Tab. 17 of Important Factors. */
+export async function compareAnalyses(body: CompareRequest, signal?: AbortSignal): Promise<Comparison> {
+  const r = await fetch(`${BASE}/factor-analysis/compare`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal,
+  });
+  if (!r.ok) throw await httpError(r, "Comparison failed");
+  return r.json();
+}
+
+/**
+ * The comparison as CSV (measures by analyses), as a LaTeX tabular like Tab. 17, or as a ZIP with
+ * both, the full result and a manifest; the measures by their short codes or by their names.
+ */
+export async function exportComparison(
+  body: CompareRequest,
+  format: CompareExportFormat,
+  shortCodes: boolean,
+): Promise<{ blob: Blob; filename: string }> {
+  const r = await fetch(`${BASE}/factor-analysis/compare/export`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...body, format, short_codes: shortCodes }),
+  });
+  if (!r.ok) throw await httpError(r, "Export failed");
+  return attachment(r, `factor-structures.${format === "latex" ? "tex" : format}`);
+}
+
 async function attachment(r: Response, fallback: string): Promise<{ blob: Blob; filename: string }> {
   const disposition = r.headers.get("Content-Disposition") ?? "";
   const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition);

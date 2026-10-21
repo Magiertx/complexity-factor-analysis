@@ -119,6 +119,8 @@ Details in [Factor analysis](#factor-analysis) below.
 | POST | `/factor-analysis/datasets/{id}/export/report` | The analysis as a LaTeX report built like ComFy's (`report.tex`). |
 | POST | `/factor-analysis/datasets/{id}/export/figure` | The scree plot or the loadings heatmap as SVG or PNG (300 dpi) in print style. |
 | POST | `/factor-analysis/datasets/{id}/export/zip` | The whole analysis as a ZIP archive: result, matrix, tables, report, figures, descriptive statistics, run times, parameters, library versions and provenance. |
+| POST | `/factor-analysis/compare` | The factor structures of 2 to 8 bundled datasets side by side, like Tab. 17 of Important Factors, under one assignment rule; needs no dataset of the session. |
+| POST | `/factor-analysis/compare/export` | The comparison as CSV, as a LaTeX table like Tab. 17, or as a ZIP with both, the full result and a manifest. |
 | GET | `/factor-analysis/interpretation/status` | Whether factors can be interpreted by Claude, and with which model. |
 | POST | `/factor-analysis/datasets/{id}/interpret` | Names and short interpretations of the factors by Claude (optional, needs an API key on the server). |
 
@@ -150,7 +152,7 @@ the connection is `PROM4PY_START_WAIT` seconds (default 180).
 
 ## Notes & limits
 
-- **Rate limits** (per source IP, tunable via `RATE_LIMIT_*` in `.env`): `60/hour` for `POST /algorithms/{id}/analyze`, `60/hour` for new datasets from `POST /factor-analysis/datasets` (`RATE_LIMIT_DATASETS`; a new copy of a bundled dataset counts too, the copy a session already has does not), `600/minute` for `GET /factor-analysis/datasets/{id}`, which the UI polls, and for listing datasets, saving their options and deleting them (`RATE_LIMIT_DATASET_STATUS`), `120/minute` for factor-analysis `analyze`, `export`, `export/zip` and `interpret` (`RATE_LIMIT_FA_ANALYZE`), `300/hour` for `POST /log-stats`, `120/minute` for everything else. A 429 carries `detail` and `"code": "rate_limited"`. Interpretations that call Claude are limited further, see [Interpretation by Claude](#interpretation-by-claude).
+- **Rate limits** (per source IP, tunable via `RATE_LIMIT_*` in `.env`): `60/hour` for `POST /algorithms/{id}/analyze`, `60/hour` for new datasets from `POST /factor-analysis/datasets` (`RATE_LIMIT_DATASETS`; a new copy of a bundled dataset counts too, the copy a session already has does not), `600/minute` for `GET /factor-analysis/datasets/{id}`, which the UI polls, and for listing datasets, saving their options and deleting them (`RATE_LIMIT_DATASET_STATUS`), `120/minute` for factor-analysis `analyze`, `export`, `export/zip`, `compare`, `compare/export` and `interpret` (`RATE_LIMIT_FA_ANALYZE`), `300/hour` for `POST /log-stats`, `120/minute` for everything else. A 429 carries `detail` and `"code": "rate_limited"`. Interpretations that call Claude are limited further, see [Interpretation by Claude](#interpretation-by-claude).
 - **Job quota:** at most 12 queued or running jobs per session (`MAX_ACTIVE_JOBS_PER_SESSION`), and at most 4 dataset jobs over all sessions (`MAX_ACTIVE_DATASET_JOBS`); both answer 429, with `"code": "job_quota"` and `params` `active`, `requested` and `limit`, or `"code": "dataset_jobs_busy"` and `params` `active`.
 - **Analyses:** at most 400 measures per analysis, counted after `excluded` (400 with `"code":
   "too_many_measures_for_analysis"`). At most two analyses compute at once; a newer analyze
@@ -600,6 +602,98 @@ features feeed 2.2.0 changed). Datasets stored before this was recorded carry wh
 metadata tell, with today's versions, and `"recorded_at_creation": false`. The ZIP of a run
 (`GET /jobs/{id}/download`) names the `tool` as well.
 
+### Compare factor structures
+
+`POST /factor-analysis/compare` puts the factor structures of 2 to 8 bundled datasets side by
+side, like Tab. 17 of Important Factors: which measures form which dimension for which miner.
+Each column is analysed on the bundled CSV itself, with the fit cache, so it makes no dataset of
+the session and counts against no dataset limit. JSON body:
+
+```json
+{ "columns": [
+    { "bundled_id": "comfy-paper-alpha-miner" },
+    { "bundled_id": "comfy-paper-directly-follows-miner" },
+    { "bundled_id": "comfy-paper-inductive-miner" },
+    { "bundled_id": "comfy-paper-hybrid-ilp-miner" } ],
+  "assignment_rule": "hair" }
+```
+
+- `columns`: 2 to 8 (422 otherwise), all of one kind. A column has `bundled_id`, `settings`
+  (`"paper"`, default: the `published_options` of the dataset, or the standard of its kind if it
+  has none; `"standard"`: the standard of its kind), `options` (changes to those settings, the
+  fields of `analyze` without `assignment_rule`; only what is given changes, and
+  `"n_factors": null` follows the Kaiser criterion) and `label` (the title of the column, at
+  most 80 characters; the label of the dataset without one). The same dataset may appear twice
+  with other options, e.g. with 4 and 6 factors as in section 6 of the paper.
+- `assignment_rule`: `largest` (default), `multi` or `hair`, the same for every column. Tab. 17
+  follows `hair`, which the web page starts with.
+
+An unknown dataset is a 400 with `"code": "compare_unknown_dataset"`, columns of two kinds a 400
+with `"code": "compare_mixed_kinds"`. A column whose analysis fails, e.g. with more factors than
+its measures allow, carries `error` (`code`, `message`, `params`, as an analysis error) and the
+others are compared without it.
+
+The factors of every analysis are numbered by the analysis, so they are matched first: the first
+column keeps the numbers of its factors, and the factors of each further column are matched one
+to one to the dimensions of the columns before it, so that the most measures fall into the same
+dimension (the Hungarian method on the number of shared measures). Each measure counts for the
+factor of its largest absolute loading, whatever the rule, so switching the rule never
+renumbers the dimensions. Tab. 17 renumbered its dimensions by hand "for easier
+comparability"; the tool's numbers can differ from the paper's while the groups are the same.
+
+The response has:
+
+- `kind`, `assignment_rule`, `cross_loading_gap` and `alignment` (`method`
+  `shared_measures`, `reference` 0, a `description`, and the number of `dimensions`: the most
+  factors of a column);
+- `columns`, one header per column: `bundled_id`, `label`, `name`, `collection`, `settings`
+  (`paper` or `standard`, as used), `options` (the parameters of the analysis, with the factor
+  count it used), `published_source`, `paper_tables` (the key of the manifest, e.g.
+  `other_data`), `n_measures` (of the CSV), `n_observations`, `used_measures`, `msa_removed`,
+  `kmo`, `n_factors`, `rotation`, `cumulative_variance` (`null` for an oblique rotation),
+  `explained_variance`, `factor_count` (`kaiser`, `parallel_analysis`), `warnings` (as
+  `warning_details` of `analyze`), `timings`, `factor_dimensions` (the dimension of each factor,
+  from 0), `shared_measures` (how many measures each factor shares with its dimension in the
+  columns before it) and `same_as` (an earlier column with the same loadings, e.g. the Alpha
+  Dollar miner of the Alpha miner, else `null`);
+- `measures`, one row per measure of any column, grouped by `dimension` (the one most columns
+  put it in first, the leftmost column deciding a tie; `null` for none, last), with `short`,
+  `agreement` (how many columns put it there) and one `cell` per column: `status` `assigned`
+  (`dimensions`, `factors` and `loadings`, largest absolute loading first, `communality`,
+  `cross_loading`), `unassigned` (`reason` `low_communality`, `low_loading` or `cross_loading`,
+  the `factor`, `dimension` and `loading` of its largest loading, `communality`,
+  `cross_loading`), `msa_removed` (`msa`, `step`), `dropped` (`reason` of the cleaning, e.g.
+  `constant`), `excluded`, `absent` (not in the dataset) or `failed`. A cross-loaded cell also
+  has `cross_dimensions` and `cross_loadings`;
+- `dimensions`, per dimension and column the `factor` of the column (or `null`) and its
+  `measures` with their loadings, in the order of the data, as Tab. 17 lists them (`null` for a
+  column that failed);
+- `unassigned`, per column the measures in no dimension with their `reason`;
+- `elapsed_ms`.
+
+With the paper settings and `hair`, the groups of the Directly Follows and the Inductive miner
+are those of Tab. 17 (the bundled data have one dup column where the paper lists two). The Alpha
+row of Tab. 17 also keeps MM (communality 0.37) and the cross-loaded CH. Tab. 14–16 of the
+Hybrid ILP miner rest on other data: here MM is in dimension 1, sep goes with size, and CH is
+in no dimension (communality below 0.5). `tests/test_compare.py` checks all of this.
+
+`POST /factor-analysis/compare/export` takes the same body plus `"format": "csv" | "latex" |
+"zip"` (default `csv`) and `"short_codes"` (default `true`: the LaTeX table names the measures
+by the codes of the papers, as Tab. 17 does) and returns `factor-structures.csv`, `.tex` or
+`.zip`:
+
+- CSV: `measure`, `code`, `dimension` (of the row) and one column per dataset with `D1` (or
+  `D1 D3` under `multi`), `unassigned:<reason>`, `msa_removed`, `excluded`, `dropped:<reason>`,
+  `failed`, or nothing for a measure the dataset does not have.
+- LaTeX: a booktabs `tabular` (needs `booktabs` and `array`) with one row per dataset and one
+  column per dimension, laid out like Tab. 17; comments name the rule, how the dimensions were
+  matched and the measures in no dimension.
+- ZIP: `comparison.json` (the response of `compare`), `membership.csv`, `dimensions.tex`,
+  `README.txt` and `manifest.json` with `app`, `created_at`, `tool`, the `request` as sent (with
+  the rule and `short_codes`), `assignment_rule`, `alignment`, `columns` (per column the
+  `bundled_id`, `label`, `settings`, `analysis_params`, `published_source`, `citation`,
+  `license`, `source_url` and `source_commit`), `measure_labels`, `libraries` and `files`.
+
 ### Interpretation by Claude
 
 Optional. With `ANTHROPIC_API_KEY` set on the server, Claude (Anthropic) proposes a name and a
@@ -683,4 +777,13 @@ entry = next(b for b in s.get(f"{BASE}/factor-analysis/catalog?kind=model").json
 paper = s.post(f"{BASE}/factor-analysis/datasets/{ds['dataset_id']}/analyze",
                json=entry["published_options"]).json()
 print(paper["published_match"]["status"], paper["factor_count"])
+
+# Tab. 17: the four miners side by side under Hair et al.; no dataset of the session needed
+miners = ["alpha", "directly-follows", "inductive", "hybrid-ilp"]
+compared = s.post(f"{BASE}/factor-analysis/compare",
+                  json={"columns": [{"bundled_id": f"comfy-paper-{m}-miner"} for m in miners],
+                        "assignment_rule": "hair"}).json()
+for i, column in enumerate(compared["columns"]):
+    print(column["label"], [[m["measure"] for m in d["columns"][i]["measures"]]
+                            for d in compared["dimensions"]])
 ```

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ChevronDown, Download, Signpost } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { COMPARE_HREF } from "@/lib/compare";
 import { useT } from "@/lib/i18n";
 
 const STORAGE_KEY = "app.start-here-open";
@@ -15,7 +16,7 @@ const STORAGE_KEY = "app.start-here-open";
 const SCENARIOS: { id: string; href: string; available: boolean }[] = [
   { id: "if_inductive", href: "/?bundled=comfy-paper-inductive-miner&preset=published", available: true },
   { id: "log_standard", href: "/log?bundled=comfy-log-pdc-training-logs&preset=standard", available: true },
-  { id: "if_four_miners", href: "", available: false },
+  { id: "if_four_miners", href: COMPARE_HREF, available: true },
   { id: "if_k4_k6", href: "", available: false },
   { id: "log_paper", href: "", available: false },
 ];

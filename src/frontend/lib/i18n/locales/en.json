@@ -255,7 +255,9 @@
       "health": "Readiness probe: 200 when the database is reachable.",
       "session_start": "Starts the session (the `session_id` cookie) if the request has none, or one the server cannot read. The page does it by itself; a script that sends several requests at once calls it first.",
       "fa_export_report": "The analysis as a LaTeX report built like ComFy's (report.tex); the body of analyze plus `short_codes` and `language`.",
-      "fa_export_figure": "The scree plot or the loadings heatmap as SVG or PNG (300 dpi) in print style; the body of analyze plus `figure`, `format`, `short_codes`, `order` and `language` (`en` or `de`)."
+      "fa_export_figure": "The scree plot or the loadings heatmap as SVG or PNG (300 dpi) in print style; the body of analyze plus `figure`, `format`, `short_codes`, `order` and `language` (`en` or `de`).",
+      "fa_compare": "The factor structures of 2 to 8 bundled datasets side by side, like Tab. 17 of Important Factors: per column n, the measures after the MSA filter, KMO, factors, rotation and variance explained, every measure with its dimension per column under one `assignment_rule`, and the dimensions per column. Needs no dataset of the session.",
+      "fa_compare_export": "The comparison as CSV, as a LaTeX table like Tab. 17, or as a ZIP with both, the full result and a manifest; the body of compare plus `format` and `short_codes`."
     },
     "notes": {
       "rate_limits": "Rate limits per IP: `60/hour` on `POST /algorithms/{id}/analyze` and on new datasets from `POST /factor-analysis/datasets`, `600/minute` on reading, listing and deleting datasets and on saving their options, `300/hour` on `POST /log-stats` and `120/minute` everywhere else. Interpretations by Claude: `10/hour` per session and `200/day` for the server. Over a limit the answer is a 429 with a `code`.",
@@ -1137,7 +1139,7 @@
     },
     "start": {
       "title": "Start here",
-      "collapsed_hint": "Two analyses to open in one click, and an example CSV",
+      "collapsed_hint": "Three analyses to open in one click, and an example CSV",
       "intro": "Each opens a bundled dataset with its settings; nothing needs to be uploaded or computed.",
       "scenario": {
         "if_inductive": {
@@ -1147,6 +1149,10 @@
         "log_standard": {
           "title": "Log measures of 2,112 PDC logs",
           "text": "The data of the log paper with the tool standard: feeed measures, Kaiser's factor count, varimax."
+        },
+        "if_four_miners": {
+          "title": "Important Factors: four miners compared",
+          "text": "The dimensions of the Alpha, Directly Follows, Inductive and Hybrid ILP miner side by side under Hair et al., like Tab. 17."
         }
       },
       "example_csv": "Example CSV",
@@ -1205,7 +1211,9 @@
       "codes_more": "Names the measures by the codes of the papers, such as CNC or C_mag, in the lists, the loadings, the figures and the report. The full name stays in the tooltip.",
       "codes_on": "Show short codes",
       "codes_off": "Show full names",
-      "codes_none": "No measure of this dataset has a short code."
+      "codes_none": "No measure of this dataset has a short code.",
+      "compare": "Compare miners",
+      "compare_more": "The factor structures of several miners side by side, like Tab. 17 of Important Factors."
     },
     "measures": {
       "search": "Search measures",
@@ -1304,7 +1312,8 @@
       "data": "To the data step",
       "results": "To the dataset step",
       "loadings": "To the loadings",
-      "api": "API access"
+      "api": "API access",
+      "compare": "Compare the four miners of Tab. 17"
     },
     "steps": {
       "title": "The six steps",
@@ -1356,6 +1365,113 @@
     "api": {
       "title": "Use the API",
       "p1": "Everything the app does is also available through the REST API, including the report and the figures. The page API access lists the endpoints with examples."
+    },
+    "compare": {
+      "title": "Compare miners",
+      "p1": "Compare miners puts the factor structures of several published datasets side by side, like Tab. 17 of Important Factors: which measures form which dimension for which miner. It opens from the column icon in the toolbar of Model complexity and from Start here.",
+      "items": {
+        "columns": "Datasets: choose 2 to 8 of the miners of Important Factors; each is analysed with the settings of its paper. The first four are those of Tab. 17.",
+        "rule": "Assignment rule: one rule for every dataset, Hair et al. as in Tab. 17 to begin with.",
+        "matrix": "By measure: a row per measure, grouped by dimension, and above them n, the measures after the MSA filter, the KMO, the factors, the rotation and the variance explained per dataset. A tinted cell is in the dimension of its row; a ring marks a cross-loading, a dashed outline a measure the MSA filter removed.",
+        "dimensions": "By dimension: a row per dataset with the measures of each dimension, laid out like Tab. 17.",
+        "export": "The download menu has the matrix as CSV, the dimensions as a LaTeX table like Tab. 17, and both in a ZIP with a manifest."
+      },
+      "p2": "The factors of every analysis are numbered by the analysis, so they are matched first: the first dataset keeps its numbers, and the factors of every further one go to the dimension with which they share the most measures. Tab. 17 renumbered its dimensions by hand; a number can differ from the paper's while the groups are the same."
+    }
+  },
+  "compare": {
+    "title": "Compare factor structures",
+    "subtitle": "Which measures form which dimension for which miner, like Tab. 17 of Important Factors. Each column is a published dataset with the settings of its paper; one assignment rule applies to all.",
+    "wait": "The comparison is still being computed.",
+    "wait_update": "The comparison is being updated.",
+    "computing": "Comparing…",
+    "link_invalid": "Part of the link could not be used: a comparison takes {min} to {max} published datasets and one of the three rules. The rest of it, or Tab. 17, is shown.",
+    "result": "Factor structures",
+    "look": {
+      "matrix": "By measure",
+      "dimensions": "By dimension"
+    },
+    "columns": {
+      "label": "Datasets",
+      "reset": "As in Tab. 17",
+      "min": "A comparison needs at least {min} datasets.",
+      "max": "At most {max} datasets fit side by side."
+    },
+    "matrix_label": "Measures by dataset",
+    "matrix_caption": "Dimension of each measure per dataset under the rule {rule}: {columns}",
+    "dimensions_label": "Dimensions by dataset",
+    "dimensions_caption": "Measures of each dimension per dataset under the rule {rule}, laid out like Tab. 17",
+    "dimensions_analysis": "Dataset",
+    "dimensions_none": "In no dimension",
+    "dimension_n": "Dimension {d}",
+    "group_dimension": "Dimension {d} · {n}",
+    "group_none": "In no dimension · {n}",
+    "alignment_note": "D1, D2, … are the dimensions after matching: the first dataset keeps the numbers of its factors, and the factors of every further one are matched to them by the measures they share. Tab. 17 of the paper renumbered its dimensions by hand, so a number here can differ from the paper's while the groups are the same.",
+    "same_as": "the same loadings as {other}.",
+    "column_notes": "Notes on the datasets",
+    "codes_more": "Names the measures by the codes of the papers, such as CNC or dens, in the tables and the LaTeX table. The full name stays in the tooltip.",
+    "header": {
+      "group": "Analysis",
+      "n": "n",
+      "measures": "Measures",
+      "measures_value": "{used} of {total}",
+      "factors": "Factors",
+      "rotation": "Rotation",
+      "rule": "Rule",
+      "variance": "Variance explained"
+    },
+    "help": {
+      "columns": "Each tile is a published dataset, analysed with the settings of its paper. Choose {min} to {max}. The first four are the miners of Tab. 17; the first one chosen keeps the numbers of its factors.",
+      "result": "The dimensions of every dataset under the chosen rule. The factors of the datasets are matched by the measures they share, so that the same dimension has the same number in every column.",
+      "n": "Observations: the nets of the dataset, one per log.",
+      "measures": "The measures left after cleaning and the MSA filter, of those in the dataset.",
+      "kmo": "The overall measure of sampling adequacy (Kaiser-Meyer-Olkin) of the measures that are left.",
+      "factors": "The number of factors, as the paper settings of the dataset fix it.",
+      "rule": "The assignment rule, the same for every dataset.",
+      "variance": "The share of the variance of the measures that the factors explain together."
+    },
+    "legend": {
+      "in_row": "in the dimension of the row",
+      "cross": "cross-loading",
+      "msa": "removed by the MSA filter",
+      "faded": "faded: in no dimension under this rule"
+    },
+    "cell": {
+      "constant": "no variance",
+      "dropped": "dropped",
+      "excluded": "excluded",
+      "absent": "not in the dataset"
+    },
+    "tip": {
+      "assigned": "{d} ({factor} of the dataset), loading {loading}",
+      "cross": "cross-loads on {dims} ({loadings})",
+      "unassigned": "in no dimension: {why}",
+      "msa": "removed by the MSA filter in round {step}, MSA {msa}",
+      "constant": "dropped before the analysis: the same value in every net",
+      "dropped": "dropped before the analysis",
+      "failed": "This dataset could not be analysed with these settings.",
+      "factor_of": "{factor} of {column}"
+    },
+    "reason": {
+      "low_communality": "low communality",
+      "low_loading": "no loading counts",
+      "cross_loading": "cross-loading"
+    },
+    "export": {
+      "more": "The comparison as CSV, as a LaTeX table like Tab. 17, or both in a ZIP with a manifest.",
+      "csv": "Matrix (CSV)",
+      "csv_hint": "One row per measure, one column per dataset",
+      "latex": "Dimensions (LaTeX)",
+      "latex_hint": "A booktabs table laid out like Tab. 17",
+      "zip": "Comparison (ZIP)",
+      "zip_hint": "CSV, LaTeX, the full result and a manifest to reproduce it"
+    },
+    "errors": {
+      "catalog": "The published datasets could not be loaded.",
+      "failed": "The comparison failed.",
+      "export": "The download failed.",
+      "compare_unknown_dataset": "The link names a dataset this server does not have: {dataset}.",
+      "compare_mixed_kinds": "A comparison takes datasets of one kind only."
     }
   }
 }
