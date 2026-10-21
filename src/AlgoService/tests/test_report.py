@@ -247,7 +247,7 @@ def _compile(directory: Path, name: str, text: str) -> str:
 
 
 @pytest.mark.skipif(_pdflatex() is None, reason="no pdflatex; the report is compiled where TeX is installed")
-def test_a_report_with_long_tables_is_settled_by_the_second_run(client, tmp_path):
+def test_a_report_with_long_tables_compiles_settled_after_the_second_run(client, tmp_path):
     """The hint in the first line of the report says to compile twice: the tables of 123
     measures (longtable) then keep their widths and nothing asks for another run."""
     text = _report_of_the_log_dataset(client, short_codes=True)

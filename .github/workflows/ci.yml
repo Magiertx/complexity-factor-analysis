@@ -47,6 +47,43 @@ jobs:
       - name: Run tests
         run: python -m pytest -q -rs
 
+  # The report is compiled where TeX is installed, and the backend job has none: this job
+  # compiles the reports, twice for the long ones, so that a change of the escaping, the
+  # pgfplots options or the tables breaks here and not on the next machine with TeX.
+  report:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: src/AlgoService
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            src/AlgoService/requirements.txt
+            src/AlgoService/requirements-dev.txt
+            src/AlgoService/constraints.txt
+
+      # booktabs, longtable, needspace, paralist, pgfplots, tikz and amsmath of the report; cm-super
+      # has the T1 fonts as outlines, without it pdflatex draws them with Metafont, slowly.
+      - name: Install TeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-pictures texlive-fonts-recommended cm-super
+          pdflatex --version | head -1
+          kpsewhich needspace.sty booktabs.sty longtable.sty paralist.sty pgfplots.sty tikz.sty
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt -c constraints.txt
+
+      # -rs lists a skip; without pdflatex the tests would skip, so the step above checks for it.
+      - name: Compile the reports
+        run: python -m pytest -q -rs tests/test_report.py -k compile
+
   frontend:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
