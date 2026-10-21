@@ -1343,7 +1343,7 @@
       "hist_none": "No values to draw.",
       "values_input": "Over all {n} observations, before cleaning.",
       "values_cleaned": "Over the cleaned matrix.",
-      "values_miner": "Over the {n} observations of {miner}, from the cleaned matrix, like the analysis below.",
+      "values_miner": "Over the {n} observations of the {miner}, from the cleaned matrix, like the analysis below.",
       "analysis": "In this analysis",
       "status": {
         "used": "In the analysis",
