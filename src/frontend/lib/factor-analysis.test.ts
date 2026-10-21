@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { FactorAnalysis, Job } from "./api";
 import {
+  PRINT_HEATMAP_MAX_MEASURES,
+  PRINT_PAGE_HEIGHT_IN,
   analysisNotices,
   countText,
   datasetJobHref,
   datasetJobSubtitle,
   datasetName,
   defaultOptions,
+  heatmapHeightIn,
   initialOptions,
   isSolutionNotice,
   jobErrorText,
@@ -142,6 +145,15 @@ describe("orderMeasures", () => {
       ],
     });
     expect(orderMeasures(twice, "factor")).toEqual(["a", "b", "c", "d"]);
+  });
+});
+
+describe("print", () => {
+  it("draws the heatmap only while it fits an A4 page", () => {
+    expect(heatmapHeightIn(PRINT_HEATMAP_MAX_MEASURES)).toBeLessThan(PRINT_PAGE_HEIGHT_IN - 1);
+    // One more row than the page holds is not allowed to be the limit; 60 rows would be cut.
+    expect(heatmapHeightIn(60)).toBeGreaterThan(PRINT_PAGE_HEIGHT_IN);
+    expect(heatmapHeightIn(123)).toBeGreaterThan(2 * PRINT_PAGE_HEIGHT_IN);
   });
 });
 

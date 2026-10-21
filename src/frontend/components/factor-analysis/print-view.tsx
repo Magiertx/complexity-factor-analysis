@@ -17,12 +17,19 @@ import {
 } from "@/lib/api";
 import { APP_NAME } from "@/lib/app-config";
 import {
+  type AnalysisOptions,
   analysisNotices,
+  assignedCells,
   countText,
   datasetName,
   defaultOptions,
   isSolutionNotice,
+  loadingCounts,
+  loadingStyle,
   noticeText,
+  orderMeasures,
+  PRINT_HEATMAP_MAX_MEASURES,
+  ruleStrict,
   settingsSummary,
   unassignedMeasures,
 } from "@/lib/factor-analysis";
@@ -81,7 +88,7 @@ export function PrintView() {
         ]);
         const [scree, loadings, interpretation] = await Promise.all([
           figure("scree"),
-          figure("loadings"),
+          analysis.used_measures.length <= PRINT_HEATMAP_MAX_MEASURES ? figure("loadings") : Promise.resolve(null),
           interpretDataset(link.datasetId, { ...link.options, n_factors: analysis.n_factors }, locale, {
             cachedOnly: true,
             signal: ctrl.signal,
@@ -277,8 +284,13 @@ export function PrintView() {
         </Section>
 
         <Section title={t("factor.steps.loadings")}>
-          {figures.loadings && (
+          {figures.loadings ? (
             <img src={figures.loadings} alt={t("factor.figure.loadings")} className="print-figure max-w-full h-auto" />
+          ) : (
+            <LoadingsKey analysis={analysis} options={link.options} />
+          )}
+          {!figures.loadings && (
+            <LoadingsTable analysis={analysis} options={link.options} order={link.view.order} name={name} />
           )}
           <h3 className="mt-3 font-semibold text-sm">{t("factor.loadings.groups_heading")}</h3>
           <p className="text-xs text-muted">{t(`factor.loadings.rule.${analysis.assignment_rule ?? "largest"}.title`)}</p>
@@ -379,7 +391,7 @@ export function PrintView() {
           </Section>
         )}
 
-        <footer className="mt-6 border-t border-border pt-2 text-[11px] text-muted">
+        <footer className="print-footer mt-6 border-t border-border pt-2 text-[11px] text-muted">
           {analysis.published_match
             ? t(analysis.published_match.status === "match" ? "print.match" : "print.differs", {
                 source: analysis.published_match.source,
@@ -398,12 +410,105 @@ function pText(value: string): string {
   return value.startsWith("<") ? value : `= ${value}`;
 }
 
+/** A section whose heading stays with its first block, so that a heading never ends a page. */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const [first, ...rest] = Children.toArray(children);
   return (
     <section className="mt-5 print-section">
-      <h2 className="text-base font-semibold tracking-tight mb-1.5">{title}</h2>
-      {children}
+      <div className="print-keep">
+        <h2 className="text-base font-semibold tracking-tight mb-1.5">{title}</h2>
+        {first}
+      </div>
+      {rest}
     </section>
+  );
+}
+
+/** What the shades of the loadings table mean, as the legend of the loadings step says it. */
+function LoadingsKey({ analysis, options }: { analysis: FactorAnalysis; options: AnalysisOptions }) {
+  const t = useT();
+  const { locale } = useLocale();
+  const strict = ruleStrict(options.assignment_rule);
+  const value = formatNumber(options.loading_threshold, locale, 2);
+  return (
+    <p className="flex items-center gap-x-4 gap-y-1 text-[11px] text-muted flex-wrap">
+      <span className="flex items-center gap-1.5">
+        <span className="h-3 w-3 rounded-sm" style={loadingStyle(-0.9)} />
+        {t("factor.loadings.legend_negative")}
+      </span>
+      <span>{t(strict ? "factor.loadings.legend_faded_strict" : "factor.loadings.legend_faded", { threshold: value })}</span>
+      <span>
+        {(analysis.assignment_rule ?? "largest") !== "largest"
+          ? t("factor.loadings.legend_bold_assigned")
+          : t(strict ? "factor.loadings.legend_bold_strict" : "factor.loadings.legend_bold", { threshold: value })}
+      </span>
+    </p>
+  );
+}
+
+/**
+ * The loadings as a table, for the datasets that have more measures than the heatmap holds on a
+ * page: colour as in the loadings step (orange for a negative sign, a shade of the text colour for
+ * a positive one, the loadings that do not count faded, the assigned ones bold), the header on
+ * every page.
+ */
+function LoadingsTable({
+  analysis,
+  options,
+  order,
+  name,
+}: {
+  analysis: FactorAnalysis;
+  options: AnalysisOptions;
+  order: "factor" | "dataset";
+  name: (key: string) => string;
+}) {
+  const t = useT();
+  const { locale } = useLocale();
+  const k = analysis.n_factors;
+  const threshold = options.loading_threshold;
+  const strict = ruleStrict(options.assignment_rule);
+  // As in the loadings step: under "multi" and "hair" the cells the rule assigned are bold, under
+  // "largest" every loading that counts.
+  const assigned = (analysis.assignment_rule ?? "largest") !== "largest" ? assignedCells(analysis) : null;
+  return (
+    <>
+      <Wide>
+        <table className="data-table print-table">
+          <caption className="sr-only">{t("factor.loadings.table_heading")}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{t("factor.loadings.col_measure")}</th>
+              {Array.from({ length: k }, (_, i) => (
+                <th key={i} scope="col" className="num">F{i + 1}</th>
+              ))}
+              <th scope="col" className="num border-l border-border">h²</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orderMeasures(analysis, order === "dataset" ? "original" : "factor").map((m) => (
+              <tr key={m}>
+                <th scope="row" className="font-medium"><MeasureName name={name(m)} /></th>
+                {(analysis.loadings[m] ?? []).map((v, i) => {
+                  const strong = assigned ? assigned.has(`${m}:${i}`) : loadingCounts(v, threshold, strict);
+                  const counts = strong || loadingCounts(v, threshold, strict);
+                  return (
+                    <td
+                      key={i}
+                      style={counts ? loadingStyle(v) : undefined}
+                      className={strong ? "num font-bold text-fg" : counts ? "num text-fg/80" : "num text-muted"}
+                    >
+                      {formatNumber(v, locale, 2)}
+                    </td>
+                  );
+                })}
+                <td className="num border-l border-border">{formatNumber(analysis.communalities[m] ?? Number.NaN, locale, 2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Wide>
+    </>
   );
 }
 

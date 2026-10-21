@@ -372,8 +372,19 @@
     .print-sheet h2, .print-sheet h3 {
       break-after: avoid;
     }
-    .print-table tr, .print-figure {
+    /* A heading and the first block under it (a paragraph or a figure that fits a page) move
+       together, as break-after does not hold for a figure that is pushed to the next page. */
+    .print-keep, .print-table tr, .print-figure {
       break-inside: avoid;
+    }
+    /* The last line of the sheet is not left alone on a page of its own. */
+    .print-footer {
+      break-before: avoid;
+    }
+    /* The shades of the loadings are the table's content, not its background. */
+    .print-table td {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
   }
 

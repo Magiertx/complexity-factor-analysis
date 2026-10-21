@@ -6,6 +6,7 @@ import {
   downloaded,
   expect,
   expectStep,
+  FIT_TIMEOUT,
   goToStep,
   openBundled,
   pattern,
@@ -182,6 +183,30 @@ test("the print view shows the whole analysis on light pages without controls", 
   await expect(print.getByRole("banner").first()).toBeHidden();
   await expect(print.getByRole("button", { name: text("print.print") })).toBeHidden();
   await expect(sheet).toBeVisible();
+  await print.close();
+});
+
+test("the print view sets the loadings of many measures as a table, as the heatmap would not fit a page", async ({ page }) => {
+  await page.goto("/log?bundled=comfy-log-pdc-training-logs&preset=standard&step=loadings");
+  await expectStep(page, "loadings", "done", "en", FIT_TIMEOUT);
+  await toolbar(page).getByRole("button", { name: text("factor.toolbar.export") }).click();
+  const [print] = await Promise.all([
+    page.waitForEvent("popup"),
+    page.getByRole("menuitem", { name: pattern(text("factor.toolbar.print")) }).click(),
+  ]);
+  const sheet = print.locator("article.light-sheet");
+  await expect(sheet.getByRole("heading", { level: 1 })).toBeVisible({ timeout: FIT_TIMEOUT });
+  const loadings = sheet.locator("section", { has: print.getByRole("heading", { level: 2, name: text("factor.steps.loadings") }) });
+  // No heatmap: its 120 rows are taller than two pages and cannot break. A table of one row per
+  // measure, with the header that repeats on every page.
+  await expect(loadings.getByRole("img", { name: text("factor.figure.loadings") })).toHaveCount(0);
+  const table = loadings.getByRole("table", { name: text("factor.loadings.table_heading") });
+  await expect(table.locator("tbody tr")).not.toHaveCount(0);
+  expect(await table.locator("tbody tr").count()).toBeGreaterThan(100);
+  await print.emulateMedia({ media: "print" });
+  expect(await table.locator("thead").evaluate((el) => getComputedStyle(el).display)).toBe("table-header-group");
+  // The heading stays with its first block.
+  await expect(loadings.locator(".print-keep").getByRole("heading", { level: 2 })).toBeVisible();
   await print.close();
 });
 

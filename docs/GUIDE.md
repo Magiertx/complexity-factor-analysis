@@ -74,7 +74,9 @@ All downloads are in the **Download** menu of the page header:
   the filter, scree plot, descriptive statistics, loadings, communalities) plus the dimensions, the
   factor correlations of an oblique rotation and the settings. It compiles with pdflatex; compile it with
   latexmk -pdf, or run pdflatex twice, as long tables settle their column widths in the second run.
-- **Print view**: the whole analysis on A4 pages in a new tab, to print or to save as PDF.
+- **Print view**: the whole analysis on A4 pages in a new tab, to print or to save as PDF. The
+  loadings of more than 50 measures are a table that breaks between its rows, as a heatmap of that
+  height would not fit a page.
 - **Loadings (CSV, LaTeX)** and **Dataset (CSV)**.
 
 The **image icon** at the scree plot and at the loadings downloads the figure as SVG (the text
