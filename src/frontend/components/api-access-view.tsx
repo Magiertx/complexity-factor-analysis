@@ -78,6 +78,15 @@ with open("report.tex", "wb") as f:
 figure = {**options, "figure": "loadings", "format": "svg", "short_codes": True}
 with open("loadings.svg", "wb") as f:
     f.write(s.post(f"{url}/figure", json=figure).content)
+
+# 4. Tab. 17: the four miners side by side under Hair et al., and the table for LaTeX
+miners = ["alpha", "directly-follows", "inductive", "hybrid-ilp"]
+body = {"columns": [{"bundled_id": f"comfy-paper-{m}-miner"} for m in miners], "assignment_rule": "hair"}
+compared = s.post(f"{BASE}/factor-analysis/compare", json=body).json()
+for i, column in enumerate(compared["columns"]):
+    print(column["label"], [[m["measure"] for m in d["columns"][i]["measures"]] for d in compared["dimensions"]])
+with open("factor-structures.tex", "wb") as f:
+    f.write(s.post(f"{BASE}/factor-analysis/compare/export", json={**body, "format": "latex"}).content)
 `;
 
 const CURL_EXAMPLE = `# List algorithms
