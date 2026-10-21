@@ -119,7 +119,7 @@ def test_the_kaiser_criterion_in_german_with_an_oblique_rotation_and_the_filter_
         "Die Zahl der Faktoren folgte dem Kaiser-Kriterium~\\cite{kaiser1960} und betrug 2; die Parallelanalyse~\\cite{horn1965} schl\u00e4gt 3 vor "
         "(100 Simulationen, 95. Perzentil, Seed 20261012).",
         "Die Faktoren wurden mit der Rotation Promax rotiert.",
-        "wenn dieser mindestens 0,35 betr\u00e4gt und seine Kommunalit\u00e4t mindestens 0,00 betr\u00e4gt; jedes Ma\u00df wurde zugeordnet.",
+        "wenn dieser mindestens 0,35 betr\u00e4gt; jedes Ma\u00df wurde zugeordnet.",
     ):
         assert part in built.text, part
     # An oblique rotation has no cumulative share, and nothing is said of one.
@@ -151,6 +151,48 @@ def test_the_rule_of_hair_and_the_rows_of_a_miner_in_a_log_dataset():
     ):
         assert part in built.text, part
     assert built.keys[-1] == "hair_multivariate" and "measure_mess" in built.keys
+
+
+def test_the_hair_rule_names_the_second_loading_condition_in_full():
+    result = _result(assignment={
+        "rule": "hair", "loading_threshold": 0.35, "loading_strict": False, "communality_threshold": 0.5, "cross_loading_gap": 0.15,
+    })
+    for language, part in (
+        ("en", "a measure with another loading that also is at least 0.35 and lies at most 0.15 below its largest was left out"),
+        ("de", "ein Maß mit einer weiteren Ladung, die ebenfalls mindestens 0,35 beträgt und höchstens 0,15 darunter liegt, blieb unzugeordnet"),
+    ):
+        built = methods.methods(
+            language=language, dataset=_dataset(), result=result, requested_factors=None, excluded=[], tool=TOOL,
+            libraries=LIBRARIES, entry=None,
+        )
+        assert part in built.text, part
+
+
+def test_uploaded_logs_are_described_as_measured_with_feeed():
+    built = methods.methods(
+        language="en", dataset=_dataset(kind="log", source="logs"), result=_result(), requested_factors=None, excluded=[],
+        tool=TOOL, libraries=LIBRARIES, entry=None,
+    )
+    assert ", whose measures were extracted with feeed, as in \cite{schalk_comfy_log}" in built.text
+    assert "computed with" not in built.text
+    german = methods.methods(
+        language="de", dataset=_dataset(kind="log", source="logs"), result=_result(), requested_factors=None, excluded=[],
+        tool=TOOL, libraries=LIBRARIES, entry=None,
+    )
+    assert ", deren Maße wie in \cite{schalk_comfy_log} mit feeed berechnet wurden" in german.text
+
+
+def test_a_communality_threshold_of_zero_is_not_stated():
+    for rule in ("largest", "multi", "hair"):
+        result = _result(assignment={
+            "rule": rule, "loading_threshold": 0.35, "loading_strict": True, "communality_threshold": 0.0, "cross_loading_gap": 0.15,
+        })
+        for language in ("en", "de"):
+            built = methods.methods(
+                language=language, dataset=_dataset(), result=result, requested_factors=None, excluded=[], tool=TOOL,
+                libraries=LIBRARIES, entry=None,
+            )
+            assert "ommunality" not in built.text and "Kommunalität" not in built.text, (rule, language)
 
 
 def test_an_unknown_language_is_refused():
