@@ -153,7 +153,10 @@ export function CompareView() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stateKey, catalog, attempt]);
-  const busy = !!catalog && !error && comparedKey !== stateKey;
+  // What is on screen is of another selection than the tiles show, whether the update is under
+  // way or failed: it is dimmed, and what is downloaded would be the new selection, not this table.
+  const outdated = comparedKey !== stateKey;
+  const computing = !!catalog && !error && outdated;
 
   // Names of the measures, or the short codes of the papers; the full name stays in the tooltip.
   const names = useMemo(() => new Map((catalog?.measures ?? []).map((m) => [m.key, m.name])), [catalog]);
@@ -189,7 +192,13 @@ export function CompareView() {
     [byId],
   );
 
-  const exportReason = !comparison ? t("compare.wait") : busy ? t("compare.wait_update") : null;
+  const exportReason = !comparison
+    ? t("compare.wait")
+    : computing
+      ? t("compare.wait_update")
+      : outdated
+        ? t("compare.stale")
+        : null;
 
   return (
     <div className="space-y-6">
@@ -236,13 +245,13 @@ export function CompareView() {
 
       <AssignmentChoice id="cmp-rule" value={state.rule} onChange={(rule) => setState({ ...state, rule })} note={null} />
 
-      <section aria-labelledby="cmp-result" aria-busy={busy} className="space-y-3">
+      <section aria-labelledby="cmp-result" aria-busy={computing} className="space-y-3">
         <div className="flex items-end justify-between gap-x-6 gap-y-3 flex-wrap">
           <div className="flex items-center gap-2">
             <h2 id="cmp-result" className="text-sm font-semibold">
               <Term more={t("compare.help.result")}>{t("compare.result")}</Term>
             </h2>
-            {busy && (
+            {computing && (
               <span className="inline-flex items-center gap-1.5 text-xs text-muted" role="status">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
                 {t("compare.computing")}
@@ -302,7 +311,7 @@ export function CompareView() {
         )}
 
         {comparison && (
-          <div className={cn("space-y-3 transition-opacity motion-reduce:transition-none", busy && "opacity-60")}>
+          <div className={cn("space-y-3 transition-opacity motion-reduce:transition-none", outdated && "opacity-60")}>
             {look === "matrix" ? (
               <MembershipMatrix comparison={comparison} labels={labels} columnLabel={columnLabel} />
             ) : (

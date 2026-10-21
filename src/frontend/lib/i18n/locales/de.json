@@ -1384,6 +1384,7 @@
     "subtitle": "Welche Maße für welchen Miner welche Dimension bilden, wie in Tab. 17 von Important Factors. Jede Spalte ist ein veröffentlichter Datensatz mit den Einstellungen seines Papers; eine Zuordnungsregel gilt für alle.",
     "wait": "Der Vergleich wird noch berechnet.",
     "wait_update": "Der Vergleich wird aktualisiert.",
+    "stale": "Die Tabelle zeigt die vorherige Auswahl; die Aktualisierung ist fehlgeschlagen.",
     "computing": "Wird verglichen…",
     "link_invalid": "Ein Teil des Links ließ sich nicht verwenden: Ein Vergleich nimmt {min} bis {max} veröffentlichte Datensätze und eine der drei Regeln. Gezeigt wird der Rest davon oder Tab. 17.",
     "result": "Faktorstrukturen",

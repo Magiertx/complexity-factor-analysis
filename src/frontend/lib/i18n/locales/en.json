@@ -1384,6 +1384,7 @@
     "subtitle": "Which measures form which dimension for which miner, like Tab. 17 of Important Factors. Each column is a published dataset with the settings of its paper; one assignment rule applies to all.",
     "wait": "The comparison is still being computed.",
     "wait_update": "The comparison is being updated.",
+    "stale": "The table shows the previous selection; the update failed.",
     "computing": "Comparing…",
     "link_invalid": "Part of the link could not be used: a comparison takes {min} to {max} published datasets and one of the three rules. The rest of it, or Tab. 17, is shown.",
     "result": "Factor structures",
