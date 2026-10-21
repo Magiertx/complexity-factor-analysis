@@ -533,15 +533,24 @@ def _pdflatex() -> str | None:
     return shutil.which("pdflatex")
 
 
-def _document(table: str) -> str:
+#: The text width of the CEUR-WS template (ceurart), where Tab. 17 of Important Factors is set;
+#: the table is as wide as the line, so it must fit this and any other.
+CEUR_TEXT_WIDTH = "452.97pt"
+
+
+def _document(table: str, text_width: str = CEUR_TEXT_WIDTH) -> str:
     return "\n".join([
         "\\documentclass{article}",
+        f"\\usepackage[textwidth={text_width},left=2cm]{{geometry}}",
         "\\usepackage[T1]{fontenc}",
         "\\usepackage{booktabs}",
         "\\usepackage{array}",
+        "\\usepackage{tabularx}",
         "\\usepackage{amsmath}",
         "\\begin{document}",
+        "\\begin{table}",
         table,
+        "\\end{table}",
         "\\end{document}",
         "",
     ])
@@ -569,6 +578,16 @@ def test_the_latex_tables_compile(client, tmp_path):
     }
     tables["log"] = compare.dimensions_latex(log, short=True)
     assert "$C_{\\text{mag}}$" in tables["log"]
+    # Every analysis failed: no dimension, but a table that still compiles.
+    failed = {
+        "kind": "model",
+        "assignment_rule": "hair",
+        "alignment": {"dimensions": 0},
+        "columns": [{"label": "A", "error": {"message": "n"}}, {"label": "B", "error": {"message": "n"}}],
+        "unassigned": [None, None],
+        "dimensions": [],
+    }
+    tables["failed"] = compare.dimensions_latex(failed, short=True)
     for name, table in tables.items():
         (tmp_path / f"{name}.tex").write_text(_document(table), encoding="utf-8")
         done = subprocess.run(
@@ -576,3 +595,6 @@ def test_the_latex_tables_compile(client, tmp_path):
             cwd=tmp_path, capture_output=True, text=True, timeout=300,
         )
         assert done.returncode == 0, (name, done.stdout[-3000:])
+        # As wide as the line: nothing sticks out of it, with the codes or the names.
+        overfull = [line for line in (tmp_path / f"{name}.log").read_text(errors="replace").splitlines() if line.startswith("Overfull")]
+        assert overfull == [], (name, overfull)

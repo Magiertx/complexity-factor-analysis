@@ -702,9 +702,11 @@ by the codes of the papers, as Tab. 17 does) and returns `factor-structures.csv`
 - CSV: `measure`, `code`, `dimension` (of the row) and one column per dataset with `D1` (or
   `D1 D3` under `multi`), `unassigned:<reason>`, `msa_removed`, `excluded`, `dropped:<reason>`,
   `failed`, or nothing for a measure the dataset does not have.
-- LaTeX: a booktabs `tabular` (needs `booktabs` and `array`) with one row per dataset and one
-  column per dimension, laid out like Tab. 17; comments name the rule, how the dimensions were
-  matched and the measures in no dimension.
+- LaTeX: a booktabs `tabularx` (needs `booktabs`, `array` and `tabularx`) as wide as the line
+  (`\linewidth`), so it fits a one- or a two-column page without a width to set: the names of the
+  datasets take what they need and the dimensions share the rest. One row per dataset and one
+  column per dimension, laid out like Tab. 17; comments name the rule, how the
+  dimensions were matched and the measures in no dimension.
 - ZIP: `comparison.json` (the response of `compare`), `membership.csv`, `dimensions.tex`,
   `co_assignment.csv` (one row per pair of measures, each once: `measure_a`, `code_a`,
   `measure_b`, `code_b`, `together`, `both_assigned`, `both_analysed`), `README.txt` and

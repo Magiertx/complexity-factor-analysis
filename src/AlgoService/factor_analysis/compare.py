@@ -488,18 +488,19 @@ _UNASSIGNED = {"low_communality": "low communality", "low_loading": "no loading 
 
 
 def dimensions_latex(comparison: dict[str, Any], short: bool = True) -> str:
-    """The dimensions of each analysis as a booktabs tabular in the layout of Tab. 17 of
-    Important Factors: one row per analysis, one column per dimension. Comments name the rule,
-    how the dimensions were matched, and the measures in no dimension."""
+    """The dimensions of each analysis as a booktabs tabularx in the layout of Tab. 17 of
+    Important Factors: one row per analysis, one column per dimension, as wide as the line so
+    that it fits whatever the page (the analyses' names take what they need, the dimensions
+    share the rest). Comments name the rule, the thresholds, how the dimensions were matched,
+    and the measures in no dimension."""
     from .export import ASSIGNMENT_RULE_TEXTS
     from .report import _RAGGED, _Labels, tex
 
     label = _Labels(comparison["kind"], short)
     rule = comparison["assignment_rule"]
     n = comparison["alignment"]["dimensions"]
-    width = max(1.6, round(11.0 / max(n, 1), 1))
     lines = [
-        "% Requires \\usepackage{booktabs} and \\usepackage{array}.",
+        "% Requires \\usepackage{booktabs}, \\usepackage{array} and \\usepackage{tabularx}; as wide as the line.",
         f"% Assignment rule {rule}: {ASSIGNMENT_RULE_TEXTS[rule]}.",
         "% Dimensions matched across the analyses by shared measures; the first analysis keeps the numbers of its factors.",
     ]
@@ -512,9 +513,10 @@ def dimensions_latex(comparison: dict[str, Any], short: bool = True) -> str:
         if column.get("error"):
             lines.append(f"% {' '.join(column['label'].split())} could not be analysed: {' '.join(column['error']['message'].split())}")
     lines += [
-        f"\\begin{{tabular}}{{l{(_RAGGED + f'p{{{width}cm}}') * n}}}",
+        # Without a dimension (every analysis failed) there is still a column, so that it compiles.
+        f"\\begin{{tabularx}}{{\\linewidth}}{{l{(_RAGGED + 'X') * max(n, 1)}}}",
         "\\toprule",
-        " & " + " & ".join(f"Dimension {d + 1}" for d in range(n)) + " \\\\",
+        " & " + (" & ".join(f"Dimension {d + 1}" for d in range(n)) if n else "") + " \\\\",
         "\\midrule",
     ]
     for i, column in enumerate(comparison["columns"]):
@@ -522,8 +524,8 @@ def dimensions_latex(comparison: dict[str, Any], short: bool = True) -> str:
         for dimension in comparison["dimensions"]:
             entry = dimension["columns"][i]
             cells.append(", ".join(label(m["measure"]) for m in entry["measures"]) if entry else "--")
-        lines.append(f"{tex(column['label'])} & " + " & ".join(cells) + " \\\\")
-    lines += ["\\bottomrule", "\\end{tabular}", ""]
+        lines.append(f"{tex(column['label'])} & " + (" & ".join(cells) if cells else "--") + " \\\\")
+    lines += ["\\bottomrule", "\\end{tabularx}", ""]
     return "\n".join(lines)
 
 
@@ -559,7 +561,7 @@ def comparison_zip(comparison: dict[str, Any], request: dict[str, Any], short: b
         ("membership.csv", membership_csv(comparison),
          "One row per measure: the dimensions each analysis puts it in, or why none."),
         ("dimensions.tex", dimensions_latex(comparison, short),
-         "The dimensions of each analysis as a booktabs tabular, laid out like Tab. 17 of Important Factors."),
+         "The dimensions of each analysis as a booktabs tabularx as wide as the line, laid out like Tab. 17 of Important Factors."),
         ("co_assignment.csv", co_assignment_csv(comparison),
          "One row per pair of measures: in how many analyses both are in the same dimension."),
     ]
