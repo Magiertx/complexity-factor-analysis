@@ -1,12 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { AlertCircle } from "lucide-react";
-import type { FactorDataset } from "@/lib/api";
+import type { Descriptives, FactorDataset, Measurement } from "@/lib/api";
 import { PREVIEW_ROWS, countText } from "@/lib/factor-analysis";
 import { NO_VALUE, formatNumber } from "@/lib/format";
+import { measurementRows, measurementTotals } from "@/lib/measurement";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { MeasureName, TableFrame } from "@/components/ui/table";
-import { useTipZone } from "@/components/ui/tip";
+import { Term, useTipZone } from "@/components/ui/tip";
+import { FoldButton } from "./measure-fold";
 import { HelpLabel, StatTile } from "./step-section";
 
 export function DatasetView({
@@ -97,6 +100,16 @@ export function DatasetView({
         </details>
       )}
 
+      {dataset.descriptives && (
+        <DescriptivesTable
+          descriptives={dataset.descriptives}
+          measureName={measureName}
+          measureDescription={measureDescription}
+        />
+      )}
+
+      {dataset.measurement && <MeasurementTable measurement={dataset.measurement} />}
+
       <div className="space-y-2">
         <h3 className="text-sm font-semibold">{t("factor.dataset.preview_heading")}</h3>
         <TableFrame label={t("factor.dataset.preview_heading")}>
@@ -145,6 +158,237 @@ export function DatasetView({
           })}
         </p>
       </div>
+    </div>
+  );
+}
+
+/** A value of the statistics: three decimals, none from a thousand on, where only the digits before the point tell. */
+function statistic(value: number | null, locale: string): React.ReactNode {
+  if (value === null) return <span className="text-muted">{NO_VALUE}</span>;
+  return formatNumber(value, locale, Math.abs(value) >= 1000 ? 0 : 3);
+}
+
+/**
+ * The statistics of every measure as ComFy's report prints them: mean, median, standard deviation
+ * (n − 1), minimum and maximum, over the data before cleaning, so the measures cleaning dropped
+ * are there too. Folded until asked for, like every table that is there for reference.
+ */
+function DescriptivesTable({
+  descriptives,
+  measureName,
+  measureDescription,
+}: {
+  descriptives: Descriptives;
+  measureName: (key: string) => string;
+  measureDescription: (key: string) => string | undefined;
+}) {
+  const t = useT();
+  const { locale } = useLocale();
+  const [open, setOpen] = useState(false);
+  const zone = useTipZone<HTMLTableElement>();
+  const rows = descriptives.measures;
+  const heading = t("factor.dataset.descriptives_heading");
+  const long = rows.length > 20;
+  return (
+    <div className="space-y-2">
+      <div className="text-sm font-semibold">
+        <FoldButton label={`${heading} · ${formatNumber(rows.length, locale)}`} fold={{ open, onToggle: () => setOpen((v) => !v) }} />
+      </div>
+      {open && (
+        <>
+          <TableFrame label={heading} boxed={long} className={long ? "max-h-[28rem]" : undefined}>
+            <table ref={zone} className="data-table">
+              <caption className="sr-only">{heading}</caption>
+              <thead>
+                <tr>
+                  <th scope="col" className="sticky-col">
+                    {t("factor.suitability.col_measure")}
+                  </th>
+                  <th scope="col" className="num" data-tip-more={t("factor.dataset.col_n_more")}>
+                    n
+                  </th>
+                  <th scope="col" className="num">
+                    {t("factor.dataset.col_mean")}
+                  </th>
+                  <th scope="col" className="num">
+                    {t("factor.dataset.col_median")}
+                  </th>
+                  <th scope="col" className="num" data-tip-more={t("factor.dataset.col_sd_more")}>
+                    {t("factor.dataset.col_sd")}
+                  </th>
+                  <th scope="col" className="num">
+                    {t("factor.dataset.col_min")}
+                  </th>
+                  <th scope="col" className="num">
+                    {t("factor.dataset.col_max")}
+                  </th>
+                  <th scope="col">{t("factor.dataset.col_cleaning")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.measure} className={row.dropped ? "text-muted" : undefined}>
+                    <th scope="row" className="sticky-col font-medium break-words min-w-[9rem] max-w-[16rem]">
+                      <span data-tip-more={measureDescription(row.measure)}>
+                        <MeasureName name={measureName(row.measure)} />
+                      </span>
+                    </th>
+                    <td className="num">{formatNumber(row.n, locale)}</td>
+                    <td className="num">{statistic(row.mean, locale)}</td>
+                    <td className="num">{statistic(row.median, locale)}</td>
+                    <td className="num">{statistic(row.std, locale)}</td>
+                    <td className="num">{statistic(row.min, locale)}</td>
+                    <td className="num">{statistic(row.max, locale)}</td>
+                    <td className="whitespace-nowrap">{row.dropped ? t(`factor.dataset.reason.${row.dropped}`) : ""}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableFrame>
+          <p className="text-[11px] text-muted max-w-prose">
+            {descriptives.basis === "input"
+              ? t("factor.dataset.descriptives_note", { n: descriptives.n_rows })
+              : t("factor.dataset.descriptives_note_cleaned")}
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Seconds in a table: two decimals, three below a tenth, so a quick stage does not read as 0. */
+function secondsText(value: number | undefined, locale: string): React.ReactNode {
+  if (value === undefined || !Number.isFinite(value)) return <span className="text-muted">{NO_VALUE}</span>;
+  return formatNumber(value, locale, value < 0.1 ? 3 : 2);
+}
+
+function countCell(value: number | undefined, locale: string): React.ReactNode {
+  return value === undefined ? <span className="text-muted">{NO_VALUE}</span> : formatNumber(value, locale);
+}
+
+/**
+ * The run times and input sizes of a dataset the tool computed, one row per observation: the size
+ * of its log and net, and the seconds of reading, discovery and the measures. The numbers a paper
+ * reports on the performance of the tool; the ZIP has them per measure as well.
+ */
+function MeasurementTable({ measurement }: { measurement: Measurement }) {
+  const t = useT();
+  const { locale } = useLocale();
+  const [open, setOpen] = useState(false);
+  const zone = useTipZone<HTMLTableElement>();
+  const rows = measurementRows(measurement);
+  const totals = measurementTotals(measurement);
+  const logs = measurement.source === "logs";
+  const discovery = measurement.kind === "model" && logs;
+  const nets = measurement.kind === "model";
+  const heading = t("factor.dataset.measurement_heading");
+  const computeLabel = t(measurement.kind === "log" ? "factor.dataset.col_features_s" : "factor.dataset.col_measures_s");
+  // The sums stand under the columns of the seconds; the columns before them share the label.
+  const before = 1 + (logs ? 4 : 0) + (nets ? 1 : 0);
+  const long = rows.length > 20;
+  return (
+    <div className="space-y-2">
+      <div className="text-sm font-semibold">
+        <FoldButton
+          label={`${heading} · ${t("factor.dataset.measurement_total", { s: formatNumber(totals.total_s, locale, 1) })}`}
+          fold={{ open, onToggle: () => setOpen((v) => !v) }}
+        />
+      </div>
+      {open && (
+        <>
+          <TableFrame label={heading} boxed={long} className={long ? "max-h-[28rem]" : undefined}>
+            <table ref={zone} className="data-table">
+              <caption className="sr-only">{heading}</caption>
+              <thead>
+                <tr>
+                  <th scope="col" className="sticky-col">
+                    {t("factor.dataset.observation")}
+                  </th>
+                  {logs && (
+                    <>
+                      <th scope="col" className="num">
+                        {t("factor.dataset.col_traces")}
+                      </th>
+                      <th scope="col" className="num">
+                        {t("factor.dataset.col_events")}
+                      </th>
+                      <th scope="col" className="num">
+                        {t("factor.dataset.col_variants")}
+                      </th>
+                      <th scope="col" className="num">
+                        {t("factor.dataset.col_activities")}
+                      </th>
+                    </>
+                  )}
+                  {nets && (
+                    <th scope="col" className="num" data-tip-more={t("factor.dataset.col_net_more")}>
+                      {t("factor.dataset.col_net")}
+                    </th>
+                  )}
+                  <th scope="col" className="num">
+                    {t("factor.dataset.col_read_s")}
+                  </th>
+                  {discovery && (
+                    <th scope="col" className="num" data-tip-more={t("factor.dataset.col_discovery_more")}>
+                      {t("factor.dataset.col_discovery_s")}
+                    </th>
+                  )}
+                  <th scope="col" className="num">
+                    {computeLabel}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.observation}>
+                    <th
+                      scope="row"
+                      className="sticky-col max-w-[16rem] break-words font-normal"
+                      data-tip={row.observation.length > 36 ? row.observation : undefined}
+                    >
+                      {row.observation}
+                      {row.error && <span className="block text-[11px] text-warn-ink break-words">{row.error}</span>}
+                    </th>
+                    {logs && (
+                      <>
+                        <td className="num">{countCell(row.traces, locale)}</td>
+                        <td className="num">{countCell(row.events, locale)}</td>
+                        <td className="num">{countCell(row.variants, locale)}</td>
+                        <td className="num">{countCell(row.activities, locale)}</td>
+                      </>
+                    )}
+                    {nets && (
+                      <td className="num whitespace-nowrap">
+                        {row.net ? (
+                          `${formatNumber(row.net.places, locale)} / ${formatNumber(row.net.transitions, locale)} / ${formatNumber(row.net.arcs, locale)}`
+                        ) : (
+                          <span className="text-muted">{NO_VALUE}</span>
+                        )}
+                      </td>
+                    )}
+                    <td className="num">{secondsText(row.read_s, locale)}</td>
+                    {discovery && <td className="num">{secondsText(row.discovery_s, locale)}</td>}
+                    <td className="num">{secondsText(row.compute_s, locale)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th scope="row" className="sticky-col font-medium" colSpan={before}>
+                    {t("factor.dataset.measurement_sum")}
+                  </th>
+                  <td className="num">{secondsText(totals.read_s, locale)}</td>
+                  {discovery && <td className="num">{secondsText(totals.discovery_s, locale)}</td>}
+                  <td className="num">{secondsText(totals.compute_s, locale)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </TableFrame>
+          <p className="text-[11px] text-muted max-w-prose">
+            <Term more={t("factor.dataset.measurement_more")}>{t("factor.dataset.measurement_note")}</Term>
+          </p>
+        </>
+      )}
     </div>
   );
 }

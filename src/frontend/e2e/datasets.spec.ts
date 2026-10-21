@@ -1,6 +1,7 @@
 import {
   COMPUTE_TIMEOUT,
   chooseSource,
+  pattern,
   deleteSessionDatasets,
   expect,
   expectStep,
@@ -85,7 +86,13 @@ test("the PNML sample computes a model dataset without ProM", async ({ page }) =
   await expectStep(page, "loadings", "done");
   // 32 nets, one observation each.
   await goToStep(page, "dataset");
-  await expect(stepSection(page, "dataset")).toContainText("32");
+  const dataset = stepSection(page, "dataset");
+  await expect(dataset).toContainText("32");
+  // The run times and the size of each net, folded until asked for.
+  await dataset.getByRole("button", { name: pattern(text("factor.dataset.measurement_heading")) }).click();
+  const times = dataset.getByRole("table", { name: text("factor.dataset.measurement_heading") });
+  await expect(times.getByRole("columnheader", { name: text("factor.dataset.col_net") })).toBeVisible();
+  await expect(times.locator("tbody tr")).toHaveCount(32);
 });
 
 test("the log sample computes feeed measures without ProM", async ({ page }) => {
@@ -99,7 +106,13 @@ test("the log sample computes feeed measures without ProM", async ({ page }) => 
   await expectStep(page, "suitability", "done|warn");
   // One observation per log.
   await goToStep(page, "dataset");
-  await expect(stepSection(page, "dataset")).toContainText("pdc2025_02001100.xes");
+  const dataset = stepSection(page, "dataset");
+  await expect(dataset).toContainText("pdc2025_02001100.xes");
+  // The size of each log and the seconds of its features.
+  await dataset.getByRole("button", { name: pattern(text("factor.dataset.measurement_heading")) }).click();
+  const times = dataset.getByRole("table", { name: text("factor.dataset.measurement_heading") });
+  await expect(times.getByRole("row", { name: /^pdc2025_02001100\.xes/ })).toContainText("1,000");
+  await expect(times.getByRole("columnheader", { name: text("factor.dataset.col_features_s") })).toBeVisible();
 });
 
 test("the log sample mined with the default miner gives a model dataset", { tag: "@prom" }, async ({ page }) => {
