@@ -33,6 +33,7 @@ from config import MAX_FILE_SIZE, CodedHTTPException, broadcast_jobs_update, get
 from env_config import positive_int, rate_limit
 from factor_analysis import catalog as cat
 from factor_analysis import compare, compute, correlations, figures, miners, published, storage
+from factor_analysis import names as factor_names
 from factor_analysis.descriptives import describe, describe_cleaned, histogram
 from factor_analysis.core import (
     COMMUNALITY_THRESHOLDS,
@@ -1096,6 +1097,17 @@ class ExportRequest(AnalyzeRequest):
     format: Literal["csv", "latex"] = "csv"
 
 
+class SaveOptionsRequest(AnalyzeRequest):
+    """The options of ``AnalyzeRequest`` as saved with a dataset, and with them the factor count
+    of the solution on screen: the names are kept for that solution (miner, count, rotation and
+    rule), whichever way the count was chosen."""
+
+    names_k: int | None = Field(None, ge=1, le=MAX_MEASURES)
+
+    def saved(self) -> dict[str, Any]:
+        return self.model_dump(exclude={"names_k"})
+
+
 def _published_match(meta: dict[str, Any], params: AnalysisParams, result: dict[str, Any]) -> dict[str, Any] | None:
     """``published.match`` for a whole copy of a bundled dataset; a selection of its measures
     has numbers of its own."""
@@ -1349,10 +1361,13 @@ async def dataset_correlations(
 async def save_options(
     request: Request,
     dataset_id: str,
-    body: AnalyzeRequest,
+    body: SaveOptionsRequest,
     session_id: str = Depends(get_session_id),
 ) -> Response:
     """Keep the parameters of an analysis with the dataset, so reopening it starts from them.
+    ``names_k`` is the factor count of the analysis on screen; with it the ``factor_names`` are
+    also kept for that solution (miner, count, rotation, rule), which the dataset's columns of a
+    comparison are headed with.
 
     Checked like ``analyze`` checks them as far as that needs no fit: unknown excluded
     measures, too few measures or observations left (of the ``miner``, if one is given), more
@@ -1368,11 +1383,16 @@ async def save_options(
             data = await run_in_threadpool(storage.load_matrix, session_id, meta["id"])
             data, params, _ = await run_in_threadpool(_select, meta, data, body.miner, params)
             check_params(list(data.columns), len(data), params)
-        if body.n_factors is not None:
-            _named(body, body.n_factors)
+        solution_k = body.names_k or body.n_factors
+        if solution_k is not None:
+            _named(body, solution_k)
     except AnalysisError as e:
         return _AnalysisFailed(e).response
-    storage.update_meta(session_id, meta["id"], options=body.saved())
+    changes: dict[str, Any] = {"options": body.saved()}
+    if solution_k is not None:
+        key = factor_names.solution_key(solution_k, body.rotation, body.assignment_rule, body.miner)
+        changes["solution_names"] = factor_names.remember(meta.get("solution_names"), key, body.factor_names)
+    storage.update_meta(session_id, meta["id"], **changes)
     return Response(status_code=204)
 
 
@@ -1887,6 +1907,12 @@ async def _comparison(request: Request, body: CompareRequest) -> dict[str, Any] 
             else:
                 spec["result"] = result
                 spec["options"] = effective_params(params, result["n_factors"])
+                if "meta" in source:
+                    # The names saved for the solution this column came to; bundled ones have none.
+                    spec["factor_names"] = factor_names.for_solution(
+                        source["meta"].get("solution_names"), result["n_factors"], params.rotation,
+                        params.assignment_rule, column.miner,
+                    )
             specs.append(spec)
     finally:
         listening.cancel()
