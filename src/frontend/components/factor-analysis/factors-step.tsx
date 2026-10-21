@@ -9,6 +9,7 @@ import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { Select } from "@/components/ui/select";
 import { Tip } from "@/components/ui/tip";
+import { FigureMenu, type FigureDownload } from "./figure-menu";
 import { HelpLabel, NoticeList } from "./step-section";
 import { ScreePlot } from "./scree-plot";
 
@@ -23,11 +24,13 @@ interface Props {
    * are those the ComFy report applies; the count is then named after the report.
    */
   paperScope?: string;
+  /** Downloads the scree plot for a paper. */
+  figure?: FigureDownload;
 }
 
 type Criterion = "kaiser" | "parallel" | "paper" | "report";
 
-export function FactorsView({ analysis, options, onOptions, paperFactors, paperScope }: Props) {
+export function FactorsView({ analysis, options, onOptions, paperFactors, paperScope, figure }: Props) {
   const t = useT();
   const tMaybe = useTMaybe();
   const { locale } = useLocale();
@@ -79,7 +82,11 @@ export function FactorsView({ analysis, options, onOptions, paperFactors, paperS
       <NoticeList heading={t("factor.factors.notes_heading")} notes={notes} />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_17rem]">
         <div className="space-y-2 min-w-0">
-          <HelpLabel label={t("factor.factors.scree_title")} help={t("factor.help.scree")} />
+          <HelpLabel
+            label={t("factor.factors.scree_title")}
+            help={t("factor.help.scree")}
+            extra={figure && <FigureMenu name={t("factor.factors.scree_title")} figure={figure} />}
+          />
           <ScreePlot
             eigenvalues={analysis.eigenvalues}
             random={counts?.eigenvalues_random}

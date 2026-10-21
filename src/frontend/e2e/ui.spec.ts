@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
-import { deleteSessionDatasets, expect, expectStep, FIT_TIMEOUT, goToStep, openBundled, stepSection, test, text } from "./fixtures";
+import { deleteSessionDatasets, expect, expectStep, FIT_TIMEOUT, goToStep, openBundled, pattern, stepSection, test, text } from "./fixtures";
 
 /** The serious and critical problems axe finds on the page, one line each. */
 async function seriousProblems(page: Page): Promise<string[]> {
@@ -46,7 +46,7 @@ test("the theme switch toggles dark mode and keeps it", async ({ page }) => {
   await expect(html).not.toHaveClass(/\bdark\b/);
 });
 
-const ROUTES = ["/", "/log", "/inspect", "/runs", "/settings", "/api-access"];
+const ROUTES = ["/", "/log", "/inspect", "/runs", "/settings", "/api-access", "/guide"];
 
 for (const scheme of ["light", "dark"] as const) {
   for (const route of ROUTES) {
@@ -74,9 +74,19 @@ for (const scheme of ["light", "dark"] as const) {
     // The other look of the loadings, and the download menu open.
     await goToStep(page, "loadings");
     await stepSection(page, "loadings").getByRole("button", { name: text("factor.loadings.look_dimensions") }).click();
-    await page.getByRole("button", { name: text("factor.toolbar.export") }).click();
+    await page.getByRole("button", { name: text("factor.toolbar.export"), exact: true }).click();
     expect(await seriousProblems(page), "dimensions and menu").toEqual([]);
     await page.keyboard.press("Escape");
+    // The statistics of the dataset step unfolded, and the print view of the analysis.
+    await goToStep(page, "dataset");
+    await stepSection(page, "dataset").getByRole("button", { name: pattern(text("factor.dataset.descriptives_heading")) }).click();
+    expect(await seriousProblems(page), "descriptive statistics").toEqual([]);
+    await page.getByRole("button", { name: text("factor.toolbar.export"), exact: true }).click();
+    const print = await page.getByRole("menuitem", { name: pattern(text("factor.toolbar.print")) }).getAttribute("href");
+    await page.keyboard.press("Escape");
+    await page.goto(print!);
+    await expect(page.locator("article.light-sheet img").first()).toBeVisible();
+    expect(await seriousProblems(page), "print view").toEqual([]);
     await deleteSessionDatasets(page);
   });
 }

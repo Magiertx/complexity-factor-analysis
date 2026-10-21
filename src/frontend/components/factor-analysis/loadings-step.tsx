@@ -31,6 +31,7 @@ import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { Segmented } from "@/components/ui/segmented";
 import { MeasureName, TableFrame } from "@/components/ui/table";
 import { Term, useTipZone } from "@/components/ui/tip";
+import { FigureMenu, type FigureDownload } from "./figure-menu";
 import { FoldButton, SectionRow, type Fold } from "./measure-fold";
 import { MeasureSearch, NotableSwitch } from "./measure-search";
 import { FieldLabel, HelpLabel, ThresholdField } from "./step-section";
@@ -74,6 +75,11 @@ interface Props {
   assignmentNote?: string | null;
   filter: LoadingsFilter;
   onFilter: (filter: LoadingsFilter) => void;
+  /** The look and order of the loadings, which the print view and the figure follow as well. */
+  look: LoadingsLookState;
+  onLook: (patch: Partial<LoadingsLookState>) => void;
+  /** Downloads the loadings heatmap for a paper. */
+  figure?: FigureDownload;
 }
 
 /** What makes a loading bold: the rule's assignment, or the threshold reached or exceeded. */
@@ -83,11 +89,17 @@ type BoldBy = "assigned" | "exceeds" | "reaches";
 type LoadingsLook = "matrix" | "dimensions";
 type MeasureOrder = "factor" | "original";
 
+/** How the loadings are shown: as a matrix or as cards, and in which order. */
+export interface LoadingsLookState {
+  look: LoadingsLook;
+  order: MeasureOrder;
+}
+
 const LOOK_KEY = "app.factor-loadings-look";
 
 /** The look and order chosen last, remembered in the browser. */
-function useLoadingsLook(): [{ look: LoadingsLook; order: MeasureOrder }, (patch: Partial<{ look: LoadingsLook; order: MeasureOrder }>) => void] {
-  const [state, setState] = useState<{ look: LoadingsLook; order: MeasureOrder }>({ look: "matrix", order: "factor" });
+export function useLoadingsLook(): [LoadingsLookState, (patch: Partial<LoadingsLookState>) => void] {
+  const [state, setState] = useState<LoadingsLookState>({ look: "matrix", order: "factor" });
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(LOOK_KEY) ?? "null");
@@ -98,7 +110,7 @@ function useLoadingsLook(): [{ look: LoadingsLook; order: MeasureOrder }, (patch
       /* storage blocked or unreadable */
     }
   }, []);
-  const update = (patch: Partial<{ look: LoadingsLook; order: MeasureOrder }>) =>
+  const update = (patch: Partial<LoadingsLookState>) =>
     setState((s) => {
       const next = { ...s, ...patch };
       try {
@@ -120,10 +132,12 @@ export function LoadingsView({
   assignmentNote,
   filter,
   onFilter,
+  look: { look, order },
+  onLook: setLook,
+  figure,
 }: Props) {
   const t = useT();
   const { locale } = useLocale();
-  const [{ look, order }, setLook] = useLoadingsLook();
   const [matrix, setMatrix] = useState<"pattern" | "structure">("pattern");
   const oblique = analysis.rotation !== "none" && !(ORTHOGONAL as string[]).includes(analysis.rotation);
   const threshold = options.loading_threshold;
@@ -253,6 +267,7 @@ export function LoadingsView({
               </div>
             )}
           </div>
+          {figure && <FigureMenu name={t("factor.figure.loadings")} figure={figure} />}
         </div>
 
         {long && (

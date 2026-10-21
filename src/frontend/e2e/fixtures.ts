@@ -136,7 +136,7 @@ export async function openBundled(page: Page, label: string, locale: "en" | "de"
 
 /** The download menu of the toolbar, opened, and one of its entries chosen by its text key. */
 export async function chooseDownload(page: Page, key: string) {
-  await page.getByRole("button", { name: text("factor.toolbar.export") }).click();
+  await page.getByRole("button", { name: text("factor.toolbar.export"), exact: true }).click();
   await page.getByRole("menuitem", { name: pattern(text(key)) }).click();
 }
 
