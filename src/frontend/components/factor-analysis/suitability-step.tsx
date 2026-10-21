@@ -167,7 +167,8 @@ function BartlettCard({ analysis, alpha }: { analysis: FactorAnalysis | null; al
           })}
         </p>
       )}
-      <dl className="grid grid-cols-3 gap-2 text-xs">
+      {/* The chi-square is the widest value: it gets the widest column, and wraps rather than being cut. */}
+      <dl className="grid grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 text-xs">
         <Value
           label={b?.regularised ? `χ² (${t("factor.suitability.regularised")})` : "χ²"}
           value={b ? formatNumber(b.chi_square, locale, 1) : NO_VALUE}
@@ -225,7 +226,7 @@ function Value({ label, value, more }: { label: string; value: string; more?: st
   return (
     <div className="rounded-md bg-bg/60 px-2.5 py-1.5 min-w-0">
       <dt className="text-[10px] text-muted">{more ? <Term more={more}>{label}</Term> : label}</dt>
-      <dd className="font-mono tabular-nums text-sm truncate">{value}</dd>
+      <dd className="font-mono tabular-nums text-sm [overflow-wrap:anywhere]">{value}</dd>
     </div>
   );
 }
