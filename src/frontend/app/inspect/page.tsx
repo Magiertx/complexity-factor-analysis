@@ -9,9 +9,15 @@ export const metadata: Metadata = { title: "Inspect a single log" };
 export default function InspectPage() {
   return (
     <div className="space-y-6">
-      <InspectHeader />
       <ErrorBoundary>
-        <Suspense fallback={<InspectLoading />}>
+        <Suspense
+          fallback={
+            <>
+              <InspectHeader />
+              <InspectLoading />
+            </>
+          }
+        >
           <Workbench />
         </Suspense>
       </ErrorBoundary>

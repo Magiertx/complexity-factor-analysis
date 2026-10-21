@@ -33,18 +33,6 @@
   "footer": {
     "credit": "Entwickelt für die Process-Mining-Forschung an der Universität Augsburg."
   },
-  "algorithm_list": {
-    "what_is_aria": "Was ist {name}?",
-    "what_does_title": "Was macht dieser Algorithmus?",
-    "favorites_heading": "Favoriten",
-    "favorite_add_title": "Als Favorit anheften",
-    "favorite_remove_title": "Aus Favoriten entfernen",
-    "favorite_add_aria": "{name} zu Favoriten hinzufügen",
-    "favorite_remove_aria": "{name} aus Favoriten entfernen",
-    "category": {
-      "complexity": "Komplexitätsanalyse"
-    }
-  },
   "file_drop": {
     "drop_label": "Event-Log hier ablegen",
     "drop_hint": "oder klicken zum Auswählen · .xes, .xes.gz, .xml, .json",
@@ -70,16 +58,12 @@
   "tours": {
     "single_run": {
       "intro_title": "Einzelnes Log untersuchen",
-      "intro_content": "Hier führst du ComFy auf einem Event-Log aus: Es findet mit den gewählten Minern Petri-Netze und berechnet ihre Komplexitätsmaße. Die Tour zeigt die wichtigsten Stellen; Esc oder Überspringen beendet sie jederzeit.",
-      "algo_pick_title": "Der Algorithmus",
-      "algo_pick_content": "Links steht der Algorithmus, den diese Seite ausführt: ComFy, das die Komplexität gefundener Petri-Netze misst.",
-      "algo_help_title": "Was ComFy macht",
-      "algo_help_content": "Das ? daneben öffnet eine ausführliche Erklärung: was ComFy macht, wie es funktioniert und wann es nützt.",
-      "logsource_title": "Event-Log wählen",
-      "logsource_content": "Zwei Quellen: „Datei hochladen“ für eine eigene XES- oder JSON-Datei (zuletzt hochgeladene stehen darunter) oder „Beispiel verwenden“ für das mitgelieferte Beispiel-Log.",
-      "params_title": "Miner und Maße",
+      "intro_content": "Hier lässt du ComFy auf einem Event-Log laufen: Es entdeckt Petri-Netze mit den gewählten Minern und berechnet ihre Komplexitätsmaße. Die Seite hat drei Abschnitte: das Log, die Miner und Maße und den Run. Esc oder Überspringen beendet die Tour jederzeit.",
+      "logsource_title": "1 · Das Event-Log",
+      "logsource_content": "Zwei Quellen: „Datei hochladen“ für eine eigene XES- oder JSON-Datei (letzte Uploads und die Logs deiner Datensätze stehen darunter) oder „Beispiel nutzen“ für das mitgelieferte Beispiel-Log. Die Übersicht zeigt, was im Log steckt.",
+      "params_title": "2 · Miner und Maße",
       "params_content": "Wähle die Miner, die laufen sollen, und die Maße, die berechnet werden. Über die Preset-Leiste darüber speicherst du eine Auswahl für später.",
-      "run_title": "Run starten",
+      "run_title": "3 · Den Run starten",
       "run_content": "Starte mit dem Knopf oder Strg+Enter (Cmd+Enter auf dem Mac). Das Ergebnis erscheint darunter mit den Maßen, den gefundenen Netzen und Downloads; der Run steht unter Letzte Runs."
     },
     "onboarding": {
@@ -451,22 +435,10 @@
     "load_failed_fallback": "Runs konnten nicht geladen werden."
   },
   "workbench": {
-    "sidebar": {
-      "algorithm_label": "Algorithmus",
-      "tour_button": "Tour",
-      "tour_aria": "Tour dieser Seite starten",
-      "tour_title": "Wie das Untersuchen eines einzelnen Logs funktioniert",
-      "close_sidebar_aria": "Algorithmenliste schließen",
-      "show_menu_title": "Algorithmenliste anzeigen",
-      "show_sidebar_title": "Algorithmenliste anzeigen",
-      "hide_sidebar_title": "Algorithmenliste ausblenden",
-      "nav_aria": "Algorithmen"
-    },
     "job_badge": "Run {id}: {status}",
     "algo_card": {
       "implemented_by": "Implementiert von: {author}",
       "paper_link": "Paper",
-      "academic_reference": "Literaturnachweis",
       "copied_bibtex": "BibTeX kopiert",
       "copy_bibtex": "BibTeX kopieren",
       "download_bib_title": "Als .bib-Datei herunterladen",
@@ -1399,7 +1371,22 @@
   },
   "inspect": {
     "title": "Einzelnes Log untersuchen",
-    "subtitle": "Führe ComFy auf einem Event-Log aus und sieh dir die gefundenen Modelle und ihre Komplexitätsmaße an."
+    "subtitle": "Führe ComFy auf einem Event-Log aus und sieh dir die gefundenen Modelle und ihre Komplexitätsmaße an.",
+    "section_log": "Event-Log",
+    "section_log_hint": "Lade ein Log hoch oder nimm ein Beispiel; die Übersicht zeigt, was darin steckt.",
+    "section_log_run": "Das Log, das dieser Run analysiert hat.",
+    "section_settings": "Miner und Maße",
+    "section_settings_hint": "Welche Miner die Netze entdecken und welche Maße ComFy darauf berechnet.",
+    "section_run": "Run",
+    "section_run_hint": "Startet im Hintergrund; das Ergebnis erscheint darunter, und der Run steht unter „Letzte Runs“.",
+    "about": "Was ComFy macht",
+    "about_hint": "Wie es arbeitet und wann es hilft",
+    "about_menu": "Über {name}",
+    "tour": "Tour",
+    "tour_more": "Wie das Ansehen eines einzelnen Logs funktioniert",
+    "from_dataset": "{log} stammt aus deinem Datensatz und ist hier ausgewählt.",
+    "from_dataset_miner": "{log} stammt aus deinem Datensatz und ist hier ausgewählt, mit dem {miner} als einzigem Miner.",
+    "log_gone": "{log} gehört nicht mehr zu den neuesten Uploads dieser Sitzung und lässt sich hier nicht öffnen. Lade es erneut hoch."
   },
   "algo_text": {
     "summary": "Miner: {miners} · Maße: {measures}",

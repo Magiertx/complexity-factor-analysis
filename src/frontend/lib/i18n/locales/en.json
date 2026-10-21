@@ -33,18 +33,6 @@
   "footer": {
     "credit": "Built for process mining research at the University of Augsburg."
   },
-  "algorithm_list": {
-    "what_is_aria": "What is {name}?",
-    "what_does_title": "What does this algorithm do?",
-    "favorites_heading": "Favorites",
-    "favorite_add_title": "Pin as favorite",
-    "favorite_remove_title": "Remove from favorites",
-    "favorite_add_aria": "Add {name} to favorites",
-    "favorite_remove_aria": "Remove {name} from favorites",
-    "category": {
-      "complexity": "Complexity analysis"
-    }
-  },
   "file_drop": {
     "drop_label": "Drop an event log here",
     "drop_hint": "or click to choose one · .xes, .xes.gz, .xml, .json",
@@ -70,16 +58,12 @@
   "tours": {
     "single_run": {
       "intro_title": "Inspect a single log",
-      "intro_content": "Here you run ComFy on one event log: it discovers Petri nets with the chosen miners and computes their complexity measures. This tour shows the key spots; Esc or Skip ends it at any time.",
-      "algo_pick_title": "The algorithm",
-      "algo_pick_content": "On the left is the algorithm this page runs: ComFy, which measures the complexity of discovered Petri nets.",
-      "algo_help_title": "What ComFy does",
-      "algo_help_content": "The ? next to it opens a detailed explanation: what ComFy does, how it works and when it is useful.",
-      "logsource_title": "Pick an event log",
-      "logsource_content": "Two sources: “Upload file” for your own XES or JSON file (recent uploads are listed below), or “Use example” for the bundled example log.",
-      "params_title": "Miners and measures",
+      "intro_content": "Here you run ComFy on one event log: it discovers Petri nets with the chosen miners and computes their complexity measures. The page has three sections: the log, the miners and measures, and the run. Esc or Skip ends the tour at any time.",
+      "logsource_title": "1 · The event log",
+      "logsource_content": "Two sources: “Upload file” for your own XES or JSON file (recent uploads and the logs of your datasets are listed below), or “Use example” for the bundled example log. The overview shows what is in the log.",
+      "params_title": "2 · Miners and measures",
       "params_content": "Choose the miners to run and the measures to compute. The preset bar above saves a selection for later.",
-      "run_title": "Start the run",
+      "run_title": "3 · Start the run",
       "run_content": "Start with the button or Ctrl+Enter (Cmd+Enter on a Mac). The result appears below with the measures, the discovered nets and downloads; the run is listed under Recent runs."
     },
     "onboarding": {
@@ -451,22 +435,10 @@
     "load_failed_fallback": "Failed to load runs."
   },
   "workbench": {
-    "sidebar": {
-      "algorithm_label": "Algorithm",
-      "tour_button": "Tour",
-      "tour_aria": "Start the tour of this page",
-      "tour_title": "How inspecting a single log works",
-      "close_sidebar_aria": "Close the algorithm list",
-      "show_menu_title": "Show the algorithm list",
-      "show_sidebar_title": "Show the algorithm list",
-      "hide_sidebar_title": "Hide the algorithm list",
-      "nav_aria": "Algorithms"
-    },
     "job_badge": "Run {id}: {status}",
     "algo_card": {
       "implemented_by": "Implemented by: {author}",
       "paper_link": "Paper",
-      "academic_reference": "Citation",
       "copied_bibtex": "BibTeX copied",
       "copy_bibtex": "Copy BibTeX",
       "download_bib_title": "Download as .bib file",
@@ -1399,7 +1371,22 @@
   },
   "inspect": {
     "title": "Inspect a single log",
-    "subtitle": "Run ComFy on one event log and look at the discovered models and their complexity measures."
+    "subtitle": "Run ComFy on one event log and look at the discovered models and their complexity measures.",
+    "section_log": "Event log",
+    "section_log_hint": "Upload a log or take an example; the overview shows what is in it.",
+    "section_log_run": "The log this run analysed.",
+    "section_settings": "Miners and measures",
+    "section_settings_hint": "Which miners discover the nets, and which measures ComFy computes on them.",
+    "section_run": "Run",
+    "section_run_hint": "Starts in the background; the result appears below and the run is listed under Recent runs.",
+    "about": "What ComFy does",
+    "about_hint": "How it works and when it helps",
+    "about_menu": "About {name}",
+    "tour": "Tour",
+    "tour_more": "How inspecting a single log works",
+    "from_dataset": "{log} comes from your dataset and is chosen here.",
+    "from_dataset_miner": "{log} comes from your dataset and is chosen here, with the {miner} as the only miner.",
+    "log_gone": "{log} is no longer among the newest uploads of this session, so it cannot be opened here. Upload it again."
   },
   "algo_text": {
     "summary": "Miners: {miners} · Measures: {measures}",
