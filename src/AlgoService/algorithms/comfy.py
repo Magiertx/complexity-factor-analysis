@@ -14,6 +14,7 @@ Vendored under ``src/AlgoService/vendored/comfy/``; local changes are listed in
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from vendored.comfy.modelcomplexity import ModelComplexityMeasures as _MCM
@@ -58,18 +59,26 @@ DISCOVERY_ATTEMPTS = 3
 
 
 def discover(
-    miner: Any, event_log: Any, log_name: str | None = None, on_wait: WaitFn | None = None
+    miner: Any,
+    event_log: Any,
+    log_name: str | None = None,
+    on_wait: WaitFn | None = None,
+    timing: dict[str, float] | None = None,
 ) -> tuple[Any, Any, Any]:
     """Run one ComFy miner; returns (net, initial marking, final marking).
 
     The discovery has ProM4Py to itself and may take ``CALL_TIMEOUT_S`` seconds there, after
     which it raises :class:`ProMTimeout` naming the miner and ``log_name``. ``on_wait`` is
-    called while it waits for ProM and may raise to abort.
+    called while it waits for ProM and may raise to abort. ``timing`` gets ``run_s``, the
+    seconds of the call that succeeded, without the wait for ProM4Py, and ``attempts``.
     """
     for attempt in range(1, DISCOVERY_ATTEMPTS + 1):
         try:
             with prom4py_turn(on_wait), call_deadline(CALL_TIMEOUT_S):
+                started = time.perf_counter()
                 net_obj = miner.discover_for(event_log)
+                if timing is not None:
+                    timing.update(run_s=time.perf_counter() - started, attempts=attempt)
             break
         except ProMTimeout:
             # Not repeated: the miner would most likely time out again. ProM goes on with the

@@ -206,6 +206,57 @@ def msa_csv(result: dict[str, Any], measures: list[str], excluded: list[str]) ->
     return "".join(lines)
 
 
+def descriptives_csv(descriptives: dict[str, Any]) -> str:
+    """One row per measure: the number of values, mean, median, standard deviation (ddof=1),
+    minimum and maximum, and why cleaning dropped it, if it did."""
+    from .descriptives import STATISTICS
+
+    lines = [_csv_line(["measure", "n", *STATISTICS, "dropped"])]
+    for row in descriptives["measures"]:
+        lines.append(_csv_line([row["measure"], row["n"], *(row[s] for s in STATISTICS), row.get("dropped") or ""]))
+    return "".join(lines)
+
+
+#: One row per observation of a computed dataset: its input's size and the seconds of each stage.
+MEASUREMENT_COLUMNS = (
+    "observation", "input", "miner", "events", "traces", "variants", "activities", "places", "transitions",
+    "arcs", "read_s", "discovery_s", "discovery_run_s", "measures_s", "features_s", "error",
+)
+
+
+def measurement_rows(measurement: dict[str, Any]) -> list[list[Any]]:
+    """The rows of ``MEASUREMENT_COLUMNS``. A log is read once for all its miners, so each of
+    its rows has the same read_s; an input that could not be read has a row of its own."""
+    inputs = {i["input"]: i for i in measurement["inputs"]}
+    rows = []
+    seen = set()
+    for observation in measurement["observations"]:
+        source = inputs.get(observation["input"], {})
+        seen.add(observation["input"])
+        net = observation.get("net") or source.get("net") or {}
+        merged = {**source, **net, **observation}
+        merged["error"] = observation.get("error") or source.get("error")
+        rows.append([merged.get(c) for c in MEASUREMENT_COLUMNS])
+    for name, source in inputs.items():
+        if name not in seen:
+            rows.append([{"observation": name, **source}.get(c) for c in MEASUREMENT_COLUMNS])
+    return rows
+
+
+def measurement_csv(measurement: dict[str, Any]) -> str:
+    return "".join(_csv_line(row) for row in [list(MEASUREMENT_COLUMNS), *measurement_rows(measurement)])
+
+
+def stages_csv(measurement: dict[str, Any]) -> str:
+    """One row per observation and stage: each measure (model) or feature group (log) with its
+    seconds."""
+    lines = [_csv_line(["observation", "stage", "seconds"])]
+    for observation in measurement["observations"]:
+        for stage, seconds in (observation.get("stages") or {}).items():
+            lines.append(_csv_line([observation["observation"], stage, seconds]))
+    return "".join(lines)
+
+
 #: Versions recorded in the manifest; factor_analyzer runs on scikit-learn's check_array.
 LIBRARIES = ("factor_analyzer", "numpy", "pandas", "scipy", "scikit-learn")
 
