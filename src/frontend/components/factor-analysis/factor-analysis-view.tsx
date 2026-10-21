@@ -851,9 +851,12 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     const wide = window.matchMedia("(min-width: 1024px)").matches;
     const target = wide ? document.getElementById(stepAnchor(current)) : stepArea.current;
     if (!target) return;
-    const pad = wide ? parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0 : 0;
+    const pad = wide ? parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0 : 8;
     const top = target.getBoundingClientRect().top;
-    if (top < pad) window.scrollBy({ top: top - pad });
+    // A wide screen scrolls only when the step begins above the window. On a phone the row of
+    // steps goes to the top of it every time, so the step starts on the first screen and not
+    // below the page's own header.
+    if (wide ? top < pad : Math.abs(top - pad) > 1) window.scrollBy({ top: top - pad });
   }, [visit, current, takeFocus]);
 
   // An anchor of the one-page layout before, followed inside the page, opens its step.
@@ -967,6 +970,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       <PageHeader
         title={t(`factor.${kind}.title`)}
         subtitle={t(`factor.${kind}.subtitle`)}
+        // On a phone the page's own sentence is gone once a step is open: the step has room.
+        subtitleClassName={ready && current !== "data" ? "max-lg:hidden" : undefined}
         actions={
           <FactorToolbar
             kind={kind}

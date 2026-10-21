@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { APP_NAME } from "@/lib/app-config";
+import { cn } from "@/lib/utils";
 
 /**
  * The heading of every page: the title, a sentence on what the page is for, and the page's own
@@ -13,11 +14,14 @@ import { APP_NAME } from "@/lib/app-config";
 export function PageHeader({
   title,
   subtitle,
+  subtitleClassName,
   back,
   actions,
 }: {
   title: string;
   subtitle?: React.ReactNode;
+  /** For the sentence under the title, e.g. to hide it where room is short. */
+  subtitleClassName?: string;
   /** For a page below another one: a link back to it above the title. */
   back?: { href: string; label: string };
   actions?: React.ReactNode;
@@ -48,7 +52,7 @@ export function PageHeader({
           </Link>
         )}
         <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{title}</h1>
-        {subtitle && <p className="text-sm text-muted mt-1 leading-relaxed">{subtitle}</p>}
+        {subtitle && <p className={cn("text-sm text-muted mt-1 leading-relaxed", subtitleClassName)}>{subtitle}</p>}
       </div>
       {actions && <div className="flex items-center gap-2 flex-wrap">{actions}</div>}
     </header>
