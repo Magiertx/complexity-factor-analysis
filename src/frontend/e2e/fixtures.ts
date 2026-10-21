@@ -20,9 +20,8 @@ export function pattern(value: string): RegExp {
   return new RegExp(value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
 }
 
-/** Prepares a page like the fixture does: no welcome tour, the UI language, a session cookie. */
-async function preparePage(page: Page, language: "en" | "de") {
-  // No welcome tour, and the UI language fixed whatever the browser's.
+/** No welcome tour, and the UI language fixed whatever the browser's. */
+export async function seedStorage(page: Page, language: "en" | "de" = "en") {
   await page.addInitScript((lang) => {
     try {
       if (!localStorage.getItem("app.e2e-init")) {
@@ -34,9 +33,15 @@ async function preparePage(page: Page, language: "en" | "de") {
       /* storage blocked; the tests then see the tour */
     }
   }, language);
-  // The session cookie before the first page: the page fires its first requests in parallel,
-  // and without a cookie each of them would start a session of its own.
-  expect((await page.request.get("/api/jobs")).ok()).toBeTruthy();
+}
+
+/**
+ * Prepares a page like the fixture does: no welcome tour, the UI language. The session cookie
+ * needs no preparing: the server sends it with the page itself (middleware.ts), before the
+ * page fires its first requests; session.spec.ts checks that.
+ */
+async function preparePage(page: Page, language: "en" | "de") {
+  await seedStorage(page, language);
 }
 
 export const test = base.extend<{ language: "en" | "de" }>({
