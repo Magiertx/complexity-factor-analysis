@@ -135,3 +135,20 @@ test("ticking a measure in a sorted list adds it at the end and keeps the order 
   }
   expect(analyses.at(-1)!.used_measures).not.toContain("n_events");
 });
+
+test.describe("on a phone, in german", () => {
+  test.use({ language: "de", viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+  test("the list of measures fits the width without scrolling sideways, and a row of a notable measure is short", async ({ page }) => {
+    await page.goto(LOG);
+    await expectStep(page, "loadings", "done", "de");
+    const list = stepSection(page, "suitability").locator("#fa-msa-table");
+    const frame = list.locator(".table-frame");
+    await expect(frame).toBeVisible();
+    expect(await frame.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    // A status of a word or two, not the sentence of a wide screen: no row grows beyond two lines.
+    const heights = await list.locator("tbody tr:not(.table-group)").evaluateAll((rows) => rows.map((r) => r.getBoundingClientRect().height));
+    expect(Math.max(...heights)).toBeLessThan(60);
+  });
+});
