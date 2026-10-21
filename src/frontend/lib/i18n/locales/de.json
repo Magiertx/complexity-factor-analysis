@@ -1275,10 +1275,10 @@
   },
   "print": {
     "title": "Faktoranalyse von „{name}“",
-    "invalid": "Diese Adresse nennt keine Analyse. Öffnen Sie die Druckansicht aus dem Download-Menü einer Analyse.",
+    "invalid": "Diese Adresse nennt keine Analyse. Öffne die Druckansicht aus dem Download-Menü einer Analyse.",
     "failed": "Die Analyse konnte nicht geladen werden: {error}",
     "loading": "Die Analyse wird geladen …",
-    "hint": "Drucken Sie die Seite oder speichern Sie sie mit dem Druckdialog des Browsers als PDF.",
+    "hint": "Drucke die Seite oder speichere sie mit dem Druckdialog des Browsers als PDF.",
     "print": "Drucken",
     "dataset_size": "{n} Beobachtungen und {p} Maße nach der Bereinigung.",
     "dropped": "Von der Bereinigung weggelassen: {list}.",
@@ -1314,15 +1314,15 @@
     "bundled": {
       "title": "Einen veröffentlichten Datensatz analysieren",
       "items": {
-        "open": "Öffnen Sie Modellkomplexität oder Log-Komplexität.",
-        "choose": "Wählen Sie unter Daten einen Datensatz eines Papers, etwa Important Factors: Inductive Miner.",
-        "settings": "Wählen Sie Paper-Einstellungen, um ihn wie im Paper zu analysieren, oder Standard des Tools für die Voreinstellungen von ComFy, dann Datensatz verwenden."
+        "open": "Öffne Modellkomplexität oder Log-Komplexität.",
+        "choose": "Wähle unter Daten einen Datensatz eines Papers, etwa Important Factors: Inductive Miner.",
+        "settings": "Wähle Paper-Einstellungen, um ihn wie im Paper zu analysieren, oder Standard des Tools für die Voreinstellungen von ComFy, dann Datensatz verwenden."
       },
       "p1": "Mit den Paper-Einstellungen sagt ein Chip in der Einstellungszeile, ob die Zahlen dem veröffentlichten ComFy-Report gleichen und wie sich die Tabellen des Papers dazu verhalten. „Hier starten“ in der Werkzeugleiste nennt vier Einstiege."
     },
     "own": {
       "title": "Eigene Daten analysieren",
-      "p1": "Wählen Sie unter Daten eine Quelle:",
+      "p1": "Wähle unter Daten eine Quelle:",
       "items": {
         "logs": "Event-Logs (.xes, .xes.gz): Für Modellmaße wird jedes Log mit jedem gewählten Miner entdeckt und jedes Netz gemessen; für Logmaße berechnet feeed die gewählten Feature-Gruppen.",
         "nets": "Petri-Netze (.pnml): Jedes Netz wird gemessen.",
