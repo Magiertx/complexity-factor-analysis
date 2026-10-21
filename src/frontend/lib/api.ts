@@ -962,6 +962,8 @@ export interface CompareColumn {
   /** The measures of the dataset, before cleaning and the MSA filter. */
   n_measures: number;
   n_observations?: number;
+  /** What the rule applied: its communality threshold is the higher of the parameter and the rule's minimum. */
+  assignment?: NonNullable<FactorAnalysis["assignment"]>;
   used_measures?: string[];
   msa_removed?: string[];
   kmo?: number;
@@ -977,6 +979,10 @@ export interface CompareColumn {
   factor_dimensions?: number[];
   /** How many measures each factor shares with its dimension in the columns before it. */
   shared_measures?: number[];
+  /** Those measures, per factor, in the order of the data. */
+  matched_by?: string[][];
+  /** How alike each factor is to the factors before it in its dimension (Tucker's congruence, 0 to 1); null where there are none. */
+  congruence?: (number | null)[];
   /** An earlier column with the same loadings, e.g. the Alpha Dollar miner of the Alpha miner. */
   same_as?: number | null;
   error?: AnalysisNotice;

@@ -1376,7 +1376,7 @@
         "dimensions": "By dimension: a row per dataset with the measures of each dimension, laid out like Tab. 17.",
         "export": "The download menu has the matrix as CSV, the dimensions as a LaTeX table like Tab. 17, and both in a ZIP with a manifest."
       },
-      "p2": "The factors of every analysis are numbered by the analysis, so they are matched first: the first dataset keeps its numbers, and the factors of every further one go to the dimension with which they share the most measures. Tab. 17 renumbered its dimensions by hand; a number can differ from the paper's while the groups are the same."
+      "p2": "The factors of every analysis are numbered by the analysis, so they are matched first: the first dataset keeps its numbers, and the factors of every further one go to the dimension with which they share the most measures; where two are equally good, the more alike loadings decide. Tab. 17 renumbered its dimensions by hand, so a number can differ from the paper's, and a match that rests on one shared measure is a guess: the tooltip of a cell in the dimension view names the measures it rests on. How the measures are grouped within a dataset does not depend on the numbers."
     }
   },
   "compare": {
@@ -1406,7 +1406,7 @@
     "dimension_n": "Dimension {d}",
     "group_dimension": "Dimension {d} · {n}",
     "group_none": "In no dimension · {n}",
-    "alignment_note": "D1, D2, … are the dimensions after matching: the first dataset keeps the numbers of its factors, and the factors of every further one are matched to them by the measures they share. Tab. 17 of the paper renumbered its dimensions by hand, so a number here can differ from the paper's while the groups are the same.",
+    "alignment_note": "D1, D2, … are the dimensions after matching: the first dataset keeps the numbers of its factors, and the factors of every further one are matched to them so that most of the measures they share get the same number. A number can differ from the paper's (Tab. 17 was renumbered by hand); how the measures are grouped within a dataset does not depend on it.",
     "same_as": "the same loadings as {other}.",
     "column_notes": "Notes on the datasets",
     "codes_more": "Names the measures by the codes of the papers, such as CNC or dens, in the tables and the LaTeX table. The full name stays in the tooltip.",
@@ -1422,7 +1422,7 @@
     },
     "help": {
       "columns": "Each tile is a published dataset, analysed with the settings of its paper. Choose {min} to {max}. The first four are the miners of Tab. 17; the first one chosen keeps the numbers of its factors.",
-      "result": "The dimensions of every dataset under the chosen rule. The factors of the datasets are matched by the measures they share, so that the same dimension has the same number in every column.",
+      "result": "The dimensions of every dataset under the chosen rule. The factors of the datasets are matched so that most shared measures get the same number; where two matches are equally good, the more alike loadings decide.",
       "n": "Observations: the nets of the dataset, one per log.",
       "measures": "The measures left after cleaning and the MSA filter, of those in the dataset.",
       "kmo": "The overall measure of sampling adequacy (Kaiser-Meyer-Olkin) of the measures that are left.",
@@ -1450,7 +1450,12 @@
       "constant": "dropped before the analysis: the same value in every net",
       "dropped": "dropped before the analysis",
       "failed": "This dataset could not be analysed with these settings.",
-      "factor_of": "{factor} of {column}"
+      "factor_of": "{factor} of {column}",
+      "kept": "The first dataset keeps the numbers of its factors.",
+      "matched": "Matched to this dimension by {n} shared measure ({measures}); congruence of the loadings {congruence}.",
+      "matched_plural": "Matched to this dimension by {n} shared measures ({measures}); congruence of the loadings {congruence}.",
+      "matched_none": "Matched to this dimension by the likeness of its loadings alone (congruence {congruence}): it shares no measure with it.",
+      "matched_new": "No dataset before it has this dimension."
     },
     "reason": {
       "low_communality": "low communality",

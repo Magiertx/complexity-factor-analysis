@@ -1376,7 +1376,7 @@
         "dimensions": "Nach Dimension: eine Zeile je Datensatz mit den Maßen jeder Dimension, aufgebaut wie Tab. 17.",
         "export": "Das Download-Menü hat die Matrix als CSV, die Dimensionen als LaTeX-Tabelle wie Tab. 17 und beides in einem ZIP mit Manifest."
       },
-      "p2": "Die Faktoren jeder Analyse sind von der Analyse nummeriert, deshalb werden sie zuerst einander zugeordnet: Der erste Datensatz behält seine Nummern, und die Faktoren jedes weiteren kommen zu der Dimension, mit der sie die meisten Maße teilen. Tab. 17 hat seine Dimensionen von Hand umbenannt; eine Nummer kann von der des Papers abweichen, die Gruppen sind dieselben."
+      "p2": "Die Faktoren jeder Analyse sind von der Analyse nummeriert, deshalb werden sie zuerst einander zugeordnet: Der erste Datensatz behält seine Nummern, die Faktoren jedes weiteren kommen in die Dimension, mit der sie die meisten Maße teilen; sind zwei gleich gut, entscheiden die ähnlicheren Ladungen. Tab. 17 hat seine Dimensionen von Hand umnummeriert, deshalb kann eine Nummer von der des Papers abweichen, und eine Zuordnung, die auf einem gemeinsamen Maß beruht, ist geraten: Der Tooltip einer Zelle der Dimensionsansicht nennt die Maße, auf denen sie beruht. Wie die Maße innerhalb eines Datensatzes gruppiert sind, hängt nicht von den Nummern ab."
     }
   },
   "compare": {
@@ -1406,7 +1406,7 @@
     "dimension_n": "Dimension {d}",
     "group_dimension": "Dimension {d} · {n}",
     "group_none": "In keiner Dimension · {n}",
-    "alignment_note": "D1, D2, … sind die Dimensionen nach dem Abgleich: Der erste Datensatz behält die Nummern seiner Faktoren, die Faktoren jedes weiteren werden ihnen über die gemeinsamen Maße zugeordnet. Tab. 17 des Papers hat seine Dimensionen von Hand umbenannt; eine Nummer kann deshalb von der des Papers abweichen, die Gruppen sind dieselben.",
+    "alignment_note": "D1, D2, … sind die Dimensionen nach dem Abgleich: Der erste Datensatz behält die Nummern seiner Faktoren, die Faktoren jedes weiteren werden ihnen so zugeordnet, dass möglichst viele ihrer gemeinsamen Maße dieselbe Nummer bekommen. Eine Nummer kann von der des Papers abweichen (Tab. 17 wurde von Hand umnummeriert); wie die Maße innerhalb eines Datensatzes gruppiert sind, hängt nicht davon ab.",
     "same_as": "dieselben Ladungen wie {other}.",
     "column_notes": "Hinweise zu den Datensätzen",
     "codes_more": "Nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder dens, in den Tabellen und in der LaTeX-Tabelle. Der volle Name steht im Tooltip.",
@@ -1422,7 +1422,7 @@
     },
     "help": {
       "columns": "Jede Kachel ist ein veröffentlichter Datensatz, analysiert mit den Einstellungen seines Papers. Wähle {min} bis {max}. Die ersten vier sind die Miner aus Tab. 17; der erste gewählte behält die Nummern seiner Faktoren.",
-      "result": "Die Dimensionen jedes Datensatzes unter der gewählten Regel. Die Faktoren der Datensätze werden über ihre gemeinsamen Maße einander zugeordnet, sodass dieselbe Dimension in jeder Spalte dieselbe Nummer hat.",
+      "result": "Die Dimensionen jedes Datensatzes unter der gewählten Regel. Die Faktoren der Datensätze werden so zugeordnet, dass möglichst viele gemeinsame Maße dieselbe Nummer bekommen; sind zwei Zuordnungen gleich gut, entscheiden die ähnlicheren Ladungen.",
       "n": "Beobachtungen: die Netze des Datensatzes, eines je Log.",
       "measures": "Die Maße, die nach der Bereinigung und dem MSA-Filter bleiben, von denen des Datensatzes.",
       "kmo": "Das Gesamtmaß der Stichprobeneignung (Kaiser-Meyer-Olkin) der verbliebenen Maße.",
@@ -1450,7 +1450,12 @@
       "constant": "vor der Analyse entfernt: in jedem Netz derselbe Wert",
       "dropped": "vor der Analyse entfernt",
       "failed": "Dieser Datensatz ließ sich mit diesen Einstellungen nicht analysieren.",
-      "factor_of": "{factor} von {column}"
+      "factor_of": "{factor} von {column}",
+      "kept": "Der erste Datensatz behält die Nummern seiner Faktoren.",
+      "matched": "Dieser Dimension über {n} gemeinsames Maß zugeordnet ({measures}); Kongruenz der Ladungen {congruence}.",
+      "matched_plural": "Dieser Dimension über {n} gemeinsame Maße zugeordnet ({measures}); Kongruenz der Ladungen {congruence}.",
+      "matched_none": "Dieser Dimension nur nach der Ähnlichkeit der Ladungen zugeordnet (Kongruenz {congruence}): Es teilt kein Maß mit ihr.",
+      "matched_new": "Keiner der Datensätze davor hat diese Dimension."
     },
     "reason": {
       "low_communality": "niedrige Kommunalität",

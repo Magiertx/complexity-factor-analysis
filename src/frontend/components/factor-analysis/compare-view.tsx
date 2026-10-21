@@ -29,7 +29,7 @@ import {
   toggleColumn,
   type CompareState,
 } from "@/lib/compare";
-import { downloadBlob, noticeText } from "@/lib/factor-analysis";
+import { countText, downloadBlob, noticeText } from "@/lib/factor-analysis";
 import { formatNumber, formatPercent } from "@/lib/format";
 import { datasetNote, orderCollection, ruleNote } from "@/lib/paper-notes";
 import { codesOf, hasCodes, loadShortCodes, measureLabels, saveShortCodes } from "@/lib/short-codes";
@@ -718,6 +718,29 @@ function cellTip(cell: CompareCell, t: Translate, locale: string, column: Compar
   }
 }
 
+/**
+ * How a factor came by its dimension, for the tooltip of its cell: the first dataset keeps its
+ * numbers; every other one was matched by the measures it shares with the datasets before it, so
+ * a match that rests on one measure, or none, shows.
+ */
+function matchText(
+  column: CompareColumn,
+  factor: number,
+  first: boolean,
+  labels: Labels,
+  t: Translate,
+  locale: string,
+): string | undefined {
+  if (first) return t("compare.tip.kept");
+  const shared = column.matched_by?.[factor];
+  const likeness = column.congruence?.[factor];
+  if (!shared) return undefined;
+  if (likeness === null || likeness === undefined) return t("compare.tip.matched_new");
+  const congruence = formatNumber(likeness, locale, 2);
+  if (shared.length === 0) return t("compare.tip.matched_none", { congruence });
+  return countText(t, "compare.tip.matched", shared.length, { measures: shared.map(labels.name).join(", "), congruence });
+}
+
 /** The dimensions per column, laid out like Tab. 17: one row per analysis, one column per dimension. */
 function DimensionTable({
   comparison,
@@ -729,8 +752,11 @@ function DimensionTable({
   columnLabel: (column: CompareColumn) => string;
 }) {
   const t = useT();
+  const { locale } = useLocale();
   const zone = useTipZone<HTMLTableElement>();
   const n = comparison.alignment.dimensions;
+  // The first column that was analysed keeps the numbers of its factors.
+  const reference = comparison.columns.findIndex((c) => !c.error);
   const list = (measures: string[]) =>
     measures.map((m, j) => (
       <Fragment key={m}>
@@ -780,8 +806,10 @@ function DimensionTable({
                       entry && entry.factor !== null
                         ? t("compare.tip.factor_of", { factor: t("factor.loadings.factor_n", { i: entry.factor + 1 }), column: columnLabel(column) })
                         : undefined;
+                    const more =
+                      entry && entry.factor !== null ? matchText(column, entry.factor, i === reference, labels, t, locale) : undefined;
                     return (
-                      <td key={dimension.index} data-tip={tip} className="!whitespace-normal align-top">
+                      <td key={dimension.index} data-tip={tip} data-tip-more={more} className="!whitespace-normal align-top">
                         {members.length > 0 ? list(members) : <span className="text-muted">–</span>}
                       </td>
                     );
