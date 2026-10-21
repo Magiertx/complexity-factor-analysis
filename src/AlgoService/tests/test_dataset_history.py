@@ -413,8 +413,8 @@ def test_zip_of_a_bundled_dataset(client):
     names = archive.namelist()
     assert set(names) == {
         "manifest.json", "README.txt", "analysis.json", "dataset.csv", "loadings.csv", "loadings.tex",
-        "assignment.csv", "eigenvalues.csv", "msa.csv", "report.tex", "descriptives.csv",
-        "figures/scree.svg", "figures/loadings.svg",
+        "assignment.csv", "eigenvalues.csv", "msa.csv", "report.tex", "descriptives.csv", "correlations.csv",
+        "figures/scree.svg", "figures/loadings.svg", "figures/correlations.svg",
     }
     analysis = client.post(f"{url}/analyze", json=body).json()
     # The time the request took is not part of the analysis, and the times of its parts differ

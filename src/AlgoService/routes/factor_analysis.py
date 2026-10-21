@@ -31,7 +31,7 @@ from algorithms._log_io import MAX_DECOMPRESSED_BYTES
 from config import MAX_FILE_SIZE, CodedHTTPException, broadcast_jobs_update, get_session_id, limiter, logger
 from env_config import positive_int, rate_limit
 from factor_analysis import catalog as cat
-from factor_analysis import compare, compute, figures, miners, published, storage
+from factor_analysis import compare, compute, correlations, figures, miners, published, storage
 from factor_analysis.descriptives import describe, describe_cleaned, histogram
 from factor_analysis.core import (
     COMMUNALITY_THRESHOLDS,
@@ -1238,6 +1238,56 @@ async def analyze_dataset(
     return result
 
 
+class CorrelationRequest(AnalyzeRequest):
+    #: correlations.ORDERS; "factor" runs the analysis these options describe, to group the
+    #: measures by its dimensions.
+    order: Literal["dataset", "cluster", "factor"] = "dataset"
+
+
+@router.post("/datasets/{dataset_id}/correlations")
+@limiter.limit(rate_limit("fa_analyze", "120/minute"))
+async def dataset_correlations(
+    request: Request,
+    dataset_id: str,
+    body: CorrelationRequest | None = None,
+    session_id: str = Depends(get_session_id),
+) -> Any:
+    """The correlations of the measures, the map of the suitability step: ``measures`` and the
+    matrix ``r`` in the ``order`` asked for ("dataset", "cluster" by average linkage on 1 - |r|,
+    or "factor" by the dimensions of the analysis the options describe, with ``groups`` where they
+    begin), the pairs with |r| of 0.95 or more (``high``) and for every measure its five closest
+    partners (``top``).
+
+    The measures are those of the dataset, or of the rows of one ``miner``, without the
+    ``excluded`` ones; the MSA filter does not take any away, so the map shows why it removes
+    them. The other options matter only for the order "factor". A 400 carries ``code`` and
+    ``params`` like the analysis does."""
+    body = body or CorrelationRequest()
+    meta, data = await _ready_matrix(dataset_id, session_id)
+    params = body.params(meta["kind"])
+    try:
+        data, params, selection = await run_in_threadpool(_select, meta, data, body.miner, params)
+        check_excluded(list(data.columns), params.excluded)
+        shown = data.drop(columns=params.excluded)
+        if shown.shape[1] < 2:
+            raise AnalysisError(
+                f"At least 2 measures are needed for a correlation map; {shown.shape[1]} are left.",
+                "too_few_measures_for_map",
+                min=2,
+                left=shown.shape[1],
+            )
+        result = await _analyze(data, params, _Watch(request)) if body.order == "factor" else None
+    except AnalysisError as e:
+        return _AnalysisFailed(e).response
+    except _AnalysisFailed as e:
+        return e.response
+    except Superseded:
+        return _superseded()
+    out = await run_in_threadpool(correlations.build, shown, body.order, result)
+    out["miner"] = selection.describe() if selection else None
+    return out
+
+
 @router.put("/datasets/{dataset_id}/options", status_code=204)
 @limiter.limit(rate_limit("dataset_status", "600/minute"))
 async def save_options(
@@ -1301,15 +1351,19 @@ class ArchiveRequest(AnalyzeRequest):
     order: Literal["factor", "dataset"] = "factor"
     #: The language of the labels of the figures in the ZIP; the paper's is English.
     figure_language: Literal["en", "de"] = "en"
+    #: The order of the measures of the correlation map in the ZIP (correlations.ORDERS).
+    correlation_order: Literal["dataset", "cluster", "factor"] = "factor"
 
 
 class FigureRequest(AnalyzeRequest):
-    figure: Literal["scree", "loadings"] = "scree"
+    figure: Literal["scree", "loadings", "correlations"] = "scree"
     format: Literal["svg", "png"] = "svg"
-    #: Name the measures by the short codes of the papers (loadings only).
+    #: Name the measures by the short codes of the papers (loadings and correlations).
     short_codes: bool = False
     #: The rows of the loadings: grouped by factor as the UI shows them, or as in the dataset.
     order: Literal["factor", "dataset"] = "factor"
+    #: The order of the measures of the correlation map (correlations.ORDERS).
+    correlation_order: Literal["dataset", "cluster", "factor"] = "factor"
     #: The language of the labels, the axes and the caption.
     language: Literal["en", "de"] = "en"
 
@@ -1446,12 +1500,20 @@ async def _interpretation(exported: _Exported, session_id: str, language: str) -
     return stored[0] if stored else None
 
 
+def _correlation_map(exported: _Exported, order: str) -> dict[str, Any]:
+    """The correlations of the measures of the analysis, those the user left out excluded."""
+    shown = exported.data.drop(columns=exported.params.excluded)
+    return correlations.build(shown, order, exported.result)
+
+
 def _figure(
-    exported: _Exported, name: str, fmt: str, short: bool, order: str = "factor", language: str = "en"
+    exported: _Exported, name: str, fmt: str, short: bool, order: str = "factor", language: str = "en",
+    correlation_order: str = "factor",
 ) -> bytes:
     return figures.figure(
         name, fmt, exported.result, exported.meta["kind"], short=short, order=order, language=language,
         names=exported.names,
+        correlations=_correlation_map(exported, correlation_order) if name == "correlations" else None,
     )
 
 
@@ -1463,14 +1525,16 @@ async def export_figure(
     body: FigureRequest | None = None,
     session_id: str = Depends(get_session_id),
 ) -> Response:
-    """The scree plot or the loadings heatmap of the analysis as SVG (text kept as text) or PNG
-    (300 dpi), in a print style: white background, 8 pt text at the width of a CEUR page."""
+    """The scree plot, the loadings heatmap or the correlation map of the analysis as SVG (text kept
+    as text) or PNG (300 dpi), in a print style: white background, 8 pt text at the width of a
+    CEUR page. The correlation map shows the measures the user left in, in the ``correlation_order``."""
     body = body or FigureRequest()
     exported = await _exported(request, dataset_id, body, session_id)
     if isinstance(exported, Response):
         return exported
     content = await run_in_threadpool(
-        _figure, exported, body.figure, body.format, body.short_codes, body.order, body.language
+        _figure, exported, body.figure, body.format, body.short_codes, body.order, body.language,
+        body.correlation_order,
     )
     stem = f"{_slug(exported.meta['name'])}-{body.figure}"
     return _attachment(content, f"{stem}.{body.format}", figures.MEDIA_TYPES[body.format])
@@ -1521,8 +1585,10 @@ async def export_archive(
 ) -> Response:
     """The analysis as a ZIP archive: result, matrix, tables, report.tex, the figures as SVG
     (rows in the ``order`` and labels in the ``figure_language``, both kept in the manifest),
-    the descriptive statistics, the run times of a computed dataset, parameters and library
-    versions, with an interpretation of exactly this analysis if one is stored. Never calls the
+    the correlations of the measures (``correlations.csv`` in the ``correlation_order``, also
+    kept in the manifest), the descriptive statistics, the run times of a computed dataset,
+    parameters and library versions, with an interpretation of exactly this analysis if one is
+    stored. Never calls the
     API for an interpretation. With ``miner`` the matrix holds the rows of that miner and the
     manifest names it; ``factor_names`` name the factors of the tables, figures and report."""
     body = body or ArchiveRequest()
@@ -1543,9 +1609,12 @@ async def export_archive(
             descriptives=_descriptives(meta, session_id),
             measurement=storage.read_measurement(session_id, meta["id"]),
             figures={
-                f"figures/{name}.svg": _figure(exported, name, "svg", body.short_codes, body.order, body.figure_language)
+                f"figures/{name}.svg": _figure(
+                    exported, name, "svg", body.short_codes, body.order, body.figure_language, body.correlation_order
+                )
                 for name in figures.FIGURES
             },
+            correlation_map=_correlation_map(exported, body.correlation_order),
             short_codes=body.short_codes,
             figure_order=body.order,
             figure_language=body.figure_language,
