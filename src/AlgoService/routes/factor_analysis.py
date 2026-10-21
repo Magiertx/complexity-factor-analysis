@@ -32,7 +32,7 @@ from config import MAX_FILE_SIZE, CodedHTTPException, broadcast_jobs_update, get
 from env_config import positive_int, rate_limit
 from factor_analysis import catalog as cat
 from factor_analysis import compare, compute, figures, miners, published, storage
-from factor_analysis.descriptives import describe, describe_cleaned
+from factor_analysis.descriptives import describe, describe_cleaned, histogram
 from factor_analysis.core import (
     COMMUNALITY_THRESHOLDS,
     LOADING_THRESHOLDS,
@@ -1348,12 +1348,26 @@ def _dataset_record(meta: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _with_histograms(descriptives: dict[str, Any], meta: dict[str, Any], session_id: str) -> dict[str, Any]:
+    """Statistics stored before the histograms were kept get them from the cleaned matrix, for the
+    measures it still has; the others have none."""
+    if all("histogram" in row for row in descriptives["measures"]):
+        return descriptives
+    data = storage.load_matrix(session_id, meta["id"])
+    rows = [
+        row if "histogram" in row
+        else {**row, "histogram": histogram(data[row["measure"]]) if row["measure"] in data.columns else None}
+        for row in descriptives["measures"]
+    ]
+    return {**descriptives, "measures": rows}
+
+
 def _descriptives(meta: dict[str, Any], session_id: str) -> dict[str, Any]:
     """The statistics kept with the dataset; for one stored before they were kept, those of
     its bundled table, or of the cleaned matrix if it has none."""
     stored = storage.read_descriptives(session_id, meta["id"])
     if stored is not None:
-        return stored
+        return _with_histograms(stored, meta, session_id)
     entry = cat.bundled_entry(meta.get("bundled_id") or "")
     if entry is not None:
         return describe(_select_columns(_bundled_table(entry), _inputs(meta).get("measures")))
