@@ -1140,7 +1140,7 @@
     },
     "start": {
       "title": "Hier starten",
-      "collapsed_hint": "Drei Analysen mit einem Klick und eine Beispiel-CSV",
+      "collapsed_hint": "Vier Analysen mit einem Klick und eine Beispiel-CSV",
       "intro": "Jede öffnet einen mitgelieferten Datensatz mit seinen Einstellungen; nichts muss hochgeladen oder berechnet werden.",
       "scenario": {
         "if_inductive": {
@@ -1154,6 +1154,10 @@
         "if_four_miners": {
           "title": "Important Factors: vier Miner im Vergleich",
           "text": "Die Dimensionen von Alpha, Directly Follows, Inductive und Hybrid ILP miner nebeneinander nach Hair et al., wie in Tab. 17."
+        },
+        "if_k4_k6": {
+          "title": "Important Factors: 4 gegen 6 Faktoren",
+          "text": "Der Inductive miner mit den 4 Faktoren des Papers neben 6, bei Mehrfachzuordnung wie in Abschnitt 6: MM (Ladung 0,50) bildet eine fünfte Dimension, die sechste bleibt leer."
         }
       },
       "example_csv": "Beispiel-CSV",
@@ -1371,7 +1375,7 @@
       "title": "Miner vergleichen",
       "p1": "Miner vergleichen stellt die Faktorstrukturen mehrerer veröffentlichter Datensätze nebeneinander, wie Tab. 17 von Important Factors: welche Maße für welchen Miner welche Dimension bilden. Es öffnet sich über das Spalten-Icon in der Werkzeugleiste von Modellkomplexität und über Hier starten.",
       "items": {
-        "columns": "Datensätze: Wähle 2 bis 8 der Miner von Important Factors; jeder wird mit den Einstellungen seines Papers analysiert. Die ersten vier sind die aus Tab. 17.",
+        "columns": "Datensätze: Wähle 2 bis 8 der Miner aus Important Factors; jeder wird mit den Einstellungen seines Papers analysiert. Die ersten vier sind die aus Tab. 17. Ein Link kann auch einen Datensatz mit eigener Faktorzahl verlangen, etwa 4 gegen 6 Faktoren (Hier starten).",
         "rule": "Zuordnungsregel: eine Regel für jeden Datensatz, zu Beginn Hair et al. wie in Tab. 17.",
         "matrix": "Nach Maß: eine Zeile je Maß, nach Dimension gruppiert, und darüber je Datensatz n, die Maße nach dem MSA-Filter, der KMO, die Faktoren, die Rotation und die erklärte Varianz. Eine getönte Zelle liegt in der Dimension ihrer Zeile; ein Ring markiert eine Querladung, eine gestrichelte Kontur ein Maß, das der MSA-Filter entfernt hat.",
         "dimensions": "Nach Dimension: eine Zeile je Datensatz mit den Maßen jeder Dimension, aufgebaut wie Tab. 17.",
@@ -1388,6 +1392,8 @@
     "stale": "Die Tabelle zeigt die vorherige Auswahl; die Aktualisierung ist fehlgeschlagen.",
     "computing": "Wird verglichen…",
     "link_invalid": "Ein Teil des Links ließ sich nicht verwenden: Ein Vergleich nimmt {min} bis {max} veröffentlichte Datensätze und eine der drei Regeln. Gezeigt wird der Rest davon oder Tab. 17.",
+    "column_k": "{label}, k = {k}",
+    "column_k_note": "{k} Faktoren statt der des Papers",
     "result": "Faktorstrukturen",
     "look": {
       "matrix": "Nach Maß",

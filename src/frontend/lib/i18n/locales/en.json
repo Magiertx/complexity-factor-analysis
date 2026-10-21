@@ -1140,7 +1140,7 @@
     },
     "start": {
       "title": "Start here",
-      "collapsed_hint": "Three analyses to open in one click, and an example CSV",
+      "collapsed_hint": "Four analyses to open in one click, and an example CSV",
       "intro": "Each opens a bundled dataset with its settings; nothing needs to be uploaded or computed.",
       "scenario": {
         "if_inductive": {
@@ -1154,6 +1154,10 @@
         "if_four_miners": {
           "title": "Important Factors: four miners compared",
           "text": "The dimensions of the Alpha, Directly Follows, Inductive and Hybrid ILP miner side by side under Hair et al., like Tab. 17."
+        },
+        "if_k4_k6": {
+          "title": "Important Factors: 4 against 6 factors",
+          "text": "The Inductive miner with the 4 factors of the paper beside 6, under multiple membership, as in section 6: MM (loading 0.50) forms a fifth dimension, the sixth stays empty."
         }
       },
       "example_csv": "Example CSV",
@@ -1371,7 +1375,7 @@
       "title": "Compare miners",
       "p1": "Compare miners puts the factor structures of several published datasets side by side, like Tab. 17 of Important Factors: which measures form which dimension for which miner. It opens from the column icon in the toolbar of Model complexity and from Start here.",
       "items": {
-        "columns": "Datasets: choose 2 to 8 of the miners of Important Factors; each is analysed with the settings of its paper. The first four are those of Tab. 17.",
+        "columns": "Datasets: choose 2 to 8 of the miners of Important Factors; each is analysed with the settings of its paper. The first four are those of Tab. 17. A link can also ask for a dataset with a factor count of its own, such as 4 against 6 factors (Start here).",
         "rule": "Assignment rule: one rule for every dataset, Hair et al. as in Tab. 17 to begin with.",
         "matrix": "By measure: a row per measure, grouped by dimension, and above them n, the measures after the MSA filter, the KMO, the factors, the rotation and the variance explained per dataset. A tinted cell is in the dimension of its row; a ring marks a cross-loading, a dashed outline a measure the MSA filter removed.",
         "dimensions": "By dimension: a row per dataset with the measures of each dimension, laid out like Tab. 17.",
@@ -1388,6 +1392,8 @@
     "stale": "The table shows the previous selection; the update failed.",
     "computing": "Comparing…",
     "link_invalid": "Part of the link could not be used: a comparison takes {min} to {max} published datasets and one of the three rules. The rest of it, or Tab. 17, is shown.",
+    "column_k": "{label}, k = {k}",
+    "column_k_note": "{k} factors instead of the paper's",
     "result": "Factor structures",
     "look": {
       "matrix": "By measure",

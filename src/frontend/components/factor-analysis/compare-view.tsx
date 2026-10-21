@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, Grid3x3, Info, LayoutGrid, Loader2, RotateCcw } from "lucide-react";
 import {
@@ -24,6 +24,7 @@ import {
   compareRequest,
   dimensionLabel,
   groupRows,
+  parseColumnKey,
   parseCompareQuery,
   sameState,
   toggleColumn,
@@ -118,6 +119,18 @@ export function CompareView() {
   const byId = useMemo(() => new Map(datasets.map((d) => [d.id, d])), [datasets]);
   const order = useMemo(() => datasets.map((d) => d.id), [datasets]);
 
+  // The title of a column: its dataset, with the factor count if it has one of its own.
+  const datasetTitle = useCallback((id: string) => byId.get(id)?.label ?? byId.get(id)?.name ?? id, [byId]);
+  const columnTitle = useCallback(
+    (id: string, k: number | null) => (k === null ? datasetTitle(id) : t("compare.column_k", { label: datasetTitle(id), k })),
+    [datasetTitle, t],
+  );
+  // The request is made a moment after the address changes: it names its columns as the page does then.
+  const titleRef = useRef(columnTitle);
+  useEffect(() => {
+    titleRef.current = columnTitle;
+  }, [columnTitle]);
+
   // The address is the state: the columns and the rule.
   const known = useMemo(() => (catalog ? new Set(catalog.bundled.map((b) => b.id)) : null), [catalog]);
   const query = search.toString();
@@ -138,7 +151,7 @@ export function CompareView() {
     setError(null);
     const timer = setTimeout(() => {
       const asked = parseCompareQuery(new URLSearchParams(stateKey), null).state;
-      compareAnalyses(compareRequest(asked), ac.signal)
+      compareAnalyses(compareRequest(asked, (id, k) => titleRef.current(id, k)), ac.signal)
         .then((result) => {
           setComparison(result);
           setComparedKey(stateKey);
@@ -157,6 +170,23 @@ export function CompareView() {
   // way or failed: it is dimmed, and what is downloaded would be the new selection, not this table.
   const outdated = comparedKey !== stateKey;
   const computing = !!catalog && !error && outdated;
+
+  // The columns of the table on screen, as they were asked: which ones had a factor count of their own.
+  const ownCounts = useMemo(
+    () =>
+      (comparedKey ? parseCompareQuery(new URLSearchParams(comparedKey), null).state.columns : []).map(
+        (key) => parseColumnKey(key)?.k ?? null,
+      ),
+    [comparedKey],
+  );
+  const titles = useMemo(
+    () =>
+      (comparison?.columns ?? []).map((column, i) => {
+        const k = ownCounts[i] ?? null;
+        return k === null ? (byId.get(column.bundled_id)?.label ?? column.label) : columnTitle(column.bundled_id, k);
+      }),
+    [comparison, ownCounts, byId, columnTitle],
+  );
 
   // Names of the measures, or the short codes of the papers; the full name stays in the tooltip.
   const names = useMemo(() => new Map((catalog?.measures ?? []).map((m) => [m.key, m.name])), [catalog]);
@@ -178,7 +208,7 @@ export function CompareView() {
     setExporting(format);
     setExportError(null);
     try {
-      const { blob, filename } = await exportComparison(compareRequest(state), format, codesShown);
+      const { blob, filename } = await exportComparison(compareRequest(state, columnTitle), format, codesShown);
       downloadBlob(blob, filename);
     } catch (e) {
       setExportError(errorText(e, tMaybe, t("compare.errors.export")));
@@ -186,11 +216,6 @@ export function CompareView() {
       setExporting(null);
     }
   };
-
-  const columnLabel = useCallback(
-    (column: CompareColumn) => byId.get(column.bundled_id)?.label ?? column.label,
-    [byId],
-  );
 
   const exportReason = !comparison
     ? t("compare.wait")
@@ -241,7 +266,7 @@ export function CompareView() {
         </p>
       )}
 
-      <ColumnChooser datasets={datasets} state={state} order={order} onState={setState} />
+      <ColumnChooser datasets={datasets} state={state} order={order} onState={setState} title={columnTitle} />
 
       <AssignmentChoice id="cmp-rule" value={state.rule} onChange={(rule) => setState({ ...state, rule })} note={null} />
 
@@ -313,11 +338,11 @@ export function CompareView() {
         {comparison && (
           <div className={cn("space-y-3 transition-opacity motion-reduce:transition-none", outdated && "opacity-60")}>
             {look === "matrix" ? (
-              <MembershipMatrix comparison={comparison} labels={labels} columnLabel={columnLabel} />
+              <MembershipMatrix comparison={comparison} labels={labels} titles={titles} />
             ) : (
-              <DimensionTable comparison={comparison} labels={labels} columnLabel={columnLabel} />
+              <DimensionTable comparison={comparison} labels={labels} titles={titles} />
             )}
-            <ColumnNotes comparison={comparison} columnLabel={columnLabel} measureName={labels.name} />
+            <ColumnNotes comparison={comparison} titles={titles} ownCounts={ownCounts} measureName={labels.name} />
             <p className="text-[11px] text-muted max-w-prose">{t("compare.alignment_note")}</p>
           </div>
         )}
@@ -337,14 +362,23 @@ function ColumnChooser({
   state,
   order,
   onState,
+  title,
 }: {
   datasets: BundledDataset[];
   state: CompareState;
   order: string[];
   onState: (state: CompareState) => void;
+  title: (id: string, k: number | null) => string;
 }) {
   const t = useT();
   const chosen = new Set(state.columns);
+  // Why a tile cannot be switched: a comparison keeps its least and its most.
+  const blocked = (on: boolean) =>
+    on && state.columns.length <= MIN_COLUMNS
+      ? t("compare.columns.min", { min: MIN_COLUMNS })
+      : !on && state.columns.length >= MAX_COLUMNS
+        ? t("compare.columns.max", { max: MAX_COLUMNS })
+        : null;
   return (
     <section className="space-y-2" aria-labelledby="cmp-columns-label">
       <div className="flex items-center justify-between gap-x-4 gap-y-1 flex-wrap">
@@ -363,25 +397,34 @@ function ColumnChooser({
         )}
       </div>
       <div role="group" aria-labelledby="cmp-columns-label" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        {datasets.map((d) => {
+        {datasets.flatMap((d) => {
           const on = chosen.has(d.id);
-          const reason =
-            on && state.columns.length <= MIN_COLUMNS
-              ? t("compare.columns.min", { min: MIN_COLUMNS })
-              : !on && state.columns.length >= MAX_COLUMNS
-                ? t("compare.columns.max", { max: MAX_COLUMNS })
-                : null;
           const note = datasetNote(d.id, t) ?? d.published_source ?? null;
-          return (
+          // A column of this dataset with a factor count of its own (from a link), right after its tile.
+          const variants = state.columns.flatMap((key) => {
+            const column = parseColumnKey(key);
+            return column && column.id === d.id && column.k !== null ? [{ key, k: column.k }] : [];
+          });
+          return [
             <ColumnTile
               key={d.id}
-              dataset={d}
-              on={on}
+              name={title(d.id, null)}
               note={note}
-              reason={reason}
+              on={on}
+              reason={blocked(on)}
               onToggle={() => onState({ ...state, columns: toggleColumn(state.columns, d.id, order) })}
-            />
-          );
+            />,
+            ...variants.map(({ key, k }) => (
+              <ColumnTile
+                key={key}
+                name={title(d.id, k)}
+                note={t("compare.column_k_note", { k })}
+                on
+                reason={blocked(true)}
+                onToggle={() => onState({ ...state, columns: toggleColumn(state.columns, key, order) })}
+              />
+            )),
+          ];
         })}
       </div>
     </section>
@@ -390,38 +433,38 @@ function ColumnChooser({
 
 /** A dataset to compare, as a tile to switch on and off; blocked with its `reason`. */
 function ColumnTile({
-  dataset,
+  name,
   on,
   note,
   reason,
   onToggle,
 }: {
-  dataset: BundledDataset;
+  name: string;
   on: boolean;
   note: string | null;
   reason: string | null;
   onToggle: () => void;
 }) {
   const tip = useTip<HTMLLabelElement>(reason ? { reason } : null);
-  const id = `cmp-col-${dataset.id}`;
+  const noteId = useId();
   return (
     <label ref={tip} className={cn("flex items-start gap-2.5 rounded-md px-3 py-2.5 min-w-0", choiceTile(on), reason && "cursor-default")}>
       <input
         type="checkbox"
         className="sr-only"
         checked={on}
-        aria-label={dataset.label ?? dataset.name}
+        aria-label={name}
+        aria-describedby={note ? noteId : undefined}
         aria-disabled={reason ? true : undefined}
-        aria-describedby={note ? id : undefined}
         onChange={() => {
           if (!reason) onToggle();
         }}
       />
       <ChoiceMark checked={on} className="mt-0.5" />
       <span className="min-w-0">
-        <span className="block text-sm font-medium">{dataset.label ?? dataset.name}</span>
+        <span className="block text-sm font-medium">{name}</span>
         {note && (
-          <span id={id} className="block text-[11px] text-muted leading-snug">
+          <span id={noteId} className="block text-[11px] text-muted leading-snug">
             {note}
           </span>
         )}
@@ -493,11 +536,11 @@ function headerRows(t: Translate, locale: string) {
 function MembershipMatrix({
   comparison,
   labels,
-  columnLabel,
+  titles,
 }: {
   comparison: Comparison;
   labels: Labels;
-  columnLabel: (column: CompareColumn) => string;
+  titles: string[];
 }) {
   const t = useT();
   const { locale } = useLocale();
@@ -515,7 +558,7 @@ function MembershipMatrix({
           <caption className="sr-only">
             {t("compare.matrix_caption", {
               rule: t(`factor.loadings.rule.${comparison.assignment_rule}.title`),
-              columns: columns.map(columnLabel).join(", "),
+              columns: titles.join(", "),
             })}
           </caption>
           <thead>
@@ -526,7 +569,7 @@ function MembershipMatrix({
               {columns.map((c, i) => (
                 <th key={`${c.bundled_id}-${i}`} scope="col" className="min-w-[6.5rem] !whitespace-normal align-bottom !h-auto py-2">
                   <span className="flex items-start gap-1">
-                    <span className="text-fg">{columnLabel(c)}</span>
+                    <span className="text-fg">{titles[i]}</span>
                     {/* A column that could not be analysed; what only deserves a note is in the notes below. */}
                     {c.error && (
                       <AlertTriangle role="img" className="h-3.5 w-3.5 mt-px shrink-0 text-warn-ink" aria-label={t("compare.tip.failed")} />
@@ -578,7 +621,7 @@ function MembershipMatrix({
                         key={i}
                         cell={cell}
                         inRow={cellInRow(cell, row.dimension)}
-                        tip={`${columnLabel(columns[i])} · ${name}: ${cellTip(cell, t, locale, columns[i])}`}
+                        tip={`${titles[i]} · ${name}: ${cellTip(cell, t, locale, columns[i])}`}
                         crossLabel={crossLabel}
                       />
                     ))}
@@ -750,11 +793,11 @@ function matchText(
 function DimensionTable({
   comparison,
   labels,
-  columnLabel,
+  titles,
 }: {
   comparison: Comparison;
   labels: Labels;
-  columnLabel: (column: CompareColumn) => string;
+  titles: string[];
 }) {
   const t = useT();
   const { locale } = useLocale();
@@ -796,7 +839,7 @@ function DimensionTable({
           {comparison.columns.map((column, i) => (
             <tr key={`${column.bundled_id}-${i}`}>
               <th scope="row" className="sticky-col font-medium min-w-[8rem] align-top">
-                {columnLabel(column)}
+                {titles[i]}
               </th>
               {column.error ? (
                 <td colSpan={n + 1} className="text-muted">
@@ -809,7 +852,7 @@ function DimensionTable({
                     const members = entry?.measures.map((m) => m.measure) ?? [];
                     const tip =
                       entry && entry.factor !== null
-                        ? t("compare.tip.factor_of", { factor: t("factor.loadings.factor_n", { i: entry.factor + 1 }), column: columnLabel(column) })
+                        ? t("compare.tip.factor_of", { factor: t("factor.loadings.factor_n", { i: entry.factor + 1 }), column: titles[i] })
                         : undefined;
                     const more =
                       entry && entry.factor !== null ? matchText(column, entry.factor, i === reference, labels, t, locale) : undefined;
@@ -843,14 +886,17 @@ function DimensionTable({
   );
 }
 
-/** What is worth knowing about the columns: notes on the bundled data, the rule and the analysis. */
+/** What is worth knowing about the columns: notes on the bundled data, the rule (for the settings of the paper) and the analysis. */
 function ColumnNotes({
   comparison,
-  columnLabel,
+  titles,
+  ownCounts,
   measureName,
 }: {
   comparison: Comparison;
-  columnLabel: (column: CompareColumn) => string;
+  titles: string[];
+  /** The factor count a column asked for instead of its paper's, or null. */
+  ownCounts: (number | null)[];
   measureName: (key: string) => string;
 }) {
   const t = useT();
@@ -858,7 +904,7 @@ function ColumnNotes({
   const { locale } = useLocale();
   const notes: { key: string; warn: boolean; text: string }[] = [];
   comparison.columns.forEach((column, i) => {
-    const label = columnLabel(column);
+    const label = titles[i];
     const add = (text: string | null | undefined, warn = false) => {
       if (text) notes.push({ key: `${i}-${notes.length}`, warn, text: `${label}: ${text}` });
     };
@@ -871,11 +917,12 @@ function ColumnNotes({
     }
     if (column.same_as !== null && column.same_as !== undefined) {
       // Says what the note on the dataset would, for these columns.
-      add(t("compare.same_as", { other: columnLabel(comparison.columns[column.same_as]) }));
+      add(t("compare.same_as", { other: titles[column.same_as] }));
     } else {
       add(datasetNote(column.bundled_id, t));
     }
-    add(ruleNote(column.bundled_id, comparison.assignment_rule, t, locale));
+    // The notes on a rule are about the settings of the paper, which a factor count of its own leaves.
+    if ((ownCounts[i] ?? null) === null) add(ruleNote(column.bundled_id, comparison.assignment_rule, t, locale));
     for (const w of column.warnings ?? []) add(noticeText(w, tMaybe, measureName), true);
   });
   if (notes.length === 0) return null;
