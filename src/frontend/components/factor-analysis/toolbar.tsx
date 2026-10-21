@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import {
   BookOpen,
   CircleHelp,
+  Columns3,
   Download,
   Ellipsis,
   FileArchive,
@@ -18,7 +19,8 @@ import {
   Signpost,
   Tag,
 } from "lucide-react";
-import type { FactorKind } from "@/lib/api";
+import type { CompareExportFormat, FactorKind } from "@/lib/api";
+import { COMPARE_HREF } from "@/lib/compare";
 import type { ExportFormat } from "@/lib/factor-analysis";
 import { useT } from "@/lib/i18n";
 import { IconButton, IconLink, ToolSeparator } from "@/components/ui/icon-button";
@@ -54,7 +56,8 @@ export interface ShortCodesSwitch {
 /**
  * The tools of a factor analysis tab as icons in one row, in groups: the way in (Start here, My
  * datasets), the view and the downloads (short codes, link, download menu), and help (guide and
- * tour, a single log). Each icon is named by its tooltip. On a phone only the link and the
+ * tour) with the pages beside the tab (the comparison of miners, a single log). Each icon is
+ * named by its tooltip. On a phone only the link and the
  * downloads stay in the row; the rest goes into a "more" menu.
  */
 export function FactorToolbar({
@@ -175,6 +178,7 @@ export function FactorToolbar({
     { id: "tour", label: t("factor.tour_button"), icon: Route, onSelect: onTour },
     ...(kind === "model"
       ? [
+          { id: "compare", label: t("factor.toolbar.compare"), icon: Columns3, href: COMPARE_HREF, separated: true },
           {
             id: "inspect",
             label: t("factor.model.inspect_link"),
@@ -213,12 +217,89 @@ export function FactorToolbar({
         <ToolSeparator />
         <Menu icon={CircleHelp} name={t("factor.toolbar.help")} more={t("factor.toolbar.help_more")} items={helpItems} />
         {kind === "model" && (
-          <IconLink icon={Microscope} name={t("factor.model.inspect_link")} more={t("factor.model.inspect_title")} href="/inspect" />
+          <>
+            <IconLink icon={Columns3} name={t("factor.toolbar.compare")} more={t("factor.toolbar.compare_more")} href={COMPARE_HREF} />
+            <IconLink icon={Microscope} name={t("factor.model.inspect_link")} more={t("factor.model.inspect_title")} href="/inspect" />
+          </>
         )}
       </span>
       <span className="sm:hidden contents">
         <Menu icon={Ellipsis} name={t("factor.toolbar.more")} items={moreItems} />
       </span>
+    </div>
+  );
+}
+
+/**
+ * The tools of the comparison of factor structures, in the header like those of a tab: the short
+ * codes, the link, the downloads (CSV, LaTeX like Tab. 17, ZIP) and the guide.
+ */
+export function CompareToolbar({
+  linkQuery,
+  exportReason,
+  exporting,
+  onExport,
+  shortCodes,
+}: {
+  linkQuery: string;
+  /** Why nothing can be downloaded yet, e.g. while the comparison is computed; null when it can. */
+  exportReason: string | null;
+  exporting: CompareExportFormat | null;
+  onExport: (format: CompareExportFormat) => void;
+  shortCodes: ShortCodesSwitch;
+}) {
+  const t = useT();
+  const busy = exporting !== null;
+  const items: MenuItem[] = [
+    {
+      id: "csv",
+      label: t("compare.export.csv"),
+      hint: exportReason ?? t("compare.export.csv_hint"),
+      icon: FileSpreadsheet,
+      disabled: !!exportReason || busy,
+      onSelect: () => onExport("csv"),
+    },
+    {
+      id: "latex",
+      label: t("compare.export.latex"),
+      hint: exportReason ?? t("compare.export.latex_hint"),
+      icon: FileCode2,
+      disabled: !!exportReason || busy,
+      onSelect: () => onExport("latex"),
+    },
+    {
+      id: "zip",
+      label: t("compare.export.zip"),
+      hint: exportReason ?? t("compare.export.zip_hint"),
+      icon: FileArchive,
+      disabled: !!exportReason || busy,
+      onSelect: () => onExport("zip"),
+      separated: true,
+    },
+  ];
+  return (
+    <div role="group" aria-label={t("factor.toolbar.aria")} className="flex items-center gap-0.5">
+      <IconButton
+        icon={Tag}
+        name={t("factor.toolbar.codes")}
+        more={t("compare.codes_more")}
+        reason={shortCodes.reason}
+        aria-pressed={shortCodes.on}
+        onClick={shortCodes.onToggle}
+        className={shortCodes.on ? "bg-tile" : undefined}
+      />
+      <ToolSeparator />
+      <CopyLink query={linkQuery} />
+      <Menu
+        icon={Download}
+        name={t("factor.toolbar.export")}
+        more={t("compare.export.more")}
+        items={items}
+        busy={busy}
+        width={320}
+      />
+      <ToolSeparator />
+      <IconLink icon={BookOpen} name={t("factor.toolbar.guide")} more={t("factor.toolbar.guide_hint")} href={`${GUIDE_HREF}#guide-compare`} />
     </div>
   );
 }

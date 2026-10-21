@@ -148,6 +148,8 @@ const ENDPOINTS: { group: string; items: Endpoint[] }[] = [
       { method: "POST", path: "/factor-analysis/datasets/{id}/export/report", key: "fa_export_report" },
       { method: "POST", path: "/factor-analysis/datasets/{id}/export/figure", key: "fa_export_figure" },
       { method: "POST", path: "/factor-analysis/datasets/{id}/export/zip", key: "fa_export_zip" },
+      { method: "POST", path: "/factor-analysis/compare", key: "fa_compare" },
+      { method: "POST", path: "/factor-analysis/compare/export", key: "fa_compare_export" },
       { method: "GET", path: "/factor-analysis/interpretation/status", key: "fa_interpretation_status" },
       { method: "POST", path: "/factor-analysis/datasets/{id}/interpret", key: "fa_interpret" },
     ],
