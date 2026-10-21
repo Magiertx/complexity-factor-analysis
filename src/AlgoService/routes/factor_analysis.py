@@ -34,7 +34,7 @@ from env_config import positive_int, rate_limit
 from factor_analysis import catalog as cat
 from factor_analysis import compare, compute, correlations, figures, miners, published, storage
 from factor_analysis import names as factor_names
-from factor_analysis.descriptives import describe, describe_cleaned, histogram
+from factor_analysis.descriptives import describe, describe_cleaned, describe_miner, histogram
 from factor_analysis.core import (
     COMMUNALITY_THRESHOLDS,
     LOADING_THRESHOLDS,
@@ -929,6 +929,38 @@ async def _delete_dataset(meta: dict[str, Any], session_id: str) -> bool:
         await _delete_job(meta["job_id"], session_id)
     await run_in_threadpool(storage.delete, session_id, meta["id"])
     return bool(meta.get("job_id"))
+
+
+@router.get("/datasets/{dataset_id}/descriptives")
+@limiter.limit(rate_limit("dataset_status", "600/minute"))
+async def get_descriptives(
+    request: Request,
+    dataset_id: str,
+    miner: str | None = Query(None, max_length=200),
+    session_id: str = Depends(get_session_id),
+) -> Any:
+    """The descriptive statistics of the measures of a ready dataset, with the histogram of each
+    (the ``descriptives`` of ``GET /datasets/{id}``). With a ``miner`` of a model dataset
+    discovered with several miners they are those of that miner's rows, taken from the cleaned
+    matrix (``basis`` "miner", with the ``miner`` and its ``n_rows``): the distribution a fact
+    sheet of the miner's analysis should show. A miner the dataset does not have is a 400
+    ``unknown_miner``; a dataset that is not ready a 409."""
+    meta = await _ready_meta(dataset_id, session_id)
+    if miner is None:
+        return await run_in_threadpool(_descriptives, meta, session_id)
+    available = miners.dataset_miners(meta)
+    if miner not in available:
+        listed = f" Its miners: {', '.join(available)}." if available else " Its rows name no miner."
+        return _AnalysisFailed(
+            AnalysisError(
+                f"The dataset has no rows of the miner '{miner}'.{listed}",
+                "unknown_miner",
+                miner=miner,
+                miners=", ".join(available),
+            )
+        ).response
+    data = await run_in_threadpool(storage.load_matrix, session_id, meta["id"])
+    return await run_in_threadpool(describe_miner, data, miner)
 
 
 @router.delete("/datasets/{dataset_id}", status_code=204)

@@ -462,3 +462,34 @@ def test_names_for_more_factors_than_the_count_are_refused(client, three):
     # The count is not kept with the options.
     client.put(f"/factor-analysis/datasets/{three}/options", json={"names_k": 2, "factor_names": ["a"]})
     assert "names_k" not in client.get(f"/factor-analysis/datasets/{three}").json()["options"]
+
+
+# --- the descriptive statistics of a miner -----------------------------------------------------
+
+
+def test_the_descriptives_of_a_miner_are_those_of_its_rows(client, three):
+    url = f"/factor-analysis/datasets/{three}/descriptives"
+    everything = client.get(url).json()
+    assert everything["n_rows"] == 150 and everything["basis"] != "miner"
+    assert everything == client.get(f"/factor-analysis/datasets/{three}").json()["descriptives"]
+
+    alpha = client.get(url, params={"miner": "Alpha miner"}).json()
+    assert (alpha["basis"], alpha["miner"], alpha["n_rows"]) == ("miner", "Alpha miner", 50)
+    data = _stored(client, three)
+    rows = [label for label in data.index if miners.miner_of(label) == "Alpha miner"]
+    size = next(r for r in alpha["measures"] if r["measure"] == "Size")
+    own = data.loc[rows, "Size"]
+    assert size["n"] == 50
+    assert size["mean"] == pytest.approx(own.mean()) and size["median"] == pytest.approx(own.median())
+    assert size["std"] == pytest.approx(own.std(ddof=1))
+    assert (size["min"], size["max"]) == (own.min(), own.max())
+    assert sum(size["histogram"]["counts"]) == 50
+    # Another basis than every row: the numbers differ.
+    assert size["mean"] != next(r for r in everything["measures"] if r["measure"] == "Size")["mean"]
+    # Every measure of the dataset is described, also one that is constant within the miner.
+    assert [r["measure"] for r in alpha["measures"]] == [r["measure"] for r in everything["measures"]]
+
+
+def test_the_descriptives_of_a_miner_the_dataset_lacks(client, three):
+    r = client.get(f"/factor-analysis/datasets/{three}/descriptives", params={"miner": "Hybrid ILP miner"})
+    assert r.status_code == 400 and r.json()["code"] == "unknown_miner"
