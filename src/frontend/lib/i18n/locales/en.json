@@ -759,6 +759,7 @@
       "col_exclude": "Exclude",
       "status_used": "used",
       "status_removed": "removed by the filter in round {step}",
+      "status_removed_short": "removed · round {step}",
       "status_excluded": "excluded",
       "min_measures": "At least {n} measures must remain.",
       "excluded_count": "{n} excluded by hand",
@@ -1179,6 +1180,9 @@
       "section_other": "The other measures",
       "section_no_group": "Without a group",
       "status_dependent": "linearly dependent",
+      "status_dependent_short": "dependent",
+      "show_other": "Show",
+      "hide_other": "Hide",
       "dependent_with": "Linearly dependent with {measures}. Excluding one measure of the group resolves it.",
       "status_below": "below {threshold}",
       "none_match": "No measure matches the search."

@@ -67,6 +67,19 @@ export function isNotable(info: MeasureInfo | undefined): boolean {
   return !!info && NOTABLE.includes(info.status);
 }
 
+/** From this many measures on, a list can be searched, narrowed to the notable ones and folded. */
+export const LONG_LIST = 20;
+
+/** Whether a measure matches a search: each of its words is in the measure's name or key, in any case. */
+export function matchesQuery(query: string, name: string, key: string): boolean {
+  const text = `${name} ${key}`.toLowerCase();
+  return query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .every((w) => text.includes(w));
+}
+
 export type MeasureSort = "dataset" | "name" | "msa";
 export type MeasureGrouping = "none" | "group";
 
@@ -103,11 +116,7 @@ export interface MeasureSection {
 /** The sections and rows of the list. Never changes `measures` or anything in `info`. */
 export function arrangeMeasures(input: ArrangeInput): MeasureSection[] {
   const { measures, info, name, sort, grouping, notable } = input;
-  const words = input.query.toLowerCase().split(/\s+/).filter(Boolean);
-  const matches = (m: string) => {
-    const text = `${name(m)} ${m}`.toLowerCase();
-    return words.every((w) => text.includes(w));
-  };
+  const matches = (m: string) => matchesQuery(input.query, name(m), m);
   const index = new Map(measures.map((m, i) => [m, i]));
   const compare = (a: string, b: string) => {
     if (sort === "name") return name(a).localeCompare(name(b)) || index.get(a)! - index.get(b)!;

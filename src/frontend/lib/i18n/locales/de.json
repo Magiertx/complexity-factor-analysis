@@ -759,6 +759,7 @@
       "col_exclude": "Ausschließen",
       "status_used": "verwendet",
       "status_removed": "in Runde {step} vom Filter entfernt",
+      "status_removed_short": "entfernt · Runde {step}",
       "status_excluded": "ausgeschlossen",
       "min_measures": "Mindestens {n} Maße müssen übrig bleiben.",
       "excluded_count": "{n} von Hand ausgeschlossen",
@@ -1179,6 +1180,9 @@
       "section_other": "Die übrigen Maße",
       "section_no_group": "Ohne Gruppe",
       "status_dependent": "linear abhängig",
+      "status_dependent_short": "abhängig",
+      "show_other": "Anzeigen",
+      "hide_other": "Ausblenden",
       "dependent_with": "Linear abhängig mit {measures}. Ein Maß der Gruppe auszuschließen löst das.",
       "status_below": "unter {threshold}",
       "none_match": "Kein Maß passt zur Suche."

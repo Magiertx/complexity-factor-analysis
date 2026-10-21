@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { FactorAnalysis } from "./api";
 import { defaultOptions } from "./factor-analysis";
-import { arrangeMeasures, dependentGroups, measureInfo, toggleExcluded, type ArrangeInput } from "./measure-list";
+import { arrangeMeasures, dependentGroups, matchesQuery, measureInfo, toggleExcluded, type ArrangeInput } from "./measure-list";
 
 const MEASURES = ["n_variants", "trace_len_min", "structure", "eventropy_trace", "n_edges_dfg", "cyclomatic_number_dfg"];
 const NAMES: Record<string, string> = Object.fromEntries(MEASURES.map((m) => [m, m]));
@@ -117,6 +117,14 @@ describe("the list of measures", () => {
     expect(arrangeMeasures(input({ onlyNotable: true }))).toEqual([
       { id: "notable", rows: ["trace_len_min", "structure", "n_edges_dfg", "cyclomatic_number_dfg"] },
     ]);
+  });
+
+  it("matches a search by every word, in the name or the key, in any case", () => {
+    expect(matchesQuery("", "Edges of the DFG", "n_edges_dfg")).toBe(true);
+    expect(matchesQuery("  ", "Edges of the DFG", "n_edges_dfg")).toBe(true);
+    expect(matchesQuery("EDGES dfg", "Edges of the DFG", "n_edges_dfg")).toBe(true);
+    expect(matchesQuery("n_edges", "Edges of the DFG", "n_edges_dfg")).toBe(true);
+    expect(matchesQuery("edges entropy", "Edges of the DFG", "n_edges_dfg")).toBe(false);
   });
 
   it("only changes the display, never the column order or the measures excluded", () => {

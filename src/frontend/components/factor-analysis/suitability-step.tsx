@@ -1,7 +1,7 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { Search } from "lucide-react";
+import { Fragment, useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import type { FactorAnalysis, FactorDataset } from "@/lib/api";
 import {
   MIN_MEASURES,
@@ -13,6 +13,7 @@ import {
   type AnalysisOptions,
 } from "@/lib/factor-analysis";
 import {
+  LONG_LIST,
   arrangeMeasures,
   isNotable,
   measureInfo,
@@ -28,7 +29,8 @@ import { ChoiceMark } from "@/components/ui/choice";
 import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { MeasureName, TableFrame } from "@/components/ui/table";
-import { Term, mergeRefs, useTip, useTipZone } from "@/components/ui/tip";
+import { Term, useTip, useTipZone } from "@/components/ui/tip";
+import { MeasureSearch, NotableSwitch } from "./measure-search";
 import { HelpLabel, NoticeList, PassBadge, ThresholdField } from "./step-section";
 
 /** How the list of measures is shown; kept by the tab while other steps are open. */
@@ -37,12 +39,17 @@ export interface MeasureView {
   sort: MeasureSort;
   grouping: MeasureGrouping;
   onlyNotable: boolean;
+  /** The unremarkable measures below the notable ones are unfolded. */
+  showOther: boolean;
 }
 
-export const DEFAULT_MEASURE_VIEW: MeasureView = { query: "", sort: "dataset", grouping: "none", onlyNotable: false };
-
-/** From this many measures on, the list can be searched, sorted, grouped and narrowed. */
-const LONG_LIST = 20;
+export const DEFAULT_MEASURE_VIEW: MeasureView = {
+  query: "",
+  sort: "dataset",
+  grouping: "none",
+  onlyNotable: false,
+  showOther: false,
+};
 
 /** The groups of the measures, e.g. the feature groups of feeed; absent for model measures. */
 export interface MeasureGroups {
@@ -232,9 +239,6 @@ function MeasureList({ dataset, analysis, options, onOptions, measureName, measu
   const t = useT();
   const { locale } = useLocale();
   const zone = useTipZone<HTMLTableSectionElement>();
-  const searchRef = useRef<HTMLInputElement>(null);
-  const searchTip = useTip<HTMLInputElement>({ name: t("factor.measures.search"), keyCap: "/" });
-  const searchRefs = useMemo(() => mergeRefs(searchRef, searchTip), [searchTip]);
   const excluded = new Set(options.excluded);
   const included = dataset.measures.length - excluded.size;
   const threshold = analysis?.kmo.threshold ?? options.msa_threshold;
@@ -272,20 +276,11 @@ function MeasureList({ dataset, analysis, options, onOptions, measureName, measu
   });
   const shownCount = sections.reduce((n, s) => n + s.rows.length, 0);
   const headed = sections.length > 1 || sections[0]?.id.startsWith("group:");
-
-  // "/" anywhere but in a field goes to the search.
-  useEffect(() => {
-    if (!long) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) return;
-      const el = document.activeElement;
-      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || (el as HTMLElement | null)?.isContentEditable) return;
-      e.preventDefault();
-      searchRef.current?.focus();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [long]);
+  // In a long list the unremarkable measures stay folded below the notable ones, so it is not a
+  // long scroll. They unfold on request, and by themselves while the list is searched or sorted,
+  // where the whole list is what is asked for. A short list is shown in full.
+  const otherByView = !long || viewOf.query.trim() !== "" || viewOf.sort !== "dataset";
+  const otherOpen = viewOf.showOther || otherByView;
 
   // Tick the few measures to keep, then invert, instead of ticking all the others.
   const canInvert = options.excluded.length >= MIN_MEASURES;
@@ -324,24 +319,7 @@ function MeasureList({ dataset, analysis, options, onOptions, measureName, measu
 
       {long && (
         <div className="flex items-center gap-2 flex-wrap">
-          <label className="relative flex-1 min-w-[12rem] max-w-xs">
-            <span className="sr-only">{t("factor.measures.search")}</span>
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted" aria-hidden />
-            <input
-              ref={searchRefs}
-              type="search"
-              value={view.query}
-              onChange={(e) => onView({ ...view, query: e.target.value })}
-              onKeyDown={(e) => {
-                if (e.key === "Escape" && view.query) {
-                  e.stopPropagation();
-                  onView({ ...view, query: "" });
-                }
-              }}
-              placeholder={t("factor.measures.search_placeholder")}
-              className="h-8 w-full rounded-md bg-tile pl-8 pr-2 text-sm placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
-            />
-          </label>
+          <MeasureSearch value={view.query} onChange={(query) => onView({ ...view, query })} />
           <Select
             aria-label={t("factor.measures.sort_aria")}
             className="h-8 w-auto min-w-[9.5rem]"
@@ -358,17 +336,12 @@ function MeasureList({ dataset, analysis, options, onOptions, measureName, measu
               options={(["none", "group"] as const).map((g) => ({ value: g, label: t(`factor.measures.grouping.${g}`) }))}
             />
           )}
-          <span className="flex items-center gap-2 text-xs">
-            <Switch
-              id="fa-only-notable"
-              checked={view.onlyNotable}
-              onCheckedChange={(v) => onView({ ...view, onlyNotable: v })}
-              aria-labelledby="fa-only-notable-label"
-            />
-            <label id="fa-only-notable-label" htmlFor="fa-only-notable" className="cursor-pointer">
-              {t("factor.measures.only_notable", { n: current.length })}
-            </label>
-          </span>
+          <NotableSwitch
+            id="fa-only-notable"
+            checked={view.onlyNotable}
+            onChange={(v) => onView({ ...view, onlyNotable: v })}
+            label={t("factor.measures.only_notable", { n: current.length })}
+          />
         </div>
       )}
 
@@ -394,11 +367,30 @@ function MeasureList({ dataset, analysis, options, onOptions, measureName, measu
                 {headed && section.rows.length > 0 && (
                   <tr className="table-group">
                     <th scope="colgroup" colSpan={4}>
-                      {sectionLabel(section.id, section.group, section.rows.length)}
+                      {section.id === "other" && !otherByView ? (
+                        <button
+                          type="button"
+                          aria-expanded={otherOpen}
+                          onClick={() => onView({ ...view, showOther: !view.showOther })}
+                          className="flex w-full items-center gap-1.5 rounded-sm text-left hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                        >
+                          {otherOpen ? (
+                            <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          ) : (
+                            <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          )}
+                          <span>{sectionLabel(section.id, section.group, section.rows.length)}</span>
+                          <span className="ml-auto font-normal">
+                            {t(otherOpen ? "factor.measures.hide_other" : "factor.measures.show_other")}
+                          </span>
+                        </button>
+                      ) : (
+                        sectionLabel(section.id, section.group, section.rows.length)
+                      )}
                     </th>
                   </tr>
                 )}
-                {section.rows.map((m) => (
+                {(section.id !== "other" || otherOpen ? section.rows : []).map((m) => (
                   <MeasureRow
                     key={m}
                     index={dataset.measures.indexOf(m)}
@@ -467,6 +459,16 @@ function MeasureRow({
   const id = `fa-exclude-${index}`;
   const msa = info?.msa ?? null;
   const status = info?.status ?? "pending";
+  const dependentWith =
+    status === "dependent"
+      ? t("factor.measures.dependent_with", { measures: (info?.partners ?? []).map(measureName).join(", ") })
+      : "";
+  // What the tooltips of the row say, also for the keyboard on the checkbox and for a screen reader.
+  const tip = useTip<HTMLInputElement>({
+    more: [description, locked ? t("factor.suitability.min_measures", { n: MIN_MEASURES }) : undefined]
+      .filter(Boolean)
+      .join(" "),
+  });
   return (
     <tr className={cn(excluded && "text-muted")}>
       <td className="w-px text-center">
@@ -479,6 +481,7 @@ function MeasureRow({
           )}
         >
           <input
+            ref={tip}
             id={id}
             type="checkbox"
             aria-label={t("factor.suitability.exclude_aria", { measure: name })}
@@ -498,19 +501,21 @@ function MeasureRow({
       <td className={cn("num", status === "below" || status === "removed" ? "text-warn-ink" : undefined)}>
         {msa === null || excluded ? <span className="text-muted">{NO_VALUE}</span> : formatNumber(msa, locale, 2)}
       </td>
-      <td>
+      {/* On a phone the status is a word or two, so a row stays one line; the partners of a
+          dependent measure are in the tooltip and, for a screen reader, in the row. */}
+      <td className="max-sm:whitespace-nowrap">
         {status === "excluded" ? (
           t("factor.suitability.status_excluded")
         ) : status === "removed" ? (
-          <span className="text-warn-ink">{t("factor.suitability.status_removed", { step: info?.round ?? 1 })}</span>
+          <span className="text-warn-ink">
+            <span className="sm:hidden">{t("factor.suitability.status_removed_short", { step: info?.round ?? 1 })}</span>
+            <span className="max-sm:hidden">{t("factor.suitability.status_removed", { step: info?.round ?? 1 })}</span>
+          </span>
         ) : status === "dependent" ? (
-          <span
-            className="text-warn-ink"
-            data-tip-more={t("factor.measures.dependent_with", {
-              measures: (info?.partners ?? []).map(measureName).join(", "),
-            })}
-          >
-            {t("factor.measures.status_dependent")}
+          <span className="text-warn-ink" data-tip-more={dependentWith}>
+            <span className="sm:hidden">{t("factor.measures.status_dependent_short")}</span>
+            <span className="max-sm:hidden">{t("factor.measures.status_dependent")}</span>
+            <span className="sr-only"> ({dependentWith})</span>
           </span>
         ) : status === "below" ? (
           <span className="text-warn-ink">
