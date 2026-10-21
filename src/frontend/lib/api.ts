@@ -963,10 +963,15 @@ export async function exportFigure(
 
 // ----------------------- Comparing factor structures -----------------------
 
-/** One column of a comparison: a bundled dataset with the settings of its paper or the standard. */
+/**
+ * One column of a comparison: a bundled dataset with the settings of its paper or the standard, or a
+ * dataset of the session with the settings saved with it or the standard, of one miner's rows.
+ */
 export interface CompareColumnRequest {
-  bundled_id: string;
-  settings?: "paper" | "standard";
+  bundled_id?: string;
+  dataset_id?: string;
+  miner?: string;
+  settings?: "paper" | "standard" | "saved";
   /** Changes to those settings, e.g. another factor count; the rule is the comparison's. */
   options?: Partial<Omit<AnalyzeOptions, "assignment_rule">>;
   label?: string;
@@ -981,11 +986,15 @@ export type CompareExportFormat = "csv" | "latex" | "zip";
 
 /** The header of a column; without `error` it has every field of an analysis. */
 export interface CompareColumn {
-  bundled_id: string;
+  /** null for a dataset of the session. */
+  bundled_id: string | null;
+  /** A dataset of the session, and the miner whose rows the column has. */
+  dataset_id?: string | null;
+  miner?: string | null;
   label: string;
   name: string;
   collection?: string | null;
-  settings: "paper" | "standard";
+  settings: "paper" | "standard" | "saved";
   options: AnalyzeOptions;
   published_source: string | null;
   paper_tables: PaperTables | string | null;
@@ -1086,7 +1095,10 @@ export interface Comparison {
   elapsed_ms?: number;
 }
 
-/** The factor structures of 2 to 8 bundled datasets side by side, like Tab. 17 of Important Factors. */
+/**
+ * The factor structures of 2 to 8 analyses side by side, like Tab. 17 of Important Factors: of
+ * bundled datasets or of datasets of the session.
+ */
 export async function compareAnalyses(body: CompareRequest, signal?: AbortSignal): Promise<Comparison> {
   const r = await fetch(`${BASE}/factor-analysis/compare`, {
     method: "POST",

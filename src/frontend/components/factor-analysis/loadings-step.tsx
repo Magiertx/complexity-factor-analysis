@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { Grid3x3, Info, LayoutGrid, Tags } from "lucide-react";
+import { Columns3, Grid3x3, Info, LayoutGrid, Pin, PinOff, Tags, X } from "lucide-react";
 import { ASSIGNMENT_RULES, type AssignmentRule, type FactorAnalysis } from "@/lib/api";
 import {
   ORTHOGONAL,
@@ -29,7 +29,9 @@ import { FOLDING_LOADINGS, LONG_LIST, arrangeLoadings, matchesQuery, otherShown 
 import { formatNumber, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
+import { ActionLink } from "@/components/ui/action-link";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
+import { IconButton } from "@/components/ui/icon-button";
 import { Segmented } from "@/components/ui/segmented";
 import { MeasureName, TableFrame } from "@/components/ui/table";
 import { Term, useTip, useTipZone } from "@/components/ui/tip";
@@ -47,6 +49,19 @@ export interface FactorNaming {
   /** The names an interpretation of this solution suggests; null without one. */
   suggested: FactorNames | null;
   onSuggested: () => void;
+}
+
+/** The solution on screen as a column of a comparison to come. */
+export interface PinState {
+  pinned: boolean;
+  /** Solutions pinned, this one included. */
+  count: number;
+  /** Why it cannot be pinned now, e.g. while the analysis catches up with a change. */
+  reason: string | null;
+  /** The comparison of the pins; null with fewer than two. */
+  href: string | null;
+  onToggle: () => void;
+  onClear: () => void;
 }
 
 /**
@@ -94,6 +109,8 @@ interface Props {
   /** Downloads the loadings heatmap for a paper. */
   figure?: FigureDownload;
   naming: FactorNaming;
+  /** Pinning the solution for a comparison; absent where there is nothing to compare it with. */
+  pin?: PinState | null;
 }
 
 /** What makes a loading bold: the rule's assignment, or the threshold reached or exceeded. */
@@ -150,6 +167,7 @@ export function LoadingsView({
   onLook: setLook,
   figure,
   naming,
+  pin,
 }: Props) {
   const t = useT();
   const { locale } = useLocale();
@@ -282,6 +300,7 @@ export function LoadingsView({
               </div>
             )}
           </div>
+          {pin && <PinTools pin={pin} />}
         </div>
 
         {long && (
@@ -900,6 +919,40 @@ function SuggestedNames({ naming }: { naming: FactorNaming }) {
       <Tags className="h-3.5 w-3.5" aria-hidden />
       {t("factor.names.suggested")}
     </button>
+  );
+}
+
+/**
+ * Pins the solution on screen as a column of a comparison, opens the comparison of the pins and
+ * clears them: the same dataset with 4 and with 6 factors, say, side by side.
+ */
+function PinTools({ pin }: { pin: PinState }) {
+  const t = useT();
+  return (
+    <div role="group" aria-label={t("factor.pin.aria")} className="flex items-center gap-1.5">
+      <IconButton
+        icon={pin.pinned ? PinOff : Pin}
+        tone="tile"
+        name={t(pin.pinned ? "factor.pin.unpin" : "factor.pin.pin")}
+        more={t("factor.pin.more")}
+        reason={pin.reason}
+        aria-pressed={pin.pinned}
+        onClick={pin.onToggle}
+      />
+      {pin.count > 0 && (
+        <>
+          <ActionLink
+            href={pin.href}
+            icon={Columns3}
+            reason={pin.href ? null : t("factor.pin.need_two")}
+            more={t("factor.pin.compare_more")}
+          >
+            {t("factor.pin.compare", { n: pin.count })}
+          </ActionLink>
+          <IconButton size="sm" icon={X} name={t("factor.pin.clear")} onClick={pin.onClear} />
+        </>
+      )}
+    </div>
   );
 }
 

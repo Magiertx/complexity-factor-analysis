@@ -1,13 +1,14 @@
 "use client";
 
 import { useId, useState } from "react";
-import { AlertCircle, AlertTriangle, Ban, Info } from "lucide-react";
+import { AlertCircle, AlertTriangle, Ban, Columns3, Info } from "lucide-react";
 import type { Descriptives, FactorDataset, Measurement, MinerSummary } from "@/lib/api";
 import { PREVIEW_ROWS, OBSERVATIONS_PER_MEASURE, countText, rowsChoice, type RowsChoice } from "@/lib/factor-analysis";
 import { NO_VALUE, formatNumber, formatStatistic } from "@/lib/format";
 import { measurementRows, measurementTotals } from "@/lib/measurement";
 import { cn } from "@/lib/utils";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
+import { ActionLink } from "@/components/ui/action-link";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { MeasureName, TableFrame } from "@/components/ui/table";
 import { Term, useTip, useTipZone } from "@/components/ui/tip";
@@ -21,6 +22,9 @@ export interface MinerChoiceProps {
   /** The measures excluded by hand, which count for the measures left. */
   excluded: string[];
   onChange: (miner: string | null) => void;
+  /** The comparison of the miners that can be analysed; null with a reason when there is none. */
+  compareHref: string | null;
+  compareReason: string | null;
 }
 
 export function DatasetView({
@@ -191,6 +195,8 @@ function MinerChoice({
   miner,
   excluded,
   onChange,
+  compareHref,
+  compareReason,
 }: MinerChoiceProps & { dataset: FactorDataset; miners: MinerSummary[] }) {
   const t = useT();
   const { locale } = useLocale();
@@ -200,13 +206,18 @@ function MinerChoice({
     : t("factor.miners.hint_together", { miners: miners.length });
   return (
     <section id="fa-miner" aria-labelledby="fa-miner-label" className="space-y-2 scroll-mt-24">
-      <span id="fa-miner-label">
-        <HelpLabel
-          as="span"
-          label={t("factor.miners.label")}
-          help={t("factor.miners.help", { per: OBSERVATIONS_PER_MEASURE })}
-        />
-      </span>
+      <div className="flex items-center justify-between gap-x-4 gap-y-1 flex-wrap">
+        <span id="fa-miner-label">
+          <HelpLabel
+            as="span"
+            label={t("factor.miners.label")}
+            help={t("factor.miners.help", { per: OBSERVATIONS_PER_MEASURE })}
+          />
+        </span>
+        <ActionLink href={compareHref} reason={compareReason} icon={Columns3} more={t("factor.miners.compare_more")}>
+          {t("factor.miners.compare")}
+        </ActionLink>
+      </div>
       <div role="radiogroup" aria-labelledby="fa-miner-label" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <MinerTile
           title={t("factor.miners.together")}

@@ -696,7 +696,12 @@
       },
       "preset_standard_detail": "Faktorzahl nach Kaiser · größte Ladung",
       "opened_standard": "Mit den Standardeinstellungen geöffnet.",
-      "opened_paper": "Mit den Paper-Einstellungen geöffnet."
+      "opened_paper": "Mit den Paper-Einstellungen geöffnet.",
+      "compare_start": "Vergleichen",
+      "compare_pick_aria": "Zu vergleichende Datensätze",
+      "compare_not_ready": "Nur ein fertiger Datensatz lässt sich vergleichen.",
+      "compare_hint": "{n} gewählt; ein Vergleich nimmt {min} bis {max} Datensätze, jeden mit den Einstellungen, die mit ihm gespeichert sind.",
+      "compare_go": "{n} vergleichen"
     },
     "inputs": {
       "logs": "{n} Log",
@@ -991,7 +996,8 @@
       "too_many_measures_for_analysis": "{n} Maße sind mehr als die {max}, die der Server auf einmal analysiert. Schließe in der Tabelle von Schritt 3 Maße aus.",
       "superseded": "Eine neuere Analyse dieses Datensatzes, etwa in einem anderen Tab, hat diese ersetzt. Ändere eine Einstellung, um sie erneut zu starten.",
       "unknown_miner": "Der Datensatz hat keine Zeilen des Miners {miner}.",
-      "factor_names_too_many": "{names} Faktornamen für {factors} Faktoren."
+      "factor_names_too_many": "{names} Faktornamen für {factors} Faktoren.",
+      "dataset_not_ready": "Der Datensatz ist nicht bereit ({status})."
     },
     "warnings": {
       "bartlett_not_significant": "Der Test nach Bartlett ist nicht signifikant (p = {p} ≥ {alpha}); die Maße sind womöglich unkorreliert.",
@@ -1271,7 +1277,10 @@
       "blocked_reason": "{n} Beobachtungen für {p} Maße: Eine Analyse braucht mehr Beobachtungen als Maße.",
       "few": "Weniger als 5 je Maß ({min})",
       "hint_together": "Alle {miners} Miner gemeinsam: Die Unterschiede zwischen den Minern mischen sich in die Dimensionen, und jedes Log zählt einmal je Miner.",
-      "hint_one": "Nur die Netze des {miner}: die Dimensionen dieses Miners allein, aus {n} Beobachtungen."
+      "hint_one": "Nur die Netze des {miner}: die Dimensionen dieses Miners allein, aus {n} Beobachtungen.",
+      "compare": "Miner vergleichen",
+      "compare_more": "Öffnet die Faktorstrukturen nebeneinander, eine Spalte je Miner, der sich analysieren lässt, mit den Einstellungen, die mit dem Datensatz gespeichert sind.",
+      "compare_none": "Weniger als zwei Miner haben mehr Beobachtungen als Maße."
     },
     "names": {
       "edit_more": "Drücke, um den Faktor zu benennen: Enter behält den Namen, Esc lässt ihn, wie er war, höchstens {max} Zeichen. Ein leerer Name gibt dem Faktor seine Nummer zurück.",
@@ -1280,6 +1289,17 @@
       "suggested": "Vorgeschlagene Namen übernehmen",
       "suggested_more": "Übernimmt die Namen, die die Interpretation für diese Lösung vorschlägt; jeden kannst du danach ändern.",
       "suggested_done": "Vorgeschlagene Namen übernommen."
+    },
+    "pin": {
+      "aria": "Vergleich von Lösungen",
+      "pin": "Diese Lösung anheften",
+      "unpin": "Diese Lösung lösen",
+      "more": "Nimmt diese Lösung in einen Vergleich auf: den Datensatz, den Miner, die Faktorzahl, die Rotation und die Regel. Die übrigen Einstellungen sind die, die mit dem Datensatz gespeichert sind.",
+      "need_two": "Hefte eine zweite Lösung an, z. B. denselben Datensatz mit einer anderen Faktorzahl.",
+      "compare": "Angeheftete vergleichen ({n})",
+      "compare_more": "Öffnet die angehefteten Lösungen nebeneinander, unter der Regel der zuletzt angehefteten.",
+      "clear": "Alle lösen",
+      "full": "{max} Lösungen sind angeheftet, so viele, wie ein Vergleich fasst."
     }
   },
   "inspect": {
@@ -1412,12 +1432,12 @@
   },
   "compare": {
     "title": "Faktorstrukturen vergleichen",
-    "subtitle": "Welche Maße für welchen Miner welche Dimension bilden, wie in Tab. 17 von Important Factors. Jede Spalte ist ein veröffentlichter Datensatz mit den Einstellungen seines Papers; eine Zuordnungsregel gilt für alle.",
+    "subtitle": "Welche Maße für welchen Miner welche Dimension bilden, wie in Tab. 17 von Important Factors. Jede Spalte ist eine Analyse: ein veröffentlichter Datensatz mit den Einstellungen seines Papers oder einer deiner Datensätze mit den Einstellungen, die mit ihm gespeichert sind. Eine Zuordnungsregel gilt für alle.",
     "wait": "Der Vergleich wird noch berechnet.",
     "wait_update": "Der Vergleich wird aktualisiert.",
     "stale": "Die Tabelle zeigt die vorherige Auswahl; die Aktualisierung ist fehlgeschlagen.",
     "computing": "Wird verglichen…",
-    "link_invalid": "Ein Teil des Links ließ sich nicht verwenden: Ein Vergleich nimmt {min} bis {max} veröffentlichte Datensätze und eine der drei Regeln. Gezeigt wird der Rest davon oder Tab. 17.",
+    "link_invalid": "Ein Teil des Links ließ sich nicht verwenden: Ein Vergleich nimmt {min} bis {max} Datensätze, veröffentlichte oder solche dieser Sitzung, und eine der drei Regeln. Gezeigt wird der Rest davon oder Tab. 17.",
     "column_k": "{label}, k = {k}",
     "column_k_note": "{k} Faktoren statt der des Papers",
     "result": "Faktorstrukturen",
@@ -1458,12 +1478,12 @@
       "variance": "Erklärte Varianz"
     },
     "help": {
-      "columns": "Jede Kachel ist ein veröffentlichter Datensatz, analysiert mit den Einstellungen seines Papers. Wähle {min} bis {max}. Die ersten vier sind die Miner aus Tab. 17; der linke behält die Nummern seiner Faktoren.",
+      "columns": "Jede Kachel ist eine Analyse: ein veröffentlichter Datensatz mit den Einstellungen seines Papers oder einer deiner Datensätze mit den Einstellungen, die mit ihm gespeichert sind, angeheftet im Ladungen-Schritt oder gewählt unter Meine Datensätze. Wähle {min} bis {max}. Die linke behält die Nummern ihrer Faktoren.",
       "result": "Die Dimensionen jedes Datensatzes unter der gewählten Regel. Die Faktoren der Datensätze werden so zugeordnet, dass möglichst viele gemeinsame Maße dieselbe Nummer bekommen; sind zwei Zuordnungen gleich gut, entscheiden die ähnlicheren Ladungen.",
       "n": "Beobachtungen: die Netze des Datensatzes, eines je Log.",
       "measures": "Die Maße, die nach der Bereinigung und dem MSA-Filter bleiben, von denen des Datensatzes.",
       "kmo": "Das Gesamtmaß der Stichprobeneignung (Kaiser-Meyer-Olkin) der verbliebenen Maße.",
-      "factors": "Die Zahl der Faktoren, wie die Paper-Einstellungen des Datensatzes sie festlegen.",
+      "factors": "Die Zahl der Faktoren, wie die Einstellungen der Spalte sie festlegen: die des Papers oder die mit deinem Datensatz gespeicherten oder mit ihm angehefteten.",
       "variance": "Der Anteil der Varianz der Maße, den die Faktoren zusammen erklären."
     },
     "legend": {
@@ -1511,7 +1531,7 @@
       "catalog": "Die veröffentlichten Datensätze ließen sich nicht laden.",
       "failed": "Der Vergleich ist fehlgeschlagen.",
       "export": "Der Download ist fehlgeschlagen.",
-      "compare_unknown_dataset": "Der Link nennt einen Datensatz, den dieser Server nicht hat: {dataset}.",
+      "compare_unknown_dataset": "Der Link nennt einen Datensatz, den weder dieser Server noch diese Sitzung hat: {dataset}.",
       "compare_mixed_kinds": "Ein Vergleich nimmt nur Datensätze einer Art.",
       "compare_nothing_analysed": "Mit diesen Einstellungen ließ sich keiner der Datensätze analysieren."
     },
@@ -1527,6 +1547,11 @@
       "never": "Kein Datensatz hat beide analysiert.",
       "never_self": "Kein Datensatz hat es analysiert.",
       "fraction": "{together} von {analysed}"
-    }
+    },
+    "own_unknown": "Datensatz dieser Sitzung",
+    "own_k": "k = {k}",
+    "own_note": "Deine Daten, mit den Einstellungen, die mit ihnen gespeichert sind",
+    "own_standard": "Mit dem Datensatz sind keine Einstellungen gespeichert; die Spalte nimmt die Standardeinstellungen.",
+    "empty": "Wähle mindestens {min} Analysen: Hefte im Ladungen-Schritt Lösungen deiner Daten an, oder vergleiche Datensätze aus Meine Datensätze."
   }
 }

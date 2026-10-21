@@ -696,7 +696,12 @@
       },
       "preset_standard_detail": "Kaiser's factor count · largest loading",
       "opened_standard": "Opened with the standard settings.",
-      "opened_paper": "Opened with the paper settings."
+      "opened_paper": "Opened with the paper settings.",
+      "compare_start": "Compare",
+      "compare_pick_aria": "Datasets to compare",
+      "compare_not_ready": "Only a dataset that is ready can be compared.",
+      "compare_hint": "{n} chosen; a comparison takes {min} to {max} datasets, each with the settings saved with it.",
+      "compare_go": "Compare {n}"
     },
     "inputs": {
       "logs": "{n} log",
@@ -991,7 +996,8 @@
       "too_many_measures_for_analysis": "{n} measures are more than the {max} the server analyses at once. Exclude measures in the table of step 3.",
       "superseded": "A newer analysis of this dataset, for example in another tab, replaced this one. Change a setting to run it again.",
       "unknown_miner": "The dataset has no rows of the miner {miner}.",
-      "factor_names_too_many": "{names} factor names for {factors} factors."
+      "factor_names_too_many": "{names} factor names for {factors} factors.",
+      "dataset_not_ready": "The dataset is not ready ({status})."
     },
     "warnings": {
       "bartlett_not_significant": "Bartlett's test is not significant (p = {p} ≥ {alpha}); the measures may be uncorrelated.",
@@ -1271,7 +1277,10 @@
       "blocked_reason": "{n} observations for {p} measures: an analysis needs more observations than measures.",
       "few": "Fewer than 5 per measure ({min})",
       "hint_together": "All {miners} miners together: the differences between the miners mix into the dimensions, and each log counts once per miner.",
-      "hint_one": "Only the nets of the {miner}: the dimensions of this miner alone, from {n} observations."
+      "hint_one": "Only the nets of the {miner}: the dimensions of this miner alone, from {n} observations.",
+      "compare": "Compare the miners",
+      "compare_more": "Opens the factor structures side by side, one column per miner that can be analysed, with the settings saved with the dataset.",
+      "compare_none": "Fewer than two miners have more observations than measures."
     },
     "names": {
       "edit_more": "Press to name the factor: Enter keeps the name, Esc leaves it as it was, at most {max} characters. An empty name gives the factor back its number.",
@@ -1280,6 +1289,17 @@
       "suggested": "Use the suggested names",
       "suggested_more": "Takes over the names the interpretation suggests for this solution; each stays yours to change.",
       "suggested_done": "Suggested names taken over."
+    },
+    "pin": {
+      "aria": "Comparison of solutions",
+      "pin": "Pin this solution",
+      "unpin": "Unpin this solution",
+      "more": "Adds this solution to a comparison: the dataset, the miner, the factor count, the rotation and the rule. The other settings are those saved with the dataset.",
+      "need_two": "Pin a second solution, e.g. the same dataset with another factor count.",
+      "compare": "Compare pinned ({n})",
+      "compare_more": "Opens the pinned solutions side by side, under the rule of the one pinned last.",
+      "clear": "Unpin all",
+      "full": "{max} solutions are pinned, as many as a comparison holds."
     }
   },
   "inspect": {
@@ -1412,12 +1432,12 @@
   },
   "compare": {
     "title": "Compare factor structures",
-    "subtitle": "Which measures form which dimension for which miner, like Tab. 17 of Important Factors. Each column is a published dataset with the settings of its paper; one assignment rule applies to all.",
+    "subtitle": "Which measures form which dimension for which miner, like Tab. 17 of Important Factors. Each column is an analysis: a published dataset with the settings of its paper, or one of your datasets with the settings saved with it. One assignment rule applies to all.",
     "wait": "The comparison is still being computed.",
     "wait_update": "The comparison is being updated.",
     "stale": "The table shows the previous selection; the update failed.",
     "computing": "Comparing…",
-    "link_invalid": "Part of the link could not be used: a comparison takes {min} to {max} published datasets and one of the three rules. The rest of it, or Tab. 17, is shown.",
+    "link_invalid": "Part of the link could not be used: a comparison takes {min} to {max} datasets, published or of this session, and one of the three rules. The rest of it is shown, or Tab. 17.",
     "column_k": "{label}, k = {k}",
     "column_k_note": "{k} factors instead of the paper's",
     "result": "Factor structures",
@@ -1458,12 +1478,12 @@
       "variance": "Variance explained"
     },
     "help": {
-      "columns": "Each tile is a published dataset, analysed with the settings of its paper. Choose {min} to {max}. The first four are the miners of Tab. 17; the leftmost one keeps the numbers of its factors.",
+      "columns": "Each tile is an analysis: a published dataset with the settings of its paper, or one of your datasets with the settings saved with it, pinned in the loadings step or chosen in My datasets. Choose {min} to {max}. The leftmost one keeps the numbers of its factors.",
       "result": "The dimensions of every dataset under the chosen rule. The factors of the datasets are matched so that most shared measures get the same number; where two matches are equally good, the more alike loadings decide.",
       "n": "Observations: the nets of the dataset, one per log.",
       "measures": "The measures left after cleaning and the MSA filter, of those in the dataset.",
       "kmo": "The overall measure of sampling adequacy (Kaiser-Meyer-Olkin) of the measures that are left.",
-      "factors": "The number of factors, as the paper settings of the dataset fix it.",
+      "factors": "The number of factors, as the settings of the column fix it: those of the paper, or those saved with your dataset or pinned with it.",
       "variance": "The share of the variance of the measures that the factors explain together."
     },
     "legend": {
@@ -1511,7 +1531,7 @@
       "catalog": "The published datasets could not be loaded.",
       "failed": "The comparison failed.",
       "export": "The download failed.",
-      "compare_unknown_dataset": "The link names a dataset this server does not have: {dataset}.",
+      "compare_unknown_dataset": "The link names a dataset that neither this server nor this session has: {dataset}.",
       "compare_mixed_kinds": "A comparison takes datasets of one kind only.",
       "compare_nothing_analysed": "None of the datasets could be analysed with these settings."
     },
@@ -1527,6 +1547,11 @@
       "never": "No dataset analysed both.",
       "never_self": "No dataset analysed it.",
       "fraction": "{together} of {analysed}"
-    }
+    },
+    "own_unknown": "Dataset of this session",
+    "own_k": "k = {k}",
+    "own_note": "Your data, with the settings saved with it",
+    "own_standard": "no settings are saved with the dataset; the column uses the standard ones.",
+    "empty": "Choose at least {min} analyses: pin solutions in the loadings step of your data, or compare datasets from My datasets."
   }
 }

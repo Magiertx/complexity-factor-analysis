@@ -57,6 +57,18 @@ import {
   type ExportFormat,
   type FactorNames,
 } from "@/lib/factor-analysis";
+import {
+  MAX_COLUMNS,
+  NO_PINS,
+  compareHref,
+  keepPins,
+  loadPins,
+  ownColumnKey,
+  pinsHref,
+  savePins,
+  togglePin,
+  type Pins,
+} from "@/lib/compare";
 import { formatNumber, formatPercent } from "@/lib/format";
 import { ruleNote } from "@/lib/paper-notes";
 import { codeIndexes, codesOf, hasCodes, loadShortCodes, measureLabels, saveShortCodes } from "@/lib/short-codes";
@@ -80,6 +92,7 @@ import {
   useLoadingsLook,
   type FactorNaming,
   type LoadingsFilter,
+  type PinState,
 } from "./loadings-step";
 import { InterpretationView } from "./interpretation-step";
 import { FactorTour } from "./factor-tour";
@@ -187,6 +200,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   useEffect(() => {
     namingRef.current = naming;
   }, [naming]);
+  // Solutions pinned for a comparison, kept by the browser per kind.
+  const [pins, setPins] = useState<Pins>(NO_PINS);
+  useEffect(() => setPins(loadPins(kind)), [kind]);
   // The dataset whose saved options were applied, and the options the server has for it.
   const optionsAppliedFor = useRef<string | null>(null);
   // Settings chosen for a dataset about to open (the paper's or the standard), which replace
@@ -417,6 +433,16 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       clearTimeout(timer);
     };
   }, [kind, formOpen, jobCount, datasetStatus]);
+
+  // Pins of datasets the session no longer has go; the open one stays, the list may lag behind it.
+  useEffect(() => {
+    if (!datasets) return;
+    setPins((current) => {
+      const kept = keepPins(current, new Set([...datasets.map((d) => d.id), ...(datasetIdRef.current ? [datasetIdRef.current] : [])]));
+      if (kept !== current) savePins(kind, kept);
+      return kept;
+    });
+  }, [datasets, kind]);
 
   const ready = !!dataset && dataset.status === "ready" && dataset.id === datasetId;
 
@@ -1111,11 +1137,26 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     onExport: runExport,
   };
 
-  // The rows of one miner, chosen in the dataset step.
-  const minerChoice: MinerChoiceProps | null =
-    ready && dataset && dataset.miners && dataset.miners.length > 1
-      ? { miner: options.miner, excluded: options.excluded, onChange: (miner) => updateOptions({ miner }) }
-      : null;
+  // The rows of one miner, chosen in the dataset step, and the comparison of the miners that can
+  // be analysed: one column each, with the settings saved with the dataset.
+  let minerChoice: MinerChoiceProps | null = null;
+  if (ready && dataset && datasetId && dataset.miners && dataset.miners.length > 1) {
+    const analysable = dataset.miners.filter((m) => !rowsChoice(dataset, m, options.excluded).blocked);
+    minerChoice = {
+      miner: options.miner,
+      excluded: options.excluded,
+      onChange: (miner) => updateOptions({ miner }),
+      compareHref:
+        analysable.length > 1
+          ? compareHref({
+              columns: analysable.slice(0, MAX_COLUMNS).map((m) => ownColumnKey(datasetId, { miner: m.name })),
+              rule: options.assignment_rule,
+              ...(kind === "log" ? { kind } : {}),
+            })
+          : null,
+      compareReason: analysable.length > 1 ? null : t("factor.miners.compare_none"),
+    };
+  }
 
   // The names of the factors on screen, set one by one or taken from an interpretation.
   const suggested =
@@ -1138,6 +1179,32 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     },
   };
 
+  // The solution on screen as a column of a comparison: its dataset, miner, count and rotation.
+  const pinKey =
+    datasetId && analysis && analyzedOptions
+      ? ownColumnKey(datasetId, { miner: analyzedOptions.miner, k: analysis.n_factors, rotation: analyzedOptions.rotation })
+      : null;
+  const pinned = !!pinKey && pins.columns.includes(pinKey);
+  const changePins = (next: Pins) => {
+    setPins(next);
+    savePins(kind, next);
+  };
+  const pin: PinState | null = pinKey
+    ? {
+        pinned,
+        count: pins.columns.length,
+        reason: !analysisCurrent
+          ? t("factor.toolbar.wait_update")
+          : !pinned && pins.columns.length >= MAX_COLUMNS
+            ? t("factor.pin.full", { max: MAX_COLUMNS })
+            : null,
+        href: pinsHref(kind, pins),
+        onToggle: () => {
+          if (analyzedOptions) changePins(togglePin(pins, pinKey, analyzedOptions.assignment_rule));
+        },
+        onClear: () => changePins(NO_PINS),
+      }
+    : null;
   const shortCodes: ShortCodesSwitch = {
     on: codesShown,
     reason: !ready ? lockReason : codesAvailable ? null : t("factor.toolbar.codes_none"),
@@ -1462,6 +1529,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                     onLook={setLoadingsLook}
                     figure={figure("loadings")}
                     naming={factorNaming}
+                    pin={pin}
                   />
                 </div>
               ) : (

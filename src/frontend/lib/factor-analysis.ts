@@ -385,7 +385,7 @@ export function settingsSummary(
 }
 
 /** localStorage keys of the factor analysis tabs, cleared with the datasets in the settings. */
-export const STORAGE_PREFIXES = ["app.factor-dataset-", "app.factor-options-"];
+export const STORAGE_PREFIXES = ["app.factor-dataset-", "app.factor-options-", "app.compare-pins-"];
 
 /** Fewest measures the backend accepts for an analysis. */
 export const MIN_MEASURES = 3;
