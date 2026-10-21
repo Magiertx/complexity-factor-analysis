@@ -55,7 +55,10 @@ Schalk do it, but interactively in the browser.
   side, like Tab. 17 of Important Factors: per miner n, the measures after the MSA filter, KMO,
   factors and explained variance, every measure with its dimension under one shared assignment
   rule, and the dimensions per miner as in Tab. 17. The factors are matched across the miners by
-  the measures they share. Downloads as CSV, as a LaTeX table and as a ZIP with a manifest.
+  the measures they share, and a third look counts for every pair of measures in how many
+  datasets both are in one dimension, which needs no matching. A link can ask for a dataset with
+  a factor count of its own, such as the Inductive miner with 4 and with 6 factors. Downloads as
+  CSV, as a LaTeX table and as a ZIP with a manifest.
 - **Come back to a dataset.** The datasets of a session are listed on the data step, reopen
   with the parameters of their last analysis and can be deleted one by one or all at once;
   deleting a dataset job in the run history deletes its dataset too.
@@ -209,7 +212,7 @@ npx next build
 Playwright drives the UI in a browser (`src/frontend/e2e/`): a paper dataset through all six
 steps with its ZIP, a CSV upload reopened from "My datasets" with its excluded measure, the
 PNML and log samples, deleting a dataset, the comparison of the four miners of Tab. 17 with its
-downloads, decimal commas in German, the theme switch, axe on every route in light and dark, and a single run without ProM, which has to fail with the
+pairs of measures, its factor counts per column and its downloads, decimal commas in German, the theme switch, axe on every route in light and dark, and a single run without ProM, which has to fail with the
 coded error. They check text, roles and downloads, no pixels.
 
 Against the Docker stack, with a browser installed on the machine (here Microsoft Edge;

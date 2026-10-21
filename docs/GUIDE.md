@@ -70,7 +70,9 @@ the column icon in the toolbar of Model complexity and from Start here, with the
 Tab. 17 (Alpha, Directly Follows, Inductive, Hybrid ILP) under Hair et al.
 
 - **Datasets**: choose 2 to 8 of the miners of Important Factors; each is analysed with the
-  settings of its paper. "As in Tab. 17" goes back to the four miners and Hair et al.
+  settings of its paper. "As in Tab. 17" goes back to the four miners and Hair et al. A link can
+  also ask for a dataset with a factor count of its own, such as the Inductive miner with 4 and
+  with 6 factors (a Start here entry opens it); that column has a tile of its own.
 - **Assignment rule**: one rule for every dataset, so that a difference between two columns is
   one of the data.
 - **By measure**: a row per measure, grouped by dimension, and above them per dataset n, the
@@ -79,6 +81,10 @@ Tab. 17 (Alpha, Directly Follows, Inductive, Hybrid ILP) under Hair et al.
   outline a measure the MSA filter removed, and a faded cell says why the rule leaves the measure
   out.
 - **By dimension**: a row per dataset with the measures of each dimension, laid out like Tab. 17.
+- **Pairs**: a square of the measures; each cell says in how many of the datasets that analysed
+  both the two share a dimension, and the tint is that share. It does not depend on how the
+  dimensions are numbered, so it shows without matching that, say, ts and CFC always go together
+  and CH goes with no other measure.
 - **Download**: the matrix as CSV, the dimensions as a LaTeX table like Tab. 17, and both in a ZIP
   with a manifest.
 
