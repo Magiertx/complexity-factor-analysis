@@ -1334,6 +1334,7 @@
       "hist_none": "Keine Werte zum Zeichnen.",
       "values_input": "Über alle {n} Beobachtungen, vor der Bereinigung.",
       "values_cleaned": "Über die bereinigte Matrix.",
+      "values_all_miners": "Alle Miner zusammen; die Analyse darunter gilt nur für die Zeilen von {miner}.",
       "analysis": "In dieser Analyse",
       "status": {
         "used": "In der Analyse",

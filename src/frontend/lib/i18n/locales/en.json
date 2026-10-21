@@ -1334,6 +1334,7 @@
       "hist_none": "No values to draw.",
       "values_input": "Over all {n} observations, before cleaning.",
       "values_cleaned": "Over the cleaned matrix.",
+      "values_all_miners": "All miners together; the analysis below is of the rows of {miner} only.",
       "analysis": "In this analysis",
       "status": {
         "used": "In the analysis",

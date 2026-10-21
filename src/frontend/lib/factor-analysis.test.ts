@@ -435,12 +435,16 @@ describe("the names of the factors", () => {
     expect(namesForApi(null, 4)).toBeNull();
   });
 
-  it("belong to a factor count, a rotation and a rule", () => {
+  it("belong to a factor count, a rotation, a rule and a miner", () => {
     const options = defaultOptions("model");
     expect(solutionKey(4, options)).toBe(solutionKey(4, { ...options, excluded: ["a"] } as typeof options));
     expect(solutionKey(4, options)).not.toBe(solutionKey(5, options));
     expect(solutionKey(4, options)).not.toBe(solutionKey(4, { ...options, rotation: "promax" }));
     expect(solutionKey(4, options)).not.toBe(solutionKey(4, { ...options, assignment_rule: "hair" }));
+    expect(solutionKey(4, options)).not.toBe(solutionKey(4, { ...options, miner: "Alpha miner" }));
+    expect(solutionKey(4, { ...options, miner: "Alpha miner" })).not.toBe(
+      solutionKey(4, { ...options, miner: "Inductive miner" }),
+    );
   });
 
   it("take the suggestions of an interpretation only for the factors there are", () => {

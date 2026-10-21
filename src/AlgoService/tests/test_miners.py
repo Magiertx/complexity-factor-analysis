@@ -335,3 +335,34 @@ def test_a_dataset_not_ready_is_a_column_with_its_error(client, three):
     comparison = client.post("/factor-analysis/compare", json=body).json()
     assert comparison["columns"][1]["error"]["code"] == "dataset_not_ready"
     assert {r["cells"][1]["status"] for r in comparison["measures"]} == {"failed"}
+
+
+def test_a_saved_factor_count_stays_with_the_rows_it_was_fixed_for(client, three):
+    """The count saved with a dataset and a miner is that miner's: a column of all rows, or of
+    another miner, starts from the standard count instead."""
+    assert client.put(
+        f"/factor-analysis/datasets/{three}/options", json={"miner": "Alpha miner", "n_factors": 5}
+    ).status_code == 204
+    body = {
+        "columns": [
+            {"dataset_id": three},
+            {"dataset_id": three, "miner": "Alpha miner"},
+            {"dataset_id": three, "miner": "Inductive miner"},
+        ]
+    }
+    columns = client.post("/factor-analysis/compare", json=body).json()["columns"]
+    assert [c["n_observations"] for c in columns] == [150, 50, 50]
+    assert [c["settings"] for c in columns] == ["saved"] * 3
+    assert columns[1]["n_factors"] == 5
+    standard = client.post(f"/factor-analysis/datasets/{three}/analyze", json={"miner": "Inductive miner"}).json()
+    assert columns[2]["n_factors"] == standard["n_factors"] != 5
+    assert columns[0]["n_factors"] != 5
+    # A count asked for by the column itself is kept.
+    asked = {"columns": [{"dataset_id": three, "miner": "Inductive miner", "options": {"n_factors": 3}}, body["columns"][1]]}
+    assert client.post("/factor-analysis/compare", json=asked).json()["columns"][0]["n_factors"] == 3
+
+
+def test_the_report_of_a_miner_counts_the_measures_of_the_miner(client, three):
+    report = client.post(f"/factor-analysis/datasets/{three}/export/report", json={"miner": "Inductive miner"}).text
+    assert r"5 \cdot 12 = 60" in report
+    assert r"5 \cdot 13 = 65" not in report

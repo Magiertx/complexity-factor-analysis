@@ -302,7 +302,7 @@ limit is marked `failed` here too.
     "created_at": "2026-10-06T09:12:44.512+00:00",
     "n_observations": 32, "n_measures": 2, "bundled_id": null, "job_id": "a3e04d71-…",
     "inputs": { "files": 32, "measures": ["Size", "Density"], "sample_id": "pdc-sample-models" },
-    "has_options": true } ] }
+    "has_options": true, "options_miner": null } ] }
 ```
 
 - `name_auto` is `true` when no name was given and the server made one up from the inputs,
@@ -312,6 +312,7 @@ limit is marked `failed` here too.
   for a CSV and 0 for a bundled dataset. `measures`, `miners`, `groups` and `sample_id` are the
   choices made at creation, where they apply; for `bundled` and `csv`, `measures` is only there
   if columns were selected.
+- `options_miner` is the miner whose rows the saved options analyse, `null` for all rows.
 - `GET /factor-analysis/datasets/{id}` carries the same `name_auto`, `bundled_id` and
   `inputs`, and `options`: the saved parameters or `null`. A ready dataset also has
   `descriptives`, `measurement` and `miners`, see below.
@@ -744,6 +745,8 @@ on its stored matrix, also with the fit cache. JSON body:
   kind) or `"standard"`, `options` as above, and `miner` (the rows of one miner, as the
   analysis option of the same name). One column each of `bundled_id` and `dataset_id` is a 422,
   as are `"saved"` or a `miner` for a bundled dataset and `"paper"` for one of the session.
+  The saved factor count was fixed for the rows of the miner saved with it (`miner` of the saved
+  options, none for all rows): a `"saved"` column of other rows starts from the standard count.
   This is how the UI compares the miners of a dataset, datasets picked in My datasets, and
   solutions pinned in the loadings step (dataset, miner, factor count and rotation):
 

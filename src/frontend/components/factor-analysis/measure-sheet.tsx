@@ -250,6 +250,12 @@ function SheetBody({
               {dataset.descriptives?.basis === "input"
                 ? t("factor.sheet.values_input", { n: formatNumber(dataset.descriptives.n_rows, locale) })
                 : t("factor.sheet.values_cleaned")}
+              {options.miner && (
+                <>
+                  {" "}
+                  {t("factor.sheet.values_all_miners", { miner: options.miner })}
+                </>
+              )}
             </p>
           </section>
         )}

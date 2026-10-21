@@ -291,11 +291,15 @@ export function hasNames(names: FactorNames | null | undefined): boolean {
 }
 
 /**
- * The solution names belong to: the factor count, the rotation and the assignment rule. A change
- * of any of them clears the names, as they would name other factors.
+ * The solution names belong to: the factor count, the rotation, the assignment rule and the
+ * miner whose rows were analysed. A change of any of them clears the names, as they would name
+ * other factors.
  */
-export function solutionKey(k: number, options: Pick<AnalysisOptions, "rotation" | "assignment_rule">): string {
-  return `${k}|${options.rotation}|${options.assignment_rule}`;
+export function solutionKey(
+  k: number,
+  options: Pick<AnalysisOptions, "rotation" | "assignment_rule" | "miner">,
+): string {
+  return `${k}|${options.rotation}|${options.assignment_rule}|${options.miner ?? ""}`;
 }
 
 /** The names an interpretation suggests, by factor, cut to the longest name allowed. */

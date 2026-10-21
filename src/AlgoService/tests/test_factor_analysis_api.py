@@ -790,3 +790,23 @@ def test_a_bundled_sample_log_is_copied_with_the_time_of_now(client, isolated_jo
     assert kept.stat().st_size == sample.stat().st_size
     assert kept.stat().st_nlink == 1 and abs(kept.stat().st_mtime - time.time()) < 60
 
+
+
+def test_a_recent_upload_of_the_same_name_is_not_replaced(client, isolated_jobs_dir, tmp_path):
+    """A log of a dataset does not overwrite a different recent log of that name; the same log is
+    renewed."""
+    from routes import algorithms
+    from routes import factor_analysis as fa
+
+    user_dir = algorithms.UPLOADED_LOGS_DIR / "session"
+    user_dir.mkdir(parents=True, exist_ok=True)
+    (user_dir / "a.xes").write_text("<log>earlier upload</log>")
+    other = tmp_path / "a.xes"
+    other.write_text("<log>another log</log>")
+    fa._keep_as_recent_logs("session", [{"path": str(other), "label": "a.xes"}])
+    assert (user_dir / "a.xes").read_text() == "<log>earlier upload</log>"
+    same = tmp_path / "same" / "a.xes"
+    same.parent.mkdir()
+    same.write_text("<log>earlier upload</log>")
+    fa._keep_as_recent_logs("session", [{"path": str(same), "label": "a.xes"}])
+    assert (user_dir / "a.xes").read_text() == "<log>earlier upload</log>"

@@ -262,7 +262,8 @@ def _validity_section(
     result: dict[str, Any], params: dict[str, Any], names: list[str], label: _Labels
 ) -> list[str]:
     n = result["n_observations"]
-    p = len(names)
+    # Within a miner, those of its measures that vary there.
+    p = result["miner"]["n_measures"] if result.get("miner") else len(names)
     bartlett = result["bartlett"]
     out = [
         "\\section*{Validity of the Factor Analysis}",

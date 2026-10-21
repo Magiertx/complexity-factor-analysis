@@ -571,6 +571,8 @@ export interface DatasetSummary {
   job_id: string | null;
   inputs: InputsSummary;
   has_options: boolean;
+  /** The miner whose rows the saved options analyse; null for all rows (or without options). */
+  options_miner?: string | null;
 }
 
 export interface CreateDatasetInput {
