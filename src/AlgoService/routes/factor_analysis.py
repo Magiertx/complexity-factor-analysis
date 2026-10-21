@@ -23,7 +23,7 @@ import pandas as pd
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 import jobs_db
 import provenance
@@ -31,7 +31,7 @@ from algorithms._log_io import MAX_DECOMPRESSED_BYTES
 from config import MAX_FILE_SIZE, CodedHTTPException, broadcast_jobs_update, get_session_id, limiter, logger
 from env_config import positive_int, rate_limit
 from factor_analysis import catalog as cat
-from factor_analysis import compute, figures, published, storage
+from factor_analysis import compare, compute, figures, published, storage
 from factor_analysis.descriptives import describe, describe_cleaned
 from factor_analysis.core import (
     COMMUNALITY_THRESHOLDS,
@@ -1417,3 +1417,163 @@ async def export_archive(
 
     archive = await run_in_threadpool(build)
     return _attachment(archive, f"{_slug(meta['name'])}-factor-analysis.zip", "application/zip")
+
+
+# --- comparing analyses -------------------------------------------------------------------
+
+
+class ColumnOptions(BaseModel):
+    """Changes to the settings a column of a comparison starts from. Only what is given
+    changes; ``"n_factors": null`` follows the Kaiser criterion. The assignment rule is the
+    comparison's."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    excluded: list[str] | None = Field(None, max_length=MAX_CSV_COLUMNS)
+    auto_msa_filter: bool | None = None
+    msa_threshold: float | None = Field(None, ge=0.0, le=1.0)
+    bartlett_alpha: float | None = Field(None, gt=0.0, lt=1.0)
+    n_factors: int | None = Field(None, ge=1)
+    rotation: Literal["varimax", "promax", "oblimin", "quartimax", "none"] | None = None
+    loading_threshold: float | None = Field(None, ge=0.0, le=1.0)
+    communality_threshold: float | None = Field(None, ge=0.0, le=1.0)
+
+    def changes(self) -> dict[str, Any]:
+        given = self.model_dump(exclude_unset=True)
+        return {k: v for k, v in given.items() if v is not None or k == "n_factors"}
+
+
+class CompareColumn(BaseModel):
+    """One column of a comparison: a bundled dataset with the settings its paper published
+    ("paper"; the standard ones of its kind if it has none) or the standard ones."""
+
+    bundled_id: str = Field(..., max_length=200)
+    settings: Literal["paper", "standard"] = "paper"
+    options: ColumnOptions | None = None
+    #: The title of the column; the label of the dataset without one.
+    label: str | None = Field(None, max_length=80)
+
+
+class CompareRequest(BaseModel):
+    columns: list[CompareColumn] = Field(..., min_length=compare.MIN_COLUMNS, max_length=compare.MAX_COLUMNS)
+    #: core.ASSIGNMENT_RULES, for every column; Tab. 17 of Important Factors follows "hair".
+    assignment_rule: Literal["largest", "multi", "hair"] = "largest"
+
+
+class CompareExportRequest(CompareRequest):
+    format: Literal["csv", "latex", "zip"] = "csv"
+    #: Name the measures in the LaTeX table by the short codes of the papers, as Tab. 17 does.
+    short_codes: bool = True
+
+
+def _compare_error(code: str, message: str, **params: Any) -> JSONResponse:
+    return JSONResponse(status_code=400, content={"detail": message, "code": code, "params": params})
+
+
+async def _comparison(request: Request, body: CompareRequest) -> dict[str, Any] | JSONResponse:
+    """The comparison of the columns of ``body``, or the response that says why there is none.
+
+    Each column is analysed on the bundled CSV directly, in the slots of the analyses and with
+    the fit cache, so no dataset of a session is made. A column whose analysis fails carries
+    its error; the others are compared without it.
+    """
+    entries = []
+    for column in body.columns:
+        entry = cat.bundled_entry(column.bundled_id)
+        if entry is None:
+            return _compare_error(
+                "compare_unknown_dataset", f"Unknown bundled dataset '{column.bundled_id}'.", dataset=column.bundled_id
+            )
+        entries.append(entry)
+    kinds = sorted({e["kind"] for e in entries})
+    if len(kinds) > 1:
+        return _compare_error(
+            "compare_mixed_kinds", "All columns of a comparison must be of one kind, model or log measures.",
+            kinds=", ".join(kinds),
+        )
+    watch = _Watch(request)
+    # One listener for all columns: it is cancelled before the response goes out.
+    listening = asyncio.create_task(watch.listen())
+    specs: list[dict[str, Any]] = []
+    try:
+        for column, entry in zip(body.columns, entries):
+            data, measures, dropped = await run_in_threadpool(compare.bundled_data, entry["id"])
+            changes = column.options.changes() if column.options else {}
+            params, settings = compare.column_params(entry, column.settings, changes, body.assignment_rule)
+            spec: dict[str, Any] = {
+                "entry": entry,
+                "settings": settings,
+                "options": dataclasses.asdict(params),
+                "measures": list(measures),
+                "dropped": dict(dropped),
+                "label": column.label,
+            }
+            await asyncio.sleep(0)
+            if watch.stale():
+                raise Superseded()
+            try:
+                async with _ANALYSIS_SLOTS:
+                    if watch.stale():
+                        raise Superseded()
+                    result = await run_in_threadpool(run_analysis, data, params, watch.stale)
+            except AnalysisError as e:
+                spec["error"] = {"code": e.code, "message": str(e), "params": e.params}
+            else:
+                spec["result"] = result
+                spec["options"] = effective_params(params, result["n_factors"])
+            specs.append(spec)
+    finally:
+        listening.cancel()
+    return await run_in_threadpool(compare.build, specs, body.assignment_rule)
+
+
+@router.post("/compare")
+@limiter.limit(rate_limit("fa_analyze", "120/minute"))
+async def compare_analyses(request: Request, body: CompareRequest) -> Any:
+    """The factor structures of 2 to 8 analyses of bundled datasets side by side, like Tab. 17
+    of Important Factors: a header per column (n, measures after the MSA filter, KMO, factors,
+    rotation, cumulative variance), every measure with the dimensions the shared assignment
+    rule puts it in per column, and the dimensions per column. The factors of the columns are
+    matched by the measures they share, so that the same dimension has the same number.
+
+    Needs no dataset of the session. A 400 with ``code`` names an unknown dataset or columns of
+    two kinds; a column whose analysis fails has its ``error``.
+    """
+    started = time.perf_counter()
+    try:
+        result = await _comparison(request, body)
+    except Superseded:
+        return _superseded()
+    if isinstance(result, JSONResponse):
+        return result
+    result["elapsed_ms"] = round((time.perf_counter() - started) * 1000, 1)
+    return result
+
+
+@router.post("/compare/export")
+@limiter.limit(rate_limit("fa_analyze", "120/minute"))
+async def export_comparison(request: Request, body: CompareExportRequest) -> Response:
+    """The comparison as CSV (one row per measure, one column per analysis), as a LaTeX
+    tabular laid out like Tab. 17 of Important Factors, or as a ZIP with both, the full result
+    and a manifest."""
+    try:
+        result = await _comparison(request, body)
+    except Superseded:
+        return _superseded()
+    if isinstance(result, JSONResponse):
+        return result
+    stem = "factor-structures"
+    if body.format == "latex":
+        content = compare.dimensions_latex(result, body.short_codes)
+        return _attachment(content, f"{stem}.tex", "application/x-latex; charset=utf-8")
+    if body.format == "zip":
+        # The request as sent, so that posting it again gives the same comparison; the rule and
+        # the labels with their defaults.
+        query = {
+            **body.model_dump(exclude_unset=True, exclude={"format"}),
+            "assignment_rule": body.assignment_rule,
+            "short_codes": body.short_codes,
+        }
+        archive = await run_in_threadpool(compare.comparison_zip, result, query, body.short_codes)
+        return _attachment(archive, f"{stem}.zip", "application/zip")
+    return _attachment(compare.membership_csv(result), f"{stem}.csv", "text/csv; charset=utf-8")
