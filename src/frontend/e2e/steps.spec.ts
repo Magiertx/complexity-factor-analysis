@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 import {
   deleteSessionDatasets,
   expect,
+  expectStep,
   goToStep,
   openBundled,
   pattern,
@@ -90,6 +91,44 @@ test("the tour opens the step of each stop", async ({ page }) => {
   await page.keyboard.press("Escape");
 });
 
+test("the tour keeps its spotlight below the settings row and ends on the step it began on", async ({ page }) => {
+  await page.goto("/");
+  await openBundled(page, "Inductive miner");
+  await goToStep(page, "loadings");
+  await toolbar(page).getByRole("button", { name: text("factor.tour_button") }).click();
+  const next = page.getByRole("button", { name: /^Next \(\d+ of \d+\)$/ });
+  await next.click();
+  await next.click();
+  await expect(page).toHaveURL(/\?step=dataset$/);
+  // The heading the tour points at is not under the row that sticks to the top of the window.
+  const row = page.getByRole("region", { name: text("factor.settings.aria") });
+  await expect
+    .poll(async () => {
+      const heading = await page.locator('[data-tour="fa-dataset"]').boundingBox();
+      const covering = await row.boundingBox();
+      return heading!.y - (covering!.y + covering!.height);
+    })
+    .toBeGreaterThanOrEqual(-1);
+  await page.keyboard.press("Escape");
+  // Back where it began, not on the stop it was left at.
+  await expect(page).toHaveURL(/\?step=loadings$/);
+  await expect(stepSection(page, "loadings")).toBeVisible();
+});
+
+test("an interpretation that waits for a key is a key in the list of steps, not a lock", async ({ page }) => {
+  const status = await (await page.request.get("/api/factor-analysis/interpretation/status")).json();
+  test.skip(status.available, "the server has a key, so there is nothing to wait for");
+  await page.goto("/");
+  await openBundled(page, "Inductive miner");
+  await expectStep(page, "loadings", "done");
+  const link = stepLink(page, "interpretation");
+  // Not disabled like a step that cannot be opened yet, and the tooltip says what it waits for.
+  await expect(link).not.toHaveAttribute("aria-disabled", "true");
+  await expect(link).toHaveAttribute("aria-description", pattern(text("factor.interpretation.state_needs_key")));
+  await expect(link.locator("svg.lucide-key-round")).toBeVisible();
+  await expect(link.locator("svg.lucide-lock")).toHaveCount(0);
+});
+
 test("the toolbar opens Start here and My datasets, and says why a download waits", async ({ page }) => {
   await page.goto("/");
   // Without a dataset the downloads are listed with the reason.
@@ -153,5 +192,28 @@ test.describe("on a phone", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
     await bar.getByRole("button", { name: text("factor.nav.back") }).click();
     await expect(page).toHaveURL(/\?step=dataset$/);
+  });
+
+  test("a step starts at the top of the window, without the page's own sentence before it", async ({ page }) => {
+    await page.goto("/");
+    // The data step keeps the sentence on what the page is for; a step with a dataset has no room for it.
+    await expect(page.getByText(text("factor.model.subtitle"))).toBeVisible();
+    await openBundled(page, "Inductive miner");
+    await expect(page.getByText(text("factor.model.subtitle"))).toBeHidden();
+    const steps = page.getByRole("navigation", { name: text("factor.steps.aria") });
+    await expect.poll(async () => Math.round((await steps.boundingBox())!.y)).toBeLessThanOrEqual(12);
+    // From any scroll position, a step opened by the bar or by Next begins at the top again.
+    await page.mouse.wheel(0, 700);
+    await page.getByRole("navigation", { name: text("factor.nav.aria") }).getByRole("button", { name: text("factor.nav.next") }).click();
+    await expect(page).toHaveURL(/\?step=suitability$/);
+    await expect.poll(async () => Math.round((await steps.boundingBox())!.y)).toBeLessThanOrEqual(12);
+  });
+
+  test("the bottom bar says why Next waits", async ({ page }) => {
+    await page.goto("/");
+    const bar = page.getByRole("navigation", { name: text("factor.nav.aria") });
+    await expect(bar).toContainText(text("factor.nav.locked.no_dataset"));
+    await expect(bar).not.toContainText(text("factor.nav.position", { n: 1, total: 6 }));
+    await expect(bar.getByRole("button", { name: text("factor.nav.next") })).toHaveAttribute("aria-disabled", "true");
   });
 });
