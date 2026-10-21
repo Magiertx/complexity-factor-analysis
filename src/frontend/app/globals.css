@@ -321,6 +321,13 @@
     color: rgb(var(--muted));
     font-weight: 500;
   }
+  /* On a phone, a list that should not scroll sideways (the measures of step 3) keeps its cells
+     closer to their sides. */
+  @media (max-width: 639.98px) {
+    .data-table.data-table--tight :where(th, td) {
+      padding-inline: 8px;
+    }
+  }
   /* The header sticks under the settings row of a wide screen; in a box of its own, at its top. */
   @media (min-width: 1024px) {
     .table-frame {

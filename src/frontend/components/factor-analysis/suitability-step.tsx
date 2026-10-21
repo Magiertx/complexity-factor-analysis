@@ -347,7 +347,7 @@ function MeasureList({ dataset, analysis, options, onOptions, measureName, measu
       )}
 
       <TableFrame label={t("factor.suitability.msa_heading")}>
-        <table className="data-table">
+        <table className="data-table data-table--tight">
           <caption className="sr-only">{t("factor.suitability.msa_heading")}</caption>
           <thead>
             <tr>
@@ -502,9 +502,9 @@ function MeasureRow({
       <td className={cn("num", status === "below" || status === "removed" ? "text-warn-ink" : undefined)}>
         {msa === null || excluded ? <span className="text-muted">{NO_VALUE}</span> : formatNumber(msa, locale, 2)}
       </td>
-      {/* On a phone the status is a word or two, so a row stays one line; the partners of a
+      {/* On a phone the status is a word or two, so a row mostly stays one line; the partners of a
           dependent measure are in the tooltip and, for a screen reader, in the row. */}
-      <td className="max-sm:whitespace-nowrap">
+      <td>
         {status === "excluded" ? (
           t("factor.suitability.status_excluded")
         ) : status === "removed" ? (
