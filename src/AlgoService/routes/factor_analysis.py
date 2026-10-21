@@ -668,6 +668,9 @@ async def _create_dataset(
         shutil.rmtree(storage.dataset_dir(session_id, dataset_id), ignore_errors=True)
         raise
 
+    if source == "logs":
+        await run_in_threadpool(_keep_as_recent_logs, session_id, spec["inputs"])
+
     job_params = {"dataset_id": dataset_id, "source": source, **chosen}
     if given:
         # Without one, the UI names the job like the dataset, in its own language.
@@ -698,6 +701,33 @@ async def _create_dataset(
         background_tasks.add_task(run_dataset_task, job_id, session_id, dataset_id, spec)
 
     return {"dataset_id": dataset_id, "status": "computing", "job_id": job_id}
+
+
+def _keep_as_recent_logs(session_id: str, inputs: list[dict[str, str]]) -> None:
+    """Keep the logs of a dataset among the recent logs of the session, where the page of a single
+    log (/inspect) finds them: a log of a dataset can be looked at as long as it is one of the
+    newest uploads (``routes.algorithms.cleanup_uploaded_logs`` keeps ten). A log gets its own
+    name, without the ".gz" of a packed one, which is the name of the row of the dataset too;
+    one that was renamed to be unique ("a.xes (2)") or whose name the list hides is not kept.
+    Best effort: the dataset does not depend on it."""
+    from routes import algorithms
+
+    try:
+        user_dir = algorithms.UPLOADED_LOGS_DIR / session_id
+        user_dir.mkdir(parents=True, exist_ok=True)
+        for item in inputs:
+            name = item["label"][:-3] if item["label"].lower().endswith(".xes.gz") else item["label"]
+            if not name.lower().endswith(".xes") or name.startswith("tmp"):
+                continue
+            target = user_dir / name
+            target.unlink(missing_ok=True)
+            try:
+                os.link(item["path"], target)
+            except OSError:
+                shutil.copyfile(item["path"], target)
+        algorithms.cleanup_uploaded_logs(session_id)
+    except Exception:
+        logger.exception("Could not keep the logs of a dataset among the recent logs")
 
 
 def _validate_dataset_id(dataset_id: str) -> str:

@@ -739,3 +739,37 @@ def test_aborted_job_fails_the_dataset(client, monkeypatch):
     asyncio.run(jobs_db.set_job_failed(body["job_id"], "boom"))
     d = client.get(f"/factor-analysis/datasets/{body['dataset_id']}").json()
     assert d["status"] == "failed" and d["error"] == "boom"
+
+
+def test_the_logs_of_a_dataset_are_kept_among_the_recent_logs(client, fake_miner, xes_files):
+    """The page of a single log finds the logs a dataset was computed from, under the names of the
+    rows, as long as they are among the newest uploads."""
+    gz = gzip.compress(xes_files["seq.xes"])
+    files = [("files", ("seq.xes.gz", gz, "application/gzip")), ("files", ("loop.xes", xes_files["loop.xes"], "application/xml"))]
+    r = _post(client, kind="model", source="logs", miners=[fake_miner], measures=["Size", "Token split"], files=files)
+    assert r.status_code == 200, r.text
+    _wait_ready(client, r.json()["dataset_id"])
+    recent = {log["name"]: log for log in client.get("/recent-logs").json()}
+    # The packed log without its ".gz", as plain XML.
+    assert set(recent) == {"seq.xes", "loop.xes"}
+    assert recent["loop.xes"]["size_bytes"] == len(xes_files["loop.xes"])
+    # A recent log is a log the overview of /inspect can read.
+    stats = client.post("/log-stats", data={"recent_log_id": "seq.xes"})
+    assert stats.status_code == 200, stats.text
+    assert stats.json()["stats"]["num_traces"] > 0
+
+
+def test_only_the_newest_ten_logs_of_a_dataset_stay_and_nothing_else_is_kept(client, monkeypatch, xes_files):
+    from routes import factor_analysis as fa
+
+    monkeypatch.setattr(fa, "MAX_LOG_FILES", 20)
+    names = [f"log{i:02d}.xes" for i in range(12)]
+    files = [("files", (n, xes_files["seq.xes"], "application/xml")) for n in names]
+    files.append(("files", ("log00.xes", xes_files["seq.xes"], "application/xml")))
+    files.append(("files", ("tmp_scratch.xes", xes_files["seq.xes"], "application/xml")))
+    r = _post(client, kind="log", source="logs", groups=["simple_stats"], files=files)
+    assert r.status_code == 200, r.text
+    kept = [log["name"] for log in client.get("/recent-logs").json()]
+    # The second "log00.xes" is named "log00.xes (2)" in the dataset, which is no log name.
+    assert len(kept) == 10 and all(n.endswith(".xes") for n in kept)
+    assert "log00.xes (2)" not in kept and "tmp_scratch.xes" not in kept
