@@ -1578,7 +1578,7 @@
     },
     "factor_named": "Faktor {i} „{name}“",
     "help": {
-      "names": "Die Namen, die du den Faktoren dieser Lösung deines eigenen Datensatzes gegeben hast, Faktor für Faktor; ein Faktor ohne Namen zeigt nur seine Nummer. Die Dimensionen werden über die Analysen hinweg zugeordnet, die Namen bleiben bei der jeweiligen Analyse.",
+      "names": "Die Namen, die du den Faktoren dieser Lösung deines eigenen Datensatzes gegeben hast, Faktor für Faktor; ein Faktor ohne Namen wird ausgelassen. Die Dimensionen werden über die Analysen hinweg zugeordnet, die Namen bleiben bei der jeweiligen Analyse.",
       "columns": "Jede Kachel ist eine Analyse: ein veröffentlichter Datensatz mit den Einstellungen seines Papers oder einer deiner Datensätze mit den Einstellungen, die mit ihm gespeichert sind, angeheftet im Ladungen-Schritt oder gewählt unter Meine Datensätze. Wähle {min} bis {max}. Die linke behält die Nummern ihrer Faktoren.",
       "result": "Die Dimensionen jedes Datensatzes unter der gewählten Regel. Die Faktoren der Datensätze werden so zugeordnet, dass möglichst viele gemeinsame Maße dieselbe Nummer bekommen; sind zwei Zuordnungen gleich gut, entscheiden die ähnlicheren Ladungen.",
       "n": "Beobachtungen: die Netze des Datensatzes, eines je Log.",

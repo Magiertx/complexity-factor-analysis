@@ -756,20 +756,18 @@ function MembershipMatrix({
   );
 }
 
-/** The names of a column's factors in the order of the factors; a factor without one shows its number, faded. */
+/** The names of a column's factors, each with the number of its factor, in the order of the factors; a factor without a name is left out. */
 function FactorNameList({ names, count }: { names: (string | null)[] | null | undefined; count: number }) {
-  if (!names || !names.some(Boolean)) return <span className="text-muted">–</span>;
+  const named = Array.from({ length: count }, (_, f) => ({ f, name: factorName(names, f) })).filter((x) => x.name);
+  if (named.length === 0) return <span className="text-muted">–</span>;
   return (
-    <ol className="space-y-0.5">
-      {Array.from({ length: count }, (_, f) => {
-        const name = factorName(names, f);
-        return (
-          <li key={f} className={cn("text-xs leading-snug", !name && "text-muted")}>
-            <span className="font-mono tabular-nums text-muted">F{f + 1}</span> {name ?? "–"}
-          </li>
-        );
-      })}
-    </ol>
+    <ul className="space-y-0.5">
+      {named.map(({ f, name }) => (
+        <li key={f} className="text-xs leading-snug">
+          <span className="font-mono tabular-nums text-muted">F{f + 1}</span> {name}
+        </li>
+      ))}
+    </ul>
   );
 }
 

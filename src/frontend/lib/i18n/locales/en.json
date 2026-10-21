@@ -1578,7 +1578,7 @@
     },
     "factor_named": "Factor {i} “{name}”",
     "help": {
-      "names": "The names you gave the factors of this solution of your own dataset, factor by factor; a factor without a name shows only its number. The dimensions are matched across the analyses, the names stay with each analysis.",
+      "names": "The names you gave the factors of this solution of your own dataset, factor by factor; a factor without a name is left out. The dimensions are matched across the analyses, the names stay with each analysis.",
       "columns": "Each tile is an analysis: a published dataset with the settings of its paper, or one of your datasets with the settings saved with it, pinned in the loadings step or chosen in My datasets. Choose {min} to {max}. The leftmost one keeps the numbers of its factors.",
       "result": "The dimensions of every dataset under the chosen rule. The factors of the datasets are matched so that most shared measures get the same number; where two matches are equally good, the more alike loadings decide.",
       "n": "Observations: the nets of the dataset, one per log.",
