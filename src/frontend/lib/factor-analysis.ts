@@ -544,7 +544,7 @@ export function progressPercent(progress: number | undefined): number | null {
 }
 
 /** The loadings table as CSV or LaTeX, the whole analysis as a ZIP, or its LaTeX report. */
-export type ExportFormat = "csv" | "latex" | "zip" | "report";
+export type ExportFormat = "csv" | "latex" | "zip" | "report" | "methods" | "bibtex";
 
 export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);

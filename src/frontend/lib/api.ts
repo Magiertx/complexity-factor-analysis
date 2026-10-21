@@ -1025,6 +1025,39 @@ export async function exportReport(
   return attachment(r, "report.tex");
 }
 
+/** The methods paragraph of an analysis, in LaTeX with cite keys, and the keys it cites. */
+export interface MethodsText {
+  language: InterpretationLanguage;
+  text: string;
+  citation_keys: string[];
+}
+
+/** The methods paragraph of the analysis these options describe, in `language`. */
+export async function fetchMethods(id: string, options: AnalyzeOptions, language: InterpretationLanguage): Promise<MethodsText> {
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/export/methods`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...options, language }),
+  });
+  if (!r.ok) throw await httpError(r, "The methods text could not be built");
+  return r.json();
+}
+
+/** The BibTeX entries of the keys the methods paragraph of the analysis cites. */
+export async function exportBibtex(
+  id: string,
+  options: AnalyzeOptions,
+  language: InterpretationLanguage,
+): Promise<{ blob: Blob; filename: string }> {
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/export/bibtex`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...options, language }),
+  });
+  if (!r.ok) throw await httpError(r, "Export failed");
+  return attachment(r, "references.bib");
+}
+
 export type FigureName = "scree" | "loadings" | "correlations";
 export type FigureFormat = "svg" | "png";
 /** The rows of the loadings heatmap: grouped by factor as the UI shows them, or as in the dataset. */
