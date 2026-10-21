@@ -62,6 +62,21 @@ for (const scheme of ["light", "dark"] as const) {
     });
   }
 
+  test(`axe finds no serious problem in the three looks of the comparison (${scheme})`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: scheme });
+    // The four miners and the Inductive miner with six factors beside them: a tile of its own.
+    await page.goto(
+      "/compare?cols=comfy-paper-alpha-miner,comfy-paper-directly-follows-miner,comfy-paper-inductive-miner,comfy-paper-inductive-miner~k6,comfy-paper-hybrid-ilp-miner&rule=hair",
+    );
+    await expect(page.locator("table.data-table").first()).toBeVisible({ timeout: FIT_TIMEOUT });
+    await expect(page.getByRole("status").filter({ hasText: text("compare.computing") })).toHaveCount(0, { timeout: FIT_TIMEOUT });
+    for (const look of ["matrix", "dimensions", "pairs"]) {
+      await page.getByRole("button", { name: text(`compare.look.${look}`) }).click();
+      await expect(page.locator("table.data-table").first()).toBeVisible();
+      expect(await seriousProblems(page), look).toEqual([]);
+    }
+  });
+
   test(`axe finds no serious problem on any step of an open analysis (${scheme})`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: scheme });
     await page.goto("/?bundled=comfy-paper-inductive-miner&preset=published");
