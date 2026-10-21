@@ -105,18 +105,20 @@ Details in [Factor analysis](#factor-analysis) below.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/factor-analysis/catalog?kind=model` or `kind=log` | Measures, miners (model) or feature groups (log), each with `slow: true` where it can take long, defaults, bundled datasets with the settings they were published with, sample inputs, and the upload `limits`. |
+| GET | `/factor-analysis/catalog?kind=model` or `kind=log` | Measures with the `short` codes of the papers, miners (model) or feature groups (log), each with `slow: true` where it can take long, defaults, bundled datasets with the settings they were published with, sample inputs, and the upload `limits`. |
 | GET | `/factor-analysis/limits` | Files and bytes one dataset request may carry on this server: `{"max_log_files": 50, "max_pnml_files": 200, "max_file_bytes": 104857600, "max_total_bytes": 524288000}`. The two file counts are set by `MAX_LOG_FILES` and `MAX_PNML_FILES`. |
 | POST | `/factor-analysis/datasets` | Create a dataset from bundled data or a CSV (ready at once), or from logs or PNML files (background job); a bundled dataset the session has already is opened again. |
 | GET | `/factor-analysis/datasets?kind=model` | The datasets of your session, newest first; `kind` is optional. |
-| GET | `/factor-analysis/datasets/{id}` | Status, progress, inputs, saved options, measures, dropped measures and the first 2000 rows. |
+| GET | `/factor-analysis/datasets/{id}` | Status, progress, inputs, saved options, measures, dropped measures and the first 2000 rows; once ready, the `descriptives` of every measure and, for a computed dataset, its run times and input sizes (`measurement`). |
 | PUT | `/factor-analysis/datasets/{id}/options` | Keep the parameters of an analysis with the dataset. |
 | DELETE | `/factor-analysis/datasets/{id}` | Delete a dataset with its job and cached interpretations. |
 | DELETE | `/factor-analysis/datasets?kind=model` | Delete every dataset of your session, or every one of a kind. |
 | GET | `/factor-analysis/datasets/{id}/download` | The cleaned matrix as CSV. |
-| POST | `/factor-analysis/datasets/{id}/analyze` | Bartlett, KMO with the MSA filter, eigenvalues with the Kaiser criterion and parallel analysis, factor analysis, factor groups by an assignment rule, and the comparison with published numbers. |
+| POST | `/factor-analysis/datasets/{id}/analyze` | Bartlett, KMO with the MSA filter, eigenvalues with the Kaiser criterion and parallel analysis, factor analysis, factor groups by an assignment rule, the comparison with published numbers, and the `timings` of the parts. |
 | POST | `/factor-analysis/datasets/{id}/export` | The loadings table as CSV or LaTeX. |
-| POST | `/factor-analysis/datasets/{id}/export/zip` | The whole analysis as a ZIP archive: result, matrix, tables, parameters, library versions and provenance. |
+| POST | `/factor-analysis/datasets/{id}/export/report` | The analysis as a LaTeX report built like ComFy's (`report.tex`). |
+| POST | `/factor-analysis/datasets/{id}/export/figure` | The scree plot or the loadings heatmap as SVG or PNG (300 dpi) in print style. |
+| POST | `/factor-analysis/datasets/{id}/export/zip` | The whole analysis as a ZIP archive: result, matrix, tables, report, figures, descriptive statistics, run times, parameters, library versions and provenance. |
 | GET | `/factor-analysis/interpretation/status` | Whether factors can be interpreted by Claude, and with which model. |
 | POST | `/factor-analysis/datasets/{id}/interpret` | Names and short interpretations of the factors by Claude (optional, needs an API key on the server). |
 
@@ -180,6 +182,13 @@ There are two kinds, each with its own catalog:
   are discovered from logs (through ProM4Py) or one uploaded PNML file.
 - `log`: event-log measures computed with [feeed](https://github.com/andreamalhera/feeed), in
   the feature groups of ComFy for log measures. A row is one log.
+
+Every measure of the catalog has a `short` code, as the papers print it in tables and
+figures: the codes of Important Factors for the model measures (`CNC`, `dens`, `mcd`, ...; the
+four measures the paper leaves out have codes of the tool in the same style: `CC`, `depth`,
+`diam`, `cyc`), and the codes of the LaTeX macros of ComFy for log measures for the 146 feeed
+features (`mag` for `n_events`, `TL-min` for `trace_len_min`, ...). The report and the figures
+use them with `"short_codes": true`; the UI switches between them and the names.
 
 A dataset belongs to the session that created it and is kept on the server next to the job
 artifacts (30 per session; a session unused for a week is removed). A dataset removed for
@@ -293,7 +302,45 @@ limit is marked `failed` here too.
   choices made at creation, where they apply; for `bundled` and `csv`, `measures` is only there
   if columns were selected.
 - `GET /factor-analysis/datasets/{id}` carries the same `name_auto`, `bundled_id` and
-  `inputs`, and `options`: the saved parameters or `null`.
+  `inputs`, and `options`: the saved parameters or `null`. A ready dataset also has
+  `descriptives` and `measurement`, see below.
+
+`descriptives` describes every measure as ComFy's report does (`FactorAnalysis.perform_factor_analysis`):
+pandas' mean, median, standard deviation with ddof = 1, minimum and maximum over every
+observation of the data as collected, before cleaning, with missing values left out. A
+measure that cleaning drops for a non-numeric value is left out; one it drops for another
+reason is described, with the reason in `dropped`. `basis` is `input`, or `cleaned` for an
+uploaded dataset stored before the statistics were kept, of which only the cleaned matrix is
+left to describe.
+
+```json
+{ "basis": "input", "n_rows": 288, "measures": [
+  { "measure": "Size", "n": 288, "mean": 71.684028, "median": 56.0, "std": 36.639797,
+    "min": 34.0, "max": 197.0, "dropped": null },
+  { "measure": "Number of empty sequence flows", "n": 288, "mean": 0.0, "median": 0.0,
+    "std": 0.0, "min": 0.0, "max": 0.0, "dropped": "constant" } ] }
+```
+
+`measurement` is `null` for a bundled or uploaded matrix. For a dataset the tool computed from
+logs or PNML files it holds the wall time (seconds, `time.perf_counter`) of every stage and the
+size of every input, measured while the job ran: `inputs` with `read_s` and, for a log,
+`events`, `traces`, `variants` and `activities`, for a net its `net` (`places`, `transitions`,
+`arcs`); `observations`, one per row of the dataset, with `discovery_s` (including the wait
+for ProM4Py while other jobs use it) and `discovery_run_s` (the call alone) for a mined net,
+its `net`, the seconds of each measure (model) or feature group (log) in `stages` and their
+sum in `measures_s` or `features_s`; and `total_s`. An input or observation that failed has an
+`error`. A log is read once for all its miners. The sizes come from the log as read, so nothing
+is read twice; feeed's features are computed one by one as its `extract_features` does.
+
+```json
+{ "kind": "model", "source": "logs", "unit": "seconds", "total_s": 41.2,
+  "inputs": [ { "input": "pdc2025_02001100.xes", "read_s": 0.31, "events": 13784,
+    "traces": 1000, "variants": 412, "activities": 14 } ],
+  "observations": [ { "observation": "pdc2025_02001100.xes / Inductive miner",
+    "input": "pdc2025_02001100.xes", "miner": "Inductive miner", "discovery_s": 2.4,
+    "discovery_run_s": 2.1, "net": { "places": 21, "transitions": 30, "arcs": 70 },
+    "stages": { "Size": 0.0004, "…": 0.01 }, "measures_s": 0.52 } ] }
+```
 
 `PUT /factor-analysis/datasets/{id}/options` takes the body of `analyze` and keeps it with the
 dataset, every field filled in, so that a client reopening the dataset can start from its last
@@ -381,7 +428,7 @@ chi-square reflects the floor more than the data), `kmo` (overall and per measur
 `factor_count`, `n_factors`, the thresholds used, `loadings` (measure → one value per factor),
 `communalities`, `uniquenesses`, `variance`, `assignment_rule`, `assignment`, `factors`,
 `unassigned`, `unassigned_details`, `cross_loadings`, `published_match`, `warnings`,
-`warning_details` and `elapsed_ms`.
+`warning_details`, `timings` and `elapsed_ms`.
 
 ```json
 { "factor_count": { "kaiser": 2, "parallel_analysis": 2, "eigenvalues_random": [1.404, 1.264, "…"],
@@ -441,6 +488,11 @@ chi-square reflects the floor more than the data), `kmo` (overall and per measur
   `_note` are those of the catalog.
 - `elapsed_ms` is the time the server spent on the request, the wait for a free slot
   included.
+- `timings` gives the wall time in seconds of the parts of the analysis: `suitability_s`
+  (cleaning of the exclusions, Bartlett, KMO and the MSA filter), `parallel_analysis_s`,
+  `fit_s` and `total_s`. The random eigenvalues of parallel analysis and the fit are cached;
+  `parallel_analysis_cached` and `fit_cached` say whether this request took them from the
+  cache, in which case their seconds are those of the computation that filled it.
 - `warnings` are English sentences; `warning_details` gives each as `{code, message, params}`:
   `bartlett_not_significant`, `kmo_low`, `small_sample` (fewer than 5 observations per
   measure), `singular` (linearly dependent measures), `not_identified` (more factors than the
@@ -480,13 +532,42 @@ measure on a factor, as the dimension tables of Important Factors list them, wit
 naming the measures in no factor and why. The CSV keeps its columns; the assignment of each
 measure is in `assignment.csv` of the ZIP.
 
+`POST /factor-analysis/datasets/{id}/export/report` takes the same body plus `"language":
+"en" | "de"` and `"short_codes": true | false` (default `false`) and returns
+`<dataset name>-report.tex`, a LaTeX report built like `report-<miner>.tex` of ComFy's
+`LatexExporter`, in its order and table style: the miners (or the source) and the measures,
+the validity of the analysis (sample size, Bartlett's chi-square and p-value, the MSA of every
+measure left and of every removed one with the round of the filter), the scree plot with
+parallel analysis and the Kaiser line and a table of the eigenvalues with their share of the
+variance (eigenvalue / p, the series ComFy plots), the descriptive statistics with six
+decimals, the loadings with four (light grey where a loading does not count, bold where the
+assignment rule put the measure, with the communality and the sums of squares), the
+communalities as a bar chart (up to 40 measures), the factor correlations of an oblique
+rotation, the dimensions the rule forms, and the settings and provenance. With `short_codes`
+the measures are named by the codes of the papers, for log measures as C with the code as
+index. Factors are named after an interpretation stored for exactly this analysis in
+`language`, if there is one; the report never asks for one. It compiles with pdflatex
+(booktabs, longtable, array, amsmath, tikz, pgfplots and paralist). Under the paper settings,
+the report of a bundled Important Factors dataset prints the numbers of the published ComFy
+report to the decimals it prints them with (`tests/test_report.py`).
+
+`POST /factor-analysis/datasets/{id}/export/figure` takes the same body plus `"figure":
+"scree" | "loadings"`, `"format": "svg" | "png"`, `"short_codes"` and `"order": "factor" |
+"dataset"` (the rows of the heatmap: grouped by factor as the UI shows them, or in the order of
+the dataset) and returns `<dataset name>-<figure>.svg` or `.png`. Both are drawn by matplotlib
+in a print style, whatever the theme of the UI: white background, 8 pt text at the text width
+of a CEUR page (15.9 cm), blue for positive and orange for negative loadings, the loadings that
+do not count left white, the assigned ones bold. The SVG keeps its text as text and is the same
+file for the same analysis; the PNG has 300 dpi.
+
 `POST /factor-analysis/datasets/{id}/export/zip` takes the same body plus `"language": "en" |
-"de"` (default `en`) and returns `<dataset name>-factor-analysis.zip`, everything needed to
-report or reproduce the analysis. Its errors are those of `analyze`.
+"de"` (default `en`) and `"short_codes"` (default `false`, for the report and the figures), and
+returns `<dataset name>-factor-analysis.zip`, everything needed to report or reproduce the
+analysis. The errors of these exports are those of `analyze`.
 
 | File | Content |
 |------|---------|
-| `manifest.json` | `app`, `created_at`, `tool` (`name`, `version` and `commit` of this tool, `null` where not recorded), `dataset` (`id`, `name`, `kind`, `source`, `bundled_id`; `collection`, `citation` and `license` for a bundled dataset, else `null`; `inputs`, `n_observations`, the `measures` left after cleaning, the `dropped` ones as `{name, reason}` and `provenance`, see below), `analysis_params` (the parameters used, with the factor count and rotation of the analysis, the thresholds of the kind and the `assignment_rule`; a single factor is not rotated), `analysis` (`method` minres of `library` factor_analyzer, the upstream code it `follows` with commits, the `assignment_rule` and the `assignment` as the result has it, the random `seed` 20261012 of parallel analysis, and `factor_count`: the factor count `used`, the `kaiser` and `parallel_analysis` suggestions, `method`, `seed`, `simulations` and `percentile`), `published` (only if the analysis used the `published_options` of a bundled dataset: these `options`, their `source` and `scope` and the `match`, as `published_match`), `libraries` (versions of factor_analyzer, numpy, pandas, scipy and scikit-learn) and `files` (`{name, description}` of each file). |
+| `manifest.json` | `app`, `created_at`, `tool` (`name`, `version` and `commit` of this tool, `null` where not recorded), `dataset` (`id`, `name`, `kind`, `source`, `bundled_id`; `collection`, `citation` and `license` for a bundled dataset, else `null`; `inputs`, `n_observations`, the `measures` left after cleaning, the `dropped` ones as `{name, reason}` and `provenance`, see below), `analysis_params` (the parameters used, with the factor count and rotation of the analysis, the thresholds of the kind and the `assignment_rule`; a single factor is not rotated), `analysis` (`method` minres of `library` factor_analyzer, the upstream code it `follows` with commits, the `assignment_rule` and the `assignment` as the result has it, the random `seed` 20261012 of parallel analysis, and `factor_count`: the factor count `used`, the `kaiser` and `parallel_analysis` suggestions, `method`, `seed`, `simulations` and `percentile`), `analysis_timings` (the `timings` of the analysis), `measure_labels` (`names` or `short_codes`, as the report and the figures name the measures), `measurement` (only for a computed dataset: its run times and input sizes, as the dataset has them), `published` (only if the analysis used the `published_options` of a bundled dataset: these `options`, their `source` and `scope` and the `match`, as `published_match`), `libraries` (versions of factor_analyzer, numpy, pandas, scipy and scikit-learn) and `files` (`{name, description}` of each file). |
 | `README.txt` | The files, how to reproduce the analysis in the UI or with factor_analyzer, and the provenance in short. |
 | `analysis.json` | The response of `analyze` for these parameters. |
 | `dataset.csv` | The cleaned matrix, the same file as `.../download`. |
@@ -495,6 +576,11 @@ report or reproduce the analysis. Its errors are those of `analyze`.
 | `structure.csv`, `factor-correlations.csv` | Oblique rotations only: the structure matrix and the factor correlations. |
 | `eigenvalues.csv` | `factor`, `eigenvalue` and `parallel_analysis` (the random eigenvalue it is compared with), largest first. |
 | `msa.csv` | `measure`, `msa`, `status` for every measure of the dataset: `used`, `removed in step k` by the MSA filter (with the MSA of that step) or `excluded` (no MSA). |
+| `report.tex` | The LaTeX report as `.../export/report` returns it. |
+| `figures/scree.svg`, `figures/loadings.svg` | The figures as `.../export/figure` returns them as SVG. |
+| `descriptives.csv` | `measure`, `n`, `mean`, `median`, `std`, `min`, `max` and `dropped` for every measure, as `descriptives` of the dataset. |
+| `inputs.csv` | Only for a computed dataset: one row per observation with `observation`, `input`, `miner`, `events`, `traces`, `variants`, `activities`, `places`, `transitions`, `arcs`, `read_s`, `discovery_s`, `discovery_run_s`, `measures_s` or `features_s`, and `error`. |
+| `stages.csv` | Only for a computed dataset: `observation`, `stage` (a measure or a feature group) and `seconds`. |
 | `interpretation.<language>.json` | Only if an interpretation of exactly these parameters is cached or precomputed in that language: the stored entry with its model, prompt version and parameters. The export never asks for a new one. |
 
 `dataset.provenance` says how the dataset was made, as recorded when it was created: `kind`
