@@ -225,3 +225,48 @@ test("the help icon opens the user guide", async ({ page }) => {
   await expect(guide.getByRole("heading", { level: 2, name: text("guide.export.title") })).toBeInViewport();
   await guide.close();
 });
+
+for (const language of ["en", "de"] as const) {
+  test.describe(`methods text (${language})`, () => {
+    test.use({ language });
+
+    test("the methods text is copied with the numbers on screen and its BibTeX is downloaded", async ({ page }) => {
+      // The clipboard is stubbed: the text is kept for the test to read.
+      await page.addInitScript(() => {
+        Object.defineProperty(navigator, "clipboard", {
+          configurable: true,
+          value: { writeText: async (value: string) => ((window as unknown as { __copied: string }).__copied = value) },
+        });
+      });
+      await page.goto("/");
+      await openBundled(page, "Inductive miner", language);
+      await expectStep(page, "loadings", "done", language);
+      await goToStep(page, "suitability", language);
+      // The numbers of the suitability step on screen.
+      const suitability = stepSection(page, "suitability");
+      const shown = (await suitability.innerText()).replace(/\s+/g, " ");
+      await chooseDownload(page, "factor.toolbar.export_methods", language);
+      await expect(page.getByRole("status").filter({ hasText: text("factor.toolbar.methods_copied", {}, language) })).toBeVisible();
+      const copied = await page.evaluate(() => (window as unknown as { __copied: string }).__copied);
+      const kmo = language === "de" ? "0,75" : "0.75";
+      const chi = language === "de" ? "6.822,4" : "6822.4";
+      // The decimal comma in German; the KMO and chi-square of the page are those of the text.
+      expect(shown).toContain(kmo);
+      expect(shown).toContain(language === "de" ? "6.822,4" : "6,822.4");
+      expect(copied).toContain(kmo);
+      expect(copied).toContain(`$\\chi^2(`);
+      expect(copied).toContain(`= ${chi}$`);
+      expect(copied).toContain("\\cite{schalk2026important}");
+      expect(copied).toContain(language === "de" ? "Der Datensatz" : "The dataset");
+      const keys = [...copied.matchAll(/\\cite\{([^}]*)\}/g)].flatMap((m) => m[1].split(","));
+
+      const download = page.waitForEvent("download");
+      await chooseDownload(page, "factor.toolbar.export_bibtex", language);
+      const bib = readFileSync(await downloaded(await download), "utf8");
+      const entries = [...bib.matchAll(/^@\w+\{([^,]+),/gm)].map((m) => m[1]);
+      // Exactly the keys the text cites, each once.
+      expect([...new Set(keys)].sort()).toEqual([...entries].sort());
+      expect(bib).toContain("doi = {10.1007/BF02291575}");
+    });
+  });
+}
