@@ -11,9 +11,10 @@ const COPIED_MS = 2000;
 /**
  * Copies a link that opens the dataset with the current settings and on the step on screen.
  * Without clipboard access (plain http on another host) it shows the link in a field to copy by
- * hand. For own data it stays focusable but inactive, and its tooltip says why.
+ * hand. For own data it stays focusable but inactive, and its tooltip says why. A page that
+ * links to something else than a dataset says what in `more`.
  */
-export function CopyLink({ query }: { query: string | null }) {
+export function CopyLink({ query, more }: { query: string | null; more?: string }) {
   const t = useT();
   const [copied, setCopied] = useState(false);
   const [manual, setManual] = useState<string | null>(null);
@@ -46,7 +47,7 @@ export function CopyLink({ query }: { query: string | null }) {
         ref={buttonRef}
         icon={copied ? Check : Link2}
         name={t("factor.link.copy")}
-        more={t("factor.link.copy_title")}
+        more={more ?? t("factor.link.copy_title")}
         reason={query ? null : t("factor.link.own_data")}
         onClick={copy}
         aria-expanded={manual !== null ? true : undefined}

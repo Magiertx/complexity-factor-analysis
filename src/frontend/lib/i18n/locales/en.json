@@ -1413,6 +1413,7 @@
     "same_as": "the same loadings as {other}.",
     "column_notes": "Notes on the datasets",
     "codes_more": "Names the measures by the codes of the papers, such as CNC or dens, in the tables and the LaTeX table. The full name stays in the tooltip.",
+    "link_more": "Copy a link that opens this comparison: the datasets and the rule",
     "header": {
       "group": "Analysis",
       "n": "n",
@@ -1423,7 +1424,7 @@
       "variance": "Variance explained"
     },
     "help": {
-      "columns": "Each tile is a published dataset, analysed with the settings of its paper. Choose {min} to {max}. The first four are the miners of Tab. 17; the first one chosen keeps the numbers of its factors.",
+      "columns": "Each tile is a published dataset, analysed with the settings of its paper. Choose {min} to {max}. The first four are the miners of Tab. 17; the leftmost one keeps the numbers of its factors.",
       "result": "The dimensions of every dataset under the chosen rule. The factors of the datasets are matched so that most shared measures get the same number; where two matches are equally good, the more alike loadings decide.",
       "n": "Observations: the nets of the dataset, one per log.",
       "measures": "The measures left after cleaning and the MSA filter, of those in the dataset.",

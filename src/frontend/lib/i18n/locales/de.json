@@ -1413,6 +1413,7 @@
     "same_as": "dieselben Ladungen wie {other}.",
     "column_notes": "Hinweise zu den Datensätzen",
     "codes_more": "Nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder dens, in den Tabellen und in der LaTeX-Tabelle. Der volle Name steht im Tooltip.",
+    "link_more": "Einen Link kopieren, der diesen Vergleich öffnet: die Datensätze und die Regel",
     "header": {
       "group": "Analyse",
       "n": "n",
@@ -1423,7 +1424,7 @@
       "variance": "Erklärte Varianz"
     },
     "help": {
-      "columns": "Jede Kachel ist ein veröffentlichter Datensatz, analysiert mit den Einstellungen seines Papers. Wähle {min} bis {max}. Die ersten vier sind die Miner aus Tab. 17; der erste gewählte behält die Nummern seiner Faktoren.",
+      "columns": "Jede Kachel ist ein veröffentlichter Datensatz, analysiert mit den Einstellungen seines Papers. Wähle {min} bis {max}. Die ersten vier sind die Miner aus Tab. 17; der linke behält die Nummern seiner Faktoren.",
       "result": "Die Dimensionen jedes Datensatzes unter der gewählten Regel. Die Faktoren der Datensätze werden so zugeordnet, dass möglichst viele gemeinsame Maße dieselbe Nummer bekommen; sind zwei Zuordnungen gleich gut, entscheiden die ähnlicheren Ladungen.",
       "n": "Beobachtungen: die Netze des Datensatzes, eines je Log.",
       "measures": "Die Maße, die nach der Bereinigung und dem MSA-Filter bleiben, von denen des Datensatzes.",
