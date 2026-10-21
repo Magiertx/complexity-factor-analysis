@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Page } from "@playwright/test";
 import {
+  COMPUTE_TIMEOUT,
   FIT_TIMEOUT,
   chooseSource,
   deleteSessionDatasets,
@@ -115,6 +116,29 @@ test("a dataset of three miners is analysed per miner and the miners are compare
   // A measure constant for the Alpha miner is no analysis there, but is one for the others.
   const dup = matrix.getByRole("row", { name: /^Number of duplicate tasks/ }).getByRole("cell");
   await expect(dup.first()).toHaveText(text("compare.cell.constant"));
+});
+
+test("the four sample logs mined twice offer the miners, blocked for too few nets", { tag: "@prom" }, async ({ page }) => {
+  test.setTimeout(COMPUTE_TIMEOUT + 60_000);
+  await page.goto("/");
+  await chooseSource(page, "logs");
+  const data = stepSection(page, "data");
+  await data.getByRole("checkbox", { name: new RegExp(text("factor.data.sample_label")) }).check({ force: true });
+  // The Inductive miner is chosen by default; the Alpha miner makes it two.
+  await data.getByRole("checkbox", { name: "Alpha miner", exact: true }).check({ force: true });
+  await data.getByRole("button", { name: text("factor.data.submit_compute") }).click();
+  await expectStep(page, "dataset", "done", "en", COMPUTE_TIMEOUT);
+  await goToStep(page, "dataset");
+  const tiles = minerTiles(page);
+  for (const miner of ["Alpha miner", "Inductive miner"]) {
+    const tile = tiles.getByRole("radio", { name: miner });
+    await expect(tile).toHaveAttribute("aria-disabled", "true");
+    await expect(tile).toHaveAccessibleDescription(pattern(text("factor.miners.blocked")));
+    await expect(tiles.locator("label").filter({ hasText: miner })).toHaveAttribute(
+      "aria-description",
+      pattern(text("factor.miners.blocked_reason", { n: 4, p: "" }).split(" for ")[0]),
+    );
+  }
 });
 
 test("with four logs every miner has too few nets: its tile is blocked and says why", async ({ page }) => {
