@@ -192,6 +192,7 @@ const ENDPOINTS: { group: string; items: Endpoint[] }[] = [
       { method: "POST", path: "/factor-analysis/datasets", key: "fa_create" },
       { method: "GET", path: "/factor-analysis/datasets?kind=model|log", key: "fa_list" },
       { method: "GET", path: "/factor-analysis/datasets/{id}", key: "fa_get" },
+      { method: "GET", path: "/factor-analysis/datasets/{id}/descriptives?miner=", key: "fa_descriptives" },
       { method: "PUT", path: "/factor-analysis/datasets/{id}/options", key: "fa_options" },
       { method: "DELETE", path: "/factor-analysis/datasets/{id}", key: "fa_delete" },
       { method: "DELETE", path: "/factor-analysis/datasets?kind=model|log", key: "fa_delete_all" },

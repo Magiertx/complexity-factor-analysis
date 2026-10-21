@@ -223,6 +223,7 @@
       "fa_create": "Create a dataset from a bundled one or a CSV (ready at once), or from event logs or PNML files (computed as a run). If the session already has the bundled dataset, it comes back unchanged, with `reused`.",
       "fa_list": "The datasets of your session, newest first; kind is optional.",
       "fa_get": "Status, progress, saved settings and the cleaned measure matrix (first 2,000 rows); once ready, the `descriptives` of every measure and, for a computed dataset, the run times and input sizes (`measurement`). For a model dataset of several miners, `miners`: the rows and the measures of each.",
+      "fa_descriptives": "The statistics and histograms of the measures: over every row, or with `miner` over the rows of one miner, as the fact sheet of a measure shows them.",
       "fa_options": "Keep the settings of an analysis with the dataset. With the `miner` and the `factor_names`, if there are; `names_k` (the factor count on screen) keeps the names for that solution.",
       "fa_delete": "Delete a dataset with its run and its cached interpretations.",
       "fa_delete_all": "Delete every dataset of your session, or every one of a kind.",
@@ -1334,7 +1335,7 @@
       "hist_none": "No values to draw.",
       "values_input": "Over all {n} observations, before cleaning.",
       "values_cleaned": "Over the cleaned matrix.",
-      "values_all_miners": "All miners together; the analysis below is of the rows of {miner} only.",
+      "values_miner": "Over the {n} observations of {miner}, from the cleaned matrix, like the analysis below.",
       "analysis": "In this analysis",
       "status": {
         "used": "In the analysis",

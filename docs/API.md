@@ -109,6 +109,7 @@ Details in [Factor analysis](#factor-analysis) below.
 | GET | `/factor-analysis/limits` | Files and bytes one dataset request may carry on this server: `{"max_log_files": 50, "max_pnml_files": 200, "max_file_bytes": 104857600, "max_total_bytes": 524288000}`. The two file counts are set by `MAX_LOG_FILES` and `MAX_PNML_FILES`. |
 | POST | `/factor-analysis/datasets` | Create a dataset from bundled data or a CSV (ready at once), or from logs or PNML files (background job); a bundled dataset the session has already is opened again. |
 | GET | `/factor-analysis/datasets?kind=model` | The datasets of your session, newest first; `kind` is optional. |
+| GET | `/factor-analysis/datasets/{id}/descriptives` | The statistics and histograms of the measures, over every row or, with `miner`, over the rows of one miner. |
 | GET | `/factor-analysis/datasets/{id}` | Status, progress, inputs, saved options, measures, dropped measures and the first 2000 rows; once ready, the `descriptives` of every measure with the histogram of its values, for a computed dataset its run times and input sizes (`measurement`), and for a model dataset of several miners its `miners`. |
 | PUT | `/factor-analysis/datasets/{id}/options` | Keep the parameters of an analysis with the dataset. |
 | DELETE | `/factor-analysis/datasets/{id}` | Delete a dataset with its job and cached interpretations. |
@@ -339,6 +340,14 @@ and `counts`, the number of its values in equal-width bins from the smallest to 
 bin; `null` for a measure without values), e.g. `"histogram": {"min": 34.0, "max": 197.0,
 "counts": [96, 61, 28, "…"]}`. Statistics stored before the histograms were kept get them from the cleaned
 matrix, for the measures it still has.
+
+`GET /factor-analysis/datasets/{id}/descriptives` serves the same object without the rest of the
+dataset. With `?miner=<name>` on a model dataset of several miners it describes the rows of that
+miner only, from the cleaned matrix: `basis` is `miner`, `miner` names it and `n_rows` counts its
+rows. Every measure of the dataset is listed, also one that is constant within the miner (an
+analysis of the miner leaves it out). The fact sheet of a measure shows these statistics and the
+histogram while a miner is chosen. A miner the dataset does not have is a 400 `unknown_miner`,
+a dataset that is not ready a 409.
 
 `measurement` is `null` for a bundled or uploaded matrix. For a dataset the tool computed from
 logs or PNML files it holds the wall time (seconds, `time.perf_counter`) of every stage and the

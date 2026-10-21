@@ -373,8 +373,12 @@ export interface DescriptiveRow {
 }
 
 export interface Descriptives {
-  /** "input": the table before cleaning, as ComFy describes it; "cleaned": only the matrix was kept. */
-  basis: "input" | "cleaned";
+  /**
+   * "input": the table before cleaning, as ComFy describes it; "cleaned": only the matrix was
+   * kept; "miner": the cleaned matrix over the rows of `miner`.
+   */
+  basis: "input" | "cleaned" | "miner";
+  miner?: string;
   n_rows: number;
   measures: DescriptiveRow[];
 }
@@ -928,6 +932,17 @@ export interface Correlations {
   /** For each measure its five closest partners by |r|. */
   top: Record<string, { measure: string; r: number }[]>;
   miner: MinerSelection | null;
+}
+
+/** The statistics of the measures of a dataset, or over the rows of one `miner` of it. */
+export async function fetchDescriptives(id: string, miner: string | null, signal?: AbortSignal): Promise<Descriptives> {
+  const query = miner ? `?miner=${encodeURIComponent(miner)}` : "";
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/descriptives${query}`, {
+    cache: "no-store",
+    signal,
+  });
+  if (!r.ok) throw await httpError(r, "The statistics could not be loaded");
+  return r.json();
 }
 
 /**

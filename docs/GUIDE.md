@@ -77,6 +77,8 @@ log is among the ten newest uploads of the session; the page says when it is not
   ComFy or feeed behind it, with a link to its source), a histogram of its values, its MSA and
   the round of the filter that removed it, its communality and uniqueness, its loadings as
   small bars, the five measures it correlates with most, and a button to exclude or include it.
+  With a miner chosen, the histogram and the statistics are those of that miner's rows, as the
+  analysis is.
   The left and right arrow keys page through the list you came from, Esc closes it, and the
   focus goes back to the name.
 - **Factors**: the scree plot with the Kaiser line and parallel analysis (95th percentile of 100
