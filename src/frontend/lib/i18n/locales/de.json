@@ -223,7 +223,7 @@
       "fa_create": "Einen Datensatz aus einem mitgelieferten oder einer CSV anlegen (sofort bereit) oder aus Event-Logs oder PNML-Dateien (als Run berechnet). Hat die Sitzung den mitgelieferten Datensatz schon, kommt er unverändert zurück, mit `reused`.",
       "fa_list": "Die Datensätze deiner Sitzung, neueste zuerst; kind ist optional.",
       "fa_get": "Status, Fortschritt, gespeicherte Einstellungen und die bereinigte Maßmatrix (erste 2.000 Zeilen); sobald bereit, die deskriptive Statistik jedes Maßes (`descriptives`) und für einen berechneten Datensatz die Laufzeiten und Eingabegrößen (`measurement`). Für einen Modell-Datensatz mehrerer Miner `miners`: die Zeilen und Maße jedes Miners.",
-      "fa_options": "Die Einstellungen einer Analyse beim Datensatz speichern. Mit dem `miner` und den `factor_names`, sofern es sie gibt.",
+      "fa_options": "Die Einstellungen einer Analyse beim Datensatz speichern. Mit dem `miner` und den `factor_names`, sofern es sie gibt; `names_k` (die Faktorenzahl auf dem Bildschirm) hält die Namen für diese Lösung fest.",
       "fa_delete": "Einen Datensatz mit seinem Run und seinen gespeicherten Interpretationen löschen.",
       "fa_delete_all": "Alle Datensätze deiner Sitzung löschen oder alle einer Art.",
       "fa_download": "Die bereinigte Matrix als CSV.",
