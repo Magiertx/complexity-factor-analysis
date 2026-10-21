@@ -1,5 +1,5 @@
 import type { Page, Request } from "@playwright/test";
-import { deleteSessionDatasets, expect, expectStep, goToStep, pattern, stepSection, test, text } from "./fixtures";
+import { deleteSessionDatasets, expect, expectStep, FIT_TIMEOUT, goToStep, pattern, stepSection, test, text } from "./fixtures";
 
 // The long lists of the log tab (over a hundred measures): the notable ones first and the rest
 // folded, searched, sorted and grouped. None of that is part of the analysis.
@@ -34,7 +34,7 @@ async function choose(page: Page, section: ReturnType<typeof stepSection>, label
 
 test("the list of measures keeps the unremarkable ones folded until a search or a sort asks for them", async ({ page }) => {
   await page.goto(LOG);
-  await expectStep(page, "loadings", "done");
+  await expectStep(page, "loadings", "done", "en", FIT_TIMEOUT);
   const suitability = stepSection(page, "suitability");
   const rows = suitability.locator("#fa-msa-table tbody tr:not(.table-group)");
   const others = suitability.getByRole("button", { name: pattern(text("factor.measures.section_other")) });
@@ -73,7 +73,7 @@ test("a search, a sort, a grouping and the notable filter change only what the l
   // The settings of a dataset just opened are saved with it once, a second after its first analysis.
   const saved = page.waitForResponse((r) => r.request().method() === "PUT" && r.url().endsWith("/options"));
   await page.goto(LOG);
-  await expectStep(page, "loadings", "done");
+  await expectStep(page, "loadings", "done", "en", FIT_TIMEOUT);
   await saved;
   const suitability = stepSection(page, "suitability");
   const before = { row: await settingsRow(page).innerText(), link: await copiedLink(page) };
@@ -103,6 +103,8 @@ test("a search, a sort, a grouping and the notable filter change only what the l
 });
 
 test("ticking a measure in a sorted list adds it at the end and keeps the order of the columns", async ({ page }) => {
+  // Two fits: the list as it comes, and without the measure ticked.
+  test.slow();
   const analyses: { used_measures: string[] }[] = [];
   const bodies: { excluded?: string[] }[] = [];
   page.on("response", async (r) => {
@@ -113,7 +115,7 @@ test("ticking a measure in a sorted list adds it at the end and keeps the order 
     }
   });
   await page.goto(LOG);
-  await expectStep(page, "loadings", "done");
+  await expectStep(page, "loadings", "done", "en", FIT_TIMEOUT);
   await expect.poll(() => analyses.length).toBeGreaterThan(0);
   const suitability = stepSection(page, "suitability");
 
@@ -122,7 +124,7 @@ test("ticking a measure in a sorted list adds it at the end and keeps the order 
   await suitability.getByRole("searchbox", { name: text("factor.measures.search") }).fill("n_events");
   const seen = analyses.length;
   await suitability.getByRole("checkbox", { name: text("factor.suitability.exclude_aria", { measure: "n_events" }), exact: true }).check({ force: true });
-  await expect.poll(() => analyses.length).toBeGreaterThan(seen);
+  await expect.poll(() => analyses.length, { timeout: FIT_TIMEOUT }).toBeGreaterThan(seen);
   expect(bodies.at(-1)?.excluded).toEqual(["n_events"]);
 
   const [summary] = (await (await page.request.get("/api/factor-analysis/datasets?kind=log")).json()).datasets;
@@ -141,7 +143,7 @@ test.describe("on a phone, in german", () => {
 
   test("the list of measures fits the width without scrolling sideways, and a row of a notable measure is short", async ({ page }) => {
     await page.goto(LOG);
-    await expectStep(page, "loadings", "done", "de");
+    await expectStep(page, "loadings", "done", "de", FIT_TIMEOUT);
     const list = stepSection(page, "suitability").locator("#fa-msa-table");
     const frame = list.locator(".table-frame");
     await expect(frame).toBeVisible();

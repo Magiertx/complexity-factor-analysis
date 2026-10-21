@@ -101,6 +101,15 @@ export async function goToStep(page: Page, step: string, locale: "en" | "de" = "
 /** A dataset computed by a job (feeed, ComFy) takes longer than one loaded from a file. */
 export const COMPUTE_TIMEOUT = 240_000;
 
+/**
+ * A factor fit of the bundled log measures (over a hundred) takes three seconds on a desktop and
+ * half a minute on a slow CI runner of two CPUs, whose backend computes the feeed job of another
+ * spec in the same process meanwhile. The backend keeps the fit for the next analysis of the
+ * same data, but not one given up because its page closed: a spec that stops waiting too early
+ * leaves the next one to start the fit over.
+ */
+export const FIT_TIMEOUT = 90_000;
+
 /** The section of a step, e.g. "suitability"; only the step on screen has one (the data step is kept, hidden). */
 export function stepSection(page: Page, step: string): Locator {
   return page.locator(`#fa-step-${step}`);

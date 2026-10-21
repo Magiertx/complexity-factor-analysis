@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
-import { deleteSessionDatasets, expect, expectStep, goToStep, openBundled, stepSection, test, text } from "./fixtures";
+import { deleteSessionDatasets, expect, expectStep, FIT_TIMEOUT, goToStep, openBundled, stepSection, test, text } from "./fixtures";
 
 /** The serious and critical problems axe finds on the page, one line each. */
 async function seriousProblems(page: Page): Promise<string[]> {
@@ -83,7 +83,7 @@ for (const scheme of ["light", "dark"] as const) {
 
 test("axe finds no serious problem in the long lists of the log tab", async ({ page }) => {
   await page.goto("/log?bundled=comfy-log-pdc-training-logs&preset=standard&step=suitability");
-  await expectStep(page, "loadings", "done");
+  await expectStep(page, "loadings", "done", "en", FIT_TIMEOUT);
   const suitability = stepSection(page, "suitability");
   await suitability.getByRole("button", { name: text("factor.measures.group_aria") }).click();
   await page.getByRole("option", { name: text("factor.measures.grouping.group") }).click();
