@@ -119,6 +119,8 @@ Details in [Factor analysis](#factor-analysis) below.
 | POST | `/factor-analysis/datasets/{id}/correlations` | The correlations of the measures, the map of the suitability step: the matrix in the order of the dataset, of a clustering or of the dimensions of an analysis, the pairs with \|r\| of 0.95 or more and the five closest partners of each measure. |
 | POST | `/factor-analysis/datasets/{id}/export` | The loadings table as CSV or LaTeX. |
 | POST | `/factor-analysis/datasets/{id}/export/report` | The analysis as a LaTeX report built like ComFy's (`report.tex`). |
+| POST | `/factor-analysis/datasets/{id}/export/methods` | A short methods paragraph of the analysis in LaTeX with cite keys, in English or German, and the keys it cites. |
+| POST | `/factor-analysis/datasets/{id}/export/bibtex` | The BibTeX entries of exactly those keys (`references.bib`). |
 | POST | `/factor-analysis/datasets/{id}/export/figure` | The scree plot, the loadings heatmap or the correlation map as SVG or PNG (300 dpi) in print style. |
 | POST | `/factor-analysis/datasets/{id}/export/zip` | The whole analysis as a ZIP archive: result, matrix, tables, report, figures, descriptive statistics, run times, parameters, library versions and provenance. |
 | POST | `/factor-analysis/compare` | The factor structures of 2 to 8 analyses side by side, like Tab. 17 of Important Factors, under one assignment rule: of bundled datasets (no dataset of the session needed) or of the session's own, per miner if they have several. |
@@ -632,6 +634,34 @@ compiles with pdflatex
 `latexmk -pdf`, or run pdflatex twice: long tables settle their column widths in the second run.
 Under the paper settings, the report of a bundled Important Factors dataset prints the numbers
 of the published ComFy report to the decimals it prints them with (`tests/test_report.py`).
+
+`POST /factor-analysis/datasets/{id}/export/methods` takes the body of `analyze` plus `"language":
+"en" | "de"` (default `en`) and answers `{"language", "text", "citation_keys"}`: one neutral
+paragraph in LaTeX (`\cite` keys, `$\chi^2$` and `$p$` in math mode, `\%`, special characters of
+names escaped) for the methods section of a paper. It is a template, not a generator: every
+number and setting is read from the analysis and its parameters, nothing is said that the analysis
+did not do, and the numbers are those of the user interface (KMO to two decimals, Bartlett's
+chi-square to one, the p-value to three, the share of variance to one). It names the dataset with its
+size (the rows of one miner with `miner`), the measures dropped in cleaning, the tool with its
+version and commit and `factor_analyzer` with its version, minres extraction, Bartlett's test and
+the KMO with the MSA filter (measures removed, rounds, or that it was off), the factor count and
+how it was chosen (set, or the Kaiser criterion; parallel analysis with simulations, percentile and
+seed), the variance explained (not for oblique rotations), the rotation, and the assignment rule
+with the thresholds it applied and the number of measures it left out. The text and the keys
+are the same for every request of one analysis and language, apart from the version and commit of
+the running tool.
+
+`POST /factor-analysis/datasets/{id}/export/bibtex` takes the same body and returns
+`<dataset>-references.bib` with the entries of the `citation_keys` of `export/methods`, in their
+order, and no others. Kaiser (1960, 1974), Bartlett (1950) and Horn (1965) are given with their
+DOIs, checked against Crossref. The data of the bundled datasets, ComFy, ComFy for log measures and
+the log paper come from `datasets/manifest.json` of this repository, and the author and address of
+`factor_analyzer` from its package metadata. The tool's own entry has its name, version and commit
+from the running service, the author from its git history, and the year of the export. What a
+source does not record (the authors of a paper beyond the one the catalog names, the edition of the
+textbook by Hair et al., the version of ComFy) is not filled in: a comment above the entry says
+what to complete. Lieben et al. are named in the text of the rule `multi` but not cited, because
+nothing in this repository says which publication is meant.
 
 `POST /factor-analysis/datasets/{id}/export/figure` takes the same body plus `"figure":
 "scree" | "loadings" | "correlations"`, `"format": "svg" | "png"`, `"short_codes"`, `"order": "factor" |

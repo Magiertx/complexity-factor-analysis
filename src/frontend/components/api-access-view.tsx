@@ -84,6 +84,12 @@ named = {**options, "factor_names": ["Size", "Connectors", None, "Separability"]
 with open("loadings.tex", "wb") as f:
     f.write(s.post(url, json=named).content)
 
+# A methods paragraph for the paper, with its BibTeX entries (the paragraph is LaTeX with cite keys)
+methods = s.post(f"{url}/methods", json={**options, "language": "en"}).json()
+print(methods["text"], methods["citation_keys"])
+with open("references.bib", "wb") as f:
+    f.write(s.post(f"{url}/bibtex", json=options).content)
+
 # 4. Tab. 17: the four miners side by side under Hair et al., and the table for LaTeX
 miners = ["alpha", "directly-follows", "inductive", "hybrid-ilp"]
 body = {"columns": [{"bundled_id": f"comfy-paper-{m}-miner"} for m in miners], "assignment_rule": "hair"}
@@ -201,6 +207,8 @@ const ENDPOINTS: { group: string; items: Endpoint[] }[] = [
       { method: "POST", path: "/factor-analysis/datasets/{id}/correlations", key: "fa_correlations" },
       { method: "POST", path: "/factor-analysis/datasets/{id}/export", key: "fa_export" },
       { method: "POST", path: "/factor-analysis/datasets/{id}/export/report", key: "fa_export_report" },
+      { method: "POST", path: "/factor-analysis/datasets/{id}/export/methods", key: "fa_export_methods" },
+      { method: "POST", path: "/factor-analysis/datasets/{id}/export/bibtex", key: "fa_export_bibtex" },
       { method: "POST", path: "/factor-analysis/datasets/{id}/export/figure", key: "fa_export_figure" },
       { method: "POST", path: "/factor-analysis/datasets/{id}/export/zip", key: "fa_export_zip" },
       { method: "POST", path: "/factor-analysis/compare", key: "fa_compare" },

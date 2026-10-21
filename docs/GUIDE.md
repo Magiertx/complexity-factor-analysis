@@ -158,6 +158,16 @@ All downloads are in the **Download** menu of the page header:
   loadings of more than 50 measures are a table that breaks between its rows, as a heatmap of that
   height would not fit a page.
 - **Loadings (CSV, LaTeX)** and **Dataset (CSV)**.
+- **Copy methods text**: a short, neutral paragraph for the methods section, in the language of the
+  app, copied to the clipboard as LaTeX with citation keys. It is a template filled from the
+  settings and results on screen and nothing else: the dataset and its size, the measures dropped,
+  the tool with version and commit, Bartlett's test and the KMO, the MSA filter, the factor count
+  and how it was chosen, minres extraction, the rotation, and the assignment rule with its
+  thresholds. **Download BibTeX** gives the entries of exactly the keys the paragraph cites. A
+  comment above an entry says what its source does not record (e.g. the authors beyond the one the
+  catalog names, or the edition of a textbook), and these you complete from the paper. Lieben et
+  al. are named for the rule of multiple membership but not cited, as the repository does not say
+  which publication is meant.
 
 The **image icon** at the scree plot, the loadings and the correlation map downloads the figure as SVG (the text
 stays text) or as PNG (300 dpi), always light, sized for the text width of a CEUR paper, with its
