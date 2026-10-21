@@ -997,7 +997,8 @@
       "superseded": "Eine neuere Analyse dieses Datensatzes, etwa in einem anderen Tab, hat diese ersetzt. Ändere eine Einstellung, um sie erneut zu starten.",
       "unknown_miner": "Der Datensatz hat keine Zeilen des Miners {miner}.",
       "factor_names_too_many": "{names} Faktornamen für {factors} Faktoren.",
-      "dataset_not_ready": "Der Datensatz ist nicht bereit ({status})."
+      "dataset_not_ready": "Der Datensatz ist nicht bereit ({status}).",
+      "too_few_measures_for_map": "Für eine Korrelationskarte braucht es mindestens {min} Maße; es sind {left} übrig."
     },
     "warnings": {
       "bartlett_not_significant": "Der Test nach Bartlett ist nicht signifikant (p = {p} ≥ {alpha}); die Maße sind womöglich unkorreliert.",
@@ -1266,7 +1267,8 @@
       "png": "PNG",
       "png_hint": "Bild mit 300 dpi",
       "loadings": "Ladungs-Heatmap",
-      "failed": "Die Abbildung konnte nicht heruntergeladen werden."
+      "failed": "Die Abbildung konnte nicht heruntergeladen werden.",
+      "correlations": "Korrelationskarte"
     },
     "miners": {
       "label": "Miner",
@@ -1300,6 +1302,31 @@
       "compare_more": "Öffnet die angehefteten Lösungen nebeneinander, unter der Regel der zuletzt angehefteten.",
       "clear": "Alle lösen",
       "full": "{max} Lösungen sind angeheftet, so viele, wie ein Vergleich fasst."
+    },
+    "correlations": {
+      "heading": "Korrelationskarte",
+      "help": "Die Korrelation jedes Maßpaares, vor dem MSA-Filter. Orange Zellen sind negative Korrelationen, die anderen farbigen Zellen positive; je kräftiger die Farbe, desto größer |r|. Umrandete Paare haben |r| ≥ {limit}: Solche Maße sagen fast dasselbe und machen die Korrelationsmatrix beinahe singulär. Von dir ausgeschlossene Maße fehlen.",
+      "order_aria": "Reihenfolge der Maße in der Karte",
+      "order_label": "Reihenfolge",
+      "order_factor": "Nach Faktor",
+      "order_cluster": "Gruppiert",
+      "order_factor_reason": "Die Faktoranalyse ist noch nicht fertig.",
+      "order_more": "Nach Faktor stellt die Maße jeder Dimension der Analyse auf dem Bildschirm zusammen, die stärkste Ladung zuerst, und die Maße ohne Dimension zuletzt. Gruppiert ordnet sie danach, wie eng sie korrelieren (Average Linkage auf 1 − |r|), unabhängig davon, was die Analyse aus ihnen macht.",
+      "region": "Korrelationskarte von {n} Maßen. Mit den Pfeiltasten wechselst du zwischen den Paaren; Esc verlässt das Paar.",
+      "pair": "{a} × {b}: r = {r}",
+      "hint": "Zeige auf eine Zelle oder gehe mit den Pfeiltasten durch die Karte, um ein Paar zu lesen. Die Tabelle darunter hat alle Werte.",
+      "legend_aria": "Farbskala von −1 in Orange über 0 bis +1 in der Akzentfarbe",
+      "legend_high": "{n} Paar hat |r| ≥ {limit}",
+      "legend_high_plural": "{n} Paare haben |r| ≥ {limit}",
+      "legend_none": "Kein Paar hat |r| ≥ {limit}",
+      "table_heading": "Die Korrelationen als Tabelle",
+      "table_caption": "Korrelationen der {n} Maße der Karte",
+      "loading": "Die Korrelationen werden geladen …",
+      "failed": "Die Korrelationen konnten nicht geladen werden: {error}",
+      "few": "Es sind weniger als zwei Maße übrig, es gibt also nichts zu korrelieren.",
+      "block_none": "Ohne Dimension",
+      "removed": "vom MSA-Filter entfernt",
+      "loaded_in": "In {ms} ms gezeichnet"
     }
   },
   "inspect": {

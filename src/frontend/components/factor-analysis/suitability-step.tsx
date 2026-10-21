@@ -30,6 +30,7 @@ import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { MeasureName, TableFrame } from "@/components/ui/table";
 import { Term, useTip, useTipZone } from "@/components/ui/tip";
+import { CorrelationMap, type CorrelationMapProps } from "./correlation-map";
 import { SectionRow } from "./measure-fold";
 import { MeasureSearch, NotableSwitch } from "./measure-search";
 import { HelpLabel, NoticeList, PassBadge, ThresholdField } from "./step-section";
@@ -69,6 +70,8 @@ interface Props {
   groups: MeasureGroups | null;
   view: MeasureView;
   onView: (view: MeasureView) => void;
+  /** The correlation map above the list of the measures; absent while there is no dataset. */
+  map?: CorrelationMapProps | null;
 }
 
 export function SuitabilityView(props: Props) {
@@ -140,6 +143,8 @@ export function SuitabilityView(props: Props) {
           </p>
         )}
       </div>
+
+      {props.map && <CorrelationMap {...props.map} />}
 
       <MeasureList {...props} />
     </div>

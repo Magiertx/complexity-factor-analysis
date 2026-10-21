@@ -997,7 +997,8 @@
       "superseded": "A newer analysis of this dataset, for example in another tab, replaced this one. Change a setting to run it again.",
       "unknown_miner": "The dataset has no rows of the miner {miner}.",
       "factor_names_too_many": "{names} factor names for {factors} factors.",
-      "dataset_not_ready": "The dataset is not ready ({status})."
+      "dataset_not_ready": "The dataset is not ready ({status}).",
+      "too_few_measures_for_map": "At least {min} measures are needed for a correlation map; {left} are left."
     },
     "warnings": {
       "bartlett_not_significant": "Bartlett's test is not significant (p = {p} ≥ {alpha}); the measures may be uncorrelated.",
@@ -1266,7 +1267,8 @@
       "png": "PNG",
       "png_hint": "Image with 300 dpi",
       "loadings": "Loadings heatmap",
-      "failed": "The figure could not be downloaded."
+      "failed": "The figure could not be downloaded.",
+      "correlations": "Correlation map"
     },
     "miners": {
       "label": "Miners",
@@ -1300,6 +1302,31 @@
       "compare_more": "Opens the pinned solutions side by side, under the rule of the one pinned last.",
       "clear": "Unpin all",
       "full": "{max} solutions are pinned, as many as a comparison holds."
+    },
+    "correlations": {
+      "heading": "Correlation map",
+      "help": "The correlation of every pair of measures, before the MSA filter. Orange cells are negative correlations, the other coloured cells positive ones; the stronger the colour, the larger |r|. Outlined pairs have |r| ≥ {limit}: such measures say almost the same and make the correlation matrix nearly singular. Measures you excluded are left out.",
+      "order_aria": "Order of the measures in the map",
+      "order_label": "Order",
+      "order_factor": "By factor",
+      "order_cluster": "Clustered",
+      "order_factor_reason": "The factor analysis is not ready yet.",
+      "order_more": "By factor puts the measures of each dimension of the analysis on screen together, strongest loading first, and the measures without a dimension last. Clustered orders them by how closely they correlate (average linkage on 1 − |r|), whatever the analysis makes of them.",
+      "region": "Correlation map of {n} measures. Move between the pairs with the arrow keys; Escape leaves the pair.",
+      "pair": "{a} × {b}: r = {r}",
+      "hint": "Point at a cell or move through the map with the arrow keys to read a pair. The table below has every value.",
+      "legend_aria": "Colour scale from −1 in orange over 0 to +1 in the accent colour",
+      "legend_high": "{n} pair has |r| ≥ {limit}",
+      "legend_high_plural": "{n} pairs have |r| ≥ {limit}",
+      "legend_none": "No pair has |r| ≥ {limit}",
+      "table_heading": "The correlations as a table",
+      "table_caption": "Correlations of the {n} measures of the map",
+      "loading": "Loading the correlations…",
+      "failed": "The correlations could not be loaded: {error}",
+      "few": "Fewer than two measures are left, so there is nothing to correlate.",
+      "block_none": "No dimension",
+      "removed": "removed by the MSA filter",
+      "loaded_in": "Drawn in {ms} ms"
     }
   },
   "inspect": {
