@@ -1,7 +1,6 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
 import type { FactorAnalysis, FactorDataset } from "@/lib/api";
 import {
   MIN_MEASURES,
@@ -17,6 +16,7 @@ import {
   arrangeMeasures,
   isNotable,
   measureInfo,
+  otherShown,
   toggleExcluded,
   type MeasureGrouping,
   type MeasureInfo,
@@ -30,6 +30,7 @@ import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { MeasureName, TableFrame } from "@/components/ui/table";
 import { Term, useTip, useTipZone } from "@/components/ui/tip";
+import { SectionRow } from "./measure-fold";
 import { MeasureSearch, NotableSwitch } from "./measure-search";
 import { HelpLabel, NoticeList, PassBadge, ThresholdField } from "./step-section";
 
@@ -280,8 +281,12 @@ function MeasureList({ dataset, analysis, options, onOptions, measureName, measu
   // In a long list the unremarkable measures stay folded below the notable ones, so it is not a
   // long scroll. They unfold on request, and by themselves while the list is searched or sorted,
   // where the whole list is what is asked for. A short list is shown in full.
-  const otherByView = !long || viewOf.query.trim() !== "" || viewOf.sort !== "dataset";
-  const otherOpen = viewOf.showOther || otherByView;
+  const { open: otherOpen, byView: otherByView } = otherShown({
+    folds: long,
+    query: viewOf.query,
+    reordered: viewOf.sort !== "dataset",
+    showOther: viewOf.showOther,
+  });
 
   // Tick the few measures to keep, then invert, instead of ticking all the others.
   const canInvert = options.excluded.length >= MIN_MEASURES;
@@ -366,30 +371,15 @@ function MeasureList({ dataset, analysis, options, onOptions, measureName, measu
             {sections.map((section) => (
               <Fragment key={section.id}>
                 {headed && section.rows.length > 0 && (
-                  <tr className="table-group">
-                    <th scope="colgroup" colSpan={4}>
-                      {section.id === "other" && !otherByView ? (
-                        <button
-                          type="button"
-                          aria-expanded={otherOpen}
-                          onClick={() => onView({ ...view, showOther: !view.showOther })}
-                          className="flex w-full items-center gap-1.5 rounded-sm text-left hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                        >
-                          {otherOpen ? (
-                            <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                          ) : (
-                            <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                          )}
-                          <span>{sectionLabel(section.id, section.group, section.rows.length)}</span>
-                          <span className="ml-auto font-normal">
-                            {t(otherOpen ? "factor.measures.hide_other" : "factor.measures.show_other")}
-                          </span>
-                        </button>
-                      ) : (
-                        sectionLabel(section.id, section.group, section.rows.length)
-                      )}
-                    </th>
-                  </tr>
+                  <SectionRow
+                    colSpan={4}
+                    label={sectionLabel(section.id, section.group, section.rows.length)}
+                    fold={
+                      section.id === "other" && !otherByView
+                        ? { open: otherOpen, onToggle: () => onView({ ...view, showOther: !view.showOther }) }
+                        : undefined
+                    }
+                  />
                 )}
                 {(section.id !== "other" || otherOpen ? section.rows : []).map((m) => (
                   <MeasureRow

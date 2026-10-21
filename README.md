@@ -20,8 +20,8 @@ Schalk do it, but interactively in the browser.
   a toolbar of icons holds Start here, My datasets, the link, the downloads and the tour.
 - **Data from anywhere.** Bundled datasets (the scores of the ComFy paper for seven miners,
   and the measures of 2112 Process Discovery Contest logs), an own CSV, up to 50 event logs
-  (`.xes`, `.xes.gz`) that are mined with any of ComFy's nine ProM miners, or up to 200 PNML
-  models. Sample logs and nets are bundled, so the demo works without own files and offline.
+  (`.xes`, `.xes.gz`; `MAX_LOG_FILES`) that are mined with any of ComFy's nine ProM miners, or
+  up to 200 PNML models (`MAX_PNML_FILES`). Sample logs and nets are bundled, so the demo works without own files and offline.
 - **Suitability first.** Data cleaning with reasons, Bartlett's test of sphericity (the
   numerically stable variant), KMO with ComFy's iterative MSA filter, and a per-measure MSA
   list with manual exclusion that shows the measures worth a look first and keeps the others
@@ -34,8 +34,10 @@ Schalk do it, but interactively in the browser.
   assignment rules: the largest loading as in ComFy's report (default), multiple membership as in
   Important Factors (Tab. 6-16) or Hair et al. (Tab. 17), with cross-loadings reported under
   each and a note where a table of the paper differs from the rule it states. The loadings show as
-  a matrix (searchable, and narrowable to the cross-loaded and unassigned measures when long) or as
-  one card per dimension. A settings row above every step sums up every choice and
+  a matrix or as one card per dimension. A long list (from 20 measures) can be searched and
+  narrowed to the cross-loaded and unassigned measures; from 30 measures on both looks start
+  with those and keep the others folded below them, like the MSA list, until a search or the
+  dataset's own order asks for the whole list. A settings row above every step sums up every choice and
   marks those that differ from the standard. Every change re-runs the analysis; a newer change
   replaces the analysis still running for the one before.
 - **Same numbers as upstream.** On the bundled paper scores of all seven miners the analysis
@@ -127,9 +129,12 @@ Backend, from `src/AlgoService`:
 ```bash
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements-dev.txt
+pip install -r requirements-dev.txt -c constraints.txt
 SESSION_SECRET_KEY=dev-only-not-a-deployment uvicorn srv_main:app --reload --port 8000
 ```
+
+`constraints.txt` pins every package to the version of the Docker image and CI, so the local
+environment matches them (how to update it: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#pinned-dependency-versions)).
 
 The service refuses to start without `SESSION_SECRET_KEY`. On PowerShell, set it first with
 `$env:SESSION_SECRET_KEY = "dev-only-not-a-deployment"`. Postgres and Redis are needed as
@@ -227,11 +232,16 @@ All of this is set in `docker-compose.yml`; reverse proxy, TLS, volumes and back
 - **Java heap.** `prom4py` gets `JAVA_HEAP=2G`. Raise it if discovery fails on large logs; the
   symptom is an out-of-memory error from the Java side.
 - **Limits.** 100 MB per uploaded file; per factor-analysis dataset 50 logs or 200 PNML
-  files and 500 MB in total; a per-session cap on queued jobs. Request rate limits and the
-  job cap are tunable in `.env` (see `.env.example`).
+  files and 500 MB in total; a per-session cap on queued jobs. Request rate limits, the job
+  cap and the number of files per dataset (`MAX_LOG_FILES`, `MAX_PNML_FILES`, default 50 and
+  200) are tunable in `.env` (see `.env.example`). The data step and `/api-access` show the
+  values in force, and `GET /api/factor-analysis/limits` reports them.
 - **Analysis cost.** A factor fit over about a hundred measures takes a few seconds of CPU
-  in the API process. At most two run at once per process; recent fits are cached. BLAS runs
-  single-threaded (`OPENBLAS_NUM_THREADS=1`), which is many times faster for these matrices.
+  in the API process. At most two run at once per process; recent fits are cached, and after the
+  start the API computes those of the bundled datasets in the background
+  (`PRECOMPUTE_BUNDLED`, on in docker-compose), so that opening one for the first time is
+  instant. BLAS runs single-threaded (`OPENBLAS_NUM_THREADS=1`), which is many times faster for
+  these matrices.
 - **Slow miners.** Alpha++ and Alpha Robust are marked slow; Alpha++ can run for many
   minutes on a mid-sized log and ProM4Py cannot interrupt it. Such a discovery fails for its
   input after `PROM4PY_CALL_TIMEOUT` (default 300 s), and the `prom4py` container restarts

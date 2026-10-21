@@ -20,8 +20,7 @@ import {
   X,
 } from "lucide-react";
 import {
-  MAX_DATASET_FILES,
-  MAX_DATASET_TOTAL_BYTES,
+  DEFAULT_UPLOAD_LIMITS,
   type BundledDataset,
   type CreateDatasetInput,
   type DatasetCollection,
@@ -45,8 +44,6 @@ import { mergeRefs, useTip, useTipZone } from "@/components/ui/tip";
 import { Input } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
 import { UploadZone } from "@/components/upload-zone";
-
-const MAX_FILE_BYTES = 100 * 1024 * 1024;
 
 const SOURCE_ICON: Record<DatasetSource, React.ComponentType<{ className?: string }>> = {
   bundled: Database,
@@ -131,7 +128,8 @@ export function DataForm({
 
   const files = source === "logs" ? logFiles : pnmlFiles;
   const setFiles = source === "logs" ? setLogFiles : setPnmlFiles;
-  const maxFiles = MAX_DATASET_FILES[source] ?? 1;
+  const limits = catalog.limits ?? DEFAULT_UPLOAD_LIMITS;
+  const maxFiles = source === "logs" ? limits.max_log_files : source === "pnml" ? limits.max_pnml_files : 1;
   const samples = (catalog.samples ?? []).filter((s) => s.source === source);
   const sample = samples.find((s) => s.id === sampleIds[source]) ?? null;
   const nInputs = sample ? sample.files.length : files.length;
@@ -146,8 +144,8 @@ export function DataForm({
     for (const f of incoming) {
       if (!spec.test(f.name.toLowerCase())) {
         messages.push(t("factor.data.wrong_type", { name: f.name, ext: spec.ext }));
-      } else if (f.size > MAX_FILE_BYTES) {
-        messages.push(t("factor.data.too_large", { name: f.name }));
+      } else if (f.size > limits.max_file_bytes) {
+        messages.push(t("factor.data.too_large", { name: f.name, mb: limits.max_file_bytes / (1024 * 1024) }));
       } else {
         ok.push(f);
       }
@@ -165,12 +163,12 @@ export function DataForm({
       let total = files.reduce((acc, f) => acc + f.size, 0);
       const fitting: File[] = [];
       for (const f of fresh.slice(0, Math.max(room, 0))) {
-        if (total + f.size > MAX_DATASET_TOTAL_BYTES) continue;
+        if (total + f.size > limits.max_total_bytes) continue;
         total += f.size;
         fitting.push(f);
       }
       if (fitting.length < Math.min(fresh.length, Math.max(room, 0))) {
-        messages.push(t("factor.data.too_large_total", { mb: MAX_DATASET_TOTAL_BYTES / (1024 * 1024) }));
+        messages.push(t("factor.data.too_large_total", { mb: limits.max_total_bytes / (1024 * 1024) }));
       }
       setFiles([...files, ...fitting]);
     }

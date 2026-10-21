@@ -160,6 +160,11 @@ CORS_ORIGINS=https://analysis.example.org
 
 # Job quota and request limits, see .env.example
 MAX_ACTIVE_JOBS_PER_SESSION=3
+# Event logs and PNML nets per factor analysis dataset (defaults 50 and 200)
+# MAX_LOG_FILES=50
+# MAX_PNML_FILES=200
+# Analyses of the bundled datasets, computed after the start (default 1; 0 turns it off)
+# PRECOMPUTE_BUNDLED=1
 # RATE_LIMIT_ANALYZE=60/hour
 # RATE_LIMIT_DATASETS=60/hour
 # RATE_LIMIT_FA_ANALYZE=120/minute
@@ -257,6 +262,26 @@ docker compose ps
 # 4. View logs of a specific service
 docker compose logs -f algoservice
 ```
+
+### Pinned dependency versions
+
+`requirements.txt` names version ranges; `src/AlgoService/constraints.txt` pins every package, direct and
+transitive, to the version that runs today. The Dockerfile and the CI jobs install with it
+(`pip install -r requirements.txt -c constraints.txt`), so a rebuild a year from now gets the same
+packages as the build that was tested, and a new upstream release cannot break a deployment by
+itself. The pins are those of Python 3.11, the version of the image and of CI.
+
+To update them (after raising a range, or to take up newer releases):
+
+```bash
+docker run --rm -v "$PWD/src/AlgoService:/w" -w /w python:3.11-slim sh -c \
+  'pip install -q -r requirements-dev.txt && pip freeze'
+```
+
+Sort the output into the two blocks of `constraints.txt` (runtime, and the test tools that only
+`requirements-dev.txt` brings), then run the backend tests and `docker compose build algoservice`
+before committing. Do not edit single pins by hand without installing the result: a pin that
+contradicts a range makes `pip` stop with a conflict, on purpose.
 
 ---
 

@@ -169,6 +169,11 @@ export function crossLoadingsByMeasure(analysis: FactorAnalysis): Map<string, Cr
   return new Map((analysis.cross_loadings ?? []).map((c) => [c.measure, c]));
 }
 
+/** The measures of the loadings worth a look: those that load on several factors, and those on none. */
+export function notableLoadingMeasures(analysis: FactorAnalysis): Set<string> {
+  return new Set([...crossLoadingsByMeasure(analysis).keys(), ...analysis.unassigned]);
+}
+
 /**
  * The cells of the loadings table that hold a further loading of a cross-loaded measure, as
  * "measure:factor"; the measure's largest loading is not one of them.

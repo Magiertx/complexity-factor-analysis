@@ -56,8 +56,11 @@ from routes.algorithms import (
 router = APIRouter(prefix="/factor-analysis", tags=["factor analysis"])
 
 SOURCES = ("bundled", "csv", "logs", "pnml")
-MAX_LOG_FILES = 50
-MAX_PNML_FILES = 200
+#: Files per dataset request, for event logs and for PNML nets. Operators raise or lower them
+#: with MAX_LOG_FILES and MAX_PNML_FILES; the UI and /factor-analysis/limits report the
+#: values in force.
+MAX_LOG_FILES = positive_int("MAX_LOG_FILES", 50)
+MAX_PNML_FILES = positive_int("MAX_PNML_FILES", 200)
 #: Budget over all files of one request, measured on the stored (decompressed) files.
 MAX_TOTAL_BYTES = 500 * 1024 * 1024
 MAX_CSV_ROWS = 100_000
@@ -106,10 +109,26 @@ def _check_known(values: list[str], known: list[str], what: str) -> None:
 # --- catalog ------------------------------------------------------------------------------
 
 
+def upload_limits() -> dict[str, int]:
+    """The upload limits in force, as the API reports them."""
+    return {
+        "max_log_files": MAX_LOG_FILES,
+        "max_pnml_files": MAX_PNML_FILES,
+        "max_file_bytes": MAX_FILE_SIZE,
+        "max_total_bytes": MAX_TOTAL_BYTES,
+    }
+
+
 @router.get("/catalog")
 def get_catalog(kind: str = "model") -> dict[str, Any]:
     """Measures, miners or feature groups, bundled datasets and sample inputs for one kind."""
-    return cat.catalog(_check_kind(kind))
+    return {**cat.catalog(_check_kind(kind)), "limits": upload_limits()}
+
+
+@router.get("/limits")
+def get_limits() -> dict[str, int]:
+    """How many files and bytes one dataset request may carry."""
+    return upload_limits()
 
 
 # --- uploads ------------------------------------------------------------------------------
@@ -1034,6 +1053,18 @@ async def _analyze(data: pd.DataFrame, params: AnalysisParams, watch: _Watch | N
         raise _AnalysisFailed(e) from None
     finally:
         listening.cancel()
+
+
+async def precompute_bundled() -> None:
+    """Compute the analyses of the bundled datasets in the background (factor_analysis.precompute),
+    in the slots of the requests so that it never runs more analyses than they may."""
+    from factor_analysis import precompute
+
+    async def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
+        async with _ANALYSIS_SLOTS:
+            return await run_in_threadpool(run_analysis, data, params)
+
+    await precompute.run(analyze)
 
 
 def _superseded() -> JSONResponse:

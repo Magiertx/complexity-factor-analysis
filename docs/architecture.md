@@ -163,8 +163,8 @@ Sources:
 |---|---|---|
 | `bundled` | at once | `datasets/manifest.json`: the scores of the ComFy paper (7 miners × 288 PDC 2025 logs) and the PDC log measures of ComFy for log measures (2112 logs). |
 | `csv` | at once | One uploaded CSV; a non-numeric first column holds the row labels. |
-| `logs` | job | Up to 50 XES files, or the bundled sample `pdc-sample-logs` (4 PDC logs). |
-| `pnml` | job | Up to 200 PNML files, or the bundled sample `pdc-sample-models` (32 nets). |
+| `logs` | job | Up to `MAX_LOG_FILES` (50) XES files, or the bundled sample `pdc-sample-logs` (4 PDC logs). |
+| `pnml` | job | Up to `MAX_PNML_FILES` (200) PNML files, or the bundled sample `pdc-sample-models` (32 nets). |
 
 ```
 POST /factor-analysis/datasets (logs | pnml)
@@ -214,7 +214,13 @@ A singular correlation matrix (common with log measures, e.g. `iqr = q3 - q1`) i
 upstream does and reported as a warning. KMO then rests on a pseudo-inverse and Bartlett's
 chi-square on clamped eigenvalues (`bartlett.regularised`), so measures with an MSA at the
 threshold can come out differently on different platforms. Fits are cached by data, factor
-count and rotation; at most two run at once per API process (`_ANALYSIS_SLOTS` in
+count and rotation. After the start the API computes the analyses of the bundled datasets
+in the background (`factor_analysis/precompute.py`, `PRECOMPUTE_BUNDLED`, set to 1 by
+docker-compose, off under test): each bundled dataset with the standard settings of its kind
+and, where the manifest has `published_options`, with those, from the matrix as the API stores
+it (`storage.as_stored`, because the cache is keyed on the bits). It runs in the slots of the
+requests, one analysis after the other, and logs each; a request for a fit still being computed
+waits for it. The cache is that of one API process and starts empty with it. At most two fits run at once per API process (`_ANALYSIS_SLOTS` in
 `routes/factor_analysis.py`). A request for a fit or for the random eigenvalues of parallel
 analysis that are being computed waits for them rather than computing them again
 (`core._computed_once`); they are computed in a thread of their own, so a request that gives up
@@ -311,6 +317,8 @@ Every browser gets an anonymous session via `SessionMiddleware` (cookie `session
 - `uploaded_logs/<session_id>/`: recent uploads, retrieved via `GET /recent-logs`.
 - `artifacts/datasets/<session_id>/`: factor-analysis datasets.
 - `Run.owner_session_id`: `GET /jobs`, `GET /jobs/{id}`, `DELETE /jobs[/{id}]` all filter by session.
+
+A page fires several requests at once, and requests without a cookie each start a session of their own, of which the browser keeps the last. So the cookie has to exist before the first request: the frontend's middleware (`src/frontend/middleware.ts`) asks `GET /session` whenever the browser requests a page and sends the `Set-Cookie` of the answer with the page. The endpoint touches no database; the session is stored with its first real request. If the API does not answer within two seconds the page is served as before and the session starts with the first request. Pages that carry a cookie are marked `Cache-Control: private, no-store`, so no cache in front can hand one visitor's session to another. A cookie the server cannot read (its secret changed) is replaced the same way.
 
 `User` and `Preset` tables exist in the schema for future authenticated use; no login flow is wired up.
 
@@ -409,8 +417,12 @@ one style (`components/ui/table.tsx`, `.data-table` in `globals.css`).
    excluded measures.
 4. **Factors**: hand-written SVG scree plot, factor count and rotation.
 5. **Loadings**: the assignment rule and thresholds, then a matrix (loadings, communalities,
-   variance; a long one can be searched and narrowed to the cross-loaded and unassigned
-   measures, which is display only like the list of step 3) or the dimensions (factor groups). The downloads of the toolbar give the loadings as
+   variance) or the dimensions (factor groups). A long list (from 20 measures) can be searched and
+   narrowed to the cross-loaded and unassigned measures in both looks, which is display only like
+   the list of step 3. From 30 measures on (`FOLDING_LOADINGS`) both start with those and fold the
+   others behind "Show" (in a card, the others of that factor), as the MSA list does; a search or
+   the dataset's own order shows them all. The fold button and the section row are shared with the
+   MSA list (`components/factor-analysis/measure-fold.tsx`). The downloads of the toolbar give the loadings as
    CSV/LaTeX, the dataset as CSV and the whole analysis as a ZIP
    (`POST /datasets/{id}/export/zip`, with the options and the language on screen).
 
@@ -448,7 +460,7 @@ Every endpoint that accepts a log enforces:
 
 - Extension whitelist: `.xes`, `.xes.gz`, `.xml`, `.json` for single runs; `.xes`, `.xes.gz`
   for dataset logs, `.pnml` for nets, `.csv` for tables.
-- Size cap: 100 MB per file; per dataset request at most 50 logs or 200 nets and 500 MB in
+- Size cap: 100 MB per file; per dataset request at most `MAX_LOG_FILES` (50) logs or `MAX_PNML_FILES` (200) nets and 500 MB in
   total, counted after decompression. Starlette receives the whole multipart body before the
   route runs, so these checks reject a request after the upload, not during it; the reverse
   proxy's `client_max_body_size` is what stops a larger body early. A CSV may have at most

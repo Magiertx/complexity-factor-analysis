@@ -23,7 +23,8 @@ import logging
 import models
 from env_config import positive_int, text
 from database import AsyncSessionLocal, engine, Base
-from sqlalchemy import select, delete, func
+from sqlalchemy import select, delete, func, update
+from sqlalchemy.exc import IntegrityError
 
 logger = logging.getLogger("algoservice")
 
@@ -40,7 +41,10 @@ async def init_db() -> None:
 
 
 async def get_or_create_session(session_id: str) -> str:
-    """Ensure a session exists in the database. If not, create it."""
+    """Ensure a session exists in the database. If not, create it.
+
+    The requests a page fires at once share one new session (the cookie comes with the page),
+    so several of them find no row and insert it: the one that comes second is not an error."""
     async with AsyncSessionLocal() as session:
         result = await session.execute(
             select(models.Session).where(models.Session.id == session_id)
@@ -53,7 +57,15 @@ async def get_or_create_session(session_id: str) -> str:
                 last_seen=_utcnow_naive()
             )
             session.add(db_sess)
-            await session.commit()
+            try:
+                await session.commit()
+            except IntegrityError:
+                # Another request inserted it between the lookup and the insert.
+                await session.rollback()
+                await session.execute(
+                    update(models.Session).where(models.Session.id == session_id).values(last_seen=_utcnow_naive())
+                )
+                await session.commit()
         else:
             db_sess.last_seen = _utcnow_naive()
             await session.commit()

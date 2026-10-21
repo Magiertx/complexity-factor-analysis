@@ -68,6 +68,71 @@ test("the list of measures keeps the unremarkable ones folded until a search or 
   expect(await rows.count()).toBeGreaterThan(100);
 });
 
+test("the loadings of a long list start with the measures worth a look and fold the others, in both looks", async ({ page }) => {
+  await page.goto(LOG);
+  await expectStep(page, "loadings", "done", "en", FIT_TIMEOUT);
+  await goToStep(page, "loadings");
+  const loadings = stepSection(page, "loadings");
+  const matrix = loadings.locator("table.data-table").first().locator("tbody tr:not(.table-group)");
+  const others = loadings.getByRole("button", { name: pattern(text("factor.measures.section_other")) });
+  const search = loadings.getByRole("searchbox", { name: text("factor.measures.search") });
+
+  // Folded: the cross-loaded and the unassigned measures, and the number of the others on the fold's own row.
+  await expect(others).toHaveAttribute("aria-expanded", "false");
+  const folded = await matrix.count();
+  expect(folded).toBeGreaterThan(0);
+  expect(folded).toBeLessThan(60);
+  await others.click();
+  await expect(others).toHaveAttribute("aria-expanded", "true");
+  expect(await matrix.count()).toBeGreaterThan(100);
+  await others.click();
+  await expect(matrix).toHaveCount(folded);
+
+  // A search is a question about the whole list: the fold opens by itself and has no button then.
+  await search.fill("entropy");
+  await expect(others).toHaveCount(0);
+  const found = await matrix.allInnerTexts();
+  expect(found.length).toBeGreaterThan(1);
+  for (const row of found) expect(row.toLowerCase()).toContain("entropy");
+  await search.fill("");
+  await expect(others).toHaveAttribute("aria-expanded", "false");
+
+  // So does the order of the dataset: it is not the order of the factors the folded list starts with.
+  await loadings.getByRole("button", { name: text("factor.loadings.order_original") }).click();
+  await expect(others).toHaveCount(0);
+  expect(await matrix.count()).toBeGreaterThan(100);
+  await loadings.getByRole("button", { name: text("factor.loadings.order_factor") }).click();
+  await expect(others).toHaveAttribute("aria-expanded", "false");
+  await expect(matrix).toHaveCount(folded);
+
+  // The dimensions start the same way, and one fold opens them all, the matrix's too.
+  await loadings.getByRole("button", { name: text("factor.loadings.look_dimensions") }).click();
+  const members = loadings.locator("ul > li.text-xs");
+  await expect(others.first()).toHaveAttribute("aria-expanded", "false");
+  const cards = await others.count();
+  expect(cards).toBeGreaterThan(1);
+  const listed = await members.count();
+  await others.first().click();
+  for (let i = 0; i < cards; i++) await expect(others.nth(i)).toHaveAttribute("aria-expanded", "true");
+  expect(await members.count()).toBeGreaterThan(listed + 50);
+  await others.first().click();
+  await expect(members).toHaveCount(listed);
+  // A search leaves out the cards without a match.
+  await search.fill("entropy");
+  await expect(others).toHaveCount(0);
+  for (const member of await members.allInnerTexts()) expect(member.toLowerCase()).toContain("entropy");
+});
+
+test("a short list of loadings is shown in full, without a fold", async ({ page }) => {
+  await page.goto("/?bundled=comfy-paper-inductive-miner&preset=published");
+  await expectStep(page, "loadings", "done");
+  await goToStep(page, "loadings");
+  const loadings = stepSection(page, "loadings");
+  await expect(loadings.getByRole("button", { name: pattern(text("factor.measures.section_other")) })).toHaveCount(0);
+  await expect(loadings.getByRole("searchbox", { name: text("factor.measures.search") })).toHaveCount(0);
+  expect(await loadings.locator("table.data-table").first().locator("tbody tr").count()).toBeGreaterThan(5);
+});
+
 test("a search, a sort, a grouping and the notable filter change only what the lists show", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   // The settings of a dataset just opened are saved with it once, a second after its first analysis.
@@ -83,17 +148,19 @@ test("a search, a sort, a grouping and the notable filter change only what the l
   await choose(page, suitability, text("factor.measures.sort_aria"), text("factor.measures.sort.name"));
   await choose(page, suitability, text("factor.measures.group_aria"), text("factor.measures.grouping.group"));
   await suitability.getByRole("switch", { name: pattern(text("factor.measures.only_notable", { n: "" }).split("(")[0].trim()) }).click();
-  // The loadings matrix has a search and a filter of its own.
+  // The loadings have a search, a filter and a fold of their own.
   await goToStep(page, "loadings");
   const loadings = stepSection(page, "loadings");
-  const matrix = loadings.locator("table.data-table").first().locator("tbody tr");
-  const all = await matrix.count();
+  const matrix = loadings.locator("table.data-table").first().locator("tbody tr:not(.table-group)");
+  const folded = await matrix.count();
   await loadings.getByRole("searchbox", { name: text("factor.measures.search") }).fill("entropy");
-  await expect.poll(() => matrix.count()).toBeLessThan(all);
+  await expect.poll(async () => (await matrix.allInnerTexts()).every((row) => row.toLowerCase().includes("entropy"))).toBe(true);
   await loadings.getByRole("searchbox", { name: text("factor.measures.search") }).fill("");
-  await expect(matrix).toHaveCount(all);
+  await expect(matrix).toHaveCount(folded);
   await loadings.getByRole("switch", { name: pattern(text("factor.loadings.only_notable", { n: "" }).split("(")[0].trim()) }).click();
-  await expect.poll(() => matrix.count()).toBeLessThan(all);
+  // The notable measures are what stays of the folded list; nothing is left to fold.
+  await expect(matrix).toHaveCount(folded);
+  await expect(loadings.getByRole("button", { name: pattern(text("factor.measures.section_other")) })).toHaveCount(0);
   // The analysis would be asked for within 300 ms of a change of its settings.
   await page.waitForTimeout(1500);
 

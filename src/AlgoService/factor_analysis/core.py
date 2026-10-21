@@ -502,7 +502,9 @@ class FactorFit:
 
 
 _FIT_CACHE: OrderedDict[tuple, FactorFit] = OrderedDict()
-_FIT_CACHE_SIZE = 32
+# Room for the analyses precomputed for the bundled datasets (precompute.py: up to 16) and for
+# what visitors fit meanwhile; a fit is a few small matrices.
+_FIT_CACHE_SIZE = 64
 _FIT_CACHE_LOCK = threading.Lock()
 
 

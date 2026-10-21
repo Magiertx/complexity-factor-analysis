@@ -1,7 +1,19 @@
 import { describe, expect, it } from "vitest";
 import type { FactorAnalysis } from "./api";
 import { defaultOptions } from "./factor-analysis";
-import { arrangeMeasures, dependentGroups, matchesQuery, measureInfo, toggleExcluded, type ArrangeInput } from "./measure-list";
+import { notableLoadingMeasures } from "./factor-analysis";
+import {
+  FOLDING_LOADINGS,
+  LONG_LIST,
+  arrangeLoadings,
+  arrangeMeasures,
+  dependentGroups,
+  matchesQuery,
+  measureInfo,
+  otherShown,
+  toggleExcluded,
+  type ArrangeInput,
+} from "./measure-list";
 
 const MEASURES = ["n_variants", "trace_len_min", "structure", "eventropy_trace", "n_edges_dfg", "cyclomatic_number_dfg"];
 const NAMES: Record<string, string> = Object.fromEntries(MEASURES.map((m) => [m, m]));
@@ -146,3 +158,70 @@ describe("the list of measures", () => {
     expect(options.excluded).toEqual(["structure", "n_variants"]);
   });
 });
+
+describe("when the other measures are shown", () => {
+  const folding = { folds: true, query: "", reordered: false, showOther: false };
+
+  it("keeps them folded in a list that folds, until asked for", () => {
+    expect(otherShown(folding)).toEqual({ open: false, byView: false });
+    expect(otherShown({ ...folding, showOther: true })).toEqual({ open: true, byView: false });
+  });
+
+  it("shows them by themselves for a search or another order, without a button to fold them", () => {
+    expect(otherShown({ ...folding, query: "dfg" })).toEqual({ open: true, byView: true });
+    expect(otherShown({ ...folding, query: "   " })).toEqual({ open: false, byView: false });
+    expect(otherShown({ ...folding, reordered: true })).toEqual({ open: true, byView: true });
+  });
+
+  it("shows everything in a list that does not fold", () => {
+    expect(otherShown({ ...folding, folds: false })).toEqual({ open: true, byView: true });
+  });
+});
+
+describe("the loadings of a long list", () => {
+  const MANY = Array.from({ length: 40 }, (_, i) => `m${i}`);
+  const NOTABLE = new Set(["m7", "m3", "m31"]);
+  const base = { measures: MANY, name: (m: string) => m, query: "", onlyNotable: false, notable: NOTABLE, folds: true };
+
+  it("folds the loadings from 30 measures on, a little later than the search starts", () => {
+    expect(LONG_LIST).toBe(20);
+    expect(FOLDING_LOADINGS).toBe(30);
+  });
+
+  it("starts with the notable measures in the order given, and the others in a section of their own", () => {
+    const sections = arrangeLoadings(base);
+    expect(sections.map((s) => s.id)).toEqual(["notable", "other"]);
+    // The order given is that of the table (by factor, say), not of the names.
+    expect(sections[0].rows).toEqual(["m3", "m7", "m31"]);
+    expect(sections[1].rows).toHaveLength(37);
+    const reversed = arrangeLoadings({ ...base, measures: [...MANY].reverse() });
+    expect(reversed[0].rows).toEqual(["m31", "m7", "m3"]);
+  });
+
+  it("shows a list that does not fold as one section in the order given, notable measures included", () => {
+    const sections = arrangeLoadings({ ...base, folds: false });
+    expect(sections).toEqual([{ id: "all", rows: MANY }]);
+  });
+
+  it("narrows to the notable measures or to a search whether it folds or not", () => {
+    for (const folds of [true, false]) {
+      expect(arrangeLoadings({ ...base, folds, onlyNotable: true })).toEqual([{ id: "notable", rows: ["m3", "m7", "m31"] }]);
+      expect(arrangeLoadings({ ...base, folds, query: "m3" }).flatMap((s) => s.rows).sort()).toEqual(["m3", "m30", "m31", "m32", "m33", "m34", "m35", "m36", "m37", "m38", "m39"].sort());
+    }
+  });
+
+  it("has no section for the others when every measure or none is notable", () => {
+    expect(arrangeLoadings({ ...base, notable: new Set() })).toEqual([{ id: "all", rows: MANY }]);
+    expect(arrangeLoadings({ ...base, notable: new Set(MANY) })).toEqual([{ id: "all", rows: MANY }]);
+  });
+
+  it("counts the cross-loaded and the unassigned measures as notable", () => {
+    const analysis = {
+      cross_loadings: [{ measure: "a", factors: [0, 1], loadings: [0.6, 0.5] }],
+      unassigned: ["b", "c"],
+    } as unknown as Parameters<typeof notableLoadingMeasures>[0];
+    expect([...notableLoadingMeasures(analysis)].sort()).toEqual(["a", "b", "c"]);
+    expect(notableLoadingMeasures({ unassigned: [] } as unknown as Parameters<typeof notableLoadingMeasures>[0]).size).toBe(0);
+  });
+});
+

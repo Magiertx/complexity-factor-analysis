@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Copy, Check, ExternalLink, Code2, FileJson, Terminal } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { PageHeader } from "./page-header";
+import { DEFAULT_UPLOAD_LIMITS, fetchUploadLimits, type UploadLimits } from "@/lib/api";
 
 const linkButtonClass =
   "inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-tile hover:bg-accent/[0.08] text-fg text-sm font-medium transition";
@@ -134,6 +135,7 @@ const ENDPOINTS: { group: string; items: Endpoint[] }[] = [
     group: "factor_analysis",
     items: [
       { method: "GET", path: "/factor-analysis/catalog?kind=model|log", key: "fa_catalog" },
+      { method: "GET", path: "/factor-analysis/limits", key: "fa_limits" },
       { method: "POST", path: "/factor-analysis/datasets", key: "fa_create" },
       { method: "GET", path: "/factor-analysis/datasets?kind=model|log", key: "fa_list" },
       { method: "GET", path: "/factor-analysis/datasets/{id}", key: "fa_get" },
@@ -164,7 +166,10 @@ const ENDPOINTS: { group: string; items: Endpoint[] }[] = [
   },
   {
     group: "diagnostics",
-    items: [{ method: "GET", path: "/health", key: "health" }],
+    items: [
+      { method: "GET", path: "/health", key: "health" },
+      { method: "GET", path: "/session", key: "session_start" },
+    ],
   },
 ];
 
@@ -189,6 +194,24 @@ function WithCode({ text }: { text: string }) {
 
 export function ApiAccessView() {
   const t = useT();
+  // The numbers of files are set by the operator of the server; the defaults stand in until
+  // it has answered, or if it does not.
+  const [limits, setLimits] = useState<UploadLimits>(DEFAULT_UPLOAD_LIMITS);
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetchUploadLimits(ctrl.signal)
+      .then(setLimits)
+      .catch(() => {
+        // The note keeps the defaults.
+      });
+    return () => ctrl.abort();
+  }, []);
+  const noteValues = {
+    file_mb: limits.max_file_bytes / (1024 * 1024),
+    logs: limits.max_log_files,
+    pnml: limits.max_pnml_files,
+    total_mb: limits.max_total_bytes / (1024 * 1024),
+  };
   return (
     // Code and endpoint rows read badly across the whole width.
     <div className="space-y-6 max-w-5xl">
@@ -277,7 +300,7 @@ export function ApiAccessView() {
           <ul className="list-disc pl-5 space-y-2 text-sm text-muted">
             {NOTES.map((key) => (
               <li key={key}>
-                <WithCode text={t(`api_access.notes.${key}`)} />
+                <WithCode text={t(`api_access.notes.${key}`, noteValues)} />
               </li>
             ))}
           </ul>

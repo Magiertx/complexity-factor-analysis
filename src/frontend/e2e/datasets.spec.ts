@@ -115,6 +115,32 @@ test("the log sample mined with the default miner gives a model dataset", { tag:
   await expect(stepSection(page, "dataset")).toContainText("Inductive miner");
 });
 
+test("the number of files per dataset is the one the server reports", async ({ page }) => {
+  // The operator sets it (MAX_LOG_FILES), so the page must not assume the default of 50.
+  const limits = { max_log_files: 3, max_pnml_files: 5, max_file_bytes: 100 * 1024 * 1024, max_total_bytes: 500 * 1024 * 1024 };
+  await page.route("**/api/factor-analysis/catalog?*", async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({ response, json: { ...(await response.json()), limits } });
+  });
+  await page.route("**/api/factor-analysis/limits", (route) => route.fulfill({ json: limits }));
+
+  await page.goto("/");
+  await chooseSource(page, "logs");
+  const data = stepSection(page, "data");
+  await expect(data).toContainText(text("factor.data.logs_drop_hint", { max: 3 }));
+  const log = (name: string) => ({ name, mimeType: "application/xml", buffer: Buffer.from("<log/>") });
+  await data.locator('input[type="file"]').setInputFiles([1, 2, 3, 4].map((i) => log(`log${i}.xes`)));
+  await expect(data).toContainText(text("factor.data.too_many_files", { max: 3, n: 1 }));
+
+  await chooseSource(page, "pnml");
+  await expect(data).toContainText(text("factor.data.pnml_drop_hint", { max: 5 }));
+
+  // The API page names the same numbers, in the sentence about uploads.
+  await page.goto("/api-access");
+  await expect(page.getByRole("main")).toContainText("up to 3 event logs");
+  await expect(page.getByRole("main")).toContainText("up to 5 Petri nets");
+});
+
 test("a deleted dataset is gone from My datasets", async ({ page }) => {
   await page.goto("/");
   await openBundled(page, "Alpha miner");
