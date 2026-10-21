@@ -493,3 +493,14 @@ def test_the_descriptives_of_a_miner_are_those_of_its_rows(client, three):
 def test_the_descriptives_of_a_miner_the_dataset_lacks(client, three):
     r = client.get(f"/factor-analysis/datasets/{three}/descriptives", params={"miner": "Hybrid ILP miner"})
     assert r.status_code == 400 and r.json()["code"] == "unknown_miner"
+
+
+def test_the_methods_paragraph_of_a_miner_names_its_rows_and_counts(client, three):
+    url = f"/factor-analysis/datasets/{three}"
+    alone = client.post(f"{url}/analyze", json={"miner": "Inductive miner", "assignment_rule": "hair"}).json()
+    text = client.post(
+        f"{url}/export/methods", json={"miner": "Inductive miner", "assignment_rule": "hair", "language": "de"}
+    ).json()["text"]
+    assert "(die Zeilen des Miners Inductive miner)" in text
+    assert f"hat {alone['n_observations']} Beobachtungen von {alone['miner']['n_measures']} " in text
+    assert "(nach Hair et al.~\\cite{hair_multivariate})" in text
