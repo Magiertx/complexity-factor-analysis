@@ -239,6 +239,7 @@ _TEXTS: dict[str, dict[str, str]] = {
         "data_miner": " (the rows of the {miner})",
         "data_published": ", published with {cite}",
         "data_source": ", whose measures were computed with {cite}",
+        "data_source_feeed": ", whose measures were extracted with feeed, as in {cite}",
         "dropped_one": "1 measure was dropped in cleaning because it has no variance or repeats another measure.",
         "dropped_many": "{n} measures were dropped in cleaning because they have no variance or repeat another measure.",
         "tool": (
@@ -268,18 +269,19 @@ _TEXTS: dict[str, dict[str, str]] = {
         "rotation": "The factors were rotated with the {rotation} rotation.",
         "rule_largest": (
             "Each measure was assigned to the factor on which its absolute loading is largest, if that loading "
-            "{reach} and its communality is at least {communality}"
+            "{reach}{comm_and}"
         ),
         "rule_multi": (
             "Each measure was assigned to every factor on which its absolute loading {reach} and lies at most {gap} "
-            "below its largest absolute loading, if its communality is at least {communality} (multiple membership, "
-            "after Lieben et al.)"
+            "below its largest absolute loading{comm_if} (multiple membership, after Lieben et al.)"
         ),
         "rule_hair": (
             "Each measure was assigned to the factor on which its absolute loading is largest, if that loading "
-            "{reach} and its communality is at least {communality}; a measure with another loading at most {gap} "
+            "{reach}{comm_and}; a measure with another loading that also {reach} and lies at most {gap} "
             "below its largest was left out (after Hair et al.{cite})"
         ),
+        "comm_and": " and its communality is at least {communality}",
+        "comm_if": ", if its communality is at least {communality}",
         "reach_strict": "exceeds {loading}",
         "reach_loose": "is at least {loading}",
         "unassigned_none": "; every measure was assigned.",
@@ -294,6 +296,7 @@ _TEXTS: dict[str, dict[str, str]] = {
         "data_miner": " (die Zeilen des Miners {miner})",
         "data_published": ", veröffentlicht mit {cite}",
         "data_source": ", deren Maße mit {cite} berechnet wurden",
+        "data_source_feeed": ", deren Maße wie in {cite} mit feeed berechnet wurden",
         "dropped_one": "1 Maß wurde bei der Bereinigung entfernt, weil es keine Varianz hat oder ein anderes Maß wiederholt.",
         "dropped_many": (
             "{n} Maße wurden bei der Bereinigung entfernt, weil sie keine Varianz haben oder ein anderes Maß "
@@ -326,18 +329,19 @@ _TEXTS: dict[str, dict[str, str]] = {
         "rotation": "Die Faktoren wurden mit der Rotation {rotation} rotiert.",
         "rule_largest": (
             "Jedes Maß wurde dem Faktor zugeordnet, auf dem der Betrag seiner Ladung am größten ist, wenn "
-            "dieser {reach} und seine Kommunalität mindestens {communality} beträgt"
+            "dieser {reach}{comm_and}"
         ),
         "rule_multi": (
             "Jedes Maß wurde jedem Faktor zugeordnet, auf dem der Betrag seiner Ladung {reach} und von seiner "
-            "größten Ladung höchstens {gap} entfernt ist, wenn seine Kommunalität mindestens "
-            "{communality} beträgt (Mehrfachzugehörigkeit, nach Lieben et al.)"
+            "größten Ladung höchstens {gap} entfernt ist{comm_if} (Mehrfachzugehörigkeit, nach Lieben et al.)"
         ),
         "rule_hair": (
             "Jedes Maß wurde dem Faktor zugeordnet, auf dem der Betrag seiner Ladung am größten ist, wenn "
-            "dieser {reach} und seine Kommunalität mindestens {communality} beträgt; ein Maß mit einer "
-            "weiteren Ladung höchstens {gap} darunter blieb unzugeordnet (nach Hair et al.{cite})"
+            "dieser {reach}{comm_and}; ein Maß mit einer weiteren Ladung, die ebenfalls {reach} und "
+            "höchstens {gap} darunter liegt, blieb unzugeordnet (nach Hair et al.{cite})"
         ),
+        "comm_and": " und seine Kommunalität mindestens {communality} beträgt",
+        "comm_if": ", wenn seine Kommunalität mindestens {communality} beträgt",
         "reach_strict": "über {loading} liegt",
         "reach_loose": "mindestens {loading} beträgt",
         "unassigned_none": "; jedes Maß wurde zugeordnet.",
@@ -400,7 +404,9 @@ def methods(
     if published:
         data += fill("data_published", cite=cite(published, tie=False))
     if dataset.get("source") in ("bundled", "logs", "pnml"):
-        data += fill("data_source", cite=cite("schalk_comfy" if kind == "model" else "schalk_comfy_log", tie=False))
+        # Uploaded logs are measured with feeed, in the way ComFy for Log Measures does; models run through ComFy.
+        template = "data_source_feeed" if dataset.get("source") == "logs" and kind == "log" else "data_source"
+        data += fill(template, cite=cite("schalk_comfy" if kind == "model" else "schalk_comfy_log", tie=False))
     sentences = [data + "."]
     if dropped:
         sentences.append(fill("dropped_one") if dropped == 1 else fill("dropped_many", n=dropped))
@@ -481,10 +487,14 @@ def methods(
         loading=_number(assignment.get("loading_threshold", result["loading_threshold"]), 2, language),
     )
     left_out = [u for u in result.get("unassigned_details", []) if u["measure"] in result["loadings"]]
+    communality = assignment.get("communality_threshold", result["communality_threshold"])
+    # A communality threshold of 0 filters nothing, so the paragraph does not state it.
+    communality_text = _number(communality, 2, language)
     text = fill(
         f"rule_{rule}",
         reach=reach,
-        communality=_number(assignment.get("communality_threshold", result["communality_threshold"]), 2, language),
+        comm_and=fill("comm_and", communality=communality_text) if communality else "",
+        comm_if=fill("comm_if", communality=communality_text) if communality else "",
         gap=_number(assignment.get("cross_loading_gap", 0.15), 2, language),
         cite=cite("hair_multivariate") if rule == "hair" else "",
     )
