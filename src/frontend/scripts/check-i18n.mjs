@@ -2,6 +2,7 @@
 //
 // - en.json and de.json have the same keys, each a text in both or a group in both;
 // - each text has the same {placeholders} in both languages;
+// - the German texts address the reader informally ("Öffne", not "Öffnen Sie"), as the app does;
 // - every key the code names literally, as t("..."), tMaybe("...") or countText(t, "..."),
 //   exists, countText's with its "_plural" form;
 // - for a key built at runtime, e.g. t(`factor.steps.${id}`), the fixed part names a group.
@@ -44,6 +45,12 @@ for (const [key, text] of en.texts) {
 }
 for (const key of de.texts.keys()) {
   if (!en.texts.has(key) && !en.groups.has(key)) problems.push(`${key}: missing in en.json`);
+}
+// A verb in the polite imperative: "Wählen Sie", "können Sie". "Sie" and "Ihre" for a thing are fine.
+const FORMAL = /\b[A-Za-zÄÖÜäöüß]+en Sie\b/;
+for (const [key, text] of de.texts) {
+  const formal = FORMAL.exec(text);
+  if (formal) problems.push(`${key}: formal address "${formal[0]}" in de.json, the app says du`);
 }
 for (const key of de.groups) {
   if (!en.groups.has(key) && !en.texts.has(key)) problems.push(`${key}: group missing in en.json`);

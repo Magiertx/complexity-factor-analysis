@@ -38,12 +38,19 @@ export function FoldButton({ label, fold, className }: { label: string; fold: Fo
   );
 }
 
-/** The header row of a section of a table of measures; with `fold` its title is the fold button. */
+/**
+ * The header row of a section of a table of measures; with `fold` its title is the fold button.
+ * The row spans the whole table, which is wider than the screen where the loadings scroll
+ * sideways, so its content is as wide as the frame of the table (TableFrame) and stays at its
+ * left edge: the label "Show" at the end of the button is never out of sight.
+ */
 export function SectionRow({ colSpan, label, fold }: { colSpan: number; label: string; fold?: Fold }) {
   return (
     <tr className="table-group">
       <th scope="colgroup" colSpan={colSpan}>
-        {fold ? <FoldButton label={label} fold={fold} /> : label}
+        <div className="sticky left-3 w-[calc(var(--frame-w,100%)-1.5rem)]">
+          {fold ? <FoldButton label={label} fold={fold} /> : label}
+        </div>
       </th>
     </tr>
   );

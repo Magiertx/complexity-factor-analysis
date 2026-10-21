@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { FactorAnalysis, Job } from "./api";
 import {
+  PRINT_HEATMAP_MAX_MEASURES,
+  PRINT_PAGE_HEIGHT_IN,
   analysisNotices,
   countText,
   datasetJobHref,
   datasetJobSubtitle,
   datasetName,
   defaultOptions,
+  heatmapHeightIn,
   initialOptions,
   isSolutionNotice,
   jobErrorText,
@@ -145,6 +148,15 @@ describe("orderMeasures", () => {
   });
 });
 
+describe("print", () => {
+  it("draws the heatmap only while it fits an A4 page", () => {
+    expect(heatmapHeightIn(PRINT_HEATMAP_MAX_MEASURES)).toBeLessThan(PRINT_PAGE_HEIGHT_IN - 1);
+    // One more row than the page holds is not allowed to be the limit; 60 rows would be cut.
+    expect(heatmapHeightIn(60)).toBeGreaterThan(PRINT_PAGE_HEIGHT_IN);
+    expect(heatmapHeightIn(123)).toBeGreaterThan(2 * PRINT_PAGE_HEIGHT_IN);
+  });
+});
+
 describe("notices", () => {
   it("fall back to the English messages of older results", () => {
     expect(analysisNotices(analysis({ warnings: ["Old warning."] }))).toEqual([
@@ -156,6 +168,13 @@ describe("notices", () => {
     const notice = { code: "kmo_low", message: "The overall MSA 0.512 is below 0.6.", params: { overall: "0.512", threshold: 0.6 } };
     expect(noticeText(notice, translator("de").tMaybe)).toContain("0,512");
     expect(noticeText({ ...notice, code: "something_new" }, tMaybe)).toBe(notice.message);
+  });
+
+  it("name the measures as the lists do, e.g. by their short codes", () => {
+    const heywood = { code: "heywood", message: "English", params: { measures: "n_events, n_variants, own" } };
+    const codes: Record<string, string> = { n_events: "mag", n_variants: "DT-#" };
+    expect(noticeText(heywood, tMaybe, (m) => codes[m] ?? m)).toContain("mag, DT-#, own");
+    expect(noticeText(heywood, tMaybe)).toContain("n_events, n_variants, own");
   });
 
   it("on the factor solution belong to step 4; only some need attention", () => {

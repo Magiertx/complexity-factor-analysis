@@ -311,9 +311,21 @@ export function analysisNotices(analysis: FactorAnalysis): AnalysisNotice[] {
   return analysis.warning_details ?? analysis.warnings.map((message) => ({ code: "", message, params: {} }));
 }
 
-/** A notice in the UI language where its code is known, else the English message. */
-export function noticeText(notice: AnalysisNotice, tMaybe: TranslateMaybe): string {
-  return (notice.code && tMaybe(`factor.warnings.${notice.code}`, noticeParams(notice.params))) || notice.message;
+/**
+ * A notice in the UI language where its code is known, else the English message. With
+ * `measureName`, the measures a notice names (the Heywood case lists them, joined by ", ") are
+ * written as the lists show them, e.g. by their short codes.
+ */
+export function noticeText(
+  notice: AnalysisNotice,
+  tMaybe: TranslateMaybe,
+  measureName?: (key: string) => string,
+): string {
+  const params = noticeParams(notice.params);
+  if (measureName && typeof params.measures === "string" && notice.code === "heywood") {
+    params.measures = params.measures.split(", ").map(measureName).join(", ");
+  }
+  return (notice.code && tMaybe(`factor.warnings.${notice.code}`, params)) || notice.message;
 }
 
 // Notices on the factor solution rather than the data: step 4 shows them next to the factor
@@ -374,6 +386,22 @@ export function signColor(value: number): string {
 export function signInk(value: number): string {
   return value >= 0 ? "rgb(var(--fg))" : "rgb(var(--negative-ink))";
 }
+
+/** The height in inches of the loadings heatmap of the server for this many measures (figures.py: 0.17 per row, 0.75 around them). */
+export function heatmapHeightIn(measures: number): number {
+  return 0.75 + 0.17 * measures;
+}
+
+/** The height of an A4 page of the print view, 14 mm of margin above and 16 mm below, in inches. */
+export const PRINT_PAGE_HEIGHT_IN = (297 - 14 - 16) / 25.4;
+
+/**
+ * The most measures whose loadings are printed as the heatmap of the server. The figure cannot
+ * break across pages, so it has to fit one: 50 rows are 9.25 in of the 10.5 in of a page, 60 would
+ * not. With more measures the print view sets the loadings as a table that breaks between its
+ * rows and repeats its header on every page.
+ */
+export const PRINT_HEATMAP_MAX_MEASURES = 50;
 
 /** Whether a loading counts under the threshold: reaches it, or exceeds it for the rules that ask so. */
 export function loadingCounts(value: number, threshold: number, strict: boolean): boolean {

@@ -51,12 +51,13 @@ import {
 } from "@/lib/factor-analysis";
 import { formatNumber, formatPercent } from "@/lib/format";
 import { ruleNote } from "@/lib/paper-notes";
-import { codesOf, hasCodes, loadShortCodes, measureLabels, saveShortCodes } from "@/lib/short-codes";
+import { codeIndexes, codesOf, hasCodes, loadShortCodes, measureLabels, saveShortCodes } from "@/lib/short-codes";
 import { CONTROL_STEPS, parseStep, stepFromHash, stepHref } from "@/lib/steps";
 import { cn } from "@/lib/utils";
 import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
+import { MeasureScope } from "@/components/ui/table";
 import { UndoToast, type UndoNotice } from "@/components/ui/undo-toast";
 import { useJobsDrawer } from "@/components/jobs-drawer";
 import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
@@ -675,7 +676,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     try {
       if (format === "zip") {
         // The button is enabled only while both are the same: the ZIP holds what is shown.
-        await downloadAnalysisZip(datasetId, analyzedOptions ?? options, locale, codesShown);
+        await downloadAnalysisZip(datasetId, analyzedOptions ?? options, locale, {
+          shortCodes: codesShown,
+          order: figureOrder,
+        });
       } else if (format === "report") {
         const { blob, filename } = await exportReport(datasetId, analyzedOptions ?? options, locale, codesShown);
         downloadBlob(blob, filename);
@@ -696,9 +700,11 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     setFigureBusy(name);
     setExportError(null);
     try {
+      // In the language of the UI: what is on screen is what is downloaded.
       const { blob, filename } = await exportFigure(datasetId, analyzedOptions, name, format, {
         shortCodes: codesShown,
         order: figureOrder,
+        language: locale,
       });
       downloadBlob(blob, filename);
     } catch (e) {
@@ -723,6 +729,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const codesShown = shortCodesOn && codesAvailable;
   const labels = useMemo(() => measureLabels(names, descriptions, codes, codesShown), [names, descriptions, codes, codesShown]);
   const measureName = labels.name;
+  // Log codes are written as the papers write them, C with the code as index.
+  const indexes = useMemo(() => codeIndexes(kind, codes, codesShown), [kind, codes, codesShown]);
   const measureDescription = labels.description;
   // The feature groups of the log measures, for grouping the list of step 3; model measures have none.
   const measureGroups = useMemo<MeasureGroups | null>(() => {
@@ -1018,7 +1026,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   });
 
   return (
-    <div className="space-y-6">
+    <MeasureScope indexes={indexes} className="space-y-6">
       <OnboardingTour open={onboarding.open} onClose={onboarding.close} />
       <FactorTour kind={kind} run={tourOpen} onClose={endTour} onStep={tourStep} />
       <Suspense fallback={null}>
@@ -1283,6 +1291,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                     paperFactors={published?.n_factors ?? null}
                     paperScope={bundled?.published_scope}
                     figure={figure("scree")}
+                    measureName={measureName}
                   />
                 </div>
               ) : (
@@ -1353,7 +1362,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         </div>
       </div>
       <StepNavBar step={current} locks={locks} onGo={go} />
-    </div>
+    </MeasureScope>
   );
 }
 

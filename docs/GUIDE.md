@@ -67,19 +67,24 @@ reopens a dataset of the session with the settings of its last analysis.
 All downloads are in the **Download** menu of the page header:
 
 - **Analysis (ZIP)**: everything to report and reproduce the analysis: the result, the matrix, the
-  tables, `report.tex`, the figures as SVG, the descriptive statistics, the run times of a computed
-  dataset, and a manifest with the settings, the versions and the provenance.
+  tables, `report.tex`, the figures as SVG (English, with the rows of the loadings in the order
+  shown), the descriptive statistics, the run times of a computed dataset, and a manifest with the
+  settings, the versions and the provenance.
 - **LaTeX report**: `report.tex`, built like the report of ComFy (validity, MSA with the rounds of
   the filter, scree plot, descriptive statistics, loadings, communalities) plus the dimensions, the
-  factor correlations of an oblique rotation and the settings. It compiles with pdflatex.
-- **Print view**: the whole analysis on A4 pages in a new tab, to print or to save as PDF.
+  factor correlations of an oblique rotation and the settings. It compiles with pdflatex; compile it with
+  latexmk -pdf, or run pdflatex twice, as long tables settle their column widths in the second run.
+- **Print view**: the whole analysis on A4 pages in a new tab, to print or to save as PDF. The
+  loadings of more than 50 measures are a table that breaks between its rows, as a heatmap of that
+  height would not fit a page.
 - **Loadings (CSV, LaTeX)** and **Dataset (CSV)**.
 
 The **image icon** at the scree plot and at the loadings downloads the figure as SVG (the text
-stays text) or as PNG (300 dpi), always light, sized for the text width of a CEUR paper.
+stays text) or as PNG (300 dpi), always light, sized for the text width of a CEUR paper, with its
+labels in the language of the app.
 
 The **tag icon** in the toolbar names the measures by the **short codes** of the papers (CNC,
-dens, C_mag); the full name stays in the tooltip. The figures, the report and the ZIP follow it.
+dens, and C with the code as index for log measures); the full name stays in the tooltip. The figures, the report and the ZIP follow it.
 
 The **link icon** copies a link to the analysis of a bundled dataset with its settings and the
 step on screen.

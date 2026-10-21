@@ -40,6 +40,18 @@ export function formatNumber(value: number, locale: string, digits?: number): st
 }
 
 /**
+ * A value of the descriptive statistics: up to three decimals, none from a thousand on, and never
+ * grouped. With a separator for thousands, "1,000" (a thousand) would sit next to "1.000" (one) in
+ * the same column, and the German UI reads them the other way round; without it a separator is
+ * always the decimal mark: 1000 and 1, 17248 and 17.248 (de: 17248 and 17,248).
+ */
+export function formatStatistic(value: number, locale: string): string {
+  if (!Number.isFinite(value)) return NO_VALUE;
+  const options = { useGrouping: false, maximumFractionDigits: Math.abs(value) >= 1000 ? 0 : 3 };
+  return signed(numberFormat(locale, options).format(value));
+}
+
+/**
  * A number as a field shows it for editing: without thousands grouping, which
  * parseInputNumber does not read, and with the minus a keyboard types.
  */

@@ -117,3 +117,33 @@ def test_the_zip_has_the_figures_the_report_and_the_descriptives(client):
     descriptives = archive.read("descriptives.csv").decode().splitlines()
     assert descriptives[0] == "measure,n,mean,median,std,min,max,dropped"
     assert len(descriptives) == 14
+
+
+def test_the_figure_has_its_language_and_the_zip_the_figure_options_of_the_menu(client):
+    r = _post(client, kind="model", source="bundled", bundled_id="comfy-paper-inductive-miner")
+    dataset_id = r.json()["dataset_id"]
+    base = f"/factor-analysis/datasets/{dataset_id}/export"
+    options = {"n_factors": 4, "short_codes": True}
+
+    german = client.post(f"{base}/figure", json={**options, "figure": "scree", "language": "de"})
+    assert "Faktor" in _svg_texts(german.content) and "Factor" not in _svg_texts(german.content)
+    assert client.post(f"{base}/figure", json={"language": "fr"}).status_code == 422
+
+    # The ZIP draws its loadings as the figure menu does with the same options.
+    menu = client.post(f"{base}/figure", json={**options, "figure": "loadings", "order": "dataset", "language": "de"})
+    archive = zipfile.ZipFile(io.BytesIO(
+        client.post(f"{base}/zip", json={**options, "order": "dataset", "figure_language": "de"}).content
+    ))
+    assert archive.read("figures/loadings.svg") == menu.content
+    manifest = json.loads(archive.read("manifest.json"))
+    assert manifest["figure_order"] == "dataset" and manifest["figure_language"] == "de"
+    assert "Faktor" in _svg_texts(archive.read("figures/scree.svg"))
+
+    # By default the rows are grouped by factor and the labels are English, as in a paper.
+    default = zipfile.ZipFile(io.BytesIO(client.post(f"{base}/zip", json=options).content))
+    manifest = json.loads(default.read("manifest.json"))
+    assert manifest["figure_order"] == "factor" and manifest["figure_language"] == "en"
+    assert default.read("figures/loadings.svg") != archive.read("figures/loadings.svg")
+    assert "Factor" in _svg_texts(default.read("figures/scree.svg"))
+    assert client.post(f"{base}/zip", json={"order": "random"}).status_code == 422
+    assert client.post(f"{base}/zip", json={"figure_language": "fr"}).status_code == 422

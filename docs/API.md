@@ -547,27 +547,33 @@ rotation, the dimensions the rule forms, and the settings and provenance. With `
 the measures are named by the codes of the papers, for log measures as C with the code as
 index. Factors are named after an interpretation stored for exactly this analysis in
 `language`, if there is one; the report never asks for one. It compiles with pdflatex
-(booktabs, longtable, array, amsmath, tikz, pgfplots and paralist). Under the paper settings,
-the report of a bundled Important Factors dataset prints the numbers of the published ComFy
-report to the decimals it prints them with (`tests/test_report.py`).
+(booktabs, longtable, needspace, array, amsmath, tikz, pgfplots and paralist). Compile it with
+`latexmk -pdf`, or run pdflatex twice: long tables settle their column widths in the second run.
+Under the paper settings, the report of a bundled Important Factors dataset prints the numbers
+of the published ComFy report to the decimals it prints them with (`tests/test_report.py`).
 
 `POST /factor-analysis/datasets/{id}/export/figure` takes the same body plus `"figure":
-"scree" | "loadings"`, `"format": "svg" | "png"`, `"short_codes"` and `"order": "factor" |
+"scree" | "loadings"`, `"format": "svg" | "png"`, `"short_codes"`, `"order": "factor" |
 "dataset"` (the rows of the heatmap: grouped by factor as the UI shows them, or in the order of
-the dataset) and returns `<dataset name>-<figure>.svg` or `.png`. Both are drawn by matplotlib
+the dataset) and `"language": "en" | "de"` (default `en`: the words of the axes, the legend and
+the caption, with the decimal comma in German) and returns `<dataset name>-<figure>.svg` or
+`.png`. With `short_codes`, a log measure is written as the paper writes it, C with its code as
+index. Both are drawn by matplotlib
 in a print style, whatever the theme of the UI: white background, 8 pt text at the text width
 of a CEUR page (15.9 cm), blue for positive and orange for negative loadings, the loadings that
 do not count left white, the assigned ones bold. The SVG keeps its text as text and is the same
 file for the same analysis; the PNG has 300 dpi.
 
 `POST /factor-analysis/datasets/{id}/export/zip` takes the same body plus `"language": "en" |
-"de"` (default `en`) and `"short_codes"` (default `false`, for the report and the figures), and
-returns `<dataset name>-factor-analysis.zip`, everything needed to report or reproduce the
+"de"` (default `en`, the language of the stored interpretation), `"short_codes"` (default
+`false`, for the report and the figures), `"order": "factor" | "dataset"` (the rows of the
+loadings heatmap, as of the figure) and `"figure_language": "en" | "de"` (default `en`, as the
+paper is written in English; the labels of the figures), and returns `<dataset name>-factor-analysis.zip`, everything needed to report or reproduce the
 analysis. The errors of these exports are those of `analyze`.
 
 | File | Content |
 |------|---------|
-| `manifest.json` | `app`, `created_at`, `tool` (`name`, `version` and `commit` of this tool, `null` where not recorded), `dataset` (`id`, `name`, `kind`, `source`, `bundled_id`; `collection`, `citation` and `license` for a bundled dataset, else `null`; `inputs`, `n_observations`, the `measures` left after cleaning, the `dropped` ones as `{name, reason}` and `provenance`, see below), `analysis_params` (the parameters used, with the factor count and rotation of the analysis, the thresholds of the kind and the `assignment_rule`; a single factor is not rotated), `analysis` (`method` minres of `library` factor_analyzer, the upstream code it `follows` with commits, the `assignment_rule` and the `assignment` as the result has it, the random `seed` 20261012 of parallel analysis, and `factor_count`: the factor count `used`, the `kaiser` and `parallel_analysis` suggestions, `method`, `seed`, `simulations` and `percentile`), `analysis_timings` (the `timings` of the analysis), `measure_labels` (`names` or `short_codes`, as the report and the figures name the measures), `measurement` (only for a computed dataset: its run times and input sizes, as the dataset has them), `published` (only if the analysis used the `published_options` of a bundled dataset: these `options`, their `source` and `scope` and the `match`, as `published_match`), `libraries` (versions of factor_analyzer, numpy, pandas, scipy and scikit-learn) and `files` (`{name, description}` of each file). |
+| `manifest.json` | `app`, `created_at`, `tool` (`name`, `version` and `commit` of this tool, `null` where not recorded), `dataset` (`id`, `name`, `kind`, `source`, `bundled_id`; `collection`, `citation` and `license` for a bundled dataset, else `null`; `inputs`, `n_observations`, the `measures` left after cleaning, the `dropped` ones as `{name, reason}` and `provenance`, see below), `analysis_params` (the parameters used, with the factor count and rotation of the analysis, the thresholds of the kind and the `assignment_rule`; a single factor is not rotated), `analysis` (`method` minres of `library` factor_analyzer, the upstream code it `follows` with commits, the `assignment_rule` and the `assignment` as the result has it, the random `seed` 20261012 of parallel analysis, and `factor_count`: the factor count `used`, the `kaiser` and `parallel_analysis` suggestions, `method`, `seed`, `simulations` and `percentile`), `analysis_timings` (the `timings` of the analysis), `measure_labels` (`names` or `short_codes`, as the report and the figures name the measures), `figure_order` (`factor` or `dataset`) and `figure_language` (`en` or `de`) of the figures, `measurement` (only for a computed dataset: its run times and input sizes, as the dataset has them), `published` (only if the analysis used the `published_options` of a bundled dataset: these `options`, their `source` and `scope` and the `match`, as `published_match`), `libraries` (versions of factor_analyzer, numpy, pandas, scipy and scikit-learn) and `files` (`{name, description}` of each file). |
 | `README.txt` | The files, how to reproduce the analysis in the UI or with factor_analyzer, and the provenance in short. |
 | `analysis.json` | The response of `analyze` for these parameters. |
 | `dataset.csv` | The cleaned matrix, the same file as `.../download`. |

@@ -267,7 +267,6 @@ export function LoadingsView({
               </div>
             )}
           </div>
-          {figure && <FigureMenu name={t("factor.figure.loadings")} figure={figure} />}
         </div>
 
         {long && (
@@ -295,6 +294,7 @@ export function LoadingsView({
             measureName={measureName}
             measureDescription={measureDescription}
             list={list}
+            figure={figure}
           />
         ) : (
           <FactorGroups
@@ -302,6 +302,7 @@ export function LoadingsView({
             measureName={measureName}
             measureDescription={measureDescription}
             list={list}
+            figure={figure}
           />
         )}
       </div>
@@ -317,6 +318,7 @@ function LoadingsMatrix({
   measureName,
   measureDescription,
   list,
+  figure,
 }: {
   analysis: FactorAnalysis;
   options: AnalysisOptions;
@@ -325,6 +327,7 @@ function LoadingsMatrix({
   measureName: (key: string) => string;
   measureDescription: (key: string) => string | undefined;
   list: LoadingsList;
+  figure?: FigureDownload;
 }) {
   const t = useT();
   const { locale } = useLocale();
@@ -366,6 +369,12 @@ function LoadingsMatrix({
 
   return (
     <div className="space-y-2">
+      {/* The download of the heatmap sits at the title of the matrix, on every width. */}
+      <HelpLabel
+        label={t("factor.loadings.table_heading")}
+        help={t("factor.help.loading")}
+        extra={figure && <FigureMenu name={t("factor.figure.loadings")} figure={figure} />}
+      />
       <Legend threshold={threshold} boldBy={boldBy} crossed={secondary.size > 0} strict={strict} />
       <TableFrame label={t("factor.loadings.table_heading")}>
         <table ref={zone} className="data-table">
@@ -672,11 +681,13 @@ function FactorGroups({
   measureName,
   measureDescription,
   list,
+  figure,
 }: {
   analysis: FactorAnalysis;
   measureName: (key: string) => string;
   measureDescription: (key: string) => string | undefined;
   list: LoadingsList;
+  figure?: FigureDownload;
 }) {
   const t = useT();
   const { locale } = useLocale();
@@ -703,7 +714,11 @@ function FactorGroups({
   const visible = cards.filter((c) => !narrowed || c.count > 0);
   return (
     <div className="space-y-2">
-      <HelpLabel label={t("factor.loadings.groups_heading")} help={t("factor.help.groups")} />
+      <HelpLabel
+        label={t("factor.loadings.groups_heading")}
+        help={t("factor.help.groups")}
+        extra={figure && <FigureMenu name={t("factor.figure.loadings")} figure={figure} />}
+      />
       <div ref={zone} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {visible.map(({ factor: f, byKey, sections, count }) => {
           // index counts from 0; shares only exist for orthogonal rotations.

@@ -6,6 +6,7 @@ import {
   downloaded,
   expect,
   expectStep,
+  FIT_TIMEOUT,
   goToStep,
   openBundled,
   pattern,
@@ -118,7 +119,44 @@ test("the LaTeX report, the figures and the ZIP take the analysis on screen into
   const files = unzip(await downloaded(await download));
   for (const name of ["report.tex", "descriptives.csv", "figures/scree.svg", "figures/loadings.svg"]) expect(files.has(name), name).toBe(true);
   expect(files.get("figures/loadings.svg")!.toString("utf8")).toContain(">CNC<");
-  expect(JSON.parse(files.get("manifest.json")!.toString("utf8")).measure_labels).toBe("short_codes");
+  const manifest = JSON.parse(files.get("manifest.json")!.toString("utf8"));
+  expect(manifest.measure_labels).toBe("short_codes");
+  // The heatmap of the ZIP is drawn as the figure menu draws it, in English as a paper is.
+  expect(manifest.figure_order).toBe("factor");
+  expect(manifest.figure_language).toBe("en");
+});
+
+test.describe("in the German UI", () => {
+  test.use({ language: "de" });
+
+  test("the figures are labelled in German and the ZIP has the order of the loadings on screen", async ({ page }) => {
+    await page.goto("/");
+    await openBundled(page, "Inductive miner", "de");
+    await expectStep(page, "loadings", "done", "de");
+
+    // The scree plot follows the language of the UI.
+    await goToStep(page, "factors", "de");
+    let download = page.waitForEvent("download");
+    await stepSection(page, "factors")
+      .getByRole("button", { name: text("factor.figure.download", { figure: text("factor.factors.scree_title", {}, "de") }, "de") })
+      .click();
+    await page.getByRole("menuitem", { name: pattern(text("factor.figure.svg_hint", {}, "de")) }).click();
+    const scree = readFileSync(await downloaded(await download), "utf8");
+    expect(scree).toContain(">Eigenwert<");
+    expect(scree).not.toContain(">Eigenvalue<");
+
+    // The ZIP takes the order chosen at the loadings, and keeps its figures English.
+    await goToStep(page, "loadings", "de");
+    await stepSection(page, "loadings").getByRole("button", { name: text("factor.loadings.order_original", {}, "de") }).click();
+    download = page.waitForEvent("download");
+    await page.getByRole("button", { name: text("factor.toolbar.export", {}, "de"), exact: true }).click();
+    await page.getByRole("menuitem", { name: pattern(text("factor.toolbar.export_zip", {}, "de")) }).click();
+    const files = unzip(await downloaded(await download));
+    const manifest = JSON.parse(files.get("manifest.json")!.toString("utf8"));
+    expect(manifest.figure_order).toBe("dataset");
+    expect(manifest.figure_language).toBe("en");
+    expect(files.get("figures/scree.svg")!.toString("utf8")).toContain(">Eigenvalue<");
+  });
 });
 
 test("the print view shows the whole analysis on light pages without controls", async ({ page }) => {
@@ -145,6 +183,30 @@ test("the print view shows the whole analysis on light pages without controls", 
   await expect(print.getByRole("banner").first()).toBeHidden();
   await expect(print.getByRole("button", { name: text("print.print") })).toBeHidden();
   await expect(sheet).toBeVisible();
+  await print.close();
+});
+
+test("the print view sets the loadings of many measures as a table, as the heatmap would not fit a page", async ({ page }) => {
+  await page.goto("/log?bundled=comfy-log-pdc-training-logs&preset=standard&step=loadings");
+  await expectStep(page, "loadings", "done", "en", FIT_TIMEOUT);
+  await toolbar(page).getByRole("button", { name: text("factor.toolbar.export") }).click();
+  const [print] = await Promise.all([
+    page.waitForEvent("popup"),
+    page.getByRole("menuitem", { name: pattern(text("factor.toolbar.print")) }).click(),
+  ]);
+  const sheet = print.locator("article.light-sheet");
+  await expect(sheet.getByRole("heading", { level: 1 })).toBeVisible({ timeout: FIT_TIMEOUT });
+  const loadings = sheet.locator("section", { has: print.getByRole("heading", { level: 2, name: text("factor.steps.loadings") }) });
+  // No heatmap: its 120 rows are taller than two pages and cannot break. A table of one row per
+  // measure, with the header that repeats on every page.
+  await expect(loadings.getByRole("img", { name: text("factor.figure.loadings") })).toHaveCount(0);
+  const table = loadings.getByRole("table", { name: text("factor.loadings.table_heading") });
+  await expect(table.locator("tbody tr")).not.toHaveCount(0);
+  expect(await table.locator("tbody tr").count()).toBeGreaterThan(100);
+  await print.emulateMedia({ media: "print" });
+  expect(await table.locator("thead").evaluate((el) => getComputedStyle(el).display)).toBe("table-header-group");
+  // The heading stays with its first block.
+  await expect(loadings.locator(".print-keep").getByRole("heading", { level: 2 })).toBeVisible();
   await print.close();
 });
 

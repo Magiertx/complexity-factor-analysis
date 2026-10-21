@@ -1194,6 +1194,11 @@ class ArchiveRequest(AnalyzeRequest):
     language: Literal["en", "de"] = "en"
     #: Name the measures of the report and the figures by the short codes of the papers.
     short_codes: bool = False
+    #: The rows of the loadings heatmap in the ZIP: grouped by factor as the UI shows them, or as
+    #: in the dataset (the same option as of the figure).
+    order: Literal["factor", "dataset"] = "factor"
+    #: The language of the labels of the figures in the ZIP; the paper's is English.
+    figure_language: Literal["en", "de"] = "en"
 
 
 class FigureRequest(AnalyzeRequest):
@@ -1203,6 +1208,8 @@ class FigureRequest(AnalyzeRequest):
     short_codes: bool = False
     #: The rows of the loadings: grouped by factor as the UI shows them, or as in the dataset.
     order: Literal["factor", "dataset"] = "factor"
+    #: The language of the labels, the axes and the caption.
+    language: Literal["en", "de"] = "en"
 
 
 def _provenance(meta: dict[str, Any], entry: dict[str, Any]) -> dict[str, Any]:
@@ -1304,8 +1311,12 @@ def _factor_names(interpretation: dict[str, Any] | None) -> dict[int, str] | Non
     return {f["index"] - 1: f["name"] for f in factors} or None
 
 
-def _figure(exported: _Exported, name: str, fmt: str, short: bool, order: str = "factor") -> bytes:
-    return figures.figure(name, fmt, exported.result, exported.meta["kind"], short=short, order=order)
+def _figure(
+    exported: _Exported, name: str, fmt: str, short: bool, order: str = "factor", language: str = "en"
+) -> bytes:
+    return figures.figure(
+        name, fmt, exported.result, exported.meta["kind"], short=short, order=order, language=language
+    )
 
 
 @router.post("/datasets/{dataset_id}/export/figure")
@@ -1322,7 +1333,9 @@ async def export_figure(
     exported = await _exported(request, dataset_id, body, session_id)
     if isinstance(exported, Response):
         return exported
-    content = await run_in_threadpool(_figure, exported, body.figure, body.format, body.short_codes, body.order)
+    content = await run_in_threadpool(
+        _figure, exported, body.figure, body.format, body.short_codes, body.order, body.language
+    )
     stem = f"{_slug(exported.meta['name'])}-{body.figure}"
     return _attachment(content, f"{stem}.{body.format}", figures.MEDIA_TYPES[body.format])
 
@@ -1371,7 +1384,8 @@ async def export_archive(
     body: ArchiveRequest | None = None,
     session_id: str = Depends(get_session_id),
 ) -> Response:
-    """The analysis as a ZIP archive: result, matrix, tables, report.tex, the figures as SVG,
+    """The analysis as a ZIP archive: result, matrix, tables, report.tex, the figures as SVG
+    (rows in the ``order`` and labels in the ``figure_language``, both kept in the manifest),
     the descriptive statistics, the run times of a computed dataset, parameters and library
     versions, with an interpretation of exactly this analysis if one is stored. Never calls the
     API for an interpretation."""
@@ -1392,8 +1406,13 @@ async def export_archive(
             published=exported.published(),
             descriptives=_descriptives(meta, session_id),
             measurement=storage.read_measurement(session_id, meta["id"]),
-            figures={f"figures/{name}.svg": _figure(exported, name, "svg", body.short_codes) for name in figures.FIGURES},
+            figures={
+                f"figures/{name}.svg": _figure(exported, name, "svg", body.short_codes, body.order, body.figure_language)
+                for name in figures.FIGURES
+            },
             short_codes=body.short_codes,
+            figure_order=body.order,
+            figure_language=body.figure_language,
         )
 
     archive = await run_in_threadpool(build)

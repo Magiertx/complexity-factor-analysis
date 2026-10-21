@@ -56,11 +56,11 @@ Schalk do it, but interactively in the browser.
   deleting a dataset job in the run history deletes its dataset too.
 - **Into the paper.** A LaTeX report built like ComFy's (`report.tex`: validity, MSA with the
   rounds of the filter, scree plot, descriptive statistics, loadings with the assigned ones in
-  bold, communalities, dimensions, settings and provenance; compiles with pdflatex and prints
-  the published numbers under the paper settings), the scree plot and the loadings heatmap as
-  SVG or PNG (300 dpi, light, at the text width of a CEUR page), a print view of the whole
-  analysis for A4 or PDF, and a switch to the short codes of the papers (CNC, dens, C_mag) for
-  lists, figures and report. The dataset step shows the descriptive statistics of every measure
+  bold, communalities, dimensions, settings and provenance; compiles with latexmk or pdflatex run
+  twice, and prints the published numbers under the paper settings), the scree plot and the
+  loadings heatmap as SVG or PNG (300 dpi, light, at the text width of a CEUR page), a print
+  view of the whole analysis for A4 or PDF, and a switch to the short codes of the papers (CNC,
+  dens, C_mag) for lists, figures and report. The dataset step shows the descriptive statistics of every measure
   as ComFy prints them and, for a computed dataset, the run time and input size of every stage.
 - **Export.** Loadings as CSV or as a LaTeX `tabular` for the paper, the cleaned matrix as CSV,
   or the whole analysis as a ZIP: result, matrix, tables, the assignment of each measure, the

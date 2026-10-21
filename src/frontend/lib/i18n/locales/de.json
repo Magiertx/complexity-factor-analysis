@@ -240,7 +240,7 @@
       "fa_download": "Die bereinigte Matrix als CSV.",
       "fa_analyze": "Bartlett, KMO mit MSA-Filter, Eigenwerte mit Kaiser und Parallelanalyse, rotierte Ladungen und die Faktorgruppen nach `assignment_rule` (`largest`, `multi`, `hair`) mit Querladungen sowie die Laufzeiten ihrer Teile (`timings`); mit den veröffentlichten Einstellungen der Abgleich mit dem Report (JSON).",
       "fa_export": "Die Ladungstabelle als CSV oder LaTeX; der Body von analyze plus format.",
-      "fa_export_zip": "Die ganze Analyse als ZIP: Ergebnis, Matrix, Tabellen, report.tex, Abbildungen, deskriptive Statistik, Laufzeiten, Parameter, Bibliotheksversionen und Herkunft (Toolversion und Commit, Upstream-Commits, feeed, pm4py und ProM, Miner mit ihren Parametern).",
+      "fa_export_zip": "Die ganze Analyse als ZIP: Ergebnis, Matrix, Tabellen, report.tex, Abbildungen, deskriptive Statistik, Laufzeiten, Parameter, Bibliotheksversionen und Herkunft (Toolversion und Commit, Upstream-Commits, feeed, pm4py und ProM, Miner mit ihren Parametern); der Body von analyze plus `language`, `short_codes` und für die Abbildungen `order` und `figure_language`, die das Manifest festhält.",
       "fa_interpretation_status": "Ob Claude Faktoren interpretieren kann, und mit welchem Modell.",
       "fa_interpret": "Namen und kurze Interpretationen der Faktoren durch Claude; der Body von analyze plus language. Optional, braucht einen API-Schlüssel auf dem Server.",
       "jobs": "Alle Runs deiner Sitzung.",
@@ -255,7 +255,7 @@
       "health": "Bereitschaftsprüfung: 200, wenn die Datenbank erreichbar ist.",
       "session_start": "Startet die Sitzung (das Cookie `session_id`), wenn die Anfrage keines hat oder eines, das der Server nicht lesen kann. Die Seite erledigt das selbst; ein Skript, das mehrere Anfragen gleichzeitig sendet, ruft es zuerst auf.",
       "fa_export_report": "Die Analyse als LaTeX-Report, aufgebaut wie der von ComFy (report.tex); der Body von analyze plus `short_codes` und `language`.",
-      "fa_export_figure": "Der Scree-Plot oder die Ladungs-Heatmap als SVG oder PNG (300 dpi) im Druckstil; der Body von analyze plus `figure`, `format`, `short_codes` und `order`."
+      "fa_export_figure": "Der Scree-Plot oder die Ladungs-Heatmap als SVG oder PNG (300 dpi) im Druckstil; der Body von analyze plus `figure`, `format`, `short_codes`, `order` und `language` (`en` oder `de`)."
     },
     "notes": {
       "rate_limits": "Ratenlimits pro IP: `60/hour` für `POST /algorithms/{id}/analyze` und für neue Datensätze aus `POST /factor-analysis/datasets`, `600/minute` für das Lesen, Auflisten und Löschen von Datensätzen und das Speichern ihrer Optionen, `300/hour` für `POST /log-stats` und `120/minute` überall sonst. Interpretationen durch Claude: `10/hour` pro Sitzung und `200/day` für den Server. Über einem Limit lautet die Antwort 429 mit einem `code`.",
@@ -1194,7 +1194,7 @@
       "mine_none": "In dieser Sitzung gibt es noch keine Datensätze.",
       "more": "Mehr",
       "export_report": "LaTeX-Report",
-      "export_report_hint": "report.tex, aufgebaut wie der ComFy-Report; läuft durch pdflatex",
+      "export_report_hint": "report.tex, aufgebaut wie der ComFy-Report; mit latexmk oder zweimal pdflatex übersetzen",
       "print": "Druckansicht",
       "print_hint": "Die ganze Analyse auf A4-Seiten in einem neuen Tab, zum Drucken oder Speichern als PDF",
       "help": "Hilfe",
@@ -1235,7 +1235,7 @@
     },
     "figure": {
       "download": "{figure} herunterladen",
-      "download_more": "Als SVG oder PNG für ein Paper: hell, mit weißem Hintergrund, in der Textbreite einer CEUR-Seite.",
+      "download_more": "Als SVG oder PNG für ein Paper: hell, mit weißem Hintergrund, in der Textbreite einer CEUR-Seite, beschriftet in der Sprache der App.",
       "svg": "SVG",
       "svg_hint": "Vektorgrafik; der Text bleibt Text",
       "png": "PNG",
@@ -1275,10 +1275,10 @@
   },
   "print": {
     "title": "Faktoranalyse von „{name}“",
-    "invalid": "Diese Adresse nennt keine Analyse. Öffnen Sie die Druckansicht aus dem Download-Menü einer Analyse.",
+    "invalid": "Diese Adresse nennt keine Analyse. Öffne die Druckansicht aus dem Download-Menü einer Analyse.",
     "failed": "Die Analyse konnte nicht geladen werden: {error}",
     "loading": "Die Analyse wird geladen …",
-    "hint": "Drucken Sie die Seite oder speichern Sie sie mit dem Druckdialog des Browsers als PDF.",
+    "hint": "Drucke die Seite oder speichere sie mit dem Druckdialog des Browsers als PDF.",
     "print": "Drucken",
     "dataset_size": "{n} Beobachtungen und {p} Maße nach der Bereinigung.",
     "dropped": "Von der Bereinigung weggelassen: {list}.",
@@ -1314,15 +1314,15 @@
     "bundled": {
       "title": "Einen veröffentlichten Datensatz analysieren",
       "items": {
-        "open": "Öffnen Sie Modellkomplexität oder Log-Komplexität.",
-        "choose": "Wählen Sie unter Daten einen Datensatz eines Papers, etwa Important Factors: Inductive Miner.",
-        "settings": "Wählen Sie Paper-Einstellungen, um ihn wie im Paper zu analysieren, oder Standard des Tools für die Voreinstellungen von ComFy, dann Datensatz verwenden."
+        "open": "Öffne Modellkomplexität oder Log-Komplexität.",
+        "choose": "Wähle unter Daten einen Datensatz eines Papers, etwa Important Factors: Inductive Miner.",
+        "settings": "Wähle Paper-Einstellungen, um ihn wie im Paper zu analysieren, oder Standard des Tools für die Voreinstellungen von ComFy, dann Datensatz verwenden."
       },
       "p1": "Mit den Paper-Einstellungen sagt ein Chip in der Einstellungszeile, ob die Zahlen dem veröffentlichten ComFy-Report gleichen und wie sich die Tabellen des Papers dazu verhalten. „Hier starten“ in der Werkzeugleiste nennt vier Einstiege."
     },
     "own": {
       "title": "Eigene Daten analysieren",
-      "p1": "Wählen Sie unter Daten eine Quelle:",
+      "p1": "Wähle unter Daten eine Quelle:",
       "items": {
         "logs": "Event-Logs (.xes, .xes.gz): Für Modellmaße wird jedes Log mit jedem gewählten Miner entdeckt und jedes Netz gemessen; für Logmaße berechnet feeed die gewählten Feature-Gruppen.",
         "nets": "Petri-Netze (.pnml): Jedes Netz wird gemessen.",
@@ -1345,11 +1345,11 @@
       "p1": "Das Download-Menü im Seitenkopf enthält:",
       "items": {
         "zip": "Analyse (ZIP): das Ergebnis, die Matrix, die Tabellen, report.tex, die Abbildungen, die deskriptive Statistik, die Laufzeiten und ein Manifest mit Einstellungen, Versionen und Herkunft.",
-        "report": "LaTeX-Report: report.tex, aufgebaut wie der ComFy-Report, mit den Dimensionen und den Einstellungen; läuft durch pdflatex.",
+        "report": "LaTeX-Report: report.tex, aufgebaut wie der ComFy-Report, mit den Dimensionen und den Einstellungen; übersetze ihn mit latexmk -pdf oder lasse pdflatex zweimal laufen, denn lange Tabellen finden ihre Spaltenbreiten erst im zweiten Lauf.",
         "print": "Druckansicht: die ganze Analyse auf A4-Seiten, zum Drucken oder Speichern als PDF.",
         "tables": "Die Ladungen als CSV oder LaTeX und den bereinigten Datensatz als CSV."
       },
-      "p2": "Das Bild-Symbol am Scree-Plot und an den Ladungen lädt die Abbildung als SVG herunter, deren Text Text bleibt, oder als PNG mit 300 dpi: immer hell, in der Textbreite eines CEUR-Papers.",
+      "p2": "Das Bild-Symbol am Scree-Plot und an den Ladungen lädt die Abbildung als SVG herunter, deren Text Text bleibt, oder als PNG mit 300 dpi: immer hell, in der Textbreite eines CEUR-Papers, mit den Beschriftungen in der Sprache der App.",
       "p3": "Das Etikett-Symbol in der Werkzeugleiste nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder C_mag; der volle Name steht im Tooltip, und Abbildungen, Report und ZIP folgen ihm.",
       "p4": "Das Link-Symbol kopiert einen Link auf die Analyse eines veröffentlichten Datensatzes mit ihren Einstellungen."
     },

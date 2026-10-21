@@ -26,17 +26,19 @@ interface Props {
   paperScope?: string;
   /** Downloads the scree plot for a paper. */
   figure?: FigureDownload;
+  /** How a measure is named in the notes, e.g. by its short code; its key without it. */
+  measureName?: (key: string) => string;
 }
 
 type Criterion = "kaiser" | "parallel" | "paper" | "report";
 
-export function FactorsView({ analysis, options, onOptions, paperFactors, paperScope, figure }: Props) {
+export function FactorsView({ analysis, options, onOptions, paperFactors, paperScope, figure, measureName }: Props) {
   const t = useT();
   const tMaybe = useTMaybe();
   const { locale } = useLocale();
   const notes = analysisNotices(analysis)
     .filter(isSolutionNotice)
-    .map((n) => noticeText(n, tMaybe));
+    .map((n) => noticeText(n, tMaybe, measureName));
   const max = Math.max(1, analysis.used_measures.length - 1);
   const counts = analysis.factor_count;
   const kaiser = counts?.kaiser ?? analysis.suggested_n_factors;

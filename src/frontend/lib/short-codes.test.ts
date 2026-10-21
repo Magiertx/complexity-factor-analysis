@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { codesOf, hasCodes, measureLabels } from "./short-codes";
+import { codeIndexes, codesOf, hasCodes, measureLabels } from "./short-codes";
 
 const catalog = [
   { key: "Size", name: "Size", description: "Number of places and transitions.", short: "size" },
@@ -28,6 +28,14 @@ describe("short codes", () => {
     expect(on.name("own")).toBe("own");
     expect(on.description("own")).toBeUndefined();
     expect(measureLabels(names, new Map(), codes, true).description("Size")).toBe("Size");
+  });
+
+  it("are set as the papers set log codes: C with the code as index, and only then", () => {
+    expect([...codeIndexes("log", codes, true).keys()]).toEqual(["size", "CNC", "mag"]);
+    expect(codeIndexes("log", codes, true).get("mag")).toBe("mag");
+    // Model codes are written plain, and nothing is set while the codes are off.
+    expect(codeIndexes("model", codes, true).size).toBe(0);
+    expect(codeIndexes("log", codes, false).size).toBe(0);
   });
 
   it("change nothing when off", () => {
