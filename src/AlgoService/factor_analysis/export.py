@@ -261,7 +261,7 @@ def stages_csv(measurement: dict[str, Any]) -> str:
 LIBRARIES = ("factor_analyzer", "numpy", "pandas", "scipy", "scikit-learn")
 
 
-def _library_versions() -> dict[str, str | None]:
+def library_versions() -> dict[str, str | None]:
     return {name: provenance.package_version(name) for name in LIBRARIES}
 
 
@@ -407,6 +407,10 @@ def analysis_zip(
     matrix: str,
     interpretation: tuple[str, dict[str, Any]] | None = None,
     published: dict[str, Any] | None = None,
+    descriptives: dict[str, Any] | None = None,
+    measurement: dict[str, Any] | None = None,
+    figures: dict[str, bytes] | None = None,
+    short_codes: bool = False,
 ) -> bytes:
     """Everything needed to report and reproduce one analysis.
 
@@ -414,9 +418,22 @@ def analysis_zip(
     analysis ran with, ``matrix`` is ``matrix_csv`` of its data and ``interpretation`` a
     stored interpretation with its language. ``published`` holds the published options of a
     bundled dataset, their source and the comparison with the published numbers, if the
-    analysis ran with these options.
+    analysis ran with these options. ``descriptives`` are the statistics kept with the dataset,
+    ``measurement`` the run times and input sizes of a computed one, ``figures`` the figures by
+    their path in the archive, e.g. "figures/scree.svg". ``short_codes`` names the measures in
+    the report by the codes of the papers, as the figures do.
     """
-    files = [
+    from .report import report_tex
+
+    created_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    tool = provenance.tool()
+    libraries = library_versions()
+    factor_names = None
+    if interpretation is not None:
+        factor_names = {
+            f["index"] - 1: f["name"] for f in (interpretation[1].get("interpretation") or {}).get("factors", [])
+        }
+    files: list[tuple[str, str | bytes, str]] = [
         ("analysis.json", json.dumps(result, ensure_ascii=False, indent=2),
          "The full result, as POST /factor-analysis/datasets/{id}/analyze returns it."),
         ("dataset.csv", matrix, "The cleaned matrix the analysis ran on, one row per observation."),
@@ -439,7 +456,28 @@ def analysis_zip(
          "Eigenvalues of the correlation matrix (scree plot) and of random data (parallel analysis)."),
         ("msa.csv", msa_csv(result, dataset["measures"], params["excluded"]),
          "MSA per measure and whether it was used, removed by the MSA filter or excluded."),
+        ("report.tex", report_tex(
+            dataset=dataset, params=params, result=result, descriptives=descriptives, tool=tool,
+            libraries=libraries, created_at=created_at, short=short_codes, factor_names=factor_names,
+            published=published,
+        ), "The analysis as a LaTeX report built like ComFy's report; compiles with pdflatex."),
     ]
+    if descriptives is not None:
+        files.append((
+            "descriptives.csv", descriptives_csv(descriptives),
+            "Mean, median, standard deviation (ddof=1), minimum and maximum of every measure, as ComFy's report "
+            + ("prints them, over the data before cleaning." if descriptives.get("basis") == "input"
+               else "prints them; over the cleaned matrix, as the data before cleaning were not kept."),
+        ))
+    if measurement is not None:
+        files += [
+            ("inputs.csv", measurement_csv(measurement),
+             "Per observation: the size of its input and the seconds of reading, discovery and the measures."),
+            ("stages.csv", stages_csv(measurement), "Seconds of each measure or feature group per observation."),
+        ]
+    for name, content in (figures or {}).items():
+        what = "scree plot" if "scree" in name else "loadings heatmap"
+        files.append((name, content, f"The {what} in print style, as the figure menu in the app downloads it."))
     if interpretation is not None:
         language, entry = interpretation
         files.append((
@@ -447,13 +485,11 @@ def analysis_zip(
             "The stored interpretation of the factors, with the model and parameters it was made for.",
         ))
 
-    created_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     listing = [
         {"name": "manifest.json", "description": "What was analysed, with which parameters, code and libraries."},
         {"name": "README.txt", "description": "This overview and how to reproduce the analysis."},
         *({"name": name, "description": description} for name, _, description in files),
     ]
-    tool = provenance.tool()
     manifest = {
         "app": APP_NAME,
         "created_at": created_at,
@@ -461,9 +497,14 @@ def analysis_zip(
         "dataset": dataset,
         "analysis_params": params,
         "analysis": provenance.analysis(result),
-        "libraries": _library_versions(),
+        # Wall times of this analysis; a cached fit keeps the time its computation took.
+        "analysis_timings": result.get("timings"),
+        "measure_labels": "short_codes" if short_codes else "names",
+        "libraries": libraries,
         "files": listing,
     }
+    if measurement is not None:
+        manifest["measurement"] = measurement
     if published is not None:
         manifest["published"] = published
     buffer = io.BytesIO()

@@ -15,6 +15,7 @@ import tempfile
 import threading
 import time
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
@@ -30,7 +31,8 @@ from algorithms._log_io import MAX_DECOMPRESSED_BYTES
 from config import MAX_FILE_SIZE, CodedHTTPException, broadcast_jobs_update, get_session_id, limiter, logger
 from env_config import positive_int, rate_limit
 from factor_analysis import catalog as cat
-from factor_analysis import compute, published, storage
+from factor_analysis import compute, figures, published, storage
+from factor_analysis.descriptives import describe, describe_cleaned
 from factor_analysis.core import (
     COMMUNALITY_THRESHOLDS,
     LOADING_THRESHOLDS,
@@ -41,7 +43,16 @@ from factor_analysis.core import (
     analyze as run_analysis,
     check_params,
 )
-from factor_analysis.export import analysis_zip, loadings_csv, loadings_latex, matrix_csv
+from factor_analysis.export import (
+    MEASUREMENT_COLUMNS,
+    library_versions,
+    analysis_zip,
+    loadings_csv,
+    loadings_latex,
+    matrix_csv,
+    measurement_rows,
+)
+from factor_analysis.report import report_tex
 from interpretation import store
 from interpretation.payload import data_hash, effective_params
 from routes.algorithms import (
@@ -301,6 +312,11 @@ def _relabel(table: pd.DataFrame, style: str | None) -> pd.DataFrame:
     return table
 
 
+def _bundled_table(entry: dict[str, Any]) -> pd.DataFrame:
+    """The table of a bundled dataset as its CSV has it, with the rows named as the UI names them."""
+    return _relabel(pd.read_csv(cat.DATASETS_DIR / entry["file"], index_col=0), entry.get("row_labels"))
+
+
 def _select_columns(table: pd.DataFrame, measures: list[str] | None) -> pd.DataFrame:
     if not measures:
         return table
@@ -378,6 +394,9 @@ async def run_dataset_task(job_id: str, session_id: str, dataset_id: str, spec: 
             first = result.failures[0][1] if result.failures else "no input produced values"
             raise RuntimeError(f"No observation could be computed. First error: {first}")
 
+        if result.measurement is not None:
+            # Before the matrix: once the dataset is ready, its measurement is there too.
+            await asyncio.to_thread(storage.write_measurement, session_id, dataset_id, result.measurement.to_dict())
         try:
             meta = await asyncio.to_thread(
                 storage.store_matrix, session_id, dataset_id, result.table, result.failures, min_measures=2
@@ -395,6 +414,10 @@ async def run_dataset_task(job_id: str, session_id: str, dataset_id: str, spec: 
             stat("Measures", len(meta["measures"])),
             table("Measure values", ["observation", *result.table.columns], rows),
         ]
+        if result.measurement is not None:
+            artifacts.append(table(
+                "Run times and input sizes", list(MEASUREMENT_COLUMNS), measurement_rows(result.measurement.to_dict())
+            ))
         if result.failures:
             artifacts.append(table("Failures", ["input", "error"], [list(f) for f in result.failures]))
         if meta["dropped"]:
@@ -536,9 +559,7 @@ async def _create_dataset(
         if source == "bundled":
             entry = _bundled_entry_or_400(kind, bundled_id)
             bundled_id = entry["id"]
-            table = await run_in_threadpool(
-                lambda: _relabel(pd.read_csv(cat.DATASETS_DIR / entry["file"], index_col=0), entry.get("row_labels"))
-            )
+            table = await run_in_threadpool(_bundled_table, entry)
             display = name or entry["name"]
         else:
             if len(uploads) != 1:
@@ -784,7 +805,9 @@ async def get_dataset(
     session_id: str = Depends(get_session_id),
 ) -> dict[str, Any]:
     """Status, measures and the first ``rows`` rows of the cleaned matrix. Polled while the
-    dataset is computed, hence its own, higher rate limit."""
+    dataset is computed, hence its own, higher rate limit. A ready dataset also has the
+    descriptive statistics of its measures (``descriptives``) and, if the tool computed it from
+    logs or nets, the run times and input sizes (``measurement``, else null)."""
     meta = await _meta_or_404(dataset_id, session_id)
     out: dict[str, Any] = {
         "id": meta["id"],
@@ -819,6 +842,8 @@ async def get_dataset(
         out["observations"] = list(head.index)
         out["values"] = head.to_numpy().tolist()
         out["truncated"] = len(data) > rows
+        out["descriptives"] = await run_in_threadpool(_descriptives, meta, session_id)
+        out["measurement"] = await run_in_threadpool(storage.read_measurement, session_id, meta["id"])
     return out
 
 
@@ -1167,6 +1192,17 @@ async def export_loadings(
 class ArchiveRequest(AnalyzeRequest):
     #: Language of the stored interpretation to include.
     language: Literal["en", "de"] = "en"
+    #: Name the measures of the report and the figures by the short codes of the papers.
+    short_codes: bool = False
+
+
+class FigureRequest(AnalyzeRequest):
+    figure: Literal["scree", "loadings"] = "scree"
+    format: Literal["svg", "png"] = "svg"
+    #: Name the measures by the short codes of the papers (loadings only).
+    short_codes: bool = False
+    #: The rows of the loadings: grouped by factor as the UI shows them, or as in the dataset.
+    order: Literal["factor", "dataset"] = "factor"
 
 
 def _provenance(meta: dict[str, Any], entry: dict[str, Any]) -> dict[str, Any]:
@@ -1203,18 +1239,45 @@ def _dataset_record(meta: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-@router.post("/datasets/{dataset_id}/export/zip")
-@limiter.limit(rate_limit("fa_analyze", "120/minute"))
-async def export_archive(
-    request: Request,
-    dataset_id: str,
-    body: ArchiveRequest | None = None,
-    session_id: str = Depends(get_session_id),
-) -> Response:
-    """The analysis as a ZIP archive: result, matrix, tables, parameters and library versions,
-    with an interpretation of exactly this analysis if one is stored. Never calls the API for
-    an interpretation."""
-    body = body or ArchiveRequest()
+def _descriptives(meta: dict[str, Any], session_id: str) -> dict[str, Any]:
+    """The statistics kept with the dataset; for one stored before they were kept, those of
+    its bundled table, or of the cleaned matrix if it has none."""
+    stored = storage.read_descriptives(session_id, meta["id"])
+    if stored is not None:
+        return stored
+    entry = cat.bundled_entry(meta.get("bundled_id") or "")
+    if entry is not None:
+        return describe(_select_columns(_bundled_table(entry), _inputs(meta).get("measures")))
+    return describe_cleaned(storage.load_matrix(session_id, meta["id"]))
+
+
+class _Exported:
+    """What the exports of one analysis share: the dataset, the analysis and its context."""
+
+    def __init__(self, meta: dict[str, Any], data: pd.DataFrame, params: AnalysisParams, result: dict[str, Any]) -> None:
+        self.meta = meta
+        self.data = data
+        self.params = params
+        self.result = result
+        self.match = _published_match(meta, params, result)
+        result["published_match"] = self.match
+        #: The parameters the analysis ran with; a single factor is not rotated, whatever was asked for.
+        self.used = {**effective_params(params, result["n_factors"]), "rotation": result["rotation"]}
+
+    def published(self) -> dict[str, Any] | None:
+        if self.match is None:
+            return None
+        entry = cat.bundled_entry(self.meta.get("bundled_id") or "") or {}
+        return {
+            "options": entry["published_options"],
+            "source": entry.get("published_source"),
+            "scope": entry.get("published_scope"),
+            "match": self.match,
+        }
+
+
+async def _exported(request: Request, dataset_id: str, body: AnalyzeRequest, session_id: str) -> _Exported | Response:
+    """The analysis an export is made of, or the response that says why there is none."""
     meta, data = await _ready_matrix(dataset_id, session_id)
     params = body.params(meta["kind"])
     try:
@@ -1223,25 +1286,115 @@ async def export_archive(
         return e.response
     except Superseded:
         return _superseded()
-    result["published_match"] = match = _published_match(meta, params, result)
-    used = effective_params(params, result["n_factors"])
-    digest = await run_in_threadpool(data_hash, data)
-    stored = store.lookup(session_id, meta, digest, used, body.language)
-    entry = cat.bundled_entry(meta.get("bundled_id") or "") or {}
-    archive = await run_in_threadpool(
-        lambda: analysis_zip(
-            dataset=_dataset_record(meta),
-            # A single factor is not rotated, whatever was asked for.
-            params={**used, "rotation": result["rotation"]},
-            result=result,
-            matrix=matrix_csv(data),
-            interpretation=(body.language, stored[0]) if stored else None,
-            published=None if match is None else {
-                "options": entry["published_options"],
-                "source": entry.get("published_source"),
-                "scope": entry.get("published_scope"),
-                "match": match,
-            },
-        )
+    return _Exported(meta, data, params, result)
+
+
+async def _interpretation(exported: _Exported, session_id: str, language: str) -> dict[str, Any] | None:
+    """The interpretation stored for exactly this analysis, if any; never calls the API."""
+    digest = await run_in_threadpool(data_hash, exported.data)
+    stored = store.lookup(
+        session_id, exported.meta, digest, effective_params(exported.params, exported.result["n_factors"]), language
     )
+    return stored[0] if stored else None
+
+
+def _factor_names(interpretation: dict[str, Any] | None) -> dict[int, str] | None:
+    """The names of the factors of a stored interpretation, by their index from 0."""
+    factors = ((interpretation or {}).get("interpretation") or {}).get("factors") or []
+    return {f["index"] - 1: f["name"] for f in factors} or None
+
+
+def _figure(exported: _Exported, name: str, fmt: str, short: bool, order: str = "factor") -> bytes:
+    return figures.figure(name, fmt, exported.result, exported.meta["kind"], short=short, order=order)
+
+
+@router.post("/datasets/{dataset_id}/export/figure")
+@limiter.limit(rate_limit("fa_analyze", "120/minute"))
+async def export_figure(
+    request: Request,
+    dataset_id: str,
+    body: FigureRequest | None = None,
+    session_id: str = Depends(get_session_id),
+) -> Response:
+    """The scree plot or the loadings heatmap of the analysis as SVG (text kept as text) or PNG
+    (300 dpi), in a print style: white background, 8 pt text at the width of a CEUR page."""
+    body = body or FigureRequest()
+    exported = await _exported(request, dataset_id, body, session_id)
+    if isinstance(exported, Response):
+        return exported
+    content = await run_in_threadpool(_figure, exported, body.figure, body.format, body.short_codes, body.order)
+    stem = f"{_slug(exported.meta['name'])}-{body.figure}"
+    return _attachment(content, f"{stem}.{body.format}", figures.MEDIA_TYPES[body.format])
+
+
+@router.post("/datasets/{dataset_id}/export/report")
+@limiter.limit(rate_limit("fa_analyze", "120/minute"))
+async def export_report(
+    request: Request,
+    dataset_id: str,
+    body: ArchiveRequest | None = None,
+    session_id: str = Depends(get_session_id),
+) -> Response:
+    """The analysis as a LaTeX report built like ComFy's (report.tex): measures, validity
+    (sample size, Bartlett, MSA with the rounds of the filter), factor count, descriptive
+    statistics, loadings, communalities, dimensions, settings and provenance. The factors are
+    named after an interpretation stored for exactly this analysis in ``language``, if any."""
+    body = body or ArchiveRequest()
+    exported = await _exported(request, dataset_id, body, session_id)
+    if isinstance(exported, Response):
+        return exported
+    names = _factor_names(await _interpretation(exported, session_id, body.language))
+
+    def build() -> str:
+        return report_tex(
+            dataset=_dataset_record(exported.meta),
+            params=exported.used,
+            result=exported.result,
+            descriptives=_descriptives(exported.meta, session_id),
+            tool=provenance.tool(),
+            libraries=library_versions(),
+            created_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            short=body.short_codes,
+            factor_names=names,
+            published=exported.published(),
+        )
+
+    content = await run_in_threadpool(build)
+    return _attachment(content, f"{_slug(exported.meta['name'])}-report.tex", "application/x-latex; charset=utf-8")
+
+
+@router.post("/datasets/{dataset_id}/export/zip")
+@limiter.limit(rate_limit("fa_analyze", "120/minute"))
+async def export_archive(
+    request: Request,
+    dataset_id: str,
+    body: ArchiveRequest | None = None,
+    session_id: str = Depends(get_session_id),
+) -> Response:
+    """The analysis as a ZIP archive: result, matrix, tables, report.tex, the figures as SVG,
+    the descriptive statistics, the run times of a computed dataset, parameters and library
+    versions, with an interpretation of exactly this analysis if one is stored. Never calls the
+    API for an interpretation."""
+    body = body or ArchiveRequest()
+    exported = await _exported(request, dataset_id, body, session_id)
+    if isinstance(exported, Response):
+        return exported
+    interpretation = await _interpretation(exported, session_id, body.language)
+    meta = exported.meta
+
+    def build() -> bytes:
+        return analysis_zip(
+            dataset=_dataset_record(meta),
+            params=exported.used,
+            result=exported.result,
+            matrix=matrix_csv(exported.data),
+            interpretation=(body.language, interpretation) if interpretation else None,
+            published=exported.published(),
+            descriptives=_descriptives(meta, session_id),
+            measurement=storage.read_measurement(session_id, meta["id"]),
+            figures={f"figures/{name}.svg": _figure(exported, name, "svg", body.short_codes) for name in figures.FIGURES},
+            short_codes=body.short_codes,
+        )
+
+    archive = await run_in_threadpool(build)
     return _attachment(archive, f"{_slug(meta['name'])}-factor-analysis.zip", "application/zip")
