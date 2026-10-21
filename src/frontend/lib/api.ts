@@ -847,12 +847,20 @@ export async function listDatasets(kind?: FactorKind, signal?: AbortSignal): Pro
   return (await r.json()).datasets;
 }
 
-/** Remembers the options of an analysis with the dataset, so reopening it starts from them. */
-export async function saveDatasetOptions(id: string, options: AnalyzeOptions): Promise<void> {
+/**
+ * Remembers the options of an analysis with the dataset, so reopening it starts from them.
+ * `factorCount` is the number of factors of the analysis on screen: the names in `options` are
+ * kept for that solution, which the dataset's columns of a comparison are headed with.
+ */
+export async function saveDatasetOptions(
+  id: string,
+  options: AnalyzeOptions,
+  factorCount: number | null = null,
+): Promise<void> {
   const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/options`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(options),
+    body: JSON.stringify(factorCount ? { ...options, names_k: factorCount } : options),
     // Sent when the page is left, too.
     keepalive: true,
   });
@@ -1096,6 +1104,8 @@ export interface CompareColumn {
   msa_removed?: string[];
   kmo?: number;
   n_factors?: number;
+  /** The names saved for this solution of a dataset of the session, one per factor (null where a factor has none); null without any. */
+  factor_names?: (string | null)[] | null;
   rotation?: Rotation;
   /** Null for an oblique rotation, whose shares do not add up. */
   cumulative_variance?: number | null;
