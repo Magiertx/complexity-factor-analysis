@@ -24,8 +24,8 @@ Schalk do it, but interactively in the browser.
   models. Sample logs and nets are bundled, so the demo works without own files and offline.
 - **Suitability first.** Data cleaning with reasons, Bartlett's test of sphericity (the
   numerically stable variant), KMO with ComFy's iterative MSA filter, and a per-measure MSA
-  list with manual exclusion that shows the measures worth a look first and can be searched,
-  sorted and grouped by feature group.
+  list with manual exclusion that shows the measures worth a look first and keeps the others
+  folded below them in a long list; it can be searched, sorted and grouped by feature group.
 - **Factors and loadings.** Scree plot with the Kaiser line, a parallel analysis with a fixed
   seed and the cumulative share of the eigenvalues; tiles for the factor count of each criterion
   (Kaiser, parallel analysis, and the paper's count chosen a priori, or the ComFy report's for
@@ -34,7 +34,8 @@ Schalk do it, but interactively in the browser.
   assignment rules: the largest loading as in ComFy's report (default), multiple membership as in
   Important Factors (Tab. 6-16) or Hair et al. (Tab. 17), with cross-loadings reported under
   each and a note where a table of the paper differs from the rule it states. The loadings show as
-  a matrix or as one card per dimension. A settings row above every step sums up every choice and
+  a matrix (searchable, and narrowable to the cross-loaded and unassigned measures when long) or as
+  one card per dimension. A settings row above every step sums up every choice and
   marks those that differ from the standard. Every change re-runs the analysis; a newer change
   replaces the analysis still running for the one before.
 - **Same numbers as upstream.** On the bundled paper scores of all seven miners the analysis
