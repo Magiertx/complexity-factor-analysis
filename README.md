@@ -127,9 +127,12 @@ Backend, from `src/AlgoService`:
 ```bash
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements-dev.txt
+pip install -r requirements-dev.txt -c constraints.txt
 SESSION_SECRET_KEY=dev-only-not-a-deployment uvicorn srv_main:app --reload --port 8000
 ```
+
+`constraints.txt` pins every package to the version of the Docker image and CI, so the local
+environment matches them (how to update it: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#pinned-dependency-versions)).
 
 The service refuses to start without `SESSION_SECRET_KEY`. On PowerShell, set it first with
 `$env:SESSION_SECRET_KEY = "dev-only-not-a-deployment"`. Postgres and Redis are needed as

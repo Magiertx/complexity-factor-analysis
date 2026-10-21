@@ -33,13 +33,15 @@ jobs:
           cache-dependency-path: |
             src/AlgoService/requirements.txt
             src/AlgoService/requirements-dev.txt
+            src/AlgoService/constraints.txt
 
       # Graphviz for the Petri-net rendering test.
       - name: Install Graphviz
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends graphviz
 
+      # The versions of constraints.txt, as in the algoservice image.
       - name: Install dependencies
-        run: pip install -r requirements-dev.txt
+        run: pip install -r requirements-dev.txt -c constraints.txt
 
       # Tests that need ProM4Py skip, as without docker locally.
       - name: Run tests
@@ -108,11 +110,13 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: src/AlgoService/requirements.txt
+          cache-dependency-path: |
+            src/AlgoService/requirements.txt
+            src/AlgoService/constraints.txt
 
       - name: Install backend dependencies
         working-directory: src/AlgoService
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt -c constraints.txt
 
       - uses: actions/setup-node@v7
         with:

@@ -258,6 +258,26 @@ docker compose ps
 docker compose logs -f algoservice
 ```
 
+### Pinned dependency versions
+
+`requirements.txt` names version ranges; `src/AlgoService/constraints.txt` pins every package, direct and
+transitive, to the version that runs today. The Dockerfile and the CI jobs install with it
+(`pip install -r requirements.txt -c constraints.txt`), so a rebuild a year from now gets the same
+packages as the build that was tested, and a new upstream release cannot break a deployment by
+itself. The pins are those of Python 3.11, the version of the image and of CI.
+
+To update them (after raising a range, or to take up newer releases):
+
+```bash
+docker run --rm -v "$PWD/src/AlgoService:/w" -w /w python:3.11-slim sh -c \
+  'pip install -q -r requirements-dev.txt && pip freeze'
+```
+
+Sort the output into the two blocks of `constraints.txt` (runtime, and the test tools that only
+`requirements-dev.txt` brings), then run the backend tests and `docker compose build algoservice`
+before committing. Do not edit single pins by hand without installing the result: a pin that
+contradicts a range makes `pip` stop with a conflict, on purpose.
+
 ---
 
 ## 6. Database Backups & Recovery

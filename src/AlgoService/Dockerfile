@@ -8,8 +8,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libgraphviz-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# constraints.txt pins every package, so a rebuild installs what was tested.
+COPY requirements.txt constraints.txt ./
+RUN pip install --no-cache-dir -r requirements.txt -c constraints.txt
 
 COPY . .
 
