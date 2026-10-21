@@ -1,66 +1,55 @@
 "use client";
 
 import { useId, useState } from "react";
-import { AlertTriangle, Check, HelpCircle, Loader2 } from "lucide-react";
+import { AlertTriangle, Check, Info } from "lucide-react";
+import { stepAnchor, type StepId } from "@/lib/steps";
 import { Card } from "@/components/ui/card";
+import { IconButton } from "@/components/ui/icon-button";
+import { Term, useTip } from "@/components/ui/tip";
 import { formatInputNumber, parseInputNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
+import { STEP_ICONS } from "./step-nav";
 
-export type StepId = "data" | "dataset" | "suitability" | "factors" | "loadings" | "interpretation";
-export type StepState = "locked" | "active" | "done" | "warn" | "busy";
-
-export function stepAnchor(id: StepId) {
-  return `fa-step-${id}`;
-}
-
-export function StepBadge({ n, state, className }: { n: number; state: StepState; className?: string }) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        "h-7 w-7 shrink-0 rounded-full grid place-items-center text-xs font-semibold",
-        state === "done" && "bg-success/15 text-success-ink",
-        state === "warn" && "bg-warn/15 text-warn-ink",
-        state === "busy" && "bg-accent/15 text-accent-ink",
-        state === "active" && "bg-accent text-accent-fg",
-        state === "locked" && "bg-tile text-muted",
-        className,
-      )}
-    >
-      {state === "done" ? (
-        <Check className="h-3.5 w-3.5" />
-      ) : state === "warn" ? (
-        <AlertTriangle className="h-3.5 w-3.5" />
-      ) : state === "busy" ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      ) : (
-        n
-      )}
-    </span>
-  );
-}
+export type { StepId, StepState } from "@/lib/steps";
+export { stepAnchor } from "@/lib/steps";
 
 interface SectionProps {
   id: StepId;
-  n: number;
-  state: StepState;
   title: string;
   description: string;
   actions?: React.ReactNode;
+  /** Back and Next, under the step. */
+  footer?: React.ReactNode;
+  /** Kept on the page but not shown, e.g. the data step with a form half filled in. */
+  hidden?: boolean;
   children: React.ReactNode;
 }
 
-export function StepSection({ id, n, state, title, description, actions, children }: SectionProps) {
+/**
+ * One step of the analysis as a card: its sign, its name (which takes the focus when the step is
+ * opened) and what it is for, then its content and Back and Next.
+ */
+export function StepSection({ id, title, description, actions, footer, hidden, children }: SectionProps) {
   const anchor = stepAnchor(id);
-  // A jump to the step stops clear of the sticky settings row by the scroll padding of globals.css.
+  const Icon = STEP_ICONS[id];
   return (
-    <section id={anchor} data-tour={`fa-${id}`} aria-labelledby={`${anchor}-title`} className="scroll-mt-6">
-      <Card className="overflow-hidden">
-        <div className="px-4 sm:px-5 pt-5 pb-4 border-b border-border flex items-start gap-3 flex-wrap">
-          <StepBadge n={n} state={state} className="mt-0.5" />
+    <section id={anchor} aria-labelledby={`${anchor}-title`} hidden={hidden}>
+      <Card>
+        {/* The tour points at the heading of the step, which is in view when the step opens. */}
+        <div
+          data-tour={`fa-${id}`}
+          className="px-4 sm:px-5 pt-5 pb-4 border-b border-border flex items-start gap-3 flex-wrap"
+        >
+          <span aria-hidden className="h-8 w-8 rounded-md bg-tile text-muted grid place-items-center shrink-0">
+            <Icon className="h-4 w-4" />
+          </span>
           <div className="flex-1 min-w-[12rem]">
-            <h2 id={`${anchor}-title`} className="text-base font-semibold tracking-tight">
+            <h2
+              id={`${anchor}-title`}
+              tabIndex={-1}
+              className="w-fit text-base font-semibold tracking-tight rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+            >
               {title}
             </h2>
             <p className="text-sm text-muted mt-0.5">{description}</p>
@@ -68,6 +57,7 @@ export function StepSection({ id, n, state, title, description, actions, childre
           {actions && <div className="flex items-center gap-2 flex-wrap">{actions}</div>}
         </div>
         <div className="px-4 sm:px-5 py-5">{children}</div>
+        {footer}
       </Card>
     </section>
   );
@@ -83,9 +73,13 @@ export function EmptyStep({ icon, children }: { icon?: React.ReactNode; children
   );
 }
 
+/** Explanations up to this length are a tooltip of their label; longer ones unfold below it. */
+const LONG_HELP = 400;
+
 /**
- * A label with a "?" button that unfolds a short explanation below it. With `htmlFor` the
- * label is a <label> of that control.
+ * A label with its explanation: as the tooltip of the label (dotted under), or for a long
+ * reference text as a panel that an info button unfolds below it. With `htmlFor` the label is a
+ * <label> of that control.
  */
 export function HelpLabel({
   label,
@@ -105,67 +99,69 @@ export function HelpLabel({
   const t = useT();
   const [open, setOpen] = useState(false);
   const panelId = useId();
+  const long = help.length > LONG_HELP;
+  const text = long ? label : <Term more={help}>{label}</Term>;
   return (
     <div className={className}>
       <div className="flex items-center gap-1.5 flex-wrap">
         {htmlFor ? (
           <label htmlFor={htmlFor} className="text-sm font-semibold">
-            {label}
+            {text}
           </label>
         ) : as === "span" ? (
-          <span className="text-sm font-semibold">{label}</span>
+          <span className="text-sm font-semibold">{text}</span>
         ) : (
-          <h3 className="text-sm font-semibold">{label}</h3>
+          <h3 className="text-sm font-semibold">{text}</h3>
         )}
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          aria-controls={panelId}
-          aria-label={t("factor.help_aria", { topic: label })}
-          title={t("factor.help_aria", { topic: label })}
-          className={cn(
-            "h-6 w-6 rounded-full grid place-items-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-            open ? "text-accent-ink bg-accent/10" : "text-muted hover:text-fg hover:bg-tile",
-          )}
-        >
-          <HelpCircle className="h-3.5 w-3.5" />
-        </button>
+        {long && (
+          <IconButton
+            size="sm"
+            icon={Info}
+            name={t("factor.help_aria", { topic: label })}
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-controls={panelId}
+            className={cn("h-6 w-6", open && "text-accent-ink hover:text-accent-ink")}
+          />
+        )}
         {extra}
       </div>
-      <p
-        id={panelId}
-        hidden={!open}
-        className="mt-2 text-xs leading-relaxed text-fg/80 bg-tile/60 rounded-md px-3 py-2 max-w-prose"
-      >
-        {help}
-      </p>
+      {long && (
+        <p
+          id={panelId}
+          hidden={!open}
+          className="mt-2 text-xs leading-relaxed text-fg/80 bg-tile/60 rounded-md px-3 py-2 max-w-prose"
+        >
+          {help}
+        </p>
+      )}
     </div>
   );
 }
 
 /**
- * Pass/fail chip with an icon, so the state never depends on colour alone. A failed test is a
- * warning: the analysis still runs.
+ * Whether a test passed, as an icon and a word, so the state never depends on colour alone. A
+ * failed test is a warning: the analysis still runs.
  */
 export function PassBadge({ passed }: { passed: boolean }) {
   const t = useT();
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
-        passed ? "bg-success/15 text-success-ink" : "bg-warn/15 text-warn-ink",
+        "inline-flex items-center gap-1 text-[11px] font-medium",
+        passed ? "text-success-ink" : "text-warn-ink",
       )}
     >
-      {passed ? <Check className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
+      {passed ? <Check className="h-3 w-3" aria-hidden /> : <AlertTriangle className="h-3 w-3" aria-hidden />}
       {passed ? t("factor.suitability.passed") : t("factor.suitability.failed")}
     </span>
   );
 }
 
 export function StatTile({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
+  const tip = useTip<HTMLDivElement>(hint ? { more: hint } : null);
   return (
-    <div className="rounded-lg bg-tile px-3.5 py-3 min-w-0" title={hint}>
+    <div ref={tip} className="rounded-lg bg-tile px-3.5 py-3 min-w-0">
       <div className="text-[11px] text-muted truncate">{label}</div>
       <div className="mt-1 text-xl font-semibold font-mono tabular-nums">{value}</div>
     </div>

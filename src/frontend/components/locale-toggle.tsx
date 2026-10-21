@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useLocale, type Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { Segmented } from "./ui/segmented";
+import { useTip } from "./ui/tip";
 
 export function LocaleToggle({ className }: { className?: string }) {
   const { locale, setLocale, t } = useLocale();
@@ -15,12 +16,13 @@ export function LocaleToggle({ className }: { className?: string }) {
   const label =
     locale === "en" ? t("header.switch_to_german") : t("header.switch_to_english");
   const display = mounted ? locale.toUpperCase() : "EN";
+  const tip = useTip<HTMLButtonElement>({ name: label });
 
   return (
     <button
+      ref={tip}
       type="button"
       aria-label={label}
-      title={label}
       onClick={() => setLocale(next)}
       className={cn(
         "h-9 px-2.5 inline-flex items-center gap-1.5 rounded-md bg-tile hover:bg-accent/[0.08] transition text-xs font-medium text-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",

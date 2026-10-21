@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useT } from "@/lib/i18n";
+import { Tip } from "./tip";
 
 const TABBABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]';
 
@@ -125,14 +126,16 @@ export function Popover({
         <h3 id={titleId} className="text-sm font-semibold">
           {title}
         </h3>
-        <button
-          type="button"
-          onClick={() => onClose(true)}
-          aria-label={t("common.close")}
-          className="-mt-1 -mr-1 h-6 w-6 grid place-items-center rounded text-muted hover:text-fg hover:bg-tile shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-        >
-          <X className="h-3.5 w-3.5" aria-hidden />
-        </button>
+        <Tip name={t("common.close")} keyCap="Esc">
+          <button
+            type="button"
+            onClick={() => onClose(true)}
+            aria-label={t("common.close")}
+            className="-mt-1 -mr-1 h-6 w-6 grid place-items-center rounded text-muted hover:text-fg hover:bg-tile shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <X className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        </Tip>
       </div>
       {children}
     </div>,

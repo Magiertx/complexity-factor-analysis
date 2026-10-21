@@ -84,9 +84,9 @@
       "step1_title": "Zwei Reiter: Modelle und Logs",
       "step1_p1": "Modellkomplexität analysiert Maße von Petri-Netzen, die aus Event-Logs gefunden und mit ComFy vermessen werden. Log-Komplexität analysiert Maße der Event-Logs selbst, berechnet mit feeed.",
       "step1_p2": "Beide Reiter funktionieren gleich.",
-      "step2_title": "Schritt für Schritt, von oben nach unten",
-      "step2_p1": "Daten, Datensatz, Eignung, Faktoren, Ladungen. Jede Änderung einer Einstellung startet die Analyse sofort neu, und die Ladungen lassen sich als CSV oder LaTeX exportieren. In einem optionalen sechsten Schritt schlägt Claude Namen für die Faktoren vor.",
-      "step2_p2": "Das ? neben einer Überschrift erklärt die Kennzahl; der Tour-Knopf führt durch die Seite.",
+      "step2_title": "Ein Schritt nach dem anderen",
+      "step2_p1": "Daten, Datensatz, Eignung, Faktoren, Ladungen: Die Liste der Schritte zeigt, was jeder ergeben hat, und öffnet ihn; Zurück und Weiter führen hindurch. Jede Änderung einer Einstellung startet die Analyse sofort neu, und die Analyse lässt sich als CSV, LaTeX oder ZIP herunterladen. In einem optionalen sechsten Schritt schlägt Claude Namen für die Faktoren vor.",
+      "step2_p2": "Halte den Zeiger über ein Bedienelement oder ein gepunktet unterstrichenes Wort, um zu sehen, was es tut; der Tour-Knopf führt durch die Schritte.",
       "step3_title": "Mehr, wenn du es brauchst",
       "step3_api": "API: alles per Python oder curl steuern; siehe die API-Seite im Header.",
       "progress_aria": "Fortschritt",
@@ -94,7 +94,7 @@
       "step3_inspect": "Einzelnes Log untersuchen: ComFy auf einem Log ausführen und die gefundenen Modelle ansehen."
     },
     "factor": {
-      "intro": "Fünf Schritte von den Rohmaßen zu den Faktoren und eine optionale Interpretation. Jeder Schritt erklärt seine Zahlen; die ?-Knöpfe neben einer Überschrift sagen mehr. Esc oder Überspringen beendet die Tour jederzeit.",
+      "intro": "Fünf Schritte von den Rohmaßen zu den Faktoren und eine optionale Interpretation, einer nach dem anderen: Die Liste der Schritte links (am Telefon die Zeile oben) und Zurück und Weiter wechseln zwischen ihnen. Halte den Zeiger über ein Bedienelement oder ein gepunktet unterstrichenes Wort, um zu sehen, was es tut. Esc oder Überspringen beendet die Tour jederzeit.",
       "data": "Hier geht es los: Wähle einen mitgelieferten Datensatz, lade eine CSV hoch oder berechne die Maße aus eigenen Dateien. Große Berechnungen laufen im Hintergrund.",
       "dataset": "Prüfe die Größe der Matrix und was die Bereinigung entfernt hat. Die bereinigten Daten kannst du als CSV herunterladen.",
       "suitability": "Bartlett und KMO zeigen, ob eine Faktorenanalyse überhaupt sinnvoll ist. Schließe hier Maße mit niedrigem MSA aus, von Hand oder per Filter.",
@@ -565,10 +565,10 @@
       "busy": "läuft"
     },
     "empty": {
-      "no_dataset": "Wähle zuerst in Schritt 1 Daten aus.",
+      "no_dataset": "Wähle zuerst im Schritt Daten Daten aus.",
       "computing": "Die Maße werden noch berechnet. Dieser Schritt füllt sich, sobald der Datensatz fertig ist.",
       "analyzing": "Analyse läuft…",
-      "after_error": "Noch kein Ergebnis. Behebe das Problem in Schritt 3."
+      "after_error": "Noch kein Ergebnis. Behebe das Problem im Schritt Eignung."
     },
     "analysis": {
       "updating": "Wird aktualisiert…",
@@ -722,13 +722,14 @@
       "dropped_rows_note_plural": "{n} Zeilen mit fehlenden Werten wurden entfernt.",
       "preview_heading": "Vorschau",
       "observation": "Beobachtung",
-      "download_csv": "Datensatz herunterladen (CSV)",
       "preview_note": "Die ersten {n} von {total} Beobachtungen.",
       "detail": {
         "non_numeric": "enthält den Wert „{value}“",
         "missing": "{missing} von {total} Werten fehlen",
         "duplicate": "perfekt korreliert mit {kept}"
-      }
+      },
+      "col_reason": "Grund",
+      "col_detail": "Detail"
     },
     "suitability": {
       "passed": "bestanden",
@@ -752,15 +753,13 @@
       "msa_threshold": "MSA-Schwelle",
       "bartlett_alpha": "Bartlett α",
       "removed_none": "Der Filter hat keine Maße entfernt.",
-      "removed_heading": "Der Filter hat {n} Maß entfernt:",
-      "removed_heading_plural": "Der Filter hat {n} Maße entfernt:",
-      "round": "Runde {step}",
       "msa_heading": "Stichprobeneignung je Maß (MSA)",
       "col_measure": "Maß",
       "col_status": "Status",
       "col_exclude": "Ausschließen",
       "status_used": "verwendet",
       "status_removed": "in Runde {step} vom Filter entfernt",
+      "status_removed_short": "entfernt · Runde {step}",
       "status_excluded": "ausgeschlossen",
       "min_measures": "Mindestens {n} Maße müssen übrig bleiben.",
       "excluded_count": "{n} von Hand ausgeschlossen",
@@ -769,7 +768,9 @@
       "regularised_title": "Einige Eigenwerte der Korrelationsmatrix sind praktisch null und wurden nach unten begrenzt, daher spiegelt χ² eher diese Grenze als die Daten. Lies den Test zusammen mit KMO.",
       "exclude_aria": "{measure} ausschließen",
       "invert": "Auswahl umkehren",
-      "invert_title": "Die einbezogenen Maße ausschließen und die ausgeschlossenen einbeziehen"
+      "invert_title": "Die einbezogenen Maße ausschließen und die ausgeschlossenen einbeziehen",
+      "removed_summary": "Der Filter hat {n} Maß entfernt; die Liste unten markiert es.",
+      "removed_summary_plural": "Der Filter hat {n} Maße entfernt; die Liste unten markiert sie."
     },
     "factors": {
       "scree_title": "Screeplot",
@@ -840,10 +841,6 @@
       "order_label": "Reihenfolge",
       "order_factor": "Nach Faktor",
       "order_original": "Wie im Datensatz",
-      "export_csv": "Ladungen herunterladen (CSV)",
-      "export_latex": "Ladungen herunterladen (LaTeX)",
-      "export_zip": "Analyse herunterladen (ZIP)",
-      "export_zip_title": "Der Datensatz, alle Ergebnisse, die Ladungen als CSV und LaTeX, eine gespeicherte Interpretation, falls vorhanden, und ein Manifest, um die Analyse zu reproduzieren",
       "export_failed": "Der Download ist fehlgeschlagen.",
       "table_heading": "Ladungen",
       "caption": "Faktorladungen, {n} Faktor, Rotation {rotation}",
@@ -861,7 +858,6 @@
       "structure_note": "Die Strukturmatrix enthält die Korrelationen zwischen Maßen und Faktoren; die Summen der quadrierten Ladungen gibt es für die Mustermatrix.",
       "oblique_note": "Bei obliquer Rotation korrelieren die Faktoren, ihre Anteile lassen sich daher nicht addieren; zusammen erklären sie {pct} der Varianz.",
       "legend_negative": "negativ",
-      "legend_positive": "positiv",
       "legend_bold": "fett: |Ladung| ≥ {threshold}",
       "legend_bold_strict": "fett: |Ladung| > {threshold}",
       "legend_bold_assigned": "fett: die Ladungen, über die die Regel ein Maß zuordnet",
@@ -895,6 +891,8 @@
         }
       },
       "cross_cell": "Querladung",
+      "only_notable": "Nur auffällige ({n})",
+      "only_notable_more": "Maße, die auf mehrere Faktoren laden oder auf keinen.",
       "legend_cross": "Ring: weitere Ladung eines Maßes mit Querladung",
       "also": "auch F{i}",
       "also_title": "Lädt auch auf Faktor {i}: {value}",
@@ -903,7 +901,12 @@
         "low_communality": "niedrige Kommunalität, h² {value}",
         "cross_loading": "lädt quer auf {factors}",
         "cross_loading_plain": "lädt auf mehrere Faktoren"
-      }
+      },
+      "look_label": "Ansicht",
+      "look_matrix": "Matrix",
+      "look_dimensions": "Dimensionen",
+      "legend_faded": "blass: |Ladung| < {threshold}",
+      "legend_faded_strict": "blass: |Ladung| ≤ {threshold}"
     },
     "help": {
       "cleaning": "Vor der Analyse werden Zeilen entfernt, in denen die meisten Werte fehlen. Danach werden Spalten entfernt, die nicht numerisch sind, keine Varianz haben, fehlende Werte enthalten oder exakte Kopien einer früheren Spalte sind, wie in ComFy für Log-Maße. Solche Spalten würden die Korrelationsmatrix verzerren oder unbrauchbar machen.",
@@ -1020,13 +1023,13 @@
       "chip_changed_title": "Weicht vom Standard des Tools ab; zu dieser Einstellung",
       "changed": "weicht vom Standard ab",
       "reset": "Auf Standard zurücksetzen",
-      "reset_short": "Standard",
       "reset_title": "Zurück zu den Standardeinstellungen des Tools",
       "paper": "Paper-Einstellungen verwenden",
-      "paper_short": "Paper-Einstellungen",
       "paper_title": "Die Einstellungen aus {source}",
       "reset_done": "Standardeinstellungen wiederhergestellt.",
-      "paper_done": "Paper-Einstellungen übernommen."
+      "paper_done": "Paper-Einstellungen übernommen.",
+      "reset_none": "Das sind bereits die Standardeinstellungen.",
+      "paper_none": "Die Paper-Einstellungen sind bereits übernommen."
     },
     "match": {
       "chip_match": "Zahlen = ComFy-Report",
@@ -1089,10 +1092,8 @@
     },
     "link": {
       "copy": "Link kopieren",
-      "copy_short": "Link",
       "copy_title": "Einen Link kopieren, der diesen Datensatz mit diesen Einstellungen öffnet",
       "copied": "Link kopiert",
-      "copied_short": "Kopiert",
       "own_data": "Links gibt es nur für mitgelieferte Datensätze; eigene Daten bleiben in deiner Sitzung.",
       "fallback_title": "Link zu dieser Analyse",
       "fallback_hint": "Der Browser hat das Kopieren nicht erlaubt; kopiere den Link aus dem Feld.",
@@ -1130,6 +1131,63 @@
       "dimensions_plural": "{n} Dimensionen",
       "cross": "{n} mit Querladung",
       "unassigned": "{n} ohne Faktor"
+    },
+    "nav": {
+      "aria": "Schrittnavigation",
+      "back": "Zurück",
+      "next": "Weiter",
+      "back_to": "Zurück: {step}",
+      "next_to": "Weiter: {step}",
+      "position": "Schritt {n} von {total}",
+      "to_data": "Zum Schritt Daten",
+      "locked": {
+        "no_dataset": "Öffne zuerst im Schritt Daten einen Datensatz.",
+        "loading": "Der Datensatz lädt noch.",
+        "computing": "Die Maße werden noch berechnet.",
+        "failed": "Der Datensatz ließ sich nicht erstellen. Wähle im Schritt Daten andere Daten."
+      }
+    },
+    "toolbar": {
+      "aria": "Werkzeuge",
+      "export": "Herunterladen",
+      "export_more": "Die Analyse als ZIP, die Ladungen als CSV oder LaTeX oder den bereinigten Datensatz als CSV.",
+      "export_zip": "Analyse (ZIP)",
+      "export_zip_hint": "Datensatz, Ergebnisse, Ladungen und ein Manifest zum Nachrechnen der Analyse",
+      "export_loadings_csv": "Ladungen (CSV)",
+      "export_loadings_latex": "Ladungen (LaTeX)",
+      "export_dataset": "Datensatz (CSV)",
+      "export_dataset_hint": "Die bereinigte Matrix",
+      "wait_analysis": "Die Analyse läuft noch.",
+      "wait_update": "Die Analyse wird gerade aktualisiert.",
+      "mine_more": "Datensätze dieser Sitzung wieder öffnen oder löschen.",
+      "mine_none": "In dieser Sitzung gibt es noch keine Datensätze.",
+      "more": "Mehr"
+    },
+    "measures": {
+      "search": "Maße durchsuchen",
+      "search_placeholder": "Maße durchsuchen",
+      "sort_aria": "Reihenfolge der Maße",
+      "sort": {
+        "dataset": "Wie im Datensatz",
+        "name": "Nach Name",
+        "msa": "Nach MSA, niedrigste zuerst"
+      },
+      "group_aria": "Gruppierung der Maße",
+      "grouping": {
+        "none": "Ohne Gruppierung",
+        "group": "Nach Feature-Gruppe"
+      },
+      "only_notable": "Nur auffällige ({n})",
+      "section_notable": "Einen Blick wert",
+      "section_other": "Die übrigen Maße",
+      "section_no_group": "Ohne Gruppe",
+      "status_dependent": "linear abhängig",
+      "status_dependent_short": "abhängig",
+      "show_other": "Anzeigen",
+      "hide_other": "Ausblenden",
+      "dependent_with": "Linear abhängig mit {measures}. Ein Maß der Gruppe auszuschließen löst das.",
+      "status_below": "unter {threshold}",
+      "none_match": "Kein Maß passt zur Suche."
     }
   },
   "inspect": {

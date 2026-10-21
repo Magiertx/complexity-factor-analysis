@@ -10,7 +10,8 @@ import {
   ExternalLink,
   FileSpreadsheet,
   FileText,
-  History,
+  FolderOpen,
+  Hourglass,
   Loader2,
   Network,
   Package,
@@ -39,6 +40,8 @@ import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
+import { IconButton } from "@/components/ui/icon-button";
+import { mergeRefs, useTip, useTipZone } from "@/components/ui/tip";
 import { Input } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
 import { UploadZone } from "@/components/upload-zone";
@@ -77,6 +80,9 @@ interface Props {
   onDelete: (id: string) => Promise<boolean>;
   /** Shown when a dataset already exists, to return to it without building a new one. */
   onCancel?: () => void;
+  /** Set by the toolbar: show My datasets with the focus on its list; `onRequestHandled` says it did. */
+  showMine?: number;
+  onRequestHandled?: () => void;
 }
 
 export function DataForm({
@@ -90,6 +96,8 @@ export function DataForm({
   onOpen,
   onDelete,
   onCancel,
+  showMine,
+  onRequestHandled,
 }: Props) {
   const t = useT();
   const sources = catalog.sources.filter((s) => kind === "model" || s !== "pnml");
@@ -110,6 +118,16 @@ export function DataForm({
   const [preset, setPreset] = useState<OpenPreset>("standard");
   // Chosen sample per source; a sample replaces the uploaded files.
   const [sampleIds, setSampleIds] = useState<Partial<Record<DatasetSource, string>>>({});
+
+  const [focusMine, setFocusMine] = useState(false);
+  useEffect(() => {
+    if (!showMine) return;
+    if (datasets.length > 0) {
+      setMineChosen(true);
+      setFocusMine(true);
+    }
+    onRequestHandled?.();
+  }, [showMine, datasets.length, onRequestHandled]);
 
   const files = source === "logs" ? logFiles : pnmlFiles;
   const setFiles = source === "logs" ? setLogFiles : setPnmlFiles;
@@ -234,7 +252,7 @@ export function DataForm({
                     value: "mine" as const,
                     label: (
                       <>
-                        <History className="h-3.5 w-3.5" />
+                        <FolderOpen className="h-3.5 w-3.5" />
                         <span>{t("factor.data.source.mine")}</span>
                       </>
                     ),
@@ -280,6 +298,8 @@ export function DataForm({
           onOpen={onOpen}
           onDelete={onDelete}
           onCancel={onCancel}
+          focus={focusMine}
+          onFocused={() => setFocusMine(false)}
         />
       </div>
     );
@@ -571,13 +591,10 @@ function CollectionBlock({
       },
       () => {},
     );
-  // On a phone the labels are only hidden from view: they still name the icon buttons.
-  const action =
-    "h-7 px-2 inline-flex items-center gap-1.5 rounded-md text-[11px] font-medium text-muted hover:text-fg hover:bg-accent/[0.08] transition";
   return (
     <section className="rounded-lg bg-tile/40 p-3.5 sm:p-4 space-y-3">
       <div className="flex items-start gap-3">
-        <div className="h-8 w-8 rounded-md bg-accent/[0.12] text-accent-ink grid place-items-center shrink-0">
+        <div className="h-8 w-8 rounded-md bg-tile text-muted grid place-items-center shrink-0" aria-hidden>
           <BookOpen className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
@@ -591,19 +608,18 @@ function CollectionBlock({
             {collection.license && <span>{t("factor.data.license", { license: collection.license })}</span>}
           </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-0.5 shrink-0">
           {collection.citation && (
-            <button type="button" onClick={copy} title={collection.citation} className={action}>
-              {copied ? <Check className="h-3.5 w-3.5 text-success-ink" /> : <Copy className="h-3.5 w-3.5" />}
-              <span className="sr-only sm:not-sr-only">{copied ? t("factor.data.copied") : t("factor.data.copy_citation")}</span>
-            </button>
+            <IconButton
+              size="sm"
+              icon={copied ? Check : Copy}
+              name={copied ? t("factor.data.copied") : t("factor.data.copy_citation")}
+              more={collection.citation}
+              onClick={copy}
+              className={copied ? "text-success-ink hover:text-success-ink" : undefined}
+            />
           )}
-          {collection.source_url && (
-            <a href={collection.source_url} target="_blank" rel="noreferrer" className={action}>
-              <ExternalLink className="h-3.5 w-3.5" />
-              <span className="sr-only sm:not-sr-only">{t("factor.data.source_link")}</span>
-            </a>
-          )}
+          {collection.source_url && <SourceLink href={collection.source_url} />}
         </div>
       </div>
       {collection.note && (
@@ -614,6 +630,24 @@ function CollectionBlock({
       )}
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
     </section>
+  );
+}
+
+/** The source of a paper's data, opened in a new tab. */
+function SourceLink({ href }: { href: string }) {
+  const t = useT();
+  const tip = useTip<HTMLAnchorElement>({ name: t("factor.data.source_link"), more: href });
+  return (
+    <a
+      ref={tip}
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={t("factor.data.source_link")}
+      className="h-7 w-7 grid place-items-center rounded-md text-muted hover:text-fg hover:bg-tile transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+    >
+      <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+    </a>
   );
 }
 
@@ -634,11 +668,9 @@ function BundledTile({
   const noteId = useId();
   const label = dataset.label ?? dataset.name;
   const note = datasetNote(dataset.id, t);
+  const tip = useTip<HTMLLabelElement>(dataset.description ? { more: dataset.description } : null);
   return (
-    <label
-      title={dataset.description}
-      className={cn("flex items-center gap-2.5 rounded-md px-3 py-2.5", choiceTile(chosen))}
-    >
+    <label ref={tip} className={cn("flex items-center gap-2.5 rounded-md px-3 py-2.5", choiceTile(chosen))}>
       {/* Named by the label alone, so the note describes the choice rather than renaming it. */}
       <input
         type="radio"
@@ -676,6 +708,8 @@ function DatasetPicker({
   onOpen,
   onDelete,
   onCancel,
+  focus,
+  onFocused,
 }: {
   kind: FactorKind;
   catalog: FactorCatalog;
@@ -684,6 +718,9 @@ function DatasetPicker({
   onOpen: (id: string) => void;
   onDelete: (id: string) => Promise<boolean>;
   onCancel?: () => void;
+  /** Give the chosen tile the focus, e.g. when the toolbar asked for My datasets. */
+  focus?: boolean;
+  onFocused?: () => void;
 }) {
   const t = useT();
   // The newest dataset that is not open already; opening the open one only closes the form.
@@ -706,6 +743,14 @@ function DatasetPicker({
     refocus.current = true;
     if (!(await onDelete(id))) refocus.current = false;
   };
+
+  useEffect(() => {
+    if (!focus) return;
+    const input = listRef.current?.querySelector<HTMLInputElement>("input:checked");
+    input?.focus({ preventScroll: true });
+    listRef.current?.scrollIntoView({ block: "nearest" });
+    onFocused?.();
+  }, [focus, onFocused]);
 
   return (
     <div className="space-y-5">
@@ -770,6 +815,11 @@ function DatasetTile({
   const title = datasetName(dataset, t, catalog);
   // A computed dataset goes with the run that computed it.
   const withRun = !!dataset.job_id;
+  const nameTip = useTip<HTMLSpanElement>({ more: title });
+  const sizeTip = useTip<HTMLSpanElement>(
+    rows !== null && cols !== null ? { more: t("factor.data.cleaned_size", { rows, cols }) } : null,
+  );
+  const timeTip = useTip<HTMLElement>({ more: formatDateTime(dataset.created_at, locale) });
   return (
     // min-w-0: a long name wraps instead of widening the grid column beyond the page.
     <div className={cn("rounded-md min-w-0", choiceTile(chosen))}>
@@ -778,17 +828,11 @@ function DatasetTile({
           <input type="radio" name={name} className="sr-only" checked={chosen} onChange={onSelect} />
           <ChoiceMark type="radio" checked={chosen} className="mt-0.5" />
           <span className="min-w-0 flex-1">
-            <span className="flex items-start gap-1.5 min-w-0">
-              {/* Two lines: names of one paper differ only at the end. */}
-              <span className="min-w-0 text-sm font-medium line-clamp-2 break-words" title={title}>
-                {title}
-              </span>
-              {open && (
-                <span className="mt-0.5 rounded bg-success/15 text-success-ink px-1 text-[10px] font-medium shrink-0">
-                  {t("factor.data.mine_open")}
-                </span>
-              )}
+            {/* Two lines: names of one paper differ only at the end; the tooltip has all of it. */}
+            <span ref={nameTip} className="block min-w-0 text-sm font-medium line-clamp-2 break-words">
+              {title}
             </span>
+            {/* What it is, how big and how old, as one line of text; the open one says so. */}
             <span className="mt-0.5 flex items-center gap-x-1.5 gap-y-0.5 flex-wrap text-[11px] text-muted">
               <Icon className="h-3 w-3 shrink-0" />
               <span>{t(`factor.data.source.${dataset.source}`)}</span>
@@ -796,41 +840,43 @@ function DatasetTile({
               {rows !== null && cols !== null && (
                 <span className="inline-flex items-center gap-1.5">
                   <span aria-hidden>·</span>
-                  <span title={t("factor.data.cleaned_size", { rows, cols })}>
+                  <span ref={sizeTip}>
                     {formatNumber(rows, locale)} × {formatNumber(cols, locale)}
                   </span>
                 </span>
               )}
               <span className="inline-flex items-center gap-1.5">
                 <span aria-hidden>·</span>
-                <time dateTime={dataset.created_at} title={formatDateTime(dataset.created_at, locale)}>
+                <time ref={timeTip} dateTime={dataset.created_at}>
                   {formatRelative(dataset.created_at, locale)}
                 </time>
               </span>
-              {dataset.status !== "ready" && (
+              {(open || dataset.status !== "ready") && (
                 <span
                   className={cn(
-                    "rounded px-1 text-[10px] font-medium",
-                    dataset.status === "failed" ? "bg-danger/15 text-danger-ink" : "bg-accent/[0.18] text-accent-ink",
+                    "inline-flex items-center gap-1.5 font-medium",
+                    dataset.status === "failed" ? "text-danger-ink" : open ? "text-success-ink" : "text-fg",
                   )}
                 >
-                  {t(`factor.data.mine_${dataset.status}`)}
+                  <span aria-hidden className="text-muted font-normal">
+                    ·
+                  </span>
+                  {dataset.status !== "ready" ? t(`factor.data.mine_${dataset.status}`) : t("factor.data.mine_open")}
                 </span>
               )}
             </span>
           </span>
         </label>
-        <button
+        <IconButton
           ref={askRef}
-          type="button"
+          size="sm"
+          icon={Trash2}
+          name={t("factor.data.delete_aria", { name: title })}
+          more={withRun ? t("factor.data.delete_with_run") : undefined}
           onClick={() => setConfirming((c) => !c)}
-          aria-label={t("factor.data.delete_aria", { name: title })}
           aria-expanded={confirming}
-          title={t(withRun ? "factor.data.delete_with_run" : "factor.data.delete")}
-          className="m-1.5 h-7 w-7 grid place-items-center rounded-md text-muted hover:text-danger-ink hover:bg-danger/10 transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </button>
+          className="m-1.5 hover:text-danger-ink hover:bg-danger/10"
+        />
       </div>
       {confirming && (
         <div className="px-3 pb-2.5 flex items-center justify-end gap-2 flex-wrap">
@@ -898,9 +944,10 @@ function SampleTile({ sample, chosen, onToggle }: { sample: SampleInput; chosen:
   const files = t(sample.files.length === 1 ? "factor.data.files_selected" : "factor.data.files_selected_plural", {
     n: sample.files.length,
   });
+  const tip = useTip<HTMLLabelElement>(sample.citation ? { more: sample.citation } : null);
   return (
     <div className={cn("rounded-md px-3 py-2.5 flex items-center gap-3", choiceTile(chosen))}>
-      <label className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer" title={sample.citation}>
+      <label ref={tip} className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer">
         <input type="checkbox" className="sr-only" checked={chosen} onChange={onToggle} />
         <ChoiceMark checked={chosen} />
         <Package className="h-4 w-4 text-muted shrink-0" />
@@ -934,6 +981,7 @@ function FileList({
 }) {
   const t = useT();
   const { locale } = useLocale();
+  const zone = useTipZone<HTMLUListElement>();
   const total = files.reduce((acc, f) => acc + f.size, 0);
   return (
     <div className="rounded-lg bg-tile">
@@ -950,22 +998,21 @@ function FileList({
           </button>
         )}
       </div>
-      <ul className="max-h-48 overflow-y-auto p-1.5 grid gap-1 sm:grid-cols-2">
+      <ul ref={zone} className="max-h-48 overflow-y-auto p-1.5 grid gap-1 sm:grid-cols-2">
         {files.map((f, i) => (
-          <li key={`${f.name}:${f.size}`} className="flex items-center gap-2 rounded px-2 py-1.5 bg-bg/40 text-xs min-w-0">
+          <li key={`${f.name}:${f.size}`} className="flex items-center gap-2 rounded px-2 py-1 bg-bg/40 text-xs min-w-0">
             <FileText className="h-3.5 w-3.5 text-muted shrink-0" />
-            <span className="truncate flex-1" title={f.name}>
+            <span className="truncate flex-1" data-tip={f.name}>
               {f.name}
             </span>
             <span className="text-[10px] text-muted shrink-0">{formatFileSize(f.size, locale)}</span>
-            <button
-              type="button"
+            <IconButton
+              size="sm"
+              icon={X}
+              name={t("factor.data.remove_file_aria", { name: f.name })}
               onClick={() => onRemove(i)}
-              aria-label={t("factor.data.remove_file_aria", { name: f.name })}
-              className="h-5 w-5 grid place-items-center rounded text-muted hover:text-danger-ink transition shrink-0"
-            >
-              <X className="h-3 w-3" />
-            </button>
+              className="h-6 w-6 hover:text-danger-ink"
+            />
           </li>
         ))}
       </ul>
@@ -1032,38 +1079,60 @@ function Checklist({
         </div>
       </div>
       <div className={cn("grid gap-1.5", wide ? "sm:grid-cols-2" : "sm:grid-cols-2 lg:grid-cols-3")}>
-        {items.map((item) => {
-          const on = chosen.has(item.key);
-          return (
-            <label
-              key={item.key}
-              title={item.description}
-              className={cn("flex items-start gap-2.5 rounded-md px-2.5 py-2 text-xs", choiceTile(on))}
-            >
-              <input type="checkbox" checked={on} onChange={() => toggle(item.key)} className="sr-only" />
-              <ChoiceMark checked={on} className="mt-px" />
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-medium">{item.name}</span>
-                  {item.slow && (
-                    <span
-                      className="rounded bg-warn/15 text-warn-ink px-1 text-[10px] font-medium"
-                      title={t("factor.data.slow_title")}
-                    >
-                      {t("factor.data.slow_badge")}
-                    </span>
-                  )}
-                  {item.detail && <span className="text-[10px] text-muted">{item.detail}</span>}
-                </span>
-                {wide && item.description && (
-                  <span className="block text-[11px] text-muted mt-0.5 leading-snug">{item.description}</span>
-                )}
-              </span>
-            </label>
-          );
-        })}
+        {items.map((item) => (
+          <ChecklistTile
+            key={item.key}
+            item={item}
+            on={chosen.has(item.key)}
+            onToggle={() => toggle(item.key)}
+            wide={wide}
+          />
+        ))}
       </div>
     </fieldset>
+  );
+}
+
+function ChecklistTile({
+  item,
+  on,
+  onToggle,
+  wide,
+}: {
+  item: ChecklistItem;
+  on: boolean;
+  onToggle: () => void;
+  wide?: boolean;
+}) {
+  // A wide tile shows its description; a narrow one has it in the tooltip.
+  const tip = useTip<HTMLLabelElement>(!wide && item.description ? { more: item.description } : null);
+  return (
+    <label ref={tip} className={cn("flex items-start gap-2.5 rounded-md px-2.5 py-2 text-xs", choiceTile(on))}>
+      <input type="checkbox" checked={on} onChange={onToggle} className="sr-only" />
+      <ChoiceMark checked={on} className="mt-px" />
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5 flex-wrap">
+          <span className="font-medium">{item.name}</span>
+          {item.slow && <SlowMark />}
+          {item.detail && <span className="text-[10px] text-muted">{item.detail}</span>}
+        </span>
+        {wide && item.description && (
+          <span className="block text-[11px] text-muted mt-0.5 leading-snug">{item.description}</span>
+        )}
+      </span>
+    </label>
+  );
+}
+
+/** A miner, measure or group that takes noticeably longer: an hourglass, named by its tooltip. */
+function SlowMark() {
+  const t = useT();
+  const tip = useTip<HTMLSpanElement>({ name: t("factor.data.slow_badge"), more: t("factor.data.slow_title") });
+  return (
+    <span ref={tip} className="inline-flex text-muted">
+      <Hourglass className="h-3 w-3" aria-hidden />
+      <span className="sr-only">{t("factor.data.slow_badge")}</span>
+    </span>
   );
 }
 
@@ -1184,7 +1253,7 @@ export function DataSummary({
   return (
     <div className="flex items-start justify-between gap-3 flex-wrap">
       <div className="flex items-start gap-3 min-w-0">
-        <div className="h-9 w-9 rounded-md bg-success/10 grid place-items-center shrink-0">
+        <div className="h-9 w-9 rounded-md bg-tile grid place-items-center shrink-0" aria-hidden>
           <Check className="h-4 w-4 text-success-ink" />
         </div>
         <div className="min-w-0 space-y-1.5">
@@ -1206,61 +1275,62 @@ export function DataSummary({
 
 const SOURCES: DatasetSource[] = ["bundled", "csv", "logs", "pnml"];
 
-/** What a dataset was built from, as chips: source, inputs, miners or feature groups, size. */
+/** What a dataset was built from, as one line of text: source, inputs, miners or feature groups, size. */
 function InputChips({ dataset, catalog }: { dataset: FactorDataset; catalog: FactorCatalog }) {
   const t = useT();
+  const zone = useTipZone<HTMLUListElement>();
   const source = SOURCES.find((s) => s === dataset.source);
   const Icon = source ? SOURCE_ICON[source] : Database;
   const inputs: InputsSummary = dataset.inputs ?? { files: 0 };
   const names = (keys: string[], known: { key: string; name: string }[] | undefined) =>
     keys.map((k) => known?.find((x) => x.key === k)?.name ?? k).join(", ");
   const sample = inputs.sample_id ? catalog.samples?.find((s) => s.id === inputs.sample_id) : undefined;
-  const chips: { key: string; text: string; title?: string }[] = [];
+  const parts: { key: string; text: string; more?: string }[] = [];
   if ((source === "logs" || source === "pnml") && inputs.files > 0) {
-    chips.push({
+    parts.push({
       key: "files",
       text: countText(t, source === "logs" ? "factor.inputs.logs" : "factor.inputs.nets", inputs.files),
-      title: sample && `${t("factor.data.sample_label")}: ${sample.name}`,
+      more: sample && `${t("factor.data.sample_label")}: ${sample.name}`,
     });
   }
   if (inputs.miners?.length) {
-    chips.push({
+    parts.push({
       key: "miners",
       text: countText(t, "factor.inputs.miners", inputs.miners.length),
-      title: names(inputs.miners, catalog.miners),
+      more: names(inputs.miners, catalog.miners),
     });
   }
   if (inputs.groups?.length) {
-    chips.push({
+    parts.push({
       key: "groups",
       text: countText(t, "factor.inputs.groups", inputs.groups.length),
-      title: names(inputs.groups, catalog.groups),
+      more: names(inputs.groups, catalog.groups),
     });
   }
   if (dataset.status === "ready") {
     // After the cleaning, so it can be smaller than the size of a bundled dataset in the list.
-    chips.push({
+    parts.push({
       key: "size",
       text: t("factor.data.cleaned_size", { rows: dataset.n_observations, cols: dataset.measures.length }),
     });
   } else if (dataset.kind === "model" && inputs.measures?.length) {
     // Until the matrix exists, the measures asked for.
-    chips.push({
+    parts.push({
       key: "measures",
       text: countText(t, "factor.inputs.measures", inputs.measures.length),
-      title: names(inputs.measures, catalog.measures),
+      more: names(inputs.measures, catalog.measures),
     });
   }
-  const chip = "inline-flex items-center gap-1 rounded-md bg-tile px-2 py-0.5 text-[11px] text-muted";
   return (
-    <ul aria-label={t("factor.data.inputs_aria")} className="flex flex-wrap gap-1.5">
-      <li className={chip}>
-        <Icon className="h-3 w-3 shrink-0" />
+    <ul ref={zone} aria-label={t("factor.data.inputs_aria")} className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted">
+      <li className="inline-flex items-center gap-1">
+        <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
         {source ? t(`factor.data.source.${source}`) : dataset.source}
       </li>
-      {chips.map((c) => (
-        <li key={c.key} className={chip} title={c.title}>
-          {c.text}
+      {parts.map((p) => (
+        <li key={p.key} className="inline-flex items-center gap-1.5">
+          <span aria-hidden>·</span>
+          <span data-tip-more={p.more}>{p.text}</span>
         </li>
       ))}
     </ul>
@@ -1272,6 +1342,8 @@ function DeleteDataset({ withRun, onDelete }: { withRun: boolean; onDelete: () =
   const t = useT();
   const [confirming, setConfirming] = useState(false);
   const askRef = useRef<HTMLButtonElement>(null);
+  const askTip = useTip<HTMLButtonElement>(withRun ? { more: t("factor.data.delete_with_run") } : null);
+  const mergedAsk = useMemo(() => mergeRefs(askRef, askTip), [askTip]);
   const refocus = useRef(false);
   // The confirmation replaces the button; after a cancel the focus goes back to it.
   useEffect(() => {
@@ -1294,12 +1366,11 @@ function DeleteDataset({ withRun, onDelete }: { withRun: boolean; onDelete: () =
   }
   return (
     <Button
-      ref={askRef}
+      ref={mergedAsk}
       variant="ghost"
       size="sm"
       className="text-muted hover:text-danger-ink hover:bg-danger/10"
       onClick={() => setConfirming(true)}
-      title={withRun ? t("factor.data.delete_with_run") : undefined}
     >
       <Trash2 className="h-3.5 w-3.5" />
       {t("factor.data.delete")}

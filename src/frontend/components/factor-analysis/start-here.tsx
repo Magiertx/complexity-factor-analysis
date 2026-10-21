@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ChevronDown, Download, Signpost } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,12 +25,14 @@ const EXAMPLE_CSV = "/examples/example-measures.csv";
 
 /**
  * "Start here": the shortest ways into the tool for someone with little time, such as a
- * reviewer. Collapsible, and it stays as it was left.
+ * reviewer. Collapsible, and it stays as it was left. `request` (from the toolbar) opens it and
+ * gives it the focus; `onRequestHandled` says that it did.
  */
-export function StartHere() {
+export function StartHere({ request, onRequestHandled }: { request?: number; onRequestHandled?: () => void }) {
   const t = useT();
   const [open, setOpen] = useState(true);
   const panelId = useId();
+  const toggleRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     try {
@@ -40,24 +42,35 @@ export function StartHere() {
     }
   }, []);
 
-  const toggle = () => {
-    setOpen(!open);
+  const remember = useCallback((next: boolean) => {
+    setOpen(next);
     try {
-      localStorage.setItem(STORAGE_KEY, open ? "0" : "1");
+      localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
     } catch {
       /* storage blocked */
     }
-  };
+  }, []);
+  const toggle = () => remember(!open);
+
+  useEffect(() => {
+    if (!request) return;
+    remember(true);
+    const button = toggleRef.current;
+    button?.focus({ preventScroll: true });
+    button?.scrollIntoView({ block: "nearest" });
+    onRequestHandled?.();
+  }, [request, onRequestHandled, remember]);
 
   return (
-    <section aria-labelledby={`${panelId}-title`} className="rounded-lg bg-accent/[0.05]">
+    <section aria-labelledby={`${panelId}-title`} className="rounded-lg bg-tile/50">
       <h3 id={`${panelId}-title`}>
         <button
+          ref={toggleRef}
           type="button"
           onClick={toggle}
           aria-expanded={open}
           aria-controls={panelId}
-          className="w-full flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left transition hover:bg-accent/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          className="w-full flex items-center gap-2.5 rounded-lg px-3.5 py-2.5 text-left transition hover:bg-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
         >
           <Signpost className="h-4 w-4 text-accent-ink shrink-0" aria-hidden />
           <span className="flex-1 min-w-0">

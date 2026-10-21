@@ -86,20 +86,39 @@ export async function expectStep(
   await expect(stepLink(page, step, locale)).toHaveAccessibleName(new RegExp(labels.join("|")), { timeout });
 }
 
+/**
+ * Opens a step from the step rail and waits until it is on screen: one step is shown at a time,
+ * so a spec opens the step whose content it reads.
+ */
+export async function goToStep(page: Page, step: string, locale: "en" | "de" = "en") {
+  const link = stepLink(page, step, locale);
+  await expect(link).not.toHaveAttribute("aria-disabled", "true");
+  await link.click();
+  await expect(link).toHaveAttribute("aria-current", "step");
+  await expect(stepSection(page, step)).toBeVisible();
+}
+
 /** A dataset computed by a job (feeed, ComFy) takes longer than one loaded from a file. */
 export const COMPUTE_TIMEOUT = 240_000;
 
-/** The section of a step, e.g. "suitability". */
+/** The section of a step, e.g. "suitability"; only the step on screen has one (the data step is kept, hidden). */
 export function stepSection(page: Page, step: string): Locator {
   return page.locator(`#fa-step-${step}`);
 }
 
-/** Opens a bundled dataset of the data step by its label, e.g. "Inductive miner". */
+/** Opens a bundled dataset of the data step by its label, e.g. "Inductive miner"; the dataset step opens with it. */
 export async function openBundled(page: Page, label: string, locale: "en" | "de" = "en") {
   const data = stepSection(page, "data");
   await data.getByRole("radio", { name: label, exact: true }).check({ force: true });
   await data.getByRole("button", { name: text("factor.data.submit_bundled", {}, locale) }).click();
   await expectStep(page, "dataset", "done", locale);
+  await expect(stepSection(page, "dataset")).toBeVisible();
+}
+
+/** The download menu of the toolbar, opened, and one of its entries chosen by its text key. */
+export async function chooseDownload(page: Page, key: string) {
+  await page.getByRole("button", { name: text("factor.toolbar.export") }).click();
+  await page.getByRole("menuitem", { name: pattern(text(key)) }).click();
 }
 
 /** Chooses a source of the data step, e.g. "csv". */

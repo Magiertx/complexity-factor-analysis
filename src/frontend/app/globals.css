@@ -22,13 +22,11 @@
     --success-ink: 22 101 52;
     --warn-ink: 146 64 14;
     --danger-ink: 185 28 28;
-    /* Signs of values such as loadings: blue for positive, orange for negative, so that a
-       negative value looks neither like an error (red) nor like the accent. */
-    --positive: 37 99 235;
+    /* The sign of values such as loadings: orange for negative, so that a negative value looks
+       neither like an error (red) nor like the accent; a positive one stays neutral. */
     --negative: 234 88 12;
-    /* The same hues for small text such as "also F1 −0.46", at 4.5:1 on a light chip. */
-    --positive-ink: 29 78 216;
-    --negative-ink: 194 65 12;
+    /* The same hue for small text such as "also F1 −0.46", at 4.5:1 and more on a tile. */
+    --negative-ink: 154 52 18;
     --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
     --font-mono: ui-monospace, "SFMono-Regular", "Menlo", "Consolas", monospace;
   }
@@ -49,9 +47,7 @@
     --success-ink: 34 197 94;
     --warn-ink: 234 179 8;
     --danger-ink: 248 113 113;
-    --positive: 59 130 246;
     --negative: 249 115 22;
-    --positive-ink: 96 165 250;
     --negative-ink: 251 146 60;
   }
   html, body { @apply bg-bg text-fg; }
@@ -61,6 +57,12 @@
      into view below it, not under it (WCAG 2.4.11). */
   @media (min-width: 1024px) {
     html { scroll-padding-top: var(--settings-row-offset, 0px); }
+  }
+  /* On a phone the factor analysis has Back and Next fixed at the bottom of the window; the page
+     keeps room for them at its end, and a toast stands above them. */
+  @media (max-width: 1023.98px) {
+    body.has-step-bar { padding-bottom: calc(3.5rem + env(safe-area-inset-bottom)); }
+    body.has-step-bar .undo-toast { bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
   }
   ::selection { background: rgb(var(--accent) / 0.3); }
   /* Safari ehrt Tailwind-Preflights `-webkit-appearance: button` und applied
@@ -107,6 +109,251 @@
   }
   ::-webkit-scrollbar-corner {
     background: transparent;
+  }
+}
+
+@layer components {
+  /* The one tooltip (components/ui/tip.tsx). Stage 1 is the name with a key cap and, for a blocked
+     element, the reason; stage 2 unfolds the explanation in the same box, downwards, while the name
+     stays where it is. While stage 2 is on its way a hairline under the name fills (--tip-wait).
+     The script writes the place; the box never covers its element. A bare name lets the pointer
+     through; a box with something to read can be entered. */
+  .tip {
+    position: fixed;
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+    max-width: min(22rem, calc(100vw - 16px));
+    padding: 6px 10px 7px;
+    border-radius: 6px;
+    background: rgb(var(--surface));
+    color: rgb(var(--fg));
+    box-shadow: 0 8px 24px -6px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(var(--border) / 0.8);
+    font-size: 12px;
+    line-height: 1.45;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-2px);
+    transition: opacity 120ms ease, transform 120ms ease;
+  }
+  .tip.is-open {
+    opacity: 1;
+    transform: none;
+  }
+  .tip.is-open.tip--enterable {
+    pointer-events: auto;
+  }
+  .tip__name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+  }
+  .tip__key {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: rgb(var(--muted));
+    background: rgb(var(--tile));
+  }
+  .tip__reason {
+    color: rgb(var(--warn-ink));
+    font-weight: 500;
+  }
+  /* Folded, the explanation does not count for the width, so stage 1 is a small box around the
+     name; unfolded, the box takes the width of its sentence. --measure is the unfolded look
+     without the ease, for the script to measure the room stage 2 will need. */
+  .tip__more {
+    display: grid;
+    grid-template-rows: 0fr;
+    contain: inline-size;
+    transition: grid-template-rows 160ms ease;
+  }
+  .tip__more > span {
+    overflow: hidden;
+    min-height: 0;
+    color: rgb(var(--fg) / 0.8);
+  }
+  .tip--stage2 .tip__more,
+  .tip--measure .tip__more {
+    grid-template-rows: 1fr;
+    contain: none;
+  }
+  .tip--stage2 .tip__more > span,
+  .tip--measure .tip__more > span {
+    padding-top: 3px;
+  }
+  .tip--measure .tip__more {
+    transition: none;
+  }
+  .tip--only-more .tip__more > span {
+    padding-top: 0;
+  }
+  .tip__wait {
+    display: none;
+    height: 2px;
+    margin: 5px -10px -7px;
+    border-radius: 0 0 6px 6px;
+    background: rgb(var(--accent) / 0.45);
+    transform-origin: left center;
+    transform: scaleX(0);
+  }
+  .tip--waiting .tip__wait {
+    display: block;
+    animation: tip-wait var(--tip-wait, 1300ms) linear forwards;
+  }
+  @keyframes tip-wait {
+    to {
+      transform: scaleX(1);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tip,
+    .tip__more {
+      transition: none;
+    }
+    .tip {
+      transform: none;
+    }
+    /* Still says that more is coming, without moving. */
+    .tip--waiting .tip__wait {
+      animation: none;
+      transform: none;
+      opacity: 0.5;
+    }
+  }
+
+  /* One style for every table (components/ui/table.tsx): the same header, row height, numbers
+     right-aligned in tabular figures, a header that stays in view, a tint on the row under the
+     pointer, no zebra and no lines but the separators between rows. The colours are opaque
+     mixes, so a sticky header or first column hides what scrolls under it. */
+  .table-frame {
+    --table-bg: color-mix(in srgb, rgb(var(--tile)) 40%, rgb(var(--surface)));
+    --table-head: rgb(var(--bg));
+    --table-hover: color-mix(in srgb, rgb(var(--tile)) 85%, rgb(var(--surface)));
+    --table-group: color-mix(in srgb, rgb(var(--tile)) 65%, rgb(var(--surface)));
+    border-radius: 6px;
+    background: var(--table-bg);
+  }
+  /* :where keeps these rules as weak as a single class, so a utility on a cell wins over them. */
+  .data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .data-table :where(thead th, thead td) {
+    position: sticky;
+    top: var(--table-top, 0px);
+    z-index: 2;
+    height: 32px;
+    padding: 0 12px;
+    background: var(--table-head);
+    border-bottom: 1px solid rgb(var(--border));
+    color: rgb(var(--muted));
+    font-weight: 500;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .data-table :where(thead tr:first-child > :first-child) {
+    border-top-left-radius: 6px;
+  }
+  .data-table :where(thead tr:first-child > :last-child) {
+    border-top-right-radius: 6px;
+  }
+  .data-table :where(tbody > tr > *, tfoot > tr > *) {
+    height: 32px;
+    padding: 6px 12px;
+    border-bottom: 1px solid rgb(var(--border) / 0.6);
+    text-align: left;
+    font-weight: 400;
+  }
+  .data-table :where(tbody > tr:last-child > *) {
+    border-bottom: 0;
+  }
+  .data-table :where(tfoot > tr:first-child > *) {
+    border-top: 1px solid rgb(var(--border));
+  }
+  .data-table :where(tfoot > tr > *) {
+    color: rgb(var(--muted));
+  }
+  .data-table :where(tbody > tr:hover > *) {
+    background-color: var(--table-hover);
+  }
+  .data-table :where(.num) {
+    text-align: right;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  /* A header over numbers is aligned with them but stays in the text face. */
+  .data-table :where(thead .num) {
+    font-family: inherit;
+  }
+  .data-table :where(.sticky-col) {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--table-bg);
+  }
+  .data-table :where(thead .sticky-col) {
+    z-index: 3;
+    background: var(--table-head);
+  }
+  .data-table :where(tbody > tr:hover > .sticky-col) {
+    background: var(--table-hover);
+  }
+  /* A plain light row that heads a group of rows, with its count. */
+  .data-table :where(tbody > tr.table-group > *) {
+    height: 28px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    background: var(--table-group);
+    color: rgb(var(--muted));
+    font-weight: 500;
+  }
+  /* On a phone, a list that should not scroll sideways (the measures of step 3) keeps its cells
+     closer to their sides. */
+  @media (max-width: 639.98px) {
+    .data-table.data-table--tight :where(th, td) {
+      padding-inline: 8px;
+    }
+  }
+  /* The header sticks under the settings row of a wide screen; in a box of its own, at its top. */
+  @media (min-width: 1024px) {
+    .table-frame {
+      --table-top: calc(var(--settings-row-offset, 0px) - 8px);
+    }
+  }
+  /* A frame that scrolls itself (sideways or in a box) holds its header at its own top. */
+  .table-frame.table-frame--scrolls {
+    --table-top: 0px;
+  }
+
+  /* A word with an explanation in its tooltip. */
+  .term {
+    text-decoration-line: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: rgb(var(--muted) / 0.7);
+    text-underline-offset: 3px;
+    cursor: help;
+    border-radius: 2px;
+  }
+  .term:hover {
+    text-decoration-color: rgb(var(--fg) / 0.8);
+  }
+  .term:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgb(var(--accent));
   }
 }
 

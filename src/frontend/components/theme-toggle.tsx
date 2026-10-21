@@ -4,6 +4,7 @@ import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
+import { useTip } from "./ui/tip";
 
 export function ThemeToggle() {
   const { setTheme, resolvedTheme } = useTheme();
@@ -12,13 +13,18 @@ export function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const isDark = resolvedTheme === "dark";
+  // The state as the name of the tooltip, the switch it offers as its explanation.
+  const tip = useTip<HTMLButtonElement>({
+    name: t("header.dark_mode"),
+    more: mounted ? t(isDark ? "header.switch_to_light" : "header.switch_to_dark") : undefined,
+  });
 
   return (
     <button
+      ref={tip}
       type="button"
       aria-label={t("header.dark_mode")}
       aria-pressed={mounted ? isDark : undefined}
-      title={mounted ? t(isDark ? "header.switch_to_light" : "header.switch_to_dark") : t("header.dark_mode")}
       onClick={() => setTheme(isDark ? "light" : "dark")}
       className="h-9 w-9 grid place-items-center rounded-md bg-tile hover:bg-accent/[0.08] transition text-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
     >

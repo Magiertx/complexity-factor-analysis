@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Table2 } from "lucide-react";
 import { formatNumber, formatPercent } from "@/lib/format";
+import { TableFrame } from "@/components/ui/table";
 import { useLocale, useT } from "@/lib/i18n";
 
 const HEIGHT = 260;
@@ -189,7 +190,7 @@ export function ScreePlot({
             y={yShare(share)}
             dy="0.32em"
             fontSize={10}
-            style={{ fill: "rgb(var(--positive-ink))" }}
+            className="fill-muted"
           >
             {formatPercent(share, locale, 0)}
           </text>
@@ -212,8 +213,8 @@ export function ScreePlot({
         <polyline
           points={line(cumulative, yShare)}
           fill="none"
-          style={{ stroke: "rgb(var(--positive))" }}
-          strokeOpacity={0.75}
+          className="stroke-muted"
+          strokeOpacity={0.9}
           strokeWidth={1.25}
           strokeLinejoin="round"
         />
@@ -359,7 +360,7 @@ export function ScreePlot({
           )}
           <li className="flex items-center gap-1.5">
             <svg width="18" height="8">
-              <line x1="0" x2="18" y1="4" y2="4" style={{ stroke: "rgb(var(--positive))" }} strokeWidth={1.25} />
+              <line x1="0" x2="18" y1="4" y2="4" className="stroke-muted" strokeWidth={1.25} />
             </svg>
             {t("factor.factors.legend_cumulative")}
           </li>
@@ -388,50 +389,41 @@ export function ScreePlot({
         </span>
       </div>
 
-      {/* Focusable, so the keyboard can scroll the table of a hundred factors. */}
-      <div
-        id={tableId}
-        hidden={!tableOpen}
-        tabIndex={0}
-        role="region"
-        aria-label={t("factor.factors.table_caption")}
-        className="max-h-64 overflow-auto rounded-md bg-tile/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-      >
-        <table className="w-full text-xs">
-          <caption className="sr-only">{t("factor.factors.table_caption")}</caption>
-          <thead className="bg-bg sticky top-0">
-            <tr className="text-muted">
-              <th scope="col" className="px-3 py-1.5 text-left font-medium">
-                {t("factor.factors.axis_factor")}
-              </th>
-              <th scope="col" className="px-3 py-1.5 text-right font-medium">
-                {t("factor.factors.axis_eigenvalue")}
-              </th>
-              {randomValues && (
-                <th scope="col" className="px-3 py-1.5 text-right font-medium">
-                  {t("factor.factors.col_random", { percentile })}
+      {/* A box of its own, so the table of a hundred factors scrolls inside it. */}
+      <div id={tableId} hidden={!tableOpen}>
+        <TableFrame label={t("factor.factors.table_caption")} boxed className="max-h-64">
+          <table className="data-table">
+            <caption className="sr-only">{t("factor.factors.table_caption")}</caption>
+            <thead>
+              <tr>
+                <th scope="col">{t("factor.factors.axis_factor")}</th>
+                <th scope="col" className="num">
+                  {t("factor.factors.axis_eigenvalue")}
                 </th>
-              )}
-              <th scope="col" className="px-3 py-1.5 text-right font-medium">
-                {t("factor.factors.col_cumulative")}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {eigenvalues.map((v, i) => (
-              <tr key={i} className={i < selected ? "bg-accent/[0.05]" : undefined}>
-                <th scope="row" className="px-3 py-1 text-left font-medium">
-                  {i + 1}
-                </th>
-                <td className="px-3 py-1 text-right font-mono tabular-nums">{formatNumber(v, locale, 3)}</td>
                 {randomValues && (
-                  <td className="px-3 py-1 text-right font-mono tabular-nums">{formatNumber(randomValues[i], locale, 3)}</td>
+                  <th scope="col" className="num">
+                    {t("factor.factors.col_random", { percentile })}
+                  </th>
                 )}
-                <td className="px-3 py-1 text-right font-mono tabular-nums">{formatPercent(cumulative[i], locale)}</td>
+                <th scope="col" className="num">
+                  {t("factor.factors.col_cumulative")}
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {eigenvalues.map((v, i) => (
+                <tr key={i}>
+                  <th scope="row" className={i < selected ? "font-semibold" : undefined}>
+                    {i + 1}
+                  </th>
+                  <td className="num">{formatNumber(v, locale, 3)}</td>
+                  {randomValues && <td className="num">{formatNumber(randomValues[i], locale, 3)}</td>}
+                  <td className="num">{formatPercent(cumulative[i], locale)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TableFrame>
       </div>
     </div>
   );

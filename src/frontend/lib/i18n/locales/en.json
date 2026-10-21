@@ -84,9 +84,9 @@
       "step1_title": "Two tabs: models and logs",
       "step1_p1": "Model complexity analyzes measures of Petri nets discovered from event logs, computed with ComFy. Log complexity analyzes measures of the event logs themselves, computed with feeed.",
       "step1_p2": "Both tabs work the same way.",
-      "step2_title": "Step by step, top to bottom",
-      "step2_p1": "Data, dataset, suitability, factors, loadings. Every change to a setting re-runs the analysis right away, and the loadings can be exported as CSV or LaTeX. An optional sixth step lets Claude propose names for the factors.",
-      "step2_p2": "The ? next to a heading explains the statistic; the Tour button walks you through the page.",
+      "step2_title": "One step at a time",
+      "step2_p1": "Data, dataset, suitability, factors, loadings: the list of steps shows what each one found and opens it; Back and Next lead through them. Every change to a setting re-runs the analysis right away, and the analysis can be downloaded as CSV, LaTeX or ZIP. An optional sixth step lets Claude propose names for the factors.",
+      "step2_p2": "Hover a control or a dotted word for what it does; the Tour button walks you through the steps.",
       "step3_title": "More when you need it",
       "step3_api": "API: drive everything from Python or curl; see the API page in the header.",
       "progress_aria": "Progress",
@@ -94,7 +94,7 @@
       "step3_inspect": "Inspect a single log: run ComFy on one log and look at the discovered models."
     },
     "factor": {
-      "intro": "Five steps from raw measures to factors, and an optional interpretation. Each step explains its numbers; the ? buttons next to a heading say more. Esc or Skip ends the tour at any time.",
+      "intro": "Five steps from raw measures to factors, and an optional interpretation, one at a time: the list of steps on the left (on a phone the row at the top) and Back and Next move between them. Hover a control or a dotted word for what it does. Esc or Skip ends the tour at any time.",
       "data": "Start here: pick a bundled dataset, upload a CSV, or compute the measures from your own files. Large computations run in the background.",
       "dataset": "Check the size of the matrix and what the cleaning removed. You can download the cleaned data as CSV.",
       "suitability": "Bartlett and KMO tell you whether a factor analysis makes sense at all. Exclude measures with low MSA here, by hand or with the filter.",
@@ -565,10 +565,10 @@
       "busy": "in progress"
     },
     "empty": {
-      "no_dataset": "Choose data in step 1 first.",
+      "no_dataset": "Choose data in the data step first.",
       "computing": "The measures are still being computed. This step fills in once the dataset is ready.",
       "analyzing": "Running the analysis…",
-      "after_error": "No result yet. Fix the problem shown in step 3."
+      "after_error": "No result yet. Fix the problem shown in the suitability step."
     },
     "analysis": {
       "updating": "Updating…",
@@ -722,13 +722,14 @@
       "dropped_rows_note_plural": "{n} rows with missing values were dropped.",
       "preview_heading": "Preview",
       "observation": "Observation",
-      "download_csv": "Download dataset (CSV)",
       "preview_note": "First {n} of {total} observations.",
       "detail": {
         "non_numeric": "contains the value “{value}”",
         "missing": "{missing} of {total} values missing",
         "duplicate": "perfectly correlated with {kept}"
-      }
+      },
+      "col_reason": "Reason",
+      "col_detail": "Detail"
     },
     "suitability": {
       "passed": "passed",
@@ -752,15 +753,13 @@
       "msa_threshold": "MSA threshold",
       "bartlett_alpha": "Bartlett α",
       "removed_none": "The filter removed no measures.",
-      "removed_heading": "The filter removed {n} measure:",
-      "removed_heading_plural": "The filter removed {n} measures:",
-      "round": "Round {step}",
       "msa_heading": "Sampling adequacy per measure (MSA)",
       "col_measure": "Measure",
       "col_status": "Status",
       "col_exclude": "Exclude",
       "status_used": "used",
       "status_removed": "removed by the filter in round {step}",
+      "status_removed_short": "removed · round {step}",
       "status_excluded": "excluded",
       "min_measures": "At least {n} measures must remain.",
       "excluded_count": "{n} excluded by hand",
@@ -769,7 +768,9 @@
       "regularised_title": "Some eigenvalues of the correlation matrix are practically zero and were clamped, so χ² reflects that floor more than the data. Read the test together with KMO.",
       "exclude_aria": "Exclude {measure}",
       "invert": "Invert selection",
-      "invert_title": "Exclude the included measures and include the excluded ones"
+      "invert_title": "Exclude the included measures and include the excluded ones",
+      "removed_summary": "The filter removed {n} measure; the list below marks it.",
+      "removed_summary_plural": "The filter removed {n} measures; the list below marks them."
     },
     "factors": {
       "scree_title": "Scree plot",
@@ -840,10 +841,6 @@
       "order_label": "Order",
       "order_factor": "By factor",
       "order_original": "As in dataset",
-      "export_csv": "Download loadings (CSV)",
-      "export_latex": "Download loadings (LaTeX)",
-      "export_zip": "Download analysis (ZIP)",
-      "export_zip_title": "The dataset, all results, the loadings as CSV and LaTeX, a stored interpretation if there is one, and a manifest to reproduce the analysis",
       "export_failed": "The download failed.",
       "table_heading": "Loadings",
       "caption": "Factor loadings, {n} factor, rotation {rotation}",
@@ -861,7 +858,6 @@
       "structure_note": "The structure matrix holds the correlations between measures and factors; sums of squared loadings are given for the pattern matrix.",
       "oblique_note": "With an oblique rotation the factors correlate, so their shares do not add up; together they explain {pct} of the variance.",
       "legend_negative": "negative",
-      "legend_positive": "positive",
       "legend_bold": "bold: |loading| ≥ {threshold}",
       "legend_bold_strict": "bold: |loading| > {threshold}",
       "legend_bold_assigned": "bold: the loadings by which the rule assigns a measure",
@@ -895,6 +891,8 @@
         }
       },
       "cross_cell": "cross-loading",
+      "only_notable": "Only notable ({n})",
+      "only_notable_more": "Measures that load on several factors or on none.",
       "legend_cross": "ring: further loading of a cross-loaded measure",
       "also": "also F{i}",
       "also_title": "Loads on factor {i} as well: {value}",
@@ -903,7 +901,12 @@
         "low_communality": "low communality, h² {value}",
         "cross_loading": "cross-loads on {factors}",
         "cross_loading_plain": "loads on several factors"
-      }
+      },
+      "look_label": "Show",
+      "look_matrix": "Matrix",
+      "look_dimensions": "Dimensions",
+      "legend_faded": "faded: |loading| < {threshold}",
+      "legend_faded_strict": "faded: |loading| ≤ {threshold}"
     },
     "help": {
       "cleaning": "Before the analysis, rows where most values are missing are dropped. Then columns that are not numeric, that have no variance, that have missing values, or that are perfect copies of an earlier column are removed, as in ComFy for log measures. Such columns would distort or break the correlation matrix.",
@@ -1020,13 +1023,13 @@
       "chip_changed_title": "Differs from the tool standard; go to this setting",
       "changed": "differs from the standard",
       "reset": "Reset to standard",
-      "reset_short": "Standard",
       "reset_title": "Back to the standard settings of the tool",
       "paper": "Use paper settings",
-      "paper_short": "Paper settings",
       "paper_title": "The settings of {source}",
       "reset_done": "Standard settings restored.",
-      "paper_done": "Paper settings applied."
+      "paper_done": "Paper settings applied.",
+      "reset_none": "These are the standard settings already.",
+      "paper_none": "The paper settings are applied already."
     },
     "match": {
       "chip_match": "Numbers = ComFy report",
@@ -1089,10 +1092,8 @@
     },
     "link": {
       "copy": "Copy link",
-      "copy_short": "Link",
       "copy_title": "Copy a link that opens this dataset with these settings",
       "copied": "Link copied",
-      "copied_short": "Copied",
       "own_data": "Links work for bundled datasets only; your own data stays in your session.",
       "fallback_title": "Link to this analysis",
       "fallback_hint": "The browser did not allow copying; copy the link from the field.",
@@ -1130,6 +1131,63 @@
       "dimensions_plural": "{n} dimensions",
       "cross": "{n} cross-loaded",
       "unassigned": "{n} unassigned"
+    },
+    "nav": {
+      "aria": "Step navigation",
+      "back": "Back",
+      "next": "Next",
+      "back_to": "Back: {step}",
+      "next_to": "Next: {step}",
+      "position": "Step {n} of {total}",
+      "to_data": "Go to the data step",
+      "locked": {
+        "no_dataset": "Open a dataset in the data step first.",
+        "loading": "The dataset is still loading.",
+        "computing": "The measures are still being computed.",
+        "failed": "The dataset could not be built. Choose other data in the data step."
+      }
+    },
+    "toolbar": {
+      "aria": "Tools",
+      "export": "Download",
+      "export_more": "The analysis as ZIP, the loadings as CSV or LaTeX, or the cleaned dataset as CSV.",
+      "export_zip": "Analysis (ZIP)",
+      "export_zip_hint": "Dataset, results, loadings and a manifest to reproduce the analysis",
+      "export_loadings_csv": "Loadings (CSV)",
+      "export_loadings_latex": "Loadings (LaTeX)",
+      "export_dataset": "Dataset (CSV)",
+      "export_dataset_hint": "The cleaned matrix",
+      "wait_analysis": "The analysis is still running.",
+      "wait_update": "The analysis is being updated.",
+      "mine_more": "Reopen or delete the datasets of this session.",
+      "mine_none": "No datasets in this session yet.",
+      "more": "More"
+    },
+    "measures": {
+      "search": "Search measures",
+      "search_placeholder": "Search measures",
+      "sort_aria": "Order of the measures",
+      "sort": {
+        "dataset": "Dataset order",
+        "name": "By name",
+        "msa": "By MSA, lowest first"
+      },
+      "group_aria": "Grouping of the measures",
+      "grouping": {
+        "none": "No grouping",
+        "group": "By feature group"
+      },
+      "only_notable": "Only notable ({n})",
+      "section_notable": "Worth a look",
+      "section_other": "The other measures",
+      "section_no_group": "Without a group",
+      "status_dependent": "linearly dependent",
+      "status_dependent_short": "dependent",
+      "show_other": "Show",
+      "hide_other": "Hide",
+      "dependent_with": "Linearly dependent with {measures}. Excluding one measure of the group resolves it.",
+      "status_below": "below {threshold}",
+      "none_match": "No measure matches the search."
     }
   },
   "inspect": {

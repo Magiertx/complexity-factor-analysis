@@ -1,9 +1,8 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { AlertCircle, HelpCircle, Info, Loader2, Microscope, RotateCcw, X } from "lucide-react";
+import { AlertCircle, Info, Loader2, RotateCcw, X } from "lucide-react";
 import { analysisLinkQuery, parseAnalysisLink } from "@/lib/analysis-link";
 import {
   HttpError,
@@ -11,6 +10,7 @@ import {
   isSuperseded,
   analyzeDataset,
   createDataset,
+  datasetDownloadUrl,
   deleteDataset,
   downloadAnalysisZip,
   exportLoadings,
@@ -47,30 +47,27 @@ import {
 } from "@/lib/factor-analysis";
 import { formatNumber, formatPercent } from "@/lib/format";
 import { ruleNote } from "@/lib/paper-notes";
+import { CONTROL_STEPS, parseStep, stepFromHash, stepHref } from "@/lib/steps";
 import { cn } from "@/lib/utils";
 import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { UndoToast, type UndoNotice } from "@/components/ui/undo-toast";
 import { useJobsDrawer } from "@/components/jobs-drawer";
 import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
 import { PageHeader } from "@/components/page-header";
 import { DataForm, DataSummary, type OpenPreset } from "./data-step";
 import { DatasetView } from "./dataset-step";
-import { SuitabilityView } from "./suitability-step";
+import { DEFAULT_MEASURE_VIEW, SuitabilityView, type MeasureGroups, type MeasureView } from "./suitability-step";
 import { FactorsView } from "./factors-step";
-import { LoadingsView } from "./loadings-step";
+import { DEFAULT_LOADINGS_FILTER, LoadingsView, type LoadingsFilter } from "./loadings-step";
 import { InterpretationView } from "./interpretation-step";
 import { FactorTour } from "./factor-tour";
-import { SettingsRow } from "./settings-row";
+import { SETTING_CONTROLS, SettingsRow, focusControl } from "./settings-row";
+import { FactorToolbar, type ExportState } from "./toolbar";
 import { StartHere } from "./start-here";
-import {
-  EmptyStep,
-  StepBadge,
-  StepSection,
-  stepAnchor,
-  type StepId,
-  type StepState,
-} from "./step-section";
+import { EmptyStep, StepSection, stepAnchor, type StepId, type StepState } from "./step-section";
+import { StepBar, StepFooter, StepNavBar, StepRail, useStepNavigation, type StepLocks } from "./step-nav";
 
 const POLL_MS = 1500;
 // Polling slows down while the browser tab is hidden.
@@ -132,7 +129,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const [gone, setGone] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   // A link to an analysis of a bundled dataset, waiting for the catalog, and what became of it.
-  const [linkRequest, setLinkRequest] = useState<URLSearchParams | null>(null);
+  const [linkRequest, setLinkRequest] = useState<{ params: URLSearchParams; step: StepId | null } | null>(null);
   const [linkNotice, setLinkNotice] = useState<{ tone: "busy" | "info" | "error"; text: string } | null>(null);
   // The datasets of this kind in the session, offered for reopening in the data step.
   const [datasets, setDatasets] = useState<DatasetSummary[] | null>(null);
@@ -165,6 +162,28 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const [exportError, setExportError] = useState<string | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
   const onboarding = useOnboarding();
+  // One step on screen at a time, named in the address (?step=...).
+  const nav = useStepNavigation();
+  const { goTo } = nav;
+  // The step to open once a dataset just chosen is ready: the dataset step after "Use dataset" or
+  // a link without a step of its own. Any navigation by hand before that cancels it.
+  const [advance, setAdvance] = useState<{ id: string; to: StepId; replace: boolean } | null>(null);
+  const go = useCallback(
+    (step: StepId, opts?: Parameters<typeof goTo>[1]) => {
+      setAdvance(null);
+      goTo(step, opts);
+    },
+    [goTo],
+  );
+  // The browser's back and forward count as navigation by hand as well.
+  const { fromUrl } = nav;
+  const followUrl = useCallback(
+    (step: StepId, initial: boolean) => {
+      if (!initial) setAdvance(null);
+      fromUrl(step, initial);
+    },
+    [fromUrl],
+  );
   // The options of the analysis on screen; a stored interpretation is looked up for them.
   const [analyzedOptions, setAnalyzedOptions] = useState<AnalysisOptions | null>(null);
 
@@ -253,7 +272,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const datasetGone = useCallback(() => {
     selectDataset(null);
     setGone(true);
-  }, [selectDataset]);
+    goTo("data", { replace: true, focus: null });
+  }, [selectDataset, goTo]);
 
   // Load the dataset and poll while its measures are computed. Loaded again when jobs come or
   // go, since deleting the job of a computed dataset deletes the dataset as well.
@@ -495,7 +515,21 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const openChosen = (id: string) => {
     focusSummary.current = true;
     openDataset(id);
+    setAdvance({ id, to: "dataset", replace: false });
   };
+
+  // A dataset of the session from a link (?dataset=<id>, e.g. a job card): without a step of its
+  // own the link opens the dataset step once the dataset is ready.
+  const openLinked = useCallback(
+    (id: string, step: StepId | null) => {
+      openDataset(id);
+      if (!step) setAdvance({ id, to: "dataset", replace: true });
+    },
+    [openDataset],
+  );
+  const openBundledLink = useCallback((params: URLSearchParams, step: StepId | null) => {
+    setLinkRequest({ params, step });
+  }, []);
 
   const cancelChoice = () => {
     focusSummary.current = true;
@@ -545,7 +579,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   useEffect(() => {
     if (!linkRequest || !rawCatalog) return;
     setLinkRequest(null);
-    const parsed = parseAnalysisLink(linkRequest, defaultOptions(kind), new Set(rawCatalog.measures.map((m) => m.key)));
+    const { params, step } = linkRequest;
+    const parsed = parseAnalysisLink(params, defaultOptions(kind), new Set(rawCatalog.measures.map((m) => m.key)));
     if (!parsed) return;
     const entry = rawCatalog.bundled.find((b) => b.id === parsed.bundledId);
     if (!entry) {
@@ -562,6 +597,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           options: paper ?? parsed.options,
           message: tRef.current(invalid ? "factor.data.opened_standard" : "factor.link.opened"),
         });
+        if (!step) setAdvance({ id: res.dataset_id, to: "dataset", replace: true });
         setLinkNotice(invalid ? { tone: "info", text: tRef.current("factor.link.invalid") } : null);
       },
       (e) => setLinkNotice({ tone: "error", text: errorTextRef.current(e, tRef.current("factor.link.failed")) }),
@@ -575,6 +611,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       const res = await createDataset(input);
       focusSummary.current = true;
       openCreated(res.dataset_id, input.source === "bundled" && input.bundledId ? presetOptions(input.bundledId, preset) : null);
+      setAdvance({ id: res.dataset_id, to: "dataset", replace: false });
     } catch (e) {
       setSubmitError(errorText(e, t("factor.data.submit_failed")));
     } finally {
@@ -619,6 +656,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       if (!formOpen) focusForm.current = true;
       selectDataset(null);
       setChoosing(false);
+      goTo("data", { replace: true, focus: null });
     }
     return true;
   };
@@ -644,13 +682,30 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
 
   const names = useMemo(() => new Map((catalog?.measures ?? []).map((m) => [m.key, m.name])), [catalog]);
   const measureName = useCallback((key: string) => names.get(key) ?? key, [names]);
-  // The tooltip of a measure: its full name, which a cell may cut off, and what it measures.
-  const titles = useMemo(
-    () =>
-      new Map((catalog?.measures ?? []).map((m) => [m.key, m.description ? `${m.name}\n${m.description}` : m.name])),
+  // What a measure measures, for the tooltip of its name, which a cell no longer cuts off.
+  const descriptions = useMemo(
+    () => new Map((catalog?.measures ?? []).map((m) => [m.key, m.description || undefined])),
     [catalog],
   );
-  const measureTitle = useCallback((key: string) => titles.get(key) ?? key, [titles]);
+  const measureDescription = useCallback((key: string) => descriptions.get(key), [descriptions]);
+  // The feature groups of the log measures, for grouping the list of step 3; model measures have none.
+  const measureGroups = useMemo<MeasureGroups | null>(() => {
+    if (!catalog?.groups?.length) return null;
+    const of = new Map(catalog.measures.map((m) => [m.key, m.group ?? null]));
+    return { order: catalog.groups.map((g) => ({ key: g.key, name: g.name })), of: (m) => of.get(m) ?? null };
+  }, [catalog]);
+  // How the list of step 3 is shown, kept while other steps are open.
+  const [measureView, setMeasureView] = useState<MeasureView>(DEFAULT_MEASURE_VIEW);
+  // The same for the matrix of the loadings.
+  const [loadingsFilter, setLoadingsFilter] = useState<LoadingsFilter>(DEFAULT_LOADINGS_FILTER);
+  // Another dataset starts with whole lists: a search for the measures of the last one would hide
+  // those of this one.
+  const [listsFor, setListsFor] = useState(datasetId);
+  if (listsFor !== datasetId) {
+    setListsFor(datasetId);
+    setMeasureView(DEFAULT_MEASURE_VIEW);
+    setLoadingsFilter(DEFAULT_LOADINGS_FILTER);
+  }
 
   // The catalog entry of a bundled dataset, and the settings of its paper if it has them.
   const bundled = dataset?.bundled_id ? catalog?.bundled.find((b) => b.id === dataset.bundled_id) : undefined;
@@ -749,6 +804,111 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       .join(" · ");
   }
 
+  // Why the steps after the data cannot be opened yet; they all need a dataset that is ready.
+  const lockReason: string | null = ready
+    ? null
+    : !datasetId
+      ? t("factor.nav.locked.no_dataset")
+      : dataset?.id === datasetId && dataset.status === "computing"
+        ? t("factor.nav.locked.computing")
+        : dataset?.id === datasetId && dataset.status === "failed"
+          ? t("factor.nav.locked.failed")
+          : t("factor.nav.locked.loading");
+  const locks: StepLocks = {
+    data: null,
+    dataset: lockReason,
+    suitability: lockReason,
+    factors: lockReason,
+    loadings: lockReason,
+    interpretation: lockReason,
+  };
+  const current = nav.step;
+
+  // Open the step chosen for a dataset once it is ready; a dataset that failed stays on the data step.
+  useEffect(() => {
+    if (!advance) return;
+    if (dataset?.id === advance.id && dataset.status === "failed") {
+      setAdvance(null);
+      return;
+    }
+    if (!ready || datasetId !== advance.id) return;
+    setAdvance(null);
+    goTo(advance.to, { replace: advance.replace });
+  }, [advance, ready, datasetId, dataset, goTo]);
+
+  // Once a step is on screen, its heading (or the control a chip of the settings row asked for)
+  // takes the focus, and a step that begins above the window is scrolled to.
+  const stepArea = useRef<HTMLDivElement>(null);
+  const { takeFocus, visit } = nav;
+  useEffect(() => {
+    const focus = takeFocus();
+    if (!focus) return;
+    if (focus !== "heading") {
+      focusControl(focus.control);
+      return;
+    }
+    document.getElementById(`${stepAnchor(current)}-title`)?.focus({ preventScroll: true });
+    const wide = window.matchMedia("(min-width: 1024px)").matches;
+    const target = wide ? document.getElementById(stepAnchor(current)) : stepArea.current;
+    if (!target) return;
+    const pad = wide ? parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0 : 8;
+    const top = target.getBoundingClientRect().top;
+    // A wide screen scrolls only when the step begins above the window. On a phone the row of
+    // steps goes to the top of it every time, so the step starts on the first screen and not
+    // below the page's own header.
+    if (wide ? top < pad : Math.abs(top - pad) > 1) window.scrollBy({ top: top - pad });
+  }, [visit, current, takeFocus]);
+
+  // An anchor of the one-page layout before, followed inside the page, opens its step.
+  useEffect(() => {
+    const onHash = () => {
+      const step = stepFromHash(window.location.hash);
+      if (step) go(step, { replace: true });
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [go]);
+
+  /** A chip of the settings row: the step with its control, and the control focused. */
+  const goToSetting = (chip: keyof typeof CONTROL_STEPS) => {
+    const step = CONTROL_STEPS[chip];
+    const control = SETTING_CONTROLS[chip];
+    if (step === current) focusControl(control);
+    else go(step, { focus: { control } });
+  };
+
+  // Start here and My datasets of the toolbar: the data step with its form open there.
+  const [formRequest, setFormRequest] = useState<{ kind: "start" | "mine"; n: number } | null>(null);
+  const formRequestHandled = useCallback(() => setFormRequest(null), []);
+  const openForm = (which: "start" | "mine") => {
+    go("data", { focus: null });
+    if (dataset && !formOpen) setChoosing(true);
+    setFormRequest({ kind: which, n: Date.now() });
+  };
+
+  // The tour opens the step of each stop, without an entry in the history for each, and puts the
+  // reader back on the step it began on once it ends, unless they moved on by themselves (the
+  // browser's back, say) while it ran.
+  const tour = useRef<{ from: StepId; at: StepId | null } | null>(null);
+  const { getStep } = nav;
+  const tourStep = useCallback(
+    (step: StepId) => {
+      if (tour.current) tour.current.at = step;
+      go(step, { replace: true, focus: null });
+    },
+    [go],
+  );
+  const startTour = () => {
+    tour.current = { from: getStep(), at: null };
+    setTourOpen(true);
+  };
+  const endTour = () => {
+    const ran = tour.current;
+    tour.current = null;
+    setTourOpen(false);
+    if (ran?.at && ran.at !== ran.from && getStep() === ran.at) go(ran.from, { replace: true, focus: null });
+  };
+
   const updating = analyzing ? (
     <span className="inline-flex items-center gap-1.5 text-xs text-muted" role="status">
       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -756,9 +916,23 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     </span>
   ) : null;
 
+  const loadingDataset = !!datasetId && !ready && dataset?.status !== "computing" && dataset?.status !== "failed";
   const lockedHint = (
-    <EmptyStep>
-      {dataset?.status === "computing" ? t("factor.empty.computing") : t("factor.empty.no_dataset")}
+    <EmptyStep icon={loadingDataset ? <Loader2 className="h-5 w-5 animate-spin text-muted" /> : undefined}>
+      <p>
+        {!datasetId
+          ? t("factor.empty.no_dataset")
+          : dataset?.id === datasetId && dataset.status === "computing"
+            ? t("factor.empty.computing")
+            : dataset?.id === datasetId && dataset.status === "failed"
+              ? t("factor.nav.locked.failed")
+              : t("common.loading")}
+      </p>
+      {!loadingDataset && (
+        <Button variant="outline" size="sm" className="mt-3" onClick={() => go("data")}>
+          {t("factor.nav.to_data")}
+        </Button>
+      )}
     </EmptyStep>
   );
   const resultPlaceholder = (
@@ -769,93 +943,143 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // Results that no longer match the parameters are dimmed until the new ones arrive.
   const stale = cn("transition-opacity", (analyzing || analysisError) && "opacity-60");
 
+  const footer = (step: StepId) => (
+    <StepFooter step={step} locks={locks} onGo={go} hideNext={step === "data" && formOpen} />
+  );
+  const navProps = { current, states, locks, stateLabels, onGo: go };
+
+  const loadingsReason = !ready ? lockReason : !analysis ? t("factor.toolbar.wait_analysis") : null;
+  const exports: ExportState = {
+    datasetReason: ready ? null : lockReason,
+    loadingsReason,
+    // The ZIP holds what is on screen, so not while the analysis catches up with a change.
+    zipReason: loadingsReason ?? (analysisCurrent ? null : t("factor.toolbar.wait_update")),
+    datasetHref: ready && datasetId ? datasetDownloadUrl(datasetId) : null,
+    exporting,
+    onExport: runExport,
+  };
+
   return (
     <div className="space-y-6">
       <OnboardingTour open={onboarding.open} onClose={onboarding.close} />
-      <FactorTour kind={kind} run={tourOpen} onClose={() => setTourOpen(false)} />
+      <FactorTour kind={kind} run={tourOpen} onClose={endTour} onStep={tourStep} />
       <Suspense fallback={null}>
-        <LinkReader onDataset={openDataset} onBundled={setLinkRequest} />
+        <UrlReader onDataset={openLinked} onBundled={openBundledLink} onStep={followUrl} />
       </Suspense>
 
       <PageHeader
         title={t(`factor.${kind}.title`)}
         subtitle={t(`factor.${kind}.subtitle`)}
+        // On a phone the page's own sentence is gone once a step is open: the step has room.
+        subtitleClassName={ready && current !== "data" ? "max-lg:hidden" : undefined}
         actions={
-          <>
-            {kind === "model" && (
-              <Link
-                href="/inspect"
-                title={t("factor.model.inspect_title")}
-                className="h-8 px-3 inline-flex items-center gap-1.5 rounded-md bg-tile hover:bg-accent/[0.08] transition text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                <Microscope className="h-3.5 w-3.5" />
-                {t("factor.model.inspect_link")}
-              </Link>
-            )}
-            <Button variant="outline" size="sm" onClick={() => setTourOpen(true)} title={t("factor.tour_title")}>
-              <HelpCircle className="h-3.5 w-3.5" />
-              {t("factor.tour_button")}
-            </Button>
-          </>
+          <FactorToolbar
+            kind={kind}
+            linkQuery={linkQuery && current !== "data" ? `${linkQuery}&step=${current}` : linkQuery}
+            exports={exports}
+            onStartHere={() => openForm("start")}
+            onMyDatasets={() => openForm("mine")}
+            myDatasetsReason={datasets && datasets.length > 0 ? null : t("factor.toolbar.mine_none")}
+            onTour={startTour}
+          />
         }
       />
 
-      <div className="lg:grid lg:grid-cols-[12.5rem_minmax(0,1fr)] lg:gap-8 lg:items-start">
-        <StepRail states={states} stateLabels={stateLabels} summaries={summaries} />
+      <div className="lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-8 lg:items-start">
+        <StepRail {...navProps} summaries={summaries} />
 
-        <div className="space-y-6 min-w-0">
+        <div ref={stepArea} className="min-w-0 flex flex-col gap-4">
+          <StepBar {...navProps} />
+          {/* What became of a link, above every step: a link opens the dataset step, not the data
+              step. Always rendered, so screen readers announce the notices that appear in it;
+              empty, it takes back the gap before it. */}
+          <div role="status" className="empty:-mt-4">
+            {linkNotice && (
+              <div
+                className={cn(
+                  "rounded-lg px-3.5 py-2.5 flex items-start gap-2.5 text-sm",
+                  linkNotice.tone === "error" ? "bg-danger/10" : "bg-surface",
+                )}
+              >
+                {linkNotice.tone === "busy" ? (
+                  <Loader2 className="h-4 w-4 text-accent-ink shrink-0 mt-0.5 animate-spin" />
+                ) : linkNotice.tone === "error" ? (
+                  <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
+                ) : (
+                  <Info className="h-4 w-4 text-muted shrink-0 mt-0.5" />
+                )}
+                <p className="flex-1 min-w-0">{linkNotice.text}</p>
+                {linkNotice.tone !== "busy" && (
+                  <IconButton
+                    size="sm"
+                    icon={X}
+                    name={t("factor.data.dismiss_aria")}
+                    onClick={() => setLinkNotice(null)}
+                    className="h-6 w-6 -my-0.5"
+                  />
+                )}
+          </div>
+          )}
+          </div>
+          {exportError && (
+            <p role="alert" className="flex items-start gap-1.5 text-xs text-danger-ink">
+              <AlertCircle className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
+              {exportError}
+            </p>
+          )}
+          {/* At the top of every step once a dataset is ready, and in view while a step scrolls. */}
+          {ready && dataset && (
+            <SettingsRow
+              options={options}
+              standard={standard}
+              published={published}
+              publishedSource={bundled?.published_source}
+              publishedScope={bundled?.published_scope}
+              bundledId={bundled?.id}
+              analysis={analysis}
+              measureCount={dataset.measures.length}
+              match={match}
+              onApply={applyOptions}
+              onGoToSetting={goToSetting}
+            />
+          )}
+          {/* Shown at the bottom of the window, but next to the row in the tab order, so the
+              "Undo" of a reset is a Tab away from the buttons that caused it. */}
+          <UndoToast
+            notice={undo}
+            onUndo={() => {
+              if (undo) setOptions(undo.previous);
+              setUndo(null);
+            }}
+            onClose={() => setUndo(null)}
+          />
+
+          {/* The data step stays on the page while another is shown, so a form half filled in
+              keeps its files and choices. */}
           <StepSection
             id="data"
-            n={1}
-            state={states.data}
+            hidden={current !== "data"}
             title={t("factor.steps.data")}
             description={t(`factor.step_desc.data_${kind}`)}
+            footer={footer("data")}
           >
-            {/* Always rendered, so screen readers announce the notices that appear in it. */}
+            {/* Always rendered, so screen readers announce the notice that appears in it. */}
             <div role="status">
-              {linkNotice && (
-                <div
-                  className={cn(
-                    "mb-4 rounded-lg px-3.5 py-2.5 flex items-start gap-2.5 text-sm",
-                    linkNotice.tone === "error" ? "bg-danger/10" : "bg-tile",
-                  )}
-                >
-                  {linkNotice.tone === "busy" ? (
-                    <Loader2 className="h-4 w-4 text-accent-ink shrink-0 mt-0.5 animate-spin" />
-                  ) : linkNotice.tone === "error" ? (
-                    <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
-                  ) : (
-                    <Info className="h-4 w-4 text-muted shrink-0 mt-0.5" />
-                  )}
-                  <p className="flex-1 min-w-0">{linkNotice.text}</p>
-                  {linkNotice.tone !== "busy" && (
-                    <button
-                      type="button"
-                      onClick={() => setLinkNotice(null)}
-                      aria-label={t("factor.data.dismiss_aria")}
-                      className="h-6 w-6 -my-0.5 grid place-items-center rounded text-muted hover:text-fg hover:bg-accent/[0.08] transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-              )}
               {gone && (
                 <div className="mb-4 rounded-lg bg-tile px-3.5 py-2.5 flex items-start gap-2.5 text-sm">
                   <Info className="h-4 w-4 text-muted shrink-0 mt-0.5" />
                   <p className="flex-1 min-w-0">{t("factor.data.gone")}</p>
-                  <button
-                    type="button"
+                  <IconButton
+                    size="sm"
+                    icon={X}
+                    name={t("factor.data.dismiss_aria")}
                     onClick={() => {
                       // The button goes with the notice; the form below takes the focus.
                       focusForm.current = true;
                       setGone(false);
                     }}
-                    aria-label={t("factor.data.dismiss_aria")}
-                    className="h-6 w-6 -my-0.5 grid place-items-center rounded text-muted hover:text-fg hover:bg-accent/[0.08] transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
+                    className="h-6 w-6 -my-0.5"
+                  />
                 </div>
               )}
             </div>
@@ -877,7 +1101,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               </div>
             ) : formOpen ? (
               <div className="space-y-5">
-                <StartHere />
+                <StartHere
+                  request={formRequest?.kind === "start" ? formRequest.n : undefined}
+                  onRequestHandled={formRequestHandled}
+                />
                 <DataForm
                   kind={kind}
                   catalog={catalog}
@@ -889,6 +1116,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                   onOpen={openChosen}
                   onDelete={removeDataset}
                   onCancel={dataset && choosing ? cancelChoice : undefined}
+                  showMine={formRequest?.kind === "mine" ? formRequest.n : undefined}
+                  onRequestHandled={formRequestHandled}
                 />
               </div>
             ) : dataset ? (
@@ -922,51 +1151,28 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             )}
           </StepSection>
 
-          <StepSection
-            id="dataset"
-            n={2}
-            state={states.dataset}
-            title={t("factor.steps.dataset")}
-            description={t("factor.step_desc.dataset")}
-          >
-            {ready && dataset ? <DatasetView dataset={dataset} measureName={measureName} measureTitle={measureTitle} /> : lockedHint}
-          </StepSection>
+          {current === "dataset" && (
+            <StepSection
+              id="dataset"
+              title={t("factor.steps.dataset")}
+              description={t("factor.step_desc.dataset")}
+              footer={footer("dataset")}
+            >
+              {ready && dataset ? (
+                <DatasetView dataset={dataset} measureName={measureName} measureDescription={measureDescription} />
+              ) : (
+                lockedHint
+              )}
+            </StepSection>
+          )}
 
-          {/* Steps 3 to 5 share the settings row, which stays in view while they scroll by. A
-              flex column, since gaps leave out the toast, which is fixed to the window. */}
-          <div className="flex flex-col gap-6">
-            {ready && dataset && (
-              <SettingsRow
-                options={options}
-                standard={standard}
-                published={published}
-                publishedSource={bundled?.published_source}
-                publishedScope={bundled?.published_scope}
-                bundledId={bundled?.id}
-                analysis={analysis}
-                measureCount={dataset.measures.length}
-                match={match}
-                onApply={applyOptions}
-                linkQuery={linkQuery}
-              />
-            )}
-            {/* Shown at the bottom of the window, but next to the row in the tab order, so the
-                "Undo" of a reset is a Tab away from the buttons that caused it. */}
-            <UndoToast
-              notice={undo}
-              onUndo={() => {
-                if (undo) setOptions(undo.previous);
-                setUndo(null);
-              }}
-              onClose={() => setUndo(null)}
-            />
+          {current === "suitability" && (
             <StepSection
               id="suitability"
-              n={3}
-              state={states.suitability}
               title={t("factor.steps.suitability")}
               description={t("factor.step_desc.suitability")}
               actions={updating}
+              footer={footer("suitability")}
             >
               {!ready || !dataset ? (
                 lockedHint
@@ -988,20 +1194,24 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                       options={options}
                       onOptions={updateOptions}
                       measureName={measureName}
-                      measureTitle={measureTitle}
+                      measureDescription={measureDescription}
+                      groups={measureGroups}
+                      view={measureView}
+                      onView={setMeasureView}
                     />
                   </div>
                 </div>
               )}
             </StepSection>
+          )}
 
+          {current === "factors" && (
             <StepSection
               id="factors"
-              n={4}
-              state={states.factors}
               title={t("factor.steps.factors")}
               description={t("factor.step_desc.factors")}
               actions={updating}
+              footer={footer("factors")}
             >
               {!ready ? (
                 lockedHint
@@ -1019,100 +1229,113 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                 resultPlaceholder
               )}
             </StepSection>
+          )}
 
+          {current === "loadings" && (
             <StepSection
               id="loadings"
-              n={5}
-              state={states.loadings}
               title={t("factor.steps.loadings")}
               description={t("factor.step_desc.loadings")}
               actions={updating}
+              footer={footer("loadings")}
             >
               {!ready ? (
                 lockedHint
               ) : analysis ? (
-                <div className="space-y-3">
-                  {exportError && (
-                    <p role="alert" className="text-xs text-danger-ink">
-                      {exportError}
-                    </p>
-                  )}
-                  <div className={stale}>
-                    <LoadingsView
-                      analysis={analysis}
-                      options={options}
-                      onOptions={updateOptions}
-                      measureName={measureName}
-                      measureTitle={measureTitle}
-                      onExport={runExport}
-                      exporting={exporting}
-                      zipReady={analysisCurrent}
-                      assignmentNote={assignmentNote}
-                    />
-                  </div>
+                <div className={stale}>
+                  <LoadingsView
+                    analysis={analysis}
+                    options={options}
+                    onOptions={updateOptions}
+                    measureName={measureName}
+                    measureDescription={measureDescription}
+                    assignmentNote={assignmentNote}
+                    filter={loadingsFilter}
+                    onFilter={setLoadingsFilter}
+                  />
                 </div>
               ) : (
                 resultPlaceholder
               )}
             </StepSection>
-          </div>
+          )}
 
-          <StepSection
-            id="interpretation"
-            n={6}
-            state={states.interpretation}
-            title={t("factor.steps.interpretation")}
-            description={t("factor.step_desc.interpretation")}
-          >
-            {!ready ? (
-              lockedHint
-            ) : analysis ? (
-              <InterpretationView
-                status={interpStatus}
-                statusFailed={interpStatusFailed}
-                interpretation={interpretation?.result ?? null}
-                stale={interpretationStale}
-                running={interpreting}
-                error={interpretError}
-                canRun={analysisCurrent}
-                onInterpret={runInterpretation}
-                measureName={measureName}
-                measureTitle={measureTitle}
-              />
-            ) : (
-              resultPlaceholder
-            )}
-          </StepSection>
+          {current === "interpretation" && (
+            <StepSection
+              id="interpretation"
+              title={t("factor.steps.interpretation")}
+              description={t("factor.step_desc.interpretation")}
+              footer={footer("interpretation")}
+            >
+              {!ready ? (
+                lockedHint
+              ) : analysis ? (
+                <InterpretationView
+                  status={interpStatus}
+                  statusFailed={interpStatusFailed}
+                  interpretation={interpretation?.result ?? null}
+                  stale={interpretationStale}
+                  running={interpreting}
+                  error={interpretError}
+                  canRun={analysisCurrent}
+                  onInterpret={runInterpretation}
+                  measureName={measureName}
+                  measureDescription={measureDescription}
+                />
+              ) : (
+                resultPlaceholder
+              )}
+            </StepSection>
+          )}
         </div>
       </div>
+      <StepNavBar step={current} locks={locks} onGo={go} />
     </div>
   );
 }
 
 /**
- * Opens the dataset of a link, also while the tab is already shown: one of the session
- * (?dataset=<id>, e.g. from a job card) or a bundled one with its settings (?bundled=<id>&...).
- * Removes the link from the address, so a reload shows the dataset chosen last. Its own
- * component, so that only it waits for the search params on the client.
+ * Reads the address: the step (?step=...), and the dataset of a link, also while the tab is already
+ * shown: one of the session (?dataset=<id>, e.g. from a job card) or a bundled one with its
+ * settings (?bundled=<id>&...). A link leaves the address once it is read, so a reload shows the
+ * dataset chosen last; its step stays. An anchor of the one-page layout before (#fa-step-loadings)
+ * becomes the step it names. Its own component, so that only it waits for the search params on
+ * the client.
  */
-function LinkReader({
+function UrlReader({
   onDataset,
   onBundled,
+  onStep,
 }: {
-  onDataset: (id: string) => void;
-  onBundled: (params: URLSearchParams) => void;
+  onDataset: (id: string, step: StepId | null) => void;
+  onBundled: (params: URLSearchParams, step: StepId | null) => void;
+  onStep: (step: StepId, initial: boolean) => void;
 }) {
   const params = useSearchParams();
   const linked = params.get("dataset");
   const bundled = params.get("bundled");
+  const step = params.get("step");
+  const first = useRef(true);
+  useEffect(() => {
+    const initial = first.current;
+    first.current = false;
+    const anchored = initial ? stepFromHash(window.location.hash) : null;
+    if (anchored) {
+      window.history.replaceState(null, "", stepHref(window.location.pathname, window.location.search, anchored));
+      onStep(anchored, true);
+      return;
+    }
+    onStep(parseStep(step) ?? "data", initial);
+  }, [step, onStep]);
   useEffect(() => {
     if (!linked && !bundled) return;
     const query = new URLSearchParams(window.location.search);
+    const target = parseStep(query.get("step"));
     // Without a state of its own, Next.js takes the new address over, so the same link opens
     // the dataset again later.
-    window.history.replaceState(null, "", window.location.pathname);
-    if (linked) onDataset(linked);
-    else onBundled(query);
+    window.history.replaceState(null, "", stepHref(window.location.pathname, "", target ?? "data"));
+    if (linked) onDataset(linked, target);
+    else onBundled(query, target);
   }, [linked, bundled, onDataset, onBundled]);
   return null;
 }
@@ -1178,112 +1401,5 @@ function AnalysisError({
         )}
       </div>
     </div>
-  );
-}
-
-const STEP_IDS: StepId[] = ["data", "dataset", "suitability", "factors", "loadings", "interpretation"];
-
-/**
- * The step in view: the last one whose top has passed the upper third of the window, or the
- * last one on screen once the page cannot scroll further.
- */
-function useStepInView(): StepId {
-  const [active, setActive] = useState<StepId>("data");
-  useEffect(() => {
-    let frame = 0;
-    const update = () => {
-      frame = 0;
-      const line = window.innerHeight / 3;
-      const atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
-      let current: StepId = STEP_IDS[0];
-      for (const id of STEP_IDS) {
-        const top = document.getElementById(stepAnchor(id))?.getBoundingClientRect().top;
-        if (top !== undefined && (top <= line || (atEnd && top < window.innerHeight))) current = id;
-      }
-      setActive(current);
-    };
-    const schedule = () => {
-      if (!frame) frame = requestAnimationFrame(update);
-    };
-    update();
-    window.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule);
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", schedule);
-    };
-  }, []);
-  return active;
-}
-
-function StepRail({
-  states,
-  stateLabels,
-  summaries,
-}: {
-  states: Record<StepId, StepState>;
-  /** Replaces the generic text of a state for screen readers, e.g. why a step is locked. */
-  stateLabels: Partial<Record<StepId, string>>;
-  /** What a finished step found, e.g. "KMO 0.75 · 2 removed"; else the step is described. */
-  summaries: Partial<Record<StepId, string>>;
-}) {
-  const t = useT();
-  const active = useStepInView();
-  const listRef = useRef<HTMLOListElement>(null);
-  // On a phone the rail scrolls sideways: keep the step in view visible in it, without moving
-  // the page.
-  useEffect(() => {
-    const list = listRef.current;
-    const item = list?.querySelector<HTMLElement>('[aria-current="step"]');
-    if (!list || !item || list.scrollWidth <= list.clientWidth) return;
-    const left = item.offsetLeft - list.offsetLeft;
-    if (left < list.scrollLeft || left + item.offsetWidth > list.scrollLeft + list.clientWidth) {
-      list.scrollLeft = Math.max(0, left - 8);
-    }
-  }, [active]);
-  return (
-    <nav aria-label={t("factor.steps.aria")} className="mb-6 lg:mb-0 lg:sticky lg:top-6">
-      <ol ref={listRef} className="flex lg:flex-col gap-1 overflow-x-auto no-scrollbar -mx-1 px-1 lg:mx-0 lg:px-0">
-        {STEP_IDS.map((id, i) => {
-          const state = states[id];
-          const current = id === active;
-          return (
-            <li key={id} className="relative shrink-0">
-              {i < STEP_IDS.length - 1 && (
-                <span aria-hidden className="hidden lg:block absolute left-[22px] top-10 bottom-[-0.5rem] w-px bg-border" />
-              )}
-              <a
-                href={`#${stepAnchor(id)}`}
-                aria-current={current ? "step" : undefined}
-                className={cn(
-                  "flex items-center gap-2.5 rounded-md px-2 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-                  state === "locked" ? "text-muted hover:bg-surface/60" : "hover:bg-surface",
-                  current && "bg-surface",
-                )}
-              >
-                <StepBadge n={i + 1} state={state} />
-                <span className="min-w-0">
-                  <span className="block text-sm font-medium whitespace-nowrap">{t(`factor.steps.${id}`)}</span>
-                  {/* A wrapper: line-clamp sets a display of its own, which would undo "hidden". */}
-                  <span className="hidden lg:block">
-                    <span
-                      className={cn(
-                        "block text-[11px] leading-snug max-w-[9.5rem]",
-                        summaries[id] ? "text-fg/80 line-clamp-2 break-words" : "text-muted",
-                      )}
-                      title={summaries[id]}
-                    >
-                      {summaries[id] ?? t(`factor.rail.${id}`)}
-                    </span>
-                  </span>
-                  <span className="sr-only"> ({stateLabels[id] ?? t(`factor.state.${state}`)})</span>
-                </span>
-              </a>
-            </li>
-          );
-        })}
-      </ol>
-    </nav>
   );
 }

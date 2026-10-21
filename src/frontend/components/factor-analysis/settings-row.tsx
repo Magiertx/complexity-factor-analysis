@@ -8,11 +8,13 @@ import { formatNumber } from "@/lib/format";
 import { paperTablesText, settingsSourceText } from "@/lib/paper-notes";
 import { cn } from "@/lib/utils";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
+import { IconButton } from "@/components/ui/icon-button";
 import { Popover } from "@/components/ui/popover";
-import { CopyLink } from "./copy-link";
+import { TableFrame } from "@/components/ui/table";
+import { useTip } from "@/components/ui/tip";
 
 /** The control each chip of the row leads to; see the ids in the steps. */
-const CONTROLS: Record<SettingChip["id"], string> = {
+export const SETTING_CONTROLS: Record<SettingChip["id"], string> = {
   measures: "fa-msa-table",
   msa: "fa-msa-threshold",
   alpha: "fa-bartlett-alpha",
@@ -28,7 +30,7 @@ const CONTROLS: Record<SettingChip["id"], string> = {
  * are tried in turn: one list would give the first match in document order, which is the "?"
  * of the label above the inputs.
  */
-function focusControl(id: string) {
+export function focusControl(id: string) {
   const el = document.getElementById(id);
   if (!el) return;
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -111,8 +113,8 @@ interface Props {
   /** The comparison with the report, for the analysis on screen if it used the published settings. */
   match: PublishedMatch | null;
   onApply: (options: AnalysisOptions, which: "standard" | "published") => void;
-  /** The query of a link to this analysis; null for own data, which links cannot reach. */
-  linkQuery: string | null;
+  /** A chip was pressed: open the step of its control and focus the control. */
+  onGoToSetting: (chip: SettingChip["id"]) => void;
 }
 
 /**
@@ -134,7 +136,7 @@ export function SettingsRow({
   measureCount,
   match,
   onApply,
-  linkQuery,
+  onGoToSetting,
 }: Props) {
   const t = useT();
   const rowRef = useRef<HTMLElement>(null);
@@ -145,10 +147,8 @@ export function SettingsRow({
   const source = settingsSourceText(publishedSource, publishedScope, t);
   const isStandard = sameOptions(options, standard);
   const isPublished = !!published && sameOptions(options, published);
-  // Inactive buttons stay focusable (aria-disabled): the one just pressed would else drop the
-  // focus to the page, a Tab before the "Undo" of the toast.
-  const action =
-    "h-7 px-2 inline-flex items-center gap-1.5 rounded-md text-xs font-medium whitespace-nowrap transition hover:bg-accent/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent aria-disabled:opacity-40 aria-disabled:cursor-default aria-disabled:hover:bg-transparent";
+  // Inactive buttons stay focusable (aria-disabled, with the reason in their tooltip): the one
+  // just pressed would else drop the focus to the page, a Tab before the "Undo" of the toast.
 
   return (
     <section
@@ -171,18 +171,7 @@ export function SettingsRow({
                     ·
                   </span>
                 )}
-                <button
-                  type="button"
-                  onClick={() => focusControl(CONTROLS[chip.id])}
-                  title={chip.differs ? t("factor.settings.chip_changed_title") : t("factor.settings.chip_title")}
-                  className={cn(
-                    "rounded px-1.5 py-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-                    chip.differs ? "bg-accent/[0.12] text-fg font-medium hover:bg-accent/[0.18]" : "text-muted hover:text-fg hover:bg-tile",
-                  )}
-                >
-                  {chip.text}
-                  {chip.differs && <span className="sr-only"> ({t("factor.settings.changed")})</span>}
-                </button>
+                <SettingChipButton chip={chip} onGo={() => onGoToSetting(chip.id)} />
               </li>
             ))}
           </ul>
@@ -190,42 +179,53 @@ export function SettingsRow({
         <span className="flex items-center gap-2 shrink-0 lg:ml-auto">
           {match && <MatchChip match={match} settingsSource={source} bundledId={bundledId} />}
           <span className="flex items-center gap-0.5">
-            <button
-              type="button"
-              className={action}
-              aria-disabled={isStandard || undefined}
-              onClick={() => !isStandard && onApply(standard, "standard")}
-              title={t("factor.settings.reset_title")}
-              aria-label={t("factor.settings.reset")}
-            >
-              <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-              <span aria-hidden className="hidden sm:inline">
-                {t("factor.settings.reset_short")}
-              </span>
-            </button>
-            {published && (
-              <button
-                type="button"
-                className={action}
-                aria-disabled={isPublished || undefined}
-                onClick={() => !isPublished && onApply(published, "published")}
-                title={source ? t("factor.settings.paper_title", { source }) : t("factor.settings.paper")}
-                aria-label={t("factor.settings.paper")}
-              >
-                <BookOpen className="h-3.5 w-3.5" aria-hidden />
-                <span aria-hidden className="hidden sm:inline">
-                  {t("factor.settings.paper_short")}
-                </span>
-              </button>
-            )}
-            <CopyLink
-              query={linkQuery}
-              className={action}
+            <IconButton
+              size="sm"
+              icon={RotateCcw}
+              name={t("factor.settings.reset")}
+              more={t("factor.settings.reset_title")}
+              reason={isStandard ? t("factor.settings.reset_none") : null}
+              onClick={() => onApply(standard, "standard")}
             />
+            {published && (
+              <IconButton
+                size="sm"
+                icon={BookOpen}
+                name={t("factor.settings.paper")}
+                more={source ? t("factor.settings.paper_title", { source }) : undefined}
+                reason={isPublished ? t("factor.settings.paper_none") : null}
+                onClick={() => onApply(published, "published")}
+              />
+            )}
           </span>
         </span>
       </div>
     </section>
+  );
+}
+
+/**
+ * One setting of the row: a press goes to its control. Settings that differ from the tool standard
+ * stand out on a neutral tile, the others are muted text.
+ */
+function SettingChipButton({ chip, onGo }: { chip: SettingChip; onGo: () => void }) {
+  const t = useT();
+  const tip = useTip<HTMLButtonElement>({
+    more: chip.differs ? t("factor.settings.chip_changed_title") : t("factor.settings.chip_title"),
+  });
+  return (
+    <button
+      ref={tip}
+      type="button"
+      onClick={onGo}
+      className={cn(
+        "rounded px-1.5 py-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+        chip.differs ? "bg-tile text-fg font-medium hover:bg-accent/[0.08]" : "text-muted hover:text-fg hover:bg-tile",
+      )}
+    >
+      {chip.text}
+      {chip.differs && <span className="sr-only"> ({t("factor.settings.changed")})</span>}
+    </button>
   );
 }
 
@@ -332,23 +332,16 @@ function MatchChip({
           </ul>
         </div>
         {match.differences.length > 0 && (
-          <div
-            tabIndex={0}
-            role="region"
-            aria-label={t("factor.match.differences")}
-            className="max-h-40 overflow-auto rounded-md bg-tile/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            <table className="w-full">
+          <TableFrame label={t("factor.match.differences")} boxed className="max-h-40">
+            <table className="data-table">
               <caption className="sr-only">{t("factor.match.differences")}</caption>
-              <thead className="text-muted">
+              <thead>
                 <tr>
-                  <th scope="col" className="px-2 py-1 text-left font-medium">
-                    {t("factor.match.col_what")}
-                  </th>
-                  <th scope="col" className="px-2 py-1 text-right font-medium">
+                  <th scope="col">{t("factor.match.col_what")}</th>
+                  <th scope="col" className="num">
                     {t("factor.match.col_expected")}
                   </th>
-                  <th scope="col" className="px-2 py-1 text-right font-medium">
+                  <th scope="col" className="num">
                     {t("factor.match.col_actual")}
                   </th>
                 </tr>
@@ -356,16 +349,16 @@ function MatchChip({
               <tbody>
                 {match.differences.map((d, i) => (
                   <tr key={i}>
-                    <th scope="row" className="px-2 py-0.5 text-left font-normal break-words">
+                    <th scope="row" className="break-words">
                       {what(d)}
                     </th>
-                    <td className="px-2 py-0.5 text-right font-mono tabular-nums">{value(d.expected)}</td>
-                    <td className="px-2 py-0.5 text-right font-mono tabular-nums">{value(d.actual)}</td>
+                    <td className="num">{value(d.expected)}</td>
+                    <td className="num">{value(d.actual)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableFrame>
         )}
         <p className="text-muted">{t("factor.match.numbers_only")}</p>
         {tables && <p>{tables}</p>}
