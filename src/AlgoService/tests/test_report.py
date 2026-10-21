@@ -40,6 +40,14 @@ def _report(client, dataset_id: str, **extra) -> str:
     return r.text
 
 
+def _report_of_the_log_dataset(client, **extra) -> str:
+    """The report of the 123 measures of the bundled log dataset: long tables, many eigenvalues."""
+    created = _post(client, kind="log", source="bundled", bundled_id="comfy-log-pdc-training-logs").json()["dataset_id"]
+    r = client.post(f"/factor-analysis/datasets/{created}/export/report", json=extra)
+    assert r.status_code == 200, r.text
+    return r.text
+
+
 def _items_after(lines: list[str], text: str) -> list[str]:
     start = next(i for i, line in enumerate(lines) if text in line)
     begin = next(i for i in range(start, len(lines)) if lines[i].startswith("\\begin{compactitem}"))
@@ -134,6 +142,34 @@ def test_the_report_of_log_measures_writes_the_codes_as_the_paper_does():
     assert tex("中") == "?"
 
 
+def test_straight_quotes_become_quotation_marks():
+    from factor_analysis.report import tex
+
+    assert tex('the paper "Important Factors" (ATAED)') == "the paper ``Important Factors'' (ATAED)"
+    assert tex('"x"') == "``x''" and tex('("y")') == "(``y'')"
+
+
+def test_the_report_starts_with_the_hint_to_compile_it_twice_and_names_the_software_in_full():
+    from factor_analysis.report import COMPILE_HINT
+
+    text = SNAPSHOT.read_text(encoding="utf-8")
+    assert text.splitlines()[0] == f"% {COMPILE_HINT}" and "twice" in COMPILE_HINT
+    assert "Software & Complexity Factor Analysis (version v0.0.0, commit 000000000000);" in text
+
+
+def test_the_scree_plot_of_many_eigenvalues_labels_every_fifth_factor(client):
+    text = _report_of_the_log_dataset(client)
+    assert "xtick={1,5,10,...," in text and "xtick=data" not in text
+    assert "xtick=data" in SNAPSHOT.read_text(encoding="utf-8")
+
+
+def test_headings_stay_with_their_tables():
+    text = SNAPSHOT.read_text(encoding="utf-8")
+    assert "\\usepackage{needspace}" in text
+    for heading in ("Dimensions", "Settings and Provenance"):
+        assert f"\\needspace{{12\\baselineskip}}\n\\section*{{{heading}}}" in text
+
+
 def _paper_analysis() -> tuple[dict, dict, dict, dict]:
     entry = cat.bundled_entry("comfy-paper-inductive-miner")
     raw = pd.read_csv(cat.DATASETS_DIR / entry["file"], index_col=0)
@@ -195,10 +231,27 @@ def test_the_reports_compile(client, tmp_path):
     assert "\\section*{Factor Correlations}" in r.text
     reports["upload"] = r.text
     for name, text in reports.items():
-        (tmp_path / f"{name}.tex").write_text(text, encoding="utf-8")
-        done = subprocess.run(
-            [_pdflatex(), "-interaction=nonstopmode", "-halt-on-error", f"{name}.tex"],
-            cwd=tmp_path, capture_output=True, text=True, timeout=300,
-        )
-        assert done.returncode == 0, (name, done.stdout[-3000:])
+        _compile(tmp_path, name, text)
         assert (tmp_path / f"{name}.pdf").stat().st_size > 10_000
+
+
+def _compile(directory: Path, name: str, text: str) -> str:
+    """Run pdflatex on a report once; the text of its log."""
+    (directory / f"{name}.tex").write_text(text, encoding="utf-8")
+    done = subprocess.run(
+        [_pdflatex(), "-interaction=nonstopmode", "-halt-on-error", f"{name}.tex"],
+        cwd=directory, capture_output=True, text=True, timeout=300,
+    )
+    assert done.returncode == 0, (name, done.stdout[-3000:])
+    return (directory / f"{name}.log").read_text(encoding="utf-8", errors="replace")
+
+
+@pytest.mark.skipif(_pdflatex() is None, reason="no pdflatex; the report is compiled where TeX is installed")
+def test_a_report_with_long_tables_is_settled_by_the_second_run(client, tmp_path):
+    """The hint in the first line of the report says to compile twice: the tables of 123
+    measures (longtable) then keep their widths and nothing asks for another run."""
+    text = _report_of_the_log_dataset(client, short_codes=True)
+    assert "\\begin{longtable}" in text
+    _compile(tmp_path, "log", text)
+    second = _compile(tmp_path, "log", text)
+    assert "Rerun LaTeX" not in second and "Table widths have changed" not in second

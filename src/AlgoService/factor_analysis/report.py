@@ -12,11 +12,14 @@ forms, the factor correlations of an oblique rotation, and the settings and prov
 Numbers are printed to the decimals of ComFy's report: four for the analysis, six for the
 descriptive statistics, so that the report of a bundled dataset under the paper settings shows
 the published numbers (tests/test_report.py). The report compiles with pdflatex; it needs
-booktabs, longtable, paralist, pgfplots and amsmath, which TeX Live and MiKTeX include.
+booktabs, longtable, needspace, paralist, pgfplots and amsmath, which TeX Live and MiKTeX include.
+Long tables settle their column widths in a second run, so it is compiled with latexmk or
+twice (``COMPILE_HINT``).
 """
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from config import APP_NAME
@@ -44,6 +47,15 @@ FACTORS_PER_TABLE_SHORT = 7
 #: Names longer than this wrap in a column of their own width, e.g. long feeed names.
 LONG_NAME = 36
 
+#: The first line of every report, and of the places that point to it.
+COMPILE_HINT = (
+    "Compile with latexmk -pdf, or run pdflatex twice: long tables settle their column widths in the second run."
+)
+
+#: Kept together with what follows, so that a heading and its introduction never end a page
+#: with the table on the next one.
+_KEEP = "\\needspace{12\\baselineskip}"
+
 #: A paragraph column set ragged right, so that a long URL does not stretch its line.
 _RAGGED = ">{\\raggedright\\arraybackslash}"
 
@@ -62,11 +74,17 @@ _UNASSIGNED = {
 
 def tex(text: Any) -> str:
     """Text for LaTeX: special characters escaped, and characters beyond the Latin alphabets of
-    pdflatex's default fonts replaced, so that any measure name of an upload compiles."""
+    pdflatex's default fonts replaced, so that any measure name of an upload compiles. Straight
+    double quotes become quotation marks: ``x'' for "x"."""
     safe = "".join(ch if ord(ch) < 0x180 else "?" for ch in str(text))
     # A line break in a name of an upload would end a table row. A long feeed name may break
     # after its underscores.
-    return latex_escape(" ".join(safe.split())).replace("\\_", "\\_\\allowbreak{}")
+    escaped = latex_escape(" ".join(safe.split())).replace("\\_", "\\_\\allowbreak{}")
+    return _CLOSING_QUOTE.sub("''", _OPENING_QUOTE.sub("``", escaped))
+
+
+_OPENING_QUOTE = re.compile(r'(?:^|(?<=[\s(\[{]))"')
+_CLOSING_QUOTE = re.compile(r'"')
 
 
 def number(value: float | None, decimals: int = DECIMALS) -> str:
@@ -275,6 +293,8 @@ def _factor_count_section(result: dict[str, Any]) -> list[str]:
     def coordinates(series: list[float]) -> str:
         return " ".join(f"({i + 1},{number(v)})" for i, v in enumerate(series[:shown]))
 
+    # Thirty labels would run together: from 20 eigenvalues on, every fifth one is labelled.
+    ticks = "xtick=data" if shown <= 20 else f"xtick={{1,5,10,...,{shown}}}"
     out = [
         "\\section*{Chosen Number of Factors}",
         "\\noindent",
@@ -283,7 +303,7 @@ def _factor_count_section(result: dict[str, Any]) -> list[str]:
         + ":",
         "\\begin{center}",
         "\\begin{tikzpicture}",
-        "\\begin{axis}[xtick=data,width=15cm,height=8cm,xlabel={Factor},ylabel={Eigenvalue},"
+        f"\\begin{{axis}}[{ticks},width=15cm,height=8cm,xlabel={{Factor}},ylabel={{Eigenvalue}},"
         "legend cell align=left,legend style={font=\\small}]",
         f"\\addplot [draw=cyan!50!blue, mark=*] coordinates {{ {coordinates(values)} }};",
         "\\addlegendentry{Eigenvalues of the correlation matrix}",
@@ -300,6 +320,7 @@ def _factor_count_section(result: dict[str, Any]) -> list[str]:
         "\\end{tikzpicture}",
         "\\end{center}",
         "",
+        _KEEP,
         "\\noindent",
         "The share of the variance of each component is its eigenvalue divided by the number of measures, "
         f"${p}$, as ComFy plots it:",
@@ -454,6 +475,7 @@ def _correlations_section(result: dict[str, Any]) -> list[str]:
         f"Factor {i + 1} & " + " & ".join(f"${number(v)}$" for v in row) + " \\\\" for i, row in enumerate(correlations)
     ]
     return [
+        _KEEP,
         "\\section*{Factor Correlations}",
         f"The {tex(result['rotation'])} rotation is oblique, so the factors may correlate:",
         "",
@@ -473,6 +495,7 @@ def _dimensions_section(
         members = ", ".join(f"{label(m['measure'])} (${number(m['loading'], 2)}$)" for m in factor["measures"]) or "--"
         rows.append(f"{name} & {members} \\\\")
     out = [
+        _KEEP,
         "\\section*{Dimensions}",
         "\\noindent",
         f"The assignment rule ``{tex(rule)}'' puts {tex(ASSIGNMENT_RULE_TEXTS[rule])}.",
@@ -579,13 +602,15 @@ def _settings_section(
         ))
     rows.append((
         "Software",
-        f"{tex(APP_NAME)} {tex(tool.get('version') or 'not recorded')}, commit {tex(str(tool.get('commit') or 'not recorded')[:12])}; "
+        f"{tex(APP_NAME)} (version {tex(tool.get('version') or 'not recorded')}, "
+        f"commit {tex(str(tool.get('commit') or 'not recorded')[:12])}); "
         + ", ".join(f"{tex(name)} {tex(v)}" for name, v in libraries.items() if v),
     ))
     citation = dataset.get("citation")
     if citation:
         rows.append(("Citation", tex(citation)))
     return [
+        _KEEP,
         "\\section*{Settings and Provenance}",
         *_table(
             f"@{{}}{_RAGGED}p{{4.2cm}}{_RAGGED}p{{11.3cm}}@{{}}", "Setting & Value \\\\", [f"{k} & {v} \\\\" for k, v in rows]
@@ -614,6 +639,7 @@ def report_tex(
     label = _Labels(dataset["kind"], short)
     names = _measures(dataset, descriptives)
     lines = [
+        f"% {COMPILE_HINT}",
         "\\documentclass[a4paper]{article}",
         "",
         "\\usepackage[margin=1in]{geometry}",
@@ -621,6 +647,7 @@ def report_tex(
         "\\usepackage{graphicx}",
         "\\usepackage{booktabs}",
         "\\usepackage{longtable}",
+        "\\usepackage{needspace}",
         "\\usepackage{array}",
         "\\usepackage{amsmath}",
         "\\usepackage{tikz}",

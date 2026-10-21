@@ -1,3 +1,4 @@
+% Compile with latexmk -pdf, or run pdflatex twice: long tables settle their column widths in the second run.
 \documentclass[a4paper]{article}
 
 \usepackage[margin=1in]{geometry}
@@ -5,6 +6,7 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{longtable}
+\usepackage{needspace}
 \usepackage{array}
 \usepackage{amsmath}
 \usepackage{tikz}
@@ -98,6 +100,7 @@ The Scree test resulted in the following Eigenvalue plot:
 \end{tikzpicture}
 \end{center}
 
+\needspace{12\baselineskip}
 \noindent
 The share of the variance of each component is its eigenvalue divided by the number of measures, $10$, as ComFy plots it:
 \begin{center}
@@ -185,6 +188,7 @@ Loadings of the 4 factor(s). Bold: the loadings by which the assignment rule put
 \end{center}
 The dashed line marks the communality an assigned measure needs, $0.30$.
 
+\needspace{12\baselineskip}
 \section*{Dimensions}
 \noindent
 The assignment rule ``multi'' puts each measure on every factor whose absolute loading exceeds the threshold and lies at most 0.15 below its largest (Important Factors, after Lieben et al.).
@@ -215,6 +219,7 @@ Cross-loadings, loadings at most $0.15$ below the largest one of a measure:
 \item Density: Factor 3 ($0.61$), Factor 1 ($-0.58$)
 \end{compactitem}
 
+\needspace{12\baselineskip}
 \section*{Settings and Provenance}
 \begin{center}
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{11.3cm}@{}}
@@ -235,8 +240,8 @@ Method & minres with factor\_analyzer 0.5.1 \\
 Parallel analysis & 100 samples of random normal data, 95th percentile, seed 20261012 \\
 Measure names & full names \\
 Data & bundled dataset comfy-paper-inductive-miner, from https://github.com/Pati-nets/ComFy, commit 1dd6ea6 \\
-Software & Complexity Factor Analysis v0.0.0, commit 000000000000; factor\_\allowbreak{}analyzer 0.5.1 \\
-Citation & Data of the paper "Important Factors: Complexity Dimensions for Petri Nets" (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy \\
+Software & Complexity Factor Analysis (version v0.0.0, commit 000000000000); factor\_\allowbreak{}analyzer 0.5.1 \\
+Citation & Data of the paper ``Important Factors: Complexity Dimensions for Petri Nets'' (ATAED 2026), computed with ComFy by Patrizia Schalk, https://github.com/Pati-nets/ComFy \\
 \bottomrule
 \end{tabular}
 \end{center}
