@@ -409,8 +409,8 @@ export function progressPercent(progress: number | undefined): number | null {
   return Math.max(0, Math.min(100, Math.round(progress)));
 }
 
-/** The loadings table as CSV or LaTeX, or the whole analysis as a ZIP. */
-export type ExportFormat = "csv" | "latex" | "zip";
+/** The loadings table as CSV or LaTeX, the whole analysis as a ZIP, or its LaTeX report. */
+export type ExportFormat = "csv" | "latex" | "zip" | "report";
 
 export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);

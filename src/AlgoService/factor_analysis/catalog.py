@@ -11,6 +11,8 @@ from typing import Any
 
 from vendored.comfy_log import Constants as _LogConstants
 
+from .short_codes import LOG_CODES, MODEL_CODES
+
 KINDS = ("model", "log")
 DATASETS_DIR = Path(__file__).resolve().parent.parent / "datasets"
 
@@ -81,6 +83,8 @@ def _model_parts() -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[str
             "name": name,
             "description": MODEL_MEASURE_DESCRIPTIONS.get(name, ""),
         }
+        if name in MODEL_CODES:
+            entry["short"] = MODEL_CODES[name]
         if name in SLOW_MEASURES:
             entry["slow"] = True
         measures.append(entry)
@@ -243,6 +247,8 @@ def catalog(kind: str) -> dict[str, Any]:
                 "description": f"{LOG_GROUPS[group][0]} (feeed).",
                 "group": group,
             }
+            if name in LOG_CODES:
+                entry["short"] = LOG_CODES[name]
             if group in SLOW_LOG_GROUPS:
                 entry["slow"] = True
             measures.append(entry)

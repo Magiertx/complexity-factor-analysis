@@ -15,6 +15,8 @@ export interface MenuItem {
   /** A link instead of an action, e.g. a download the browser makes itself. */
   href?: string;
   download?: boolean;
+  /** The link opens in a tab of its own, e.g. a page to print, so the analysis stays where it is. */
+  newTab?: boolean;
   disabled?: boolean;
   /** A thin line above the entry, to start a group. */
   separated?: boolean;
@@ -193,6 +195,8 @@ export function Menu({
                   tabIndex={-1}
                   href={item.href}
                   download={item.download || undefined}
+                  target={item.newTab ? "_blank" : undefined}
+                  rel={item.newTab ? "noopener" : undefined}
                   onClick={() => close(true)}
                   onMouseEnter={() => setActive(i)}
                   className={cls}

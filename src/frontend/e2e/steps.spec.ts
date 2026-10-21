@@ -76,10 +76,16 @@ test("each step is a view of its own, with an address, Back and Next, and the br
   await expect(page.getByRole("button", { name: /^Next:/ })).toHaveCount(0);
 });
 
+/** Starts the tour from the help menu of the toolbar. */
+async function startTour(page: Page) {
+  await toolbar(page).getByRole("button", { name: text("factor.toolbar.help") }).click();
+  await page.getByRole("menuitem", { name: pattern(text("factor.tour_button")) }).click();
+}
+
 test("the tour opens the step of each stop", async ({ page }) => {
   await page.goto("/");
   await openBundled(page, "Inductive miner");
-  await toolbar(page).getByRole("button", { name: text("factor.tour_button") }).click();
+  await startTour(page);
   const next = page.getByRole("button", { name: /^Next \(\d+ of \d+\)$/ });
   await next.click();
   await expect(stepSection(page, "data")).toBeVisible();
@@ -95,7 +101,7 @@ test("the tour keeps its spotlight below the settings row and ends on the step i
   await page.goto("/");
   await openBundled(page, "Inductive miner");
   await goToStep(page, "loadings");
-  await toolbar(page).getByRole("button", { name: text("factor.tour_button") }).click();
+  await startTour(page);
   const next = page.getByRole("button", { name: /^Next \(\d+ of \d+\)$/ });
   await next.click();
   await next.click();
@@ -156,15 +162,15 @@ test("the toolbar opens Start here and My datasets, and says why a download wait
 
 test("an icon names itself in a tooltip, and explains itself after a while", async ({ page }) => {
   await page.goto("/");
-  const tour = toolbar(page).getByRole("button", { name: text("factor.tour_button") });
-  await expect(tour).toHaveAttribute("aria-description", text("factor.tour_title"));
-  await tour.hover();
+  const help = toolbar(page).getByRole("button", { name: text("factor.toolbar.help") });
+  await expect(help).toHaveAttribute("aria-description", text("factor.toolbar.help_more"));
+  await help.hover();
   const tip = page.getByRole("tooltip");
-  await expect(tip).toContainText(text("factor.tour_button"));
+  await expect(tip).toContainText(text("factor.toolbar.help"));
   await expect(tip).not.toHaveClass(/tip--stage2/);
   // The explanation joins the name in the same box, 2 s after the pointer arrived.
   await expect(tip).toHaveClass(/tip--stage2/, { timeout: 4000 });
-  await expect(tip).toContainText(text("factor.tour_title"));
+  await expect(tip).toContainText(text("factor.toolbar.help_more"));
   await page.keyboard.press("Escape");
   await expect(tip).toHaveCount(0);
 });

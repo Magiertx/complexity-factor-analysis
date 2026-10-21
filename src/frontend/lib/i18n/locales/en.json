@@ -229,18 +229,18 @@
       "recent_logs": "Logs your session uploaded recently.",
       "analyze": "Run one algorithm on one log; returns a job_id.",
       "log_stats": "Quick descriptive statistics of a log: traces, events, variants, time range.",
-      "fa_catalog": "Measures, miners or feature groups, bundled datasets with the settings their paper published (`published_options`), example inputs, the accepted sources and the upload `limits`.",
+      "fa_catalog": "Measures with the `short` codes of the papers, miners or feature groups, bundled datasets with the settings their paper published (`published_options`), example inputs, the accepted sources and the upload `limits`.",
       "fa_limits": "How many logs and Petri nets, and how many bytes, one dataset request may carry on this server (`max_log_files`, `max_pnml_files`, `max_file_bytes`, `max_total_bytes`).",
       "fa_create": "Create a dataset from a bundled one or a CSV (ready at once), or from event logs or PNML files (computed as a run). If the session already has the bundled dataset, it comes back unchanged, with `reused`.",
       "fa_list": "The datasets of your session, newest first; kind is optional.",
-      "fa_get": "Status, progress, saved settings and the cleaned measure matrix (first 2,000 rows).",
+      "fa_get": "Status, progress, saved settings and the cleaned measure matrix (first 2,000 rows); once ready, the `descriptives` of every measure and, for a computed dataset, the run times and input sizes (`measurement`).",
       "fa_options": "Keep the settings of an analysis with the dataset.",
       "fa_delete": "Delete a dataset with its run and its cached interpretations.",
       "fa_delete_all": "Delete every dataset of your session, or every one of a kind.",
       "fa_download": "The cleaned matrix as CSV.",
-      "fa_analyze": "Bartlett, KMO with the MSA filter, eigenvalues with Kaiser and parallel analysis, rotated loadings and the factor groups by `assignment_rule` (`largest`, `multi`, `hair`) with cross-loadings; with the published settings, the comparison with the report (JSON).",
+      "fa_analyze": "Bartlett, KMO with the MSA filter, eigenvalues with Kaiser and parallel analysis, rotated loadings and the factor groups by `assignment_rule` (`largest`, `multi`, `hair`) with cross-loadings, and the `timings` of its parts; with the published settings, the comparison with the report (JSON).",
       "fa_export": "The loadings table as CSV or LaTeX; the body of analyze plus format.",
-      "fa_export_zip": "The whole analysis as a ZIP: result, matrix, tables, parameters, library versions and provenance (tool version and commit, upstream commits, feeed, pm4py and ProM, miners with their parameters).",
+      "fa_export_zip": "The whole analysis as a ZIP: result, matrix, tables, report.tex, figures, descriptive statistics, run times, parameters, library versions and provenance (tool version and commit, upstream commits, feeed, pm4py and ProM, miners with their parameters).",
       "fa_interpretation_status": "Whether Claude can interpret factors, and with which model.",
       "fa_interpret": "Names and short interpretations of the factors by Claude; the body of analyze plus language. Optional, needs an API key on the server.",
       "jobs": "All runs of your session.",
@@ -253,7 +253,9 @@
       "job_delete": "Delete a run and its results; a dataset run takes its dataset with it.",
       "jobs_delete": "Delete every run of your session, with the datasets they computed.",
       "health": "Readiness probe: 200 when the database is reachable.",
-      "session_start": "Starts the session (the `session_id` cookie) if the request has none, or one the server cannot read. The page does it by itself; a script that sends several requests at once calls it first."
+      "session_start": "Starts the session (the `session_id` cookie) if the request has none, or one the server cannot read. The page does it by itself; a script that sends several requests at once calls it first.",
+      "fa_export_report": "The analysis as a LaTeX report built like ComFy's (report.tex); the body of analyze plus `short_codes` and `language`.",
+      "fa_export_figure": "The scree plot or the loadings heatmap as SVG or PNG (300 dpi) in print style; the body of analyze plus `figure`, `format`, `short_codes` and `order`."
     },
     "notes": {
       "rate_limits": "Rate limits per IP: `60/hour` on `POST /algorithms/{id}/analyze` and on new datasets from `POST /factor-analysis/datasets`, `600/minute` on reading, listing and deleting datasets and on saving their options, `300/hour` on `POST /log-stats` and `120/minute` everywhere else. Interpretations by Claude: `10/hour` per session and `200/day` for the server. Over a limit the answer is a 429 with a `code`.",
@@ -731,7 +733,34 @@
         "duplicate": "perfectly correlated with {kept}"
       },
       "col_reason": "Reason",
-      "col_detail": "Detail"
+      "col_detail": "Detail",
+      "descriptives_heading": "Descriptive statistics",
+      "col_n_more": "The values the statistics rest on; missing values are not counted.",
+      "col_mean": "Mean",
+      "col_median": "Median",
+      "col_sd": "SD",
+      "col_sd_more": "Sample standard deviation, with n − 1 in the denominator, as in ComFy.",
+      "col_min": "Min",
+      "col_max": "Max",
+      "col_cleaning": "Cleaning",
+      "descriptives_note": "As ComFy's report prints them: over all {n} observations of the data as collected, before cleaning, so the measures cleaning left out are described as well.",
+      "descriptives_note_cleaned": "Over the cleaned matrix: the data before cleaning were not kept for this dataset.",
+      "measurement_heading": "Run times and input sizes",
+      "measurement_total": "{s} s in all",
+      "col_traces": "Traces",
+      "col_events": "Events",
+      "col_variants": "Variants",
+      "col_activities": "Activities",
+      "col_net": "Net P / T / A",
+      "col_net_more": "Places, transitions and arcs of the Petri net.",
+      "col_read_s": "Read (s)",
+      "col_discovery_s": "Discovery (s)",
+      "col_discovery_more": "Wall time of the discovery, including the wait for ProM while other jobs used it.",
+      "col_measures_s": "Measures (s)",
+      "col_features_s": "Features (s)",
+      "measurement_sum": "Sum",
+      "measurement_note": "Wall time in seconds on this server.",
+      "measurement_more": "Measured while the dataset was computed. A log is read once for all its miners. The ZIP has the seconds of every measure or feature group as well."
     },
     "suitability": {
       "passed": "passed",
@@ -1152,9 +1181,9 @@
     "toolbar": {
       "aria": "Tools",
       "export": "Download",
-      "export_more": "The analysis as ZIP, the loadings as CSV or LaTeX, or the cleaned dataset as CSV.",
+      "export_more": "The analysis as ZIP, its LaTeX report or print view, the loadings as CSV or LaTeX, or the cleaned dataset as CSV.",
       "export_zip": "Analysis (ZIP)",
-      "export_zip_hint": "Dataset, results, loadings and a manifest to reproduce the analysis",
+      "export_zip_hint": "Dataset, results, report, figures and a manifest to reproduce the analysis",
       "export_loadings_csv": "Loadings (CSV)",
       "export_loadings_latex": "Loadings (LaTeX)",
       "export_dataset": "Dataset (CSV)",
@@ -1163,7 +1192,20 @@
       "wait_update": "The analysis is being updated.",
       "mine_more": "Reopen or delete the datasets of this session.",
       "mine_none": "No datasets in this session yet.",
-      "more": "More"
+      "more": "More",
+      "export_report": "LaTeX report",
+      "export_report_hint": "report.tex built like ComFy's report; compiles with pdflatex",
+      "print": "Print view",
+      "print_hint": "The whole analysis on A4 pages in a new tab, to print or save as PDF",
+      "help": "Help",
+      "help_more": "The user guide, or a tour of the steps.",
+      "guide": "User guide",
+      "guide_hint": "What the tool does and how, in a new tab",
+      "codes": "Short codes",
+      "codes_more": "Names the measures by the codes of the papers, such as CNC or C_mag, in the lists, the loadings, the figures and the report. The full name stays in the tooltip.",
+      "codes_on": "Show short codes",
+      "codes_off": "Show full names",
+      "codes_none": "No measure of this dataset has a short code."
     },
     "measures": {
       "search": "Search measures",
@@ -1190,6 +1232,16 @@
       "dependent_with": "Linearly dependent with {measures}. Excluding one measure of the group resolves it.",
       "status_below": "below {threshold}",
       "none_match": "No measure matches the search."
+    },
+    "figure": {
+      "download": "Download the {figure}",
+      "download_more": "As SVG or PNG for a paper: light, with white background, at the text width of a CEUR page.",
+      "svg": "SVG",
+      "svg_hint": "Vector graphics; the text stays text",
+      "png": "PNG",
+      "png_hint": "Image with 300 dpi",
+      "loadings": "Loadings heatmap",
+      "failed": "The figure could not be downloaded."
     }
   },
   "inspect": {
@@ -1220,5 +1272,90 @@
     "job_quota": "You already have {active} runs queued or running, and this would add {requested}; at most {limit} are allowed. Wait for them to finish or abort some under Recent runs.",
     "dataset_jobs_busy": "The server is already computing {active} datasets, the most it runs at once. Try again in a few minutes.",
     "prom_unavailable": "ProM, which runs the miners, cannot be reached right now, so no Petri net could be discovered. Try again in a few minutes; if it stays like this, the prom4py service has to be started on the server."
+  },
+  "print": {
+    "title": "Factor analysis of “{name}”",
+    "invalid": "This address names no analysis. Open the print view from the download menu of an analysis.",
+    "failed": "The analysis could not be loaded: {error}",
+    "loading": "Loading the analysis…",
+    "hint": "Print the page or save it as PDF with the print dialog of the browser.",
+    "print": "Print",
+    "dataset_size": "{n} observations and {p} measures after cleaning.",
+    "dropped": "Left out by cleaning: {list}.",
+    "bartlett": "Bartlett's test of sphericity: χ² = {chi}, df = {df}, p {p} ({result}).",
+    "kmo": "Overall KMO: {value} ({result}).",
+    "factors": "{n} factor, {rotation}; it explains {pct} of the variance.",
+    "factors_plural": "{n} factors, {rotation}; together they explain {pct} of the variance.",
+    "criteria": "Kaiser criterion: {kaiser}; parallel analysis ({percentile}th percentile, seed {seed}): {parallel}.",
+    "interpretation_note": "Names and summaries suggested by {model} on request; the analysis does not depend on them.",
+    "codes_heading": "Short codes",
+    "match": "The numbers equal those of {source}.",
+    "differs": "{n} numbers differ from those of {source}.",
+    "footer": "Made with {app}."
+  },
+  "guide": {
+    "title": "User guide",
+    "subtitle": "What {app} does, step by step: analyse a published dataset or your own data, read the results, and take them into a paper.",
+    "toc": "Contents",
+    "links": {
+      "model": "Model complexity",
+      "log": "Log complexity",
+      "paper": "Open Important Factors: Inductive miner with the paper settings",
+      "data": "To the data step",
+      "results": "To the dataset step",
+      "loadings": "To the loadings",
+      "api": "API access"
+    },
+    "steps": {
+      "title": "The six steps",
+      "p1": "Model complexity analyses the measures of ComFy on Petri nets, Log complexity the measures of feeed on event logs. Both walk through the same steps: Data, Dataset, Suitability, Factors, Loadings and an optional Interpretation. One step is on screen at a time; the list of steps shows what each step found.",
+      "p2": "The settings row above the steps sums up every choice, marks those that differ from the tool standard and leads to each control. Every change of a setting runs the analysis again."
+    },
+    "bundled": {
+      "title": "Analyse a published dataset",
+      "items": {
+        "open": "Open Model complexity or Log complexity.",
+        "choose": "In Data, choose a dataset of a paper, for example Important Factors: Inductive miner.",
+        "settings": "Choose Paper settings to analyse it as the paper did, or Tool standard for the defaults of ComFy, then Use dataset."
+      },
+      "p1": "With the paper settings, a chip in the settings row says whether the numbers equal the published ComFy report and how the tables of the paper relate to it. Start here in the toolbar lists four ways in."
+    },
+    "own": {
+      "title": "Analyse your own data",
+      "p1": "In Data, choose a source:",
+      "items": {
+        "logs": "Event logs (.xes, .xes.gz): for model measures, every log is mined with every miner you choose and every net is measured; for log measures, feeed computes the feature groups you choose.",
+        "nets": "Petri nets (.pnml): every net is measured.",
+        "csv": "A CSV file: one row per observation, one column per measure; a first column of names becomes the row labels."
+      },
+      "p2": "Logs and nets are computed in a job; the jobs drawer shows its progress. My datasets in the toolbar reopens a dataset of the session with the settings of its last analysis."
+    },
+    "results": {
+      "title": "Read the results",
+      "items": {
+        "dataset": "Dataset: what cleaning left out and why, the descriptive statistics of every measure as ComFy's report prints them, and for a dataset computed from logs or nets the run times and input sizes. Both tables are folded until opened.",
+        "suitability": "Suitability: Bartlett's test, the overall KMO and the MSA of every measure. The MSA filter removes measures in rounds, as ComFy does; any measure can be excluded by hand.",
+        "factors": "Factors: the scree plot with the Kaiser line and parallel analysis, the count each criterion suggests, and the rotation.",
+        "loadings": "Loadings: a matrix (orange for negative loadings, faded where a loading does not count) or a card per dimension, the thresholds, and the rule that assigns measures to factors. Cross-loadings are ringed.",
+        "interpretation": "Interpretation: names for the factors, suggested by a language model only on request. It decides nothing."
+      }
+    },
+    "export": {
+      "title": "Take the results into a paper",
+      "p1": "The download menu in the page header has:",
+      "items": {
+        "zip": "Analysis (ZIP): the result, the matrix, the tables, report.tex, the figures, the descriptive statistics, the run times, and a manifest with settings, versions and provenance.",
+        "report": "LaTeX report: report.tex built like the report of ComFy, with the dimensions and the settings; it compiles with pdflatex.",
+        "print": "Print view: the whole analysis on A4 pages, to print or save as PDF.",
+        "tables": "The loadings as CSV or LaTeX, and the cleaned dataset as CSV."
+      },
+      "p2": "The image icon at the scree plot and at the loadings downloads the figure as SVG, whose text stays text, or as PNG with 300 dpi: always light, at the text width of a CEUR paper.",
+      "p3": "The tag icon in the toolbar names the measures by the short codes of the papers, such as CNC or C_mag; the full name stays in the tooltip, and the figures, the report and the ZIP follow it.",
+      "p4": "The link icon copies a link to the analysis of a published dataset with its settings."
+    },
+    "api": {
+      "title": "Use the API",
+      "p1": "Everything the app does is also available through the REST API, including the report and the figures. The page API access lists the endpoints with examples."
+    }
   }
 }

@@ -1,8 +1,10 @@
 """Session-scoped datasets on disk, next to the job artifacts.
 
 Layout: ``<ARTIFACTS_DIR>/datasets/<session id>/<dataset id>/`` with ``meta.json``,
-``data.csv`` (the cleaned matrix, once ready), ``inputs/`` (uploads waiting for the job) and
-``interpretations/`` (cached interpretations of an own dataset).
+``data.csv`` (the cleaned matrix, once ready), ``descriptives.json`` (the statistics of the
+table before cleaning, once ready), ``measurement.json`` (run times and input sizes of a
+computed dataset), ``inputs/`` (uploads waiting for the job) and ``interpretations/`` (cached
+interpretations of an own dataset).
 """
 
 from __future__ import annotations
@@ -22,6 +24,7 @@ import pandas as pd
 import jobs_db
 
 from .core import clean_matrix
+from .descriptives import describe
 
 #: Datasets kept per session; the oldest finished ones go first.
 MAX_DATASETS_PER_SESSION = 30
@@ -169,7 +172,8 @@ def store_matrix(
     """Clean ``raw`` (rows = observations), save it and mark the dataset ready.
 
     ``failures`` are (input, error) pairs of inputs that gave no or incomplete values; rows
-    dropped for missing most values are added to them.
+    dropped for missing most values are added to them. The descriptive statistics of ``raw``
+    are kept with the dataset, since only the cleaned matrix is.
     """
     cleaned = clean_matrix(raw)
     data = cleaned.data
@@ -184,6 +188,8 @@ def store_matrix(
     failures = list(failures or [])
     failures += [(row, "most measure values are missing; the row was dropped") for row in cleaned.empty_rows]
     directory = dataset_dir(session_id, dataset_id)
+    # In a file of its own: meta.json is read for every listing of the session's datasets.
+    _write_json(directory / "descriptives.json", describe(raw, cleaned.dropped))
     tmp = directory / "data.csv.tmp"
     data.to_csv(tmp, index_label="observation")
     os.replace(tmp, directory / "data.csv")
@@ -215,6 +221,31 @@ def load_matrix(session_id: str, dataset_id: str) -> pd.DataFrame:
         _cache.clear()
     _cache[key] = (mtime, data)
     return data
+
+
+def _read_extra(session_id: str, dataset_id: str, name: str) -> dict[str, Any] | None:
+    try:
+        with open(dataset_dir(session_id, dataset_id) / name, encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+
+def read_descriptives(session_id: str, dataset_id: str) -> dict[str, Any] | None:
+    """The statistics kept with a dataset (``descriptives.describe``); None for a dataset
+    stored before they were kept."""
+    return _read_extra(session_id, dataset_id, "descriptives.json")
+
+
+def write_measurement(session_id: str, dataset_id: str, measurement: dict[str, Any]) -> None:
+    """Keep the run times and input sizes of a computed dataset (``compute.Measurement``)."""
+    _write_json(dataset_dir(session_id, dataset_id) / "measurement.json", measurement)
+
+
+def read_measurement(session_id: str, dataset_id: str) -> dict[str, Any] | None:
+    """The run times and input sizes of a computed dataset; None for a bundled or uploaded
+    matrix and for a dataset computed before they were kept."""
+    return _read_extra(session_id, dataset_id, "measurement.json")
 
 
 def _read_matrix(source: Any) -> pd.DataFrame:

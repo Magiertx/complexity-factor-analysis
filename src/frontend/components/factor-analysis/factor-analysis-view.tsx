@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AlertCircle, Info, Loader2, RotateCcw, X } from "lucide-react";
-import { analysisLinkQuery, parseAnalysisLink } from "@/lib/analysis-link";
+import { analysisLinkQuery, parseAnalysisLink, printHref } from "@/lib/analysis-link";
 import {
   HttpError,
   abortTask,
@@ -13,7 +13,9 @@ import {
   datasetDownloadUrl,
   deleteDataset,
   downloadAnalysisZip,
+  exportFigure,
   exportLoadings,
+  exportReport,
   fetchDataset,
   fetchFactorCatalog,
   fetchInterpretationStatus,
@@ -27,6 +29,8 @@ import {
   type FactorDataset,
   type FactorInterpretation,
   type FactorKind,
+  type FigureFormat,
+  type FigureName,
   type InterpretationStatus,
 } from "@/lib/api";
 import {
@@ -47,6 +51,7 @@ import {
 } from "@/lib/factor-analysis";
 import { formatNumber, formatPercent } from "@/lib/format";
 import { ruleNote } from "@/lib/paper-notes";
+import { codesOf, hasCodes, loadShortCodes, measureLabels, saveShortCodes } from "@/lib/short-codes";
 import { CONTROL_STEPS, parseStep, stepFromHash, stepHref } from "@/lib/steps";
 import { cn } from "@/lib/utils";
 import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
@@ -60,11 +65,12 @@ import { DataForm, DataSummary, type OpenPreset } from "./data-step";
 import { DatasetView } from "./dataset-step";
 import { DEFAULT_MEASURE_VIEW, SuitabilityView, type MeasureGroups, type MeasureView } from "./suitability-step";
 import { FactorsView } from "./factors-step";
-import { DEFAULT_LOADINGS_FILTER, LoadingsView, type LoadingsFilter } from "./loadings-step";
+import { DEFAULT_LOADINGS_FILTER, LoadingsView, useLoadingsLook, type LoadingsFilter } from "./loadings-step";
 import { InterpretationView } from "./interpretation-step";
 import { FactorTour } from "./factor-tour";
 import { SETTING_CONTROLS, SettingsRow, focusControl } from "./settings-row";
-import { FactorToolbar, type ExportState } from "./toolbar";
+import { FactorToolbar, type ExportState, type ShortCodesSwitch } from "./toolbar";
+import type { FigureDownload } from "./figure-menu";
 import { StartHere } from "./start-here";
 import { EmptyStep, StepSection, stepAnchor, type StepId, type StepState } from "./step-section";
 import { StepBar, StepFooter, StepNavBar, StepRail, useStepNavigation, type StepLocks } from "./step-nav";
@@ -159,6 +165,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [exporting, setExporting] = useState<ExportFormat | null>(null);
+  const [figureBusy, setFigureBusy] = useState<FigureName | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
   const onboarding = useOnboarding();
@@ -668,7 +675,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     try {
       if (format === "zip") {
         // The button is enabled only while both are the same: the ZIP holds what is shown.
-        await downloadAnalysisZip(datasetId, analyzedOptions ?? options, locale);
+        await downloadAnalysisZip(datasetId, analyzedOptions ?? options, locale, codesShown);
+      } else if (format === "report") {
+        const { blob, filename } = await exportReport(datasetId, analyzedOptions ?? options, locale, codesShown);
+        downloadBlob(blob, filename);
       } else {
         const { blob, filename } = await exportLoadings(datasetId, options, format);
         downloadBlob(blob, filename);
@@ -680,14 +690,40 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     }
   };
 
+  // A figure of the analysis on screen, drawn by the server in the print style.
+  const runFigure = async (name: FigureName, format: FigureFormat) => {
+    if (!datasetId || !analyzedOptions) return;
+    setFigureBusy(name);
+    setExportError(null);
+    try {
+      const { blob, filename } = await exportFigure(datasetId, analyzedOptions, name, format, {
+        shortCodes: codesShown,
+        order: figureOrder,
+      });
+      downloadBlob(blob, filename);
+    } catch (e) {
+      setExportError(errorText(e, t("factor.figure.failed")));
+    } finally {
+      setFigureBusy(null);
+    }
+  };
+
   const names = useMemo(() => new Map((catalog?.measures ?? []).map((m) => [m.key, m.name])), [catalog]);
-  const measureName = useCallback((key: string) => names.get(key) ?? key, [names]);
   // What a measure measures, for the tooltip of its name, which a cell no longer cuts off.
   const descriptions = useMemo(
     () => new Map((catalog?.measures ?? []).map((m) => [m.key, m.description || undefined])),
     [catalog],
   );
-  const measureDescription = useCallback((key: string) => descriptions.get(key), [descriptions]);
+  // The short codes of the papers instead of the names, a choice of the browser; the full name
+  // stays in the tooltip. Only where the dataset has measures with a code.
+  const codes = useMemo(() => codesOf(catalog?.measures ?? []), [catalog]);
+  const [shortCodesOn, setShortCodesOn] = useState(false);
+  useEffect(() => setShortCodesOn(loadShortCodes()), []);
+  const codesAvailable = !!dataset && dataset.id === datasetId && hasCodes(codes, dataset.measures);
+  const codesShown = shortCodesOn && codesAvailable;
+  const labels = useMemo(() => measureLabels(names, descriptions, codes, codesShown), [names, descriptions, codes, codesShown]);
+  const measureName = labels.name;
+  const measureDescription = labels.description;
   // The feature groups of the log measures, for grouping the list of step 3; model measures have none.
   const measureGroups = useMemo<MeasureGroups | null>(() => {
     if (!catalog?.groups?.length) return null;
@@ -698,6 +734,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const [measureView, setMeasureView] = useState<MeasureView>(DEFAULT_MEASURE_VIEW);
   // The same for the matrix of the loadings.
   const [loadingsFilter, setLoadingsFilter] = useState<LoadingsFilter>(DEFAULT_LOADINGS_FILTER);
+  const [loadingsLook, setLoadingsLook] = useLoadingsLook();
+  const figureOrder = loadingsLook.order === "original" ? "dataset" : "factor";
   // Another dataset starts with whole lists: a search for the measures of the last one would hide
   // those of this one.
   const [listsFor, setListsFor] = useState(datasetId);
@@ -949,15 +987,35 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const navProps = { current, states, locks, stateLabels, onGo: go };
 
   const loadingsReason = !ready ? lockReason : !analysis ? t("factor.toolbar.wait_analysis") : null;
+  // The ZIP, the report and the print view hold what is on screen, so not while the analysis
+  // catches up with a change.
+  const zipReason = loadingsReason ?? (analysisCurrent ? null : t("factor.toolbar.wait_update"));
   const exports: ExportState = {
     datasetReason: ready ? null : lockReason,
     loadingsReason,
-    // The ZIP holds what is on screen, so not while the analysis catches up with a change.
-    zipReason: loadingsReason ?? (analysisCurrent ? null : t("factor.toolbar.wait_update")),
+    zipReason,
     datasetHref: ready && datasetId ? datasetDownloadUrl(datasetId) : null,
+    printHref:
+      ready && datasetId && analyzedOptions
+        ? printHref(kind, datasetId, analyzedOptions, standard, { codes: codesShown, order: figureOrder })
+        : null,
     exporting,
     onExport: runExport,
   };
+  const shortCodes: ShortCodesSwitch = {
+    on: codesShown,
+    reason: !ready ? lockReason : codesAvailable ? null : t("factor.toolbar.codes_none"),
+    onToggle: () => {
+      const next = !codesShown;
+      setShortCodesOn(next);
+      saveShortCodes(next);
+    },
+  };
+  const figure = (name: FigureName): FigureDownload => ({
+    busy: figureBusy === name,
+    reason: zipReason,
+    onDownload: (format: FigureFormat) => void runFigure(name, format),
+  });
 
   return (
     <div className="space-y-6">
@@ -981,6 +1039,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             onMyDatasets={() => openForm("mine")}
             myDatasetsReason={datasets && datasets.length > 0 ? null : t("factor.toolbar.mine_none")}
             onTour={startTour}
+            shortCodes={shortCodes}
           />
         }
       />
@@ -1223,6 +1282,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                     onOptions={updateOptions}
                     paperFactors={published?.n_factors ?? null}
                     paperScope={bundled?.published_scope}
+                    figure={figure("scree")}
                   />
                 </div>
               ) : (
@@ -1252,6 +1312,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                     assignmentNote={assignmentNote}
                     filter={loadingsFilter}
                     onFilter={setLoadingsFilter}
+                    look={loadingsLook}
+                    onLook={setLoadingsLook}
+                    figure={figure("loadings")}
                   />
                 </div>
               ) : (

@@ -18,6 +18,7 @@ import hashlib
 import inspect
 import math
 import threading
+import time
 import warnings
 from collections import OrderedDict
 from dataclasses import dataclass, field
@@ -431,6 +432,8 @@ _RANDOM_EIGENVALUES: OrderedDict[tuple[int, int], list[float]] = OrderedDict()
 _RANDOM_EIGENVALUES_SIZE = 64
 _RANDOM_EIGENVALUES_LOCK = threading.Lock()
 _RANDOM_IN_FLIGHT: dict[tuple[int, int], _Flight] = {}
+#: How long the computation of each cached entry of _RANDOM_EIGENVALUES took, in seconds.
+_RANDOM_SECONDS: dict[tuple[int, int], float] = {}
 
 
 def random_eigenvalues(n: int, p: int, should_stop: StopCheck | None = None) -> list[float]:
@@ -448,13 +451,19 @@ def random_eigenvalues(n: int, p: int, should_stop: StopCheck | None = None) -> 
     """
 
     def compute(stop: StopCheck) -> list[float]:
+        started = time.perf_counter()
         rng = np.random.default_rng(PARALLEL_ANALYSIS_SEED)
         samples = np.empty((PARALLEL_ANALYSIS_SIMULATIONS, p))
         for i in range(PARALLEL_ANALYSIS_SIMULATIONS):
             _check_stop(stop)
             # The same correlation as for the data, so that the comparison is like with like.
             samples[i] = np.linalg.eigvalsh(_corr(rng.standard_normal((n, p))))[::-1]
-        return [float(v) for v in np.percentile(samples, PARALLEL_ANALYSIS_PERCENTILE, axis=0)]
+        out = [float(v) for v in np.percentile(samples, PARALLEL_ANALYSIS_PERCENTILE, axis=0)]
+        with _RANDOM_EIGENVALUES_LOCK:
+            if len(_RANDOM_SECONDS) > 4 * _RANDOM_EIGENVALUES_SIZE:
+                _RANDOM_SECONDS.clear()
+            _RANDOM_SECONDS[(int(n), int(p))] = time.perf_counter() - started
+        return out
 
     return _computed_once(
         (int(n), int(p)),
@@ -499,6 +508,8 @@ class FactorFit:
     factor_correlations: list[list[float]] | None = None
     #: Warnings of the fit, e.g. that the optimizer did not converge.
     notes: list[str] = field(default_factory=list)
+    #: How long the fit took when it was computed; a fit from the cache keeps this time.
+    seconds: float = 0.0
 
 
 _FIT_CACHE: OrderedDict[tuple, FactorFit] = OrderedDict()
@@ -515,6 +526,13 @@ def _fit_key(data: pd.DataFrame, n_factors: int, rotation: str) -> tuple:
 
 
 _IN_FLIGHT: dict[tuple, _Flight] = {}
+
+
+def _fit_cached(data: pd.DataFrame, n_factors: int, rotation: str) -> bool:
+    """Whether ``fit_factors`` has this fit at hand, for the timings of an analysis."""
+    key = _fit_key(data, n_factors, rotation)
+    with _FIT_CACHE_LOCK:
+        return key in _FIT_CACHE
 
 
 def fit_factors(
@@ -559,6 +577,7 @@ class _StoppableFactorAnalyzer(FactorAnalyzer):
 def _fit_factors(
     data: pd.DataFrame, n_factors: int, rotation: str, should_stop: StopCheck | None = None
 ) -> FactorFit:
+    started = time.perf_counter()
     if rotation not in ROTATIONS:
         raise AnalysisError(f"Unknown rotation '{rotation}'.", "unknown_rotation", rotation=rotation)
     p = data.shape[1]
@@ -611,6 +630,7 @@ def _fit_factors(
         structure=None if structure is None else pd.DataFrame(structure, index=list(data.columns), columns=columns),
         factor_correlations=correlations,
         notes=notes,
+        seconds=time.perf_counter() - started,
     )
 
 
@@ -829,6 +849,7 @@ def analyze(data: pd.DataFrame, params: AnalysisParams, should_stop: StopCheck |
     analysis is given up with ``Superseded``.
     """
     _check_stop(should_stop)
+    started = time.perf_counter()
     _check_rule(params.assignment_rule)
     check_excluded(list(data.columns), params.excluded)
     data = data.drop(columns=list(params.excluded))
@@ -891,9 +912,13 @@ def analyze(data: pd.DataFrame, params: AnalysisParams, should_stop: StopCheck |
         )
 
     _check_stop(should_stop)
+    suitability_s = time.perf_counter() - started
     values = eigenvalues(data)
     suggested = min(kaiser_criterion(values), max_factors(p))
     # On the matrix of the scree plot, so the two criteria can be drawn on the same axes.
+    random_key = (int(n), int(p))
+    with _RANDOM_EIGENVALUES_LOCK:
+        random_cached = random_key in _RANDOM_EIGENVALUES
     random = list(random_eigenvalues(n, p, should_stop))
     by_parallel_analysis = min(parallel_analysis(values, random), max_factors(p))
     n_factors = suggested if params.n_factors is None else int(params.n_factors)
@@ -909,6 +934,7 @@ def analyze(data: pd.DataFrame, params: AnalysisParams, should_stop: StopCheck |
         )
 
     _check_stop(should_stop)
+    fit_cached = _fit_cached(data, n_factors, params.rotation)
     fit = fit_factors(data, n_factors, params.rotation, should_stop)
     for note in fit.notes:
         out.add("fit_not_converged", f"The factor fit: {note}", message=note)
@@ -995,4 +1021,14 @@ def analyze(data: pd.DataFrame, params: AnalysisParams, should_stop: StopCheck |
         "cross_loadings": assignment.cross_loadings,
         "warnings": [w["message"] for w in out.items],
         "warning_details": out.items,
+        # Wall times in seconds. The fit and the random eigenvalues of parallel analysis are
+        # cached; a cached one keeps the time its computation took and says so.
+        "timings": {
+            "suitability_s": round(suitability_s, 6),
+            "parallel_analysis_s": round(_RANDOM_SECONDS.get(random_key, 0.0), 6),
+            "parallel_analysis_cached": random_cached,
+            "fit_s": round(fit.seconds, 6),
+            "fit_cached": fit_cached,
+            "total_s": round(time.perf_counter() - started, 6),
+        },
     }

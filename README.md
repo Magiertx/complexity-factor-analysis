@@ -17,7 +17,8 @@ Schalk do it, but interactively in the browser.
   measures. Both walk through the same five steps: data, dataset, suitability, factors,
   loadings, followed by an optional interpretation. One step is on screen at a time, with its
   own address (`?step=loadings`), a step list that shows what each step found, and Back and Next;
-  a toolbar of icons holds Start here, My datasets, the link, the downloads and the tour.
+  a toolbar of icons holds Start here, My datasets, the short codes, the link, the downloads,
+  and the user guide and the tour.
 - **Data from anywhere.** Bundled datasets (the scores of the ComFy paper for seven miners,
   and the measures of 2112 Process Discovery Contest logs), an own CSV, up to 50 event logs
   (`.xes`, `.xes.gz`; `MAX_LOG_FILES`) that are mined with any of ComFy's nine ProM miners, or
@@ -53,8 +54,17 @@ Schalk do it, but interactively in the browser.
 - **Come back to a dataset.** The datasets of a session are listed on the data step, reopen
   with the parameters of their last analysis and can be deleted one by one or all at once;
   deleting a dataset job in the run history deletes its dataset too.
+- **Into the paper.** A LaTeX report built like ComFy's (`report.tex`: validity, MSA with the
+  rounds of the filter, scree plot, descriptive statistics, loadings with the assigned ones in
+  bold, communalities, dimensions, settings and provenance; compiles with pdflatex and prints
+  the published numbers under the paper settings), the scree plot and the loadings heatmap as
+  SVG or PNG (300 dpi, light, at the text width of a CEUR page), a print view of the whole
+  analysis for A4 or PDF, and a switch to the short codes of the papers (CNC, dens, C_mag) for
+  lists, figures and report. The dataset step shows the descriptive statistics of every measure
+  as ComFy prints them and, for a computed dataset, the run time and input size of every stage.
 - **Export.** Loadings as CSV or as a LaTeX `tabular` for the paper, the cleaned matrix as CSV,
-  or the whole analysis as a ZIP: result, matrix, tables, the assignment of each measure,
+  or the whole analysis as a ZIP: result, matrix, tables, the assignment of each measure, the
+  report and the figures, the descriptive statistics, the run times of a computed dataset,
   parameters, provenance (tool version and commit, upstream commits, feeed, pm4py and ProM,
   miners with their parameters, assignment rule, the seed of parallel analysis, the published
   settings if used) and a README on how to reproduce it.
@@ -91,7 +101,9 @@ ProM plugins.
 ```
 
 Six services. `prom4py` is the Java bridge to ProM that all miners go through. Details in
-[`docs/architecture.md`](docs/architecture.md), the HTTP API in [`docs/API.md`](docs/API.md).
+[`docs/architecture.md`](docs/architecture.md), the HTTP API in [`docs/API.md`](docs/API.md),
+and how to use the tool in the user guide [`docs/GUIDE.md`](docs/GUIDE.md), which the app has
+behind the help icon of its toolbar as well.
 
 ## Quick start
 

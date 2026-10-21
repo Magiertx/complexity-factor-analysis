@@ -71,13 +71,13 @@ print("Same numbers as the report:", (result["published_match"] or {}).get("stat
 for factor in result["factors"]:
     print(factor["index"] + 1, [m["measure"] for m in factor["measures"]])
 
-# 3. The loadings as a LaTeX table for a paper
-tex = s.post(
-    f"{BASE}/factor-analysis/datasets/{ds['dataset_id']}/export",
-    json={**options, "format": "latex"},
-)
-with open("loadings.tex", "wb") as f:
-    f.write(tex.content)
+# 3. For a paper: the LaTeX report like ComFy's, and the loadings heatmap with the short codes
+url = f"{BASE}/factor-analysis/datasets/{ds['dataset_id']}/export"
+with open("report.tex", "wb") as f:
+    f.write(s.post(f"{url}/report", json={**options, "short_codes": True}).content)
+figure = {**options, "figure": "loadings", "format": "svg", "short_codes": True}
+with open("loadings.svg", "wb") as f:
+    f.write(s.post(f"{url}/figure", json=figure).content)
 `;
 
 const CURL_EXAMPLE = `# List algorithms
@@ -145,6 +145,8 @@ const ENDPOINTS: { group: string; items: Endpoint[] }[] = [
       { method: "GET", path: "/factor-analysis/datasets/{id}/download", key: "fa_download" },
       { method: "POST", path: "/factor-analysis/datasets/{id}/analyze", key: "fa_analyze" },
       { method: "POST", path: "/factor-analysis/datasets/{id}/export", key: "fa_export" },
+      { method: "POST", path: "/factor-analysis/datasets/{id}/export/report", key: "fa_export_report" },
+      { method: "POST", path: "/factor-analysis/datasets/{id}/export/figure", key: "fa_export_figure" },
       { method: "POST", path: "/factor-analysis/datasets/{id}/export/zip", key: "fa_export_zip" },
       { method: "GET", path: "/factor-analysis/interpretation/status", key: "fa_interpretation_status" },
       { method: "POST", path: "/factor-analysis/datasets/{id}/interpret", key: "fa_interpret" },

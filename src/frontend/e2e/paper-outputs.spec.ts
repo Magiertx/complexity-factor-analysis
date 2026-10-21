@@ -1,0 +1,165 @@
+import { readFileSync } from "node:fs";
+import type { Page } from "@playwright/test";
+import {
+  chooseDownload,
+  deleteSessionDatasets,
+  downloaded,
+  expect,
+  expectStep,
+  goToStep,
+  openBundled,
+  pattern,
+  stepSection,
+  test,
+  text,
+  unzip,
+} from "./fixtures";
+
+// What a paper takes from an analysis: the short codes of the papers, the descriptive
+// statistics, the LaTeX report, the figures, the print view, and the user guide.
+
+test.afterEach(async ({ page }) => deleteSessionDatasets(page));
+
+function toolbar(page: Page) {
+  return page.getByRole("group", { name: text("factor.toolbar.aria") });
+}
+
+function codesSwitch(page: Page) {
+  return toolbar(page).getByRole("button", { name: text("factor.toolbar.codes"), exact: true });
+}
+
+/** Opens the Inductive miner of Important Factors with the paper settings. */
+async function openPaper(page: Page) {
+  await page.goto("/");
+  const data = stepSection(page, "data");
+  await data.getByRole("radio", { name: "Inductive miner", exact: true }).check({ force: true });
+  await data.getByRole("radio", { name: text("factor.data.preset.published"), exact: true }).check({ force: true });
+  await data.getByRole("button", { name: text("factor.data.submit_bundled") }).click();
+  await expectStep(page, "loadings", "done");
+}
+
+test("short codes name the measures as the papers do, with the full name in the tooltip", async ({ page }) => {
+  await page.goto("/");
+  await openBundled(page, "Inductive miner");
+  await expectStep(page, "loadings", "done");
+  await goToStep(page, "loadings");
+  const loadings = stepSection(page, "loadings");
+  const row = loadings.getByRole("rowheader", { name: "Coefficient of network connectivity" });
+  await expect(row).toBeVisible();
+
+  await expect(codesSwitch(page)).toHaveAttribute("aria-pressed", "false");
+  await codesSwitch(page).click();
+  await expect(codesSwitch(page)).toHaveAttribute("aria-pressed", "true");
+  const coded = loadings.getByRole("rowheader", { name: "CNC", exact: true });
+  await expect(coded).toBeVisible();
+  // The full name is in the tooltip of the code.
+  await expect(coded.locator("[data-tip-more]")).toHaveAttribute("data-tip-more", /^Coefficient of network connectivity: /);
+
+  // The list of the MSA uses them as well.
+  await goToStep(page, "suitability");
+  await expect(stepSection(page, "suitability").getByRole("rowheader", { name: "CNC", exact: true })).toBeVisible();
+
+  // The browser keeps the choice.
+  await page.reload();
+  await expect(codesSwitch(page)).toHaveAttribute("aria-pressed", "true");
+  await codesSwitch(page).click();
+  await expect(stepSection(page, "suitability").getByRole("rowheader", { name: "Coefficient of network connectivity" })).toBeVisible();
+});
+
+test("the dataset step folds the descriptive statistics until asked for", async ({ page }) => {
+  await page.goto("/");
+  await openBundled(page, "Inductive miner");
+  const dataset = stepSection(page, "dataset");
+  const fold = dataset.getByRole("button", { name: pattern(text("factor.dataset.descriptives_heading")) });
+  await expect(fold).toHaveAttribute("aria-expanded", "false");
+  // A bundled dataset was not computed by the tool, so it has no run times.
+  await expect(dataset.getByRole("button", { name: pattern(text("factor.dataset.measurement_heading")) })).toHaveCount(0);
+  await fold.click();
+  await expect(fold).toHaveAttribute("aria-expanded", "true");
+  const table = dataset.getByRole("table", { name: text("factor.dataset.descriptives_heading") });
+  // As ComFy's report prints them: Size has the mean 71.684028; the constant measure is there too.
+  await expect(table.getByRole("row", { name: /^Size/ })).toContainText("71.684");
+  await expect(table.getByRole("row", { name: /^Number of empty sequence flows/ })).toContainText(text("factor.dataset.reason.constant"));
+});
+
+test("the LaTeX report, the figures and the ZIP take the analysis on screen into a paper", async ({ page }) => {
+  await openPaper(page);
+  await codesSwitch(page).click();
+
+  // The report: as ComFy's, under the paper settings with its numbers and the assigned loadings bold.
+  let download = page.waitForEvent("download");
+  await chooseDownload(page, "factor.toolbar.export_report");
+  const report = readFileSync(await downloaded(await download), "utf8");
+  expect((await download).suggestedFilename()).toMatch(/-report\.tex$/);
+  expect(report).toContain("\\section*{Results of the Factor Analysis}");
+  expect(report).toContain("\\item CNC (Coefficient of network connectivity)");
+  expect(report).toContain("size & $\\mathbf{0.9712}$");
+
+  // The scree plot as SVG, its text kept as text.
+  await goToStep(page, "factors");
+  download = page.waitForEvent("download");
+  await stepSection(page, "factors").getByRole("button", { name: text("factor.figure.download", { figure: text("factor.factors.scree_title") }) }).click();
+  await page.getByRole("menuitem", { name: pattern(text("factor.figure.svg_hint")) }).click();
+  const scree = readFileSync(await downloaded(await download), "utf8");
+  expect(scree).toContain("<svg");
+  expect(scree).toContain(">Eigenvalue<");
+
+  // The loadings heatmap as PNG, with the short codes.
+  await goToStep(page, "loadings");
+  download = page.waitForEvent("download");
+  await stepSection(page, "loadings").getByRole("button", { name: text("factor.figure.download", { figure: text("factor.figure.loadings") }) }).click();
+  await page.getByRole("menuitem", { name: pattern(text("factor.figure.png_hint")) }).click();
+  const png = readFileSync(await downloaded(await download));
+  expect(png.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+
+  // The ZIP has all of it.
+  download = page.waitForEvent("download");
+  await chooseDownload(page, "factor.toolbar.export_zip");
+  const files = unzip(await downloaded(await download));
+  for (const name of ["report.tex", "descriptives.csv", "figures/scree.svg", "figures/loadings.svg"]) expect(files.has(name), name).toBe(true);
+  expect(files.get("figures/loadings.svg")!.toString("utf8")).toContain(">CNC<");
+  expect(JSON.parse(files.get("manifest.json")!.toString("utf8")).measure_labels).toBe("short_codes");
+});
+
+test("the print view shows the whole analysis on light pages without controls", async ({ page }) => {
+  await openPaper(page);
+  await toolbar(page).getByRole("button", { name: text("factor.toolbar.export") }).click();
+  const [print] = await Promise.all([
+    page.waitForEvent("popup"),
+    page.getByRole("menuitem", { name: pattern(text("factor.toolbar.print")) }).click(),
+  ]);
+  await expect(print).toHaveURL(/\/print\?kind=model&dataset=.*&k=4&rot=varimax.*rule=multi/);
+  const sheet = print.locator("article.light-sheet");
+  await expect(sheet.getByRole("heading", { level: 1 })).toContainText("Important Factors: Inductive miner");
+  for (const step of ["dataset", "suitability", "factors", "loadings"]) {
+    await expect(sheet.getByRole("heading", { level: 2, name: text(`factor.steps.${step}`) })).toBeVisible();
+  }
+  // The figures the server drew are there and loaded.
+  const scree = sheet.getByRole("img", { name: text("factor.factors.scree_title") });
+  await expect(scree).toBeVisible();
+  await expect.poll(() => scree.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+  // Under the paper settings it says that the numbers are those of the ComFy report.
+  await expect(sheet).toContainText(text("print.match", { source: "@" }).split("@")[0]);
+  // On paper only the sheet is left: no header, no tools.
+  await print.emulateMedia({ media: "print" });
+  await expect(print.getByRole("banner").first()).toBeHidden();
+  await expect(print.getByRole("button", { name: text("print.print") })).toBeHidden();
+  await expect(sheet).toBeVisible();
+  await print.close();
+});
+
+test("the help icon opens the user guide", async ({ page }) => {
+  await page.goto("/");
+  await toolbar(page).getByRole("button", { name: text("factor.toolbar.help") }).click();
+  const [guide] = await Promise.all([
+    page.waitForEvent("popup"),
+    page.getByRole("menuitem", { name: pattern(text("factor.toolbar.guide")) }).click(),
+  ]);
+  await expect(guide).toHaveURL(/\/guide$/);
+  await expect(guide.getByRole("heading", { level: 1, name: text("guide.title") })).toBeVisible();
+  const toc = guide.getByRole("navigation", { name: text("guide.toc") });
+  await toc.getByRole("link", { name: text("guide.export.title") }).click();
+  await expect(guide).toHaveURL(/#guide-export$/);
+  await expect(guide.getByRole("heading", { level: 2, name: text("guide.export.title") })).toBeInViewport();
+  await guide.close();
+});

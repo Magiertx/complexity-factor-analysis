@@ -206,11 +206,62 @@ def msa_csv(result: dict[str, Any], measures: list[str], excluded: list[str]) ->
     return "".join(lines)
 
 
+def descriptives_csv(descriptives: dict[str, Any]) -> str:
+    """One row per measure: the number of values, mean, median, standard deviation (ddof=1),
+    minimum and maximum, and why cleaning dropped it, if it did."""
+    from .descriptives import STATISTICS
+
+    lines = [_csv_line(["measure", "n", *STATISTICS, "dropped"])]
+    for row in descriptives["measures"]:
+        lines.append(_csv_line([row["measure"], row["n"], *(row[s] for s in STATISTICS), row.get("dropped") or ""]))
+    return "".join(lines)
+
+
+#: One row per observation of a computed dataset: its input's size and the seconds of each stage.
+MEASUREMENT_COLUMNS = (
+    "observation", "input", "miner", "events", "traces", "variants", "activities", "places", "transitions",
+    "arcs", "read_s", "discovery_s", "discovery_run_s", "measures_s", "features_s", "error",
+)
+
+
+def measurement_rows(measurement: dict[str, Any]) -> list[list[Any]]:
+    """The rows of ``MEASUREMENT_COLUMNS``. A log is read once for all its miners, so each of
+    its rows has the same read_s; an input that could not be read has a row of its own."""
+    inputs = {i["input"]: i for i in measurement["inputs"]}
+    rows = []
+    seen = set()
+    for observation in measurement["observations"]:
+        source = inputs.get(observation["input"], {})
+        seen.add(observation["input"])
+        net = observation.get("net") or source.get("net") or {}
+        merged = {**source, **net, **observation}
+        merged["error"] = observation.get("error") or source.get("error")
+        rows.append([merged.get(c) for c in MEASUREMENT_COLUMNS])
+    for name, source in inputs.items():
+        if name not in seen:
+            rows.append([{"observation": name, **source}.get(c) for c in MEASUREMENT_COLUMNS])
+    return rows
+
+
+def measurement_csv(measurement: dict[str, Any]) -> str:
+    return "".join(_csv_line(row) for row in [list(MEASUREMENT_COLUMNS), *measurement_rows(measurement)])
+
+
+def stages_csv(measurement: dict[str, Any]) -> str:
+    """One row per observation and stage: each measure (model) or feature group (log) with its
+    seconds."""
+    lines = [_csv_line(["observation", "stage", "seconds"])]
+    for observation in measurement["observations"]:
+        for stage, seconds in (observation.get("stages") or {}).items():
+            lines.append(_csv_line([observation["observation"], stage, seconds]))
+    return "".join(lines)
+
+
 #: Versions recorded in the manifest; factor_analyzer runs on scikit-learn's check_array.
 LIBRARIES = ("factor_analyzer", "numpy", "pandas", "scipy", "scikit-learn")
 
 
-def _library_versions() -> dict[str, str | None]:
+def library_versions() -> dict[str, str | None]:
     return {name: provenance.package_version(name) for name in LIBRARIES}
 
 
@@ -356,6 +407,10 @@ def analysis_zip(
     matrix: str,
     interpretation: tuple[str, dict[str, Any]] | None = None,
     published: dict[str, Any] | None = None,
+    descriptives: dict[str, Any] | None = None,
+    measurement: dict[str, Any] | None = None,
+    figures: dict[str, bytes] | None = None,
+    short_codes: bool = False,
 ) -> bytes:
     """Everything needed to report and reproduce one analysis.
 
@@ -363,9 +418,22 @@ def analysis_zip(
     analysis ran with, ``matrix`` is ``matrix_csv`` of its data and ``interpretation`` a
     stored interpretation with its language. ``published`` holds the published options of a
     bundled dataset, their source and the comparison with the published numbers, if the
-    analysis ran with these options.
+    analysis ran with these options. ``descriptives`` are the statistics kept with the dataset,
+    ``measurement`` the run times and input sizes of a computed one, ``figures`` the figures by
+    their path in the archive, e.g. "figures/scree.svg". ``short_codes`` names the measures in
+    the report by the codes of the papers, as the figures do.
     """
-    files = [
+    from .report import report_tex
+
+    created_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    tool = provenance.tool()
+    libraries = library_versions()
+    factor_names = None
+    if interpretation is not None:
+        factor_names = {
+            f["index"] - 1: f["name"] for f in (interpretation[1].get("interpretation") or {}).get("factors", [])
+        }
+    files: list[tuple[str, str | bytes, str]] = [
         ("analysis.json", json.dumps(result, ensure_ascii=False, indent=2),
          "The full result, as POST /factor-analysis/datasets/{id}/analyze returns it."),
         ("dataset.csv", matrix, "The cleaned matrix the analysis ran on, one row per observation."),
@@ -388,7 +456,28 @@ def analysis_zip(
          "Eigenvalues of the correlation matrix (scree plot) and of random data (parallel analysis)."),
         ("msa.csv", msa_csv(result, dataset["measures"], params["excluded"]),
          "MSA per measure and whether it was used, removed by the MSA filter or excluded."),
+        ("report.tex", report_tex(
+            dataset=dataset, params=params, result=result, descriptives=descriptives, tool=tool,
+            libraries=libraries, created_at=created_at, short=short_codes, factor_names=factor_names,
+            published=published,
+        ), "The analysis as a LaTeX report built like ComFy's report; compiles with pdflatex."),
     ]
+    if descriptives is not None:
+        files.append((
+            "descriptives.csv", descriptives_csv(descriptives),
+            "Mean, median, standard deviation (ddof=1), minimum and maximum of every measure, as ComFy's report "
+            + ("prints them, over the data before cleaning." if descriptives.get("basis") == "input"
+               else "prints them; over the cleaned matrix, as the data before cleaning were not kept."),
+        ))
+    if measurement is not None:
+        files += [
+            ("inputs.csv", measurement_csv(measurement),
+             "Per observation: the size of its input and the seconds of reading, discovery and the measures."),
+            ("stages.csv", stages_csv(measurement), "Seconds of each measure or feature group per observation."),
+        ]
+    for name, content in (figures or {}).items():
+        what = "scree plot" if "scree" in name else "loadings heatmap"
+        files.append((name, content, f"The {what} in print style, as the figure menu in the app downloads it."))
     if interpretation is not None:
         language, entry = interpretation
         files.append((
@@ -396,13 +485,11 @@ def analysis_zip(
             "The stored interpretation of the factors, with the model and parameters it was made for.",
         ))
 
-    created_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     listing = [
         {"name": "manifest.json", "description": "What was analysed, with which parameters, code and libraries."},
         {"name": "README.txt", "description": "This overview and how to reproduce the analysis."},
         *({"name": name, "description": description} for name, _, description in files),
     ]
-    tool = provenance.tool()
     manifest = {
         "app": APP_NAME,
         "created_at": created_at,
@@ -410,9 +497,14 @@ def analysis_zip(
         "dataset": dataset,
         "analysis_params": params,
         "analysis": provenance.analysis(result),
-        "libraries": _library_versions(),
+        # Wall times of this analysis; a cached fit keeps the time its computation took.
+        "analysis_timings": result.get("timings"),
+        "measure_labels": "short_codes" if short_codes else "names",
+        "libraries": libraries,
         "files": listing,
     }
+    if measurement is not None:
+        manifest["measurement"] = measurement
     if published is not None:
         manifest["published"] = published
     buffer = io.BytesIO()

@@ -330,6 +330,84 @@ export interface FactorMeasure {
   description: string;
   slow?: boolean;
   group?: string;
+  /** The short code the papers print, e.g. "CNC"; absent from older servers. */
+  short?: string;
+}
+
+/** Statistics of one measure, as ComFy's report prints them; null where there is no value. */
+export interface DescriptiveRow {
+  measure: string;
+  /** The values the statistics rest on; missing ones are not counted. */
+  n: number;
+  mean: number | null;
+  median: number | null;
+  /** Sample standard deviation (ddof = 1). */
+  std: number | null;
+  min: number | null;
+  max: number | null;
+  /** Why the cleaning left the measure out of the matrix, if it did. */
+  dropped: DropReason | null;
+}
+
+export interface Descriptives {
+  /** "input": the table before cleaning, as ComFy describes it; "cleaned": only the matrix was kept. */
+  basis: "input" | "cleaned";
+  n_rows: number;
+  measures: DescriptiveRow[];
+}
+
+export interface NetSize {
+  places: number;
+  transitions: number;
+  arcs: number;
+}
+
+/** One input file of a computed dataset: its size and the seconds to read it. */
+export interface MeasurementInput {
+  input: string;
+  read_s?: number;
+  events?: number;
+  traces?: number;
+  variants?: number;
+  activities?: number;
+  net?: NetSize | null;
+  error?: string;
+}
+
+/** One row of a computed dataset: the seconds of each stage and the size of its net. */
+export interface MeasurementObservation {
+  observation: string;
+  input: string;
+  miner?: string;
+  /** Wall time including the wait for ProM4Py; `discovery_run_s` is the call alone. */
+  discovery_s?: number;
+  discovery_run_s?: number;
+  net?: NetSize | null;
+  /** Seconds per measure (model) or feature group (log). */
+  stages?: Record<string, number>;
+  measures_s?: number;
+  features_s?: number;
+  error?: string;
+}
+
+/** Run times (wall time, seconds) and input sizes of a dataset the tool computed. */
+export interface Measurement {
+  kind: FactorKind;
+  source: string;
+  unit: "seconds";
+  total_s: number;
+  inputs: MeasurementInput[];
+  observations: MeasurementObservation[];
+}
+
+/** Wall times of an analysis; a cached fit keeps the time its computation took. */
+export interface AnalysisTimings {
+  suitability_s: number;
+  parallel_analysis_s: number;
+  parallel_analysis_cached: boolean;
+  fit_s: number;
+  fit_cached: boolean;
+  total_s: number;
 }
 
 export interface BundledDataset {
@@ -423,6 +501,10 @@ export interface FactorDataset {
   inputs?: InputsSummary;
   /** The options of the last analysis, saved with the dataset; null before the first one. */
   options?: AnalyzeOptions | null;
+  /** Of a ready dataset: the statistics of its measures; absent from older servers. */
+  descriptives?: Descriptives | null;
+  /** Of a dataset the tool computed from logs or nets: run times and input sizes, else null. */
+  measurement?: Measurement | null;
 }
 
 /** What a dataset was built from. */
@@ -615,6 +697,8 @@ export interface FactorAnalysis {
   published_match?: PublishedMatch | null;
   /** Time the server took for the analysis. */
   elapsed_ms?: number;
+  /** The time of each part of the analysis; absent from older servers. */
+  timings?: AnalysisTimings;
   warnings: string[];
   warning_details?: AnalysisNotice[];
 }
@@ -738,12 +822,19 @@ export function datasetDownloadUrl(id: string): string {
   return `${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/download`;
 }
 
+/**
+ * The analysis with these options. A newer analysis of the same dataset in the session replaces
+ * this one (409 "superseded"), unless `latestWins` is false, e.g. for the print view, which must
+ * not take the place of the analysis of the tab it was opened from.
+ */
 export async function analyzeDataset(
   id: string,
   options: AnalyzeOptions,
   signal?: AbortSignal,
+  { latestWins = true }: { latestWins?: boolean } = {},
 ): Promise<FactorAnalysis> {
-  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/analyze`, {
+  const query = latestWins ? "" : "?latest_wins=false";
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/analyze${query}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(options),
@@ -775,15 +866,60 @@ export async function downloadAnalysisZip(
   id: string,
   options: AnalyzeOptions,
   language: InterpretationLanguage,
+  shortCodes = false,
 ): Promise<void> {
   const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/export/zip`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...options, language }),
+    body: JSON.stringify({ ...options, language, short_codes: shortCodes }),
   });
   if (!r.ok) throw await httpError(r, "Export failed");
   const { blob, filename } = await attachment(r, "factor-analysis.zip");
   downloadBlob(blob, filename);
+}
+
+/**
+ * The analysis as a LaTeX report built like ComFy's; the factors are named after an
+ * interpretation stored for these options in `language`, if there is one.
+ */
+export async function exportReport(
+  id: string,
+  options: AnalyzeOptions,
+  language: InterpretationLanguage,
+  shortCodes = false,
+): Promise<{ blob: Blob; filename: string }> {
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/export/report`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...options, language, short_codes: shortCodes }),
+  });
+  if (!r.ok) throw await httpError(r, "Export failed");
+  return attachment(r, "report.tex");
+}
+
+export type FigureName = "scree" | "loadings";
+export type FigureFormat = "svg" | "png";
+
+/**
+ * A figure of the analysis in the print style: SVG with its text as text, or PNG at 300 dpi. Like
+ * every export it runs the analysis it shows without replacing the one on screen.
+ */
+export async function exportFigure(
+  id: string,
+  options: AnalyzeOptions,
+  figure: FigureName,
+  format: FigureFormat,
+  { shortCodes = false, order = "factor" }: { shortCodes?: boolean; order?: "factor" | "dataset" } = {},
+  signal?: AbortSignal,
+): Promise<{ blob: Blob; filename: string }> {
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/export/figure`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...options, figure, format, short_codes: shortCodes, order }),
+    signal,
+  });
+  if (!r.ok) throw await httpError(r, "Export failed");
+  return attachment(r, `${figure}.${format}`);
 }
 
 async function attachment(r: Response, fallback: string): Promise<{ blob: Blob; filename: string }> {

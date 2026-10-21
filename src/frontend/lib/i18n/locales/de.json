@@ -229,18 +229,18 @@
       "recent_logs": "Logs, die deine Sitzung zuletzt hochgeladen hat.",
       "analyze": "Einen Algorithmus auf einem Log ausführen; liefert eine job_id.",
       "log_stats": "Schnelle beschreibende Statistiken eines Logs: Traces, Events, Varianten, Zeitraum.",
-      "fa_catalog": "Maße, Miner oder Feature-Gruppen, mitgelieferte Datensätze mit den Einstellungen, die ihr Paper veröffentlicht hat (`published_options`), Beispieleingaben, die angenommenen Quellen und die Upload-Grenzen (`limits`).",
+      "fa_catalog": "Maße mit den Kurzzeichen der Papers (`short`), Miner oder Feature-Gruppen, mitgelieferte Datensätze mit den Einstellungen ihres Papers (`published_options`), Beispieleingaben, die erlaubten Quellen und die Upload-Grenzen (`limits`).",
       "fa_limits": "Wie viele Logs und Petri-Netze und wie viele Bytes eine Datensatz-Anfrage auf diesem Server umfassen darf (`max_log_files`, `max_pnml_files`, `max_file_bytes`, `max_total_bytes`).",
       "fa_create": "Einen Datensatz aus einem mitgelieferten oder einer CSV anlegen (sofort bereit) oder aus Event-Logs oder PNML-Dateien (als Run berechnet). Hat die Sitzung den mitgelieferten Datensatz schon, kommt er unverändert zurück, mit `reused`.",
       "fa_list": "Die Datensätze deiner Sitzung, neueste zuerst; kind ist optional.",
-      "fa_get": "Status, Fortschritt, gespeicherte Einstellungen und die bereinigte Matrix der Maße (erste 2.000 Zeilen).",
+      "fa_get": "Status, Fortschritt, gespeicherte Einstellungen und die bereinigte Maßmatrix (erste 2.000 Zeilen); sobald bereit, die deskriptive Statistik jedes Maßes (`descriptives`) und für einen berechneten Datensatz die Laufzeiten und Eingabegrößen (`measurement`).",
       "fa_options": "Die Einstellungen einer Analyse beim Datensatz speichern.",
       "fa_delete": "Einen Datensatz mit seinem Run und seinen gespeicherten Interpretationen löschen.",
       "fa_delete_all": "Alle Datensätze deiner Sitzung löschen oder alle einer Art.",
       "fa_download": "Die bereinigte Matrix als CSV.",
-      "fa_analyze": "Bartlett, KMO mit MSA-Filter, Eigenwerte mit Kaiser und Parallelanalyse, rotierte Ladungen und die Faktorgruppen nach `assignment_rule` (`largest`, `multi`, `hair`) mit Querladungen; mit den veröffentlichten Einstellungen den Abgleich mit dem Report (JSON).",
+      "fa_analyze": "Bartlett, KMO mit MSA-Filter, Eigenwerte mit Kaiser und Parallelanalyse, rotierte Ladungen und die Faktorgruppen nach `assignment_rule` (`largest`, `multi`, `hair`) mit Querladungen sowie die Laufzeiten ihrer Teile (`timings`); mit den veröffentlichten Einstellungen der Abgleich mit dem Report (JSON).",
       "fa_export": "Die Ladungstabelle als CSV oder LaTeX; der Body von analyze plus format.",
-      "fa_export_zip": "Die ganze Analyse als ZIP: Ergebnis, Matrix, Tabellen, Parameter, Bibliotheksversionen und Herkunft (Version und Commit des Tools, Commits der Vorlagen, feeed, pm4py und ProM, Miner mit ihren Parametern).",
+      "fa_export_zip": "Die ganze Analyse als ZIP: Ergebnis, Matrix, Tabellen, report.tex, Abbildungen, deskriptive Statistik, Laufzeiten, Parameter, Bibliotheksversionen und Herkunft (Toolversion und Commit, Upstream-Commits, feeed, pm4py und ProM, Miner mit ihren Parametern).",
       "fa_interpretation_status": "Ob Claude Faktoren interpretieren kann, und mit welchem Modell.",
       "fa_interpret": "Namen und kurze Interpretationen der Faktoren durch Claude; der Body von analyze plus language. Optional, braucht einen API-Schlüssel auf dem Server.",
       "jobs": "Alle Runs deiner Sitzung.",
@@ -253,7 +253,9 @@
       "job_delete": "Einen Run und seine Ergebnisse löschen; ein Datensatz-Run nimmt seinen Datensatz mit.",
       "jobs_delete": "Alle Runs deiner Sitzung löschen, mit den Datensätzen, die sie berechnet haben.",
       "health": "Bereitschaftsprüfung: 200, wenn die Datenbank erreichbar ist.",
-      "session_start": "Startet die Sitzung (das Cookie `session_id`), wenn die Anfrage keines hat oder eines, das der Server nicht lesen kann. Die Seite erledigt das selbst; ein Skript, das mehrere Anfragen gleichzeitig sendet, ruft es zuerst auf."
+      "session_start": "Startet die Sitzung (das Cookie `session_id`), wenn die Anfrage keines hat oder eines, das der Server nicht lesen kann. Die Seite erledigt das selbst; ein Skript, das mehrere Anfragen gleichzeitig sendet, ruft es zuerst auf.",
+      "fa_export_report": "Die Analyse als LaTeX-Report, aufgebaut wie der von ComFy (report.tex); der Body von analyze plus `short_codes` und `language`.",
+      "fa_export_figure": "Der Scree-Plot oder die Ladungs-Heatmap als SVG oder PNG (300 dpi) im Druckstil; der Body von analyze plus `figure`, `format`, `short_codes` und `order`."
     },
     "notes": {
       "rate_limits": "Ratenlimits pro IP: `60/hour` für `POST /algorithms/{id}/analyze` und für neue Datensätze aus `POST /factor-analysis/datasets`, `600/minute` für das Lesen, Auflisten und Löschen von Datensätzen und das Speichern ihrer Optionen, `300/hour` für `POST /log-stats` und `120/minute` überall sonst. Interpretationen durch Claude: `10/hour` pro Sitzung und `200/day` für den Server. Über einem Limit lautet die Antwort 429 mit einem `code`.",
@@ -731,7 +733,34 @@
         "duplicate": "perfekt korreliert mit {kept}"
       },
       "col_reason": "Grund",
-      "col_detail": "Detail"
+      "col_detail": "Detail",
+      "descriptives_heading": "Deskriptive Statistik",
+      "col_n_more": "Die Werte, auf denen die Kennzahlen beruhen; fehlende zählen nicht.",
+      "col_mean": "Mittel",
+      "col_median": "Median",
+      "col_sd": "SD",
+      "col_sd_more": "Standardabweichung der Stichprobe, mit n − 1 im Nenner, wie in ComFy.",
+      "col_min": "Min",
+      "col_max": "Max",
+      "col_cleaning": "Bereinigung",
+      "descriptives_note": "So, wie der ComFy-Report sie ausgibt: über alle {n} Beobachtungen der erhobenen Daten vor der Bereinigung, also auch für die Maße, die die Bereinigung weggelassen hat.",
+      "descriptives_note_cleaned": "Über die bereinigte Matrix: Die Daten vor der Bereinigung wurden für diesen Datensatz nicht aufbewahrt.",
+      "measurement_heading": "Laufzeiten und Eingabegrößen",
+      "measurement_total": "{s} s insgesamt",
+      "col_traces": "Traces",
+      "col_events": "Events",
+      "col_variants": "Varianten",
+      "col_activities": "Aktivitäten",
+      "col_net": "Netz S / T / K",
+      "col_net_more": "Stellen, Transitionen und Kanten des Petri-Netzes.",
+      "col_read_s": "Lesen (s)",
+      "col_discovery_s": "Discovery (s)",
+      "col_discovery_more": "Laufzeit der Discovery einschließlich der Wartezeit auf ProM, solange andere Jobs es nutzten.",
+      "col_measures_s": "Maße (s)",
+      "col_features_s": "Features (s)",
+      "measurement_sum": "Summe",
+      "measurement_note": "Laufzeit in Sekunden auf diesem Server.",
+      "measurement_more": "Gemessen, während der Datensatz berechnet wurde. Ein Log wird für alle seine Miner einmal gelesen. Das ZIP enthält zusätzlich die Sekunden jedes Maßes oder jeder Feature-Gruppe."
     },
     "suitability": {
       "passed": "bestanden",
@@ -1152,9 +1181,9 @@
     "toolbar": {
       "aria": "Werkzeuge",
       "export": "Herunterladen",
-      "export_more": "Die Analyse als ZIP, die Ladungen als CSV oder LaTeX oder den bereinigten Datensatz als CSV.",
+      "export_more": "Die Analyse als ZIP, ihren LaTeX-Report oder ihre Druckansicht, die Ladungen als CSV oder LaTeX oder den bereinigten Datensatz als CSV.",
       "export_zip": "Analyse (ZIP)",
-      "export_zip_hint": "Datensatz, Ergebnisse, Ladungen und ein Manifest zum Nachrechnen der Analyse",
+      "export_zip_hint": "Datensatz, Ergebnisse, Report, Abbildungen und ein Manifest, um die Analyse nachzuvollziehen",
       "export_loadings_csv": "Ladungen (CSV)",
       "export_loadings_latex": "Ladungen (LaTeX)",
       "export_dataset": "Datensatz (CSV)",
@@ -1163,7 +1192,20 @@
       "wait_update": "Die Analyse wird gerade aktualisiert.",
       "mine_more": "Datensätze dieser Sitzung wieder öffnen oder löschen.",
       "mine_none": "In dieser Sitzung gibt es noch keine Datensätze.",
-      "more": "Mehr"
+      "more": "Mehr",
+      "export_report": "LaTeX-Report",
+      "export_report_hint": "report.tex, aufgebaut wie der ComFy-Report; läuft durch pdflatex",
+      "print": "Druckansicht",
+      "print_hint": "Die ganze Analyse auf A4-Seiten in einem neuen Tab, zum Drucken oder Speichern als PDF",
+      "help": "Hilfe",
+      "help_more": "Die Anleitung oder eine Tour durch die Schritte.",
+      "guide": "Anleitung",
+      "guide_hint": "Was das Tool tut und wie, in einem neuen Tab",
+      "codes": "Kurzzeichen",
+      "codes_more": "Nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder C_mag, in den Listen, den Ladungen, den Abbildungen und dem Report. Der volle Name steht im Tooltip.",
+      "codes_on": "Kurzzeichen zeigen",
+      "codes_off": "Volle Namen zeigen",
+      "codes_none": "Kein Maß dieses Datensatzes hat ein Kurzzeichen."
     },
     "measures": {
       "search": "Maße durchsuchen",
@@ -1190,6 +1232,16 @@
       "dependent_with": "Linear abhängig mit {measures}. Ein Maß der Gruppe auszuschließen löst das.",
       "status_below": "unter {threshold}",
       "none_match": "Kein Maß passt zur Suche."
+    },
+    "figure": {
+      "download": "{figure} herunterladen",
+      "download_more": "Als SVG oder PNG für ein Paper: hell, mit weißem Hintergrund, in der Textbreite einer CEUR-Seite.",
+      "svg": "SVG",
+      "svg_hint": "Vektorgrafik; der Text bleibt Text",
+      "png": "PNG",
+      "png_hint": "Bild mit 300 dpi",
+      "loadings": "Ladungs-Heatmap",
+      "failed": "Die Abbildung konnte nicht heruntergeladen werden."
     }
   },
   "inspect": {
@@ -1220,5 +1272,90 @@
     "job_quota": "Du hast schon {active} wartende oder laufende Runs, und das käme mit {requested} dazu; erlaubt sind höchstens {limit}. Warte, bis sie fertig sind, oder brich einige unter Letzte Runs ab.",
     "dataset_jobs_busy": "Der Server berechnet schon {active} Datensätze, mehr gleichzeitig nicht. Versuche es in ein paar Minuten noch einmal.",
     "prom_unavailable": "ProM, das die Miner ausführt, ist gerade nicht erreichbar, daher konnte kein Petri-Netz entdeckt werden. Versuche es in ein paar Minuten noch einmal; bleibt es dabei, muss auf dem Server der Dienst prom4py gestartet werden."
+  },
+  "print": {
+    "title": "Faktoranalyse von „{name}“",
+    "invalid": "Diese Adresse nennt keine Analyse. Öffnen Sie die Druckansicht aus dem Download-Menü einer Analyse.",
+    "failed": "Die Analyse konnte nicht geladen werden: {error}",
+    "loading": "Die Analyse wird geladen …",
+    "hint": "Drucken Sie die Seite oder speichern Sie sie mit dem Druckdialog des Browsers als PDF.",
+    "print": "Drucken",
+    "dataset_size": "{n} Beobachtungen und {p} Maße nach der Bereinigung.",
+    "dropped": "Von der Bereinigung weggelassen: {list}.",
+    "bartlett": "Bartlett-Test auf Sphärizität: χ² = {chi}, df = {df}, p {p} ({result}).",
+    "kmo": "KMO insgesamt: {value} ({result}).",
+    "factors": "{n} Faktor, {rotation}; er erklärt {pct} der Varianz.",
+    "factors_plural": "{n} Faktoren, {rotation}; zusammen erklären sie {pct} der Varianz.",
+    "criteria": "Kaiser-Kriterium: {kaiser}; Parallelanalyse ({percentile}. Perzentil, Seed {seed}): {parallel}.",
+    "interpretation_note": "Namen und Zusammenfassungen auf Anfrage vorgeschlagen von {model}; die Analyse hängt nicht von ihnen ab.",
+    "codes_heading": "Kurzzeichen",
+    "match": "Die Zahlen stimmen mit denen von {source} überein.",
+    "differs": "{n} Zahlen weichen von denen von {source} ab.",
+    "footer": "Erstellt mit {app}."
+  },
+  "guide": {
+    "title": "Anleitung",
+    "subtitle": "Was {app} tut, Schritt für Schritt: einen veröffentlichten Datensatz oder eigene Daten analysieren, die Ergebnisse lesen und sie in ein Paper übernehmen.",
+    "toc": "Inhalt",
+    "links": {
+      "model": "Modellkomplexität",
+      "log": "Log-Komplexität",
+      "paper": "Important Factors: Inductive Miner mit den Paper-Einstellungen öffnen",
+      "data": "Zum Schritt Daten",
+      "results": "Zum Schritt Datensatz",
+      "loadings": "Zu den Ladungen",
+      "api": "API-Zugang"
+    },
+    "steps": {
+      "title": "Die sechs Schritte",
+      "p1": "Modellkomplexität analysiert die Maße von ComFy auf Petri-Netzen, Log-Komplexität die Maße von feeed auf Event-Logs. Beide führen durch dieselben Schritte: Daten, Datensatz, Eignung, Faktoren, Ladungen und eine optionale Interpretation. Es ist immer ein Schritt zu sehen; die Liste der Schritte zeigt, was jeder Schritt ergeben hat.",
+      "p2": "Die Einstellungszeile über den Schritten fasst jede Entscheidung zusammen, markiert die, die vom Standard des Tools abweichen, und führt zu jedem Regler. Jede Änderung einer Einstellung rechnet die Analyse neu."
+    },
+    "bundled": {
+      "title": "Einen veröffentlichten Datensatz analysieren",
+      "items": {
+        "open": "Öffnen Sie Modellkomplexität oder Log-Komplexität.",
+        "choose": "Wählen Sie unter Daten einen Datensatz eines Papers, etwa Important Factors: Inductive Miner.",
+        "settings": "Wählen Sie Paper-Einstellungen, um ihn wie im Paper zu analysieren, oder Standard des Tools für die Voreinstellungen von ComFy, dann Datensatz verwenden."
+      },
+      "p1": "Mit den Paper-Einstellungen sagt ein Chip in der Einstellungszeile, ob die Zahlen dem veröffentlichten ComFy-Report gleichen und wie sich die Tabellen des Papers dazu verhalten. „Hier starten“ in der Werkzeugleiste nennt vier Einstiege."
+    },
+    "own": {
+      "title": "Eigene Daten analysieren",
+      "p1": "Wählen Sie unter Daten eine Quelle:",
+      "items": {
+        "logs": "Event-Logs (.xes, .xes.gz): Für Modellmaße wird jedes Log mit jedem gewählten Miner entdeckt und jedes Netz gemessen; für Logmaße berechnet feeed die gewählten Feature-Gruppen.",
+        "nets": "Petri-Netze (.pnml): Jedes Netz wird gemessen.",
+        "csv": "Eine CSV-Datei: eine Zeile je Beobachtung, eine Spalte je Maß; eine erste Spalte mit Namen wird zu den Zeilenbeschriftungen."
+      },
+      "p2": "Logs und Netze werden in einem Job berechnet; die Job-Leiste zeigt den Fortschritt. „Meine Datensätze“ in der Werkzeugleiste öffnet einen Datensatz der Sitzung wieder, mit den Einstellungen seiner letzten Analyse."
+    },
+    "results": {
+      "title": "Die Ergebnisse lesen",
+      "items": {
+        "dataset": "Datensatz: was die Bereinigung weggelassen hat und warum, die deskriptive Statistik jedes Maßes, wie der ComFy-Report sie ausgibt, und für einen aus Logs oder Netzen berechneten Datensatz die Laufzeiten und Eingabegrößen. Beide Tabellen sind eingeklappt, bis man sie öffnet.",
+        "suitability": "Eignung: der Bartlett-Test, der KMO insgesamt und der MSA jedes Maßes. Der MSA-Filter entfernt Maße in Runden, wie ComFy; jedes Maß lässt sich von Hand ausschließen.",
+        "factors": "Faktoren: der Scree-Plot mit Kaiser-Linie und Parallelanalyse, die Zahl, die jedes Kriterium vorschlägt, und die Rotation.",
+        "loadings": "Ladungen: eine Matrix (orange für negative Ladungen, blass, wo eine Ladung nicht zählt) oder eine Karte je Dimension, die Schwellen und die Regel, die Maße Faktoren zuordnet. Querladungen sind umrandet.",
+        "interpretation": "Interpretation: Namen für die Faktoren, von einem Sprachmodell nur auf Anfrage vorgeschlagen. Es entscheidet nichts."
+      }
+    },
+    "export": {
+      "title": "Die Ergebnisse in ein Paper übernehmen",
+      "p1": "Das Download-Menü im Seitenkopf enthält:",
+      "items": {
+        "zip": "Analyse (ZIP): das Ergebnis, die Matrix, die Tabellen, report.tex, die Abbildungen, die deskriptive Statistik, die Laufzeiten und ein Manifest mit Einstellungen, Versionen und Herkunft.",
+        "report": "LaTeX-Report: report.tex, aufgebaut wie der ComFy-Report, mit den Dimensionen und den Einstellungen; läuft durch pdflatex.",
+        "print": "Druckansicht: die ganze Analyse auf A4-Seiten, zum Drucken oder Speichern als PDF.",
+        "tables": "Die Ladungen als CSV oder LaTeX und den bereinigten Datensatz als CSV."
+      },
+      "p2": "Das Bild-Symbol am Scree-Plot und an den Ladungen lädt die Abbildung als SVG herunter, deren Text Text bleibt, oder als PNG mit 300 dpi: immer hell, in der Textbreite eines CEUR-Papers.",
+      "p3": "Das Etikett-Symbol in der Werkzeugleiste nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder C_mag; der volle Name steht im Tooltip, und Abbildungen, Report und ZIP folgen ihm.",
+      "p4": "Das Link-Symbol kopiert einen Link auf die Analyse eines veröffentlichten Datensatzes mit ihren Einstellungen."
+    },
+    "api": {
+      "title": "Die API nutzen",
+      "p1": "Alles, was die App kann, geht auch über die REST-API, auch der Report und die Abbildungen. Die Seite API-Zugang nennt die Endpunkte mit Beispielen."
+    }
   }
 }
