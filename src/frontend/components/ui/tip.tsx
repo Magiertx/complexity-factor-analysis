@@ -281,8 +281,10 @@ export function Term({ more, children, className }: { more: string; children: Re
 
 /**
  * Tooltips for the cells of a table without one listener per cell: an element inside the container
- * with `data-tip` (the name) and/or `data-tip-more` (the explanation) shows them for the pointer. For
- * numbers a screen reader already reads from the table, so the cells get no description.
+ * with `data-tip` (the name) and/or `data-tip-more` (the explanation) shows them for the pointer,
+ * and for a long press of a finger, which then does not trigger the element. For numbers a screen
+ * reader already reads from the table, so the cells get no description; what a cell says that the
+ * table does not is in the text of its row instead.
  */
 export function useTipZone<T extends HTMLElement = HTMLElement>(): RefCallback<T> {
   return useCallback((zone: T | null) => {
@@ -290,22 +292,32 @@ export function useTipZone<T extends HTMLElement = HTMLElement>(): RefCallback<T
     const c = tips();
     const entries = new WeakMap<HTMLElement, TipEntry<HTMLElement>>();
     let current: TipEntry<HTMLElement> | null = null;
+    /** The element a finger is pressing, until the click that may follow has been dealt with. */
+    let pressed: TipEntry<HTMLElement> | null = null;
     const argsOf = (el: HTMLElement): TipArgs => ({ name: el.dataset.tip, more: el.dataset.tipMore });
+    const entryOf = (el: HTMLElement): TipEntry<HTMLElement> => {
+      let entry = entries.get(el);
+      if (!entry) {
+        entry = tipEntry(el, argsOf(el), false);
+        entries.set(el, entry);
+      } else c.update(entry, argsOf(el));
+      return entry;
+    };
+    const tipped = (target: EventTarget | null): HTMLElement | null => {
+      const el = (target as Element | null)?.closest<HTMLElement>("[data-tip], [data-tip-more]");
+      return el && zone.contains(el) ? el : null;
+    };
     const leave = () => {
       if (current) c.pointerLeave(current);
       current = null;
     };
     const over = (e: PointerEvent) => {
       if (e.pointerType === "touch" || e.buttons !== 0) return;
-      const el = (e.target as Element | null)?.closest<HTMLElement>("[data-tip], [data-tip-more]");
-      if (!el || !zone.contains(el)) return leave();
+      const el = tipped(e.target);
+      if (!el) return leave();
       if (current?.el === el) return;
       leave();
-      let entry = entries.get(el);
-      if (!entry) {
-        entry = tipEntry(el, argsOf(el), false);
-        entries.set(el, entry);
-      } else c.update(entry, argsOf(el));
+      const entry = entryOf(el);
       current = entry;
       c.pointerEnter(entry, e.clientX);
     };
@@ -316,17 +328,56 @@ export function useTipZone<T extends HTMLElement = HTMLElement>(): RefCallback<T
       leave();
     };
     const down = (e: PointerEvent) => {
-      if (current && e.pointerType !== "touch") c.pointerDown(current, e.pointerType);
+      if (e.pointerType !== "touch") {
+        if (current) c.pointerDown(current, e.pointerType);
+        return;
+      }
+      // A finger: a long press on a cell with a tooltip shows it.
+      const el = tipped(e.target);
+      if (!el) return;
+      pressed = entryOf(el);
+      c.pointerDown(pressed, "touch", e.clientX, e.clientY);
+    };
+    const move = (e: PointerEvent) => {
+      if (pressed) c.pointerMove(pressed, e.pointerType, e.clientX, e.clientY);
+    };
+    const up = (e: PointerEvent) => {
+      if (pressed) c.pointerUp(pressed, e.pointerType);
+    };
+    // The click some browsers send after a long press must not trigger the cell's control.
+    const click = (e: MouseEvent) => {
+      const el = tipped(e.target);
+      const entry = el ? entries.get(el) : undefined;
+      if (!entry || !c.swallowsClick(entry)) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    };
+    const menu = (e: Event) => {
+      const el = tipped(e.target);
+      const entry = el ? entries.get(el) : undefined;
+      if (entry && c.holdsContextMenu(entry)) e.preventDefault();
     };
     zone.addEventListener("pointerover", over);
     zone.addEventListener("pointerout", out);
     zone.addEventListener("pointerdown", down, true);
+    zone.addEventListener("pointermove", move);
+    zone.addEventListener("pointerup", up);
+    zone.addEventListener("pointercancel", up);
+    zone.addEventListener("click", click, true);
+    zone.addEventListener("contextmenu", menu);
     return () => {
       zone.removeEventListener("pointerover", over);
       zone.removeEventListener("pointerout", out);
       zone.removeEventListener("pointerdown", down, true);
+      zone.removeEventListener("pointermove", move);
+      zone.removeEventListener("pointerup", up);
+      zone.removeEventListener("pointercancel", up);
+      zone.removeEventListener("click", click, true);
+      zone.removeEventListener("contextmenu", menu);
       if (current) c.remove(current);
+      if (pressed) c.remove(pressed);
       current = null;
+      pressed = null;
     };
   }, []);
 }
