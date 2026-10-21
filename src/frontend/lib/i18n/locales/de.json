@@ -1404,8 +1404,10 @@
     "dimensions_analysis": "Datensatz",
     "dimensions_none": "In keiner Dimension",
     "dimension_n": "Dimension {d}",
-    "group_dimension": "Dimension {d} · {n}",
-    "group_none": "In keiner Dimension · {n}",
+    "group_dimension": "Dimension {d} · {n} Maß",
+    "group_dimension_plural": "Dimension {d} · {n} Maße",
+    "group_none": "In keiner Dimension · {n} Maß",
+    "group_none_plural": "In keiner Dimension · {n} Maße",
     "alignment_note": "D1, D2, … sind die Dimensionen nach dem Abgleich: Der erste Datensatz behält die Nummern seiner Faktoren, die Faktoren jedes weiteren werden ihnen so zugeordnet, dass möglichst viele ihrer gemeinsamen Maße dieselbe Nummer bekommen. Eine Nummer kann von der des Papers abweichen (Tab. 17 wurde von Hand umnummeriert); wie die Maße innerhalb eines Datensatzes gruppiert sind, hängt nicht davon ab.",
     "same_as": "dieselben Ladungen wie {other}.",
     "column_notes": "Hinweise zu den Datensätzen",
@@ -1417,7 +1419,6 @@
       "measures_value": "{used} von {total}",
       "factors": "Faktoren",
       "rotation": "Rotation",
-      "rule": "Regel",
       "variance": "Erklärte Varianz"
     },
     "help": {
@@ -1427,7 +1428,6 @@
       "measures": "Die Maße, die nach der Bereinigung und dem MSA-Filter bleiben, von denen des Datensatzes.",
       "kmo": "Das Gesamtmaß der Stichprobeneignung (Kaiser-Meyer-Olkin) der verbliebenen Maße.",
       "factors": "Die Zahl der Faktoren, wie die Paper-Einstellungen des Datensatzes sie festlegen.",
-      "rule": "Die Zuordnungsregel, für jeden Datensatz dieselbe.",
       "variance": "Der Anteil der Varianz der Maße, den die Faktoren zusammen erklären."
     },
     "legend": {

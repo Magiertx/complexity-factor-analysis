@@ -1404,8 +1404,10 @@
     "dimensions_analysis": "Dataset",
     "dimensions_none": "In no dimension",
     "dimension_n": "Dimension {d}",
-    "group_dimension": "Dimension {d} · {n}",
-    "group_none": "In no dimension · {n}",
+    "group_dimension": "Dimension {d} · {n} measure",
+    "group_dimension_plural": "Dimension {d} · {n} measures",
+    "group_none": "In no dimension · {n} measure",
+    "group_none_plural": "In no dimension · {n} measures",
     "alignment_note": "D1, D2, … are the dimensions after matching: the first dataset keeps the numbers of its factors, and the factors of every further one are matched to them so that most of the measures they share get the same number. A number can differ from the paper's (Tab. 17 was renumbered by hand); how the measures are grouped within a dataset does not depend on it.",
     "same_as": "the same loadings as {other}.",
     "column_notes": "Notes on the datasets",
@@ -1417,7 +1419,6 @@
       "measures_value": "{used} of {total}",
       "factors": "Factors",
       "rotation": "Rotation",
-      "rule": "Rule",
       "variance": "Variance explained"
     },
     "help": {
@@ -1427,7 +1428,6 @@
       "measures": "The measures left after cleaning and the MSA filter, of those in the dataset.",
       "kmo": "The overall measure of sampling adequacy (Kaiser-Meyer-Olkin) of the measures that are left.",
       "factors": "The number of factors, as the paper settings of the dataset fix it.",
-      "rule": "The assignment rule, the same for every dataset.",
       "variance": "The share of the variance of the measures that the factors explain together."
     },
     "legend": {

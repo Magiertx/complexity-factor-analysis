@@ -427,7 +427,7 @@ function statOf(column: CompareColumn, value: (c: CompareColumn) => string | nul
 }
 
 /** The rows of the header of every column: what was analysed and how. */
-function headerRows(t: Translate, locale: string, rule: string) {
+function headerRows(t: Translate, locale: string) {
   return [
     {
       id: "n",
@@ -461,12 +461,6 @@ function headerRows(t: Translate, locale: string, rule: string) {
       value: (c: CompareColumn) => (c.rotation ? t(`factor.factors.rotation.${c.rotation}`) : null),
     },
     {
-      id: "rule",
-      label: t("compare.header.rule"),
-      help: t("compare.help.rule"),
-      value: () => t(`factor.loadings.rule.${rule}.title`),
-    },
-    {
       id: "variance",
       label: t("compare.header.variance"),
       help: t("compare.help.variance"),
@@ -484,7 +478,8 @@ function headerRows(t: Translate, locale: string, rule: string) {
  * Measures by columns: the dimension each column puts a measure in, the rows grouped by the
  * dimension most columns agree on. A cell in its row's dimension is tinted, a cross-loading is
  * ringed as in the loadings, a measure the MSA filter removed has a dashed outline, and one the
- * rule leaves out says why, faded.
+ * rule leaves out says why, faded. The one rule is in the tiles above and in the caption, not in
+ * every column.
  */
 function MembershipMatrix({
   comparison,
@@ -501,7 +496,7 @@ function MembershipMatrix({
   const { columns } = comparison;
   const groups = groupRows(comparison.measures);
   const span = columns.length + 1;
-  const rows = headerRows(t, locale, comparison.assignment_rule);
+  const rows = headerRows(t, locale);
   const crossLabel = t("factor.loadings.cross_cell");
   return (
     <div className="space-y-2">
@@ -543,7 +538,7 @@ function MembershipMatrix({
                   <Term more={row.help}>{row.label}</Term>
                 </th>
                 {columns.map((c, i) => (
-                  <td key={i} className={cn("tabular-nums", (row.id === "rule" || row.id === "rotation") && "text-muted")}>
+                  <td key={i} className={cn("tabular-nums", row.id === "rotation" && "text-muted")}>
                     {statOf(c, row.value)}
                   </td>
                 ))}
@@ -555,8 +550,8 @@ function MembershipMatrix({
               <tr className="table-group">
                 <th scope="rowgroup" colSpan={span} className="sticky-col">
                   {group.dimension === null
-                    ? t("compare.group_none", { n: group.rows.length })
-                    : t("compare.group_dimension", { d: group.dimension + 1, n: group.rows.length })}
+                    ? countText(t, "compare.group_none", group.rows.length)
+                    : countText(t, "compare.group_dimension", group.rows.length, { d: group.dimension + 1 })}
                 </th>
               </tr>
               {group.rows.map((row) => {
