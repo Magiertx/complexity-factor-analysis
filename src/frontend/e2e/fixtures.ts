@@ -98,8 +98,13 @@ export async function goToStep(page: Page, step: string, locale: "en" | "de" = "
   await expect(stepSection(page, step)).toBeVisible();
 }
 
-/** A dataset computed by a job (feeed, ComFy) takes longer than one loaded from a file. */
-export const COMPUTE_TIMEOUT = 240_000;
+/**
+ * A dataset computed by a job (feeed, ComFy) takes longer than one loaded from a file: the log
+ * sample with the default feeed groups two minutes on a fast CI runner and over four on a slow
+ * one, whose two CPUs the specs of the other worker share meanwhile. A spec that waits for one
+ * gives itself a minute more for the steps after it.
+ */
+export const COMPUTE_TIMEOUT = 360_000;
 
 /**
  * A factor fit of the bundled log measures (over a hundred) takes three seconds on a desktop and

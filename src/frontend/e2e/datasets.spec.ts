@@ -75,7 +75,7 @@ test("an uploaded CSV reopens from My datasets with its excluded measure", async
 
 test("the PNML sample computes a model dataset without ProM", async ({ page }) => {
   // A job, like the log sample: in the Docker stack it waits for a free Celery worker.
-  test.slow();
+  test.setTimeout(COMPUTE_TIMEOUT + 60_000);
   await page.goto("/");
   await chooseSource(page, "pnml");
   const data = stepSection(page, "data");
@@ -89,7 +89,7 @@ test("the PNML sample computes a model dataset without ProM", async ({ page }) =
 });
 
 test("the log sample computes feeed measures without ProM", async ({ page }) => {
-  test.slow();
+  test.setTimeout(COMPUTE_TIMEOUT + 60_000);
   await page.goto("/log");
   await chooseSource(page, "logs");
   const data = stepSection(page, "data");
@@ -103,7 +103,7 @@ test("the log sample computes feeed measures without ProM", async ({ page }) => 
 });
 
 test("the log sample mined with the default miner gives a model dataset", { tag: "@prom" }, async ({ page }) => {
-  test.slow();
+  test.setTimeout(COMPUTE_TIMEOUT + 60_000);
   await page.goto("/");
   await chooseSource(page, "logs");
   const data = stepSection(page, "data");
