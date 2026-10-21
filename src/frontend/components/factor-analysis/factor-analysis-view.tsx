@@ -883,8 +883,28 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     setFormRequest({ kind: which, n: Date.now() });
   };
 
-  // The tour opens the step of each stop, without an entry in the history for each.
-  const tourStep = useCallback((step: StepId) => go(step, { replace: true, focus: null }), [go]);
+  // The tour opens the step of each stop, without an entry in the history for each, and puts the
+  // reader back on the step it began on once it ends, unless they moved on by themselves (the
+  // browser's back, say) while it ran.
+  const tour = useRef<{ from: StepId; at: StepId | null } | null>(null);
+  const { getStep } = nav;
+  const tourStep = useCallback(
+    (step: StepId) => {
+      if (tour.current) tour.current.at = step;
+      go(step, { replace: true, focus: null });
+    },
+    [go],
+  );
+  const startTour = () => {
+    tour.current = { from: getStep(), at: null };
+    setTourOpen(true);
+  };
+  const endTour = () => {
+    const ran = tour.current;
+    tour.current = null;
+    setTourOpen(false);
+    if (ran?.at && ran.at !== ran.from && getStep() === ran.at) go(ran.from, { replace: true, focus: null });
+  };
 
   const updating = analyzing ? (
     <span className="inline-flex items-center gap-1.5 text-xs text-muted" role="status">
@@ -939,7 +959,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   return (
     <div className="space-y-6">
       <OnboardingTour open={onboarding.open} onClose={onboarding.close} />
-      <FactorTour kind={kind} run={tourOpen} onClose={() => setTourOpen(false)} onStep={tourStep} />
+      <FactorTour kind={kind} run={tourOpen} onClose={endTour} onStep={tourStep} />
       <Suspense fallback={null}>
         <UrlReader onDataset={openLinked} onBundled={openBundledLink} onStep={followUrl} />
       </Suspense>
@@ -955,7 +975,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             onStartHere={() => openForm("start")}
             onMyDatasets={() => openForm("mine")}
             myDatasetsReason={datasets && datasets.length > 0 ? null : t("factor.toolbar.mine_none")}
-            onTour={() => setTourOpen(true)}
+            onTour={startTour}
           />
         }
       />

@@ -80,7 +80,10 @@ export function useStepNavigation() {
     return f;
   }, []);
 
-  return { step, visit, goTo, fromUrl, takeFocus };
+  /** The step on screen at this moment, for callbacks that must not wait for a render. */
+  const getStep = useCallback(() => stepRef.current, []);
+
+  return { step, visit, goTo, fromUrl, takeFocus, getStep };
 }
 
 function StateMark({ state }: { state: StepState }) {
