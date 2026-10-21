@@ -206,3 +206,132 @@ def test_the_archive_holds_the_rows_of_the_miner_and_names_it(client, three):
     together = client.post(f"/factor-analysis/datasets/{three}/export/report", json={}).text
     assert "Only the nets of" not in together
 
+
+# --- comparing the miners, and other analyses of the session's datasets ---------------------
+
+
+def test_compare_the_miners_of_a_dataset(client, three):
+    body = {
+        "columns": [{"dataset_id": three, "miner": m} for m in MINERS],
+        "assignment_rule": "hair",
+    }
+    r = client.post("/factor-analysis/compare", json=body)
+    assert r.status_code == 200, r.text
+    comparison = r.json()
+    columns = comparison["columns"]
+    assert [c["miner"] for c in columns] == MINERS
+    assert [c["dataset_id"] for c in columns] == [three] * 3
+    assert [c["bundled_id"] for c in columns] == [None] * 3
+    assert [c["n_observations"] for c in columns] == [50, 50, 50]
+    assert [c["settings"] for c in columns] == ["standard"] * 3
+    assert columns[0]["label"] == "miners.csv, Alpha miner"
+    # Constant within the miner: dropped for that column only.
+    rows = {r["measure"]: r["cells"] for r in comparison["measures"]}
+    assert rows["Number of duplicate tasks"][0] == {"status": "dropped", "reason": "constant"}
+    assert rows["Number of empty sequence flows"][1] == {"status": "dropped", "reason": "constant"}
+    assert rows["Number of empty sequence flows"][0]["status"] != "dropped"
+    # The same analysis as on the tab, with the same rows.
+    alone = client.post(
+        f"/factor-analysis/datasets/{three}/analyze", json={"miner": "Inductive miner", "assignment_rule": "hair"}
+    ).json()
+    assert columns[1]["kmo"] == alone["kmo"]["overall"]
+    assert columns[1]["n_factors"] == alone["n_factors"]
+
+
+def test_a_pinned_solution_with_four_and_with_six_factors(client, three):
+    """The same dataset twice, as "Pin this solution" adds it: the miner, the factor count and the
+    rotation of each, on the settings saved with the dataset."""
+    url = f"/factor-analysis/datasets/{three}"
+    assert client.put(f"{url}/options", json={"excluded": ["Density"], "loading_threshold": 0.4}).status_code == 204
+    pin = {"dataset_id": three, "miner": "Alpha miner"}
+    body = {
+        "columns": [
+            {**pin, "options": {"n_factors": 4, "rotation": "varimax"}, "label": "Alpha, k = 4"},
+            {**pin, "options": {"n_factors": 6, "rotation": "promax"}, "label": "Alpha, k = 6"},
+        ],
+        "assignment_rule": "multi",
+    }
+    comparison = client.post("/factor-analysis/compare", json=body).json()
+    four, six = comparison["columns"]
+    assert (four["n_factors"], six["n_factors"]) == (4, 6)
+    assert (four["rotation"], six["rotation"]) == ("varimax", "promax")
+    assert four["settings"] == "saved" and four["label"] == "Alpha, k = 4"
+    assert four["options"]["loading_threshold"] == 0.4 and four["options"]["excluded"] == ["Density"]
+    assert four["options"]["assignment_rule"] == "multi"
+    rows = {r["measure"]: r["cells"] for r in comparison["measures"]}
+    assert rows["Density"][0]["status"] == "excluded"
+    # "standard" leaves the saved settings aside.
+    standard = client.post(
+        "/factor-analysis/compare",
+        json={"columns": [{**pin, "settings": "standard"}, pin]},
+    ).json()["columns"][0]
+    assert standard["settings"] == "standard" and standard["options"]["excluded"] == []
+
+
+def test_bundled_and_own_columns_side_by_side(client, three):
+    body = {"columns": [{"bundled_id": "comfy-paper-alpha-miner"}, {"dataset_id": three, "miner": "Alpha miner"}]}
+    comparison = client.post("/factor-analysis/compare", json=body).json()
+    assert [c["n_observations"] for c in comparison["columns"]] == [288, 50]
+    assert comparison["columns"][0]["dataset_id"] is None
+
+
+def test_a_column_of_a_miner_the_dataset_lacks_carries_its_error(client, three):
+    body = {"columns": [{"dataset_id": three, "miner": "Alpha miner"}, {"dataset_id": three, "miner": "Hybrid ILP miner"}]}
+    comparison = client.post("/factor-analysis/compare", json=body).json()
+    assert comparison["columns"][1]["error"]["code"] == "unknown_miner"
+
+
+def test_the_archive_of_a_comparison_names_dataset_and_miner(client, three):
+    body = {"columns": [{"dataset_id": three, "miner": m} for m in MINERS[:2]], "format": "zip"}
+    r = client.post("/factor-analysis/compare/export", json=body)
+    with zipfile.ZipFile(io.BytesIO(r.content)) as archive:
+        manifest = json.loads(archive.read("manifest.json"))
+        readme = archive.read("README.txt").decode()
+    assert [(c["dataset_id"], c["miner"]) for c in manifest["columns"]] == [(three, m) for m in MINERS[:2]]
+    assert "only that session can post them again" in readme
+
+
+@pytest.mark.parametrize(
+    "column, status, code",
+    [
+        ({"dataset_id": "not-a-uuid"}, 400, "compare_unknown_dataset"),
+        ({"dataset_id": "00000000-0000-0000-0000-000000000000"}, 400, "compare_unknown_dataset"),
+        ({"bundled_id": "comfy-paper-alpha-miner", "miner": "Alpha miner"}, 422, None),
+        ({"bundled_id": "comfy-paper-alpha-miner", "settings": "saved"}, 422, None),
+        ({"dataset_id": "00000000-0000-0000-0000-000000000000", "settings": "paper"}, 422, None),
+        ({}, 422, None),
+        ({"bundled_id": "comfy-paper-alpha-miner", "dataset_id": "00000000-0000-0000-0000-000000000000"}, 422, None),
+    ],
+)
+def test_bad_columns(client, three, column, status, code):
+    body = {"columns": [{"dataset_id": three, "miner": "Alpha miner"}, column]}
+    r = client.post("/factor-analysis/compare", json=body)
+    assert r.status_code == status, r.text
+    if code:
+        assert r.json()["code"] == code
+
+
+def test_a_dataset_of_another_session_is_unknown(client, three):
+    from fastapi.testclient import TestClient
+    from srv_main import app
+
+    with TestClient(app) as other:
+        body = {"columns": [{"dataset_id": three, "miner": m} for m in MINERS[:2]]}
+        r = other.post("/factor-analysis/compare", json=body)
+    assert r.status_code == 400 and r.json()["code"] == "compare_unknown_dataset"
+
+
+def test_columns_of_two_kinds(client, three):
+    body = {"columns": [{"dataset_id": three, "miner": "Alpha miner"}, {"bundled_id": "comfy-log-pdc-training-logs"}]}
+    r = client.post("/factor-analysis/compare", json=body)
+    assert r.status_code == 400 and r.json()["code"] == "compare_mixed_kinds"
+
+
+def test_a_dataset_not_ready_is_a_column_with_its_error(client, three):
+    second = _upload(client, _table(30))
+    session = next(d.name for d in storage.root().iterdir() if (d / second).is_dir())
+    storage.update_meta(session, second, status="computing")
+    body = {"columns": [{"dataset_id": three, "miner": "Alpha miner"}, {"dataset_id": second}]}
+    comparison = client.post("/factor-analysis/compare", json=body).json()
+    assert comparison["columns"][1]["error"]["code"] == "dataset_not_ready"
+    assert {r["cells"][1]["status"] for r in comparison["measures"]} == {"failed"}

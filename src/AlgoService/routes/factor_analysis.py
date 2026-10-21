@@ -1567,14 +1567,30 @@ class ColumnOptions(BaseModel):
 
 
 class CompareColumn(BaseModel):
-    """One column of a comparison: a bundled dataset with the settings its paper published
-    ("paper"; the standard ones of its kind if it has none) or the standard ones."""
+    """One column of a comparison: a bundled dataset (``bundled_id``) with the settings its paper
+    published ("paper", the default; the standard ones of its kind if it has none) or the
+    standard ones; or a dataset of the session (``dataset_id``) with the settings saved with it
+    ("saved", the default; the standard ones if none are) or the standard ones, optionally of the
+    rows of one ``miner``."""
 
-    bundled_id: str = Field(..., max_length=200)
-    settings: Literal["paper", "standard"] = "paper"
+    bundled_id: str | None = Field(None, max_length=200)
+    dataset_id: str | None = Field(None, max_length=64)
+    #: Of a model dataset of the session discovered with several miners: the rows of this one.
+    miner: str | None = Field(None, max_length=200)
+    settings: Literal["paper", "standard", "saved"] | None = None
     options: ColumnOptions | None = None
     #: The title of the column; the label of the dataset without one.
     label: str | None = Field(None, max_length=80)
+
+    @model_validator(mode="after")
+    def _one_source(self) -> "CompareColumn":
+        if (self.bundled_id is None) == (self.dataset_id is None):
+            raise ValueError("A column names a bundled dataset (bundled_id) or one of the session (dataset_id).")
+        if self.bundled_id is not None and (self.settings == "saved" or self.miner is not None):
+            raise ValueError("A bundled dataset has the settings 'paper' or 'standard', and no miner to choose.")
+        if self.dataset_id is not None and self.settings == "paper":
+            raise ValueError("A dataset of the session has the settings 'saved' or 'standard'.")
+        return self
 
 
 class CompareRequest(BaseModel):
@@ -1593,22 +1609,94 @@ def _compare_error(code: str, message: str, **params: Any) -> JSONResponse:
     return JSONResponse(status_code=400, content={"detail": message, "code": code, "params": params})
 
 
+def _saved_params(meta: dict[str, Any], settings: str | None) -> tuple[AnalysisParams, str]:
+    """The parameters a column of a dataset of the session starts from: those saved with it
+    ("saved"), else, or for "standard", the standard ones of its kind."""
+    from interpretation.payload import default_params
+
+    saved = meta.get("options") if settings != "standard" else None
+    if saved:
+        try:
+            return AnalyzeRequest.model_validate(saved).params(meta["kind"]), "saved"
+        except ValueError:
+            # Saved in a form this version does not read: the standard instead.
+            pass
+    return default_params(meta["kind"]), "standard"
+
+
+def _own_column(
+    meta: dict[str, Any], session_id: str, column: CompareColumn, rule: str
+) -> tuple[pd.DataFrame | None, AnalysisParams, dict[str, Any]]:
+    """The data, the parameters and the spec of a column of a dataset of the session; no data,
+    and the spec with its ``error``, when the dataset is not ready or has no such miner."""
+    base, settings = _saved_params(meta, column.settings)
+    changes = column.options.changes() if column.options else {}
+    params = dataclasses.replace(base, **changes, assignment_rule=rule)
+    # Every measure of the dataset: those cleaning kept, then those it dropped.
+    kept = list(meta["measures"])
+    measures = [*kept, *(d["measure"] for d in meta["dropped"] if d["measure"] not in kept)]
+    spec: dict[str, Any] = {
+        "entry": {"id": None, "kind": meta["kind"], "name": meta["name"]},
+        "dataset": {
+            "id": meta["id"], "name": meta["name"], "source": meta["source"], "bundled_id": meta.get("bundled_id"),
+        },
+        "miner": column.miner,
+        "settings": settings,
+        "options": dataclasses.asdict(params),
+        "measures": measures,
+        "dropped": {d["measure"]: d["reason"] for d in meta["dropped"]},
+        "label": column.label or (f"{meta['name']}, {column.miner}" if column.miner else meta["name"]),
+    }
+    if meta["status"] != "ready":
+        spec["error"] = {
+            "code": "dataset_not_ready",
+            "message": f"The dataset is {meta['status']}, not ready.",
+            "params": {"status": meta["status"]},
+        }
+        return None, params, spec
+    data = storage.load_matrix(session_id, meta["id"])
+    try:
+        data, params, selection = _select(meta, data, column.miner, params)
+    except AnalysisError as e:
+        spec["error"] = {"code": e.code, "message": str(e), "params": e.params}
+        return None, params, spec
+    if selection:
+        spec["dropped"].update({d["measure"]: d["reason"] for d in selection.dropped})
+        spec["options"] = dataclasses.asdict(params)
+    return data, params, spec
+
+
 async def _comparison(request: Request, body: CompareRequest) -> dict[str, Any] | JSONResponse:
     """The comparison of the columns of ``body``, or the response that says why there is none.
 
-    Each column is analysed on the bundled CSV directly, in the slots of the analyses and with
-    the fit cache, so no dataset of a session is made. A column whose analysis fails carries
-    its error; the others are compared without it.
+    A column of a bundled dataset is analysed on the bundled CSV directly, so no dataset of a
+    session is made; a column of a dataset of the session on its stored matrix, or on the rows
+    of one miner of it. Both run in the slots of the analyses and with the fit cache. A column
+    whose analysis fails carries its error; the others are compared without it.
     """
-    entries = []
+    # Only a column of the session's own data needs the session.
+    session_id = await get_session_id(request) if any(c.dataset_id for c in body.columns) else None
+    sources: list[dict[str, Any]] = []
     for column in body.columns:
-        entry = cat.bundled_entry(column.bundled_id)
-        if entry is None:
+        if column.bundled_id is not None:
+            entry = cat.bundled_entry(column.bundled_id)
+            if entry is None:
+                return _compare_error(
+                    "compare_unknown_dataset", f"Unknown bundled dataset '{column.bundled_id}'.", dataset=column.bundled_id
+                )
+            sources.append({"kind": entry["kind"], "entry": entry})
+            continue
+        try:
+            dataset_id: str | None = str(uuid.UUID(column.dataset_id or ""))
+        except ValueError:
+            dataset_id = None
+        meta = storage.read_meta(session_id, dataset_id) if session_id and dataset_id else None
+        if meta is None:
             return _compare_error(
-                "compare_unknown_dataset", f"Unknown bundled dataset '{column.bundled_id}'.", dataset=column.bundled_id
+                "compare_unknown_dataset", f"The session has no dataset '{column.dataset_id}'.", dataset=column.dataset_id
             )
-        entries.append(entry)
-    kinds = sorted({e["kind"] for e in entries})
+        sources.append({"kind": meta["kind"], "meta": meta})
+    kinds = sorted({s["kind"] for s in sources})
     if len(kinds) > 1:
         return _compare_error(
             "compare_mixed_kinds", "All columns of a comparison must be of one kind, model or log measures.",
@@ -1619,18 +1707,30 @@ async def _comparison(request: Request, body: CompareRequest) -> dict[str, Any] 
     listening = asyncio.create_task(watch.listen())
     specs: list[dict[str, Any]] = []
     try:
-        for column, entry in zip(body.columns, entries):
-            data, measures, dropped = await run_in_threadpool(compare.bundled_data, entry["id"])
-            changes = column.options.changes() if column.options else {}
-            params, settings = compare.column_params(entry, column.settings, changes, body.assignment_rule)
-            spec: dict[str, Any] = {
-                "entry": entry,
-                "settings": settings,
-                "options": dataclasses.asdict(params),
-                "measures": list(measures),
-                "dropped": dict(dropped),
-                "label": column.label,
-            }
+        for column, source in zip(body.columns, sources):
+            if "entry" in source:
+                entry = source["entry"]
+                data, measures, dropped = await run_in_threadpool(compare.bundled_data, entry["id"])
+                changes = column.options.changes() if column.options else {}
+                params, settings = compare.column_params(
+                    entry, column.settings or "paper", changes, body.assignment_rule
+                )
+                spec: dict[str, Any] = {
+                    "entry": entry,
+                    "settings": settings,
+                    "options": dataclasses.asdict(params),
+                    "measures": list(measures),
+                    "dropped": dict(dropped),
+                    "label": column.label,
+                }
+            else:
+                own, params, spec = await run_in_threadpool(
+                    _own_column, source["meta"], session_id, column, body.assignment_rule
+                )
+                if own is None:
+                    specs.append(spec)
+                    continue
+                data = own
             await asyncio.sleep(0)
             if watch.stale():
                 raise Superseded()
@@ -1660,17 +1760,20 @@ async def _comparison(request: Request, body: CompareRequest) -> dict[str, Any] 
 @router.post("/compare")
 @limiter.limit(rate_limit("fa_analyze", "120/minute"))
 async def compare_analyses(request: Request, body: CompareRequest) -> Any:
-    """The factor structures of 2 to 8 analyses of bundled datasets side by side, like Tab. 17
-    of Important Factors: a header per column (n, measures after the MSA filter, KMO, factors,
+    """The factor structures of 2 to 8 analyses side by side, like Tab. 17 of Important
+    Factors, of bundled datasets or of datasets of the session (``dataset_id``, optionally with a
+    ``miner``): a header per column (n, measures after the MSA filter, KMO, factors,
     rotation, cumulative variance), every measure with the dimensions the shared assignment
     rule puts it in per column, the dimensions per column, and for every pair of measures in
     how many columns both are in the same dimension (``co_assignment``). The factors of the
     columns are matched by the measures they share, so that most measures in common get the same
     number.
 
-    Needs no dataset of the session. A 400 with ``code`` names an unknown dataset, columns of
-    two kinds, or that no column could be analysed; a column whose analysis fails has its
-    ``error`` and the others are compared without it.
+    Bundled datasets need no dataset of the session; a column of one names it by ``dataset_id``
+    and starts from the settings saved with it. A 400 with ``code`` names an unknown dataset,
+    columns of two kinds, or that no column could be analysed; a column whose analysis fails
+    (also a dataset not ready, or a miner it does not have) has its ``error`` and the others are
+    compared without it.
     """
     started = time.perf_counter()
     try:

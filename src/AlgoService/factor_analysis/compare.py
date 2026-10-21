@@ -211,8 +211,12 @@ def _same(a: dict[str, Any], b: dict[str, Any]) -> bool:
 
 def _column_header(spec: dict[str, Any], result: dict[str, Any] | None) -> dict[str, Any]:
     entry = spec["entry"]
+    dataset = spec.get("dataset")
     header: dict[str, Any] = {
         "bundled_id": entry["id"],
+        # A dataset of the session, and the miner whose rows the column has; None for a bundled one.
+        "dataset_id": dataset["id"] if dataset else None,
+        "miner": spec.get("miner"),
         "label": spec.get("label") or entry.get("label") or entry["name"],
         "name": entry["name"],
         "collection": entry.get("collection"),
@@ -341,11 +345,12 @@ def co_assignment(rows: list[dict[str, Any]], n_dimensions: int) -> dict[str, An
 def build(specs: list[dict[str, Any]], rule: str) -> dict[str, Any]:
     """The comparison of analysed columns.
 
-    Each spec has the bundled ``entry``, the ``settings`` its parameters start from, the
-    ``options`` (the parameters as a dict), the ``measures`` of its dataset, the measures
-    cleaning ``dropped`` (by name, with the reason), an optional ``label``, and either the
-    ``result`` of the analysis or the ``error`` that stopped it (``code``, ``message``,
-    ``params``).
+    Each spec has the bundled ``entry`` (for a dataset of the session one with the id None, its
+    kind and name, and the ``dataset`` with its id, name and source, and the ``miner`` of its
+    rows), the ``settings`` its parameters start from, the ``options`` (the parameters as a
+    dict), the ``measures`` of its dataset, the measures cleaning ``dropped`` (by name, with the
+    reason), an optional ``label``, and either the ``result`` of the analysis or the ``error``
+    that stopped it (``code``, ``message``, ``params``).
     """
     results = [spec.get("result") for spec in specs]
     groups = [primary_groups(r["loadings"], r["n_factors"]) if r else [] for r in results]
@@ -564,8 +569,16 @@ def _readme(comparison: dict[str, Any], files: list[dict[str, str]], created_at:
         "",
         "Reproduce",
         "  POST the request of manifest.json to /factor-analysis/compare. Each column is the",
-        "  analysis of a bundled dataset with the parameters manifest.json lists for it; the same",
+        "  analysis of a dataset with the parameters manifest.json lists for it; the same",
         "  parameters on the dataset's own page give the same loadings.",
+        *(
+            [
+                "  Columns with a dataset_id are datasets of the session the comparison was made in;",
+                "  only that session can post them again. A miner keeps the rows of that miner.",
+            ]
+            if any(c.get("dataset_id") for c in comparison["columns"])
+            else []
+        ),
         "",
         f"  {ALIGNMENT['description']}",
         "",
@@ -596,9 +609,12 @@ def comparison_zip(comparison: dict[str, Any], request: dict[str, Any], short: b
     ]
     datasets = []
     for column in comparison["columns"]:
-        entry = cat.bundled_entry(column["bundled_id"]) or {}
+        entry = cat.bundled_entry(column["bundled_id"] or "") or {}
         datasets.append({
             "bundled_id": column["bundled_id"],
+            # A dataset of the session; reproducing the column needs that session.
+            "dataset_id": column.get("dataset_id"),
+            "miner": column.get("miner"),
             "label": column["label"],
             "settings": column["settings"],
             "analysis_params": column["options"],
