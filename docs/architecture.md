@@ -452,7 +452,9 @@ The single-log ComFy workbench lives at `/inspect` ("Inspect a single log" on th
 7. Optional: ZIP download via `/jobs/{job_id}/download`.
 
 `/runs` lists the session's history, `/settings` holds local preferences and presets,
-`/api-access` shows scripting examples.
+`/api-access` shows scripting examples. `/print` shows the analysis of its address on A4 pages
+to print or save as PDF (the download menu opens it in a new tab), `/guide` the user guide of
+`docs/GUIDE.md` in the language of the UI (the help icon of the toolbar opens it).
 
 ## Input safety
 
@@ -529,10 +531,14 @@ A malformed value in any of these stops the service at startup instead of fallin
     │   │   └── comfy.py         # ComFy adapter
     │   ├── factor_analysis/
     │   │   ├── core.py          # cleaning, Bartlett, KMO/MSA filter, factor fit, assignment
-    │   │   ├── compute.py       # measure values from logs (ProM4Py miners, feeed) or PNML
+    │   │   ├── compute.py       # measure values from logs (ProM4Py miners, feeed) or PNML, timed
     │   │   ├── catalog.py       # measures, miners, feature groups, bundled data, samples
+    │   │   ├── short_codes.py   # the short codes of the measures, as the papers print them
+    │   │   ├── descriptives.py  # descriptive statistics of a dataset, as ComFy prints them
     │   │   ├── storage.py       # session-scoped datasets on disk
     │   │   ├── published.py     # the published numbers of the bundled datasets
+    │   │   ├── report.py        # the analysis as a LaTeX report like ComFy's
+    │   │   ├── figures.py       # scree plot and loadings heatmap as SVG / PNG for a paper
     │   │   └── export.py        # loadings as CSV / LaTeX, matrix as CSV, analysis as ZIP
     │   ├── interpretation/      # factor names by Claude: payload, prompt, client, cache, limits
     │   ├── scripts/             # precompute_interpretations.py, extract_published.py
@@ -544,7 +550,7 @@ A malformed value in any of these stops the service at startup instead of fallin
     │   ├── Dockerfile
     │   └── requirements.txt
     └── frontend/
-        ├── app/                 # Next.js App Router: /, /log, /inspect, /runs, /settings, /api-access
+        ├── app/                 # Next.js App Router: /, /log, /inspect, /runs, /settings, /api-access, /print, /guide
         ├── components/          # factor-analysis/, workbench, jobs drawer, artifact viewers, ui/
         ├── lib/
         │   ├── api.ts           # typed AlgoService client
