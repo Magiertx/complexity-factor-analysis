@@ -518,8 +518,9 @@ function MembershipMatrix({
                 <th key={`${c.bundled_id}-${i}`} scope="col" className="min-w-[6.5rem] !whitespace-normal align-bottom !h-auto py-2">
                   <span className="flex items-start gap-1">
                     <span className="text-fg">{columnLabel(c)}</span>
-                    {(c.error || (c.warnings?.length ?? 0) > 0) && (
-                      <AlertTriangle role="img" className="h-3.5 w-3.5 mt-px shrink-0 text-warn-ink" aria-label={t("compare.column_notes")} />
+                    {/* A column that could not be analysed; what only deserves a note is in the notes below. */}
+                    {c.error && (
+                      <AlertTriangle role="img" className="h-3.5 w-3.5 mt-px shrink-0 text-warn-ink" aria-label={t("compare.tip.failed")} />
                     )}
                   </span>
                 </th>
