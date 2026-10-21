@@ -119,9 +119,7 @@ test("the page of a single log named by an address takes the miner of the row", 
   expect(href).toMatch(/^\/inspect\?log=pdc.*\.xes&miner=Inductive\+miner$/);
   await link.click();
   await expect(page).toHaveURL(/\/inspect$/);
-  const miners = page.getByRole("group", { name: /Discovery algorithms/ });
   // Only the miner of the row is chosen.
   await expect(page.getByRole("checkbox", { name: "Inductive miner", exact: true })).toBeChecked();
   await expect(page.getByRole("checkbox", { name: "Directly Follows miner", exact: true })).not.toBeChecked();
-  void miners;
 });
