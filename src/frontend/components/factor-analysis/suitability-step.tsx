@@ -512,6 +512,11 @@ function MeasureRow({
           <span className="text-warn-ink">
             {t("factor.measures.status_below", { threshold: formatNumber(threshold, locale) })}
           </span>
+        ) : status === "miner" ? (
+          // Not analysed for this miner: a fact of its rows, not a warning.
+          <span className="text-muted" data-tip-more={t("factor.measures.status_miner_more")}>
+            {t(info?.reason === "duplicate" ? "factor.measures.status_miner_duplicate" : "factor.measures.status_miner")}
+          </span>
         ) : status === "used" ? (
           <span className="text-muted">{t("factor.suitability.status_used")}</span>
         ) : (

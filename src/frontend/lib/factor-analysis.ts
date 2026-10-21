@@ -13,6 +13,7 @@ import {
   type FactorKind,
   type InputsSummary,
   type Job,
+  type MinerSummary,
   type Rotation,
   type UnassignedReason,
 } from "./api";
@@ -32,6 +33,8 @@ export interface AnalysisOptions {
   /** Measures below this communality stay unassigned. */
   communality_threshold: number;
   assignment_rule: AssignmentRule;
+  /** Of a model dataset discovered with several miners: the rows of this miner; null for all rows. */
+  miner: string | null;
 }
 
 /** Same defaults as the backend: ComFy for model, ComFy for log measures for log measures. */
@@ -46,6 +49,7 @@ export function defaultOptions(kind: FactorKind): AnalysisOptions {
     loading_threshold: kind === "log" ? 0.5 : 0.35,
     communality_threshold: kind === "log" ? 0.5 : 0,
     assignment_rule: "largest",
+    miner: null,
   };
 }
 
@@ -69,6 +73,7 @@ export function optionsFromSaved(kind: FactorKind, saved: AnalyzeOptions): Analy
       saved.assignment_rule && ASSIGNMENT_RULES.includes(saved.assignment_rule)
         ? saved.assignment_rule
         : defaults.assignment_rule,
+    miner: saved.miner ?? null,
   };
 }
 
@@ -195,21 +200,55 @@ export function dimensionCount(analysis: FactorAnalysis): number {
 
 /**
  * The options a dataset opens with: those saved with it, else the defaults. Exclusions of
- * measures the dataset no longer has are dropped.
+ * measures the dataset no longer has are dropped, and a miner it has not.
  */
 export function initialOptions(
   kind: FactorKind,
   saved: AnalyzeOptions | null | undefined,
   measures: string[],
+  miners?: MinerSummary[] | null,
 ): AnalysisOptions {
   if (!saved) return defaultOptions(kind);
   const options = optionsFromSaved(kind, saved);
-  return { ...options, excluded: options.excluded.filter((m) => measures.includes(m)) };
+  const miner = options.miner !== null && (miners ?? []).some((m) => m.name === options.miner) ? options.miner : null;
+  return { ...options, excluded: options.excluded.filter((m) => measures.includes(m)), miner };
+}
+
+/** Observations per measure recommended; below, the analysis warns (the server's small_sample). */
+export const OBSERVATIONS_PER_MEASURE = 5;
+
+/** What the rows of one miner, or of all together, allow for an analysis. */
+export interface RowsChoice {
+  /** Observations. */
+  n: number;
+  /** Measures left for the analysis: those that vary within the rows, less the excluded ones. */
+  p: number;
+  /** No more observations than measures: the analysis cannot run (the server needs n > p). */
+  blocked: boolean;
+  /** Fewer than 5 observations per measure: it runs, with a warning. */
+  few: boolean;
+}
+
+/**
+ * What the rows of `miner` (all rows for null) allow, with the measures excluded by hand: `p`
+ * counts the measures that vary within the rows and are not excluded.
+ */
+export function rowsChoice(
+  dataset: { n_observations: number; measures: string[] },
+  miner: MinerSummary | null,
+  excluded: string[],
+): RowsChoice {
+  const out = new Set(excluded);
+  const without = new Set(miner?.dropped ?? []);
+  const n = miner ? miner.n_observations : dataset.n_observations;
+  const p = dataset.measures.filter((m) => !out.has(m) && !without.has(m)).length;
+  const blocked = n <= p;
+  return { n, p, blocked, few: !blocked && n < OBSERVATIONS_PER_MEASURE * p };
 }
 
 /** One part of the settings row above steps 3 to 5, e.g. "MSA ≥ 0.6". */
 export interface SettingChip {
-  id: "measures" | "msa" | "alpha" | "factors" | "rotation" | "loading" | "communality" | "rule";
+  id: "miner" | "measures" | "msa" | "alpha" | "factors" | "rotation" | "loading" | "communality" | "rule";
   text: string;
   /** Differs from the tool standard. */
   differs: boolean;
@@ -235,6 +274,8 @@ export function settingsSummary(
   // count, e.g. that of the paper settings just left.
   const n = options.n_factors ?? kaiser;
   const chips: SettingChip[] = [
+    // The rows of one miner, first: everything after it is of these rows.
+    ...(options.miner !== null ? [{ id: "miner" as const, text: options.miner, differs: true }] : []),
     {
       id: "measures",
       text: t("factor.settings.measures", { used, total: measureCount }),

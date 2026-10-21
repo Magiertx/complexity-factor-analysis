@@ -43,6 +43,7 @@ import {
   initialOptions,
   optionsFromSaved,
   publishedOptions,
+  rowsChoice,
   sameOptions,
   solutionNeedsAttention,
   unassignedMeasures,
@@ -63,7 +64,7 @@ import { useJobsDrawer } from "@/components/jobs-drawer";
 import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
 import { PageHeader } from "@/components/page-header";
 import { DataForm, DataSummary, type OpenPreset } from "./data-step";
-import { DatasetView } from "./dataset-step";
+import { DatasetView, type MinerChoiceProps } from "./dataset-step";
 import { DEFAULT_MEASURE_VIEW, SuitabilityView, type MeasureGroups, type MeasureView } from "./suitability-step";
 import { FactorsView } from "./factors-step";
 import { DEFAULT_LOADINGS_FILTER, LoadingsView, useLoadingsLook, type LoadingsFilter } from "./loadings-step";
@@ -303,7 +304,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           optionsAppliedFor.current = d.id;
           const saved = d.options ? JSON.stringify(optionsFromSaved(kind, d.options)) : null;
           savedOptions.current = { id: d.id, json: saved };
-          const own = initialOptions(kind, d.options, d.measures);
+          const own = initialOptions(kind, d.options, d.measures, d.miners);
           const chosen = openWith.current?.id === d.id ? openWith.current : null;
           openWith.current = null;
           const applied = chosen ? chosen.options : own;
@@ -488,9 +489,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     (patch: Partial<AnalysisOptions>) => {
       setOptions((o) => {
         const next = { ...o, ...patch };
-        // Keep an explicit factor count below the number of measures left.
-        if (patch.excluded && next.n_factors !== null && dataset) {
-          const max = Math.max(1, dataset.measures.length - next.excluded.length - 1);
+        // Keep an explicit factor count below the number of measures left, of the miner if one is chosen.
+        if ((patch.excluded || patch.miner !== undefined) && next.n_factors !== null && dataset) {
+          const miner = dataset.miners?.find((m) => m.name === next.miner) ?? null;
+          const max = Math.max(1, rowsChoice(dataset, miner, next.excluded).p - 1);
           next.n_factors = Math.min(next.n_factors, max);
         }
         return next;
@@ -756,6 +758,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // The catalog entry of a bundled dataset, and the settings of its paper if it has them.
   const bundled = dataset?.bundled_id ? catalog?.bundled.find((b) => b.id === dataset.bundled_id) : undefined;
   const published = useMemo(() => publishedOptions(kind, bundled), [kind, bundled]);
+  // The miner chooses the rows rather than how they are analysed: going back to the standard or
+  // to the paper's settings keeps it.
+  const rowStandard = useMemo(() => ({ ...standard, miner: options.miner }), [standard, options.miner]);
+  const rowPublished = useMemo(() => published && { ...published, miner: options.miner }, [published, options.miner]);
   // Only for the analysis on screen, and only while the settings are still those it ran with.
   const match =
     analysis && analyzedOptions && sameOptions(analyzedOptions, options) ? (analysis.published_match ?? null) : null;
@@ -816,8 +822,14 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     summaries.data = bundled?.label ?? datasetName(dataset, t, catalog);
   }
   if (dataset && finished("dataset")) {
+    // With one miner chosen, its rows; the rest of the steps are of them.
+    const chosenMiner = dataset.miners?.find((m) => m.name === options.miner) ?? null;
     summaries.dataset = [
-      `${formatNumber(dataset.n_observations, locale)} × ${formatNumber(dataset.measures.length, locale)}`,
+      chosenMiner?.name ?? null,
+      `${formatNumber(chosenMiner?.n_observations ?? dataset.n_observations, locale)} × ${formatNumber(
+        chosenMiner?.n_measures ?? dataset.measures.length,
+        locale,
+      )}`,
       dataset.dropped.length > 0 ? countText(t, "factor.rail_summary.removed", dataset.dropped.length) : null,
     ]
       .filter(Boolean)
@@ -1010,6 +1022,13 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     exporting,
     onExport: runExport,
   };
+
+  // The rows of one miner, chosen in the dataset step.
+  const minerChoice: MinerChoiceProps | null =
+    ready && dataset && dataset.miners && dataset.miners.length > 1
+      ? { miner: options.miner, excluded: options.excluded, onChange: (miner) => updateOptions({ miner }) }
+      : null;
+
   const shortCodes: ShortCodesSwitch = {
     on: codesShown,
     reason: !ready ? lockReason : codesAvailable ? null : t("factor.toolbar.codes_none"),
@@ -1098,13 +1117,14 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           {ready && dataset && (
             <SettingsRow
               options={options}
-              standard={standard}
-              published={published}
+              standard={rowStandard}
+              published={rowPublished}
               publishedSource={bundled?.published_source}
               publishedScope={bundled?.published_scope}
               bundledId={bundled?.id}
               analysis={analysis}
-              measureCount={dataset.measures.length}
+              // Of one miner, the measures that vary within its rows.
+              measureCount={dataset.miners?.find((m) => m.name === options.miner)?.n_measures ?? dataset.measures.length}
               match={match}
               onApply={applyOptions}
               onGoToSetting={goToSetting}
@@ -1226,7 +1246,12 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               footer={footer("dataset")}
             >
               {ready && dataset ? (
-                <DatasetView dataset={dataset} measureName={measureName} measureDescription={measureDescription} />
+                <DatasetView
+                  dataset={dataset}
+                  measureName={measureName}
+                  measureDescription={measureDescription}
+                  minerChoice={minerChoice}
+                />
               ) : (
                 lockedHint
               )}
@@ -1433,6 +1458,8 @@ function AnalysisError({
     filter: !options.auto_msa_filter,
     // A threshold above the default can leave too few measures for the analysis.
     threshold: options.auto_msa_filter && options.msa_threshold > defaultThreshold,
+    // The rows of one miner can be too few for the measures.
+    miner: options.miner !== null,
   };
   const anyFix = Object.values(fixes).some(Boolean);
   return (
@@ -1467,6 +1494,11 @@ function AnalysisError({
             {fixes.threshold && (
               <Button size="sm" variant="outline" onClick={() => onOptions({ msa_threshold: defaultThreshold })}>
                 {t("factor.analysis.default_threshold", { value: defaultThreshold })}
+              </Button>
+            )}
+            {fixes.miner && (
+              <Button size="sm" variant="outline" onClick={() => onOptions({ miner: null })}>
+                {t("factor.analysis.all_miners")}
               </Button>
             )}
           </div>

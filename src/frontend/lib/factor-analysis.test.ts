@@ -25,6 +25,7 @@ import {
   settingsSummary,
   solutionNeedsAttention,
   unassignedMeasures,
+  rowsChoice,
 } from "./factor-analysis";
 import { formatNumber } from "./format";
 import de from "./i18n/locales/de.json";
@@ -370,5 +371,35 @@ describe("settingsSummary", () => {
     });
     const chip = settingsSummary(standard, standard, paperResult, 4, t).find((c) => c.id === "factors");
     expect(chip).toEqual({ id: "factors", text: "2 factors (Kaiser)", differs: false });
+  });
+});
+
+describe("the rows of one miner", () => {
+  const dataset = { n_observations: 150, measures: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m"] };
+  const alpha = { name: "Alpha miner", n_observations: 50, n_measures: 12, dropped: ["m"] };
+  const few = { name: "Heuristics miner", n_observations: 4, n_measures: 12, dropped: ["m"] };
+
+  it("count the measures that vary within them, less the excluded ones", () => {
+    expect(rowsChoice(dataset, null, [])).toEqual({ n: 150, p: 13, blocked: false, few: false });
+    expect(rowsChoice(dataset, alpha, [])).toEqual({ n: 50, p: 12, blocked: false, few: true });
+    // An excluded measure the miner drops anyway counts once.
+    expect(rowsChoice(dataset, alpha, ["m", "a", "b"])).toEqual({ n: 50, p: 10, blocked: false, few: false });
+  });
+
+  it("block the analysis with no more rows than measures", () => {
+    expect(rowsChoice(dataset, few, [])).toEqual({ n: 4, p: 12, blocked: true, few: false });
+    expect(rowsChoice({ n_observations: 4, measures: ["a", "b", "c", "d"] }, null, [])).toMatchObject({ blocked: true });
+    expect(rowsChoice({ n_observations: 5, measures: ["a", "b", "c", "d"] }, null, [])).toMatchObject({ blocked: false, few: true });
+  });
+
+  it("open with a saved miner only when the dataset has it, and show it in the settings", () => {
+    const saved = { miner: "Alpha miner", n_factors: 3 };
+    expect(initialOptions("model", saved, dataset.measures, [alpha]).miner).toBe("Alpha miner");
+    expect(initialOptions("model", saved, dataset.measures, [few]).miner).toBeNull();
+    expect(initialOptions("model", saved, dataset.measures, null).miner).toBeNull();
+    const t = (key: string, params?: Record<string, string | number>) => `${key}${params ? JSON.stringify(params) : ""}`;
+    const chips = settingsSummary({ ...defaultOptions("model"), miner: "Alpha miner" }, defaultOptions("model"), null, 13, t);
+    expect(chips[0]).toEqual({ id: "miner", text: "Alpha miner", differs: true });
+    expect(settingsSummary(defaultOptions("model"), defaultOptions("model"), null, 13, t).some((c) => c.id === "miner")).toBe(false);
   });
 });

@@ -585,7 +585,8 @@
       "stale_note": "Die Ergebnisse unten stammen aus der letzten erfolgreichen Analyse.",
       "reset_factors": "Vorgeschlagene Faktorenzahl verwenden",
       "enable_filter": "MSA-Filter einschalten",
-      "default_threshold": "Standard-MSA-Schwelle von {value} verwenden"
+      "default_threshold": "Standard-MSA-Schwelle von {value} verwenden",
+      "all_miners": "Alle Miner gemeinsam analysieren"
     },
     "data": {
       "source": {
@@ -988,7 +989,8 @@
       "interpretation_limits_unavailable": "Der Server kann Interpretationen gerade nicht zählen. Versuche es später noch einmal.",
       "interpretation_too_large": "Diese Analyse ist zu groß für eine Interpretation: gesendet werden höchstens {measures} Maße, {factors} Faktoren und Maßnamen mit {name_length} Zeichen. Schließe Maße aus oder wähle weniger Faktoren.",
       "too_many_measures_for_analysis": "{n} Maße sind mehr als die {max}, die der Server auf einmal analysiert. Schließe in der Tabelle von Schritt 3 Maße aus.",
-      "superseded": "Eine neuere Analyse dieses Datensatzes, etwa in einem anderen Tab, hat diese ersetzt. Ändere eine Einstellung, um sie erneut zu starten."
+      "superseded": "Eine neuere Analyse dieses Datensatzes, etwa in einem anderen Tab, hat diese ersetzt. Ändere eine Einstellung, um sie erneut zu starten.",
+      "unknown_miner": "Der Datensatz hat keine Zeilen des Miners {miner}."
     },
     "warnings": {
       "bartlett_not_significant": "Der Test nach Bartlett ist nicht signifikant (p = {p} ≥ {alpha}); die Maße sind womöglich unkorreliert.",
@@ -1244,7 +1246,10 @@
       "hide_other": "Ausblenden",
       "dependent_with": "Linear abhängig mit {measures}. Ein Maß der Gruppe auszuschließen löst das.",
       "status_below": "unter {threshold}",
-      "none_match": "Kein Maß passt zur Suche."
+      "none_match": "Kein Maß passt zur Suche.",
+      "status_miner": "keine Varianz bei diesem Miner",
+      "status_miner_duplicate": "bei diesem Miner ein Duplikat",
+      "status_miner_more": "Innerhalb der Netze dieses Miners variiert das Maß nicht oder gleicht einem anderen, deshalb lässt diese Analyse es weg. Über alle Miner bleibt es im Datensatz."
     },
     "figure": {
       "download": "{figure} herunterladen",
@@ -1255,6 +1260,17 @@
       "png_hint": "Bild mit 300 dpi",
       "loadings": "Ladungs-Heatmap",
       "failed": "Die Abbildung konnte nicht heruntergeladen werden."
+    },
+    "miners": {
+      "label": "Miner",
+      "help": "Der Datensatz hat ein Netz je Log und Miner. Analysiere alle zusammen oder die Netze eines Miners, wie Important Factors es tut. Ein Miner braucht mehr Beobachtungen als Maße; unter {per} je Maß warnt die Analyse. Ein Maß ohne Varianz innerhalb eines Miners fällt nur für diesen Miner heraus.",
+      "together": "Alle Miner gemeinsam",
+      "size": "n = {n} · {p} Maße",
+      "blocked": "Nicht mehr Beobachtungen als Maße",
+      "blocked_reason": "{n} Beobachtungen für {p} Maße: Eine Analyse braucht mehr Beobachtungen als Maße.",
+      "few": "Weniger als 5 je Maß ({min})",
+      "hint_together": "Alle {miners} Miner gemeinsam: Die Unterschiede zwischen den Minern mischen sich in die Dimensionen, und jedes Log zählt einmal je Miner.",
+      "hint_one": "Nur die Netze des {miner}: die Dimensionen dieses Miners allein, aus {n} Beobachtungen."
     }
   },
   "inspect": {

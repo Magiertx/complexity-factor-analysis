@@ -7,7 +7,7 @@ import { sameOptions, type AnalysisOptions } from "./factor-analysis";
 export type LinkPreset = "published" | "standard";
 
 /** The parameters a link may carry besides `bundled`; any other one is left alone. */
-const OPTION_PARAMS = ["k", "rot", "msa", "alpha", "lt", "h2", "rule", "ex"];
+const OPTION_PARAMS = ["k", "rot", "msa", "alpha", "lt", "h2", "rule", "ex", "miner"];
 
 /**
  * The query of a link to these settings: a preset where they are the standard or the paper's,
@@ -42,6 +42,8 @@ function writeOptions(q: URLSearchParams, options: AnalysisOptions, standard: An
   q.set("h2", String(options.communality_threshold));
   q.set("rule", options.assignment_rule);
   if (options.excluded.length > 0) q.set("ex", options.excluded.join(","));
+  // The rows of one miner, of a dataset discovered with several.
+  if (options.miner !== null) q.set("miner", options.miner);
 }
 
 export interface ParsedLink {
@@ -137,6 +139,11 @@ function readOptions(params: URLSearchParams, standard: AnalysisOptions, measure
     const excluded = ex.split(",");
     if (measures && excluded.some((m) => !measures.has(m))) return null;
     options.excluded = [...new Set(excluded)];
+  }
+  const miner = get("miner");
+  if (miner !== null) {
+    if (!miner.trim() || miner.length > 200) return null;
+    options.miner = miner;
   }
   return options;
 }

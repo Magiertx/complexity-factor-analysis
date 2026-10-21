@@ -505,6 +505,21 @@ export interface FactorDataset {
   descriptives?: Descriptives | null;
   /** Of a dataset the tool computed from logs or nets: run times and input sizes, else null. */
   measurement?: Measurement | null;
+  /**
+   * Of a model dataset whose rows are "<log> / <miner>": per miner its rows and the measures that
+   * vary within them; null for other datasets, absent from older servers.
+   */
+  miners?: MinerSummary[] | null;
+}
+
+/** The rows of one miner of a model dataset discovered with several miners. */
+export interface MinerSummary {
+  name: string;
+  n_observations: number;
+  /** The measures that vary within the rows of the miner. */
+  n_measures: number;
+  /** The measures without variance (or with a perfectly correlated twin) within them. */
+  dropped: string[];
 }
 
 /** What a dataset was built from. */
@@ -565,6 +580,8 @@ export interface AnalyzeOptions {
   communality_threshold?: number | null;
   /** Default "largest". */
   assignment_rule?: AssignmentRule;
+  /** Of a model dataset discovered with several miners: the rows of this miner only. */
+  miner?: string | null;
 }
 
 /** Why a measure joined no factor. */
@@ -695,12 +712,23 @@ export interface FactorAnalysis {
   factor_count?: FactorCount;
   /** Only when the dataset has published numbers and the analysis used the published settings. */
   published_match?: PublishedMatch | null;
+  /** The rows of one miner the analysis ran on; null for every row, absent from older servers. */
+  miner?: MinerSelection | null;
   /** Time the server took for the analysis. */
   elapsed_ms?: number;
   /** The time of each part of the analysis; absent from older servers. */
   timings?: AnalysisTimings;
   warnings: string[];
   warning_details?: AnalysisNotice[];
+}
+
+/** The rows of one miner an analysis ran on. */
+export interface MinerSelection {
+  name: string;
+  n_observations: number;
+  n_measures: number;
+  /** Measures without variance within the miner, or with a perfectly correlated twin in it. */
+  dropped: { measure: string; reason: DropReason | string; detail?: string; params?: Record<string, string | number> }[];
 }
 
 /**

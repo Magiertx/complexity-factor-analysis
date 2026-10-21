@@ -585,7 +585,8 @@
       "stale_note": "The results below are from the last successful analysis.",
       "reset_factors": "Use the suggested number of factors",
       "enable_filter": "Turn the MSA filter on",
-      "default_threshold": "Use the default MSA threshold of {value}"
+      "default_threshold": "Use the default MSA threshold of {value}",
+      "all_miners": "Analyse all miners together"
     },
     "data": {
       "source": {
@@ -988,7 +989,8 @@
       "interpretation_limits_unavailable": "The server cannot count interpretations right now. Try again later.",
       "interpretation_too_large": "This analysis is too large to interpret: at most {measures} measures, {factors} factors and measure names of {name_length} characters can be sent. Exclude measures or choose fewer factors.",
       "too_many_measures_for_analysis": "{n} measures are more than the {max} the server analyses at once. Exclude measures in the table of step 3.",
-      "superseded": "A newer analysis of this dataset, for example in another tab, replaced this one. Change a setting to run it again."
+      "superseded": "A newer analysis of this dataset, for example in another tab, replaced this one. Change a setting to run it again.",
+      "unknown_miner": "The dataset has no rows of the miner {miner}."
     },
     "warnings": {
       "bartlett_not_significant": "Bartlett's test is not significant (p = {p} ≥ {alpha}); the measures may be uncorrelated.",
@@ -1244,7 +1246,10 @@
       "hide_other": "Hide",
       "dependent_with": "Linearly dependent with {measures}. Excluding one measure of the group resolves it.",
       "status_below": "below {threshold}",
-      "none_match": "No measure matches the search."
+      "none_match": "No measure matches the search.",
+      "status_miner": "no variance for this miner",
+      "status_miner_duplicate": "a duplicate for this miner",
+      "status_miner_more": "Within the nets of this miner the measure does not vary, or equals another one, so this analysis leaves it out. Over all miners it stays in the dataset."
     },
     "figure": {
       "download": "Download the {figure}",
@@ -1255,6 +1260,17 @@
       "png_hint": "Image with 300 dpi",
       "loadings": "Loadings heatmap",
       "failed": "The figure could not be downloaded."
+    },
+    "miners": {
+      "label": "Miners",
+      "help": "The dataset has a net per log and miner. Analyse all of them together, or the nets of one miner as Important Factors does. A miner needs more observations than measures; below {per} per measure the analysis warns. A measure without variance within a miner is left out for that miner only.",
+      "together": "All miners together",
+      "size": "n = {n} · {p} measures",
+      "blocked": "No more observations than measures",
+      "blocked_reason": "{n} observations for {p} measures: an analysis needs more observations than measures.",
+      "few": "Fewer than 5 per measure ({min})",
+      "hint_together": "All {miners} miners together: the differences between the miners mix into the dimensions, and each log counts once per miner.",
+      "hint_one": "Only the nets of the {miner}: the dimensions of this miner alone, from {n} observations."
     }
   },
   "inspect": {

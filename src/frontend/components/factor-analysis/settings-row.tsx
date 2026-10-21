@@ -15,6 +15,7 @@ import { useTip } from "@/components/ui/tip";
 
 /** The control each chip of the row leads to; see the ids in the steps. */
 export const SETTING_CONTROLS: Record<SettingChip["id"], string> = {
+  miner: "fa-miner",
   measures: "fa-msa-table",
   msa: "fa-msa-threshold",
   alpha: "fa-bartlett-alpha",
