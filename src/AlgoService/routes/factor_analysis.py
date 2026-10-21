@@ -721,10 +721,16 @@ def _keep_as_recent_logs(session_id: str, inputs: list[dict[str, str]]) -> None:
                 continue
             target = user_dir / name
             target.unlink(missing_ok=True)
-            try:
-                os.link(item["path"], target)
-            except OSError:
-                shutil.copyfile(item["path"], target)
+            source = Path(item["path"])
+            # A link costs no space, but it shares the time of the file, which for a bundled sample
+            # is old: the cleanup of the newest ten would drop it first. Samples are copied.
+            if not source.resolve().is_relative_to(cat.DATASETS_DIR.resolve()):
+                try:
+                    os.link(source, target)
+                    continue
+                except OSError:
+                    pass
+            shutil.copyfile(source, target)
         algorithms.cleanup_uploaded_logs(session_id)
     except Exception:
         logger.exception("Could not keep the logs of a dataset among the recent logs")

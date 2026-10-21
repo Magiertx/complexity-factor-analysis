@@ -773,3 +773,20 @@ def test_only_the_newest_ten_logs_of_a_dataset_stay_and_nothing_else_is_kept(cli
     # The second "log00.xes" is named "log00.xes (2)" in the dataset, which is no log name.
     assert len(kept) == 10 and all(n.endswith(".xes") for n in kept)
     assert "log00.xes (2)" not in kept and "tmp_scratch.xes" not in kept
+
+
+def test_a_bundled_sample_log_is_copied_with_the_time_of_now(client, isolated_jobs_dir):
+    """A copy of a bundled log is as new as the upload; a link would carry the old time of the file
+    and the cleanup of the newest ten would drop it first."""
+    import time
+
+    from factor_analysis import catalog as cat
+    from routes import algorithms
+    from routes import factor_analysis as fa
+
+    sample = cat.sample_paths(cat.sample_entry("pdc-sample-logs"))[0]
+    fa._keep_as_recent_logs("session", [{"path": str(sample), "label": sample.name}])
+    kept = algorithms.UPLOADED_LOGS_DIR / "session" / sample.name
+    assert kept.stat().st_size == sample.stat().st_size
+    assert kept.stat().st_nlink == 1 and abs(kept.stat().st_mtime - time.time()) < 60
+
