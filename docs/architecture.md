@@ -538,7 +538,7 @@ A malformed value in any of these stops the service at startup instead of fallin
     │   │   ├── storage.py       # session-scoped datasets on disk
     │   │   ├── published.py     # the published numbers of the bundled datasets
     │   │   ├── report.py        # the analysis as a LaTeX report like ComFy's
-    │   │   ├── figures.py       # scree plot and loadings heatmap as SVG / PNG for a paper
+    │   │   ├── figures.py       # scree plot and loadings heatmap as SVG / PNG for a paper, in en or de, drawn once
     │   │   └── export.py        # loadings as CSV / LaTeX, matrix as CSV, analysis as ZIP
     │   ├── interpretation/      # factor names by Claude: payload, prompt, client, cache, limits
     │   ├── scripts/             # precompute_interpretations.py, extract_published.py
