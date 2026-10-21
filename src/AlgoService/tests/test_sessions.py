@@ -133,3 +133,40 @@ def test_session_endpoint_does_not_touch_the_database(monkeypatch):
     with TestClient(app) as client:
         assert client.get("/session").status_code == 204
 
+
+def test_a_request_that_loses_the_race_to_store_a_new_session_is_not_an_error(monkeypatch):
+    """The requests a page fires at once share one new session, so each finds no row for it and
+    inserts one. The test lets the lookup of the second miss a row that is there."""
+    import asyncio
+
+    import jobs_db
+    from database import AsyncSessionLocal
+    from sqlalchemy import func, select
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    import models
+
+    session_id = "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+
+    async def count() -> int:
+        async with AsyncSessionLocal() as session:
+            query = select(func.count()).select_from(models.Session).where(models.Session.id == session_id)
+            return (await session.execute(query)).scalar_one()
+
+    async def run() -> tuple[str, int]:
+        await jobs_db.init_db()
+        await jobs_db.get_or_create_session(session_id)
+        original = AsyncSession.execute
+        lookups = {"n": 0}
+
+        async def blind_first_lookup(self, statement, *args, **kwargs):
+            lookups["n"] += 1
+            if lookups["n"] == 1:
+                statement = select(models.Session).where(models.Session.id == "not-a-session")
+            return await original(self, statement, *args, **kwargs)
+
+        monkeypatch.setattr(AsyncSession, "execute", blind_first_lookup)
+        returned = await jobs_db.get_or_create_session(session_id)
+        return returned, await count()
+
+    assert asyncio.run(run()) == (session_id, 1)
