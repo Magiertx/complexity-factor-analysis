@@ -59,9 +59,18 @@ Schalk do it, but interactively in the browser.
   datasets both are in one dimension, which needs no matching. A link can ask for a dataset with
   a factor count of its own, such as the Inductive miner with 4 and with 6 factors. Downloads as
   CSV, as a LaTeX table and as a ZIP with a manifest.
+- **Look at the measures.** In the suitability step a folded correlation map shows the correlation of
+  every pair of measures, ordered by factor or clustered, with the pairs at |r| of 0.95 or more
+  outlined, a pair and its r read with the pointer or the arrow keys, a table as its text and the
+  figure for a paper. The name of a measure anywhere opens its fact sheet: what it is (the function
+  of ComFy or feeed behind it, with a link to its source), a histogram of its values, its MSA and
+  the round of the filter that removed it, communality, uniqueness and loadings, the five measures
+  it correlates with most, and the choice to exclude or include it.
 - **Come back to a dataset.** The datasets of a session are listed on the data step, reopen
   with the parameters of their last analysis and can be deleted one by one or all at once;
-  deleting a dataset job in the run history deletes its dataset too.
+  deleting a dataset job in the run history deletes its dataset too. The tab "Recent runs" says what
+  runs and how far, marks a failed run with a red dot, and a dataset that has been computed raises a
+  notice with a link to it.
 - **Into the paper.** A LaTeX report built like ComFy's (`report.tex`: validity, MSA with the
   rounds of the filter, scree plot, descriptive statistics, loadings with the assigned ones in
   bold, communalities, dimensions, settings and provenance; compiles with latexmk or pdflatex run
@@ -84,8 +93,10 @@ Schalk do it, but interactively in the browser.
   day, and caches every answer; precomputed interpretations of the bundled datasets work
   without a key and offline. Details in [`docs/API.md`](docs/API.md#interpretation-by-claude)
   and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#interpretation-by-claude).
-- **Single-log inspection.** "Inspect a single log" runs the chosen miners on one log and shows
-  the measures next to the rendered nets.
+- **Single-log inspection.** "Inspect a single log" (a log, the miners and measures, the run, in
+  three sections) runs the chosen miners on one log and shows the measures next to the rendered
+  nets. A row of a dataset computed from logs links to it with the log and the miner of the row
+  chosen, while the log is among the newest uploads of the session.
 - **Scriptable.** Everything the UI does goes through a documented HTTP API
   ([`docs/API.md`](docs/API.md#factor-analysis)); English and German UI.
 

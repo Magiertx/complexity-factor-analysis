@@ -244,9 +244,10 @@
       "health": "Bereitschaftsprüfung: 200, wenn die Datenbank erreichbar ist.",
       "session_start": "Startet die Sitzung (das Cookie `session_id`), wenn die Anfrage keines hat oder eines, das der Server nicht lesen kann. Die Seite erledigt das selbst; ein Skript, das mehrere Anfragen gleichzeitig sendet, ruft es zuerst auf.",
       "fa_export_report": "Die Analyse als LaTeX-Report, aufgebaut wie der von ComFy (report.tex); der Body von analyze plus `short_codes` und `language`.",
-      "fa_export_figure": "Der Scree-Plot oder die Ladungs-Heatmap als SVG oder PNG (300 dpi) im Druckstil; der Body von analyze plus `figure`, `format`, `short_codes`, `order` und `language` (`en` oder `de`).",
+      "fa_export_figure": "Der Scree-Plot, die Ladungs-Heatmap oder die Korrelationskarte als SVG oder PNG (300 dpi) im Druckstil; der Body von analyze plus `figure`, `format`, `short_codes`, `order`, `correlation_order` und `language` (`en` oder `de`).",
       "fa_compare": "Die Faktorstrukturen von 2 bis 8 Analysen nebeneinander, wie Tab. 17 von Important Factors: je Spalte n, die Maße nach dem MSA-Filter, KMO, Faktoren, Rotation und erklärte Varianz, jedes Maß mit seiner Dimension je Spalte unter einer `assignment_rule`, die Dimensionen je Spalte und für jedes Paar von Maßen, in wie vielen Spalten es eine Dimension teilt (`co_assignment`). Eine Spalte ist ein mitgelieferter Datensatz (`bundled_id`, mit den Einstellungen seines Papers) oder ein Datensatz der Sitzung (`dataset_id`, mit seinen gespeicherten Einstellungen und optional einem `miner`) und kann ihre Einstellungen ändern (`options`). Mitgelieferte Spalten brauchen keinen Datensatz der Sitzung.",
-      "fa_compare_export": "Der Vergleich als CSV, als LaTeX-Tabelle wie Tab. 17 oder als ZIP mit beidem, den Paaren von Maßen, dem vollständigen Ergebnis und einem Manifest; der Body von compare plus `format` und `short_codes`."
+      "fa_compare_export": "Der Vergleich als CSV, als LaTeX-Tabelle wie Tab. 17 oder als ZIP mit beidem, den Paaren von Maßen, dem vollständigen Ergebnis und einem Manifest; der Body von compare plus `format` und `short_codes`.",
+      "fa_correlations": "Die Korrelationen der Maße, die Karte des Eignungs-Schritts: die Matrix in der Reihenfolge des Datensatzes, einer Gruppierung (`cluster`) oder der Dimensionen einer Analyse (`factor`), die Paare mit |r| ab 0,95 und die fünf engsten Partner jedes Maßes; der Body von analyze plus `order`."
     },
     "notes": {
       "rate_limits": "Ratenlimits pro IP: `60/hour` für `POST /algorithms/{id}/analyze` und für neue Datensätze aus `POST /factor-analysis/datasets`, `600/minute` für das Lesen, Auflisten und Löschen von Datensätzen und das Speichern ihrer Optionen, `300/hour` für `POST /log-stats` und `120/minute` überall sonst. Interpretationen durch Claude: `10/hour` pro Sitzung und `200/day` für den Server. Über einem Limit lautet die Antwort 429 mit einem `code`.",
@@ -1472,8 +1473,9 @@
         "nets": "Petri-Netze (.pnml): Jedes Netz wird gemessen.",
         "csv": "Eine CSV-Datei: eine Zeile je Beobachtung, eine Spalte je Maß; eine erste Spalte mit Namen wird zu den Zeilenbeschriftungen."
       },
-      "p2": "Logs und Netze werden in einem Job berechnet; die Job-Leiste zeigt den Fortschritt. „Meine Datensätze“ in der Werkzeugleiste öffnet einen Datensatz der Sitzung wieder, mit den Einstellungen seiner letzten Analyse.",
-      "p3": "Ein Datensatz aus Netzen mehrerer Miner hat eine Zeile je Log und Miner. Der Datensatz-Schritt bietet alle Miner gemeinsam oder je einen Miner an, so wie Important Factors sie analysiert: Gemeinsam mischen sich die Unterschiede zwischen den Minern in die Dimensionen, und jedes Log zählt einmal je Miner; ein einzelner Miner hat weniger Beobachtungen. Ein Miner mit nicht mehr Beobachtungen als Maßen lässt sich nicht analysieren; unter fünf je Maß warnt die Analyse. Miner vergleichen öffnet dort ihre Faktorstrukturen nebeneinander."
+      "p2": "Logs und Netze werden in einem Job berechnet. Der Reiter „Letzte Runs“ sagt, was läuft („1 läuft · 37 %“), und hat einen roten Punkt für einen fehlgeschlagenen Run, den du noch nicht angesehen hast; ein fertig berechneter Datensatz meldet sich mit „… ist fertig · Öffnen“, wo du auch bist. „Meine Datensätze“ in der Werkzeugleiste öffnet einen Datensatz der Sitzung wieder, mit den Einstellungen seiner letzten Analyse.",
+      "p3": "Ein Datensatz aus Netzen mehrerer Miner hat eine Zeile je Log und Miner. Der Datensatz-Schritt bietet alle Miner gemeinsam oder je einen Miner an, so wie Important Factors sie analysiert: Gemeinsam mischen sich die Unterschiede zwischen den Minern in die Dimensionen, und jedes Log zählt einmal je Miner; ein einzelner Miner hat weniger Beobachtungen. Ein Miner mit nicht mehr Beobachtungen als Maßen lässt sich nicht analysieren; unter fünf je Maß warnt die Analyse. Miner vergleichen öffnet dort ihre Faktorstrukturen nebeneinander.",
+      "p4": "Eine Zeile eines aus Logs berechneten Datensatzes hat im Datensatz-Schritt einen Link „Dieses Log ansehen“. Er öffnet die Seite „Ein einzelnes Log ansehen“ mit diesem Log und, bei einer Zeile aus Netzen, nur dem Miner der Zeile, solange das Log zu den zehn neuesten Uploads der Sitzung gehört; die Seite sagt es, wenn nicht."
     },
     "results": {
       "title": "Die Ergebnisse lesen",
@@ -1483,19 +1485,21 @@
         "factors": "Faktoren: der Scree-Plot mit Kaiser-Linie und Parallelanalyse, die Zahl, die jedes Kriterium vorschlägt, und die Rotation.",
         "loadings": "Ladungen: eine Matrix (orange für negative Ladungen, blass, wo eine Ladung nicht zählt) oder eine Karte je Dimension, die Schwellen und die Regel, die Maße Faktoren zuordnet. Querladungen sind umrandet.",
         "interpretation": "Interpretation: Namen für die Faktoren, von einem Sprachmodell nur auf Anfrage vorgeschlagen. Es entscheidet nichts.",
-        "names": "Namen: Drücke auf den Titel eines Faktors, auf seiner Karte oder im Kopf seiner Spalte, um ihn zu benennen; Enter behält den Namen, Esc lässt ihn. Die Namen erscheinen in den Ladungen, den Faktorkorrelationen, der Schrittliste und jedem Download. Sie gehören zu Faktorzahl, Rotation und Regel: Ändert sich eines davon, verschwinden sie, und der Hinweis holt sie zurück. Mit einer Interpretation übernimmt Vorgeschlagene Namen übernehmen deren Namen."
+        "names": "Namen: Drücke auf den Titel eines Faktors, auf seiner Karte oder im Kopf seiner Spalte, um ihn zu benennen; Enter behält den Namen, Esc lässt ihn. Die Namen erscheinen in den Ladungen, den Faktorkorrelationen, der Schrittliste und jedem Download. Sie gehören zu Faktorzahl, Rotation und Regel: Ändert sich eines davon, verschwinden sie, und der Hinweis holt sie zurück. Mit einer Interpretation übernimmt Vorgeschlagene Namen übernehmen deren Namen.",
+        "correlations": "Korrelationskarte: in Eignung, eingeklappt, bis man sie öffnet. Eine Zelle je Maßpaar, orange für eine negative Korrelation und in der Akzentfarbe für eine positive, ein Paar mit |r| ≥ 0,95 umrandet, nach Faktor oder gruppiert geordnet. Zeige auf eine Zelle oder nimm die Pfeiltasten, um das Paar und sein r zu lesen; eine Tabelle unter der Karte hat jeden Wert. Das Bild-Symbol lädt sie wie die anderen Abbildungen herunter.",
+        "sheet": "Steckbrief: Drücke auf den Namen eines Maßes (oder Enter darauf), wo er auch steht, um ein Fenster neben der Seite zu öffnen. Es zeigt, was das Maß ist (die Beschreibung des Tools und die Funktion in ComFy oder feeed dahinter, mit Link zur Quelle), ein Histogramm seiner Werte, seinen MSA und die Runde des Filters, die es entfernt hat, Kommunalität und Einzigartigkeit, seine Ladungen, die fünf am stärksten korrelierten Maße und eine Schaltfläche zum Ausschließen oder Einbeziehen. Die Pfeiltasten links und rechts blättern durch die Liste, aus der du kommst, Esc schließt das Fenster, und der Fokus kehrt zum Namen zurück."
       }
     },
     "export": {
       "title": "Die Ergebnisse in ein Paper übernehmen",
       "p1": "Das Download-Menü im Seitenkopf enthält:",
       "items": {
-        "zip": "Analyse (ZIP): das Ergebnis, die Matrix, die Tabellen, report.tex, die Abbildungen, die deskriptive Statistik, die Laufzeiten und ein Manifest mit Einstellungen, Versionen und Herkunft.",
+        "zip": "Analyse (ZIP): das Ergebnis, die Matrix, die Tabellen, report.tex, die Abbildungen, correlations.csv, die deskriptive Statistik, die Laufzeiten und ein Manifest mit Einstellungen, Versionen und Herkunft.",
         "report": "LaTeX-Report: report.tex, aufgebaut wie der ComFy-Report, mit den Dimensionen und den Einstellungen; übersetze ihn mit latexmk -pdf oder lasse pdflatex zweimal laufen, denn lange Tabellen finden ihre Spaltenbreiten erst im zweiten Lauf.",
         "print": "Druckansicht: die ganze Analyse auf A4-Seiten, zum Drucken oder Speichern als PDF.",
         "tables": "Die Ladungen als CSV oder LaTeX und den bereinigten Datensatz als CSV."
       },
-      "p2": "Das Bild-Symbol am Scree-Plot und an den Ladungen lädt die Abbildung als SVG herunter, deren Text Text bleibt, oder als PNG mit 300 dpi: immer hell, in der Textbreite eines CEUR-Papers, mit den Beschriftungen in der Sprache der App.",
+      "p2": "Das Bild-Symbol am Scree-Plot, an den Ladungen und an der Korrelationskarte lädt die Abbildung als SVG herunter, deren Text Text bleibt, oder als PNG mit 300 dpi: immer hell, in der Textbreite eines CEUR-Papers, mit den Beschriftungen in der Sprache der App.",
       "p3": "Das Etikett-Symbol in der Werkzeugleiste nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder C_mag; der volle Name steht im Tooltip, und Abbildungen, Report und ZIP folgen ihm.",
       "p4": "Das Link-Symbol kopiert einen Link auf die Analyse eines veröffentlichten Datensatzes mit ihren Einstellungen."
     },

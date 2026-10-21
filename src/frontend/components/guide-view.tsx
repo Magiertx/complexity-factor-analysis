@@ -41,13 +41,13 @@ const SECTIONS: GuideSection[] = [
     id: "own",
     before: 1,
     items: ["logs", "nets", "csv"],
-    after: 2,
+    after: 3,
     links: [{ href: "/", key: "data" }],
   },
   {
     id: "results",
     before: 0,
-    items: ["dataset", "suitability", "factors", "loadings", "names", "interpretation"],
+    items: ["dataset", "suitability", "correlations", "sheet", "factors", "loadings", "names", "interpretation"],
     links: [{ href: "/?step=dataset", key: "results" }],
   },
   {
