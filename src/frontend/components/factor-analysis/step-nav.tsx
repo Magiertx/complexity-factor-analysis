@@ -11,6 +11,7 @@ import {
   Database,
   Gauge,
   Grid3x3,
+  KeyRound,
   Loader2,
   Lock,
   Sparkles,
@@ -86,7 +87,13 @@ export function useStepNavigation() {
   return { step, visit, goTo, fromUrl, takeFocus, getStep };
 }
 
-function StateMark({ state }: { state: StepState }) {
+/**
+ * What a step's state looks like. A step that is "locked" but can be opened is waiting for a key
+ * (the interpretation without an API key): it shows a key, not the lock of a step that cannot be
+ * opened yet.
+ */
+function StateMark({ state, needsKey }: { state: StepState; needsKey?: boolean }) {
+  if (needsKey) return <KeyRound className="h-3 w-3 shrink-0 text-muted" aria-hidden />;
   if (state === "done") return <Check className="h-3.5 w-3.5 shrink-0 text-success-ink" aria-hidden />;
   if (state === "warn") return <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-warn-ink" aria-hidden />;
   if (state === "busy") return <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted" aria-hidden />;
@@ -112,6 +119,7 @@ function StepLink({
   current,
   state,
   lock,
+  needsKey,
   stateLabel,
   onGo,
   iconOnly,
@@ -122,6 +130,8 @@ function StepLink({
   current: boolean;
   state: StepState;
   lock: string | null;
+  /** Can be opened, but waits for a key; the tooltip says so. */
+  needsKey: boolean;
   stateLabel: string;
   onGo: (step: StepId) => void;
   /** Shows only its sign and number, so its tooltip names it. */
@@ -132,7 +142,9 @@ function StepLink({
   const t = useT();
   const pathname = usePathname();
   const name = t(`factor.steps.${id}`);
-  const tip = useTip<HTMLAnchorElement>(lock ? { name, reason: lock } : iconOnly ? { name } : null);
+  const tip = useTip<HTMLAnchorElement>(
+    lock ? { name, reason: lock } : needsKey ? { name, reason: stateLabel } : iconOnly ? { name } : null,
+  );
   return (
     <a
       ref={tip}
@@ -181,6 +193,7 @@ export function StepRail({
           const Icon = STEP_ICONS[id];
           const here = id === current;
           const lock = locks[id];
+          const needsKey = states[id] === "locked" && !lock && !!stateLabels[id];
           return (
             <li key={id}>
               <StepLink
@@ -188,6 +201,7 @@ export function StepRail({
                 current={here}
                 state={states[id]}
                 lock={lock}
+                needsKey={needsKey}
                 stateLabel={stateLabels[id] ?? t(`factor.state.${states[id]}`)}
                 onGo={onGo}
                 className={cn(
@@ -208,7 +222,7 @@ export function StepRail({
                   </span>
                 </span>
                 <span className="mt-1">
-                  <StateMark state={states[id]} />
+                  <StateMark state={states[id]} needsKey={needsKey} />
                 </span>
               </StepLink>
             </li>
@@ -233,6 +247,7 @@ export function StepBar({ current, states, locks, stateLabels, onGo }: NavProps)
           const here = id === current;
           const lock = locks[id];
           const state = states[id];
+          const needsKey = state === "locked" && !lock && !!stateLabels[id];
           return (
             <li key={id} className={cn(here ? "min-w-0 flex-1" : "shrink-0")}>
               <StepLink
@@ -240,6 +255,7 @@ export function StepBar({ current, states, locks, stateLabels, onGo }: NavProps)
                 current={here}
                 state={state}
                 lock={lock}
+                needsKey={needsKey}
                 stateLabel={stateLabels[id] ?? t(`factor.state.${state}`)}
                 onGo={onGo}
                 iconOnly={!here}
@@ -272,7 +288,7 @@ export function StepBar({ current, states, locks, stateLabels, onGo }: NavProps)
                 {!here && <span className="sr-only">{t(`factor.steps.${id}`)}</span>}
                 {here && (
                   <span className="ml-auto">
-                    <StateMark state={state} />
+                    <StateMark state={state} needsKey={needsKey} />
                   </span>
                 )}
               </StepLink>
@@ -367,6 +383,7 @@ export function StepNavBar({
 }) {
   const t = useT();
   const { previous, next } = neighbours(step);
+  const reason = next ? locks[next] : null;
   // The page keeps room for the bar at its end, so the bar never hides the last lines.
   useEffect(() => {
     document.body.classList.add("has-step-bar");
@@ -388,9 +405,14 @@ export function StepNavBar({
           <ChevronLeft className="h-4 w-4 -ml-1" aria-hidden />
           {t("factor.nav.back")}
         </Button>
-        <span className="flex-1 min-w-0 text-center text-xs text-muted truncate">
-          {t("factor.nav.position", { n: STEP_IDS.indexOf(step) + 1, total: STEP_IDS.length })}
-        </span>
+        {/* While Next waits for something, the middle says what, as the footer of a wide screen does. */}
+        {reason ? (
+          <span className="flex-1 min-w-0 text-center text-xs text-muted leading-snug line-clamp-2">{reason}</span>
+        ) : (
+          <span className="flex-1 min-w-0 text-center text-xs text-muted truncate">
+            {t("factor.nav.position", { n: STEP_IDS.indexOf(step) + 1, total: STEP_IDS.length })}
+          </span>
+        )}
         {next ? <NextButton next={next} lock={locks[next]} onGo={onGo} compact /> : <span className="w-[4.5rem]" />}
       </div>
     </nav>
