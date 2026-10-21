@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  /* .light-sheet: the print view keeps the light tokens under the dark theme as well. */
+  :root, .light-sheet {
     --bg: 240 242 247;
     --surface: 255 255 255;
     --tile: 226 231 240;
@@ -50,6 +51,7 @@
     --negative: 249 115 22;
     --negative-ink: 251 146 60;
   }
+  .light-sheet { color-scheme: light; }
   html, body { @apply bg-bg text-fg; }
   body { @apply font-sans antialiased; }
   /* The settings row of the factor analysis sticks to the top of a wide screen and sets
@@ -337,6 +339,42 @@
   /* A frame that scrolls itself (sideways or in a box) holds its header at its own top. */
   .table-frame.table-frame--scrolls {
     --table-top: 0px;
+  }
+
+  /* The tables of the print view: the one table style, without what only a screen needs (a
+     header that sticks, the tint under the pointer) and with rows close enough for paper. */
+  .print-table {
+    margin-top: 4px;
+    font-size: 11px;
+    line-height: 14px;
+  }
+  .print-table :where(thead th, thead td) {
+    position: static;
+    height: auto;
+    padding: 4px 8px;
+    background: none;
+  }
+  .print-table :where(tbody > tr > *, tfoot > tr > *) {
+    height: auto;
+    padding: 3px 8px;
+  }
+  .print-table :where(tbody > tr:hover > *) {
+    background: none;
+  }
+  @media print {
+    @page {
+      size: A4;
+      margin: 14mm 14mm 16mm;
+    }
+    html, body {
+      background: white !important;
+    }
+    .print-sheet h2, .print-sheet h3 {
+      break-after: avoid;
+    }
+    .print-table tr, .print-figure {
+      break-inside: avoid;
+    }
   }
 
   /* A word with an explanation in its tooltip. */

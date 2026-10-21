@@ -13,7 +13,7 @@ export function SiteHeader() {
   const apiTip = useTip<HTMLAnchorElement>({ name: t("common.api"), more: t("header.api_title", { app: APP_NAME }) });
   const settingsTip = useTip<HTMLAnchorElement>({ name: t("header.settings_title") });
   return (
-    <header className="border-b border-border">
+    <header className="border-b border-border print:hidden">
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <Link href="/" className="flex items-center gap-3 min-w-0">

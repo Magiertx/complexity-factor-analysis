@@ -1217,6 +1217,16 @@
       "dependent_with": "Linearly dependent with {measures}. Excluding one measure of the group resolves it.",
       "status_below": "below {threshold}",
       "none_match": "No measure matches the search."
+    },
+    "figure": {
+      "download": "Download the {figure}",
+      "download_more": "As SVG or PNG for a paper: light, with white background, at the text width of a CEUR page.",
+      "svg": "SVG",
+      "svg_hint": "Vector graphics; the text stays text",
+      "png": "PNG",
+      "png_hint": "Image with 300 dpi",
+      "loadings": "Loadings heatmap",
+      "failed": "The figure could not be downloaded."
     }
   },
   "inspect": {
@@ -1247,5 +1257,90 @@
     "job_quota": "You already have {active} runs queued or running, and this would add {requested}; at most {limit} are allowed. Wait for them to finish or abort some under Recent runs.",
     "dataset_jobs_busy": "The server is already computing {active} datasets, the most it runs at once. Try again in a few minutes.",
     "prom_unavailable": "ProM, which runs the miners, cannot be reached right now, so no Petri net could be discovered. Try again in a few minutes; if it stays like this, the prom4py service has to be started on the server."
+  },
+  "print": {
+    "title": "Factor analysis of “{name}”",
+    "invalid": "This address names no analysis. Open the print view from the download menu of an analysis.",
+    "failed": "The analysis could not be loaded: {error}",
+    "loading": "Loading the analysis…",
+    "hint": "Print the page or save it as PDF with the print dialog of the browser.",
+    "print": "Print",
+    "dataset_size": "{n} observations and {p} measures after cleaning.",
+    "dropped": "Left out by cleaning: {list}.",
+    "bartlett": "Bartlett's test of sphericity: χ² = {chi}, df = {df}, p {p} ({result}).",
+    "kmo": "Overall KMO: {value} ({result}).",
+    "factors": "{n} factor, {rotation}; it explains {pct} of the variance.",
+    "factors_plural": "{n} factors, {rotation}; together they explain {pct} of the variance.",
+    "criteria": "Kaiser criterion: {kaiser}; parallel analysis ({percentile}th percentile, seed {seed}): {parallel}.",
+    "interpretation_note": "Names and summaries suggested by {model} on request; the analysis does not depend on them.",
+    "codes_heading": "Short codes",
+    "match": "The numbers equal those of {source}.",
+    "differs": "{n} numbers differ from those of {source}.",
+    "footer": "Made with {app}."
+  },
+  "guide": {
+    "title": "User guide",
+    "subtitle": "What {app} does, step by step: analyse a published dataset or your own data, read the results, and take them into a paper.",
+    "toc": "Contents",
+    "links": {
+      "model": "Model complexity",
+      "log": "Log complexity",
+      "paper": "Open Important Factors: Inductive miner with the paper settings",
+      "data": "To the data step",
+      "results": "To the dataset step",
+      "loadings": "To the loadings",
+      "api": "API access"
+    },
+    "steps": {
+      "title": "The six steps",
+      "p1": "Model complexity analyses the measures of ComFy on Petri nets, Log complexity the measures of feeed on event logs. Both walk through the same steps: Data, Dataset, Suitability, Factors, Loadings and an optional Interpretation. One step is on screen at a time; the list of steps shows what each step found.",
+      "p2": "The settings row above the steps sums up every choice, marks those that differ from the tool standard and leads to each control. Every change of a setting runs the analysis again."
+    },
+    "bundled": {
+      "title": "Analyse a published dataset",
+      "items": {
+        "open": "Open Model complexity or Log complexity.",
+        "choose": "In Data, choose a dataset of a paper, for example Important Factors: Inductive miner.",
+        "settings": "Choose Paper settings to analyse it as the paper did, or Tool standard for the defaults of ComFy, then Use dataset."
+      },
+      "p1": "With the paper settings, a chip in the settings row says whether the numbers equal the published ComFy report and how the tables of the paper relate to it. Start here in the toolbar lists four ways in."
+    },
+    "own": {
+      "title": "Analyse your own data",
+      "p1": "In Data, choose a source:",
+      "items": {
+        "logs": "Event logs (.xes, .xes.gz): for model measures, every log is mined with every miner you choose and every net is measured; for log measures, feeed computes the feature groups you choose.",
+        "nets": "Petri nets (.pnml): every net is measured.",
+        "csv": "A CSV file: one row per observation, one column per measure; a first column of names becomes the row labels."
+      },
+      "p2": "Logs and nets are computed in a job; the jobs drawer shows its progress. My datasets in the toolbar reopens a dataset of the session with the settings of its last analysis."
+    },
+    "results": {
+      "title": "Read the results",
+      "items": {
+        "dataset": "Dataset: what cleaning left out and why, the descriptive statistics of every measure as ComFy's report prints them, and for a dataset computed from logs or nets the run times and input sizes. Both tables are folded until opened.",
+        "suitability": "Suitability: Bartlett's test, the overall KMO and the MSA of every measure. The MSA filter removes measures in rounds, as ComFy does; any measure can be excluded by hand.",
+        "factors": "Factors: the scree plot with the Kaiser line and parallel analysis, the count each criterion suggests, and the rotation.",
+        "loadings": "Loadings: a matrix (orange for negative loadings, faded where a loading does not count) or a card per dimension, the thresholds, and the rule that assigns measures to factors. Cross-loadings are ringed.",
+        "interpretation": "Interpretation: names for the factors, suggested by a language model only on request. It decides nothing."
+      }
+    },
+    "export": {
+      "title": "Take the results into a paper",
+      "p1": "The download menu in the page header has:",
+      "items": {
+        "zip": "Analysis (ZIP): the result, the matrix, the tables, report.tex, the figures, the descriptive statistics, the run times, and a manifest with settings, versions and provenance.",
+        "report": "LaTeX report: report.tex built like the report of ComFy, with the dimensions and the settings; it compiles with pdflatex.",
+        "print": "Print view: the whole analysis on A4 pages, to print or save as PDF.",
+        "tables": "The loadings as CSV or LaTeX, and the cleaned dataset as CSV."
+      },
+      "p2": "The image icon at the scree plot and at the loadings downloads the figure as SVG, whose text stays text, or as PNG with 300 dpi: always light, at the text width of a CEUR paper.",
+      "p3": "The tag icon in the toolbar names the measures by the short codes of the papers, such as CNC or C_mag; the full name stays in the tooltip, and the figures, the report and the ZIP follow it.",
+      "p4": "The link icon copies a link to the analysis of a published dataset with its settings."
+    },
+    "api": {
+      "title": "Use the API",
+      "p1": "Everything the app does is also available through the REST API, including the report and the figures. The page API access lists the endpoints with examples."
+    }
   }
 }

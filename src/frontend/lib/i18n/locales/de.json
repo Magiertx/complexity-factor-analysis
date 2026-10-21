@@ -1217,6 +1217,16 @@
       "dependent_with": "Linear abhängig mit {measures}. Ein Maß der Gruppe auszuschließen löst das.",
       "status_below": "unter {threshold}",
       "none_match": "Kein Maß passt zur Suche."
+    },
+    "figure": {
+      "download": "{figure} herunterladen",
+      "download_more": "Als SVG oder PNG für ein Paper: hell, mit weißem Hintergrund, in der Textbreite einer CEUR-Seite.",
+      "svg": "SVG",
+      "svg_hint": "Vektorgrafik; der Text bleibt Text",
+      "png": "PNG",
+      "png_hint": "Bild mit 300 dpi",
+      "loadings": "Ladungs-Heatmap",
+      "failed": "Die Abbildung konnte nicht heruntergeladen werden."
     }
   },
   "inspect": {
@@ -1247,5 +1257,90 @@
     "job_quota": "Du hast schon {active} wartende oder laufende Runs, und das käme mit {requested} dazu; erlaubt sind höchstens {limit}. Warte, bis sie fertig sind, oder brich einige unter Letzte Runs ab.",
     "dataset_jobs_busy": "Der Server berechnet schon {active} Datensätze, mehr gleichzeitig nicht. Versuche es in ein paar Minuten noch einmal.",
     "prom_unavailable": "ProM, das die Miner ausführt, ist gerade nicht erreichbar, daher konnte kein Petri-Netz entdeckt werden. Versuche es in ein paar Minuten noch einmal; bleibt es dabei, muss auf dem Server der Dienst prom4py gestartet werden."
+  },
+  "print": {
+    "title": "Faktoranalyse von „{name}“",
+    "invalid": "Diese Adresse nennt keine Analyse. Öffnen Sie die Druckansicht aus dem Download-Menü einer Analyse.",
+    "failed": "Die Analyse konnte nicht geladen werden: {error}",
+    "loading": "Die Analyse wird geladen …",
+    "hint": "Drucken Sie die Seite oder speichern Sie sie mit dem Druckdialog des Browsers als PDF.",
+    "print": "Drucken",
+    "dataset_size": "{n} Beobachtungen und {p} Maße nach der Bereinigung.",
+    "dropped": "Von der Bereinigung weggelassen: {list}.",
+    "bartlett": "Bartlett-Test auf Sphärizität: χ² = {chi}, df = {df}, p {p} ({result}).",
+    "kmo": "KMO insgesamt: {value} ({result}).",
+    "factors": "{n} Faktor, {rotation}; er erklärt {pct} der Varianz.",
+    "factors_plural": "{n} Faktoren, {rotation}; zusammen erklären sie {pct} der Varianz.",
+    "criteria": "Kaiser-Kriterium: {kaiser}; Parallelanalyse ({percentile}. Perzentil, Seed {seed}): {parallel}.",
+    "interpretation_note": "Namen und Zusammenfassungen auf Anfrage vorgeschlagen von {model}; die Analyse hängt nicht von ihnen ab.",
+    "codes_heading": "Kurzzeichen",
+    "match": "Die Zahlen stimmen mit denen von {source} überein.",
+    "differs": "{n} Zahlen weichen von denen von {source} ab.",
+    "footer": "Erstellt mit {app}."
+  },
+  "guide": {
+    "title": "Anleitung",
+    "subtitle": "Was {app} tut, Schritt für Schritt: einen veröffentlichten Datensatz oder eigene Daten analysieren, die Ergebnisse lesen und sie in ein Paper übernehmen.",
+    "toc": "Inhalt",
+    "links": {
+      "model": "Modellkomplexität",
+      "log": "Log-Komplexität",
+      "paper": "Important Factors: Inductive Miner mit den Paper-Einstellungen öffnen",
+      "data": "Zum Schritt Daten",
+      "results": "Zum Schritt Datensatz",
+      "loadings": "Zu den Ladungen",
+      "api": "API-Zugang"
+    },
+    "steps": {
+      "title": "Die sechs Schritte",
+      "p1": "Modellkomplexität analysiert die Maße von ComFy auf Petri-Netzen, Log-Komplexität die Maße von feeed auf Event-Logs. Beide führen durch dieselben Schritte: Daten, Datensatz, Eignung, Faktoren, Ladungen und eine optionale Interpretation. Es ist immer ein Schritt zu sehen; die Liste der Schritte zeigt, was jeder Schritt ergeben hat.",
+      "p2": "Die Einstellungszeile über den Schritten fasst jede Entscheidung zusammen, markiert die, die vom Standard des Tools abweichen, und führt zu jedem Regler. Jede Änderung einer Einstellung rechnet die Analyse neu."
+    },
+    "bundled": {
+      "title": "Einen veröffentlichten Datensatz analysieren",
+      "items": {
+        "open": "Öffnen Sie Modellkomplexität oder Log-Komplexität.",
+        "choose": "Wählen Sie unter Daten einen Datensatz eines Papers, etwa Important Factors: Inductive Miner.",
+        "settings": "Wählen Sie Paper-Einstellungen, um ihn wie im Paper zu analysieren, oder Standard des Tools für die Voreinstellungen von ComFy, dann Datensatz verwenden."
+      },
+      "p1": "Mit den Paper-Einstellungen sagt ein Chip in der Einstellungszeile, ob die Zahlen dem veröffentlichten ComFy-Report gleichen und wie sich die Tabellen des Papers dazu verhalten. „Hier starten“ in der Werkzeugleiste nennt vier Einstiege."
+    },
+    "own": {
+      "title": "Eigene Daten analysieren",
+      "p1": "Wählen Sie unter Daten eine Quelle:",
+      "items": {
+        "logs": "Event-Logs (.xes, .xes.gz): Für Modellmaße wird jedes Log mit jedem gewählten Miner entdeckt und jedes Netz gemessen; für Logmaße berechnet feeed die gewählten Feature-Gruppen.",
+        "nets": "Petri-Netze (.pnml): Jedes Netz wird gemessen.",
+        "csv": "Eine CSV-Datei: eine Zeile je Beobachtung, eine Spalte je Maß; eine erste Spalte mit Namen wird zu den Zeilenbeschriftungen."
+      },
+      "p2": "Logs und Netze werden in einem Job berechnet; die Job-Leiste zeigt den Fortschritt. „Meine Datensätze“ in der Werkzeugleiste öffnet einen Datensatz der Sitzung wieder, mit den Einstellungen seiner letzten Analyse."
+    },
+    "results": {
+      "title": "Die Ergebnisse lesen",
+      "items": {
+        "dataset": "Datensatz: was die Bereinigung weggelassen hat und warum, die deskriptive Statistik jedes Maßes, wie der ComFy-Report sie ausgibt, und für einen aus Logs oder Netzen berechneten Datensatz die Laufzeiten und Eingabegrößen. Beide Tabellen sind eingeklappt, bis man sie öffnet.",
+        "suitability": "Eignung: der Bartlett-Test, der KMO insgesamt und der MSA jedes Maßes. Der MSA-Filter entfernt Maße in Runden, wie ComFy; jedes Maß lässt sich von Hand ausschließen.",
+        "factors": "Faktoren: der Scree-Plot mit Kaiser-Linie und Parallelanalyse, die Zahl, die jedes Kriterium vorschlägt, und die Rotation.",
+        "loadings": "Ladungen: eine Matrix (orange für negative Ladungen, blass, wo eine Ladung nicht zählt) oder eine Karte je Dimension, die Schwellen und die Regel, die Maße Faktoren zuordnet. Querladungen sind umrandet.",
+        "interpretation": "Interpretation: Namen für die Faktoren, von einem Sprachmodell nur auf Anfrage vorgeschlagen. Es entscheidet nichts."
+      }
+    },
+    "export": {
+      "title": "Die Ergebnisse in ein Paper übernehmen",
+      "p1": "Das Download-Menü im Seitenkopf enthält:",
+      "items": {
+        "zip": "Analyse (ZIP): das Ergebnis, die Matrix, die Tabellen, report.tex, die Abbildungen, die deskriptive Statistik, die Laufzeiten und ein Manifest mit Einstellungen, Versionen und Herkunft.",
+        "report": "LaTeX-Report: report.tex, aufgebaut wie der ComFy-Report, mit den Dimensionen und den Einstellungen; läuft durch pdflatex.",
+        "print": "Druckansicht: die ganze Analyse auf A4-Seiten, zum Drucken oder Speichern als PDF.",
+        "tables": "Die Ladungen als CSV oder LaTeX und den bereinigten Datensatz als CSV."
+      },
+      "p2": "Das Bild-Symbol am Scree-Plot und an den Ladungen lädt die Abbildung als SVG herunter, deren Text Text bleibt, oder als PNG mit 300 dpi: immer hell, in der Textbreite eines CEUR-Papers.",
+      "p3": "Das Etikett-Symbol in der Werkzeugleiste nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder C_mag; der volle Name steht im Tooltip, und Abbildungen, Report und ZIP folgen ihm.",
+      "p4": "Das Link-Symbol kopiert einen Link auf die Analyse eines veröffentlichten Datensatzes mit ihren Einstellungen."
+    },
+    "api": {
+      "title": "Die API nutzen",
+      "p1": "Alles, was die App kann, geht auch über die REST-API, auch der Report und die Abbildungen. Die Seite API-Zugang nennt die Endpunkte mit Beispielen."
+    }
   }
 }

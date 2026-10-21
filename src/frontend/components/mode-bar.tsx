@@ -75,7 +75,7 @@ export function ModeBar() {
   }, [pathname]);
 
   return (
-    <div className="border-b border-border bg-bg">
+    <div className="border-b border-border bg-bg print:hidden">
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6">
         <nav
           ref={navRef}
