@@ -17,9 +17,11 @@ paper's, and so can a match that rests on one shared measure; the grouping of th
 within a column does not depend on the numbers.
 
 ``build`` turns the analyses into what the API returns: a header per column, a matrix with one
-row per measure and the dimensions of the measure in every column, and the dimensions per
-column as Tab. 17 lists them. ``membership_csv``, ``dimensions_latex`` and ``comparison_zip``
-are its exports.
+row per measure and the dimensions of the measure in every column, the dimensions per column as
+Tab. 17 lists them, and for every pair of measures in how many columns both are in the same
+dimension (``co_assignment``), which needs no matching of the dimensions at all.
+``membership_csv``, ``dimensions_latex``, ``co_assignment_csv`` and ``comparison_zip`` are its
+exports.
 """
 
 from __future__ import annotations
@@ -296,6 +298,43 @@ def _cell(measure: str, spec: dict[str, Any], result: dict[str, Any] | None, dim
     }
 
 
+def co_assignment(rows: list[dict[str, Any]], n_dimensions: int) -> dict[str, Any]:
+    """For every pair of measures, in how many columns both are in the same dimension.
+
+    ``rows`` are the rows of the matrix, in their order. A measure is in the dimensions its cell
+    lists (several under "multi"); two share a dimension in a column if they have one in common.
+    The matrices are square and symmetric, indexed by ``measures``:
+
+    - ``together``: the columns in which both are in one dimension;
+    - ``both_assigned``: the columns in which both are in some dimension, so that the difference
+      to ``together`` is where they are apart;
+    - ``both_analysed``: the columns that analysed both, in a dimension or not (a column that
+      dropped, excluded or MSA-removed one of them, lacks it, or failed, does not count).
+
+    On the diagonal a measure is paired with itself: the columns that put it in a dimension, and
+    the columns that analysed it. Nothing here depends on how the dimensions are numbered.
+    """
+    columns = len(rows[0]["cells"]) if rows else 0
+    analysed = np.zeros((len(rows), columns), dtype=int)
+    assigned = np.zeros((len(rows), columns), dtype=int)
+    together = np.zeros((len(rows), len(rows)), dtype=int)
+    for c in range(columns):
+        member = np.zeros((len(rows), max(n_dimensions, 1)), dtype=int)
+        for i, row in enumerate(rows):
+            cell = row["cells"][c]
+            analysed[i, c] = cell["status"] in ("assigned", "unassigned")
+            if cell["status"] == "assigned":
+                assigned[i, c] = 1
+                member[i, cell["dimensions"]] = 1
+        together += (member @ member.T > 0).astype(int)
+    return {
+        "measures": [row["measure"] for row in rows],
+        "together": together.tolist(),
+        "both_assigned": (assigned @ assigned.T).tolist(),
+        "both_analysed": (analysed @ analysed.T).tolist(),
+    }
+
+
 def build(specs: list[dict[str, Any]], rule: str) -> dict[str, Any]:
     """The comparison of analysed columns.
 
@@ -384,6 +423,7 @@ def build(specs: list[dict[str, Any]], rule: str) -> dict[str, Any]:
         "alignment": {**ALIGNMENT, "dimensions": n_dimensions},
         "columns": columns,
         "measures": rows,
+        "co_assignment": co_assignment(rows, n_dimensions),
         "dimensions": dimensions,
         "unassigned": [
             None if result is None else [
@@ -425,6 +465,22 @@ def membership_csv(comparison: dict[str, Any]) -> str:
     for row in comparison["measures"]:
         dimension = "" if row["dimension"] is None else f"D{row['dimension'] + 1}"
         lines.append(_csv_line([row["measure"], row["short"] or "", dimension, *(cell_text(c) for c in row["cells"])]))
+    return "".join(lines)
+
+
+def co_assignment_csv(comparison: dict[str, Any]) -> str:
+    """One row per pair of measures (each pair once, in the order of the matrix): in how many
+    analyses both are in the same dimension (``together``), in some dimension (``both_assigned``)
+    and were analysed at all (``both_analysed``)."""
+    pairs = comparison["co_assignment"]
+    codes = {row["measure"]: row["short"] or "" for row in comparison["measures"]}
+    lines = [_csv_line(["measure_a", "code_a", "measure_b", "code_b", "together", "both_assigned", "both_analysed"])]
+    for i, a in enumerate(pairs["measures"]):
+        for j in range(i + 1, len(pairs["measures"])):
+            b = pairs["measures"][j]
+            lines.append(_csv_line([
+                a, codes[a], b, codes[b], pairs["together"][i][j], pairs["both_assigned"][i][j], pairs["both_analysed"][i][j],
+            ]))
     return "".join(lines)
 
 
@@ -491,8 +547,8 @@ def _readme(comparison: dict[str, Any], files: list[dict[str, str]], created_at:
 
 
 def comparison_zip(comparison: dict[str, Any], request: dict[str, Any], short: bool = True) -> bytes:
-    """The comparison as a ZIP: the full result, the matrix as CSV, the dimensions as LaTeX, a
-    README and a manifest with the request, the parameters of each column, where the data come
+    """The comparison as a ZIP: the full result, the matrix and the pairs of measures as CSV, the
+    dimensions as LaTeX, a README and a manifest with the request, the parameters of each column, where the data come
     from, the tool and the library versions."""
     from .export import library_versions
 
@@ -504,6 +560,8 @@ def comparison_zip(comparison: dict[str, Any], request: dict[str, Any], short: b
          "One row per measure: the dimensions each analysis puts it in, or why none."),
         ("dimensions.tex", dimensions_latex(comparison, short),
          "The dimensions of each analysis as a booktabs tabular, laid out like Tab. 17 of Important Factors."),
+        ("co_assignment.csv", co_assignment_csv(comparison),
+         "One row per pair of measures: in how many analyses both are in the same dimension."),
     ]
     listing = [
         {"name": "manifest.json", "description": "What was compared, with which parameters, code and libraries."},

@@ -1533,8 +1533,10 @@ async def compare_analyses(request: Request, body: CompareRequest) -> Any:
     """The factor structures of 2 to 8 analyses of bundled datasets side by side, like Tab. 17
     of Important Factors: a header per column (n, measures after the MSA filter, KMO, factors,
     rotation, cumulative variance), every measure with the dimensions the shared assignment
-    rule puts it in per column, and the dimensions per column. The factors of the columns are
-    matched by the measures they share, so that most measures in common get the same number.
+    rule puts it in per column, the dimensions per column, and for every pair of measures in
+    how many columns both are in the same dimension (``co_assignment``). The factors of the
+    columns are matched by the measures they share, so that most measures in common get the same
+    number.
 
     Needs no dataset of the session. A 400 with ``code`` names an unknown dataset or columns of
     two kinds; a column whose analysis fails has its ``error``.
@@ -1554,8 +1556,8 @@ async def compare_analyses(request: Request, body: CompareRequest) -> Any:
 @limiter.limit(rate_limit("fa_analyze", "120/minute"))
 async def export_comparison(request: Request, body: CompareExportRequest) -> Response:
     """The comparison as CSV (one row per measure, one column per analysis), as a LaTeX
-    tabular laid out like Tab. 17 of Important Factors, or as a ZIP with both, the full result
-    and a manifest."""
+    tabular laid out like Tab. 17 of Important Factors, or as a ZIP with both, the pairs of
+    measures that share a dimension, the full result and a manifest."""
     try:
         result = await _comparison(request, body)
     except Superseded:

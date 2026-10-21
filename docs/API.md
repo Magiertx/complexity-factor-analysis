@@ -671,6 +671,17 @@ The response has:
   `cross_loading`), `msa_removed` (`msa`, `step`), `dropped` (`reason` of the cleaning, e.g.
   `constant`), `excluded`, `absent` (not in the dataset) or `failed`. A cross-loaded cell also
   has `cross_dimensions` and `cross_loadings`;
+- `co_assignment`, for every pair of measures in how many columns both are in the same
+  dimension, which needs no matching of the dimensions: `measures` (the keys, in the order of
+  `measures` above) and three square, symmetric matrices indexed by them. `together` counts the
+  columns in which both are in one dimension (under `multi`, in one they have in common),
+  `both_assigned` those in which both are in some dimension, so that the difference to
+  `together` is where they are apart, and `both_analysed` those that analysed both, in a
+  dimension or not. A column that dropped, excluded or MSA-removed one of them, lacks it or
+  failed, counts for none. On the diagonal a measure is paired with itself: the columns that put
+  it in a dimension, and the columns that analysed it. With the paper settings and `hair`, ts and
+  CFC share a dimension wherever both are in one (2 of 2), as do mcd and CNC (3 of 3, in 4
+  columns that analysed both), and CH shares one with no other measure (section 6 of the paper);
 - `dimensions`, per dimension and column the `factor` of the column (or `null`) and its
   `measures` with their loadings, in the order of the data, as Tab. 17 lists them (`null` for a
   column that failed);
@@ -695,10 +706,12 @@ by the codes of the papers, as Tab. 17 does) and returns `factor-structures.csv`
   column per dimension, laid out like Tab. 17; comments name the rule, how the dimensions were
   matched and the measures in no dimension.
 - ZIP: `comparison.json` (the response of `compare`), `membership.csv`, `dimensions.tex`,
-  `README.txt` and `manifest.json` with `app`, `created_at`, `tool`, the `request` as sent (with
-  the rule and `short_codes`), `assignment_rule`, `alignment`, `columns` (per column the
-  `bundled_id`, `label`, `settings`, `analysis_params`, `published_source`, `citation`,
-  `license`, `source_url` and `source_commit`), `measure_labels`, `libraries` and `files`.
+  `co_assignment.csv` (one row per pair of measures, each once: `measure_a`, `code_a`,
+  `measure_b`, `code_b`, `together`, `both_assigned`, `both_analysed`), `README.txt` and
+  `manifest.json` with `app`, `created_at`, `tool`, the `request` as sent (with the rule and
+  `short_codes`), `assignment_rule`, `alignment`, `columns` (per column the `bundled_id`,
+  `label`, `settings`, `analysis_params`, `published_source`, `citation`, `license`,
+  `source_url` and `source_commit`), `measure_labels`, `libraries` and `files`.
 
 ### Interpretation by Claude
 

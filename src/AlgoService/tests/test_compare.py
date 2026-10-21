@@ -30,6 +30,7 @@ import json
 import shutil
 import subprocess
 import zipfile
+from collections.abc import Callable
 
 import pytest
 
@@ -305,6 +306,64 @@ def test_rows_are_grouped_by_dimension(compared):
     assert {SHORT[r["measure"]] for r in rows} == set(SHORT.values())
 
 
+def _pairs(comparison: dict) -> tuple[dict[str, int], Callable[[str, str], tuple[int, int, int]]]:
+    """The index of each measure by short name, and the three counts of a pair."""
+    pairs = comparison["co_assignment"]
+    index = {SHORT[m]: i for i, m in enumerate(pairs["measures"])}
+
+    def pair(a: str, b: str) -> tuple[int, int, int]:
+        return tuple(pairs[k][index[a]][index[b]] for k in ("together", "both_assigned", "both_analysed"))
+
+    return index, pair
+
+
+def test_pairs_count_in_how_many_columns_two_measures_share_a_dimension(compared):
+    comparison = compared(_body(FOUR))
+    pairs = comparison["co_assignment"]
+    # The measures in the order of the matrix, three square matrices.
+    assert pairs["measures"] == [r["measure"] for r in comparison["measures"]]
+    for key in ("together", "both_assigned", "both_analysed"):
+        matrix = pairs[key]
+        assert len(matrix) == 13 and all(len(row) == 13 for row in matrix)
+        assert all(matrix[i][j] == matrix[j][i] for i in range(13) for j in range(13))
+    index, pair = _pairs(comparison)
+    # ts and CFC are both analysed by the Alpha and the Hybrid ILP miner (the other two drop or
+    # remove one) and share a dimension in both; mcd and CNC are cross-loaded in the Directly
+    # Follows miner and so in no dimension there: together wherever both are in a dimension.
+    assert pair("ts", "CFC") == (2, 2, 2)
+    assert pair("mcd", "CNC") == (3, 3, 4)
+    # sep is with size in the Hybrid ILP miner only.
+    assert pair("sep", "size") == (1, 4, 4)
+    # On the diagonal: the columns with the measure in a dimension, and the columns with it at all.
+    assert pair("CH", "CH") == (1, 1, 3)
+    assert pair("size", "size") == (4, 4, 4)
+    # Apart is told from left out: size and ts are both in a dimension in three columns and
+    # together in two, being apart in the Hybrid ILP miner, where size goes with sep.
+    assert pair("size", "ts") == (2, 3, 3)
+
+
+def test_ch_shares_a_dimension_with_nothing_under_hair_and_a_pair_that_needs_no_numbers(compared):
+    """IF, section 6: CH is alone. Under the rule of Tab. 17 it is in a dimension in one column
+    only, and with no other measure there."""
+    index, pair = _pairs(compared(_body(FOUR, "hair")))
+    for other in index:
+        if other != "CH":
+            assert pair("CH", other)[0] == 0, other
+    # The pairs do not depend on how the dimensions are numbered, nor on whether they were matched.
+    assert [pair("ts", "CFC")[0], pair("mcd", "CNC")[0]] == [2, 3]
+
+
+def test_pairs_under_multi_count_a_shared_dimension_of_a_cross_loaded_measure(compared):
+    index, pair = _pairs(compared(_body(FOUR, "multi")))
+    # Wherever ts and CFC, mcd and CNC are both in a dimension, they share one.
+    for a, b in (("ts", "CFC"), ("mcd", "CNC")):
+        together, both_assigned, both_analysed = pair(a, b)
+        assert together == both_assigned > 0
+        assert both_analysed >= both_assigned
+    # acd is in three dimensions of the Inductive miner, one of them with CH.
+    assert pair("acd", "CH")[0] >= 1
+
+
 def test_alpha_dollar_is_named_the_same_as_alpha_and_heuristics_has_three_factors(compared):
     comparison = compared(_body(SEVEN))
     columns = comparison["columns"]
@@ -447,7 +506,10 @@ def test_zip_has_the_request_and_the_parameters_of_every_column(client):
         manifest = json.loads(archive.read("manifest.json"))
         comparison = json.loads(archive.read("comparison.json"))
         readme = archive.read("README.txt").decode()
-    assert names == {"manifest.json", "README.txt", "comparison.json", "membership.csv", "dimensions.tex"}
+        pairs = archive.read("co_assignment.csv").decode().splitlines()
+    assert names == {
+        "manifest.json", "README.txt", "comparison.json", "membership.csv", "dimensions.tex", "co_assignment.csv",
+    }
     # The request as sent, with the rule and the labels it used.
     assert manifest["request"] == {**body, "short_codes": True}
     assert manifest["assignment_rule"] == "hair"
@@ -459,6 +521,12 @@ def test_zip_has_the_request_and_the_parameters_of_every_column(client):
     assert manifest["measure_labels"] == "short_codes"
     assert comparison["columns"][2]["label"] == "Inductive miner"
     assert "POST the request of manifest.json to /factor-analysis/compare" in readme
+    # One row per pair of measures, each once; the manifest lists the file.
+    assert pairs[0] == "measure_a,code_a,measure_b,code_b,together,both_assigned,both_analysed"
+    assert len(pairs) == 1 + 13 * 12 // 2
+    assert "Token split,ts,Control flow complexity,CFC,2,2,2" in pairs or "Control flow complexity,CFC,Token split,ts,2,2,2" in pairs
+    assert "co_assignment.csv" in {f["name"] for f in manifest["files"]}
+    assert "co_assignment.csv" in readme
 
 
 def _pdflatex() -> str | None:
