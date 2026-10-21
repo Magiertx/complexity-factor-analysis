@@ -764,7 +764,7 @@ function DimensionTable({
         <tbody>
           {comparison.columns.map((column, i) => (
             <tr key={`${column.bundled_id}-${i}`}>
-              <th scope="row" className="sticky-col font-medium min-w-[8rem]">
+              <th scope="row" className="sticky-col font-medium min-w-[8rem] align-top">
                 {columnLabel(column)}
               </th>
               {column.error ? (
