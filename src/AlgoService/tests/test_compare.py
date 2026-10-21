@@ -270,6 +270,12 @@ def test_column_headers(compared):
     assert {SHORT[m] for m in hybrid["msa_removed"]} == {"dens"}
     assert alpha["published_source"].startswith("Important Factors")
     assert hybrid["paper_tables"] == "other_data"
+    # What the rule applied: Hair et al. leave out a communality below 0.5, whatever the parameter says.
+    for column in columns:
+        assert column["assignment"] == {
+            "rule": "hair", "loading_threshold": 0.35, "loading_strict": True, "communality_threshold": 0.5,
+            "cross_loading_gap": 0.15, "cross_loaded": "none",
+        }
 
 
 def test_cells_say_why_a_measure_is_in_no_dimension(compared):
@@ -413,6 +419,22 @@ def test_the_same_dataset_with_four_and_six_factors(client):
     assert [d["columns"][1]["measures"] for d in comparison["dimensions"][4:]] == [[], []]
 
 
+def test_the_latex_names_the_thresholds_of_each_analysis_where_they_differ(client):
+    body = {
+        "columns": [
+            {"bundled_id": "comfy-paper-alpha-miner"},
+            {"bundled_id": "comfy-paper-inductive-miner", "options": {"communality_threshold": 0.6}},
+        ],
+        "assignment_rule": "hair",
+        "format": "latex",
+    }
+    tex = client.post("/factor-analysis/compare/export", json=body).text
+    assert "% Thresholds applied, Alpha miner: communality >= 0.5, |loading| > 0.35." in tex
+    assert "% Thresholds applied, Inductive miner: communality >= 0.6, |loading| > 0.35." in tex
+    largest = client.post("/factor-analysis/compare/export", json={**body, "assignment_rule": "largest"}).text
+    assert "% Thresholds applied, Alpha miner: communality >= 0.3, |loading| >= 0.35." in largest
+
+
 def test_standard_settings_and_kaiser(client):
     body = {
         "columns": [
@@ -509,6 +531,8 @@ def test_latex_is_laid_out_like_table_17(client):
     assert "Inductive miner & size, ts, dup & CH & sep & mcd, CNC \\\\" in tex
     assert "Directly Follows miner & size, CFC, acd, dup & dens & sep &  \\\\" in tex
     assert "% Assignment rule hair:" in tex
+    # The least communality the rule used, not the 0.3 of the parameters.
+    assert "% Thresholds applied: communality >= 0.5, |loading| > 0.35." in tex
     assert "% In no dimension, Alpha miner: Connector Mismatch (low communality); Connector Heterogeneity (cross-loading)." in tex
     names = client.post("/factor-analysis/compare/export", json={**_body(FOUR), "format": "latex", "short_codes": False}).text
     assert "Inductive miner & Size, Token split, Number of duplicate tasks &" in names
@@ -533,6 +557,10 @@ def test_zip_has_the_request_and_the_parameters_of_every_column(client):
     assert manifest["alignment"]["method"] == "shared_measures"
     assert [c["bundled_id"] for c in manifest["columns"]] == [f"comfy-paper-{m}-miner" for m in FOUR]
     assert manifest["columns"][0]["analysis_params"]["n_factors"] == 4
+    # The parameter says 0.3; the rule used 0.5.
+    assert manifest["columns"][0]["analysis_params"]["communality_threshold"] == 0.3
+    assert manifest["columns"][0]["assignment"]["communality_threshold"] == 0.5
+    assert manifest["columns"][0]["assignment"]["rule"] == "hair"
     assert manifest["columns"][0]["citation"].startswith("Data of the paper")
     assert manifest["libraries"]["factor_analyzer"]
     assert manifest["measure_labels"] == "short_codes"

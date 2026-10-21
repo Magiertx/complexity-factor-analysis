@@ -656,7 +656,11 @@ The response has:
   (`paper` or `standard`, as used), `options` (the parameters of the analysis, with the factor
   count it used), `published_source`, `paper_tables` (the key of the manifest, e.g.
   `other_data`), `n_measures` (of the CSV), `n_observations`, `used_measures`, `msa_removed`,
-  `kmo`, `n_factors`, `rotation`, `cumulative_variance` (`null` for an oblique rotation),
+  `kmo`, `n_factors`, `rotation`, `assignment` (what the rule applied: `rule`,
+  `loading_threshold`, `loading_strict`, the `communality_threshold` it used and
+  `cross_loading_gap`, `cross_loaded`; the communality threshold is the higher of the parameter
+  and the rule's own minimum, so 0.5 under `hair` whatever `options` say), `cumulative_variance`
+  (`null` for an oblique rotation),
   `explained_variance`, `factor_count` (`kaiser`, `parallel_analysis`), `warnings` (as
   `warning_details` of `analyze`), `timings`, `factor_dimensions` (the dimension of each factor,
   from 0), `shared_measures` (how many measures each factor shares with its dimension in the
@@ -707,14 +711,14 @@ by the codes of the papers, as Tab. 17 does) and returns `factor-structures.csv`
 - LaTeX: a booktabs `tabularx` (needs `booktabs`, `array` and `tabularx`) as wide as the line
   (`\linewidth`), so it fits a one- or a two-column page without a width to set: the names of the
   datasets take what they need and the dimensions share the rest. One row per dataset and one
-  column per dimension, laid out like Tab. 17; comments name the rule, how the
-  dimensions were matched and the measures in no dimension.
+  column per dimension, laid out like Tab. 17; comments name the rule, the thresholds it
+  applied, how the dimensions were matched and the measures in no dimension.
 - ZIP: `comparison.json` (the response of `compare`), `membership.csv`, `dimensions.tex`,
   `co_assignment.csv` (one row per pair of measures, each once: `measure_a`, `code_a`,
   `measure_b`, `code_b`, `together`, `both_assigned`, `both_analysed`), `README.txt` and
   `manifest.json` with `app`, `created_at`, `tool`, the `request` as sent (with the rule and
   `short_codes`), `assignment_rule`, `alignment`, `columns` (per column the `bundled_id`,
-  `label`, `settings`, `analysis_params`, `published_source`, `citation`, `license`,
+  `label`, `settings`, `analysis_params`, `assignment`, `published_source`, `citation`, `license`,
   `source_url` and `source_commit`), `measure_labels`, `libraries` and `files`.
 
 ### Interpretation by Claude

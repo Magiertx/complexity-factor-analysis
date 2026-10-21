@@ -227,6 +227,9 @@ def _column_header(spec: dict[str, Any], result: dict[str, Any] | None) -> dict[
     cumulative = result["variance"]["cumulative"]
     header.update({
         "n_observations": result["n_observations"],
+        # What the rule applied: communality_threshold is the higher of the parameter and the
+        # rule's own minimum (0.5 under "hair" whatever ``options`` say).
+        "assignment": result["assignment"],
         "used_measures": result["used_measures"],
         "msa_removed": [r["measure"] for r in result["msa_filter"]["removed"]],
         "kmo": result["kmo"]["overall"],
@@ -484,6 +487,15 @@ def co_assignment_csv(comparison: dict[str, Any]) -> str:
     return "".join(lines)
 
 
+def _thresholds(assignment: dict[str, Any]) -> str:
+    """What the rule applied to one analysis, e.g. "communality >= 0.5, |loading| > 0.35"."""
+    compare = ">" if assignment["loading_strict"] else ">="
+    return (
+        f"communality >= {assignment['communality_threshold']:g}, "
+        f"|loading| {compare} {assignment['loading_threshold']:g}"
+    )
+
+
 _UNASSIGNED = {"low_communality": "low communality", "low_loading": "no loading counts", "cross_loading": "cross-loading"}
 
 
@@ -502,8 +514,20 @@ def dimensions_latex(comparison: dict[str, Any], short: bool = True) -> str:
     lines = [
         "% Requires \\usepackage{booktabs}, \\usepackage{array} and \\usepackage{tabularx}; as wide as the line.",
         f"% Assignment rule {rule}: {ASSIGNMENT_RULE_TEXTS[rule]}.",
-        "% Dimensions matched across the analyses by shared measures; the first analysis keeps the numbers of its factors.",
     ]
+    # The thresholds the rule applied, which can differ from the parameters (the least
+    # communality of "hair" is 0.5 whatever the parameter says); per analysis only if they differ.
+    applied: dict[str, list[str]] = {}
+    for column in comparison["columns"]:
+        if column.get("assignment"):
+            applied.setdefault(_thresholds(column["assignment"]), []).append(" ".join(column["label"].split()))
+    if len(applied) == 1:
+        lines.append(f"% Thresholds applied: {next(iter(applied))}.")
+    else:
+        lines += [f"% Thresholds applied, {', '.join(labels)}: {text}." for text, labels in applied.items()]
+    lines.append(
+        "% Dimensions matched across the analyses by shared measures; the first analysis keeps the numbers of its factors."
+    )
     for column, unassigned in zip(comparison["columns"], comparison["unassigned"]):
         if unassigned:
             listed = "; ".join(
@@ -578,6 +602,7 @@ def comparison_zip(comparison: dict[str, Any], request: dict[str, Any], short: b
             "label": column["label"],
             "settings": column["settings"],
             "analysis_params": column["options"],
+            "assignment": column.get("assignment"),
             "published_source": column.get("published_source"),
             "citation": entry.get("citation"),
             "license": entry.get("license"),
