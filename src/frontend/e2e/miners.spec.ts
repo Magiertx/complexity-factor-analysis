@@ -10,6 +10,7 @@ import {
   expectStep,
   goToStep,
   pattern,
+  stepLink,
   stepSection,
   test,
   text,
@@ -160,4 +161,34 @@ test("with four logs every miner has too few nets: its tile is blocked and says 
   const compare = stepSection(page, "dataset").getByRole("link", { name: text("factor.miners.compare") });
   await expect(compare).toHaveAttribute("aria-disabled", "true");
   await expect(compare).toHaveAttribute("aria-description", pattern(text("factor.miners.compare_none")));
+});
+
+test("another miner clears the names of the factors, and Undo brings back both", async ({ page }) => {
+  test.setTimeout(FIT_TIMEOUT + 120_000);
+  await uploadMiners(page, 50);
+  const tiles = minerTiles(page);
+  await tiles.getByRole("radio", { name: "Inductive miner" }).check({ force: true });
+  await expectStep(page, "loadings", "done", "en", FIT_TIMEOUT);
+  await goToStep(page, "loadings");
+  const loadings = stepSection(page, "loadings");
+  await loadings.getByRole("button", { name: text("factor.loadings.look_matrix") }).click();
+  await loadings
+    .locator("thead")
+    .first()
+    .getByRole("button", { name: new RegExp(`^${text("factor.loadings.factor_n", { i: 1 })}\b`) })
+    .click();
+  const field = loadings.getByRole("textbox", { name: text("factor.names.field", { i: 1 }) });
+  await field.fill("Size");
+  await field.press("Enter");
+  await expect(stepLink(page, "loadings")).toContainText("Size");
+
+  // The names of one miner's factors do not name the factors of another miner.
+  await goToStep(page, "dataset");
+  await tiles.getByRole("radio", { name: "Alpha miner" }).check({ force: true });
+  const toast = page.getByRole("status").filter({ hasText: text("factor.names.cleared") });
+  await expect(toast).toBeVisible({ timeout: FIT_TIMEOUT });
+  await expect(stepLink(page, "loadings")).not.toContainText("Size");
+  await toast.getByRole("button", { name: text("common.undo") }).click();
+  await expect(tiles.getByRole("radio", { name: "Inductive miner" })).toBeChecked();
+  await expect(stepLink(page, "loadings")).toContainText("Size", { timeout: FIT_TIMEOUT });
 });
