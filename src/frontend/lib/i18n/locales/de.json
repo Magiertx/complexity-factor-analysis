@@ -256,8 +256,8 @@
       "session_start": "Startet die Sitzung (das Cookie `session_id`), wenn die Anfrage keines hat oder eines, das der Server nicht lesen kann. Die Seite erledigt das selbst; ein Skript, das mehrere Anfragen gleichzeitig sendet, ruft es zuerst auf.",
       "fa_export_report": "Die Analyse als LaTeX-Report, aufgebaut wie der von ComFy (report.tex); der Body von analyze plus `short_codes` und `language`.",
       "fa_export_figure": "Der Scree-Plot oder die Ladungs-Heatmap als SVG oder PNG (300 dpi) im Druckstil; der Body von analyze plus `figure`, `format`, `short_codes`, `order` und `language` (`en` oder `de`).",
-      "fa_compare": "Die Faktorstrukturen von 2 bis 8 mitgelieferten Datensätzen nebeneinander, wie Tab. 17 von Important Factors: je Spalte n, die Maße nach dem MSA-Filter, KMO, Faktoren, Rotation und erklärte Varianz, jedes Maß mit seiner Dimension je Spalte unter einer `assignment_rule`, und die Dimensionen je Spalte. Braucht keinen Datensatz der Session.",
-      "fa_compare_export": "Der Vergleich als CSV, als LaTeX-Tabelle wie Tab. 17 oder als ZIP mit beidem, dem vollständigen Ergebnis und einem Manifest; der Body von compare plus `format` und `short_codes`."
+      "fa_compare": "Die Faktorstrukturen von 2 bis 8 mitgelieferten Datensätzen nebeneinander, wie Tab. 17 von Important Factors: je Spalte n, die Maße nach dem MSA-Filter, KMO, Faktoren, Rotation und erklärte Varianz, jedes Maß mit seiner Dimension je Spalte unter einer `assignment_rule`, die Dimensionen je Spalte und für jedes Paar von Maßen, in wie vielen Spalten es eine Dimension teilt (`co_assignment`). Eine Spalte kann eine eigene Faktorzahl haben (`options`). Braucht keinen Datensatz der Session.",
+      "fa_compare_export": "Der Vergleich als CSV, als LaTeX-Tabelle wie Tab. 17 oder als ZIP mit beidem, den Paaren von Maßen, dem vollständigen Ergebnis und einem Manifest; der Body von compare plus `format` und `short_codes`."
     },
     "notes": {
       "rate_limits": "Ratenlimits pro IP: `60/hour` für `POST /algorithms/{id}/analyze` und für neue Datensätze aus `POST /factor-analysis/datasets`, `600/minute` für das Lesen, Auflisten und Löschen von Datensätzen und das Speichern ihrer Optionen, `300/hour` für `POST /log-stats` und `120/minute` überall sonst. Interpretationen durch Claude: `10/hour` pro Sitzung und `200/day` für den Server. Über einem Limit lautet die Antwort 429 mit einem `code`.",
@@ -1379,6 +1379,7 @@
         "rule": "Zuordnungsregel: eine Regel für jeden Datensatz, zu Beginn Hair et al. wie in Tab. 17.",
         "matrix": "Nach Maß: eine Zeile je Maß, nach Dimension gruppiert, und darüber je Datensatz n, die Maße nach dem MSA-Filter, der KMO, die Faktoren, die Rotation und die erklärte Varianz. Eine getönte Zelle liegt in der Dimension ihrer Zeile; ein Ring markiert eine Querladung, eine gestrichelte Kontur ein Maß, das der MSA-Filter entfernt hat.",
         "dimensions": "Nach Dimension: eine Zeile je Datensatz mit den Maßen jeder Dimension, aufgebaut wie Tab. 17.",
+        "pairs": "Paare: ein Quadrat der Maße; jede Zelle sagt, in wie vielen der Datensätze, die beide analysiert haben, die beiden eine Dimension teilen. Es hängt nicht davon ab, wie die Dimensionen nummeriert sind.",
         "export": "Das Download-Menü hat die Matrix als CSV, die Dimensionen als LaTeX-Tabelle wie Tab. 17 und beides in einem ZIP mit Manifest."
       },
       "p2": "Die Faktoren jeder Analyse sind von der Analyse nummeriert, deshalb werden sie zuerst einander zugeordnet: Der erste Datensatz behält seine Nummern, die Faktoren jedes weiteren kommen in die Dimension, mit der sie die meisten Maße teilen; sind zwei gleich gut, entscheiden die ähnlicheren Ladungen. Tab. 17 hat seine Dimensionen von Hand umnummeriert, deshalb kann eine Nummer von der des Papers abweichen, und eine Zuordnung, die auf einem gemeinsamen Maß beruht, ist geraten: Der Tooltip einer Zelle der Dimensionsansicht nennt die Maße, auf denen sie beruht. Wie die Maße innerhalb eines Datensatzes gruppiert sind, hängt nicht von den Nummern ab."
@@ -1397,7 +1398,8 @@
     "result": "Faktorstrukturen",
     "look": {
       "matrix": "Nach Maß",
-      "dimensions": "Nach Dimension"
+      "dimensions": "Nach Dimension",
+      "pairs": "Paare"
     },
     "columns": {
       "label": "Datensätze",
@@ -1487,6 +1489,19 @@
       "compare_unknown_dataset": "Der Link nennt einen Datensatz, den dieser Server nicht hat: {dataset}.",
       "compare_mixed_kinds": "Ein Vergleich nimmt nur Datensätze einer Art.",
       "compare_nothing_analysed": "Mit diesen Einstellungen ließ sich keiner der Datensätze analysieren."
+    },
+    "pairs": {
+      "legend": "In wie vielen der Datensätze, die beide analysiert haben, zwei Maße in derselben Dimension liegen; je dunkler, desto mehr. Auf die Nummerierung der Dimensionen kommt es hier nicht an.",
+      "label": "Paare von Maßen",
+      "caption": "In wie vielen Datensätzen zwei Maße eine Dimension teilen, unter der Regel {rule}: {columns}",
+      "names": "{a} und {b}",
+      "pair": "In derselben Dimension in {together} von {n} Datensatz, der beide analysiert hat (beide in einer Dimension in {assigned}).",
+      "pair_plural": "In derselben Dimension in {together} von {n} Datensätzen, die beide analysiert haben (beide in einer Dimension in {assigned}).",
+      "self": "In einer Dimension in {assigned} von {n} Datensatz, der es analysiert hat.",
+      "self_plural": "In einer Dimension in {assigned} von {n} Datensätzen, die es analysiert haben.",
+      "never": "Kein Datensatz hat beide analysiert.",
+      "never_self": "Kein Datensatz hat es analysiert.",
+      "fraction": "{together} von {analysed}"
     }
   }
 }

@@ -170,3 +170,12 @@ export function groupRows<T extends { dimension: number | null }>(rows: T[]): { 
   }
   return groups;
 }
+
+/**
+ * The tint of a pair in the matrix of pairs, as the opacity of the text colour: nothing where the
+ * two are never in one dimension, up to a quarter where they always are.
+ */
+export function pairTint(together: number, analysed: number): number {
+  if (analysed <= 0 || together <= 0) return 0;
+  return 0.05 + 0.2 * Math.min(1, together / analysed);
+}

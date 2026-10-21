@@ -1025,6 +1025,17 @@ export interface CompareRow {
   cells: CompareCell[];
 }
 
+/** Square, symmetric matrices indexed by `measures` (the order of the rows of the comparison). */
+export interface CoAssignment {
+  measures: string[];
+  /** The columns in which both measures are in one dimension. */
+  together: number[][];
+  /** The columns in which both are in some dimension. */
+  both_assigned: number[][];
+  /** The columns that analysed both, in a dimension or not. */
+  both_analysed: number[][];
+}
+
 export interface Comparison {
   kind: FactorKind;
   assignment_rule: AssignmentRule;
@@ -1033,6 +1044,8 @@ export interface Comparison {
   columns: CompareColumn[];
   /** Grouped by dimension, those in none last. */
   measures: CompareRow[];
+  /** For every pair of measures, in how many columns both are in the same dimension. */
+  co_assignment: CoAssignment;
   /** Per dimension and column: the factor of the column and its measures, in the order of the data. */
   dimensions: {
     index: number;

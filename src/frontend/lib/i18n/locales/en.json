@@ -256,8 +256,8 @@
       "session_start": "Starts the session (the `session_id` cookie) if the request has none, or one the server cannot read. The page does it by itself; a script that sends several requests at once calls it first.",
       "fa_export_report": "The analysis as a LaTeX report built like ComFy's (report.tex); the body of analyze plus `short_codes` and `language`.",
       "fa_export_figure": "The scree plot or the loadings heatmap as SVG or PNG (300 dpi) in print style; the body of analyze plus `figure`, `format`, `short_codes`, `order` and `language` (`en` or `de`).",
-      "fa_compare": "The factor structures of 2 to 8 bundled datasets side by side, like Tab. 17 of Important Factors: per column n, the measures after the MSA filter, KMO, factors, rotation and variance explained, every measure with its dimension per column under one `assignment_rule`, and the dimensions per column. Needs no dataset of the session.",
-      "fa_compare_export": "The comparison as CSV, as a LaTeX table like Tab. 17, or as a ZIP with both, the full result and a manifest; the body of compare plus `format` and `short_codes`."
+      "fa_compare": "The factor structures of 2 to 8 bundled datasets side by side, like Tab. 17 of Important Factors: per column n, the measures after the MSA filter, KMO, factors, rotation and variance explained, every measure with its dimension per column under one `assignment_rule`, the dimensions per column, and for every pair of measures in how many columns they share a dimension (`co_assignment`). A column may have a factor count of its own (`options`). Needs no dataset of the session.",
+      "fa_compare_export": "The comparison as CSV, as a LaTeX table like Tab. 17, or as a ZIP with both, the pairs of measures, the full result and a manifest; the body of compare plus `format` and `short_codes`."
     },
     "notes": {
       "rate_limits": "Rate limits per IP: `60/hour` on `POST /algorithms/{id}/analyze` and on new datasets from `POST /factor-analysis/datasets`, `600/minute` on reading, listing and deleting datasets and on saving their options, `300/hour` on `POST /log-stats` and `120/minute` everywhere else. Interpretations by Claude: `10/hour` per session and `200/day` for the server. Over a limit the answer is a 429 with a `code`.",
@@ -1379,6 +1379,7 @@
         "rule": "Assignment rule: one rule for every dataset, Hair et al. as in Tab. 17 to begin with.",
         "matrix": "By measure: a row per measure, grouped by dimension, and above them n, the measures after the MSA filter, the KMO, the factors, the rotation and the variance explained per dataset. A tinted cell is in the dimension of its row; a ring marks a cross-loading, a dashed outline a measure the MSA filter removed.",
         "dimensions": "By dimension: a row per dataset with the measures of each dimension, laid out like Tab. 17.",
+        "pairs": "Pairs: a square of the measures, each cell saying in how many of the datasets that analysed both the two share a dimension. It does not depend on how the dimensions are numbered.",
         "export": "The download menu has the matrix as CSV, the dimensions as a LaTeX table like Tab. 17, and both in a ZIP with a manifest."
       },
       "p2": "The factors of every analysis are numbered by the analysis, so they are matched first: the first dataset keeps its numbers, and the factors of every further one go to the dimension with which they share the most measures; where two are equally good, the more alike loadings decide. Tab. 17 renumbered its dimensions by hand, so a number can differ from the paper's, and a match that rests on one shared measure is a guess: the tooltip of a cell in the dimension view names the measures it rests on. How the measures are grouped within a dataset does not depend on the numbers."
@@ -1397,7 +1398,8 @@
     "result": "Factor structures",
     "look": {
       "matrix": "By measure",
-      "dimensions": "By dimension"
+      "dimensions": "By dimension",
+      "pairs": "Pairs"
     },
     "columns": {
       "label": "Datasets",
@@ -1487,6 +1489,19 @@
       "compare_unknown_dataset": "The link names a dataset this server does not have: {dataset}.",
       "compare_mixed_kinds": "A comparison takes datasets of one kind only.",
       "compare_nothing_analysed": "None of the datasets could be analysed with these settings."
+    },
+    "pairs": {
+      "legend": "In how many of the datasets that analysed both, two measures are in the same dimension; the darker, the more. The numbering of the dimensions does not matter here.",
+      "label": "Pairs of measures",
+      "caption": "In how many datasets two measures share a dimension, under the rule {rule}: {columns}",
+      "names": "{a} and {b}",
+      "pair": "In the same dimension in {together} of {n} dataset that analysed both (both in a dimension in {assigned}).",
+      "pair_plural": "In the same dimension in {together} of {n} datasets that analysed both (both in a dimension in {assigned}).",
+      "self": "In a dimension in {assigned} of {n} dataset that analysed it.",
+      "self_plural": "In a dimension in {assigned} of {n} datasets that analysed it.",
+      "never": "No dataset analysed both.",
+      "never_self": "No dataset analysed it.",
+      "fraction": "{together} of {analysed}"
     }
   }
 }

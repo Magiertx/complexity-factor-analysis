@@ -87,6 +87,21 @@ for i, column in enumerate(compared["columns"]):
     print(column["label"], [[m["measure"] for m in d["columns"][i]["measures"]] for d in compared["dimensions"]])
 with open("factor-structures.tex", "wb") as f:
     f.write(s.post(f"{BASE}/factor-analysis/compare/export", json={**body, "format": "latex"}).content)
+
+# 5. In how many datasets two measures share a dimension, whatever the numbering of the dimensions
+pairs = compared["co_assignment"]
+ts, cfc = (pairs["measures"].index(m) for m in ("Token split", "Control flow complexity"))
+print("ts and CFC:", pairs["together"][ts][cfc], "of", pairs["both_analysed"][ts][cfc])
+
+# 6. Section 6: the same dataset with 4 and with 6 factors; a column may change its settings
+six = {
+    "columns": [
+        {"bundled_id": "comfy-paper-inductive-miner"},
+        {"bundled_id": "comfy-paper-inductive-miner", "options": {"n_factors": 6}, "label": "k = 6"},
+    ],
+    "assignment_rule": "multi",
+}
+print([c["n_factors"] for c in s.post(f"{BASE}/factor-analysis/compare", json=six).json()["columns"]])
 `;
 
 const CURL_EXAMPLE = `# List algorithms

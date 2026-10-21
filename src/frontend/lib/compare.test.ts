@@ -9,6 +9,7 @@ import {
   compareRequest,
   dimensionLabel,
   groupRows,
+  pairTint,
   parseColumnKey,
   parseCompareQuery,
   sameState,
@@ -117,6 +118,18 @@ describe("a factor count per column", () => {
     expect(toggleColumn(["a", "a~k6", "c"], "a", order)).toEqual(["a~k6", "c"]);
     expect(toggleColumn(["a~k6", "c"], "a", order)).toEqual(["a", "a~k6", "c"]);
     expect(toggleColumn(["a", "a~k8"], "a~k6", order)).toEqual(["a", "a~k6", "a~k8"]);
+  });
+});
+
+describe("the tint of a pair", () => {
+  it("is none for a pair never in one dimension or never analysed, and darker the more often", () => {
+    expect(pairTint(0, 3)).toBe(0);
+    expect(pairTint(2, 0)).toBe(0);
+    expect(pairTint(1, 4)).toBeGreaterThan(0);
+    expect(pairTint(2, 4)).toBeGreaterThan(pairTint(1, 4));
+    expect(pairTint(4, 4)).toBeGreaterThan(pairTint(2, 4));
+    expect(pairTint(9, 4)).toBe(pairTint(4, 4));
+    expect(pairTint(4, 4)).toBeLessThanOrEqual(0.3);
   });
 });
 

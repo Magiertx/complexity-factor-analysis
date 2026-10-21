@@ -53,7 +53,7 @@ const SECTIONS: GuideSection[] = [
   {
     id: "compare",
     before: 1,
-    items: ["columns", "rule", "matrix", "dimensions", "export"],
+    items: ["columns", "rule", "matrix", "dimensions", "pairs", "export"],
     after: 1,
     links: [{ href: COMPARE_HREF, key: "compare" }],
   },

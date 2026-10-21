@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, Grid3x3, Info, LayoutGrid, Loader2, RotateCcw } from "lucide-react";
+import { AlertTriangle, Combine, Grid3x3, Info, LayoutGrid, Loader2, RotateCcw } from "lucide-react";
 import {
   HttpError,
   compareAnalyses,
@@ -24,6 +24,7 @@ import {
   compareRequest,
   dimensionLabel,
   groupRows,
+  pairTint,
   parseColumnKey,
   parseCompareQuery,
   sameState,
@@ -53,13 +54,15 @@ const LOOK_KEY = "app.compare-look";
 /** Changes in quick succession (several tiles) are compared once. */
 const COMPARE_DEBOUNCE_MS = 150;
 
-type Look = "matrix" | "dimensions";
+type Look = "matrix" | "dimensions" | "pairs";
+const LOOKS: readonly Look[] = ["matrix", "dimensions", "pairs"];
 
 function useLook(): [Look, (look: Look) => void] {
   const [look, setLook] = useState<Look>("matrix");
   useEffect(() => {
     try {
-      if (localStorage.getItem(LOOK_KEY) === "dimensions") setLook("dimensions");
+      const saved = localStorage.getItem(LOOK_KEY) as Look | null;
+      if (saved && LOOKS.includes(saved)) setLook(saved);
     } catch {
       /* storage blocked */
     }
@@ -200,6 +203,7 @@ export function CompareView() {
   const codesAvailable = !!comparison && hasCodes(codes, comparison.measures.map((m) => m.measure));
   const codesShown = codesOn && codesAvailable;
   const labels = useMemo(() => measureLabels(names, descriptions, codes, codesShown), [names, descriptions, codes, codesShown]);
+  const everyLabel = useMemo(() => measureLabels(names, descriptions, codes, false), [names, descriptions, codes]);
 
   const [look, setLook] = useLook();
   const [exporting, setExporting] = useState<CompareExportFormat | null>(null);
@@ -309,6 +313,15 @@ export function CompareView() {
                     </>
                   ),
                 },
+                {
+                  value: "pairs",
+                  label: (
+                    <>
+                      <Combine className="h-3.5 w-3.5" aria-hidden />
+                      {t("compare.look.pairs")}
+                    </>
+                  ),
+                },
               ]}
             />
           </div>
@@ -339,8 +352,10 @@ export function CompareView() {
           <div className={cn("space-y-3 transition-opacity motion-reduce:transition-none", outdated && "opacity-60")}>
             {look === "matrix" ? (
               <MembershipMatrix comparison={comparison} labels={labels} titles={titles} />
-            ) : (
+            ) : look === "dimensions" ? (
               <DimensionTable comparison={comparison} labels={labels} titles={titles} />
+            ) : (
+              <PairsMatrix comparison={comparison} labels={everyLabel} codes={codes} titles={titles} />
             )}
             <ColumnNotes comparison={comparison} titles={titles} ownCounts={ownCounts} measureName={labels.name} />
             <p className="text-[11px] text-muted max-w-prose">{t("compare.alignment_note")}</p>
@@ -883,6 +898,140 @@ function DimensionTable({
         </tbody>
       </table>
     </TableFrame>
+  );
+}
+
+/**
+ * Pairs of measures: in how many of the datasets that analysed both two measures are in the same
+ * dimension, as a square of short codes. The rows are those of the matrix, so the dimensions show
+ * as blocks along the diagonal, and nothing in it depends on how the dimensions are numbered.
+ * The tint is the share, the number in the cell says how many of how many; on the diagonal a
+ * measure is paired with itself: in a dimension in how many of the datasets that analysed it.
+ */
+function PairsMatrix({
+  comparison,
+  labels,
+  codes,
+  titles,
+}: {
+  comparison: Comparison;
+  /** The full names and what the measures measure, whatever the switch of the short codes says. */
+  labels: Labels;
+  codes: ReadonlyMap<string, string>;
+  titles: string[];
+}) {
+  const t = useT();
+  const zone = useTipZone<HTMLTableElement>();
+  const pairs = comparison.co_assignment;
+  const rows = comparison.measures;
+  // The axes are short: the code of the papers, or the name of a measure without one.
+  const axis = (measure: string) => codes.get(measure) ?? labels.name(measure);
+  // The rows start a new block where the dimension of the row changes.
+  const starts = rows.map((row, i) => i > 0 && row.dimension !== rows[i - 1].dimension);
+  return (
+    <div className="space-y-2">
+      <p className="text-[11px] text-muted max-w-prose">{t("compare.pairs.legend")}</p>
+      <TableFrame label={t("compare.pairs.label")}>
+        <table ref={zone} className="data-table">
+          <caption className="sr-only">
+            {t("compare.pairs.caption", {
+              rule: t(`factor.loadings.rule.${comparison.assignment_rule}.title`),
+              columns: titles.join(", "),
+            })}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col" className="sticky-col">
+                {t("factor.loadings.col_measure")}
+              </th>
+              {rows.map((row, j) => (
+                <th
+                  key={row.measure}
+                  scope="col"
+                  data-tip={labels.name(row.measure)}
+                  data-tip-more={labels.description(row.measure)}
+                  className={cn("text-center !px-2 min-w-[3rem]", starts[j] && "border-l border-border")}
+                >
+                  {axis(row.measure)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={row.measure}>
+                <th
+                  scope="row"
+                  data-tip={labels.name(row.measure)}
+                  data-tip-more={labels.description(row.measure)}
+                  className={cn("sticky-col font-medium", starts[i] && "border-t border-border")}
+                >
+                  {axis(row.measure)}
+                </th>
+                {rows.map((other, j) => (
+                  <PairCell
+                    key={other.measure}
+                    together={pairs.together[i][j]}
+                    assigned={pairs.both_assigned[i][j]}
+                    analysed={pairs.both_analysed[i][j]}
+                    self={i === j}
+                    a={labels.name(row.measure)}
+                    b={labels.name(other.measure)}
+                    className={cn(starts[i] && "border-t border-border", starts[j] && "border-l border-border")}
+                  />
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </TableFrame>
+    </div>
+  );
+}
+
+function PairCell({
+  together,
+  assigned,
+  analysed,
+  self,
+  a,
+  b,
+  className,
+}: {
+  together: number;
+  assigned: number;
+  analysed: number;
+  self: boolean;
+  a: string;
+  b: string;
+  className?: string;
+}) {
+  const t = useT();
+  const none = analysed === 0;
+  const more = none
+    ? t(self ? "compare.pairs.never_self" : "compare.pairs.never")
+    : self
+      ? countText(t, "compare.pairs.self", analysed, { assigned })
+      : countText(t, "compare.pairs.pair", analysed, { together, assigned });
+  const alpha = self ? 0 : pairTint(together, analysed);
+  return (
+    <td
+      data-tip={self ? a : t("compare.pairs.names", { a, b })}
+      data-tip-more={more}
+      className={cn("text-center tabular-nums !px-2", self || none ? "text-muted" : "text-fg", className)}
+      style={alpha > 0 ? { backgroundColor: `rgb(var(--fg) / ${alpha.toFixed(3)})` } : undefined}
+    >
+      {none ? (
+        "–"
+      ) : (
+        <>
+          <span aria-hidden>
+            {together}/{analysed}
+          </span>
+          <span className="sr-only">{t("compare.pairs.fraction", { together, analysed })}</span>
+        </>
+      )}
+    </td>
   );
 }
 
