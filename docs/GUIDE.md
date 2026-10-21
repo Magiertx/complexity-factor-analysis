@@ -82,7 +82,7 @@ stays text) or as PNG (300 dpi), always light, sized for the text width of a CEU
 labels in the language of the app.
 
 The **tag icon** in the toolbar names the measures by the **short codes** of the papers (CNC,
-dens, C_mag); the full name stays in the tooltip. The figures, the report and the ZIP follow it.
+dens, and C with the code as index for log measures); the full name stays in the tooltip. The figures, the report and the ZIP follow it.
 
 The **link icon** copies a link to the analysis of a bundled dataset with its settings and the
 step on screen.

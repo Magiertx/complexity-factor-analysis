@@ -311,9 +311,21 @@ export function analysisNotices(analysis: FactorAnalysis): AnalysisNotice[] {
   return analysis.warning_details ?? analysis.warnings.map((message) => ({ code: "", message, params: {} }));
 }
 
-/** A notice in the UI language where its code is known, else the English message. */
-export function noticeText(notice: AnalysisNotice, tMaybe: TranslateMaybe): string {
-  return (notice.code && tMaybe(`factor.warnings.${notice.code}`, noticeParams(notice.params))) || notice.message;
+/**
+ * A notice in the UI language where its code is known, else the English message. With
+ * `measureName`, the measures a notice names (the Heywood case lists them, joined by ", ") are
+ * written as the lists show them, e.g. by their short codes.
+ */
+export function noticeText(
+  notice: AnalysisNotice,
+  tMaybe: TranslateMaybe,
+  measureName?: (key: string) => string,
+): string {
+  const params = noticeParams(notice.params);
+  if (measureName && typeof params.measures === "string" && notice.code === "heywood") {
+    params.measures = params.measures.split(", ").map(measureName).join(", ");
+  }
+  return (notice.code && tMaybe(`factor.warnings.${notice.code}`, params)) || notice.message;
 }
 
 // Notices on the factor solution rather than the data: step 4 shows them next to the factor

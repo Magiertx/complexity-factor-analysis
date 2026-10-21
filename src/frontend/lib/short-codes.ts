@@ -3,7 +3,7 @@
 // report; the full name is always in the tooltip. The codes come from the catalog
 // (src/AlgoService/factor_analysis/short_codes.py).
 
-import type { FactorMeasure } from "./api";
+import type { FactorKind, FactorMeasure } from "./api";
 
 const STORAGE_KEY = "app.factor-short-codes";
 
@@ -43,6 +43,23 @@ export function measureLabels(
       return what ? `${full(key)}: ${what}` : full(key);
     },
   };
+}
+
+const NO_INDEXES: ReadonlyMap<string, string> = new Map();
+
+/**
+ * The log measures that are shown by their code and that the papers write with the code as an
+ * index, C with "mag" below it. Keyed by the text shown, which MeasureName sets this way, so that
+ * the lists, the loadings, the figures and the report agree. Model measures are written plain
+ * (CNC), as are the names; nothing is set while the codes are off.
+ */
+export function codeIndexes(
+  kind: FactorKind,
+  codes: ReadonlyMap<string, string>,
+  on: boolean,
+): ReadonlyMap<string, string> {
+  if (!on || kind !== "log") return NO_INDEXES;
+  return new Map([...codes.values()].map((code) => [code, code]));
 }
 
 /** The setting as chosen last in this browser; off by default. */

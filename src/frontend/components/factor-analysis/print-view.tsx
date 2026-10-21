@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Children, Fragment, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AlertCircle, Loader2, Printer } from "lucide-react";
 import { parsePrintLink } from "@/lib/analysis-link";
@@ -28,9 +28,10 @@ import {
 } from "@/lib/factor-analysis";
 import { NO_VALUE, formatDateTime, formatNumber, formatPValue, formatPercent, formatStatistic } from "@/lib/format";
 import { measurementRows, measurementTotals } from "@/lib/measurement";
-import { codesOf, measureLabels } from "@/lib/short-codes";
+import { codeIndexes, codesOf, measureLabels } from "@/lib/short-codes";
 import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { MeasureName, MeasureScope } from "@/components/ui/table";
 
 interface Loaded {
   catalog: FactorCatalog;
@@ -130,12 +131,13 @@ export function PrintView() {
   const excluded = new Set(link.options.excluded);
   const counts = analysis.factor_count;
   const notices = analysisNotices(analysis);
-  const notes = notices.filter((n) => !isSolutionNotice(n)).map((n) => noticeText(n, tMaybe));
-  const solutionNotes = notices.filter(isSolutionNotice).map((n) => noticeText(n, tMaybe));
+  const notes = notices.filter((n) => !isSolutionNotice(n)).map((n) => noticeText(n, tMaybe, name));
+  const solutionNotes = notices.filter(isSolutionNotice).map((n) => noticeText(n, tMaybe, name));
+  const indexes = codeIndexes(link.kind, codesOf(catalog.measures), link.view.codes);
   const codesUsed = link.view.codes ? dataset.measures.filter((m) => labels.name(m) !== (names.get(m) ?? m)) : [];
 
   return (
-    <div className="space-y-4">
+    <MeasureScope indexes={indexes} className="space-y-4">
       <div className="print:hidden flex items-center justify-between gap-3 flex-wrap max-w-[210mm] mx-auto">
         <p className="text-sm text-muted">{t("print.hint")}</p>
         <Button size="sm" onClick={() => window.print()}>
@@ -183,7 +185,7 @@ export function PrintView() {
                 <tbody>
                   {dataset.descriptives.measures.map((row) => (
                     <tr key={row.measure} className={row.dropped ? "text-muted" : undefined}>
-                      <th scope="row" className="font-medium">{name(row.measure)}</th>
+                      <th scope="row" className="font-medium"><MeasureName name={name(row.measure)} /></th>
                       <td className="num">{formatNumber(row.n, locale)}</td>
                       {[row.mean, row.median, row.std, row.min, row.max].map((v, i) => (
                         <td key={i} className="num">
@@ -236,7 +238,7 @@ export function PrintView() {
                 const msa = analysis.kmo.per_measure[m] ?? r?.msa;
                 return (
                   <tr key={m} className={excluded.has(m) || r ? "text-muted" : undefined}>
-                    <th scope="row" className="font-medium">{name(m)}</th>
+                    <th scope="row" className="font-medium"><MeasureName name={name(m)} /></th>
                     <td className="num">{msa === undefined || excluded.has(m) ? NO_VALUE : formatNumber(msa, locale, 3)}</td>
                     <td>
                       {excluded.has(m)
@@ -296,7 +298,12 @@ export function PrintView() {
                   <td>
                     {f.measures.length === 0
                       ? t("factor.loadings.factor_empty")
-                      : f.measures.map((m) => `${name(m.measure)} (${formatNumber(m.loading, locale, 2)})`).join(", ")}
+                      : f.measures.map((m, i) => (
+                          <Fragment key={m.measure}>
+                            {i > 0 && ", "}
+                            <MeasureName name={name(m.measure)} /> ({formatNumber(m.loading, locale, 2)})
+                          </Fragment>
+                        ))}
                   </td>
                 </tr>
               ))}
@@ -306,9 +313,12 @@ export function PrintView() {
           {unassignedMeasures(analysis).length > 0 && (
             <p className="mt-2 text-xs">
               <span className="font-medium">{t("factor.loadings.unassigned_heading")}:</span>{" "}
-              {unassignedMeasures(analysis)
-                .map((u) => name(u.measure))
-                .join(", ")}
+              {unassignedMeasures(analysis).map((u, i) => (
+                <Fragment key={u.measure}>
+                  {i > 0 && ", "}
+                  <MeasureName name={name(u.measure)} />
+                </Fragment>
+              ))}
             </p>
           )}
           {analysis.factor_correlations && (
@@ -359,7 +369,12 @@ export function PrintView() {
         {codesUsed.length > 0 && (
           <Section title={t("print.codes_heading")}>
             <p className="text-xs">
-              {codesUsed.map((m) => `${labels.name(m)}: ${names.get(m) ?? m}`).join(" · ")}
+              {codesUsed.map((m, i) => (
+                <Fragment key={m}>
+                  {i > 0 && " · "}
+                  <MeasureName name={labels.name(m)} />: {names.get(m) ?? m}
+                </Fragment>
+              ))}
             </p>
           </Section>
         )}
@@ -374,7 +389,7 @@ export function PrintView() {
           {t("print.footer", { app: APP_NAME })}
         </footer>
       </article>
-    </div>
+    </MeasureScope>
   );
 }
 

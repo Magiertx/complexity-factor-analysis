@@ -158,6 +158,13 @@ describe("notices", () => {
     expect(noticeText({ ...notice, code: "something_new" }, tMaybe)).toBe(notice.message);
   });
 
+  it("name the measures as the lists do, e.g. by their short codes", () => {
+    const heywood = { code: "heywood", message: "English", params: { measures: "n_events, n_variants, own" } };
+    const codes: Record<string, string> = { n_events: "mag", n_variants: "DT-#" };
+    expect(noticeText(heywood, tMaybe, (m) => codes[m] ?? m)).toContain("mag, DT-#, own");
+    expect(noticeText(heywood, tMaybe)).toContain("n_events, n_variants, own");
+  });
+
   it("on the factor solution belong to step 4; only some need attention", () => {
     const heywood = { code: "heywood", message: "", params: {} };
     const single = { code: "single_factor_no_rotation", message: "", params: {} };

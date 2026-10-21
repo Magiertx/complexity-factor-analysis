@@ -1,7 +1,30 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, createContext, useContext, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+
+/**
+ * The measures to write as C with an index (the codes of log measures, lib/short-codes.ts), by
+ * the text they are shown with. The view that shows the codes provides it for the tables below.
+ */
+const MeasureIndexes = createContext<ReadonlyMap<string, string> | null>(null);
+
+/** A block of the page whose measure names are set with these indexes (`MeasureName`). */
+export function MeasureScope({
+  indexes,
+  className,
+  children,
+}: {
+  indexes: ReadonlyMap<string, string>;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <MeasureIndexes.Provider value={indexes}>
+      <div className={className}>{children}</div>
+    </MeasureIndexes.Provider>
+  );
+}
 
 /**
  * The frame of a table in the one table style (`.data-table`, globals.css). A table that fits
@@ -58,9 +81,18 @@ export function TableFrame({
 
 /**
  * A measure's full name, with places to break after underscores: "epa_normalized_sequence_entropy"
- * wraps between its parts rather than being cut off.
+ * wraps between its parts rather than being cut off. The code of a log measure is written as the
+ * papers write it: C with the code as index.
  */
 export function MeasureName({ name }: { name: string }) {
+  const index = useContext(MeasureIndexes)?.get(name);
+  if (index !== undefined) {
+    return (
+      <>
+        C<sub>{index}</sub>
+      </>
+    );
+  }
   const parts = name.split("_");
   if (parts.length === 1) return <>{name}</>;
   return (
