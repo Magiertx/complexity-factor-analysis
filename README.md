@@ -51,6 +51,11 @@ Schalk do it, but interactively in the browser.
   and how the paper's own tables relate to it. "Start here" on the data step opens such an
   analysis directly, and "Copy link" shares an analysis of any bundled dataset with its settings
   and the step on screen.
+- **Compare miners.** A page puts the factor structures of up to eight bundled datasets side by
+  side, like Tab. 17 of Important Factors: per miner n, the measures after the MSA filter, KMO,
+  factors and explained variance, every measure with its dimension under one shared assignment
+  rule, and the dimensions per miner as in Tab. 17. The factors are matched across the miners by
+  the measures they share. Downloads as CSV, as a LaTeX table and as a ZIP with a manifest.
 - **Come back to a dataset.** The datasets of a session are listed on the data step, reopen
   with the parameters of their last analysis and can be deleted one by one or all at once;
   deleting a dataset job in the run history deletes its dataset too.

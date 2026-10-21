@@ -62,6 +62,32 @@ reopens a dataset of the session with the settings of its last analysis.
 - **Interpretation**: names and summaries for the factors, suggested by a language model only on
   request. It decides nothing; the analysis does not depend on it.
 
+## Compare miners
+
+**Compare miners** puts the factor structures of several published datasets side by side, like
+Tab. 17 of Important Factors: which measures form which dimension for which miner. It opens from
+the column icon in the toolbar of Model complexity and from Start here, with the four miners of
+Tab. 17 (Alpha, Directly Follows, Inductive, Hybrid ILP) under Hair et al.
+
+- **Datasets**: choose 2 to 8 of the miners of Important Factors; each is analysed with the
+  settings of its paper. "As in Tab. 17" goes back to the four miners and Hair et al.
+- **Assignment rule**: one rule for every dataset, so that a difference between two columns is
+  one of the data.
+- **By measure**: a row per measure, grouped by dimension, and above them per dataset n, the
+  measures after the MSA filter, the KMO, the factors, the rotation, the rule and the variance
+  explained. A tinted cell is in the dimension of its row; a ring marks a cross-loading, a dashed
+  outline a measure the MSA filter removed, and a faded cell says why the rule leaves the measure
+  out.
+- **By dimension**: a row per dataset with the measures of each dimension, laid out like Tab. 17.
+- **Download**: the matrix as CSV, the dimensions as a LaTeX table like Tab. 17, and both in a ZIP
+  with a manifest.
+
+The factors of every analysis are numbered by the analysis, so they are matched first: the first
+dataset keeps its numbers, and the factors of every further one go to the dimension with which
+they share the most measures. Tab. 17 renumbered its dimensions by hand; a number can differ
+from the paper's while the groups are the same. The notes under the table say where the bundled
+data differ from the paper, e.g. for the Hybrid ILP miner.
+
 ## Take the results into a paper
 
 All downloads are in the **Download** menu of the page header:
