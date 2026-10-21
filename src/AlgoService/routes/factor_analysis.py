@@ -6,6 +6,7 @@ import asyncio
 import csv
 import dataclasses
 import gzip
+import hashlib
 import io
 import json
 import os
@@ -703,6 +704,18 @@ async def _create_dataset(
     return {"dataset_id": dataset_id, "status": "computing", "job_id": job_id}
 
 
+def _same_content(a: Path, b: Path) -> bool:
+    """Whether two files are one file, or have the same bytes."""
+    try:
+        if os.path.samefile(a, b):
+            return True
+        if a.stat().st_size != b.stat().st_size:
+            return False
+        return hashlib.sha256(a.read_bytes()).digest() == hashlib.sha256(b.read_bytes()).digest()
+    except OSError:
+        return False
+
+
 def _keep_as_recent_logs(session_id: str, inputs: list[dict[str, str]]) -> None:
     """Keep the logs of a dataset among the recent logs of the session, where the page of a single
     log (/inspect) finds them: a log of a dataset can be looked at as long as it is one of the
@@ -720,8 +733,13 @@ def _keep_as_recent_logs(session_id: str, inputs: list[dict[str, str]]) -> None:
             if not name.lower().endswith(".xes") or name.startswith("tmp"):
                 continue
             target = user_dir / name
-            target.unlink(missing_ok=True)
             source = Path(item["path"])
+            if target.exists():
+                # A different upload of the same name stays; the same log is renewed below,
+                # which makes it one of the newest again.
+                if not _same_content(source, target):
+                    continue
+                target.unlink()
             # A link costs no space, but it shares the time of the file, which for a bundled sample
             # is old: the cleanup of the newest ten would drop it first. Samples are copied.
             if not source.resolve().is_relative_to(cat.DATASETS_DIR.resolve()):
@@ -808,6 +826,8 @@ def _summary(meta: dict[str, Any], status: str) -> dict[str, Any]:
         "job_id": meta.get("job_id"),
         "inputs": _inputs(meta),
         "has_options": meta.get("options") is not None,
+        # The rows of this miner were analysed last; null for all rows.
+        "options_miner": (meta.get("options") or {}).get("miner"),
     }
 
 
@@ -1749,6 +1769,10 @@ def _own_column(
     """The data, the parameters and the spec of a column of a dataset of the session; no data,
     and the spec with its ``error``, when the dataset is not ready or has no such miner."""
     base, settings = _saved_params(meta, column.settings)
+    if settings == "saved" and column.miner != (meta.get("options") or {}).get("miner"):
+        # The count of factors saved was fixed for the rows of the miner saved with it (or for
+        # all rows); on other rows it would be a count for other factors: the standard one.
+        base = dataclasses.replace(base, n_factors=None)
     changes = column.options.changes() if column.options else {}
     params = dataclasses.replace(base, **changes, assignment_rule=rule)
     # Every measure of the dataset: those cleaning kept, then those it dropped.

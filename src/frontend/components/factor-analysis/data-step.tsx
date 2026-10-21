@@ -771,7 +771,7 @@ function DatasetPicker({
   const compareTarget =
     pickedReady.length >= MIN_COLUMNS
       ? compareHref({
-          columns: pickedReady.map((id) => ownColumnKey(id)),
+          columns: pickedReady.map((id) => ownColumnKey(id, { miner: ready.find((d) => d.id === id)?.options_miner ?? null })),
           rule: "largest",
           ...(kind === "log" ? { kind } : {}),
         })
