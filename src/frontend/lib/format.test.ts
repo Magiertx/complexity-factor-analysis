@@ -9,6 +9,7 @@ import {
   formatPercent,
   formatPValue,
   formatRelative,
+  formatStatistic,
   parseInputNumber,
 } from "./format";
 
@@ -38,6 +39,32 @@ describe("formatNumber", () => {
   it("shows a dash for what is not a finite number", () => {
     expect(formatNumber(Number.NaN, "en")).toBe(NO_VALUE);
     expect(formatNumber(Number.POSITIVE_INFINITY, "de", 2)).toBe(NO_VALUE);
+  });
+});
+
+describe("formatStatistic", () => {
+  it("never groups, so a separator is always the decimal mark", () => {
+    // A thousand and one in one column, in both languages: they cannot be mistaken for each other.
+    expect(formatStatistic(1000, "en")).toBe("1000");
+    expect(formatStatistic(1, "en")).toBe("1");
+    expect(formatStatistic(1000, "de")).toBe("1000");
+    expect(formatStatistic(1, "de")).toBe("1");
+    expect(formatStatistic(17248, "en")).toBe("17248");
+    expect(formatStatistic(17.248, "en")).toBe("17.248");
+    expect(formatStatistic(17.248, "de")).toBe("17,248");
+    expect(formatStatistic(17248.4, "de")).toBe("17248");
+  });
+
+  it("keeps up to three decimals below a thousand and trims the zeros", () => {
+    expect(formatStatistic(319.2503, "en")).toBe("319.25");
+    expect(formatStatistic(0.1234, "de")).toBe("0,123");
+    expect(formatStatistic(999.9996, "en")).toBe("1000");
+  });
+
+  it("writes the minus as the other numbers do, none for a value that rounds to zero", () => {
+    expect(formatStatistic(-2500, "en")).toBe("−2500");
+    expect(formatStatistic(-0.0001, "en")).toBe("0");
+    expect(formatStatistic(Number.NaN, "en")).toBe(NO_VALUE);
   });
 });
 

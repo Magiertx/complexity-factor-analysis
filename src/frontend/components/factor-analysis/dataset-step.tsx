@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AlertCircle } from "lucide-react";
 import type { Descriptives, FactorDataset, Measurement } from "@/lib/api";
 import { PREVIEW_ROWS, countText } from "@/lib/factor-analysis";
-import { NO_VALUE, formatNumber } from "@/lib/format";
+import { NO_VALUE, formatNumber, formatStatistic } from "@/lib/format";
 import { measurementRows, measurementTotals } from "@/lib/measurement";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { MeasureName, TableFrame } from "@/components/ui/table";
@@ -162,10 +162,10 @@ export function DatasetView({
   );
 }
 
-/** A value of the statistics: three decimals, none from a thousand on, where only the digits before the point tell. */
+/** A value of the statistics, ungrouped (formatStatistic), or a dash where there is none. */
 function statistic(value: number | null, locale: string): React.ReactNode {
   if (value === null) return <span className="text-muted">{NO_VALUE}</span>;
-  return formatNumber(value, locale, Math.abs(value) >= 1000 ? 0 : 3);
+  return formatStatistic(value, locale);
 }
 
 /**

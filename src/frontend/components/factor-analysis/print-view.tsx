@@ -26,7 +26,7 @@ import {
   settingsSummary,
   unassignedMeasures,
 } from "@/lib/factor-analysis";
-import { NO_VALUE, formatDateTime, formatNumber, formatPValue, formatPercent } from "@/lib/format";
+import { NO_VALUE, formatDateTime, formatNumber, formatPValue, formatPercent, formatStatistic } from "@/lib/format";
 import { measurementRows, measurementTotals } from "@/lib/measurement";
 import { codesOf, measureLabels } from "@/lib/short-codes";
 import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
@@ -187,7 +187,7 @@ export function PrintView() {
                       <td className="num">{formatNumber(row.n, locale)}</td>
                       {[row.mean, row.median, row.std, row.min, row.max].map((v, i) => (
                         <td key={i} className="num">
-                          {v === null ? NO_VALUE : formatNumber(v, locale, Math.abs(v) >= 1000 ? 0 : 3)}
+                          {v === null ? NO_VALUE : formatStatistic(v, locale)}
                         </td>
                       ))}
                     </tr>
