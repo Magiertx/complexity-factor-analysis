@@ -84,6 +84,12 @@ named = {**options, "factor_names": ["Size", "Connectors", None, "Separability"]
 with open("loadings.tex", "wb") as f:
     f.write(s.post(url, json=named).content)
 
+# A methods paragraph for the paper, with its BibTeX entries (the paragraph is LaTeX with cite keys)
+methods = s.post(f"{url}/methods", json={**options, "language": "en"}).json()
+print(methods["text"], methods["citation_keys"])
+with open("references.bib", "wb") as f:
+    f.write(s.post(f"{url}/bibtex", json=options).content)
+
 # 4. Tab. 17: the four miners side by side under Hair et al., and the table for LaTeX
 miners = ["alpha", "directly-follows", "inductive", "hybrid-ilp"]
 body = {"columns": [{"bundled_id": f"comfy-paper-{m}-miner"} for m in miners], "assignment_rule": "hair"}
@@ -115,6 +121,14 @@ for m in s.get(f"{BASE}/factor-analysis/datasets/{own}").json()["miners"] or []:
     print(m["name"], alone["n_observations"], "observations, KMO", round(alone["kmo"]["overall"], 2))
 per_miner = {"columns": [{"dataset_id": own, "miner": m["name"]} for m in
                          s.get(f"{BASE}/factor-analysis/datasets/{own}").json()["miners"] or []]}
+
+# Names kept for a solution (names_k: its factor count) head that column of a comparison
+s.put(f"{BASE}/factor-analysis/datasets/{own}/options",
+      json={"miner": "Alpha miner", "n_factors": 3, "factor_names": ["Size", None, "Flow"], "names_k": 3})
+named = s.post(f"{BASE}/factor-analysis/compare", json={"columns": [
+    {"dataset_id": own, "miner": "Alpha miner", "options": {"n_factors": 3}}]
+    + per_miner["columns"][1:]}).json()
+print(named["columns"][0]["factor_names"])
 
 # 8. The correlations of the measures: clustered, with the pairs that say almost the same
 corr = s.post(f"{BASE}/factor-analysis/datasets/{ds['dataset_id']}/correlations", json={"order": "cluster"}).json()
@@ -184,6 +198,7 @@ const ENDPOINTS: { group: string; items: Endpoint[] }[] = [
       { method: "POST", path: "/factor-analysis/datasets", key: "fa_create" },
       { method: "GET", path: "/factor-analysis/datasets?kind=model|log", key: "fa_list" },
       { method: "GET", path: "/factor-analysis/datasets/{id}", key: "fa_get" },
+      { method: "GET", path: "/factor-analysis/datasets/{id}/descriptives?miner=", key: "fa_descriptives" },
       { method: "PUT", path: "/factor-analysis/datasets/{id}/options", key: "fa_options" },
       { method: "DELETE", path: "/factor-analysis/datasets/{id}", key: "fa_delete" },
       { method: "DELETE", path: "/factor-analysis/datasets?kind=model|log", key: "fa_delete_all" },
@@ -192,6 +207,8 @@ const ENDPOINTS: { group: string; items: Endpoint[] }[] = [
       { method: "POST", path: "/factor-analysis/datasets/{id}/correlations", key: "fa_correlations" },
       { method: "POST", path: "/factor-analysis/datasets/{id}/export", key: "fa_export" },
       { method: "POST", path: "/factor-analysis/datasets/{id}/export/report", key: "fa_export_report" },
+      { method: "POST", path: "/factor-analysis/datasets/{id}/export/methods", key: "fa_export_methods" },
+      { method: "POST", path: "/factor-analysis/datasets/{id}/export/bibtex", key: "fa_export_bibtex" },
       { method: "POST", path: "/factor-analysis/datasets/{id}/export/figure", key: "fa_export_figure" },
       { method: "POST", path: "/factor-analysis/datasets/{id}/export/zip", key: "fa_export_zip" },
       { method: "POST", path: "/factor-analysis/compare", key: "fa_compare" },

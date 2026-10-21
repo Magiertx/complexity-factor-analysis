@@ -225,6 +225,9 @@ def _column_header(spec: dict[str, Any], result: dict[str, Any] | None) -> dict[
         "published_source": entry.get("published_source") if spec["settings"] == "paper" else None,
         "paper_tables": (entry.get("paper_tables") or {}).get("key"),
         "n_measures": len(spec["measures"]),
+        # The names saved for this solution of a dataset of the session, one per factor (null
+        # where a factor has none); null for a bundled dataset, a failed column or no names.
+        "factor_names": None,
     }
     if result is None:
         return header
@@ -238,6 +241,7 @@ def _column_header(spec: dict[str, Any], result: dict[str, Any] | None) -> dict[
         "msa_removed": [r["measure"] for r in result["msa_filter"]["removed"]],
         "kmo": result["kmo"]["overall"],
         "n_factors": result["n_factors"],
+        "factor_names": spec.get("factor_names"),
         "rotation": result["rotation"],
         "cumulative_variance": cumulative[-1] if cumulative else None,
         "explained_variance": result["variance"]["explained"],
@@ -451,12 +455,17 @@ def _csv_line(cells: list[Any]) -> str:
     return ",".join(csv_cell(c) for c in cells) + "\n"
 
 
-def cell_text(cell: dict[str, Any]) -> str:
-    """A cell of the matrix as the CSV writes it: the dimensions, counted from 1, or why the
-    measure is in none."""
+def cell_text(cell: dict[str, Any], names: list[str | None] | None = None) -> str:
+    """A cell of the matrix as the CSV writes it: the dimensions, counted from 1, each with the
+    name its analysis gave the factor in parentheses where it has one, or why the measure is in
+    none."""
     status = cell["status"]
     if status == "assigned":
-        return " ".join(f"D{d + 1}" for d in cell["dimensions"])
+        parts = []
+        for dimension, factor in zip(cell["dimensions"], cell["factors"]):
+            name = names[factor] if names and factor < len(names) else None
+            parts.append(f"D{dimension + 1} ({' '.join(name.split())})" if name else f"D{dimension + 1}")
+        return " ".join(parts)
     if status == "unassigned":
         return f"unassigned:{cell['reason']}" if cell.get("reason") else "unassigned"
     if status == "dropped":
@@ -466,13 +475,15 @@ def cell_text(cell: dict[str, Any]) -> str:
 
 def membership_csv(comparison: dict[str, Any]) -> str:
     """One row per measure, one column per analysis: the dimensions the rule put the measure in
-    (D1, or D1 D3 under "multi"), else ``unassigned:<reason>``, ``msa_removed``, ``excluded``,
-    ``dropped:<reason>``, ``failed``, or nothing for a measure the dataset does not have."""
+    (D1, or D1 D3 under "multi"; "D1 (Size)" where the analysis named the factor), else
+    ``unassigned:<reason>``, ``msa_removed``, ``excluded``, ``dropped:<reason>``, ``failed``, or
+    nothing for a measure the dataset does not have."""
     labels = [c["label"] for c in comparison["columns"]]
+    names = [c.get("factor_names") for c in comparison["columns"]]
     lines = [_csv_line(["measure", "code", "dimension", *labels])]
     for row in comparison["measures"]:
         dimension = "" if row["dimension"] is None else f"D{row['dimension'] + 1}"
-        lines.append(_csv_line([row["measure"], row["short"] or "", dimension, *(cell_text(c) for c in row["cells"])]))
+        lines.append(_csv_line([row["measure"], row["short"] or "", dimension, *(cell_text(c, names[i]) for i, c in enumerate(row["cells"]))]))
     return "".join(lines)
 
 
@@ -533,6 +544,8 @@ def dimensions_latex(comparison: dict[str, Any], short: bool = True) -> str:
     lines.append(
         "% Dimensions matched across the analyses by shared measures; the first analysis keeps the numbers of its factors."
     )
+    if any(c.get("factor_names") for c in comparison["columns"]):
+        lines.append("% A name before the measures of a dimension is what that analysis called the factor.")
     for column, unassigned in zip(comparison["columns"], comparison["unassigned"]):
         if unassigned:
             listed = "; ".join(
@@ -552,7 +565,10 @@ def dimensions_latex(comparison: dict[str, Any], short: bool = True) -> str:
         cells = []
         for dimension in comparison["dimensions"]:
             entry = dimension["columns"][i]
-            cells.append(", ".join(label(m["measure"]) for m in entry["measures"]) if entry else "--")
+            names = column.get("factor_names")
+            name = names[entry["factor"]] if entry and names and entry["factor"] is not None and entry["factor"] < len(names) else None
+            members = ", ".join(label(m["measure"]) for m in entry["measures"]) if entry else "--"
+            cells.append(f"\\emph{{{tex(name)}}}: {members}" if name and entry["measures"] else members)
         lines.append(f"{tex(column['label'])} & " + (" & ".join(cells) if cells else "--") + " \\\\")
     lines += ["\\bottomrule", "\\end{tabularx}", ""]
     return "\n".join(lines)
@@ -618,6 +634,7 @@ def comparison_zip(comparison: dict[str, Any], request: dict[str, Any], short: b
             "label": column["label"],
             "settings": column["settings"],
             "analysis_params": column["options"],
+            "factor_names": column.get("factor_names"),
             "assignment": column.get("assignment"),
             "published_source": column.get("published_source"),
             "citation": entry.get("citation"),

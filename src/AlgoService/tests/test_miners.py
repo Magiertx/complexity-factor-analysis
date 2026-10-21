@@ -366,3 +366,141 @@ def test_the_report_of_a_miner_counts_the_measures_of_the_miner(client, three):
     report = client.post(f"/factor-analysis/datasets/{three}/export/report", json={"miner": "Inductive miner"}).text
     assert r"5 \cdot 12 = 60" in report
     assert r"5 \cdot 13 = 65" not in report
+
+
+# --- the names of the factors in a comparison ----------------------------------------------
+
+
+def _save_named(client, dataset_id, names, **options):
+    """Save options and names the way the frontend does: with the factor count on screen."""
+    body = {"names_k": options.pop("k"), "factor_names": names, **options}
+    r = client.put(f"/factor-analysis/datasets/{dataset_id}/options", json=body)
+    assert r.status_code == 204, r.text
+
+
+def test_the_names_kept_per_solution():
+    from factor_analysis import names
+
+    store = names.remember(None, names.solution_key(3, "varimax", "largest", "Alpha miner"), ["Size", None, "Flow"])
+    store = names.remember(store, names.solution_key(2, "varimax", "largest", None), ["Control"])
+    assert names.for_solution(store, 3, "varimax", "largest", "Alpha miner") == ["Size", None, "Flow"]
+    # One entry per factor, whatever the names saved are long.
+    assert names.for_solution(store, 2, "varimax", "largest", None) == ["Control", None]
+    # Another miner, count, rotation or rule is another solution.
+    assert names.for_solution(store, 3, "varimax", "largest", None) is None
+    assert names.for_solution(store, 4, "varimax", "largest", "Alpha miner") is None
+    assert names.for_solution(store, 3, "promax", "largest", "Alpha miner") is None
+    assert names.for_solution(store, 3, "varimax", "hair", "Alpha miner") is None
+    # Saved again without names, a solution is forgotten; the oldest go when there are too many.
+    assert names.remember(store, names.solution_key(2, "varimax", "largest", None), None) == {
+        names.solution_key(3, "varimax", "largest", "Alpha miner"): ["Size", None, "Flow"]
+    }
+    many: dict = {}
+    for k in range(1, names.MAX_SOLUTIONS + 5):
+        many = names.remember(many, names.solution_key(k, "varimax", "largest", None), ["x"])
+    assert len(many) == names.MAX_SOLUTIONS
+    assert names.solution_key(1, "varimax", "largest", None) not in many
+
+
+def test_a_column_has_the_names_saved_for_its_solution(client, three):
+    _save_named(client, three, ["Size", None, "Flow"], k=3, miner="Alpha miner", assignment_rule="largest")
+    _save_named(client, three, ["Control & more"], k=2, miner="Inductive miner", assignment_rule="largest")
+    body = {
+        "columns": [
+            {"dataset_id": three, "miner": "Alpha miner", "options": {"n_factors": 3}},
+            {"dataset_id": three, "miner": "Inductive miner", "options": {"n_factors": 2}},
+            # Another count of the same rows, all rows, and a bundled dataset: no names.
+            {"dataset_id": three, "miner": "Alpha miner", "options": {"n_factors": 4}},
+            {"dataset_id": three, "options": {"n_factors": 3}},
+            {"bundled_id": "comfy-paper-alpha-miner"},
+        ],
+        "assignment_rule": "largest",
+    }
+    comparison = client.post("/factor-analysis/compare", json=body).json()
+    assert [c["factor_names"] for c in comparison["columns"]] == [
+        ["Size", None, "Flow"], ["Control & more", None], None, None, None,
+    ]
+    # The rule is part of the solution.
+    hair = client.post("/factor-analysis/compare", json={**body, "assignment_rule": "hair"}).json()
+    assert [c["factor_names"] for c in hair["columns"]] == [None] * 5
+
+
+def test_the_downloads_of_a_comparison_carry_the_names(client, three):
+    _save_named(client, three, ["Size & shape", None, "Flow"], k=3, miner="Alpha miner")
+    body = {
+        "columns": [
+            {"dataset_id": three, "miner": "Alpha miner", "options": {"n_factors": 3}},
+            {"dataset_id": three, "miner": "Inductive miner", "options": {"n_factors": 3}},
+        ]
+    }
+    csv = client.post("/factor-analysis/compare/export", json={**body, "format": "csv"}).text
+    named = [line for line in csv.splitlines()[1:] if "(Size & shape)" in line]
+    assert named and all(line.count("(") == 1 for line in named)
+    # Only the named column has them; the other keeps D1, D2, D3.
+    assert "(Flow)" in csv and csv.count("(Size & shape)") == csv.count("D1 (Size & shape)")
+    tex = client.post("/factor-analysis/compare/export", json={**body, "format": "latex"}).text
+    assert r"\emph{Size \& shape}: " in tex and r"\emph{Flow}: " in tex
+    assert tex.count(r"\emph{") == 2
+    r = client.post("/factor-analysis/compare/export", json={**body, "format": "zip"})
+    with zipfile.ZipFile(io.BytesIO(r.content)) as archive:
+        manifest = json.loads(archive.read("manifest.json"))
+        full = json.loads(archive.read("comparison.json"))
+    assert [c["factor_names"] for c in manifest["columns"]] == [["Size & shape", None, "Flow"], None]
+    assert full["columns"][0]["factor_names"] == ["Size & shape", None, "Flow"]
+    # Without any name the files are as before.
+    client.put(f"/factor-analysis/datasets/{three}/options", json={"miner": "Alpha miner", "n_factors": 3, "names_k": 3})
+    plain = client.post("/factor-analysis/compare/export", json={**body, "format": "csv"}).text
+    assert "D1 (" not in plain and "D3 (" not in plain
+    assert r"\emph" not in client.post("/factor-analysis/compare/export", json={**body, "format": "latex"}).text
+
+
+def test_names_for_more_factors_than_the_count_are_refused(client, three):
+    r = client.put(
+        f"/factor-analysis/datasets/{three}/options", json={"names_k": 2, "factor_names": ["a", "b", "c"]}
+    )
+    assert r.status_code == 400 and r.json()["code"] == "factor_names_too_many"
+    # The count is not kept with the options.
+    client.put(f"/factor-analysis/datasets/{three}/options", json={"names_k": 2, "factor_names": ["a"]})
+    assert "names_k" not in client.get(f"/factor-analysis/datasets/{three}").json()["options"]
+
+
+# --- the descriptive statistics of a miner -----------------------------------------------------
+
+
+def test_the_descriptives_of_a_miner_are_those_of_its_rows(client, three):
+    url = f"/factor-analysis/datasets/{three}/descriptives"
+    everything = client.get(url).json()
+    assert everything["n_rows"] == 150 and everything["basis"] != "miner"
+    assert everything == client.get(f"/factor-analysis/datasets/{three}").json()["descriptives"]
+
+    alpha = client.get(url, params={"miner": "Alpha miner"}).json()
+    assert (alpha["basis"], alpha["miner"], alpha["n_rows"]) == ("miner", "Alpha miner", 50)
+    data = _stored(client, three)
+    rows = [label for label in data.index if miners.miner_of(label) == "Alpha miner"]
+    size = next(r for r in alpha["measures"] if r["measure"] == "Size")
+    own = data.loc[rows, "Size"]
+    assert size["n"] == 50
+    assert size["mean"] == pytest.approx(own.mean()) and size["median"] == pytest.approx(own.median())
+    assert size["std"] == pytest.approx(own.std(ddof=1))
+    assert (size["min"], size["max"]) == (own.min(), own.max())
+    assert sum(size["histogram"]["counts"]) == 50
+    # Another basis than every row: the numbers differ.
+    assert size["mean"] != next(r for r in everything["measures"] if r["measure"] == "Size")["mean"]
+    # Every measure of the dataset is described, also one that is constant within the miner.
+    assert [r["measure"] for r in alpha["measures"]] == [r["measure"] for r in everything["measures"]]
+
+
+def test_the_descriptives_of_a_miner_the_dataset_lacks(client, three):
+    r = client.get(f"/factor-analysis/datasets/{three}/descriptives", params={"miner": "Hybrid ILP miner"})
+    assert r.status_code == 400 and r.json()["code"] == "unknown_miner"
+
+
+def test_the_methods_paragraph_of_a_miner_names_its_rows_and_counts(client, three):
+    url = f"/factor-analysis/datasets/{three}"
+    alone = client.post(f"{url}/analyze", json={"miner": "Inductive miner", "assignment_rule": "hair"}).json()
+    text = client.post(
+        f"{url}/export/methods", json={"miner": "Inductive miner", "assignment_rule": "hair", "language": "de"}
+    ).json()["text"]
+    assert "(die Zeilen des Miners Inductive miner)" in text
+    assert f"hat {alone['n_observations']} Beobachtungen von {alone['miner']['n_measures']} " in text
+    assert "(nach Hair et al.~\\cite{hair_multivariate})" in text

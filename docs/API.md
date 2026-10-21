@@ -109,6 +109,7 @@ Details in [Factor analysis](#factor-analysis) below.
 | GET | `/factor-analysis/limits` | Files and bytes one dataset request may carry on this server: `{"max_log_files": 50, "max_pnml_files": 200, "max_file_bytes": 104857600, "max_total_bytes": 524288000}`. The two file counts are set by `MAX_LOG_FILES` and `MAX_PNML_FILES`. |
 | POST | `/factor-analysis/datasets` | Create a dataset from bundled data or a CSV (ready at once), or from logs or PNML files (background job); a bundled dataset the session has already is opened again. |
 | GET | `/factor-analysis/datasets?kind=model` | The datasets of your session, newest first; `kind` is optional. |
+| GET | `/factor-analysis/datasets/{id}/descriptives` | The statistics and histograms of the measures, over every row or, with `miner`, over the rows of one miner. |
 | GET | `/factor-analysis/datasets/{id}` | Status, progress, inputs, saved options, measures, dropped measures and the first 2000 rows; once ready, the `descriptives` of every measure with the histogram of its values, for a computed dataset its run times and input sizes (`measurement`), and for a model dataset of several miners its `miners`. |
 | PUT | `/factor-analysis/datasets/{id}/options` | Keep the parameters of an analysis with the dataset. |
 | DELETE | `/factor-analysis/datasets/{id}` | Delete a dataset with its job and cached interpretations. |
@@ -118,6 +119,8 @@ Details in [Factor analysis](#factor-analysis) below.
 | POST | `/factor-analysis/datasets/{id}/correlations` | The correlations of the measures, the map of the suitability step: the matrix in the order of the dataset, of a clustering or of the dimensions of an analysis, the pairs with \|r\| of 0.95 or more and the five closest partners of each measure. |
 | POST | `/factor-analysis/datasets/{id}/export` | The loadings table as CSV or LaTeX. |
 | POST | `/factor-analysis/datasets/{id}/export/report` | The analysis as a LaTeX report built like ComFy's (`report.tex`). |
+| POST | `/factor-analysis/datasets/{id}/export/methods` | A short methods paragraph of the analysis in LaTeX with cite keys, in English or German, and the keys it cites. |
+| POST | `/factor-analysis/datasets/{id}/export/bibtex` | The BibTeX entries of exactly those keys (`references.bib`). |
 | POST | `/factor-analysis/datasets/{id}/export/figure` | The scree plot, the loadings heatmap or the correlation map as SVG or PNG (300 dpi) in print style. |
 | POST | `/factor-analysis/datasets/{id}/export/zip` | The whole analysis as a ZIP archive: result, matrix, tables, report, figures, descriptive statistics, run times, parameters, library versions and provenance. |
 | POST | `/factor-analysis/compare` | The factor structures of 2 to 8 analyses side by side, like Tab. 17 of Important Factors, under one assignment rule: of bundled datasets (no dataset of the session needed) or of the session's own, per miner if they have several. |
@@ -340,6 +343,14 @@ bin; `null` for a measure without values), e.g. `"histogram": {"min": 34.0, "max
 "counts": [96, 61, 28, "…"]}`. Statistics stored before the histograms were kept get them from the cleaned
 matrix, for the measures it still has.
 
+`GET /factor-analysis/datasets/{id}/descriptives` serves the same object without the rest of the
+dataset. With `?miner=<name>` on a model dataset of several miners it describes the rows of that
+miner only, from the cleaned matrix: `basis` is `miner`, `miner` names it and `n_rows` counts its
+rows. Every measure of the dataset is listed, also one that is constant within the miner (an
+analysis of the miner leaves it out). The fact sheet of a measure shows these statistics and the
+histogram while a miner is chosen. A miner the dataset does not have is a 400 `unknown_miner`,
+a dataset that is not ready a 409.
+
 `measurement` is `null` for a bundled or uploaded matrix. For a dataset the tool computed from
 logs or PNML files it holds the wall time (seconds, `time.perf_counter`) of every stage and the
 size of every input, measured while the job ran: `inputs` with `read_s` and, for a log,
@@ -386,6 +397,14 @@ its rows), more factors than the measures left allow (`n_factors_range`), a mine
 does not have (`unknown_miner`) or more `factor_names` than factors (`factor_names_too_many`).
 Whether the MSA filter leaves enough measures only the analysis tells. `miner` and
 `factor_names` are kept only when given. The answer is 204, or 409 if the dataset is not ready.
+
+`names_k` (optional, the factor count of the analysis on screen) says which solution the
+`factor_names` belong to, however the count was chosen (also by the Kaiser criterion). With it the
+names are kept for that solution, that is for its miner, `names_k`, `rotation` and
+`assignment_rule`, besides the options themselves: a dataset keeps the names of up to 40
+solutions, the one saved last is the newest, and saving a solution without names forgets its
+names. `names_k` is not part of the saved options. Without it (and without `n_factors`) the names
+stay with the options only. More names than `names_k` is a 400 `factor_names_too_many`.
 
 ```python
 s.put(f"{BASE}/factor-analysis/datasets/{dataset_id}/options",
@@ -616,6 +635,34 @@ compiles with pdflatex
 Under the paper settings, the report of a bundled Important Factors dataset prints the numbers
 of the published ComFy report to the decimals it prints them with (`tests/test_report.py`).
 
+`POST /factor-analysis/datasets/{id}/export/methods` takes the body of `analyze` plus `"language":
+"en" | "de"` (default `en`) and answers `{"language", "text", "citation_keys"}`: one neutral
+paragraph in LaTeX (`\cite` keys, `$\chi^2$` and `$p$` in math mode, `\%`, special characters of
+names escaped) for the methods section of a paper. It is a template, not a generator: every
+number and setting is read from the analysis and its parameters, nothing is said that the analysis
+did not do, and the numbers are those of the user interface (KMO to two decimals, Bartlett's
+chi-square to one, the p-value to three, the share of variance to one). It names the dataset with its
+size (the rows of one miner with `miner`), the measures dropped in cleaning, the tool with its
+version and commit and `factor_analyzer` with its version, minres extraction, Bartlett's test and
+the KMO with the MSA filter (measures removed, rounds, or that it was off), the factor count and
+how it was chosen (set, or the Kaiser criterion; parallel analysis with simulations, percentile and
+seed), the variance explained (not for oblique rotations), the rotation, and the assignment rule
+with the thresholds it applied and the number of measures it left out. The text and the keys
+are the same for every request of one analysis and language, apart from the version and commit of
+the running tool.
+
+`POST /factor-analysis/datasets/{id}/export/bibtex` takes the same body and returns
+`<dataset>-references.bib` with the entries of the `citation_keys` of `export/methods`, in their
+order, and no others. Kaiser (1960, 1974), Bartlett (1950) and Horn (1965) are given with their
+DOIs, checked against Crossref. The data of the bundled datasets, ComFy, ComFy for log measures and
+the log paper come from `datasets/manifest.json` of this repository, and the author and address of
+`factor_analyzer` from its package metadata. The tool's own entry has its name, version and commit
+from the running service, the author from its git history, and the year of the export. What a
+source does not record (the authors of a paper beyond the one the catalog names, the edition of the
+textbook by Hair et al., the version of ComFy) is not filled in: a comment above the entry says
+what to complete. Lieben et al. are named in the text of the rule `multi` but not cited, because
+nothing in this repository says which publication is meant.
+
 `POST /factor-analysis/datasets/{id}/export/figure` takes the same body plus `"figure":
 "scree" | "loadings" | "correlations"`, `"format": "svg" | "png"`, `"short_codes"`, `"order": "factor" |
 "dataset"` (the rows of the heatmap: grouped by factor as the UI shows them, or in the order of
@@ -748,7 +795,11 @@ on its stored matrix, also with the fit cache. JSON body:
   The saved factor count was fixed for the rows of the miner saved with it (`miner` of the saved
   options, none for all rows): a `"saved"` column of other rows starts from the standard count.
   This is how the UI compares the miners of a dataset, datasets picked in My datasets, and
-  solutions pinned in the loadings step (dataset, miner, factor count and rotation):
+  solutions pinned in the loadings step (dataset, miner, factor count and rotation). The header
+  of such a column has `factor_names`: the names saved with the dataset for exactly the solution
+  the column came to (its miner, factor count, rotation and the request's `assignment_rule`; see
+  `names_k` of the saved options), one entry per factor and `null` where a factor has none, or
+  `null` without any name; bundled datasets never have names:
 
 ```json
 { "columns": [
@@ -842,18 +893,20 @@ by the codes of the papers, as Tab. 17 does) and returns `factor-structures.csv`
 
 - CSV: `measure`, `code`, `dimension` (of the row) and one column per dataset with `D1` (or
   `D1 D3` under `multi`), `unassigned:<reason>`, `msa_removed`, `excluded`, `dropped:<reason>`,
-  `failed`, or nothing for a measure the dataset does not have.
+  `failed`, or nothing for a measure the dataset does not have. Where the analysis of a column
+  named the factor, the name follows its dimension in parentheses: `D1 (Size)`.
 - LaTeX: a booktabs `tabularx` (needs `booktabs`, `array` and `tabularx`) as wide as the line
   (`\linewidth`), so it fits a one- or a two-column page without a width to set: the names of the
   datasets take what they need and the dimensions share the rest. One row per dataset and one
   column per dimension, laid out like Tab. 17; comments name the rule, the thresholds it
-  applied, how the dimensions were matched and the measures in no dimension.
+  applied, how the dimensions were matched and the measures in no dimension. Where the analysis
+  of a row named the factor, its name in italics and a colon precede the measures of the cell.
 - ZIP: `comparison.json` (the response of `compare`), `membership.csv`, `dimensions.tex`,
   `co_assignment.csv` (one row per pair of measures, each once: `measure_a`, `code_a`,
   `measure_b`, `code_b`, `together`, `both_assigned`, `both_analysed`), `README.txt` and
   `manifest.json` with `app`, `created_at`, `tool`, the `request` as sent (with the rule and
   `short_codes`), `assignment_rule`, `alignment`, `columns` (per column the `bundled_id`,
-  `dataset_id`, `miner`, `label`, `settings`, `analysis_params`, `assignment`, `published_source`,
+  `dataset_id`, `miner`, `label`, `settings`, `analysis_params`, `factor_names`, `assignment`, `published_source`,
   `citation`, `license`, `source_url` and `source_commit`), `measure_labels`, `libraries` and
   `files`. Columns with a `dataset_id` can only be posted again in the session that has them.
 

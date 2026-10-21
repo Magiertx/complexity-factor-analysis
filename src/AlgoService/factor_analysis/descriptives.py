@@ -70,6 +70,19 @@ def describe(raw: pd.DataFrame, dropped: list[dict[str, Any]] | None = None) -> 
     return {"basis": "input", "n_rows": int(len(raw)), "measures": rows}
 
 
+def describe_miner(data: pd.DataFrame, miner: str) -> dict[str, Any]:
+    """The statistics of the rows of one miner of a cleaned matrix of rows "<log> / <miner>".
+
+    Every measure of the matrix is described over those rows, also one that is constant within
+    them (an analysis of the miner drops it, the fact sheet still shows it). ``basis`` is
+    "miner"; ``n_rows`` is the number of the miner's rows.
+    """
+    from .miners import miner_of
+
+    rows = [label for label in data.index if miner_of(label) == miner]
+    return {**describe(data.loc[rows], []), "basis": "miner", "miner": miner}
+
+
 def describe_cleaned(data: pd.DataFrame) -> dict[str, Any]:
     """The same for a cleaned matrix, for datasets stored before the statistics were kept: their
     input is gone, so only the measures that were kept can be described."""

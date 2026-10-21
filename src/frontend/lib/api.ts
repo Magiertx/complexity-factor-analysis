@@ -373,8 +373,12 @@ export interface DescriptiveRow {
 }
 
 export interface Descriptives {
-  /** "input": the table before cleaning, as ComFy describes it; "cleaned": only the matrix was kept. */
-  basis: "input" | "cleaned";
+  /**
+   * "input": the table before cleaning, as ComFy describes it; "cleaned": only the matrix was
+   * kept; "miner": the cleaned matrix over the rows of `miner`.
+   */
+  basis: "input" | "cleaned" | "miner";
+  miner?: string;
   n_rows: number;
   measures: DescriptiveRow[];
 }
@@ -847,12 +851,20 @@ export async function listDatasets(kind?: FactorKind, signal?: AbortSignal): Pro
   return (await r.json()).datasets;
 }
 
-/** Remembers the options of an analysis with the dataset, so reopening it starts from them. */
-export async function saveDatasetOptions(id: string, options: AnalyzeOptions): Promise<void> {
+/**
+ * Remembers the options of an analysis with the dataset, so reopening it starts from them.
+ * `factorCount` is the number of factors of the analysis on screen: the names in `options` are
+ * kept for that solution, which the dataset's columns of a comparison are headed with.
+ */
+export async function saveDatasetOptions(
+  id: string,
+  options: AnalyzeOptions,
+  factorCount: number | null = null,
+): Promise<void> {
   const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/options`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(options),
+    body: JSON.stringify(factorCount ? { ...options, names_k: factorCount } : options),
     // Sent when the page is left, too.
     keepalive: true,
   });
@@ -920,6 +932,17 @@ export interface Correlations {
   /** For each measure its five closest partners by |r|. */
   top: Record<string, { measure: string; r: number }[]>;
   miner: MinerSelection | null;
+}
+
+/** The statistics of the measures of a dataset, or over the rows of one `miner` of it. */
+export async function fetchDescriptives(id: string, miner: string | null, signal?: AbortSignal): Promise<Descriptives> {
+  const query = miner ? `?miner=${encodeURIComponent(miner)}` : "";
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/descriptives${query}`, {
+    cache: "no-store",
+    signal,
+  });
+  if (!r.ok) throw await httpError(r, "The statistics could not be loaded");
+  return r.json();
 }
 
 /**
@@ -1000,6 +1023,39 @@ export async function exportReport(
   });
   if (!r.ok) throw await httpError(r, "Export failed");
   return attachment(r, "report.tex");
+}
+
+/** The methods paragraph of an analysis, in LaTeX with cite keys, and the keys it cites. */
+export interface MethodsText {
+  language: InterpretationLanguage;
+  text: string;
+  citation_keys: string[];
+}
+
+/** The methods paragraph of the analysis these options describe, in `language`. */
+export async function fetchMethods(id: string, options: AnalyzeOptions, language: InterpretationLanguage): Promise<MethodsText> {
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/export/methods`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...options, language }),
+  });
+  if (!r.ok) throw await httpError(r, "The methods text could not be built");
+  return r.json();
+}
+
+/** The BibTeX entries of the keys the methods paragraph of the analysis cites. */
+export async function exportBibtex(
+  id: string,
+  options: AnalyzeOptions,
+  language: InterpretationLanguage,
+): Promise<{ blob: Blob; filename: string }> {
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/export/bibtex`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...options, language }),
+  });
+  if (!r.ok) throw await httpError(r, "Export failed");
+  return attachment(r, "references.bib");
 }
 
 export type FigureName = "scree" | "loadings" | "correlations";
@@ -1096,6 +1152,8 @@ export interface CompareColumn {
   msa_removed?: string[];
   kmo?: number;
   n_factors?: number;
+  /** The names saved for this solution of a dataset of the session, one per factor (null where a factor has none); null without any. */
+  factor_names?: (string | null)[] | null;
   rotation?: Rotation;
   /** Null for an oblique rotation, whose shares do not add up. */
   cumulative_variance?: number | null;

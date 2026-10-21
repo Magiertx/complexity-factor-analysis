@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Page } from "@playwright/test";
@@ -99,6 +100,14 @@ test("a dataset of three miners is analysed per miner and the miners are compare
   const row = stepSection(page, "suitability").getByRole("row", { name: /Number of empty sequence flows/ });
   await expect(row).toContainText(text("factor.measures.status_miner"));
 
+  // The fact sheet of a measure describes the rows of the miner: its 50 nets, not all 150.
+  await stepSection(page, "suitability").locator("#fa-msa-table").getByRole("button", { name: "Size", exact: true }).click();
+  const fact = page.getByRole("dialog", { name: "Size", exact: true });
+  await expect(fact).toContainText(text("factor.sheet.values_miner", { n: 50, miner: "Inductive miner" }));
+  await expect(fact.getByText("n", { exact: true }).locator("xpath=..")).toContainText("50");
+  await page.keyboard.press("Escape");
+  await expect(fact).toBeHidden();
+
   // The miner is kept with the dataset: a reload opens it with the same rows.
   await page.reload();
   await goToStep(page, "dataset");
@@ -192,3 +201,51 @@ test("another miner clears the names of the factors, and Undo brings back both",
   await expect(tiles.getByRole("radio", { name: "Inductive miner" })).toBeChecked();
   await expect(stepLink(page, "loadings")).toContainText("Size", { timeout: FIT_TIMEOUT });
 });
+
+/** The serious and critical problems axe finds on the page, one line each. */
+async function seriousProblems(page: Page): Promise<string[]> {
+  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+  return results.violations
+    .filter((v) => v.impact === "serious" || v.impact === "critical")
+    .map((v) => `${v.id}: ${v.help} (${v.nodes.map((n) => n.target.join(" ")).join(", ")})`);
+}
+
+for (const scheme of ["light", "dark"] as const) {
+  // 50 nets per miner: every tile can be chosen, with the note on the sample size; 4 nets: every
+  // tile is blocked, with its reason.
+  for (const logs of [50, 4]) {
+    test(`axe finds no serious problem with the miner tiles of ${logs} nets per miner (${scheme})`, async ({ page }) => {
+      test.setTimeout(FIT_TIMEOUT * 2);
+      await page.emulateMedia({ colorScheme: scheme });
+      await uploadMiners(page, logs);
+      await goToStep(page, "dataset");
+      const tiles = minerTiles(page);
+      await expect(tiles.getByRole("radio")).toHaveCount(4);
+      if (logs === 50) {
+        await tiles.getByRole("radio", { name: "Inductive miner" }).check({ force: true });
+        await expect(stepSection(page, "dataset")).toContainText(text("factor.miners.hint_one", { miner: "Inductive miner", n: 50 }));
+      } else {
+        await expect(tiles.getByRole("radio", { name: "Alpha miner" })).toHaveAttribute("aria-disabled", "true");
+      }
+      await page.waitForLoadState("networkidle");
+      expect(await seriousProblems(page)).toEqual([]);
+    });
+  }
+}
+
+for (const scheme of ["light", "dark"] as const) {
+  test(`axe finds no serious problem in the comparison of the miners of a dataset (${scheme})`, async ({ page }) => {
+    test.setTimeout(FIT_TIMEOUT * 3);
+    await page.emulateMedia({ colorScheme: scheme });
+    await uploadMiners(page, 50);
+    await goToStep(page, "dataset");
+    await stepSection(page, "dataset").getByRole("link", { name: text("factor.miners.compare") }).click();
+    await expect(page.locator("table.data-table").first()).toBeVisible({ timeout: FIT_TIMEOUT });
+    await expect(page.getByRole("status").filter({ hasText: text("compare.computing") })).toHaveCount(0, { timeout: FIT_TIMEOUT });
+    for (const look of ["matrix", "dimensions", "pairs"]) {
+      await page.getByRole("button", { name: text(`compare.look.${look}`) }).click();
+      await expect(page.locator("table.data-table").first()).toBeVisible();
+      expect(await seriousProblems(page), look).toEqual([]);
+    }
+  });
+}

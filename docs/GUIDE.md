@@ -77,6 +77,8 @@ log is among the ten newest uploads of the session; the page says when it is not
   ComFy or feeed behind it, with a link to its source), a histogram of its values, its MSA and
   the round of the filter that removed it, its communality and uniqueness, its loadings as
   small bars, the five measures it correlates with most, and a button to exclude or include it.
+  With a miner chosen, the histogram and the statistics are those of that miner's rows, as the
+  analysis is.
   The left and right arrow keys page through the list you came from, Esc closes it, and the
   focus goes back to the name.
 - **Factors**: the scree plot with the Kaiser line and parallel analysis (95th percentile of 100
@@ -110,7 +112,12 @@ Tab. 17 (Alpha, Directly Follows, Inductive, Hybrid ILP) under Hair et al.
   **Compare** in My datasets one column per dataset picked, and the **pin** at the loadings keeps
   the solution on screen (dataset, miner, factor count, rotation and rule): pin one with 4
   factors, change to 6, pin again, and **Compare pinned** shows both. Such a column starts from
-  the settings saved with its dataset and works in this session only.
+  the settings saved with its dataset and works in this session only. Where you named the factors
+  of exactly that solution (miner, factor count, rotation and the rule of the comparison), the
+  column carries the names: in a row of the header, beside the dimension in the matrix and over
+  the measures of its dimension, and in the CSV (`D1 (Size)`), the LaTeX table and the ZIP.
+  Published datasets keep the numbers; the dimensions stay the same across the columns, each
+  column's names are its own.
 - **Assignment rule**: one rule for every dataset, so that a difference between two columns is
   one of the data.
 - **By measure**: a row per measure, grouped by dimension, and above them per dataset n, the
@@ -151,6 +158,16 @@ All downloads are in the **Download** menu of the page header:
   loadings of more than 50 measures are a table that breaks between its rows, as a heatmap of that
   height would not fit a page.
 - **Loadings (CSV, LaTeX)** and **Dataset (CSV)**.
+- **Copy methods text**: a short, neutral paragraph for the methods section, in the language of the
+  app, copied to the clipboard as LaTeX with citation keys. It is a template filled from the
+  settings and results on screen and nothing else: the dataset and its size, the measures dropped,
+  the tool with version and commit, Bartlett's test and the KMO, the MSA filter, the factor count
+  and how it was chosen, minres extraction, the rotation, and the assignment rule with its
+  thresholds. **Download BibTeX** gives the entries of exactly the keys the paragraph cites. A
+  comment above an entry says what its source does not record (e.g. the authors beyond the one the
+  catalog names, or the edition of a textbook), and these you complete from the paper. Lieben et
+  al. are named for the rule of multiple membership but not cited, as the repository does not say
+  which publication is meant.
 
 The **image icon** at the scree plot, the loadings and the correlation map downloads the figure as SVG (the text
 stays text) or as PNG (300 dpi), always light, sized for the text width of a CEUR paper, with its

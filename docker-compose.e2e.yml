@@ -1,0 +1,12 @@
+# Local end-to-end runs only. Layer it over the default file to switch the request limits off
+# for the backend, so the full Playwright suite (many sessions, one client address) does not
+# run into the shared limit:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build
+#
+# Go back to the limits with a plain `docker compose up -d`. Never deploy with this file: the
+# default docker-compose.yml keeps every limit.
+services:
+  algoservice:
+    environment:
+      - RATE_LIMIT_DISABLED=1

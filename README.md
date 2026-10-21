@@ -57,7 +57,8 @@ Schalk do it, but interactively in the browser.
   rule, and the dimensions per miner as in Tab. 17. The factors are matched across the miners by
   the measures they share, and a third look counts for every pair of measures in how many
   datasets both are in one dimension, which needs no matching. A link can ask for a dataset with
-  a factor count of its own, such as the Inductive miner with 4 and with 6 factors. Downloads as
+  a factor count of its own, such as the Inductive miner with 4 and with 6 factors. Columns of
+  your own datasets carry the names you gave the factors of exactly that solution. Downloads as
   CSV, as a LaTeX table and as a ZIP with a manifest.
 - **Look at the measures.** In the suitability step a folded correlation map shows the correlation of
   every pair of measures, ordered by factor or clustered, with the pairs at |r| of 0.95 or more
@@ -79,6 +80,10 @@ Schalk do it, but interactively in the browser.
   view of the whole analysis for A4 or PDF, and a switch to the short codes of the papers (CNC,
   dens, C_mag) for lists, figures and report. The dataset step shows the descriptive statistics of every measure
   as ComFy prints them and, for a computed dataset, the run time and input size of every stage.
+  "Copy methods text" in the download menu puts a short, neutral methods paragraph on the
+  clipboard (English, or German with the UI), read strictly from the settings and results on screen,
+  with LaTeX citation keys; "Download BibTeX" gives the entries of exactly those keys, and says in
+  a comment what a source does not record.
 - **Export.** Loadings as CSV or as a LaTeX `tabular` for the paper, the cleaned matrix as CSV,
   or the whole analysis as a ZIP: result, matrix, tables, the assignment of each measure, the
   report and the figures, the descriptive statistics, the run times of a computed dataset,
@@ -233,6 +238,19 @@ Playwright's own browsers are not needed):
 cd src/frontend
 BASE_URL=http://localhost:3000 PW_CHANNEL=msedge E2E_PROM=1 npx playwright test
 ```
+
+The suite opens many sessions from one address, so a stack with the default request limits
+answers some of them with 429. For a local run, start the stack with the e2e override, which
+sets `RATE_LIMIT_DISABLED=1` for the backend and nothing else, and go back to the default file
+afterwards:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build   # limits off
+docker compose up -d                                                           # limits on again
+```
+
+`docker-compose.yml` keeps the limits; the override is for a machine you test on, never for a
+deployment.
 
 `E2E_PROM=1` says that the stack has ProM: it adds the specs tagged `@prom` (the sample logs
 mined with the default miner) and skips those tagged `@no-prom`. The `e2e` job in CI runs the

@@ -33,7 +33,9 @@ from config import MAX_FILE_SIZE, CodedHTTPException, broadcast_jobs_update, get
 from env_config import positive_int, rate_limit
 from factor_analysis import catalog as cat
 from factor_analysis import compare, compute, correlations, figures, miners, published, storage
-from factor_analysis.descriptives import describe, describe_cleaned, histogram
+from factor_analysis import methods as methods_text
+from factor_analysis import names as factor_names
+from factor_analysis.descriptives import describe, describe_cleaned, describe_miner, histogram
 from factor_analysis.core import (
     COMMUNALITY_THRESHOLDS,
     LOADING_THRESHOLDS,
@@ -930,6 +932,38 @@ async def _delete_dataset(meta: dict[str, Any], session_id: str) -> bool:
     return bool(meta.get("job_id"))
 
 
+@router.get("/datasets/{dataset_id}/descriptives")
+@limiter.limit(rate_limit("dataset_status", "600/minute"))
+async def get_descriptives(
+    request: Request,
+    dataset_id: str,
+    miner: str | None = Query(None, max_length=200),
+    session_id: str = Depends(get_session_id),
+) -> Any:
+    """The descriptive statistics of the measures of a ready dataset, with the histogram of each
+    (the ``descriptives`` of ``GET /datasets/{id}``). With a ``miner`` of a model dataset
+    discovered with several miners they are those of that miner's rows, taken from the cleaned
+    matrix (``basis`` "miner", with the ``miner`` and its ``n_rows``): the distribution a fact
+    sheet of the miner's analysis should show. A miner the dataset does not have is a 400
+    ``unknown_miner``; a dataset that is not ready a 409."""
+    meta = await _ready_meta(dataset_id, session_id)
+    if miner is None:
+        return await run_in_threadpool(_descriptives, meta, session_id)
+    available = miners.dataset_miners(meta)
+    if miner not in available:
+        listed = f" Its miners: {', '.join(available)}." if available else " Its rows name no miner."
+        return _AnalysisFailed(
+            AnalysisError(
+                f"The dataset has no rows of the miner '{miner}'.{listed}",
+                "unknown_miner",
+                miner=miner,
+                miners=", ".join(available),
+            )
+        ).response
+    data = await run_in_threadpool(storage.load_matrix, session_id, meta["id"])
+    return await run_in_threadpool(describe_miner, data, miner)
+
+
 @router.delete("/datasets/{dataset_id}", status_code=204)
 @limiter.limit(rate_limit("dataset_status", "600/minute"))
 async def delete_dataset(
@@ -1094,6 +1128,17 @@ def _named(body: AnalyzeRequest, n_factors: int) -> dict[int, str] | None:
 
 class ExportRequest(AnalyzeRequest):
     format: Literal["csv", "latex"] = "csv"
+
+
+class SaveOptionsRequest(AnalyzeRequest):
+    """The options of ``AnalyzeRequest`` as saved with a dataset, and with them the factor count
+    of the solution on screen: the names are kept for that solution (miner, count, rotation and
+    rule), whichever way the count was chosen."""
+
+    names_k: int | None = Field(None, ge=1, le=MAX_MEASURES)
+
+    def saved(self) -> dict[str, Any]:
+        return self.model_dump(exclude={"names_k"})
 
 
 def _published_match(meta: dict[str, Any], params: AnalysisParams, result: dict[str, Any]) -> dict[str, Any] | None:
@@ -1349,10 +1394,13 @@ async def dataset_correlations(
 async def save_options(
     request: Request,
     dataset_id: str,
-    body: AnalyzeRequest,
+    body: SaveOptionsRequest,
     session_id: str = Depends(get_session_id),
 ) -> Response:
     """Keep the parameters of an analysis with the dataset, so reopening it starts from them.
+    ``names_k`` is the factor count of the analysis on screen; with it the ``factor_names`` are
+    also kept for that solution (miner, count, rotation, rule), which the dataset's columns of a
+    comparison are headed with.
 
     Checked like ``analyze`` checks them as far as that needs no fit: unknown excluded
     measures, too few measures or observations left (of the ``miner``, if one is given), more
@@ -1368,11 +1416,16 @@ async def save_options(
             data = await run_in_threadpool(storage.load_matrix, session_id, meta["id"])
             data, params, _ = await run_in_threadpool(_select, meta, data, body.miner, params)
             check_params(list(data.columns), len(data), params)
-        if body.n_factors is not None:
-            _named(body, body.n_factors)
+        solution_k = body.names_k or body.n_factors
+        if solution_k is not None:
+            _named(body, solution_k)
     except AnalysisError as e:
         return _AnalysisFailed(e).response
-    storage.update_meta(session_id, meta["id"], options=body.saved())
+    changes: dict[str, Any] = {"options": body.saved()}
+    if solution_k is not None:
+        key = factor_names.solution_key(solution_k, body.rotation, body.assignment_rule, body.miner)
+        changes["solution_names"] = factor_names.remember(meta.get("solution_names"), key, body.factor_names)
+    storage.update_meta(session_id, meta["id"], **changes)
     return Response(status_code=204)
 
 
@@ -1631,6 +1684,67 @@ async def export_report(
     return _attachment(content, f"{_slug(exported.meta['name'])}-report.tex", "application/x-latex; charset=utf-8")
 
 
+class MethodsRequest(AnalyzeRequest):
+    #: The language of the paragraph.
+    language: Literal["en", "de"] = "en"
+
+
+def _methods(exported: _Exported, language: str) -> methods_text.Methods:
+    """The methods paragraph of the analysis an export is made of."""
+    meta = exported.meta
+    return methods_text.methods(
+        language=language,
+        dataset=_dataset_record(meta),
+        result=exported.result,
+        requested_factors=exported.params.n_factors,
+        excluded=list(exported.params.excluded),
+        tool=provenance.tool(),
+        libraries=library_versions(),
+        entry=cat.bundled_entry(meta["bundled_id"]) if meta.get("bundled_id") else None,
+    )
+
+
+@router.post("/datasets/{dataset_id}/export/methods")
+@limiter.limit(rate_limit("fa_analyze", "120/minute"))
+async def export_methods(
+    request: Request,
+    dataset_id: str,
+    body: MethodsRequest | None = None,
+    session_id: str = Depends(get_session_id),
+) -> Any:
+    """A short, neutral methods paragraph of the analysis, in LaTeX with cite keys, in English
+    or German (``language``). Every number and setting in it is read from the analysis and its
+    parameters; nothing is said that the analysis did not do. ``citation_keys`` are the keys it
+    cites, in the order of their first citation; ``export/bibtex`` gives their entries."""
+    body = body or MethodsRequest()
+    exported = await _exported(request, dataset_id, body, session_id)
+    if isinstance(exported, Response):
+        return exported
+    built = _methods(exported, body.language)
+    return {"language": built.language, "text": built.text, "citation_keys": built.keys}
+
+
+@router.post("/datasets/{dataset_id}/export/bibtex")
+@limiter.limit(rate_limit("fa_analyze", "120/minute"))
+async def export_bibtex(
+    request: Request,
+    dataset_id: str,
+    body: MethodsRequest | None = None,
+    session_id: str = Depends(get_session_id),
+) -> Response:
+    """The BibTeX entries of exactly the keys ``export/methods`` cites for this analysis
+    (references.bib). What the repository or the entry does not record, e.g. the authors beyond the
+    one a catalog names or the edition of a textbook, is said in a comment above the entry and left
+    out, not filled in."""
+    body = body or MethodsRequest()
+    exported = await _exported(request, dataset_id, body, session_id)
+    if isinstance(exported, Response):
+        return exported
+    built = _methods(exported, body.language)
+    content = methods_text.bibtex(built.keys, provenance.tool(), library_versions(), datetime.now(timezone.utc).year)
+    return _attachment(content, f"{_slug(exported.meta['name'])}-references.bib", "application/x-bibtex; charset=utf-8")
+
+
 @router.post("/datasets/{dataset_id}/export/zip")
 @limiter.limit(rate_limit("fa_analyze", "120/minute"))
 async def export_archive(
@@ -1887,6 +2001,12 @@ async def _comparison(request: Request, body: CompareRequest) -> dict[str, Any] 
             else:
                 spec["result"] = result
                 spec["options"] = effective_params(params, result["n_factors"])
+                if "meta" in source:
+                    # The names saved for the solution this column came to; bundled ones have none.
+                    spec["factor_names"] = factor_names.for_solution(
+                        source["meta"].get("solution_names"), result["n_factors"], params.rotation,
+                        params.assignment_rule, column.miner,
+                    )
             specs.append(spec)
     finally:
         listening.cancel()

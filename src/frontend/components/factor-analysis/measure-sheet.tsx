@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Ban, ChevronLeft, ChevronRight, ExternalLink, Loader2, Plus, X } from "lucide-react";
-import type { FactorAnalysis, FactorDataset, FactorMeasure } from "@/lib/api";
+import { fetchDescriptives, type Descriptives, type FactorAnalysis, type FactorDataset, type FactorMeasure } from "@/lib/api";
 import { assignedCells, factorName, signColor, type AnalysisOptions, type FactorNames } from "@/lib/factor-analysis";
 import { MIN_MEASURES } from "@/lib/factor-analysis";
 import { NO_VALUE, formatNumber, formatStatistic } from "@/lib/format";
@@ -57,6 +57,25 @@ export function MeasureSheet(props: MeasureSheetProps) {
   const titleId = useId();
   const [announce, setAnnounce] = useState("");
   const open = measure !== null;
+  // With a miner chosen, the distribution is that of the miner's rows, from the server.
+  const { dataset, options } = props;
+  const miner = options.miner ?? null;
+  const minerKey = open && miner ? `${dataset.id}|${miner}` : null;
+  const [minerStats, setMinerStats] = useState<{ key: string; data: Descriptives | null } | null>(null);
+  useEffect(() => {
+    if (!minerKey || !miner) return;
+    const ctrl = new AbortController();
+    fetchDescriptives(dataset.id, miner, ctrl.signal).then(
+      (data) => setMinerStats({ key: minerKey, data }),
+      () => {
+        if (!ctrl.signal.aborted) setMinerStats({ key: minerKey, data: null });
+      },
+    );
+    return () => ctrl.abort();
+  }, [minerKey, dataset.id, miner]);
+  const ownStats = minerStats && minerStats.key === minerKey ? minerStats : null;
+  const descriptives = miner ? (ownStats?.data ?? null) : (dataset.descriptives ?? null);
+  const statsLoading = !!miner && !ownStats;
   const at = measure !== null ? list.indexOf(measure) : -1;
   const previous = at > 0 ? list[at - 1] : null;
   const next = at >= 0 && at < list.length - 1 ? list[at + 1] : null;
@@ -89,6 +108,8 @@ export function MeasureSheet(props: MeasureSheetProps) {
         <SheetBody
           {...props}
           measure={measure}
+          descriptives={descriptives}
+          statsLoading={statsLoading}
           titleId={titleId}
           position={at >= 0 ? { i: at + 1, n: list.length } : null}
           previous={previous}
@@ -104,6 +125,8 @@ export function MeasureSheet(props: MeasureSheetProps) {
 
 function SheetBody({
   measure,
+  descriptives,
+  statsLoading,
   titleId,
   position,
   previous,
@@ -125,6 +148,9 @@ function SheetBody({
   onToggleExcluded,
 }: MeasureSheetProps & {
   measure: string;
+  /** The statistics the distribution shows; null where the chosen miner's are not there (yet). */
+  descriptives: Descriptives | null;
+  statsLoading: boolean;
   titleId: string;
   position: { i: number; n: number } | null;
   previous: string | null;
@@ -137,7 +163,7 @@ function SheetBody({
   const { locale } = useLocale();
   const entry = catalog.get(measure);
   const fullName = entry?.name ?? measure;
-  const row = dataset.descriptives?.measures.find((m) => m.measure === measure);
+  const row = descriptives?.measures.find((m) => m.measure === measure);
   const dropped = dataset.dropped.find((d) => d.measure === measure)?.reason ?? row?.dropped ?? null;
   const known = info.get(measure);
   const excluded = options.excluded.includes(measure);
@@ -228,6 +254,17 @@ function SheetBody({
       <div ref={scroller} className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
         <Definition measure={measure} entry={entry} groupName={groupName} />
 
+        {statsLoading && (
+          <section className="space-y-2" aria-labelledby={`${titleId}-values`} aria-busy>
+            <h3 id={`${titleId}-values`} className="text-sm font-semibold">
+              {t("factor.sheet.values")}
+            </h3>
+            <p className="flex items-center gap-1.5 text-xs text-muted">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+              {t("common.loading")}
+            </p>
+          </section>
+        )}
         {row && (
           <section className="space-y-2" aria-labelledby={`${titleId}-values`}>
             <h3 id={`${titleId}-values`} className="text-sm font-semibold">
@@ -247,15 +284,11 @@ function SheetBody({
               <Stat label={t("factor.dataset.col_max")} value={statistic(row.max, locale)} />
             </dl>
             <p className="text-[11px] text-muted">
-              {dataset.descriptives?.basis === "input"
-                ? t("factor.sheet.values_input", { n: formatNumber(dataset.descriptives.n_rows, locale) })
-                : t("factor.sheet.values_cleaned")}
-              {options.miner && (
-                <>
-                  {" "}
-                  {t("factor.sheet.values_all_miners", { miner: options.miner })}
-                </>
-              )}
+              {descriptives?.basis === "input"
+                ? t("factor.sheet.values_input", { n: formatNumber(descriptives.n_rows, locale) })
+                : descriptives?.basis === "miner"
+                  ? t("factor.sheet.values_miner", { n: formatNumber(descriptives.n_rows, locale), miner: descriptives.miner ?? "" })
+                  : t("factor.sheet.values_cleaned")}
             </p>
           </section>
         )}

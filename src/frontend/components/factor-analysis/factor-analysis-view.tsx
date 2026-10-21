@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { AlertCircle, Info, Loader2, RotateCcw, X } from "lucide-react";
+import { AlertCircle, Check, Info, Loader2, RotateCcw, X } from "lucide-react";
 import { analysisLinkQuery, parseAnalysisLink, printHref } from "@/lib/analysis-link";
 import {
   HttpError,
@@ -13,6 +13,7 @@ import {
   datasetDownloadUrl,
   deleteDataset,
   downloadAnalysisZip,
+  exportBibtex,
   exportFigure,
   exportLoadings,
   exportReport,
@@ -20,6 +21,7 @@ import {
   fetchDataset,
   fetchFactorCatalog,
   fetchInterpretationStatus,
+  fetchMethods,
   interpretDataset,
   listDatasets,
   saveDatasetOptions,
@@ -132,8 +134,8 @@ interface Naming {
 const NO_NAMES: Naming = { key: null, names: [] };
 
 /** The options as saved with a dataset, with the names of the factors where there are. */
-function savedForm(options: AnalysisOptions, names: FactorNames | null): string {
-  return JSON.stringify(names && names.length > 0 ? { ...options, factor_names: names } : options);
+function savedForm(options: AnalysisOptions, names: FactorNames | null, factors: number | null): string {
+  return JSON.stringify([names && names.length > 0 ? { ...options, factor_names: names } : options, factors]);
 }
 
 function messageOf(e: unknown, fallback: string) {
@@ -236,6 +238,13 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // The fact sheet of a measure: which one, the list its name stood in, and where it was opened from.
   const [sheet, setSheet] = useState<{ measure: string; list: readonly string[] | null; from: HTMLElement | null } | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  // What an export that downloads nothing did, e.g. that the methods text is on the clipboard.
+  const [exportNote, setExportNote] = useState<string | null>(null);
+  useEffect(() => {
+    if (!exportNote) return;
+    const timer = setTimeout(() => setExportNote(null), 6000);
+    return () => clearTimeout(timer);
+  }, [exportNote]);
   const [tourOpen, setTourOpen] = useState(false);
   const onboarding = useOnboarding();
   // One step on screen at a time, named in the address (?step=...).
@@ -379,7 +388,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         if (d.status === "ready" && optionsAppliedFor.current !== d.id) {
           optionsAppliedFor.current = d.id;
           const savedNames = trimNames(d.options?.factor_names ?? []);
-          const saved = d.options ? savedForm(optionsFromSaved(kind, d.options), savedNames) : null;
+          const saved = d.options ? savedForm(optionsFromSaved(kind, d.options), savedNames, null) : null;
           savedOptions.current = { id: d.id, json: saved };
           const own = initialOptions(kind, d.options, d.measures, d.miners);
           const chosen = openWith.current?.id === d.id ? openWith.current : null;
@@ -558,6 +567,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     [analysis, shownNames],
   );
   const apiNamesJson = JSON.stringify(apiNames);
+  // The names are kept for this many factors, however the count was chosen.
+  const solutionFactors = analysis?.n_factors ?? null;
 
   // Remember the options of every new analysis with its dataset, and the names of its factors, so
   // that reopening the dataset starts from them. Nothing depends on the answer; a failure only
@@ -567,12 +578,16 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     pendingSave.current = null;
     if (!datasetId || !analyzedOptions) return;
     const names = JSON.parse(apiNamesJson) as FactorNames | null;
-    const json = savedForm(analyzedOptions, names);
+    const json = savedForm(analyzedOptions, names, solutionFactors);
     const saved = savedOptions.current;
     if (saved?.id === datasetId && saved.json === json) return;
     const save = () => {
       pendingSave.current = null;
-      saveDatasetOptions(datasetId, names ? { ...analyzedOptions, factor_names: names } : analyzedOptions).then(
+      saveDatasetOptions(
+        datasetId,
+        names ? { ...analyzedOptions, factor_names: names } : analyzedOptions,
+        solutionFactors,
+      ).then(
         () => {
           if (datasetIdRef.current === datasetId) savedOptions.current = { id: datasetId, json };
         },
@@ -585,7 +600,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     pendingSave.current = save;
     const timer = setTimeout(save, SAVE_OPTIONS_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [datasetId, analyzedOptions, apiNamesJson]);
+  }, [datasetId, analyzedOptions, apiNamesJson, solutionFactors]);
 
   // Leaving the tab, the page or the dataset sends a save still waiting for its debounce.
   useEffect(() => {
@@ -831,6 +846,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     if (!datasetId) return;
     setExporting(format);
     setExportError(null);
+    setExportNote(null);
     // What is on screen, with the names of its factors.
     const shown = { ...(analyzedOptions ?? options), factor_names: apiNames };
     try {
@@ -843,6 +859,19 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         });
       } else if (format === "report") {
         const { blob, filename } = await exportReport(datasetId, shown, locale, codesShown);
+        downloadBlob(blob, filename);
+      } else if (format === "methods") {
+        const { text } = await fetchMethods(datasetId, shown, locale);
+        try {
+          await navigator.clipboard.writeText(text);
+          setExportNote(t("factor.toolbar.methods_copied"));
+        } catch {
+          // Without clipboard access (plain http on another host) the text goes into a file.
+          downloadBlob(new Blob([text], { type: "application/x-latex" }), "methods.tex");
+          setExportNote(t("factor.toolbar.methods_saved"));
+        }
+      } else if (format === "bibtex") {
+        const { blob, filename } = await exportBibtex(datasetId, shown, locale);
         downloadBlob(blob, filename);
       } else {
         const { blob, filename } = await exportLoadings(datasetId, shown, format);
@@ -1378,6 +1407,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               {exportError}
             </p>
           )}
+          <p role="status" className={exportNote ? "flex items-start gap-1.5 text-xs text-success-ink" : "sr-only"}>
+            {exportNote && <Check className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />}
+            {exportNote}
+          </p>
           {/* At the top of every step once a dataset is ready, and in view while a step scrolls. */}
           {ready && dataset && (
             <SettingsRow

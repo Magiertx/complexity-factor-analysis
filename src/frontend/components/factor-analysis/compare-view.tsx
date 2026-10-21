@@ -35,7 +35,7 @@ import {
   type ColumnChoice,
   type CompareState,
 } from "@/lib/compare";
-import { countText, datasetName, downloadBlob, noticeText } from "@/lib/factor-analysis";
+import { countText, datasetName, downloadBlob, factorName, noticeText } from "@/lib/factor-analysis";
 import { formatNumber, formatPercent } from "@/lib/format";
 import { datasetNote, orderCollection, ruleNote } from "@/lib/paper-notes";
 import { codesOf, hasCodes, loadShortCodes, measureLabels, saveShortCodes } from "@/lib/short-codes";
@@ -654,6 +654,8 @@ function MembershipMatrix({
   const groups = groupRows(comparison.measures);
   const span = columns.length + 1;
   const rows = headerRows(t, locale);
+  // The names of the factors, where an analysis of the session's own data has them.
+  const named = columns.some((c) => c.factor_names?.some(Boolean));
   const crossLabel = t("factor.loadings.cross_cell");
   return (
     <div className="space-y-2">
@@ -702,6 +704,18 @@ function MembershipMatrix({
                 ))}
               </tr>
             ))}
+            {named && (
+              <tr>
+                <th scope="row" className="sticky-col font-medium align-top">
+                  <Term more={t("compare.help.names")}>{t("compare.header.names")}</Term>
+                </th>
+                {columns.map((c, i) => (
+                  <td key={i} className="!whitespace-normal align-top">
+                    <FactorNameList names={c.factor_names} count={c.error ? 0 : (c.n_factors ?? 0)} />
+                  </td>
+                ))}
+              </tr>
+            )}
           </tbody>
           {groups.map((group) => (
             <tbody key={group.dimension ?? "none"}>
@@ -728,6 +742,7 @@ function MembershipMatrix({
                         inRow={cellInRow(cell, row.dimension)}
                         tip={`${titles[i]} · ${name}: ${cellTip(cell, t, locale, columns[i])}`}
                         crossLabel={crossLabel}
+                        names={columns[i].factor_names}
                       />
                     ))}
                   </tr>
@@ -738,6 +753,21 @@ function MembershipMatrix({
         </table>
       </TableFrame>
     </div>
+  );
+}
+
+/** The names of a column's factors, each with the number of its factor, in the order of the factors; a factor without a name is left out. */
+function FactorNameList({ names, count }: { names: (string | null)[] | null | undefined; count: number }) {
+  const named = Array.from({ length: count }, (_, f) => ({ f, name: factorName(names, f) })).filter((x) => x.name);
+  if (named.length === 0) return <span className="text-muted">–</span>;
+  return (
+    <ul className="space-y-0.5">
+      {named.map(({ f, name }) => (
+        <li key={f} className="text-xs leading-snug">
+          <span className="font-mono tabular-nums text-muted">F{f + 1}</span> {name}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -772,11 +802,14 @@ function MatrixCell({
   inRow,
   tip,
   crossLabel,
+  names,
 }: {
   cell: CompareCell;
   inRow: boolean;
   tip: string;
   crossLabel: string;
+  /** The names its analysis gave the factors, where it did. */
+  names?: (string | null)[] | null;
 }) {
   const t = useT();
   const { locale } = useLocale();
@@ -785,7 +818,20 @@ function MatrixCell({
   if (cell.status === "assigned") {
     content = (
       <>
-        <span className="font-medium text-fg">{dimensionsText(cell.dimensions)}</span>
+        <span className="font-medium text-fg">
+          {cell.dimensions.map((d, j) => {
+            const name = factorName(names, cell.factors[j]);
+            return (
+              <Fragment key={d}>
+                {j > 0 && " · "}
+                {dimensionLabel(d)}
+                {name && (
+                  <span className="ml-1 inline-block max-w-[7rem] truncate align-bottom text-xs font-normal text-muted">{name}</span>
+                )}
+              </Fragment>
+            );
+          })}
+        </span>
         {cell.loadings.length === 1 && (
           <span className="ml-1.5 font-mono text-[11px] text-muted tabular-nums">{formatNumber(cell.loadings[0], locale, 2)}</span>
         )}
@@ -835,10 +881,16 @@ function MatrixCell({
   );
 }
 
+/** "Factor 2", or "Factor 2 “Size”" where its analysis named it. */
+function factorText(t: Translate, factor: number, names: (string | null)[] | null | undefined): string {
+  const name = factorName(names, factor);
+  return name ? t("compare.factor_named", { i: factor + 1, name }) : t("factor.loadings.factor_n", { i: factor + 1 });
+}
+
 /** What a cell says in words, for its tooltip. */
 function cellTip(cell: CompareCell, t: Translate, locale: string, column: CompareColumn): string {
   const number = (v: number) => formatNumber(v, locale, 2);
-  const factorOf = (f: number) => t("factor.loadings.factor_n", { i: f + 1 });
+  const factorOf = (f: number) => factorText(t, f, column.factor_names);
   switch (cell.status) {
     case "assigned": {
       const parts = cell.dimensions.map((d, j) =>
@@ -957,12 +1009,14 @@ function DimensionTable({
                     const members = entry?.measures.map((m) => m.measure) ?? [];
                     const tip =
                       entry && entry.factor !== null
-                        ? t("compare.tip.factor_of", { factor: t("factor.loadings.factor_n", { i: entry.factor + 1 }), column: titles[i] })
+                        ? t("compare.tip.factor_of", { factor: factorText(t, entry.factor, column.factor_names), column: titles[i] })
                         : undefined;
+                    const name = entry && entry.factor !== null ? factorName(column.factor_names, entry.factor) : null;
                     const more =
                       entry && entry.factor !== null ? matchText(column, entry.factor, i === reference, labels, t, locale) : undefined;
                     return (
                       <td key={dimension.index} data-tip={tip} data-tip-more={more} className="!whitespace-normal align-top">
+                        {name && <span className="mb-0.5 block text-xs font-medium text-muted">{name}</span>}
                         {members.length > 0 ? list(members) : <span className="text-muted">–</span>}
                       </td>
                     );
