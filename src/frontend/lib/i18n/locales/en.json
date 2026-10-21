@@ -252,13 +252,14 @@
       "job_notes": "Set or clear the note of a run.",
       "job_delete": "Delete a run and its results; a dataset run takes its dataset with it.",
       "jobs_delete": "Delete every run of your session, with the datasets they computed.",
-      "health": "Readiness probe: 200 when the database is reachable."
+      "health": "Readiness probe: 200 when the database is reachable.",
+      "session_start": "Starts the session (the `session_id` cookie) if the request has none, or one the server cannot read. The page does it by itself; a script that sends several requests at once calls it first."
     },
     "notes": {
       "rate_limits": "Rate limits per IP: `60/hour` on `POST /algorithms/{id}/analyze` and on new datasets from `POST /factor-analysis/datasets`, `600/minute` on reading, listing and deleting datasets and on saving their options, `300/hour` on `POST /log-stats` and `120/minute` everywhere else. Interpretations by Claude: `10/hour` per session and `200/day` for the server. Over a limit the answer is a 429 with a `code`.",
       "quota": "Runs: at most 12 queued or running per session, and at most 4 dataset runs at once over all sessions; more are answered with a 429.",
       "uploads": "Uploads: at most {file_mb} MB per file. `POST /algorithms/{id}/analyze` and `POST /log-stats` take one event log (`.xes`, `.xes.gz`, `.xml`, `.json`). `POST /factor-analysis/datasets` takes one `.csv`, up to {logs} event logs (`.xes`, `.xes.gz`) or up to {pnml} Petri nets (`.pnml`), at most {total_mb} MB together. The operator sets the numbers of files; `GET /factor-analysis/limits` reports what this server allows.",
-      "session": "Session: a signed cookie scopes every endpoint. Reuse it across requests (in Python with `requests.Session()`) to keep your runs and datasets visible.",
+      "session": "Session: a signed cookie scopes every endpoint. Reuse it across requests (in Python with `requests.Session()`) to keep your runs and datasets visible. Without a cookie, requests sent at once each start a session of their own; call `GET /session` first.",
       "schemas": "Parameter schemas come from `GET /algorithms`: read the `parameters_schema` of an algorithm before submitting.",
       "analysis": "Analyses: at most `400` measures per analysis, more give a 400 with the code `too_many_measures_for_analysis`. A newer analysis of the same dataset in a session replaces an older one that still waits; the older one gets a 409 `superseded`. Scripts that analyse one dataset with several settings in parallel pass `?latest_wins=false`."
     }

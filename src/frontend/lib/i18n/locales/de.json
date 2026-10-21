@@ -252,13 +252,14 @@
       "job_notes": "Die Notiz eines Runs setzen oder löschen.",
       "job_delete": "Einen Run und seine Ergebnisse löschen; ein Datensatz-Run nimmt seinen Datensatz mit.",
       "jobs_delete": "Alle Runs deiner Sitzung löschen, mit den Datensätzen, die sie berechnet haben.",
-      "health": "Bereitschaftsprüfung: 200, wenn die Datenbank erreichbar ist."
+      "health": "Bereitschaftsprüfung: 200, wenn die Datenbank erreichbar ist.",
+      "session_start": "Startet die Sitzung (das Cookie `session_id`), wenn die Anfrage keines hat oder eines, das der Server nicht lesen kann. Die Seite erledigt das selbst; ein Skript, das mehrere Anfragen gleichzeitig sendet, ruft es zuerst auf."
     },
     "notes": {
       "rate_limits": "Ratenlimits pro IP: `60/hour` für `POST /algorithms/{id}/analyze` und für neue Datensätze aus `POST /factor-analysis/datasets`, `600/minute` für das Lesen, Auflisten und Löschen von Datensätzen und das Speichern ihrer Optionen, `300/hour` für `POST /log-stats` und `120/minute` überall sonst. Interpretationen durch Claude: `10/hour` pro Sitzung und `200/day` für den Server. Über einem Limit lautet die Antwort 429 mit einem `code`.",
       "quota": "Runs: höchstens 12 wartende oder laufende pro Sitzung und höchstens 4 Datensatz-Runs gleichzeitig über alle Sitzungen; weitere werden mit 429 beantwortet.",
       "uploads": "Uploads: höchstens {file_mb} MB pro Datei. `POST /algorithms/{id}/analyze` und `POST /log-stats` nehmen ein Event-Log (`.xes`, `.xes.gz`, `.xml`, `.json`). `POST /factor-analysis/datasets` nimmt eine `.csv`, bis zu {logs} Event-Logs (`.xes`, `.xes.gz`) oder bis zu {pnml} Petri-Netze (`.pnml`), zusammen höchstens {total_mb} MB. Die Zahl der Dateien legt der Betreiber fest; `GET /factor-analysis/limits` nennt, was dieser Server erlaubt.",
-      "session": "Sitzung: Ein signiertes Cookie grenzt jeden Endpoint ein. Verwende es für alle Anfragen (in Python mit `requests.Session()`), damit deine Runs und Datensätze sichtbar bleiben.",
+      "session": "Sitzung: Ein signiertes Cookie grenzt jeden Endpoint ein. Verwende es für alle Anfragen (in Python mit `requests.Session()`), damit deine Runs und Datensätze sichtbar bleiben. Ohne Cookie beginnt jede von mehreren gleichzeitigen Anfragen eine eigene Sitzung; rufe zuerst `GET /session` auf.",
       "schemas": "Die Parameterschemas liefert `GET /algorithms`: Lies vor dem Absenden das `parameters_schema` eines Algorithmus.",
       "analysis": "Analysen: höchstens `400` Maße pro Analyse, mehr ergeben 400 mit dem Code `too_many_measures_for_analysis`. Eine neuere Analyse desselben Datensatzes in einer Sitzung ersetzt eine ältere, die noch wartet; die ältere erhält 409 `superseded`. Skripte, die einen Datensatz parallel mit mehreren Einstellungen analysieren, übergeben `?latest_wins=false`."
     }

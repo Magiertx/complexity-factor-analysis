@@ -166,7 +166,10 @@ const ENDPOINTS: { group: string; items: Endpoint[] }[] = [
   },
   {
     group: "diagnostics",
-    items: [{ method: "GET", path: "/health", key: "health" }],
+    items: [
+      { method: "GET", path: "/health", key: "health" },
+      { method: "GET", path: "/session", key: "session_start" },
+    ],
   },
 ];
 
