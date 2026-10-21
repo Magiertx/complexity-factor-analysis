@@ -1524,6 +1524,13 @@ async def _comparison(request: Request, body: CompareRequest) -> dict[str, Any] 
             specs.append(spec)
     finally:
         listening.cancel()
+    if all("error" in spec for spec in specs):
+        # Nothing to compare, and nothing a download could say.
+        return _compare_error(
+            "compare_nothing_analysed",
+            "None of the columns could be analysed with these settings.",
+            reasons=", ".join(sorted({spec["error"]["code"] for spec in specs if spec["error"].get("code")})),
+        )
     return await run_in_threadpool(compare.build, specs, body.assignment_rule)
 
 
@@ -1538,8 +1545,9 @@ async def compare_analyses(request: Request, body: CompareRequest) -> Any:
     columns are matched by the measures they share, so that most measures in common get the same
     number.
 
-    Needs no dataset of the session. A 400 with ``code`` names an unknown dataset or columns of
-    two kinds; a column whose analysis fails has its ``error``.
+    Needs no dataset of the session. A 400 with ``code`` names an unknown dataset, columns of
+    two kinds, or that no column could be analysed; a column whose analysis fails has its
+    ``error`` and the others are compared without it.
     """
     started = time.perf_counter()
     try:

@@ -458,6 +458,12 @@ def test_a_column_that_cannot_be_analysed_carries_its_error(client):
             400,
             "compare_mixed_kinds",
         ),
+        # Nothing can be analysed with 50 factors: no comparison, rather than an empty one.
+        (
+            {"columns": [{"bundled_id": "comfy-paper-alpha-miner", "options": {"n_factors": 50}}] * 2},
+            400,
+            "compare_nothing_analysed",
+        ),
         ({**_body(["alpha", "inductive"]), "assignment_rule": "lieben"}, 422, None),
         ({"columns": [{"bundled_id": "comfy-paper-alpha-miner", "options": {"assignment_rule": "multi"}}] * 2}, 422, None),
     ],
@@ -467,6 +473,17 @@ def test_bad_requests(client, body, status, code):
     assert r.status_code == status, r.text
     if code:
         assert r.json()["code"] == code
+
+
+def test_nothing_analysed_is_no_download_either(client):
+    body = {"columns": [{"bundled_id": "comfy-paper-alpha-miner", "options": {"n_factors": 50}}] * 2}
+    for format in ("csv", "latex", "zip"):
+        r = client.post("/factor-analysis/compare/export", json={**body, "format": format})
+        assert r.status_code == 400 and r.json()["code"] == "compare_nothing_analysed", format
+    assert r.json()["params"] == {"reasons": "n_factors_range"}
+    # One column that can be analysed is enough: the other carries its error.
+    mixed = {"columns": [{"bundled_id": "comfy-paper-alpha-miner"}, body["columns"][0]]}
+    assert client.post("/factor-analysis/compare", json=mixed).status_code == 200
 
 
 # --- exports ------------------------------------------------------------------------------

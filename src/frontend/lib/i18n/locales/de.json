@@ -1471,7 +1471,8 @@
       "failed": "Der Vergleich ist fehlgeschlagen.",
       "export": "Der Download ist fehlgeschlagen.",
       "compare_unknown_dataset": "Der Link nennt einen Datensatz, den dieser Server nicht hat: {dataset}.",
-      "compare_mixed_kinds": "Ein Vergleich nimmt nur Datensätze einer Art."
+      "compare_mixed_kinds": "Ein Vergleich nimmt nur Datensätze einer Art.",
+      "compare_nothing_analysed": "Mit diesen Einstellungen ließ sich keiner der Datensätze analysieren."
     }
   }
 }

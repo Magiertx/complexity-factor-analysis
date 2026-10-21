@@ -1471,7 +1471,8 @@
       "failed": "The comparison failed.",
       "export": "The download failed.",
       "compare_unknown_dataset": "The link names a dataset this server does not have: {dataset}.",
-      "compare_mixed_kinds": "A comparison takes datasets of one kind only."
+      "compare_mixed_kinds": "A comparison takes datasets of one kind only.",
+      "compare_nothing_analysed": "None of the datasets could be analysed with these settings."
     }
   }
 }

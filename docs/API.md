@@ -631,7 +631,9 @@ the session and counts against no dataset limit. JSON body:
 An unknown dataset is a 400 with `"code": "compare_unknown_dataset"`, columns of two kinds a 400
 with `"code": "compare_mixed_kinds"`. A column whose analysis fails, e.g. with more factors than
 its measures allow, carries `error` (`code`, `message`, `params`, as an analysis error) and the
-others are compared without it.
+others are compared without it; if none can be analysed, there is nothing to compare, and the
+answer is a 400 with `"code": "compare_nothing_analysed"` (`params.reasons` lists the codes of
+their errors), from `compare/export` as well.
 
 The factors of every analysis are numbered by the analysis, so they are matched first: the first
 column keeps the numbers of its factors, and the factors of each further column are matched one
