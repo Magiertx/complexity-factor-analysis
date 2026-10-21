@@ -636,10 +636,14 @@ others are compared without it.
 The factors of every analysis are numbered by the analysis, so they are matched first: the first
 column keeps the numbers of its factors, and the factors of each further column are matched one
 to one to the dimensions of the columns before it, so that the most measures fall into the same
-dimension (the Hungarian method on the number of shared measures). Each measure counts for the
-factor of its largest absolute loading, whatever the rule, so switching the rule never
-renumbers the dimensions. Tab. 17 renumbered its dimensions by hand "for easier
-comparability"; the tool's numbers can differ from the paper's while the groups are the same.
+dimension (the Hungarian method on the number of shared measures). Where two matches share as
+many measures, the one whose loadings are more alike wins (Tucker's congruence with the factors
+before it in the dimension), and only if that does not tell them apart too does a factor keep its
+own number. Each measure counts for the factor of its largest absolute loading, whatever the
+rule, so switching the rule never renumbers the dimensions. Tab. 17 renumbered its dimensions by
+hand "for easier comparability"; the tool's numbers can differ from the paper's, and a match that
+rests on a single shared measure is a guess, which `matched_by` shows. The grouping of the
+measures within a column does not depend on the numbers.
 
 The response has:
 
@@ -654,7 +658,9 @@ The response has:
   `explained_variance`, `factor_count` (`kaiser`, `parallel_analysis`), `warnings` (as
   `warning_details` of `analyze`), `timings`, `factor_dimensions` (the dimension of each factor,
   from 0), `shared_measures` (how many measures each factor shares with its dimension in the
-  columns before it) and `same_as` (an earlier column with the same loadings, e.g. the Alpha
+  columns before it), `matched_by` (those measures per factor, in the order of the data),
+  `congruence` (Tucker's congruence of each factor with the factors before it in its dimension,
+  from 0 to 1, averaged; `null` in the first column and where there are none) and `same_as` (an earlier column with the same loadings, e.g. the Alpha
   Dollar miner of the Alpha miner, else `null`);
 - `measures`, one row per measure of any column, grouped by `dimension` (the one most columns
   put it in first, the leftmost column deciding a tie; `null` for none, last), with `short`,

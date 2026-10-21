@@ -1534,7 +1534,7 @@ async def compare_analyses(request: Request, body: CompareRequest) -> Any:
     of Important Factors: a header per column (n, measures after the MSA filter, KMO, factors,
     rotation, cumulative variance), every measure with the dimensions the shared assignment
     rule puts it in per column, and the dimensions per column. The factors of the columns are
-    matched by the measures they share, so that the same dimension has the same number.
+    matched by the measures they share, so that most measures in common get the same number.
 
     Needs no dataset of the session. A 400 with ``code`` names an unknown dataset or columns of
     two kinds; a column whose analysis fails has its ``error``.

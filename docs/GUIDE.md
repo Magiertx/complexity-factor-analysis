@@ -84,9 +84,12 @@ Tab. 17 (Alpha, Directly Follows, Inductive, Hybrid ILP) under Hair et al.
 
 The factors of every analysis are numbered by the analysis, so they are matched first: the first
 dataset keeps its numbers, and the factors of every further one go to the dimension with which
-they share the most measures. Tab. 17 renumbered its dimensions by hand; a number can differ
-from the paper's while the groups are the same. The notes under the table say where the bundled
-data differ from the paper, e.g. for the Hybrid ILP miner.
+they share the most measures; where two are equally good, the one with the more alike loadings
+wins. Tab. 17 renumbered its dimensions by hand, so a number can differ from the paper's, and a
+match that rests on one shared measure is a guess: the tooltip of a cell in the dimension view
+names the measures it rests on. How the measures are grouped within a dataset does not depend on
+the numbers. The notes under the table say where the bundled data differ from the paper, e.g. for
+the Hybrid ILP miner.
 
 ## Take the results into a paper
 

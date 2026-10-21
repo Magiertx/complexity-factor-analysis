@@ -97,9 +97,13 @@ def test_primary_groups_put_each_measure_on_its_largest_loading():
 def test_align_keeps_the_first_column_and_finds_a_permutation():
     first = [{"a", "b"}, {"c"}, {"d", "e"}]
     permuted = [{"d", "e"}, {"a", "b"}, {"c"}]
-    dimensions, shared = compare.align([first, permuted])
-    assert dimensions == [[0, 1, 2], [2, 0, 1]]
-    assert shared == [[0, 0, 0], [2, 2, 1]]
+    matched = compare.align([first, permuted])
+    assert matched.dimensions == [[0, 1, 2], [2, 0, 1]]
+    assert matched.shared == [[0, 0, 0], [2, 2, 1]]
+    # The measures shared with the dimension, each once.
+    assert matched.shared_names == [[[], [], []], [["d", "e"], ["a", "b"], ["c"]]]
+    # Nothing before the first column to be alike.
+    assert matched.congruence[0] == [None, None, None]
 
 
 def test_align_counts_the_columns_before_and_keeps_numbers_in_a_tie():
@@ -109,18 +113,43 @@ def test_align_counts_the_columns_before_and_keeps_numbers_in_a_tie():
         # "x" shares nothing: it keeps its own number where that is free.
         [{"c"}, {"a"}, {"x"}],
     ]
-    dimensions, _ = compare.align(columns)
-    assert dimensions == [[0, 1], [1, 0], [1, 0, 2]]
+    assert compare.align(columns).dimensions == [[0, 1], [1, 0], [1, 0, 2]]
 
 
 def test_align_with_unequal_factor_counts_and_a_failed_column():
     columns = [[{"a"}, {"b"}, {"c"}], [], [{"c", "b"}, {"a"}], [{"b"}, {"a"}, {"c"}, {"z"}]]
-    dimensions, shared = compare.align(columns)
+    matched = compare.align(columns)
     # Four dimensions, as the column with the most factors has.
-    assert dimensions[1] == [] and shared[1] == []
-    assert dimensions[0] == [0, 1, 2]
-    assert dimensions[2][1] == 0
-    assert dimensions[3] == [1, 0, 2, 3]
+    assert matched.dimensions[1] == [] and matched.shared[1] == [] and matched.shared_names[1] == []
+    assert matched.dimensions[0] == [0, 1, 2]
+    assert matched.dimensions[2][1] == 0
+    assert matched.dimensions[3] == [1, 0, 2, 3]
+
+
+def test_congruence_ignores_the_sign_and_the_measures_only_one_has():
+    x = {"a": 0.8, "b": 0.6, "only_x": 0.9}
+    assert compare.congruence(x, {"a": 0.8, "b": 0.6}) == pytest.approx(1.0)
+    assert compare.congruence(x, {"a": -0.8, "b": -0.6, "only_y": 0.5}) == pytest.approx(1.0)
+    assert compare.congruence({"a": 1.0, "b": 0.0}, {"a": 0.0, "b": 1.0}) == pytest.approx(0.0)
+    assert compare.congruence(x, {"c": 0.5}) == 0.0
+    assert compare.congruence({"a": 0.0}, {"a": 0.4}) == 0.0
+
+
+def test_align_settles_a_tie_by_the_loadings_before_the_number():
+    # The first factor of the second column shares one measure with each of the first two
+    # dimensions; on the numbers alone it keeps its own.
+    first = [{"a"}, {"b"}, {"c"}]
+    second = [{"a", "b"}, set(), set()]
+    assert compare.align([first, second]).dimensions[1][0] == 0
+    profiles = [
+        [{"a": 0.9, "b": 0.1, "c": 0.0}, {"a": 0.1, "b": 0.9, "c": 0.0}, {"a": 0.0, "b": 0.1, "c": 0.9}],
+        # The first factor looks like the second dimension.
+        [{"a": 0.2, "b": 0.8, "c": 0.0}, {"a": 0.7, "b": 0.0, "c": 0.7}, {"a": 0.0, "b": 0.0, "c": 0.1}],
+    ]
+    matched = compare.align([first, second], profiles)
+    assert matched.dimensions[1][0] == 1
+    assert matched.shared[1][0] == 1 and matched.shared_names[1][0] == ["b"]
+    assert matched.congruence[1][0] > 0.9
 
 
 # --- Tab. 17 ------------------------------------------------------------------------------
@@ -149,6 +178,30 @@ def test_four_miners_under_hair_have_the_groups_of_table_17(compared):
     hybrid = [TAB_17["hybrid-ilp"][0] | {"MM"}, {"size", "sep"}, {"seq"}]
     assert _partition(groups["hybrid-ilp"]) == _partition(hybrid)
     assert {SHORT[u["measure"]]: u["reason"] for u in comparison["unassigned"][3]} == {"CH": "low_communality"}
+
+
+def test_a_tie_in_the_matching_is_settled_by_the_loadings_and_says_what_it_rests_on(compared):
+    """The Hybrid ILP factor of seq shares one measure, CH, with each of three dimensions. It used
+    to land with acd and dens only because the empty factor after it kept its own number; now the
+    loadings decide, and the column says which measures the match rests on."""
+    comparison = compared(_body(FOUR))
+    hybrid = comparison["columns"][3]
+    factor = next(f for f, measures in enumerate(hybrid["matched_by"]) if measures and SHORT[measures[0]] == "CH")
+    seq = next(r for r in comparison["measures"] if SHORT[r["measure"]] == "seq")["cells"][3]
+    assert seq["status"] == "assigned" and seq["factors"] == [factor]
+    assert hybrid["shared_measures"][factor] == 1
+    assert [SHORT[m] for m in hybrid["matched_by"][factor]] == ["CH"]
+    # With the dimension of the Alpha miner's CH, not the one of acd and dens.
+    dimension = hybrid["factor_dimensions"][factor]
+    assert dimension == comparison["columns"][0]["factor_dimensions"][3]
+    assert "acd" not in _groups(comparison, 3)[dimension]
+    # How alike the factor is to the factors before it in that dimension, from 0 to 1.
+    assert 0.0 < hybrid["congruence"][factor] <= 1.0
+    # The first column has nothing to be matched with.
+    assert comparison["columns"][0]["congruence"] == [None] * 4 and comparison["columns"][0]["matched_by"] == [[]] * 4
+    # The measures come in the order of the data, with one for every factor.
+    inductive = comparison["columns"][2]
+    assert [[SHORT[m] for m in names] for names in inductive["matched_by"]] == [["size", "MM", "ts", "dup"], ["CNC"], ["acd", "dens"], ["sep"]]
 
 
 def test_four_miners_line_up_like_table_17_where_its_dimensions_share_measures(compared):

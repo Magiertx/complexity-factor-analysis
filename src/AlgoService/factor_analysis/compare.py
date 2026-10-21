@@ -7,11 +7,14 @@ data, not of the rule.
 
 The numbering of factors is arbitrary in every analysis, so the factors of the columns are
 matched first: the first column keeps its numbers, and the factors of each further column are
-matched one to one to the dimensions of the columns before it by the measures they share
-(the Hungarian method on the number of shared measures; ``align``). Each measure counts for the
-factor of its largest absolute loading, whatever the rule, so that switching the rule never
-renumbers the dimensions. Important Factors renumbered its dimensions by hand for Tab. 17; the
-tool's numbers can differ from the paper's, the groups do not.
+matched one to one to the dimensions of the columns before it by the measures they share (the
+Hungarian method on the number of shared measures; ``align``). Where two matches share as many
+measures, the one whose loadings are more alike wins (Tucker's congruence), and only after that
+a factor keeps its own number. Each measure counts for the factor of its largest absolute
+loading, whatever the rule, so that switching the rule never renumbers the dimensions. Important
+Factors renumbered its dimensions by hand for Tab. 17: the tool's numbers can differ from the
+paper's, and so can a match that rests on one shared measure; the grouping of the measures
+within a column does not depend on the numbers.
 
 ``build`` turns the analyses into what the API returns: a header per column, a matrix with one
 row per measure and the dimensions of the measure in every column, and the dimensions per
@@ -28,7 +31,7 @@ import zipfile
 from collections import Counter
 from datetime import datetime, timezone
 from functools import lru_cache
-from typing import Any
+from typing import Any, NamedTuple
 
 import numpy as np
 import pandas as pd
@@ -52,7 +55,9 @@ ALIGNMENT = {
         "The first column keeps the numbers of its factors. The factors of each further column are "
         "matched one to one to the dimensions of the columns before it, so that the most measures "
         "fall into the same dimension (Hungarian method on the number of shared measures); each "
-        "measure counts for the factor of its largest absolute loading, whatever the rule."
+        "measure counts for the factor of its largest absolute loading, whatever the rule. Among "
+        "matches that share as many measures, the one with the more alike loadings wins (Tucker's "
+        "congruence with the factors before it), then the factor keeps its own number."
     ),
 }
 
@@ -103,41 +108,89 @@ def primary_groups(loadings: dict[str, list[float]], n_factors: int) -> list[set
     return groups
 
 
-def align(columns: list[list[set[str]]]) -> tuple[list[list[int]], list[list[int]]]:
-    """The dimension of each factor of each column, and the number of measures each factor
-    shares with the dimension it was matched to (over the columns before it).
+class Alignment(NamedTuple):
+    """How the factors of the columns were matched to dimensions (``align``)."""
+
+    #: The dimension of each factor of each column.
+    dimensions: list[list[int]]
+    #: How many measures each factor shares with the dimension it was matched to, counted over
+    #: the columns before it (a measure in two of them counts twice).
+    shared: list[list[int]]
+    #: Those measures, each once, in alphabetical order.
+    shared_names: list[list[list[str]]]
+    #: Tucker's congruence of each factor with the factors before it in its dimension, in
+    #: absolute value and averaged over them; ``None`` where there are none.
+    congruence: list[list[float | None]]
+
+
+def congruence(x: dict[str, float], y: dict[str, float]) -> float:
+    """Tucker's congruence coefficient of two loading vectors over the measures both have, in
+    absolute value because the sign of a factor is arbitrary; 0 if they share none."""
+    common = sorted(x.keys() & y.keys())
+    if not common:
+        return 0.0
+    a = np.array([x[m] for m in common], dtype=float)
+    b = np.array([y[m] for m in common], dtype=float)
+    denominator = float(np.sqrt((a @ a) * (b @ b)))
+    return 0.0 if denominator == 0.0 else abs(float(a @ b)) / denominator
+
+
+def align(columns: list[list[set[str]]], profiles: list[list[dict[str, float]]] | None = None) -> Alignment:
+    """The dimension of each factor of each column.
 
     ``columns`` holds the groups of each column (``primary_groups``); a column that failed has
     none. The dimensions are as many as the most factors of a column. The first column with
     factors keeps their numbers; each further column is matched to the measures the columns
     before it put into each dimension, so that the shared measures add up to the most. Among
-    equally good matches a factor keeps its own number.
+    equally good matches, the one whose loadings are the more alike wins (Tucker's congruence
+    with the factors before it in the dimension, from ``profiles``: the loadings of each factor
+    by measure, as ``primary_groups`` has them), and only when that tells them apart too a
+    factor keeps its own number.
     """
     n_dimensions = max((len(groups) for groups in columns), default=0)
     counts: list[Counter[str]] = [Counter() for _ in range(n_dimensions)]
+    before: list[list[dict[str, float]]] = [[] for _ in range(n_dimensions)]
     dimensions: list[list[int]] = []
     shared: list[list[int]] = []
-    for groups in columns:
+    names: list[list[list[str]]] = []
+    similar: list[list[float | None]] = []
+    for position, groups in enumerate(columns):
         if not groups:
             dimensions.append([])
             shared.append([])
+            names.append([])
+            similar.append([])
             continue
+        loadings = profiles[position] if profiles else [{} for _ in groups]
         overlap = np.array(
             [[sum(counts[d][m] for m in group) for d in range(n_dimensions)] for group in groups], dtype=float
         )
-        # Integers scaled up, plus 1 where a factor keeps its own number: that wins only a tie.
+        likeness = np.zeros_like(overlap)
+        has_before = np.zeros_like(overlap, dtype=bool)
+        for f in range(len(groups)):
+            for d in range(n_dimensions):
+                if before[d]:
+                    has_before[f, d] = True
+                    likeness[f, d] = sum(congruence(loadings[f], earlier) for earlier in before[d]) / len(before[d])
+        # Lexicographic: the shared measures (integers, scaled up so that the likeness of all
+        # factors together stays below one), then the likeness (rounded, so that a difference
+        # in the last digits does not count), then the factor's own number.
         keep = np.zeros_like(overlap)
         for f in range(len(groups)):
-            keep[f, f] = 1.0
-        rows, cols = linear_sum_assignment(overlap * (len(groups) + 1) + keep, maximize=True)
+            keep[f, f] = 1e-9
+        score = overlap * (len(groups) + 1) + np.round(likeness, 6) + keep
+        rows, cols = linear_sum_assignment(score, maximize=True)
         mapping = [0] * len(groups)
         for f, d in zip(rows, cols):
             mapping[int(f)] = int(d)
         dimensions.append(mapping)
         shared.append([int(overlap[f, mapping[f]]) for f in range(len(groups))])
+        names.append([sorted(m for m in groups[f] if counts[mapping[f]][m] > 0) for f in range(len(groups))])
+        similar.append([float(likeness[f, mapping[f]]) if has_before[f, mapping[f]] else None for f in range(len(groups))])
         for f, group in enumerate(groups):
             counts[mapping[f]].update(group)
-    return dimensions, shared
+            before[mapping[f]].append(loadings[f])
+    return Alignment(dimensions, shared, names, similar)
 
 
 # --- the comparison -----------------------------------------------------------------------
@@ -254,7 +307,11 @@ def build(specs: list[dict[str, Any]], rule: str) -> dict[str, Any]:
     """
     results = [spec.get("result") for spec in specs]
     groups = [primary_groups(r["loadings"], r["n_factors"]) if r else [] for r in results]
-    dimension_of, shared = align(groups)
+    profiles = [
+        [{m: row[f] for m, row in r["loadings"].items()} for f in range(r["n_factors"])] if r else [] for r in results
+    ]
+    alignment = align(groups, profiles)
+    dimension_of = alignment.dimensions
     n_dimensions = max((len(d) for d in dimension_of), default=0)
     kind = specs[0]["entry"]["kind"]
 
@@ -264,8 +321,12 @@ def build(specs: list[dict[str, Any]], rule: str) -> dict[str, Any]:
         if result is None:
             header["error"] = spec.get("error")
         else:
+            rank = {m: p for p, m in enumerate(spec["measures"])}
             header["factor_dimensions"] = dimension_of[i]
-            header["shared_measures"] = shared[i]
+            header["shared_measures"] = alignment.shared[i]
+            # In the order of the data, as the rows are.
+            header["matched_by"] = [sorted(names, key=lambda m: rank.get(m, len(rank))) for names in alignment.shared_names[i]]
+            header["congruence"] = [None if c is None else round(c, 4) for c in alignment.congruence[i]]
             header["same_as"] = next(
                 (j for j in range(i) if results[j] is not None and _same(results[j], result)), None
             )
