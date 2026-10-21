@@ -115,6 +115,14 @@ for m in s.get(f"{BASE}/factor-analysis/datasets/{own}").json()["miners"] or []:
     print(m["name"], alone["n_observations"], "observations, KMO", round(alone["kmo"]["overall"], 2))
 per_miner = {"columns": [{"dataset_id": own, "miner": m["name"]} for m in
                          s.get(f"{BASE}/factor-analysis/datasets/{own}").json()["miners"] or []]}
+
+# 8. The correlations of the measures: clustered, with the pairs that say almost the same
+corr = s.post(f"{BASE}/factor-analysis/datasets/{ds['dataset_id']}/correlations", json={"order": "cluster"}).json()
+print(corr["high"]["count"], "pairs with |r| >= 0.95; closest to Size:", corr["top"]["Size"][0])
+# ... and as a figure for a paper, in the order of the dimensions
+figure = {**options, "figure": "correlations", "format": "svg", "correlation_order": "factor"}
+with open("correlations.svg", "wb") as f:
+    f.write(s.post(f"{url}/figure", json=figure).content)
 `;
 
 const CURL_EXAMPLE = `# List algorithms
@@ -181,6 +189,7 @@ const ENDPOINTS: { group: string; items: Endpoint[] }[] = [
       { method: "DELETE", path: "/factor-analysis/datasets?kind=model|log", key: "fa_delete_all" },
       { method: "GET", path: "/factor-analysis/datasets/{id}/download", key: "fa_download" },
       { method: "POST", path: "/factor-analysis/datasets/{id}/analyze", key: "fa_analyze" },
+      { method: "POST", path: "/factor-analysis/datasets/{id}/correlations", key: "fa_correlations" },
       { method: "POST", path: "/factor-analysis/datasets/{id}/export", key: "fa_export" },
       { method: "POST", path: "/factor-analysis/datasets/{id}/export/report", key: "fa_export_report" },
       { method: "POST", path: "/factor-analysis/datasets/{id}/export/figure", key: "fa_export_figure" },

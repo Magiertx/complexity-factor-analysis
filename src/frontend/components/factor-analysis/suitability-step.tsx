@@ -28,8 +28,9 @@ import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { ChoiceMark } from "@/components/ui/choice";
 import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { MeasureName, TableFrame } from "@/components/ui/table";
+import { MeasureListScope, MeasureName, TableFrame } from "@/components/ui/table";
 import { Term, useTip, useTipZone } from "@/components/ui/tip";
+import { CorrelationMap, type CorrelationMapProps } from "./correlation-map";
 import { SectionRow } from "./measure-fold";
 import { MeasureSearch, NotableSwitch } from "./measure-search";
 import { HelpLabel, NoticeList, PassBadge, ThresholdField } from "./step-section";
@@ -69,6 +70,8 @@ interface Props {
   groups: MeasureGroups | null;
   view: MeasureView;
   onView: (view: MeasureView) => void;
+  /** The correlation map above the list of the measures; absent while there is no dataset. */
+  map?: CorrelationMapProps | null;
 }
 
 export function SuitabilityView(props: Props) {
@@ -140,6 +143,8 @@ export function SuitabilityView(props: Props) {
           </p>
         )}
       </div>
+
+      {props.map && <CorrelationMap {...props.map} />}
 
       <MeasureList {...props} />
     </div>
@@ -288,6 +293,9 @@ function MeasureList({ dataset, analysis, options, onOptions, measureName, measu
     showOther: viewOf.showOther,
   });
 
+  // The measures on screen, in their order, which the fact sheet of one of them pages through.
+  const visible = sections.flatMap((section) => (section.id !== "other" || otherOpen ? section.rows : []));
+
   // Tick the few measures to keep, then invert, instead of ticking all the others.
   const canInvert = options.excluded.length >= MIN_MEASURES;
   const invert = () => onOptions({ excluded: dataset.measures.filter((m) => !excluded.has(m)) });
@@ -351,178 +359,184 @@ function MeasureList({ dataset, analysis, options, onOptions, measureName, measu
         </div>
       )}
 
-      <TableFrame label={t("factor.suitability.msa_heading")}>
-        <table className="data-table data-table--tight">
-          <caption className="sr-only">{t("factor.suitability.msa_heading")}</caption>
-          <thead>
-            <tr>
-              {/* First, so a phone reaches it without scrolling the table sideways; w-px keeps it narrow. */}
-              <th scope="col" className="w-px text-center">
-                {t("factor.suitability.col_exclude")}
-              </th>
-              <th scope="col">{t("factor.suitability.col_measure")}</th>
-              <th scope="col" className="num">
-                MSA
-              </th>
-              <th scope="col">{t("factor.suitability.col_status")}</th>
-            </tr>
-          </thead>
-          <tbody ref={zone}>
-            {sections.map((section) => (
-              <Fragment key={section.id}>
-                {headed && section.rows.length > 0 && (
-                  <SectionRow
-                    colSpan={4}
-                    label={sectionLabel(section.id, section.group, section.rows.length)}
-                    fold={
-                      section.id === "other" && !otherByView
-                        ? { open: otherOpen, onToggle: () => onView({ ...view, showOther: !view.showOther }) }
-                        : undefined
-                    }
-                  />
-                )}
-                {(section.id !== "other" || otherOpen ? section.rows : []).map((m) => (
-                  <MeasureRow
-                    key={m}
-                    index={dataset.measures.indexOf(m)}
-                    name={measureName(m)}
-                    description={measureDescription(m)}
-                    info={info.get(m)}
-                    threshold={threshold}
-                    excluded={excluded.has(m)}
-                    locked={!excluded.has(m) && included <= MIN_MEASURES}
-                    onToggle={() => onOptions({ excluded: toggleExcluded(options.excluded, m) })}
-                    measureName={measureName}
-                  />
-                ))}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
-      </TableFrame>
-      {shownCount === 0 && <p className="text-xs text-muted">{t("factor.measures.none_match")}</p>}
-    </div>
-  );
-}
+      <MeasureListScope measures={visible}>
+        <TableFrame label={t("factor.suitability.msa_heading")}>
+          <table className="data-table data-table--tight">
+            <caption className="sr-only">{t("factor.suitability.msa_heading")}</caption>
+            <thead>
+              <tr>
+                {/* First, so a phone reaches it without scrolling the table sideways; w-px keeps it narrow. */}
+                <th scope="col" className="w-px text-center">
+                  {t("factor.suitability.col_exclude")}
+                </th>
+                <th scope="col">{t("factor.suitability.col_measure")}</th>
+                <th scope="col" className="num">
+                  MSA
+                </th>
+                <th scope="col">{t("factor.suitability.col_status")}</th>
+              </tr>
+            </thead>
+            <tbody ref={zone}>
+              {sections.map((section) => (
+                <Fragment key={section.id}>
+                  {headed && section.rows.length > 0 && (
+                    <SectionRow
+                      colSpan={4}
+                      label={sectionLabel(section.id, section.group, section.rows.length)}
+                      fold={
+                        section.id === "other" && !otherByView
+                          ? { open: otherOpen, onToggle: () => onView({ ...view, showOther: !view.showOther }) }
+                          : undefined
+                      }
+                    />
+                  )}
+                  {(section.id !== "other" || otherOpen ? section.rows : []).map((m) => (
+                    <MeasureRow
+                      key={m}
+                      measure={m}
+                      index={dataset.measures.indexOf(m)}
+                      name={measureName(m)}
+                      description={measureDescription(m)}
+                      info={info.get(m)}
+                      threshold={threshold}
+                      excluded={excluded.has(m)}
+                      locked={!excluded.has(m) && included <= MIN_MEASURES}
+                      onToggle={() => onOptions({ excluded: toggleExcluded(options.excluded, m) })}
+                      measureName={measureName}
+                    />
+                  ))}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </TableFrame>
+        </MeasureListScope>
+        {shownCount === 0 && <p className="text-xs text-muted">{t("factor.measures.none_match")}</p>}
+      </div>
+    );
+  }
 
-function InvertButton({ canInvert, onInvert }: { canInvert: boolean; onInvert: () => void }) {
-  const t = useT();
-  const tip = useTip<HTMLButtonElement>({
-    more: t("factor.suitability.invert_title"),
-    reason: canInvert ? undefined : t("factor.suitability.min_measures", { n: MIN_MEASURES }),
-  });
-  return (
-    <button
-      ref={tip}
-      type="button"
-      onClick={() => canInvert && onInvert()}
-      aria-disabled={!canInvert || undefined}
-      className="rounded hover:text-fg transition aria-disabled:opacity-40 aria-disabled:hover:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-    >
-      {t("factor.suitability.invert")}
-    </button>
-  );
-}
+  function InvertButton({ canInvert, onInvert }: { canInvert: boolean; onInvert: () => void }) {
+    const t = useT();
+    const tip = useTip<HTMLButtonElement>({
+      more: t("factor.suitability.invert_title"),
+      reason: canInvert ? undefined : t("factor.suitability.min_measures", { n: MIN_MEASURES }),
+    });
+    return (
+      <button
+        ref={tip}
+        type="button"
+        onClick={() => canInvert && onInvert()}
+        aria-disabled={!canInvert || undefined}
+        className="rounded hover:text-fg transition aria-disabled:opacity-40 aria-disabled:hover:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      >
+        {t("factor.suitability.invert")}
+      </button>
+    );
+  }
 
-function MeasureRow({
-  index,
-  name,
-  description,
-  info,
-  threshold,
-  excluded,
-  locked,
-  onToggle,
-  measureName,
-}: {
-  index: number;
-  name: string;
-  description: string | undefined;
-  info: MeasureInfo | undefined;
-  threshold: number;
-  excluded: boolean;
-  locked: boolean;
-  onToggle: () => void;
-  measureName: (key: string) => string;
-}) {
-  const t = useT();
-  const { locale } = useLocale();
-  const id = `fa-exclude-${index}`;
-  const msa = info?.msa ?? null;
-  const status = info?.status ?? "pending";
-  const dependentWith =
-    status === "dependent"
-      ? t("factor.measures.dependent_with", { measures: (info?.partners ?? []).map(measureName).join(", ") })
-      : "";
-  // What the tooltips of the row say, also for the keyboard on the checkbox and for a screen reader.
-  const tip = useTip<HTMLInputElement>({
-    more: [description, locked ? t("factor.suitability.min_measures", { n: MIN_MEASURES }) : undefined]
-      .filter(Boolean)
-      .join(" "),
-  });
-  return (
-    <tr className={cn(excluded && "text-muted")}>
-      <td className="w-px text-center">
-        <label
-          data-tip-more={locked ? t("factor.suitability.min_measures", { n: MIN_MEASURES }) : undefined}
-          className={cn(
-            // relative: the sr-only input stays inside the scrolling table instead of widening the page.
-            "relative inline-grid place-items-center h-5 w-5 rounded align-middle has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/60",
-            locked ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-accent/[0.08]",
+  function MeasureRow({
+    measure,
+    index,
+    name,
+    description,
+    info,
+    threshold,
+    excluded,
+    locked,
+    onToggle,
+    measureName,
+  }: {
+    measure: string;
+    index: number;
+    name: string;
+    description: string | undefined;
+    info: MeasureInfo | undefined;
+    threshold: number;
+    excluded: boolean;
+    locked: boolean;
+    onToggle: () => void;
+    measureName: (key: string) => string;
+  }) {
+    const t = useT();
+    const { locale } = useLocale();
+    const id = `fa-exclude-${index}`;
+    const msa = info?.msa ?? null;
+    const status = info?.status ?? "pending";
+    const dependentWith =
+      status === "dependent"
+        ? t("factor.measures.dependent_with", { measures: (info?.partners ?? []).map(measureName).join(", ") })
+        : "";
+    // What the tooltips of the row say, also for the keyboard on the checkbox and for a screen reader.
+    const tip = useTip<HTMLInputElement>({
+      more: [description, locked ? t("factor.suitability.min_measures", { n: MIN_MEASURES }) : undefined]
+        .filter(Boolean)
+        .join(" "),
+    });
+    return (
+      <tr className={cn(excluded && "text-muted")}>
+        <td className="w-px text-center">
+          <label
+            data-tip-more={locked ? t("factor.suitability.min_measures", { n: MIN_MEASURES }) : undefined}
+            className={cn(
+              // relative: the sr-only input stays inside the scrolling table instead of widening the page.
+              "relative inline-grid place-items-center h-5 w-5 rounded align-middle has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/60",
+              locked ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-accent/[0.08]",
+            )}
+          >
+            <input
+              ref={tip}
+              id={id}
+              type="checkbox"
+              aria-label={t("factor.suitability.exclude_aria", { measure: name })}
+              checked={excluded}
+              disabled={locked}
+              onChange={onToggle}
+              className="sr-only"
+            />
+            <ChoiceMark checked={excluded} />
+          </label>
+        </td>
+        <th scope="row" className="font-medium break-words">
+          {/* The name opens the fact sheet; the box before it excludes the measure. */}
+          <span data-tip-more={description}>
+            <MeasureName name={name} measure={measure} />
+          </span>
+        </th>
+        <td className={cn("num", status === "below" || status === "removed" ? "text-warn-ink" : undefined)}>
+          {msa === null || excluded ? <span className="text-muted">{NO_VALUE}</span> : formatNumber(msa, locale, 2)}
+        </td>
+        {/* On a phone the status is a word or two, so a row mostly stays one line; the partners of a
+            dependent measure are in the tooltip and, for a screen reader, in the row. */}
+        <td>
+          {status === "excluded" ? (
+            t("factor.suitability.status_excluded")
+          ) : status === "removed" ? (
+            <span className="text-warn-ink">
+              <span className="sm:hidden">{t("factor.suitability.status_removed_short", { step: info?.round ?? 1 })}</span>
+              <span className="max-sm:hidden">{t("factor.suitability.status_removed", { step: info?.round ?? 1 })}</span>
+            </span>
+          ) : status === "dependent" ? (
+            <span className="text-warn-ink" data-tip-more={dependentWith}>
+              <span className="sm:hidden">{t("factor.measures.status_dependent_short")}</span>
+              <span className="max-sm:hidden">{t("factor.measures.status_dependent")}</span>
+              <span className="sr-only"> ({dependentWith})</span>
+            </span>
+          ) : status === "below" ? (
+            <span className="text-warn-ink">
+              {t("factor.measures.status_below", { threshold: formatNumber(threshold, locale) })}
+            </span>
+          ) : status === "miner" ? (
+            // Not analysed for this miner: a fact of its rows, not a warning.
+            <span className="text-muted" data-tip-more={t("factor.measures.status_miner_more")}>
+              {t(info?.reason === "duplicate" ? "factor.measures.status_miner_duplicate" : "factor.measures.status_miner")}
+            </span>
+          ) : status === "used" ? (
+            <span className="text-muted">{t("factor.suitability.status_used")}</span>
+          ) : (
+            <span className="text-muted">{NO_VALUE}</span>
           )}
-        >
-          <input
-            ref={tip}
-            id={id}
-            type="checkbox"
-            aria-label={t("factor.suitability.exclude_aria", { measure: name })}
-            checked={excluded}
-            disabled={locked}
-            onChange={onToggle}
-            className="sr-only"
-          />
-          <ChoiceMark checked={excluded} />
-        </label>
-      </td>
-      <th scope="row" className="font-medium break-words">
-        <label htmlFor={id} className="cursor-pointer" data-tip-more={description}>
-          <MeasureName name={name} />
-        </label>
-      </th>
-      <td className={cn("num", status === "below" || status === "removed" ? "text-warn-ink" : undefined)}>
-        {msa === null || excluded ? <span className="text-muted">{NO_VALUE}</span> : formatNumber(msa, locale, 2)}
-      </td>
-      {/* On a phone the status is a word or two, so a row mostly stays one line; the partners of a
-          dependent measure are in the tooltip and, for a screen reader, in the row. */}
-      <td>
-        {status === "excluded" ? (
-          t("factor.suitability.status_excluded")
-        ) : status === "removed" ? (
-          <span className="text-warn-ink">
-            <span className="sm:hidden">{t("factor.suitability.status_removed_short", { step: info?.round ?? 1 })}</span>
-            <span className="max-sm:hidden">{t("factor.suitability.status_removed", { step: info?.round ?? 1 })}</span>
-          </span>
-        ) : status === "dependent" ? (
-          <span className="text-warn-ink" data-tip-more={dependentWith}>
-            <span className="sm:hidden">{t("factor.measures.status_dependent_short")}</span>
-            <span className="max-sm:hidden">{t("factor.measures.status_dependent")}</span>
-            <span className="sr-only"> ({dependentWith})</span>
-          </span>
-        ) : status === "below" ? (
-          <span className="text-warn-ink">
-            {t("factor.measures.status_below", { threshold: formatNumber(threshold, locale) })}
-          </span>
-        ) : status === "miner" ? (
-          // Not analysed for this miner: a fact of its rows, not a warning.
-          <span className="text-muted" data-tip-more={t("factor.measures.status_miner_more")}>
-            {t(info?.reason === "duplicate" ? "factor.measures.status_miner_duplicate" : "factor.measures.status_miner")}
-          </span>
-        ) : status === "used" ? (
-          <span className="text-muted">{t("factor.suitability.status_used")}</span>
-        ) : (
-          <span className="text-muted">{NO_VALUE}</span>
-        )}
-      </td>
-    </tr>
-  );
-}
+        </td>
+      </tr>
+    );
+  }

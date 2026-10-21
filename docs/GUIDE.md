@@ -38,8 +38,9 @@ In **Data**, choose a source:
 - **CSV file**: one row per observation, one column per measure; a first column of names is
   taken as row labels.
 
-Logs and nets are computed in a job; the jobs drawer shows its progress, and the dataset opens
-when it is ready. The data step names the upload limits in force. **My datasets** in the toolbar
+Logs and nets are computed in a job. The tab **Recent runs** says what runs ("1 running · 37%") and has a red
+dot for a failed run you have not looked at; a dataset that has been computed raises a notice "… is ready ·
+Open" wherever you are, and the dataset opens from it. The data step names the upload limits in force. **My datasets** in the toolbar
 reopens a dataset of the session with the settings of its last analysis.
 
 A dataset of nets from several miners has a row per log and miner. The **Dataset** step offers
@@ -51,6 +52,10 @@ measure the tile and the analysis warn. A measure without variance within a mine
 for that miner only. The chosen miner stands in the settings row, in the print link and in the
 manifest of the ZIP. **Compare the miners** opens their factor structures side by side.
 
+A row of a dataset computed from logs has a **View this log** link in the Dataset step. It opens the page
+**Inspect a single log** with that log and, for a row of nets, only the miner of the row chosen, as long as the
+log is among the ten newest uploads of the session; the page says when it is not.
+
 ## Read the results
 
 - **Dataset**: the cleaned matrix, what cleaning left out and why, the **descriptive statistics**
@@ -61,6 +66,19 @@ manifest of the ZIP. **Compare the miners** opens their factor structures side b
 - **Suitability**: Bartlett's test of sphericity, the overall KMO and the MSA of every measure.
   The MSA filter removes measures below the threshold in rounds, as ComFy does; any measure can
   be excluded by hand.
+- **Correlation map** (in Suitability, folded until it is opened): one cell for each pair of
+  measures, orange for a negative and the accent colour for a positive correlation, a pair with
+  |r| ≥ 0.95 outlined, ordered by factor or clustered. Point at a cell or move with the arrow
+  keys to read the pair and its r; a table under the map has every value. The image icon
+  downloads the map like the other figures, and the ZIP holds it as a figure and as
+  `correlations.csv`.
+- **Fact sheet**: press, or Enter on, the name of a measure wherever it stands to open a panel
+  beside the page. It has what the measure is (the description of the tool and the function of
+  ComFy or feeed behind it, with a link to its source), a histogram of its values, its MSA and
+  the round of the filter that removed it, its communality and uniqueness, its loadings as
+  small bars, the five measures it correlates with most, and a button to exclude or include it.
+  The left and right arrow keys page through the list you came from, Esc closes it, and the
+  focus goes back to the name.
 - **Factors**: the scree plot with the Kaiser line and parallel analysis (95th percentile of 100
   samples of random data with a fixed seed), the factor count each criterion suggests, and the
   rotation.
@@ -122,8 +140,8 @@ the Hybrid ILP miner.
 All downloads are in the **Download** menu of the page header:
 
 - **Analysis (ZIP)**: everything to report and reproduce the analysis: the result, the matrix, the
-  tables, `report.tex`, the figures as SVG (English, with the rows of the loadings in the order
-  shown), the descriptive statistics, the run times of a computed dataset, and a manifest with the
+  tables, `report.tex`, the figures as SVG (English, with the rows of the loadings and the measures of
+  the correlation map in the order shown), `correlations.csv`, the descriptive statistics, the run times of a computed dataset, and a manifest with the
   settings, the versions and the provenance.
 - **LaTeX report**: `report.tex`, built like the report of ComFy (validity, MSA with the rounds of
   the filter, scree plot, descriptive statistics, loadings, communalities) plus the dimensions, the
@@ -134,7 +152,7 @@ All downloads are in the **Download** menu of the page header:
   height would not fit a page.
 - **Loadings (CSV, LaTeX)** and **Dataset (CSV)**.
 
-The **image icon** at the scree plot and at the loadings downloads the figure as SVG (the text
+The **image icon** at the scree plot, the loadings and the correlation map downloads the figure as SVG (the text
 stays text) or as PNG (300 dpi), always light, sized for the text width of a CEUR paper, with its
 labels in the language of the app.
 

@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   useT,
   useLocale,
-  localizedAlgoDescription,
   localizedAlgoName,
   localizedAlgoText,
   localizedSampleLog,
@@ -13,22 +12,20 @@ import {
 } from "@/lib/i18n";
 import {
   AlertCircle,
-  Play,
+  BookOpen,
+  Check,
+  Copy,
+  Download,
   ExternalLink,
   FileCheck2,
-  Menu,
-  PanelLeftClose,
-  PanelLeftOpen,
-  User,
-  Copy,
-  Check,
-  Download,
+  FileUp,
   History,
+  Info,
   LayoutGrid,
   List,
+  Play,
+  Route,
   X,
-  HelpCircle,
-  FileUp,
 } from "lucide-react";
 import {
   AlgorithmManifest,
@@ -51,8 +48,7 @@ import {
   fetchFactorCatalog,
   FactorCatalog,
 } from "@/lib/api";
-import { jobErrorText } from "@/lib/factor-analysis";
-import { AlgorithmList } from "./algorithm-list";
+import { downloadBlob, jobErrorText } from "@/lib/factor-analysis";
 import { FileDrop, LOG_EXTENSIONS } from "./file-drop";
 import { ParameterForm, choiceList, type OptionInfo } from "./parameter-form";
 import { SingleRunTour } from "./single-run-tour";
@@ -62,7 +58,11 @@ import { LogOverviewCard } from "./log-overview-card";
 import { JobNotesField } from "./job-notes-field";
 import { ResultPanel } from "./result-panel";
 import { Button } from "./ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent } from "./ui/card";
+import { IconButton, ToolSeparator } from "./ui/icon-button";
+import { Menu, type MenuItem } from "./ui/menu";
+import { useTip } from "./ui/tip";
+import { PageHeader } from "./page-header";
 import { Segmented } from "./ui/segmented";
 import { ChoiceMark, choiceTile } from "./ui/choice";
 import { cn } from "@/lib/utils";
@@ -72,7 +72,6 @@ export function Workbench() {
   const t = useT();
   const { locale, tMaybe } = useLocale();
   const [algorithms, setAlgorithms] = useState<AlgorithmManifest[]>([]);
-  const [categories, setCategories] = useState<{ id: string; label: string }[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -85,9 +84,10 @@ export function Workbench() {
   const [sampleLogs, setSampleLogs] = useState<SampleLog[]>([]);
   const [selectedSampleId, setSelectedSampleId] = useState<string | null>(null);
   const [recentLogs, setRecentLogs] = useState<RecentLog[]>([]);
+  // The list of recent logs has been read once, so that a log named in the address can be looked for.
+  const [recentsLoaded, setRecentsLoaded] = useState(false);
   const [selectedRecentId, setSelectedRecentId] = useState<string | null>(null);
   const [activeSourceTab, setActiveSourceTab] = useState<"upload" | "sample">("upload");
-  const [copiedCitation, setCopiedCitation] = useState(false);
   const [recentLayout, setRecentLayout] = useState<"grid" | "list">("grid");
   const [sampleLayout, setSampleLayout] = useState<"grid" | "list">("grid");
 
@@ -130,24 +130,7 @@ export function Workbench() {
     setParamsDiffOnly(true);
   }, [selectedJobId]);
 
-  // Sidebar Layout States
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [sidebarOpenMobile, setSidebarOpenMobile] = useState(false);
-  const sidebarRef = useRef<HTMLElement | null>(null);
-  // Below lg the sidebar is a drawer, from lg on a column that collapses. Hidden in either form
-  // it is inert, so Tab does not land on its controls off screen or at zero width. Unknown
-  // until mounted, so the server HTML leaves it reachable.
-  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
-  useEffect(() => {
-    const query = window.matchMedia("(min-width: 1024px)");
-    const update = () => setIsDesktop(query.matches);
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
-  const sidebarHidden = isDesktop === null ? false : isDesktop ? sidebarCollapsed : !sidebarOpenMobile;
-
-  // On-demand page tour and algorithm explainer state (see
+  // On-demand page tour and the explanation of the algorithm (see
   // single-run-tour.tsx / algorithm-explainer-modal.tsx).
   const [pageTourOpen, setPageTourOpen] = useState(false);
   const [explainerFor, setExplainerFor] = useState<AlgorithmManifest | null>(null);
@@ -157,18 +140,6 @@ export function Workbench() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [progress, setProgress] = useState<{ percentage: number; status: string } | null>(null);
-
-  // Escape key listener for closing mobile drawer
-  useEffect(() => {
-    if (!sidebarOpenMobile) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setSidebarOpenMobile(false);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [sidebarOpenMobile]);
 
   // Ctrl/Cmd+Enter triggers the Run button, as long as we're configuring a new
   // run (i.e. not viewing a past job and not already running one).
@@ -184,54 +155,6 @@ export function Workbench() {
     return () => window.removeEventListener("keydown", handler);
   });
 
-  // Focus trap for mobile drawer accessibility
-  useEffect(() => {
-    if (!sidebarOpenMobile || !sidebarRef.current) return;
-    const sidebar = sidebarRef.current;
-    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-
-    // Focus the first interactive element (close button) when drawer opens
-    const focusable = sidebarRef.current.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    if (focusable.length > 0) {
-      focusable[0].focus();
-    }
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== "Tab") return;
-
-      const elements = sidebarRef.current?.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      if (!elements || elements.length === 0) return;
-
-      const first = elements[0];
-      const last = elements[elements.length - 1];
-
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          last.focus();
-          e.preventDefault();
-        }
-      } else {
-        if (document.activeElement === last) {
-          first.focus();
-          e.preventDefault();
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      // The closed drawer is inert, so focus inside it would fall to the page; hand it back to
-      // the menu button.
-      const focus = document.activeElement;
-      if (!focus || focus === document.body || sidebar.contains(focus)) previous?.focus();
-    };
-  }, [sidebarOpenMobile]);
-
   // Load algorithms list, sample logs & recent logs
   useEffect(() => {
     let cancelled = false;
@@ -240,7 +163,6 @@ export function Workbench() {
       .then((res) => {
         if (cancelled) return;
         setAlgorithms(res.algorithms);
-        setCategories(res.categories);
         if (res.algorithms.length > 0) setSelectedId(res.algorithms[0].id);
       })
       .catch((e: Error) => !cancelled && setLoadError(e.message));
@@ -256,8 +178,12 @@ export function Workbench() {
       .then((res) => {
         if (cancelled) return;
         setRecentLogs(res);
+        setRecentsLoaded(true);
       })
-      .catch((e: Error) => console.error("Failed to load recent logs:", e));
+      .catch((e: Error) => {
+        console.error("Failed to load recent logs:", e);
+        if (!cancelled) setRecentsLoaded(true);
+      });
 
     return () => {
       cancelled = true;
@@ -471,6 +397,39 @@ export function Workbench() {
     setError(null);
   }, [selected, selectedJobId]);
 
+  // A link from a row of a dataset ("View this log") names the log, and the miner of the row. Both
+  // are taken once the recent logs are known; the address is cleaned afterwards, so that choosing
+  // another log is not undone by it. A log that is no longer among the newest uploads is said so.
+  const linkedLog = searchParams.get("log");
+  const linkedMiner = searchParams.get("miner");
+  const [prefill, setPrefill] = useState<{ log: string; found: boolean; miner: string | null } | null>(null);
+  useEffect(() => {
+    if (!linkedLog || !recentsLoaded || !selected) return;
+    const found = recentLogs.some((r) => r.id === linkedLog);
+    const spec = selected.parameters_schema.find((p) => p.name === "discovery_algorithms");
+    const miner = found && linkedMiner && spec?.options?.includes(linkedMiner) ? linkedMiner : null;
+    setSelectedJobId(null);
+    if (found) {
+      setActiveSourceTab("upload");
+      setSelectedRecentId(linkedLog);
+      setFile(null);
+      setError(null);
+    }
+    if (miner) {
+      setParams((p) => {
+        const next = { ...p, discovery_algorithms: [miner] };
+        try {
+          localStorage.setItem(`app.params-${selected.id}`, JSON.stringify(next));
+        } catch {
+          /* storage blocked */
+        }
+        return next;
+      });
+    }
+    setPrefill({ log: linkedLog, found, miner });
+    router.replace("/inspect", { scroll: false });
+  }, [linkedLog, linkedMiner, recentsLoaded, recentLogs, selected, router]);
+
   // When viewing a past job, hydrate the parameter form with the values that
   // were actually submitted for that job (kept on the server in
   // `Run.params_json`) instead of the cached values from localStorage.
@@ -622,253 +581,61 @@ export function Workbench() {
 
   if (loadError) {
     return (
-      <Card>
-        <CardContent className="flex items-start gap-3 py-6">
-          <AlertCircle className="h-5 w-5 text-danger-ink shrink-0 mt-0.5" />
-          <div>
-            <div className="font-medium">{t("workbench.load_error.title")}</div>
-            <div className="text-sm text-muted mt-1">{loadError}</div>
-            <div className="text-xs text-muted mt-2 font-mono">
-              {API_BASE}
+      <div className="space-y-6">
+        <PageHeader
+          title={t("inspect.title")}
+          subtitle={t("inspect.subtitle")}
+          back={{ href: "/", label: t("mode_bar.model_label") }}
+        />
+        <Card>
+          <CardContent className="flex items-start gap-3 py-6">
+            <AlertCircle className="h-5 w-5 text-danger-ink shrink-0 mt-0.5" />
+            <div>
+              <div className="font-medium">{t("workbench.load_error.title")}</div>
+              <div className="text-sm text-muted mt-1">{loadError}</div>
+              <div className="text-xs text-muted mt-2 font-mono">
+                {API_BASE}
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 w-full items-start">
+    <div className="space-y-6 w-full">
       <SingleRunTour run={pageTourOpen} onClose={() => setPageTourOpen(false)} />
-      <AlgorithmExplainerModal
-        algo={explainerFor}
-        onClose={() => setExplainerFor(null)}
+      <AlgorithmExplainerModal algo={explainerFor} onClose={() => setExplainerFor(null)} />
+
+      <PageHeader
+        title={t("inspect.title")}
+        subtitle={t("inspect.subtitle")}
+        back={{ href: "/", label: t("mode_bar.model_label") }}
+        actions={
+          selected && (
+            <InspectToolbar
+              algorithm={selected}
+              onAbout={() => setExplainerFor(selected)}
+              onTour={() => setPageTourOpen(true)}
+            />
+          )
+        }
       />
 
-      {/* Mobile Drawer Overlay Backdrop */}
-      {sidebarOpenMobile && (
-        <div
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
-          onClick={() => setSidebarOpenMobile(false)}
-        />
-      )}
-
-      {/* Sidebar (Normal on desktop, slide-out drawer on mobile) */}
-      <aside
-        ref={sidebarRef}
-        role={sidebarOpenMobile ? "dialog" : undefined}
-        aria-modal={sidebarOpenMobile ? "true" : undefined}
-        aria-label={t("workbench.sidebar.nav_aria")}
-        inert={sidebarHidden}
-        className={
-          "space-y-6 shrink-0 transition-all duration-300 ease-in-out " +
-          (sidebarCollapsed ? "lg:w-0 lg:opacity-0 lg:overflow-hidden lg:pointer-events-none lg:mr-0 " : "lg:w-[280px] lg:opacity-100 ") +
-          // Mobile Drawer absolute overlay classes
-          "fixed inset-y-0 left-0 z-50 w-[290px] bg-surface p-5 shadow-2xl ring-1 ring-border/70 transition-transform duration-300 overflow-y-auto lg:overflow-visible lg:shadow-none lg:p-0 lg:ring-0 lg:bg-transparent lg:static lg:transform-none " +
-          (sidebarOpenMobile ? "translate-x-0" : "-translate-x-full lg:translate-x-0")
-        }
-      >
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs font-medium text-muted px-1">
-            <span>{t("workbench.sidebar.algorithm_label")}</span>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setPageTourOpen(true)}
-                aria-label={t("workbench.sidebar.tour_aria")}
-                title={t("workbench.sidebar.tour_title")}
-                className="h-6 px-1.5 inline-flex items-center gap-1 rounded text-[11px] font-normal text-muted hover:text-fg hover:bg-tile transition appearance-none"
-              >
-                <HelpCircle className="h-3.5 w-3.5" />
-                <span>{t("workbench.sidebar.tour_button")}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSidebarOpenMobile(false)}
-                aria-label={t("workbench.sidebar.close_sidebar_aria")}
-                className="lg:hidden h-6 w-6 grid place-items-center rounded text-muted hover:text-fg hover:bg-tile transition appearance-none"
-              >
-                <PanelLeftClose className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-          {algorithms.length === 0 ? (
-            <div className="text-sm text-muted p-3">{t("common.loading")}</div>
-          ) : (
-            <AlgorithmList
-              algorithms={algorithms}
-              categories={categories}
-              selectedId={selectedId}
-              onShowExplainer={(algo) => setExplainerFor(algo)}
-              onSelect={(id) => {
-                setSelectedId(id);
-                setSelectedJobId(null); // Clear selected job to configure a new run
-                clearJobParam();
-                setValidationErrors({}); // Clear validation errors
-                setSecondaryFiles({}); // Clear auxiliary uploads (per-algorithm)
-                setSelectedSampleId(null); // Clear selected sample
-                setSelectedRecentId(null); // Clear selected recent upload
-                setFile(null); // Clear uploaded file
-                setSidebarOpenMobile(false); // Close mobile drawer
-              }}
-            />
-          )}
-        </div>
-
-      </aside>
-
-      {/* Main Workspace Section */}
-      <section className="space-y-4 min-w-0 flex-1 w-full">
+      <div className="space-y-4 min-w-0">
         {selected && (
-          <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
-            <div className="flex items-center gap-2">
-              {/* Mobile Toggle Button */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="lg:hidden h-8 w-8 p-0 flex items-center justify-center text-muted hover:text-fg shrink-0"
-                onClick={() => setSidebarOpenMobile(true)}
-                title={t("workbench.sidebar.show_menu_title")}
-                aria-label={t("workbench.sidebar.show_menu_title")}
-                aria-expanded={sidebarOpenMobile}
-              >
-                <Menu className="h-4 w-4" aria-hidden />
-              </Button>
-
-              {/* Desktop Sidebar Collapse Toggle Button */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="hidden lg:flex h-8 w-8 p-0 items-center justify-center text-muted hover:text-fg shrink-0"
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                title={sidebarCollapsed ? t("workbench.sidebar.show_sidebar_title") : t("workbench.sidebar.hide_sidebar_title")}
-                aria-label={sidebarCollapsed ? t("workbench.sidebar.show_sidebar_title") : t("workbench.sidebar.hide_sidebar_title")}
-                aria-expanded={!sidebarCollapsed}
-              >
-                {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" aria-hidden /> : <PanelLeftClose className="h-4 w-4" aria-hidden />}
-              </Button>
-            </div>
-
-            {selectedJobDetail && (
-              <span
-                className={
-                  "text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0 " +
-                  (selectedJobDetail.status === "completed"
-                    ? "bg-success/15 text-success-ink "
-                    : "") +
-                  (selectedJobDetail.status === "failed"
-                    ? "bg-danger/15 text-danger-ink "
-                    : "") +
-                  (selectedJobDetail.status === "aborted"
-                    ? "bg-muted/15 text-muted "
-                    : "") +
-                  (selectedJobDetail.status === "running" || selectedJobDetail.status === "pending"
-                    ? "bg-accent/15 text-accent-ink animate-pulse "
-                    : "")
-                }
-              >
-                {t("workbench.job_badge", {
-                  id: selectedJobDetail.id.slice(0, 8),
-                  status: t(`run_history.status_label_${selectedJobDetail.status}`),
-                })}
-              </span>
-            )}
-          </div>
-        )}
-
-        {selected && (
-          <Card>
-            <CardHeader>
-              {/* On a phone the author and the paper go below the description, which would
-                  otherwise be squeezed into a narrow column beside them. */}
-              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                <div className="space-y-1 flex-1">
-                  <CardTitle className="text-lg lg:text-xl font-bold">{localizedAlgoName(selected, locale)}</CardTitle>
-                  <CardDescription className="text-sm text-muted mt-1">{localizedAlgoDescription(selected, locale)}</CardDescription>
-                </div>
-                <div className="flex flex-wrap sm:flex-col items-center sm:items-end gap-x-4 gap-y-1.5 shrink-0 sm:text-right">
-                  {selected.author && (
-                    <span
-                      className="text-xs text-muted flex items-center gap-1.5 shrink-0"
-                      title={t("workbench.algo_card.implemented_by", { author: selected.author ?? "" })}
-                    >
-                      <User className="h-3.5 w-3.5" />
-                      <span>{selected.author}</span>
-                    </span>
-                  )}
-                  {selected.paper_url && (
-                    <a
-                      href={selected.paper_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs text-muted hover:text-fg inline-flex items-center gap-1 shrink-0"
-                    >
-                      {t("workbench.algo_card.paper_link")} <ExternalLink className="h-3 w-3" />
-                    </a>
-                  )}
-                </div>
-              </div>
-              
-              {/* Formatted Citation Helper */}
-              {(selected.formatted_citation || selected.citation) && (
-                <div className="mt-4 bg-tile rounded-lg p-3.5 relative group">
-                  <div className="text-xs font-medium text-muted mb-1.5 flex items-center justify-between gap-x-3 gap-y-1 flex-wrap">
-                    <span>{t("workbench.algo_card.academic_reference")}</span>
-                    {selected.citation && (
-                      <div className="flex items-center gap-3">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard.writeText(selected.citation || "");
-                            setCopiedCitation(true);
-                            setTimeout(() => setCopiedCitation(false), 2000);
-                          }}
-                          className="flex items-center gap-1 text-[11px] text-muted hover:text-accent-ink font-medium transition whitespace-nowrap"
-                        >
-                          {copiedCitation ? (
-                            <>
-                              <Check className="h-3 w-3 text-success-ink" />
-                              <span className="text-success-ink">{t("workbench.algo_card.copied_bibtex")}</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="h-3 w-3" />
-                              <span>{t("workbench.algo_card.copy_bibtex")}</span>
-                            </>
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const blob = new Blob([selected.citation || ""], { type: "application/x-bibtex" });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement("a");
-                            a.href = url;
-                            a.download = `${selected.id}.bib`;
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(url);
-                          }}
-                          className="flex items-center gap-1 text-[11px] text-muted hover:text-accent-ink font-medium transition whitespace-nowrap"
-                          title={t("workbench.algo_card.download_bib_title")}
-                        >
-                          <Download className="h-3 w-3" />
-                          <span>{t("workbench.algo_card.download_bib")}</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted italic leading-relaxed pr-2">
-                    {selected.formatted_citation || selected.citation}
-                  </p>
-                </div>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-5">
+          <>
+            {/* 1. The event log: where it comes from, and what is in it. */}
+            <InspectSection
+              n={1}
+              title={t("inspect.section_log")}
+              hint={t(selectedJobDetail ? "inspect.section_log_run" : "inspect.section_log_hint")}
+              tour="single-logsource"
+            >
               {selectedJobDetail ? (
                 <>
-                  <div className="rounded-lg bg-tile p-4 flex items-center justify-between opacity-80">
+                  <div className="rounded-lg bg-tile p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="h-9 w-9 rounded-md bg-accent/10 grid place-items-center">
                         <FileCheck2 className="h-4 w-4 text-accent-ink" />
@@ -884,16 +651,14 @@ export function Workbench() {
                     initialNotes={selectedJobDetail.notes}
                     onSaved={(notes) => {
                       setJobs((prev) =>
-                        prev.map((j) =>
-                          j.id === selectedJobDetail.id ? { ...j, notes } : j,
-                        ),
+                        prev.map((j) => (j.id === selectedJobDetail.id ? { ...j, notes } : j)),
                       );
                     }}
                   />
                 </>
               ) : (
-                <div className="space-y-4" data-tour="single-logsource">
-                  {/* Log Source Tab Selector */}
+                <div className="space-y-4">
+                  {/* Where the log comes from */}
                   <Segmented
                     aria-label={t("workbench.log_source.aria")}
                     className="max-w-[420px]"
@@ -907,6 +672,36 @@ export function Workbench() {
                       { value: "sample", label: t("workbench.log_source.use_sample") },
                     ]}
                   />
+
+                  {/* A log named by a link from a dataset: opened, or no longer there. */}
+                  <div role="status" className="empty:hidden">
+                    {prefill && (
+                      <p
+                        className={cn(
+                          "flex items-start gap-2 rounded-lg px-3 py-2 text-xs",
+                          prefill.found ? "bg-tile" : "bg-warn/10 text-warn-ink",
+                        )}
+                      >
+                        <Info className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
+                        <span className="min-w-0 flex-1 break-words">
+                          {prefill.found
+                            ? t(prefill.miner ? "inspect.from_dataset_miner" : "inspect.from_dataset", {
+                                log: prefill.log,
+                                miner: prefill.miner ?? "",
+                              })
+                            : t("inspect.log_gone", { log: prefill.log })}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setPrefill(null)}
+                          aria-label={t("common.close")}
+                          className="shrink-0 rounded text-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                        >
+                          <X className="h-3.5 w-3.5" aria-hidden />
+                        </button>
+                      </p>
+                    )}
+                  </div>
 
                   {/* Conditional Log Inputs */}
                   {activeSourceTab === "upload" ? (
@@ -959,9 +754,7 @@ export function Workbench() {
                             // size, treat the upload as picking that recent (instead of uploading a
                             // duplicate). This keeps the "selected" highlight in sync with what the
                             // user just dropped.
-                            const matching = recentLogs.find(
-                              (r) => r.name === f.name && r.size_bytes === f.size,
-                            );
+                            const matching = recentLogs.find((r) => r.name === f.name && r.size_bytes === f.size);
                             if (matching) {
                               setSelectedRecentId(matching.id);
                               setFile(null);
@@ -985,8 +778,26 @@ export function Workbench() {
                               value={recentLayout}
                               onChange={setRecentLayout}
                               options={[
-                                { value: "grid", label: <><LayoutGrid className="h-3 w-3" /><span>{t("workbench.layout.grid")}</span></>, title: t("workbench.layout.grid_title") },
-                                { value: "list", label: <><List className="h-3 w-3" /><span>{t("workbench.layout.list")}</span></>, title: t("workbench.layout.list_title") },
+                                {
+                                  value: "grid",
+                                  label: (
+                                    <>
+                                      <LayoutGrid className="h-3 w-3" />
+                                      <span>{t("workbench.layout.grid")}</span>
+                                    </>
+                                  ),
+                                  title: t("workbench.layout.grid_title"),
+                                },
+                                {
+                                  value: "list",
+                                  label: (
+                                    <>
+                                      <List className="h-3 w-3" />
+                                      <span>{t("workbench.layout.list")}</span>
+                                    </>
+                                  ),
+                                  title: t("workbench.layout.list_title"),
+                                },
                               ]}
                             />
                           </div>
@@ -1068,8 +879,26 @@ export function Workbench() {
                             value={sampleLayout}
                             onChange={setSampleLayout}
                             options={[
-                              { value: "grid", label: <><LayoutGrid className="h-3 w-3" /><span>{t("workbench.layout.grid")}</span></>, title: t("workbench.layout.grid_title") },
-                              { value: "list", label: <><List className="h-3 w-3" /><span>{t("workbench.layout.list")}</span></>, title: t("workbench.layout.list_title") },
+                              {
+                                value: "grid",
+                                label: (
+                                  <>
+                                    <LayoutGrid className="h-3 w-3" />
+                                    <span>{t("workbench.layout.grid")}</span>
+                                  </>
+                                ),
+                                title: t("workbench.layout.grid_title"),
+                              },
+                              {
+                                value: "list",
+                                label: (
+                                  <>
+                                    <List className="h-3 w-3" />
+                                    <span>{t("workbench.layout.list")}</span>
+                                  </>
+                                ),
+                                title: t("workbench.layout.list_title"),
+                              },
                             ]}
                           />
                         )}
@@ -1121,26 +950,28 @@ export function Workbench() {
                           );
                         })}
                       </div>
+                    </div>
+                  )}
+
+                  {/* Log overview: descriptive stats about the selected log. */}
+                  {logStats && <LogOverviewCard stats={logStats.stats} filename={uploadDisplayMeta?.name ?? null} />}
                 </div>
               )}
-            </div>
-          )}
-              {/* Log overview: descriptive stats about the selected log. */}
-              {!selectedJobDetail && logStats && (
-                <LogOverviewCard
-                  stats={logStats.stats}
-                  filename={uploadDisplayMeta?.name ?? null}
-                />
-              )}
+            </InspectSection>
 
+            {/* 2. The miners that discover the nets and the measures computed on them. */}
+            <InspectSection
+              n={2}
+              title={t("inspect.section_settings")}
+              hint={t("inspect.section_settings_hint")}
+              tour="single-params"
+            >
               {!selectedJobDetail && selected.parameters_schema.length > 0 && (
                 <PresetBar
                   algorithmId={selected.id}
                   currentParams={params}
                   disabled={!!selectedJobId}
-                  defaults={Object.fromEntries(
-                    selected.parameters_schema.map((p) => [p.name, p.default]),
-                  )}
+                  defaults={Object.fromEntries(selected.parameters_schema.map((p) => [p.name, p.default]))}
                   onLoad={(loaded) => {
                     setParams(loaded);
                     try {
@@ -1153,7 +984,7 @@ export function Workbench() {
                 />
               )}
               {selectedJobDetail && selected.parameters_schema.length > 0 && (
-                <div className="flex items-center justify-end gap-2 -mt-2 mb-1">
+                <div className="flex items-center justify-end gap-2">
                   <span className="text-[11px] text-muted">
                     {paramsDiffOnly ? t("workbench.params.showing_modified") : t("workbench.params.showing_all")}
                   </span>
@@ -1175,9 +1006,7 @@ export function Workbench() {
                         <div className="text-xs font-medium text-muted">
                           {sf.label}
                           {sf.optional && (
-                            <span className="ml-1.5 font-normal text-muted">
-                              · {t("workbench.secondary.optional")}
-                            </span>
+                            <span className="ml-1.5 font-normal text-muted">· {t("workbench.secondary.optional")}</span>
                           )}
                         </div>
                         {chosen ? (
@@ -1227,15 +1056,12 @@ export function Workbench() {
                             />
                           </label>
                         )}
-                        {sf.help && (
-                          <p className="text-[11px] text-muted leading-snug">{sf.help}</p>
-                        )}
+                        {sf.help && <p className="text-[11px] text-muted leading-snug">{sf.help}</p>}
                       </div>
                     );
                   })}
                 </div>
               )}
-              <div data-tour="single-params">
               <ParameterForm
                 schema={selected.parameters_schema}
                 algorithmId={selected.id}
@@ -1257,14 +1083,43 @@ export function Workbench() {
                   });
                 }}
               />
-              </div>
-            </CardContent>
-            <div className="px-5 pb-5 pt-3 border-t border-border flex flex-col gap-3">
+            </InspectSection>
+
+            {/* 3. The run: its progress, and the button that starts or stops it. */}
+            <InspectSection
+              n={3}
+              title={t("inspect.section_run")}
+              hint={t("inspect.section_run_hint")}
+              tour="single-run"
+              aside={
+                selectedJobDetail && (
+                  <span
+                    className={cn(
+                      "text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0",
+                      selectedJobDetail.status === "completed" && "bg-success/15 text-success-ink",
+                      selectedJobDetail.status === "failed" && "bg-danger/15 text-danger-ink",
+                      selectedJobDetail.status === "aborted" && "bg-muted/15 text-muted",
+                      (selectedJobDetail.status === "running" || selectedJobDetail.status === "pending") &&
+                        "bg-accent/15 text-accent-ink animate-pulse",
+                    )}
+                  >
+                    {t("workbench.job_badge", {
+                      id: selectedJobDetail.id.slice(0, 8),
+                      status: t(`run_history.status_label_${selectedJobDetail.status}`),
+                    })}
+                  </span>
+                )
+              }
+            >
               {progress && (
-                <div className="w-full space-y-2 mb-2">
+                <div className="w-full space-y-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-muted truncate max-w-[80%]">{localizedAlgoText(progress.status, t)}</span>
-                    <span className="font-bold text-accent-ink shrink-0">{formatPercent(progress.percentage / 100, locale, 0)}</span>
+                    <span className="font-medium text-muted truncate max-w-[80%]">
+                      {localizedAlgoText(progress.status, t)}
+                    </span>
+                    <span className="font-bold text-accent-ink shrink-0">
+                      {formatPercent(progress.percentage / 100, locale, 0)}
+                    </span>
                   </div>
                   <div
                     role="progressbar"
@@ -1281,7 +1136,7 @@ export function Workbench() {
                   </div>
                 </div>
               )}
-              <div className="flex items-center justify-between gap-3 w-full">
+              <div className="flex items-center justify-between gap-3 w-full flex-wrap">
                 <div className="text-xs text-muted">
                   {selectedJobDetail
                     ? t("workbench.run_bar.job_status", { status: t(`run_history.status_label_${selectedJobDetail.status}`) })
@@ -1293,47 +1148,35 @@ export function Workbench() {
                 </div>
                 <div className="flex items-center gap-2">
                   {selectedJobDetail ? (
-                    <>
-                      {isJobRunning ? (
-                        <Button
-                          onClick={handleAbort}
-                          variant="outline"
-                          size="md"
-                          className="bg-danger/10 text-danger-ink hover:bg-danger/20 hover:text-danger-ink"
-                        >
-                          {t("workbench.run_bar.abort")}
-                        </Button>
-                      ) : (
-                        <Button
-                          onClick={() => {
-                            setSelectedJobId(null);
-                            clearJobParam();
-                            setResult(null);
-                            setError(null);
-                          }}
-                          size="md"
-                        >
-                          {t("workbench.run_bar.new_run")}
-                        </Button>
-                      )}
-                    </>
+                    isJobRunning ? (
+                      <Button
+                        onClick={handleAbort}
+                        variant="outline"
+                        size="md"
+                        className="bg-danger/10 text-danger-ink hover:bg-danger/20 hover:text-danger-ink"
+                      >
+                        {t("workbench.run_bar.abort")}
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => {
+                          setSelectedJobId(null);
+                          clearJobParam();
+                          setResult(null);
+                          setError(null);
+                        }}
+                        size="md"
+                      >
+                        {t("workbench.run_bar.new_run")}
+                      </Button>
+                    )
                   ) : (
-                    <Button
-                      onClick={run}
-                      title={t("workbench.run_bar.run_title")}
-                      disabled={!hasLog}
-                      size="md"
-                      data-tour="single-run"
-                    >
-                      <Play className="h-4 w-4" />
-                      {t("common.run_analysis")}
-                    </Button>
+                    <RunButton disabled={!hasLog} onClick={run} />
                   )}
-
                 </div>
               </div>
-            </div>
-          </Card>
+            </InspectSection>
+          </>
         )}
 
         {error && (
@@ -1344,7 +1187,123 @@ export function Workbench() {
         )}
 
         {result && <ResultPanel result={result} runId={selectedJobId} />}
-      </section>
+      </div>
+    </div>
+  );
+}
+
+/** One of the three sections of the page: a number, what it is for, and its content on a card. */
+function InspectSection({
+  n,
+  title,
+  hint,
+  tour,
+  aside,
+  children,
+}: {
+  n: number;
+  title: string;
+  hint: string;
+  tour: string;
+  aside?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const id = useId();
+  return (
+    <section aria-labelledby={id} data-tour={tour}>
+      <Card>
+        <div className="px-4 sm:px-5 pt-4 pb-3 flex items-start gap-3 flex-wrap">
+          <span
+            aria-hidden
+            className="h-7 w-7 rounded-md bg-tile text-muted grid place-items-center text-xs font-semibold tabular-nums shrink-0"
+          >
+            {n}
+          </span>
+          <div className="flex-1 min-w-[12rem]">
+            <h2 id={id} className="text-sm font-semibold tracking-tight">
+              {title}
+            </h2>
+            <p className="text-xs text-muted mt-0.5">{hint}</p>
+          </div>
+          {aside}
+        </div>
+        <div className="px-4 sm:px-5 pb-5 space-y-4">{children}</div>
+      </Card>
+    </section>
+  );
+}
+
+/** The button that starts the run, with its shortcut in the tooltip. */
+function RunButton({ disabled, onClick }: { disabled: boolean; onClick: () => void }) {
+  const t = useT();
+  const tip = useTip<HTMLButtonElement>({ more: t("workbench.run_bar.run_title"), keyCap: "Ctrl+Enter" });
+  return (
+    <Button ref={tip} onClick={onClick} disabled={disabled} size="md">
+      <Play className="h-4 w-4" aria-hidden />
+      {t("common.run_analysis")}
+    </Button>
+  );
+}
+
+/**
+ * The tools of the page in the header, as icons: what ComFy does with the paper and the citation
+ * in BibTeX, and the tour of the page.
+ */
+function InspectToolbar({
+  algorithm,
+  onAbout,
+  onTour,
+}: {
+  algorithm: AlgorithmManifest;
+  onAbout: () => void;
+  onTour: () => void;
+}) {
+  const t = useT();
+  const { locale } = useLocale();
+  const [copied, setCopied] = useState(false);
+  const citation = algorithm.citation;
+  const items: MenuItem[] = [
+    { id: "about", label: t("inspect.about"), hint: t("inspect.about_hint"), icon: BookOpen, onSelect: onAbout },
+    {
+      id: "paper",
+      label: t("workbench.algo_card.paper_link"),
+      hint: algorithm.author ? t("workbench.algo_card.implemented_by", { author: algorithm.author }) : undefined,
+      icon: ExternalLink,
+      href: algorithm.paper_url ?? undefined,
+      newTab: true,
+      disabled: !algorithm.paper_url,
+      separated: true,
+    },
+    {
+      id: "copy",
+      label: copied ? t("workbench.algo_card.copied_bibtex") : t("workbench.algo_card.copy_bibtex"),
+      hint: algorithm.formatted_citation ?? undefined,
+      icon: copied ? Check : Copy,
+      disabled: !citation,
+      onSelect: () => {
+        void navigator.clipboard.writeText(citation ?? "").then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        });
+      },
+    },
+    {
+      id: "bib",
+      label: t("workbench.algo_card.download_bib"),
+      hint: t("workbench.algo_card.download_bib_title"),
+      icon: Download,
+      disabled: !citation,
+      onSelect: () => {
+        const blob = new Blob([citation ?? ""], { type: "application/x-bibtex" });
+        downloadBlob(blob, `${algorithm.id}.bib`);
+      },
+    },
+  ];
+  return (
+    <div role="group" aria-label={t("factor.toolbar.aria")} className="flex items-center gap-0.5">
+      <Menu icon={BookOpen} name={t("inspect.about_menu", { name: localizedAlgoName(algorithm, locale) })} items={items} width={320} />
+      <ToolSeparator />
+      <IconButton icon={Route} name={t("inspect.tour")} more={t("inspect.tour_more")} onClick={onTour} />
     </div>
   );
 }

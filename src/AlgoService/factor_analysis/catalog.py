@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import ast
 import csv
+import importlib.util
+import inspect
 import json
 import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+import provenance
 from vendored.comfy_log import Constants as _LogConstants
 
 from .short_codes import LOG_CODES, MODEL_CODES
@@ -73,6 +77,66 @@ def log_group_of(feature: str) -> str | None:
     return None
 
 
+#: The file of ComFy that implements the measures of a model, in its repository.
+COMFY_MEASURES_FILE = "modelcomplexity/ModelComplexity.py"
+_CALLED_FUNCTION = re.compile(r"\bModelComplexity\.(\w+)\(")
+
+
+def _source(repository: dict[str, Any], file: str, function: str) -> dict[str, Any]:
+    """Where a measure is implemented: the tool, the function in its file, the commit and a link
+    to the file at that commit. What the sheet of a measure points to instead of a definition
+    of its own."""
+    commit = str(repository["commit"])[:7]
+    return {
+        "name": repository["name"],
+        "function": function,
+        "file": file,
+        "commit": commit,
+        "url": f"{repository['repository']}/blob/{commit}/{file}",
+    }
+
+
+def model_measure_source(measure: Any) -> dict[str, Any] | None:
+    """ComFy's function behind a model measure: the one its ``calculate_for`` calls."""
+    try:
+        called = _CALLED_FUNCTION.search(inspect.getsource(type(measure).calculate_for))
+    except (OSError, TypeError):
+        return None
+    return _source(provenance.COMFY, COMFY_MEASURES_FILE, called.group(1)) if called else None
+
+
+@lru_cache(maxsize=1)
+def feeed_functions() -> dict[str, tuple[str, str]]:
+    """For each feeed feature, the file of the feeed repository and the method ("Class.name")
+    that computes it, read from the installed package without importing it (which takes seconds,
+    with pm4py)."""
+    spec = importlib.util.find_spec("feeed")
+    if spec is None or not spec.submodule_search_locations:
+        return {}
+    package = Path(next(iter(spec.submodule_search_locations)))
+    out: dict[str, tuple[str, str]] = {}
+    for path in sorted(package.rglob("*.py")):
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+        except (OSError, SyntaxError, UnicodeDecodeError):
+            continue
+        file = f"{package.name}/{path.relative_to(package).as_posix()}"
+        for node in tree.body:
+            if not isinstance(node, ast.ClassDef):
+                continue
+            for member in node.body:
+                if isinstance(member, ast.FunctionDef) and any(
+                    isinstance(d, ast.Name) and d.id == "classmethod" for d in member.decorator_list
+                ):
+                    out.setdefault(member.name, (file, f"{node.name}.{member.name}"))
+    return out
+
+
+def log_measure_source(feature: str) -> dict[str, Any] | None:
+    found = feeed_functions().get(feature)
+    return _source(provenance.FEEED, found[0], found[1]) if found else None
+
+
 def _model_parts() -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[str]]:
     from algorithms.comfy import MEASURES_BY_NAME, MINERS_BY_NAME, SLOW_MEASURES, SLOW_MINERS
 
@@ -85,6 +149,9 @@ def _model_parts() -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[str
         }
         if name in MODEL_CODES:
             entry["short"] = MODEL_CODES[name]
+        source = model_measure_source(MEASURES_BY_NAME[name])
+        if source:
+            entry["source"] = source
         if name in SLOW_MEASURES:
             entry["slow"] = True
         measures.append(entry)
@@ -249,6 +316,9 @@ def catalog(kind: str) -> dict[str, Any]:
             }
             if name in LOG_CODES:
                 entry["short"] = LOG_CODES[name]
+            source = log_measure_source(name)
+            if source:
+                entry["source"] = source
             if group in SLOW_LOG_GROUPS:
                 entry["slow"] = True
             measures.append(entry)

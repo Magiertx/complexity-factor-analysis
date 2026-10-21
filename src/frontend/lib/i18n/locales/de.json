@@ -33,18 +33,6 @@
   "footer": {
     "credit": "Entwickelt für die Process-Mining-Forschung an der Universität Augsburg."
   },
-  "algorithm_list": {
-    "what_is_aria": "Was ist {name}?",
-    "what_does_title": "Was macht dieser Algorithmus?",
-    "favorites_heading": "Favoriten",
-    "favorite_add_title": "Als Favorit anheften",
-    "favorite_remove_title": "Aus Favoriten entfernen",
-    "favorite_add_aria": "{name} zu Favoriten hinzufügen",
-    "favorite_remove_aria": "{name} aus Favoriten entfernen",
-    "category": {
-      "complexity": "Komplexitätsanalyse"
-    }
-  },
   "file_drop": {
     "drop_label": "Event-Log hier ablegen",
     "drop_hint": "oder klicken zum Auswählen · .xes, .xes.gz, .xml, .json",
@@ -60,21 +48,22 @@
     "log_label": "Log-Komplexität",
     "log_desc": "Maße von Event-Logs",
     "runs_label": "Runs",
-    "runs_desc": "Alle Runs dieser Sitzung"
+    "runs_desc": "Alle Runs dieser Sitzung",
+    "jobs_running": "{n} läuft · {pct}",
+    "jobs_running_plural": "{n} laufen · {pct}",
+    "jobs_waiting": "{n} wartet",
+    "jobs_waiting_plural": "{n} warten",
+    "jobs_failed": "Ein Run ist fehlgeschlagen. Öffne die Liste, um zu sehen, welcher."
   },
   "tours": {
     "single_run": {
       "intro_title": "Einzelnes Log untersuchen",
-      "intro_content": "Hier führst du ComFy auf einem Event-Log aus: Es findet mit den gewählten Minern Petri-Netze und berechnet ihre Komplexitätsmaße. Die Tour zeigt die wichtigsten Stellen; Esc oder Überspringen beendet sie jederzeit.",
-      "algo_pick_title": "Der Algorithmus",
-      "algo_pick_content": "Links steht der Algorithmus, den diese Seite ausführt: ComFy, das die Komplexität gefundener Petri-Netze misst.",
-      "algo_help_title": "Was ComFy macht",
-      "algo_help_content": "Das ? daneben öffnet eine ausführliche Erklärung: was ComFy macht, wie es funktioniert und wann es nützt.",
-      "logsource_title": "Event-Log wählen",
-      "logsource_content": "Zwei Quellen: „Datei hochladen“ für eine eigene XES- oder JSON-Datei (zuletzt hochgeladene stehen darunter) oder „Beispiel verwenden“ für das mitgelieferte Beispiel-Log.",
-      "params_title": "Miner und Maße",
+      "intro_content": "Hier lässt du ComFy auf einem Event-Log laufen: Es entdeckt Petri-Netze mit den gewählten Minern und berechnet ihre Komplexitätsmaße. Die Seite hat drei Abschnitte: das Log, die Miner und Maße und den Run. Esc oder Überspringen beendet die Tour jederzeit.",
+      "logsource_title": "1 · Das Event-Log",
+      "logsource_content": "Zwei Quellen: „Datei hochladen“ für eine eigene XES- oder JSON-Datei (letzte Uploads und die Logs deiner Datensätze stehen darunter) oder „Beispiel nutzen“ für das mitgelieferte Beispiel-Log. Die Übersicht zeigt, was im Log steckt.",
+      "params_title": "2 · Miner und Maße",
       "params_content": "Wähle die Miner, die laufen sollen, und die Maße, die berechnet werden. Über die Preset-Leiste darüber speicherst du eine Auswahl für später.",
-      "run_title": "Run starten",
+      "run_title": "3 · Den Run starten",
       "run_content": "Starte mit dem Knopf oder Strg+Enter (Cmd+Enter auf dem Mac). Das Ergebnis erscheint darunter mit den Maßen, den gefundenen Netzen und Downloads; der Run steht unter Letzte Runs."
     },
     "onboarding": {
@@ -255,9 +244,10 @@
       "health": "Bereitschaftsprüfung: 200, wenn die Datenbank erreichbar ist.",
       "session_start": "Startet die Sitzung (das Cookie `session_id`), wenn die Anfrage keines hat oder eines, das der Server nicht lesen kann. Die Seite erledigt das selbst; ein Skript, das mehrere Anfragen gleichzeitig sendet, ruft es zuerst auf.",
       "fa_export_report": "Die Analyse als LaTeX-Report, aufgebaut wie der von ComFy (report.tex); der Body von analyze plus `short_codes` und `language`.",
-      "fa_export_figure": "Der Scree-Plot oder die Ladungs-Heatmap als SVG oder PNG (300 dpi) im Druckstil; der Body von analyze plus `figure`, `format`, `short_codes`, `order` und `language` (`en` oder `de`).",
+      "fa_export_figure": "Der Scree-Plot, die Ladungs-Heatmap oder die Korrelationskarte als SVG oder PNG (300 dpi) im Druckstil; der Body von analyze plus `figure`, `format`, `short_codes`, `order`, `correlation_order` und `language` (`en` oder `de`).",
       "fa_compare": "Die Faktorstrukturen von 2 bis 8 Analysen nebeneinander, wie Tab. 17 von Important Factors: je Spalte n, die Maße nach dem MSA-Filter, KMO, Faktoren, Rotation und erklärte Varianz, jedes Maß mit seiner Dimension je Spalte unter einer `assignment_rule`, die Dimensionen je Spalte und für jedes Paar von Maßen, in wie vielen Spalten es eine Dimension teilt (`co_assignment`). Eine Spalte ist ein mitgelieferter Datensatz (`bundled_id`, mit den Einstellungen seines Papers) oder ein Datensatz der Sitzung (`dataset_id`, mit seinen gespeicherten Einstellungen und optional einem `miner`) und kann ihre Einstellungen ändern (`options`). Mitgelieferte Spalten brauchen keinen Datensatz der Sitzung.",
-      "fa_compare_export": "Der Vergleich als CSV, als LaTeX-Tabelle wie Tab. 17 oder als ZIP mit beidem, den Paaren von Maßen, dem vollständigen Ergebnis und einem Manifest; der Body von compare plus `format` und `short_codes`."
+      "fa_compare_export": "Der Vergleich als CSV, als LaTeX-Tabelle wie Tab. 17 oder als ZIP mit beidem, den Paaren von Maßen, dem vollständigen Ergebnis und einem Manifest; der Body von compare plus `format` und `short_codes`.",
+      "fa_correlations": "Die Korrelationen der Maße, die Karte des Eignungs-Schritts: die Matrix in der Reihenfolge des Datensatzes, einer Gruppierung (`cluster`) oder der Dimensionen einer Analyse (`factor`), die Paare mit |r| ab 0,95 und die fünf engsten Partner jedes Maßes; der Body von analyze plus `order`."
     },
     "notes": {
       "rate_limits": "Ratenlimits pro IP: `60/hour` für `POST /algorithms/{id}/analyze` und für neue Datensätze aus `POST /factor-analysis/datasets`, `600/minute` für das Lesen, Auflisten und Löschen von Datensätzen und das Speichern ihrer Optionen, `300/hour` für `POST /log-stats` und `120/minute` überall sonst. Interpretationen durch Claude: `10/hour` pro Sitzung und `200/day` für den Server. Über einem Limit lautet die Antwort 429 mit einem `code`.",
@@ -407,7 +397,10 @@
     "dataset_name": {
       "model": "Datensatz der Faktorenanalyse (Modellmaße)",
       "log": "Datensatz der Faktorenanalyse (Log-Maße)"
-    }
+    },
+    "ready": "{name} ist fertig",
+    "ready_several": "{n} Datensätze sind fertig",
+    "ready_open": "Öffnen"
   },
   "run_history": {
     "heading": "Runs",
@@ -443,22 +436,10 @@
     "load_failed_fallback": "Runs konnten nicht geladen werden."
   },
   "workbench": {
-    "sidebar": {
-      "algorithm_label": "Algorithmus",
-      "tour_button": "Tour",
-      "tour_aria": "Tour dieser Seite starten",
-      "tour_title": "Wie das Untersuchen eines einzelnen Logs funktioniert",
-      "close_sidebar_aria": "Algorithmenliste schließen",
-      "show_menu_title": "Algorithmenliste anzeigen",
-      "show_sidebar_title": "Algorithmenliste anzeigen",
-      "hide_sidebar_title": "Algorithmenliste ausblenden",
-      "nav_aria": "Algorithmen"
-    },
     "job_badge": "Run {id}: {status}",
     "algo_card": {
       "implemented_by": "Implementiert von: {author}",
       "paper_link": "Paper",
-      "academic_reference": "Literaturnachweis",
       "copied_bibtex": "BibTeX kopiert",
       "copy_bibtex": "BibTeX kopieren",
       "download_bib_title": "Als .bib-Datei herunterladen",
@@ -769,7 +750,10 @@
       "col_features_s": "Features (s)",
       "measurement_sum": "Summe",
       "measurement_note": "Laufzeit in Sekunden auf diesem Server.",
-      "measurement_more": "Gemessen, während der Datensatz berechnet wurde. Ein Log wird für alle seine Miner einmal gelesen. Das ZIP enthält zusätzlich die Sekunden jedes Maßes oder jeder Feature-Gruppe."
+      "measurement_more": "Gemessen, während der Datensatz berechnet wurde. Ein Log wird für alle seine Miner einmal gelesen. Das ZIP enthält zusätzlich die Sekunden jedes Maßes oder jeder Feature-Gruppe.",
+      "view_log": "Dieses Log ansehen",
+      "view_log_more": "Öffnet die Seite für ein einzelnes Log mit diesem Log und dem Miner der Zeile. Das geht, solange das Log zu den neuesten Uploads dieser Sitzung gehört.",
+      "view_log_gone": "Das Log gehört nicht mehr zu den neuesten Uploads dieser Sitzung."
     },
     "suitability": {
       "passed": "bestanden",
@@ -997,7 +981,8 @@
       "superseded": "Eine neuere Analyse dieses Datensatzes, etwa in einem anderen Tab, hat diese ersetzt. Ändere eine Einstellung, um sie erneut zu starten.",
       "unknown_miner": "Der Datensatz hat keine Zeilen des Miners {miner}.",
       "factor_names_too_many": "{names} Faktornamen für {factors} Faktoren.",
-      "dataset_not_ready": "Der Datensatz ist nicht bereit ({status})."
+      "dataset_not_ready": "Der Datensatz ist nicht bereit ({status}).",
+      "too_few_measures_for_map": "Für eine Korrelationskarte braucht es mindestens {min} Maße; es sind {left} übrig."
     },
     "warnings": {
       "bartlett_not_significant": "Der Test nach Bartlett ist nicht signifikant (p = {p} ≥ {alpha}); die Maße sind womöglich unkorreliert.",
@@ -1266,7 +1251,8 @@
       "png": "PNG",
       "png_hint": "Bild mit 300 dpi",
       "loadings": "Ladungs-Heatmap",
-      "failed": "Die Abbildung konnte nicht heruntergeladen werden."
+      "failed": "Die Abbildung konnte nicht heruntergeladen werden.",
+      "correlations": "Korrelationskarte"
     },
     "miners": {
       "label": "Miner",
@@ -1300,11 +1286,107 @@
       "compare_more": "Öffnet die angehefteten Lösungen nebeneinander, unter der Regel der zuletzt angehefteten.",
       "clear": "Alle lösen",
       "full": "{max} Lösungen sind angeheftet, so viele, wie ein Vergleich fasst."
+    },
+    "correlations": {
+      "heading": "Korrelationskarte",
+      "help": "Die Korrelation jedes Maßpaares, vor dem MSA-Filter. Orange Zellen sind negative Korrelationen, die anderen farbigen Zellen positive; je kräftiger die Farbe, desto größer |r|. Umrandete Paare haben |r| ≥ {limit}: Solche Maße sagen fast dasselbe und machen die Korrelationsmatrix beinahe singulär. Von dir ausgeschlossene Maße fehlen.",
+      "order_label": "Reihenfolge",
+      "order_factor": "Nach Faktor",
+      "order_cluster": "Gruppiert",
+      "order_factor_reason": "Die Faktoranalyse ist noch nicht fertig.",
+      "order_more": "Nach Faktor stellt die Maße jeder Dimension der Analyse auf dem Bildschirm zusammen, die stärkste Ladung zuerst, und die Maße ohne Dimension zuletzt. Gruppiert ordnet sie danach, wie eng sie korrelieren (Average Linkage auf 1 − |r|), unabhängig davon, was die Analyse aus ihnen macht.",
+      "region": "Korrelationskarte von {n} Maßen. Mit den Pfeiltasten wechselst du zwischen den Paaren; Esc verlässt das Paar.",
+      "pair": "{a} × {b}: r = {r}",
+      "hint": "Zeige auf eine Zelle oder gehe mit den Pfeiltasten durch die Karte, um ein Paar zu lesen. Die Tabelle darunter hat alle Werte.",
+      "legend_aria": "Farbskala von −1 in Orange über 0 bis +1 in der Akzentfarbe",
+      "legend_high": "{n} Paar hat |r| ≥ {limit}",
+      "legend_high_plural": "{n} Paare haben |r| ≥ {limit}",
+      "legend_none": "Kein Paar hat |r| ≥ {limit}",
+      "table_heading": "Die Korrelationen als Tabelle",
+      "table_caption": "Korrelationen der {n} Maße der Karte",
+      "loading": "Die Korrelationen werden geladen …",
+      "failed": "Die Korrelationen konnten nicht geladen werden: {error}",
+      "few": "Es sind weniger als zwei Maße übrig, es gibt also nichts zu korrelieren.",
+      "block_none": "Ohne Dimension",
+      "removed": "vom MSA-Filter entfernt"
+    },
+    "sheet": {
+      "close": "Steckbrief schließen",
+      "position": "{i} von {n}",
+      "announce": "{measure}, {i} von {n}",
+      "prev": "Voriges Maß",
+      "next": "Nächstes Maß",
+      "paging_more": "Die Pfeiltasten links und rechts blättern durch die Maße der Liste, aus der du kommst.",
+      "first": "Das ist das erste Maß der Liste.",
+      "last": "Das ist das letzte Maß der Liste.",
+      "definition": "Definition",
+      "no_description": "Das Tool hat keine Beschreibung dieses Maßes.",
+      "group_label": "Merkmalsgruppe",
+      "function_label": "Funktion",
+      "source_label": "Quelle",
+      "source_commit": "{tool}, Commit {commit}",
+      "source_open": "Quelle öffnen",
+      "source_open_more": "Die Datei mit dieser Funktion auf GitHub, beim Commit dieses Tools, in einem neuen Tab.",
+      "source_new_tab": "öffnet in einem neuen Tab",
+      "description_note": "In den Worten dieses Tools; die Definition ist die Funktion in ComFy.",
+      "values": "Verteilung",
+      "hist_aria": "Histogramm von {measure}: {bins} Klassen von {min} bis {max}; die meisten Werte, {top}, liegen zwischen {from} und {to}",
+      "hist_none": "Keine Werte zum Zeichnen.",
+      "values_input": "Über alle {n} Beobachtungen, vor der Bereinigung.",
+      "values_cleaned": "Über die bereinigte Matrix.",
+      "analysis": "In dieser Analyse",
+      "status": {
+        "used": "In der Analyse",
+        "removed": "In Runde {step} vom MSA-Filter entfernt",
+        "excluded": "Von dir ausgeschlossen",
+        "dependent": "Linear abhängig",
+        "below": "MSA unter {threshold}",
+        "miner": "Keine Varianz für diesen Miner",
+        "dropped": "Von der Bereinigung entfernt",
+        "pending": "Die Analyse läuft"
+      },
+      "msa": "MSA",
+      "msa_more": "Die Stichprobeneignung dieses Maßes, sein eigener KMO-Wert. Der Filter entfernt Maße unter {threshold}.",
+      "msa_removed": "{msa} bei der Entfernung",
+      "communality": "Kommunalität h²",
+      "uniqueness": "Einzigartigkeit 1 − h²",
+      "uniqueness_more": "Der Anteil der Varianz dieses Maßes, den kein Faktor erklärt. Ein hoher Wert heißt, dass das Maß wenig mit den Faktoren zu tun hat.",
+      "loadings": "Ladungen",
+      "loading_assigned": "zugeordnet",
+      "loadings_note": "Fett: die Faktoren, denen die Regel das Maß zuordnet.",
+      "excluded_note": "Du hast dieses Maß ausgeschlossen, es ist also nicht Teil der Analyse.",
+      "dropped_note": "Die Bereinigung hat dieses Maß aus der Matrix genommen: {reason}.",
+      "closest": "Am stärksten korreliert",
+      "closest_more": "Die fünf Maße mit dem größten |r| zu diesem, über alle Zeilen der Analyse.",
+      "closest_loading": "Die Korrelationen werden geladen …",
+      "closest_failed": "Die Korrelationen konnten nicht geladen werden.",
+      "closest_none": "Keine Korrelationen zu diesem Maß.",
+      "closest_open": "{measure}, r = {r}. Steckbrief zeigen.",
+      "exclude": "Aus der Analyse ausschließen",
+      "include": "In die Analyse einbeziehen",
+      "locked": "Mindestens {n} Maße müssen drin bleiben.",
+      "excluded_done": "{measure} ist ausgeschlossen.",
+      "included_done": "{measure} ist einbezogen."
     }
   },
   "inspect": {
     "title": "Einzelnes Log untersuchen",
-    "subtitle": "Führe ComFy auf einem Event-Log aus und sieh dir die gefundenen Modelle und ihre Komplexitätsmaße an."
+    "subtitle": "Führe ComFy auf einem Event-Log aus und sieh dir die gefundenen Modelle und ihre Komplexitätsmaße an.",
+    "section_log": "Event-Log",
+    "section_log_hint": "Lade ein Log hoch oder nimm ein Beispiel; die Übersicht zeigt, was darin steckt.",
+    "section_log_run": "Das Log, das dieser Run analysiert hat.",
+    "section_settings": "Miner und Maße",
+    "section_settings_hint": "Welche Miner die Netze entdecken und welche Maße ComFy darauf berechnet.",
+    "section_run": "Run",
+    "section_run_hint": "Startet im Hintergrund; das Ergebnis erscheint darunter, und der Run steht unter „Letzte Runs“.",
+    "about": "Was ComFy macht",
+    "about_hint": "Wie es arbeitet und wann es hilft",
+    "about_menu": "Über {name}",
+    "tour": "Tour",
+    "tour_more": "Wie das Ansehen eines einzelnen Logs funktioniert",
+    "from_dataset": "{log} stammt aus deinem Datensatz und ist hier ausgewählt.",
+    "from_dataset_miner": "{log} stammt aus deinem Datensatz und ist hier ausgewählt, mit dem {miner} als einzigem Miner.",
+    "log_gone": "{log} gehört nicht mehr zu den neuesten Uploads dieser Sitzung und lässt sich hier nicht öffnen. Lade es erneut hoch."
   },
   "algo_text": {
     "summary": "Miner: {miners} · Maße: {measures}",
@@ -1387,8 +1469,9 @@
         "nets": "Petri-Netze (.pnml): Jedes Netz wird gemessen.",
         "csv": "Eine CSV-Datei: eine Zeile je Beobachtung, eine Spalte je Maß; eine erste Spalte mit Namen wird zu den Zeilenbeschriftungen."
       },
-      "p2": "Logs und Netze werden in einem Job berechnet; die Job-Leiste zeigt den Fortschritt. „Meine Datensätze“ in der Werkzeugleiste öffnet einen Datensatz der Sitzung wieder, mit den Einstellungen seiner letzten Analyse.",
-      "p3": "Ein Datensatz aus Netzen mehrerer Miner hat eine Zeile je Log und Miner. Der Datensatz-Schritt bietet alle Miner gemeinsam oder je einen Miner an, so wie Important Factors sie analysiert: Gemeinsam mischen sich die Unterschiede zwischen den Minern in die Dimensionen, und jedes Log zählt einmal je Miner; ein einzelner Miner hat weniger Beobachtungen. Ein Miner mit nicht mehr Beobachtungen als Maßen lässt sich nicht analysieren; unter fünf je Maß warnt die Analyse. Miner vergleichen öffnet dort ihre Faktorstrukturen nebeneinander."
+      "p2": "Logs und Netze werden in einem Job berechnet. Der Reiter „Letzte Runs“ sagt, was läuft („1 läuft · 37 %“), und hat einen roten Punkt für einen fehlgeschlagenen Run, den du noch nicht angesehen hast; ein fertig berechneter Datensatz meldet sich mit „… ist fertig · Öffnen“, wo du auch bist. „Meine Datensätze“ in der Werkzeugleiste öffnet einen Datensatz der Sitzung wieder, mit den Einstellungen seiner letzten Analyse.",
+      "p3": "Ein Datensatz aus Netzen mehrerer Miner hat eine Zeile je Log und Miner. Der Datensatz-Schritt bietet alle Miner gemeinsam oder je einen Miner an, so wie Important Factors sie analysiert: Gemeinsam mischen sich die Unterschiede zwischen den Minern in die Dimensionen, und jedes Log zählt einmal je Miner; ein einzelner Miner hat weniger Beobachtungen. Ein Miner mit nicht mehr Beobachtungen als Maßen lässt sich nicht analysieren; unter fünf je Maß warnt die Analyse. Miner vergleichen öffnet dort ihre Faktorstrukturen nebeneinander.",
+      "p4": "Eine Zeile eines aus Logs berechneten Datensatzes hat im Datensatz-Schritt einen Link „Dieses Log ansehen“. Er öffnet die Seite „Ein einzelnes Log ansehen“ mit diesem Log und, bei einer Zeile aus Netzen, nur dem Miner der Zeile, solange das Log zu den zehn neuesten Uploads der Sitzung gehört; die Seite sagt es, wenn nicht."
     },
     "results": {
       "title": "Die Ergebnisse lesen",
@@ -1398,19 +1481,21 @@
         "factors": "Faktoren: der Scree-Plot mit Kaiser-Linie und Parallelanalyse, die Zahl, die jedes Kriterium vorschlägt, und die Rotation.",
         "loadings": "Ladungen: eine Matrix (orange für negative Ladungen, blass, wo eine Ladung nicht zählt) oder eine Karte je Dimension, die Schwellen und die Regel, die Maße Faktoren zuordnet. Querladungen sind umrandet.",
         "interpretation": "Interpretation: Namen für die Faktoren, von einem Sprachmodell nur auf Anfrage vorgeschlagen. Es entscheidet nichts.",
-        "names": "Namen: Drücke auf den Titel eines Faktors, auf seiner Karte oder im Kopf seiner Spalte, um ihn zu benennen; Enter behält den Namen, Esc lässt ihn. Die Namen erscheinen in den Ladungen, den Faktorkorrelationen, der Schrittliste und jedem Download. Sie gehören zu Faktorzahl, Rotation und Regel: Ändert sich eines davon, verschwinden sie, und der Hinweis holt sie zurück. Mit einer Interpretation übernimmt Vorgeschlagene Namen übernehmen deren Namen."
+        "names": "Namen: Drücke auf den Titel eines Faktors, auf seiner Karte oder im Kopf seiner Spalte, um ihn zu benennen; Enter behält den Namen, Esc lässt ihn. Die Namen erscheinen in den Ladungen, den Faktorkorrelationen, der Schrittliste und jedem Download. Sie gehören zu Faktorzahl, Rotation und Regel: Ändert sich eines davon, verschwinden sie, und der Hinweis holt sie zurück. Mit einer Interpretation übernimmt Vorgeschlagene Namen übernehmen deren Namen.",
+        "correlations": "Korrelationskarte: in Eignung, eingeklappt, bis man sie öffnet. Eine Zelle je Maßpaar, orange für eine negative Korrelation und in der Akzentfarbe für eine positive, ein Paar mit |r| ≥ 0,95 umrandet, nach Faktor oder gruppiert geordnet. Zeige auf eine Zelle oder nimm die Pfeiltasten, um das Paar und sein r zu lesen; eine Tabelle unter der Karte hat jeden Wert. Das Bild-Symbol lädt sie wie die anderen Abbildungen herunter.",
+        "sheet": "Steckbrief: Drücke auf den Namen eines Maßes (oder Enter darauf), wo er auch steht, um ein Fenster neben der Seite zu öffnen. Es zeigt, was das Maß ist (die Beschreibung des Tools und die Funktion in ComFy oder feeed dahinter, mit Link zur Quelle), ein Histogramm seiner Werte, seinen MSA und die Runde des Filters, die es entfernt hat, Kommunalität und Einzigartigkeit, seine Ladungen, die fünf am stärksten korrelierten Maße und eine Schaltfläche zum Ausschließen oder Einbeziehen. Die Pfeiltasten links und rechts blättern durch die Liste, aus der du kommst, Esc schließt das Fenster, und der Fokus kehrt zum Namen zurück."
       }
     },
     "export": {
       "title": "Die Ergebnisse in ein Paper übernehmen",
       "p1": "Das Download-Menü im Seitenkopf enthält:",
       "items": {
-        "zip": "Analyse (ZIP): das Ergebnis, die Matrix, die Tabellen, report.tex, die Abbildungen, die deskriptive Statistik, die Laufzeiten und ein Manifest mit Einstellungen, Versionen und Herkunft.",
+        "zip": "Analyse (ZIP): das Ergebnis, die Matrix, die Tabellen, report.tex, die Abbildungen, correlations.csv, die deskriptive Statistik, die Laufzeiten und ein Manifest mit Einstellungen, Versionen und Herkunft.",
         "report": "LaTeX-Report: report.tex, aufgebaut wie der ComFy-Report, mit den Dimensionen und den Einstellungen; übersetze ihn mit latexmk -pdf oder lasse pdflatex zweimal laufen, denn lange Tabellen finden ihre Spaltenbreiten erst im zweiten Lauf.",
         "print": "Druckansicht: die ganze Analyse auf A4-Seiten, zum Drucken oder Speichern als PDF.",
         "tables": "Die Ladungen als CSV oder LaTeX und den bereinigten Datensatz als CSV."
       },
-      "p2": "Das Bild-Symbol am Scree-Plot und an den Ladungen lädt die Abbildung als SVG herunter, deren Text Text bleibt, oder als PNG mit 300 dpi: immer hell, in der Textbreite eines CEUR-Papers, mit den Beschriftungen in der Sprache der App.",
+      "p2": "Das Bild-Symbol am Scree-Plot, an den Ladungen und an der Korrelationskarte lädt die Abbildung als SVG herunter, deren Text Text bleibt, oder als PNG mit 300 dpi: immer hell, in der Textbreite eines CEUR-Papers, mit den Beschriftungen in der Sprache der App.",
       "p3": "Das Etikett-Symbol in der Werkzeugleiste nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder C_mag; der volle Name steht im Tooltip, und Abbildungen, Report und ZIP folgen ihm.",
       "p4": "Das Link-Symbol kopiert einen Link auf die Analyse eines veröffentlichten Datensatzes mit ihren Einstellungen."
     },

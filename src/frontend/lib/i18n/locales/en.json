@@ -33,18 +33,6 @@
   "footer": {
     "credit": "Built for process mining research at the University of Augsburg."
   },
-  "algorithm_list": {
-    "what_is_aria": "What is {name}?",
-    "what_does_title": "What does this algorithm do?",
-    "favorites_heading": "Favorites",
-    "favorite_add_title": "Pin as favorite",
-    "favorite_remove_title": "Remove from favorites",
-    "favorite_add_aria": "Add {name} to favorites",
-    "favorite_remove_aria": "Remove {name} from favorites",
-    "category": {
-      "complexity": "Complexity analysis"
-    }
-  },
   "file_drop": {
     "drop_label": "Drop an event log here",
     "drop_hint": "or click to choose one · .xes, .xes.gz, .xml, .json",
@@ -60,21 +48,22 @@
     "log_label": "Log complexity",
     "log_desc": "Measures of event logs",
     "runs_label": "Runs",
-    "runs_desc": "All runs of this session"
+    "runs_desc": "All runs of this session",
+    "jobs_running": "{n} running · {pct}",
+    "jobs_running_plural": "{n} running · {pct}",
+    "jobs_waiting": "{n} waiting",
+    "jobs_waiting_plural": "{n} waiting",
+    "jobs_failed": "A run failed. Open the list to see which."
   },
   "tours": {
     "single_run": {
       "intro_title": "Inspect a single log",
-      "intro_content": "Here you run ComFy on one event log: it discovers Petri nets with the chosen miners and computes their complexity measures. This tour shows the key spots; Esc or Skip ends it at any time.",
-      "algo_pick_title": "The algorithm",
-      "algo_pick_content": "On the left is the algorithm this page runs: ComFy, which measures the complexity of discovered Petri nets.",
-      "algo_help_title": "What ComFy does",
-      "algo_help_content": "The ? next to it opens a detailed explanation: what ComFy does, how it works and when it is useful.",
-      "logsource_title": "Pick an event log",
-      "logsource_content": "Two sources: “Upload file” for your own XES or JSON file (recent uploads are listed below), or “Use example” for the bundled example log.",
-      "params_title": "Miners and measures",
+      "intro_content": "Here you run ComFy on one event log: it discovers Petri nets with the chosen miners and computes their complexity measures. The page has three sections: the log, the miners and measures, and the run. Esc or Skip ends the tour at any time.",
+      "logsource_title": "1 · The event log",
+      "logsource_content": "Two sources: “Upload file” for your own XES or JSON file (recent uploads and the logs of your datasets are listed below), or “Use example” for the bundled example log. The overview shows what is in the log.",
+      "params_title": "2 · Miners and measures",
       "params_content": "Choose the miners to run and the measures to compute. The preset bar above saves a selection for later.",
-      "run_title": "Start the run",
+      "run_title": "3 · Start the run",
       "run_content": "Start with the button or Ctrl+Enter (Cmd+Enter on a Mac). The result appears below with the measures, the discovered nets and downloads; the run is listed under Recent runs."
     },
     "onboarding": {
@@ -255,9 +244,10 @@
       "health": "Readiness probe: 200 when the database is reachable.",
       "session_start": "Starts the session (the `session_id` cookie) if the request has none, or one the server cannot read. The page does it by itself; a script that sends several requests at once calls it first.",
       "fa_export_report": "The analysis as a LaTeX report built like ComFy's (report.tex); the body of analyze plus `short_codes` and `language`.",
-      "fa_export_figure": "The scree plot or the loadings heatmap as SVG or PNG (300 dpi) in print style; the body of analyze plus `figure`, `format`, `short_codes`, `order` and `language` (`en` or `de`).",
+      "fa_export_figure": "The scree plot, the loadings heatmap or the correlation map as SVG or PNG (300 dpi) in print style; the body of analyze plus `figure`, `format`, `short_codes`, `order`, `correlation_order` and `language` (`en` or `de`).",
       "fa_compare": "The factor structures of 2 to 8 analyses side by side, like Tab. 17 of Important Factors: per column n, the measures after the MSA filter, KMO, factors, rotation and variance explained, every measure with its dimension per column under one `assignment_rule`, the dimensions per column, and for every pair of measures in how many columns they share a dimension (`co_assignment`). A column is a bundled dataset (`bundled_id`, with the settings of its paper) or a dataset of the session (`dataset_id`, with its saved settings and optionally a `miner`), and may change its settings (`options`). Bundled columns need no dataset of the session.",
-      "fa_compare_export": "The comparison as CSV, as a LaTeX table like Tab. 17, or as a ZIP with both, the pairs of measures, the full result and a manifest; the body of compare plus `format` and `short_codes`."
+      "fa_compare_export": "The comparison as CSV, as a LaTeX table like Tab. 17, or as a ZIP with both, the pairs of measures, the full result and a manifest; the body of compare plus `format` and `short_codes`.",
+      "fa_correlations": "The correlations of the measures, the map of the suitability step: the matrix in the order of the dataset, of a clustering (`cluster`) or of the dimensions of an analysis (`factor`), the pairs with |r| of 0.95 or more and the five closest partners of each measure; the body of analyze plus `order`."
     },
     "notes": {
       "rate_limits": "Rate limits per IP: `60/hour` on `POST /algorithms/{id}/analyze` and on new datasets from `POST /factor-analysis/datasets`, `600/minute` on reading, listing and deleting datasets and on saving their options, `300/hour` on `POST /log-stats` and `120/minute` everywhere else. Interpretations by Claude: `10/hour` per session and `200/day` for the server. Over a limit the answer is a 429 with a `code`.",
@@ -407,7 +397,10 @@
     "dataset_name": {
       "model": "Factor analysis dataset (model measures)",
       "log": "Factor analysis dataset (log measures)"
-    }
+    },
+    "ready": "{name} is ready",
+    "ready_several": "{n} datasets are ready",
+    "ready_open": "Open"
   },
   "run_history": {
     "heading": "Runs",
@@ -443,22 +436,10 @@
     "load_failed_fallback": "Failed to load runs."
   },
   "workbench": {
-    "sidebar": {
-      "algorithm_label": "Algorithm",
-      "tour_button": "Tour",
-      "tour_aria": "Start the tour of this page",
-      "tour_title": "How inspecting a single log works",
-      "close_sidebar_aria": "Close the algorithm list",
-      "show_menu_title": "Show the algorithm list",
-      "show_sidebar_title": "Show the algorithm list",
-      "hide_sidebar_title": "Hide the algorithm list",
-      "nav_aria": "Algorithms"
-    },
     "job_badge": "Run {id}: {status}",
     "algo_card": {
       "implemented_by": "Implemented by: {author}",
       "paper_link": "Paper",
-      "academic_reference": "Citation",
       "copied_bibtex": "BibTeX copied",
       "copy_bibtex": "Copy BibTeX",
       "download_bib_title": "Download as .bib file",
@@ -769,7 +750,10 @@
       "col_features_s": "Features (s)",
       "measurement_sum": "Sum",
       "measurement_note": "Wall time in seconds on this server.",
-      "measurement_more": "Measured while the dataset was computed. A log is read once for all its miners. The ZIP has the seconds of every measure or feature group as well."
+      "measurement_more": "Measured while the dataset was computed. A log is read once for all its miners. The ZIP has the seconds of every measure or feature group as well.",
+      "view_log": "View this log",
+      "view_log_more": "Opens the page for a single log with this log and the miner of the row chosen. It works while the log is among the newest uploads of this session.",
+      "view_log_gone": "The log is no longer among the newest uploads of this session."
     },
     "suitability": {
       "passed": "passed",
@@ -997,7 +981,8 @@
       "superseded": "A newer analysis of this dataset, for example in another tab, replaced this one. Change a setting to run it again.",
       "unknown_miner": "The dataset has no rows of the miner {miner}.",
       "factor_names_too_many": "{names} factor names for {factors} factors.",
-      "dataset_not_ready": "The dataset is not ready ({status})."
+      "dataset_not_ready": "The dataset is not ready ({status}).",
+      "too_few_measures_for_map": "At least {min} measures are needed for a correlation map; {left} are left."
     },
     "warnings": {
       "bartlett_not_significant": "Bartlett's test is not significant (p = {p} ≥ {alpha}); the measures may be uncorrelated.",
@@ -1266,7 +1251,8 @@
       "png": "PNG",
       "png_hint": "Image with 300 dpi",
       "loadings": "Loadings heatmap",
-      "failed": "The figure could not be downloaded."
+      "failed": "The figure could not be downloaded.",
+      "correlations": "Correlation map"
     },
     "miners": {
       "label": "Miners",
@@ -1300,11 +1286,107 @@
       "compare_more": "Opens the pinned solutions side by side, under the rule of the one pinned last.",
       "clear": "Unpin all",
       "full": "{max} solutions are pinned, as many as a comparison holds."
+    },
+    "correlations": {
+      "heading": "Correlation map",
+      "help": "The correlation of every pair of measures, before the MSA filter. Orange cells are negative correlations, the other coloured cells positive ones; the stronger the colour, the larger |r|. Outlined pairs have |r| ≥ {limit}: such measures say almost the same and make the correlation matrix nearly singular. Measures you excluded are left out.",
+      "order_label": "Order",
+      "order_factor": "By factor",
+      "order_cluster": "Clustered",
+      "order_factor_reason": "The factor analysis is not ready yet.",
+      "order_more": "By factor puts the measures of each dimension of the analysis on screen together, strongest loading first, and the measures without a dimension last. Clustered orders them by how closely they correlate (average linkage on 1 − |r|), whatever the analysis makes of them.",
+      "region": "Correlation map of {n} measures. Move between the pairs with the arrow keys; Escape leaves the pair.",
+      "pair": "{a} × {b}: r = {r}",
+      "hint": "Point at a cell or move through the map with the arrow keys to read a pair. The table below has every value.",
+      "legend_aria": "Colour scale from −1 in orange over 0 to +1 in the accent colour",
+      "legend_high": "{n} pair has |r| ≥ {limit}",
+      "legend_high_plural": "{n} pairs have |r| ≥ {limit}",
+      "legend_none": "No pair has |r| ≥ {limit}",
+      "table_heading": "The correlations as a table",
+      "table_caption": "Correlations of the {n} measures of the map",
+      "loading": "Loading the correlations…",
+      "failed": "The correlations could not be loaded: {error}",
+      "few": "Fewer than two measures are left, so there is nothing to correlate.",
+      "block_none": "No dimension",
+      "removed": "removed by the MSA filter"
+    },
+    "sheet": {
+      "close": "Close the fact sheet",
+      "position": "{i} of {n}",
+      "announce": "{measure}, {i} of {n}",
+      "prev": "Previous measure",
+      "next": "Next measure",
+      "paging_more": "The left and right arrow keys page through the measures of the list you came from.",
+      "first": "This is the first measure of the list.",
+      "last": "This is the last measure of the list.",
+      "definition": "Definition",
+      "no_description": "The tool has no description of this measure.",
+      "group_label": "Feature group",
+      "function_label": "Function",
+      "source_label": "Source",
+      "source_commit": "{tool}, commit {commit}",
+      "source_open": "Open the source",
+      "source_open_more": "The file with this function on GitHub, at the commit this tool uses, in a new tab.",
+      "source_new_tab": "opens in a new tab",
+      "description_note": "In the words of this tool; the definition is the function of ComFy.",
+      "values": "Distribution",
+      "hist_aria": "Histogram of {measure}: {bins} bins from {min} to {max}; the most values, {top}, lie between {from} and {to}",
+      "hist_none": "No values to draw.",
+      "values_input": "Over all {n} observations, before cleaning.",
+      "values_cleaned": "Over the cleaned matrix.",
+      "analysis": "In this analysis",
+      "status": {
+        "used": "In the analysis",
+        "removed": "Removed by the MSA filter in round {step}",
+        "excluded": "Excluded by you",
+        "dependent": "Linearly dependent",
+        "below": "MSA below {threshold}",
+        "miner": "No variance for this miner",
+        "dropped": "Left out by the cleaning",
+        "pending": "The analysis is running"
+      },
+      "msa": "MSA",
+      "msa_more": "The sampling adequacy of this measure, its own KMO value. The filter removes measures below {threshold}.",
+      "msa_removed": "{msa} when it was removed",
+      "communality": "Communality h²",
+      "uniqueness": "Uniqueness 1 − h²",
+      "uniqueness_more": "The share of the variance of this measure that no factor explains. A high value means the measure has little to do with the factors.",
+      "loadings": "Loadings",
+      "loading_assigned": "assigned",
+      "loadings_note": "Bold: the factors the rule assigns the measure to.",
+      "excluded_note": "You excluded this measure, so it is not part of the analysis.",
+      "dropped_note": "The cleaning left this measure out of the matrix: {reason}.",
+      "closest": "Most correlated",
+      "closest_more": "The five measures with the largest |r| to this one, over all rows of the analysis.",
+      "closest_loading": "Loading the correlations…",
+      "closest_failed": "The correlations could not be loaded.",
+      "closest_none": "No correlations to show for this measure.",
+      "closest_open": "{measure}, r = {r}. Show its fact sheet.",
+      "exclude": "Exclude from the analysis",
+      "include": "Include in the analysis",
+      "locked": "At least {n} measures must stay in.",
+      "excluded_done": "{measure} is excluded.",
+      "included_done": "{measure} is included."
     }
   },
   "inspect": {
     "title": "Inspect a single log",
-    "subtitle": "Run ComFy on one event log and look at the discovered models and their complexity measures."
+    "subtitle": "Run ComFy on one event log and look at the discovered models and their complexity measures.",
+    "section_log": "Event log",
+    "section_log_hint": "Upload a log or take an example; the overview shows what is in it.",
+    "section_log_run": "The log this run analysed.",
+    "section_settings": "Miners and measures",
+    "section_settings_hint": "Which miners discover the nets, and which measures ComFy computes on them.",
+    "section_run": "Run",
+    "section_run_hint": "Starts in the background; the result appears below and the run is listed under Recent runs.",
+    "about": "What ComFy does",
+    "about_hint": "How it works and when it helps",
+    "about_menu": "About {name}",
+    "tour": "Tour",
+    "tour_more": "How inspecting a single log works",
+    "from_dataset": "{log} comes from your dataset and is chosen here.",
+    "from_dataset_miner": "{log} comes from your dataset and is chosen here, with the {miner} as the only miner.",
+    "log_gone": "{log} is no longer among the newest uploads of this session, so it cannot be opened here. Upload it again."
   },
   "algo_text": {
     "summary": "Miners: {miners} · Measures: {measures}",
@@ -1387,8 +1469,9 @@
         "nets": "Petri nets (.pnml): every net is measured.",
         "csv": "A CSV file: one row per observation, one column per measure; a first column of names becomes the row labels."
       },
-      "p2": "Logs and nets are computed in a job; the jobs drawer shows its progress. My datasets in the toolbar reopens a dataset of the session with the settings of its last analysis.",
-      "p3": "A dataset of nets from several miners has a row per log and miner. The dataset step offers all miners together or one miner at a time, as Important Factors analyses them: together, the differences between the miners mix into the dimensions and each log counts once per miner; one miner has fewer observations. A miner with no more observations than measures cannot be analysed; below five per measure the analysis warns. Compare the miners there opens their factor structures side by side."
+      "p2": "Logs and nets are computed in a job. The tab Recent runs says what runs (“1 running · 37%”) and has a red dot for a failed run you have not looked at; a dataset that has been computed raises a notice “… is ready · Open” wherever you are. My datasets in the toolbar reopens a dataset of the session with the settings of its last analysis.",
+      "p3": "A dataset of nets from several miners has a row per log and miner. The dataset step offers all miners together or one miner at a time, as Important Factors analyses them: together, the differences between the miners mix into the dimensions and each log counts once per miner; one miner has fewer observations. A miner with no more observations than measures cannot be analysed; below five per measure the analysis warns. Compare the miners there opens their factor structures side by side.",
+      "p4": "A row of a dataset computed from logs has a View this log link in the dataset step. It opens the page Inspect a single log with that log and, for a row of nets, only the miner of the row chosen, as long as the log is among the ten newest uploads of the session; the page says when it is not."
     },
     "results": {
       "title": "Read the results",
@@ -1398,19 +1481,21 @@
         "factors": "Factors: the scree plot with the Kaiser line and parallel analysis, the count each criterion suggests, and the rotation.",
         "loadings": "Loadings: a matrix (orange for negative loadings, faded where a loading does not count) or a card per dimension, the thresholds, and the rule that assigns measures to factors. Cross-loadings are ringed.",
         "interpretation": "Interpretation: names for the factors, suggested by a language model only on request. It decides nothing.",
-        "names": "Names: press the title of a factor, on its card or at the head of its column, to name it; Enter keeps the name, Esc leaves it. The names appear in the loadings, the factor correlations, the list of steps and every download. They belong to the factor count, the rotation and the rule: changing one of them clears them, and the toast brings them back. With an interpretation, Use the suggested names takes its names over."
+        "names": "Names: press the title of a factor, on its card or at the head of its column, to name it; Enter keeps the name, Esc leaves it. The names appear in the loadings, the factor correlations, the list of steps and every download. They belong to the factor count, the rotation and the rule: changing one of them clears them, and the toast brings them back. With an interpretation, Use the suggested names takes its names over.",
+        "correlations": "Correlation map: in Suitability, folded until opened. One cell for each pair of measures, orange for a negative correlation and the accent colour for a positive one, a pair with |r| ≥ 0.95 outlined, ordered by factor or clustered. Point at a cell or use the arrow keys to read the pair and its r; a table under the map has every value. The image icon downloads it like the other figures.",
+        "sheet": "Fact sheet: press, or Enter on, the name of a measure wherever it stands to open a panel beside the page. It shows what the measure is (the description of the tool and the function of ComFy or feeed behind it, with a link to its source), a histogram of its values, its MSA and the round of the filter that removed it, its communality and uniqueness, its loadings, the five measures it correlates with most, and a button to exclude or include it. The left and right arrow keys page through the list you came from, Esc closes the panel and the focus goes back to the name."
       }
     },
     "export": {
       "title": "Take the results into a paper",
       "p1": "The download menu in the page header has:",
       "items": {
-        "zip": "Analysis (ZIP): the result, the matrix, the tables, report.tex, the figures, the descriptive statistics, the run times, and a manifest with settings, versions and provenance.",
+        "zip": "Analysis (ZIP): the result, the matrix, the tables, report.tex, the figures, correlations.csv, the descriptive statistics, the run times, and a manifest with settings, versions and provenance.",
         "report": "LaTeX report: report.tex built like the report of ComFy, with the dimensions and the settings; compile it with latexmk -pdf, or run pdflatex twice, since long tables settle their widths in the second run.",
         "print": "Print view: the whole analysis on A4 pages, to print or save as PDF.",
         "tables": "The loadings as CSV or LaTeX, and the cleaned dataset as CSV."
       },
-      "p2": "The image icon at the scree plot and at the loadings downloads the figure as SVG, whose text stays text, or as PNG with 300 dpi: always light, at the text width of a CEUR paper, with the labels in the language of the app.",
+      "p2": "The image icon at the scree plot, the loadings and the correlation map downloads the figure as SVG, whose text stays text, or as PNG with 300 dpi: always light, at the text width of a CEUR paper, with the labels in the language of the app.",
       "p3": "The tag icon in the toolbar names the measures by the short codes of the papers, such as CNC or C_mag; the full name stays in the tooltip, and the figures, the report and the ZIP follow it.",
       "p4": "The link icon copies a link to the analysis of a published dataset with its settings."
     },

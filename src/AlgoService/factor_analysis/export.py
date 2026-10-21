@@ -221,6 +221,15 @@ def msa_csv(result: dict[str, Any], measures: list[str], excluded: list[str]) ->
     return "".join(lines)
 
 
+def correlations_csv(correlation_map: dict[str, Any]) -> str:
+    """The correlations of the measures as a square table, measures in the order of the map."""
+    measures = correlation_map["measures"]
+    lines = [_csv_line(["measure", *measures])]
+    for measure, row in zip(measures, correlation_map["r"]):
+        lines.append(_csv_line([measure, *row]))
+    return "".join(lines)
+
+
 def descriptives_csv(descriptives: dict[str, Any]) -> str:
     """One row per measure: the number of values, mean, median, standard deviation (ddof=1),
     minimum and maximum, and why cleaning dropped it, if it did."""
@@ -433,6 +442,7 @@ def analysis_zip(
     descriptives: dict[str, Any] | None = None,
     measurement: dict[str, Any] | None = None,
     figures: dict[str, bytes] | None = None,
+    correlation_map: dict[str, Any] | None = None,
     short_codes: bool = False,
     figure_order: str = "factor",
     figure_language: str = "en",
@@ -446,7 +456,9 @@ def analysis_zip(
     bundled dataset, their source and the comparison with the published numbers, if the
     analysis ran with these options. ``descriptives`` are the statistics kept with the dataset,
     ``measurement`` the run times and input sizes of a computed one, ``figures`` the figures by
-    their path in the archive, e.g. "figures/scree.svg". ``short_codes`` names the measures in
+    their path in the archive, e.g. "figures/scree.svg", ``correlation_map`` the correlations of
+    the measures (``correlations.build``), written as correlations.csv in its order and named
+    in the manifest. ``short_codes`` names the measures in
     the report by the codes of the papers, as the figures do; ``figure_order`` and
     ``figure_language`` say how the figures were drawn and go into the manifest.
     ``factor_names`` name the factors in the tables, the report and the manifest, as the
@@ -505,8 +517,14 @@ def analysis_zip(
              "Per observation: the size of its input and the seconds of reading, discovery and the measures."),
             ("stages.csv", stages_csv(measurement), "Seconds of each measure or feature group per observation."),
         ]
+    if correlation_map is not None:
+        files.append((
+            "correlations.csv", correlations_csv(correlation_map),
+            "Pearson correlations of the measures the user left in, before the MSA filter, "
+            f"in the order of the correlation map ({correlation_map['order']}).",
+        ))
     for name, content in (figures or {}).items():
-        what = "scree plot" if "scree" in name else "loadings heatmap"
+        what = "scree plot" if "scree" in name else "correlation map" if "correlations" in name else "loadings heatmap"
         files.append((name, content, f"The {what} in print style, as the figure menu in the app downloads it."))
     if interpretation is not None:
         language, entry = interpretation
@@ -531,6 +549,7 @@ def analysis_zip(
         "analysis_timings": result.get("timings"),
         "measure_labels": "short_codes" if short_codes else "names",
         "figure_order": figure_order,
+        "correlation_order": correlation_map["order"] if correlation_map is not None else None,
         "figure_language": figure_language,
         "libraries": libraries,
         "files": listing,

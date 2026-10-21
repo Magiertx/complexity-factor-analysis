@@ -33,7 +33,7 @@ import { ActionLink } from "@/components/ui/action-link";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { IconButton } from "@/components/ui/icon-button";
 import { Segmented } from "@/components/ui/segmented";
-import { MeasureName, TableFrame } from "@/components/ui/table";
+import { MeasureListScope, MeasureName, TableFrame } from "@/components/ui/table";
 import { Term, useTip, useTipZone } from "@/components/ui/tip";
 import { FactorTitle } from "./factor-title";
 import { FigureMenu, type FigureDownload } from "./figure-menu";
@@ -382,6 +382,8 @@ function LoadingsMatrix({
     folds: list.folds,
   });
   const shownCount = sections.reduce((n, s) => n + s.rows.length, 0);
+  // The measures on screen in their order, which the fact sheet of one of them pages through.
+  const onScreen = sections.flatMap((section) => (section.id !== "other" || list.otherOpen ? section.rows : []));
   const headed = sections.length > 1;
   const sectionLabel = (id: string, n: number) =>
     `${t(id === "notable" ? "factor.measures.section_notable" : "factor.measures.section_other")} · ${formatNumber(n, locale)}`;
@@ -419,571 +421,582 @@ function LoadingsMatrix({
         }
       />
       <Legend threshold={threshold} boldBy={boldBy} crossed={secondary.size > 0} strict={strict} />
-      <TableFrame label={t("factor.loadings.table_heading")}>
-        <table ref={zone} className="data-table">
-          <caption className="sr-only">
-            {countText(t, "factor.loadings.caption", k, { rotation: t(`factor.factors.rotation.${analysis.rotation}`) })}
-            {oblique && ` (${t(`factor.loadings.matrix_${structure ? "structure" : "pattern"}`)})`}
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col" className="sticky-col">
-                {t("factor.loadings.col_measure")}
-              </th>
-              {factorIdx.map((i) => (
-                <th key={i} scope="col" className={cn("num align-bottom", cell)}>
-                  <FactorTitle
-                    index={i}
-                    name={factorName(naming.names, i)}
-                    onName={(text) => naming.onName(i, text)}
-                    look="column"
-                  />
+      <MeasureListScope measures={onScreen}>
+        <TableFrame label={t("factor.loadings.table_heading")}>
+          <table ref={zone} className="data-table">
+            <caption className="sr-only">
+              {countText(t, "factor.loadings.caption", k, { rotation: t(`factor.factors.rotation.${analysis.rotation}`) })}
+              {oblique && ` (${t(`factor.loadings.matrix_${structure ? "structure" : "pattern"}`)})`}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col" className="sticky-col">
+                  {t("factor.loadings.col_measure")}
                 </th>
-              ))}
-              <th scope="col" className="num border-l border-border" data-tip={t("factor.loadings.col_communality")}>
-                h²
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sections.map((section) => (
-              <Fragment key={section.id}>
-                {headed && section.rows.length > 0 && (
-                  <SectionRow
-                    colSpan={k + 2}
-                    label={sectionLabel(section.id, section.rows.length)}
-                    fold={section.id === "other" ? list.fold : undefined}
-                  />
-                )}
-                {(section.id !== "other" || list.otherOpen ? section.rows : []).map((m) => {
-                  const values = shown[m] ?? [];
-                  const h2 = analysis.communalities[m];
-                  const name = measureName(m);
-                  return (
-                    <tr key={m}>
-                      <th scope="row" className="sticky-col font-medium break-words min-w-[9rem] max-w-[16rem]">
-                        <span data-tip-more={measureDescription(m)}>
-                          <MeasureName name={name} />
-                        </span>
-                      </th>
-                      {factorIdx.map((i) => {
-                        const v = values[i];
-                        if (v === undefined) return <td key={i} className={cell} />;
-                        const strong = isBold(m, i, v);
-                        // Loadings that do not count are faded, so the ones that do stand out.
-                        const counts = loadingCounts(v, threshold, strict) || strong;
-                        const crossed = secondary.has(`${m}:${i}`);
-                        const factor = factorName(naming.names, i) ?? t("factor.loadings.factor_n", { i: i + 1 });
-                        const tip = `${name} · ${factor}: ${formatNumber(v, locale, 3)}`;
-                        return (
-                          <td
-                            key={i}
-                            style={counts ? loadingStyle(v) : undefined}
-                            data-tip={crossed ? `${tip} · ${crossLabel}` : tip}
-                            className={cn(
-                              "num",
-                              cell,
-                              strong ? "font-bold text-fg" : counts ? "text-fg/80" : "text-muted",
-                              crossed && "ring-2 ring-inset ring-fg/55",
-                            )}
-                          >
-                            {formatNumber(v, locale, 2)}
-                            {crossed && <span className="sr-only"> ({crossLabel})</span>}
-                          </td>
-                        );
-                      })}
-                      <td className="num border-l border-border">
-                        {h2 !== undefined && (
-                          <span className="flex items-center justify-end gap-2">
-                            <span className="hidden sm:block h-1.5 w-10 rounded-full bg-tile overflow-hidden" aria-hidden>
-                              <span
-                                className="block h-full bg-muted/60 rounded-full"
-                                style={{ width: `${Math.min(1, Math.max(0, h2)) * 100}%` }}
-                              />
-                            </span>
-                            {formatNumber(h2, locale, 2)}
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </Fragment>
-            ))}
-          </tbody>
-          {/* The sums of squares are those of the pattern matrix; the structure matrix has none. */}
-          {!structure && (
-            <tfoot>
-              <VarianceRow label={t("factor.loadings.ss_loadings")} values={analysis.variance.ss_loadings} format={(v) => formatNumber(v, locale, 2)} cell={cell} />
-              {proportion && (
-                <VarianceRow label={t("factor.loadings.proportion")} values={proportion} format={(v) => formatPercent(v, locale)} cell={cell} />
-              )}
-              {cumulative && (
-                <VarianceRow label={t("factor.loadings.cumulative")} values={cumulative} format={(v) => formatPercent(v, locale)} cell={cell} />
-              )}
-            </tfoot>
-          )}
-        </table>
-      </TableFrame>
-      {shownCount === 0 && <p className="text-xs text-muted">{t("factor.measures.none_match")}</p>}
-      {/* What the numbers mean, in the tooltips of these words. */}
-      <p className="flex gap-x-3 gap-y-1 flex-wrap text-[11px] text-muted">
-        <Term more={t("factor.help.loading")}>{t("factor.loadings.table_heading")}</Term>
-        <Term more={t("factor.help.communality")}>{t("factor.loadings.col_communality")}</Term>
-        <Term more={t("factor.help.variance")}>{t("factor.loadings.variance_label")}</Term>
-      </p>
-      <p className="text-[11px] text-muted max-w-prose">
-        {t("factor.loadings.h2_note")}{" "}
-        {!oblique
-          ? t("factor.loadings.footer_rows")
-          : structure
-            ? t("factor.loadings.structure_note")
-            : t("factor.loadings.footer_row_pattern")}
-        {oblique && ` ${t("factor.loadings.oblique_note", { pct: formatPercent(analysis.variance.explained, locale) })}`}
-      </p>
-
-      {analysis.factor_correlations && <FactorCorrelations values={analysis.factor_correlations} names={naming.names} />}
-    </div>
-  );
-}
-
-function VarianceRow({
-  label,
-  values,
-  format,
-  cell,
-}: {
-  label: string;
-  values: number[];
-  format: (v: number) => string;
-  cell?: string;
-}) {
-  return (
-    <tr>
-      <th scope="row" className="sticky-col font-medium">
-        {label}
-      </th>
-      {values.map((v, i) => (
-        <td key={i} className={cn("num", cell)}>
-          {format(v)}
-        </td>
-      ))}
-      <td className="border-l border-border" />
-    </tr>
-  );
-}
-
-function FactorCorrelations({ values, names }: { values: number[][]; names: FactorNames }) {
-  const t = useT();
-  const { locale } = useLocale();
-  const zone = useTipZone<HTMLTableElement>();
-  // The columns keep the short numbers, the rows say the names; a column's name is in its tooltip.
-  return (
-    <div className="space-y-2 pt-2">
-      <HelpLabel label={t("factor.loadings.correlations_heading")} help={t("factor.help.factor_correlations")} />
-      <TableFrame label={t("factor.loadings.correlations_heading")} className="w-fit max-w-full">
-        <table ref={zone} className="data-table w-auto">
-          <caption className="sr-only">{t("factor.loadings.correlations_heading")}</caption>
-          <thead>
-            <tr>
-              <td />
-              {values.map((_, j) => (
-                <th key={j} scope="col" className="num" data-tip={factorName(names, j) ?? undefined}>
-                  F{j + 1}
-                  {factorName(names, j) && <span className="sr-only"> {factorName(names, j)}</span>}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {values.map((row, i) => (
-              <tr key={i}>
-                <th scope="row" className="font-medium text-muted max-w-[14rem]">
-                  F{i + 1}
-                  {factorName(names, i) && <span className="ml-1.5 font-medium text-fg">{factorName(names, i)}</span>}
-                </th>
-                {row.map((v, j) => (
-                  <td key={j} style={i === j ? undefined : loadingStyle(v)} className={cn("num", i === j && "text-muted")}>
-                    {formatNumber(v, locale, 2)}
-                  </td>
+                {factorIdx.map((i) => (
+                  <th key={i} scope="col" className={cn("num align-bottom", cell)}>
+                    <FactorTitle
+                      index={i}
+                      name={factorName(naming.names, i)}
+                      onName={(text) => naming.onName(i, text)}
+                      look="column"
+                    />
+                  </th>
                 ))}
+                <th scope="col" className="num border-l border-border" data-tip={t("factor.loadings.col_communality")}>
+                  h²
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </TableFrame>
-    </div>
-  );
-}
-
-/**
- * The rule that turns loadings into factor groups, as tiles. The thresholds next to it stay in
- * effect; the rules differ in what happens to a measure that loads on several factors and in
- * the least communality.
- */
-export function AssignmentChoice({
-  value,
-  onChange,
-  note,
-  id = "fa-assignment",
-}: {
-  value: AssignmentRule;
-  onChange: (rule: AssignmentRule) => void;
-  /** Where the paper's tables differ from the chosen rule; read with the tiles. */
-  note: string | null;
-  /** The id of the block, and the start of the ids in it. */
-  id?: string;
-}) {
-  const t = useT();
-  const { locale } = useLocale();
-  const limits = {
-    gap: formatNumber(RULE_LIMITS.gap, locale, 2),
-    h2_multi: formatNumber(RULE_LIMITS.multi_communality, locale, 1),
-    h2_hair: formatNumber(RULE_LIMITS.hair_communality, locale, 1),
-  };
-  const label = t("factor.loadings.assignment_label");
-  return (
-    // Its id is where the rule chip of the settings row leads.
-    <div id={id} className="space-y-2 scroll-mt-24">
-      <HelpLabel as="span" label={label} help={t("factor.help.assignment", limits)} />
-      <div
-        role="radiogroup"
-        aria-label={label}
-        aria-describedby={note ? `${id}-note` : undefined}
-        className="grid gap-2 sm:grid-cols-3"
-      >
-        {ASSIGNMENT_RULES.map((rule) => {
-          const chosen = rule === value;
-          return (
-            <label key={rule} className={cn("flex items-start gap-2.5 rounded-md px-3 py-2.5 min-w-0", choiceTile(chosen))}>
-              <input
-                type="radio"
-                name={id}
-                value={rule}
-                className="sr-only"
-                checked={chosen}
-                onChange={() => onChange(rule)}
-                aria-label={t(`factor.loadings.rule.${rule}.title`)}
-                aria-describedby={`${id}-${rule}-source ${id}-${rule}`}
-              />
-              <ChoiceMark type="radio" checked={chosen} className="mt-0.5" />
-              <span className="min-w-0">
-                <span className="block text-sm font-medium">{t(`factor.loadings.rule.${rule}.title`)}</span>
-                <span id={`${id}-${rule}-source`} className="block text-[11px] text-muted">
-                  {t(`factor.loadings.rule.${rule}.source`)}
-                </span>
-                <span id={`${id}-${rule}`} className="mt-1 block text-xs text-fg/80 leading-snug">
-                  {t(`factor.loadings.rule.${rule}.text`, limits)}
-                </span>
-              </span>
-            </label>
-          );
-        })}
-      </div>
-      {note && (
-        <p id={`${id}-note`} className="flex items-start gap-1.5 text-xs text-muted max-w-prose">
-          <Info className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
-          <span>{note}</span>
-        </p>
-      )}
-    </div>
-  );
-}
-
-function Legend({
-  threshold,
-  boldBy,
-  crossed,
-  strict,
-}: {
-  threshold: number;
-  boldBy: BoldBy;
-  crossed: boolean;
-  strict: boolean;
-}) {
-  const t = useT();
-  const { locale } = useLocale();
-  const value = formatNumber(threshold, locale, 2);
-  return (
-    <div className="flex items-center gap-x-4 gap-y-1 text-[11px] text-muted flex-wrap" aria-hidden>
-      <span className="flex items-center gap-1.5">
-        <span className="h-3 w-3 rounded-sm" style={loadingStyle(-0.9)} />
-        {t("factor.loadings.legend_negative")}
-      </span>
-      <span className="flex items-center gap-1.5">
-        <span className="font-mono text-muted">{formatNumber(0.1, locale, 2)}</span>
-        {t(strict ? "factor.loadings.legend_faded_strict" : "factor.loadings.legend_faded", { threshold: value })}
-      </span>
-      <span>
-        <b className="font-mono text-fg">{formatNumber(0, locale, 2)}</b>{" "}
-        {boldBy === "assigned"
-          ? t("factor.loadings.legend_bold_assigned")
-          : t(boldBy === "exceeds" ? "factor.loadings.legend_bold_strict" : "factor.loadings.legend_bold", {
-              threshold: value,
-            })}
-      </span>
-      {crossed && (
-        <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-sm ring-2 ring-inset ring-fg/55" />
-          {t("factor.loadings.legend_cross")}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function FactorGroups({
-  analysis,
-  measureName,
-  measureDescription,
-  list,
-  figure,
-  naming,
-}: {
-  analysis: FactorAnalysis;
-  measureName: (key: string) => string;
-  measureDescription: (key: string) => string | undefined;
-  list: LoadingsList;
-  figure?: FigureDownload;
-  naming: FactorNaming;
-}) {
-  const t = useT();
-  const { locale } = useLocale();
-  const zone = useTipZone<HTMLDivElement>();
-  const cross = crossLoadingsByMeasure(analysis);
-  const unassigned = unassignedMeasures(analysis);
-  // A search or the notable filter leaves some measures out; a card without any is left out too.
-  const narrowed = list.query.trim() !== "" || list.onlyNotable;
-  const matches = (m: string) => (!narrowed || matchesQuery(list.query, measureName(m), m)) && (!list.onlyNotable || list.notable.has(m));
-  const unassignedShown = unassigned.filter((u) => matches(u.measure));
-  const cards = analysis.factors.map((f) => {
-    // The notable members first, then the others behind the fold, as in the matrix.
-    const byKey = new Map(f.measures.map((m) => [m.measure, m]));
-    const sections = arrangeLoadings({
-      measures: f.measures.map((m) => m.measure),
-      name: measureName,
-      query: list.query,
-      onlyNotable: list.onlyNotable,
-      notable: list.notable,
-      folds: list.folds,
-    });
-    return { factor: f, byKey, sections, count: sections.reduce((n, s) => n + s.rows.length, 0) };
-  });
-  const visible = cards.filter((c) => !narrowed || c.count > 0);
-  return (
-    <div className="space-y-2">
-      <HelpLabel
-        label={t("factor.loadings.groups_heading")}
-        help={t("factor.help.groups")}
-        extra={
-          <>
-            {figure && <FigureMenu name={t("factor.figure.loadings")} figure={figure} />}
-            <SuggestedNames naming={naming} />
-          </>
-        }
-      />
-      <div ref={zone} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {visible.map(({ factor: f, byKey, sections, count }) => {
-          // index counts from 0; shares only exist for orthogonal rotations.
-          const share = analysis.variance.proportion?.[f.index];
-          return (
-            <div key={f.index} className="rounded-lg bg-tile p-3.5 space-y-2.5 min-w-0">
-              <div className="flex items-baseline justify-between gap-2">
-                <h4 className="text-sm font-semibold min-w-0 flex-1">
-                  <FactorTitle
-                    index={f.index}
-                    name={factorName(naming.names, f.index)}
-                    onName={(text) => naming.onName(f.index, text)}
-                    look="card"
-                  />
-                </h4>
-                {share !== undefined && (
-                  <span className="text-[11px] text-muted shrink-0">
-                    {t("factor.loadings.factor_variance", { pct: formatPercent(share, locale) })}
-                  </span>
-                )}
-              </div>
-              {f.measures.length === 0 ? (
-                <p className="text-xs text-muted">{t("factor.loadings.factor_empty")}</p>
-              ) : (
-                <ul className="space-y-1.5">
-                  {count > 0 &&
-                    sections.map((section) => (
-                      <Fragment key={section.id}>
-                        {section.id === "other" && section.rows.length > 0 && (
-                          <li className="text-[11px] font-medium text-muted pt-1">
-                            {list.fold ? (
-                              <FoldButton label={otherLabel(t, locale, section.rows.length)} fold={list.fold} />
-                            ) : (
-                              otherLabel(t, locale, section.rows.length)
-                            )}
-                          </li>
-                        )}
-                        {(section.id !== "other" || list.otherOpen ? section.rows : []).map((key) => {
-                          const m = byKey.get(key)!;
-                          // The other factors of a cross-loaded measure, e.g. "also F1 −0.46".
-                          const c = cross.get(m.measure);
-                          const others = c
-                            ? c.factors.map((i, j) => ({ i, loading: c.loadings[j] })).filter((o) => o.i !== f.index)
-                            : [];
+            </thead>
+            <tbody>
+              {sections.map((section) => (
+                <Fragment key={section.id}>
+                  {headed && section.rows.length > 0 && (
+                    <SectionRow
+                      colSpan={k + 2}
+                      label={sectionLabel(section.id, section.rows.length)}
+                      fold={section.id === "other" ? list.fold : undefined}
+                    />
+                  )}
+                  {(section.id !== "other" || list.otherOpen ? section.rows : []).map((m) => {
+                    const values = shown[m] ?? [];
+                    const h2 = analysis.communalities[m];
+                    const name = measureName(m);
+                    return (
+                      <tr key={m}>
+                        <th scope="row" className="sticky-col font-medium break-words min-w-[9rem] max-w-[16rem]">
+                          <span data-tip-more={measureDescription(m)}>
+                            <MeasureName name={name} measure={m} />
+                          </span>
+                        </th>
+                        {factorIdx.map((i) => {
+                          const v = values[i];
+                          if (v === undefined) return <td key={i} className={cell} />;
+                          const strong = isBold(m, i, v);
+                          // Loadings that do not count are faded, so the ones that do stand out.
+                          const counts = loadingCounts(v, threshold, strict) || strong;
+                          const crossed = secondary.has(`${m}:${i}`);
+                          const factor = factorName(naming.names, i) ?? t("factor.loadings.factor_n", { i: i + 1 });
+                          const tip = `${name} · ${factor}: ${formatNumber(v, locale, 3)}`;
                           return (
-                            <li key={m.measure} className="text-xs">
-                              <div className="flex items-start justify-between gap-2">
-                                <span className="min-w-0 break-words" data-tip-more={measureDescription(m.measure)}>
-                                  <MeasureName name={measureName(m.measure)} />
-                                </span>
-                                <span className="font-mono tabular-nums shrink-0" style={m.loading < 0 ? { color: signInk(m.loading) } : undefined}>
-                                  {formatNumber(m.loading, locale, 2)}
-                                </span>
-                              </div>
-                              <div className="mt-1 h-1 rounded-full bg-bg/80 overflow-hidden" aria-hidden>
-                                <div
-                                  className="h-full rounded-full"
-                                  style={{
-                                    width: `${Math.min(1, Math.abs(m.loading)) * 100}%`,
-                                    backgroundColor: signColor(m.loading),
-                                    opacity: 0.7,
-                                  }}
-                                />
-                              </div>
-                              {others.length > 0 && (
-                                <span className="mt-1 block text-[11px] text-muted">
-                                  {others.map((o, j) => (
-                                    <span
-                                      key={o.i}
-                                      data-tip-more={t("factor.loadings.also_title", {
-                                        i: o.i + 1,
-                                        value: formatNumber(o.loading, locale, 2),
-                                      })}
-                                    >
-                                      {j > 0 && " · "}
-                                      {t("factor.loadings.also", { i: o.i + 1 })}{" "}
-                                      <span className="font-mono tabular-nums" style={{ color: signInk(o.loading) }}>
-                                        {formatNumber(o.loading, locale, 2)}
-                                      </span>
-                                    </span>
-                                  ))}
-                                </span>
+                            <td
+                              key={i}
+                              style={counts ? loadingStyle(v) : undefined}
+                              data-tip={crossed ? `${tip} · ${crossLabel}` : tip}
+                              className={cn(
+                                "num",
+                                cell,
+                                strong ? "font-bold text-fg" : counts ? "text-fg/80" : "text-muted",
+                                crossed && "ring-2 ring-inset ring-fg/55",
                               )}
-                            </li>
+                            >
+                              {formatNumber(v, locale, 2)}
+                              {crossed && <span className="sr-only"> ({crossLabel})</span>}
+                            </td>
                           );
                         })}
-                      </Fragment>
-                    ))}
-                </ul>
-              )}
-            </div>
-          );
-        })}
-        {unassignedShown.length > 0 && (
-          <div className="rounded-lg bg-tile/50 p-3.5 space-y-2 min-w-0">
-            <div>
-              <h4 className="text-sm font-semibold">{t("factor.loadings.unassigned_heading")}</h4>
-              <p className="text-[11px] text-muted">{t("factor.loadings.unassigned_hint")}</p>
-            </div>
-            <ul className="space-y-1">
-              {unassignedShown.map((u) => (
-                <li key={u.measure} className="flex items-baseline justify-between gap-x-2 flex-wrap text-xs">
-                  <span className="min-w-0 break-words" data-tip-more={measureDescription(u.measure)}>
-                    <MeasureName name={measureName(u.measure)} />
-                  </span>
-                  {u.reason && <span className="text-[11px] text-muted">{reasonText(u, analysis, t, locale)}</span>}
-                </li>
+                        <td className="num border-l border-border">
+                          {h2 !== undefined && (
+                            <span className="flex items-center justify-end gap-2">
+                              <span className="hidden sm:block h-1.5 w-10 rounded-full bg-tile overflow-hidden" aria-hidden>
+                                <span
+                                  className="block h-full bg-muted/60 rounded-full"
+                                  style={{ width: `${Math.min(1, Math.max(0, h2)) * 100}%` }}
+                                />
+                              </span>
+                              {formatNumber(h2, locale, 2)}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </Fragment>
               ))}
-            </ul>
-          </div>
+            </tbody>
+            {/* The sums of squares are those of the pattern matrix; the structure matrix has none. */}
+            {!structure && (
+              <tfoot>
+                <VarianceRow label={t("factor.loadings.ss_loadings")} values={analysis.variance.ss_loadings} format={(v) => formatNumber(v, locale, 2)} cell={cell} />
+                {proportion && (
+                  <VarianceRow label={t("factor.loadings.proportion")} values={proportion} format={(v) => formatPercent(v, locale)} cell={cell} />
+                )}
+                {cumulative && (
+                  <VarianceRow label={t("factor.loadings.cumulative")} values={cumulative} format={(v) => formatPercent(v, locale)} cell={cell} />
+                )}
+              </tfoot>
+            )}
+          </table>
+        </TableFrame>
+        </MeasureListScope>
+        {shownCount === 0 && <p className="text-xs text-muted">{t("factor.measures.none_match")}</p>}
+        {/* What the numbers mean, in the tooltips of these words. */}
+        <p className="flex gap-x-3 gap-y-1 flex-wrap text-[11px] text-muted">
+          <Term more={t("factor.help.loading")}>{t("factor.loadings.table_heading")}</Term>
+          <Term more={t("factor.help.communality")}>{t("factor.loadings.col_communality")}</Term>
+          <Term more={t("factor.help.variance")}>{t("factor.loadings.variance_label")}</Term>
+        </p>
+        <p className="text-[11px] text-muted max-w-prose">
+          {t("factor.loadings.h2_note")}{" "}
+          {!oblique
+            ? t("factor.loadings.footer_rows")
+            : structure
+              ? t("factor.loadings.structure_note")
+              : t("factor.loadings.footer_row_pattern")}
+          {oblique && ` ${t("factor.loadings.oblique_note", { pct: formatPercent(analysis.variance.explained, locale) })}`}
+        </p>
+
+        {analysis.factor_correlations && <FactorCorrelations values={analysis.factor_correlations} names={naming.names} />}
+      </div>
+    );
+  }
+
+  function VarianceRow({
+    label,
+    values,
+    format,
+    cell,
+  }: {
+    label: string;
+    values: number[];
+    format: (v: number) => string;
+    cell?: string;
+  }) {
+    return (
+      <tr>
+        <th scope="row" className="sticky-col font-medium">
+          {label}
+        </th>
+        {values.map((v, i) => (
+          <td key={i} className={cn("num", cell)}>
+            {format(v)}
+          </td>
+        ))}
+        <td className="border-l border-border" />
+      </tr>
+    );
+  }
+
+  function FactorCorrelations({ values, names }: { values: number[][]; names: FactorNames }) {
+    const t = useT();
+    const { locale } = useLocale();
+    const zone = useTipZone<HTMLTableElement>();
+    // The columns keep the short numbers, the rows say the names; a column's name is in its tooltip.
+    return (
+      <div className="space-y-2 pt-2">
+        <HelpLabel label={t("factor.loadings.correlations_heading")} help={t("factor.help.factor_correlations")} />
+        <TableFrame label={t("factor.loadings.correlations_heading")} className="w-fit max-w-full">
+          <table ref={zone} className="data-table w-auto">
+            <caption className="sr-only">{t("factor.loadings.correlations_heading")}</caption>
+            <thead>
+              <tr>
+                <td />
+                {values.map((_, j) => (
+                  <th key={j} scope="col" className="num" data-tip={factorName(names, j) ?? undefined}>
+                    F{j + 1}
+                    {factorName(names, j) && <span className="sr-only"> {factorName(names, j)}</span>}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {values.map((row, i) => (
+                <tr key={i}>
+                  <th scope="row" className="font-medium text-muted max-w-[14rem]">
+                    F{i + 1}
+                    {factorName(names, i) && <span className="ml-1.5 font-medium text-fg">{factorName(names, i)}</span>}
+                  </th>
+                  {row.map((v, j) => (
+                    <td key={j} style={i === j ? undefined : loadingStyle(v)} className={cn("num", i === j && "text-muted")}>
+                      {formatNumber(v, locale, 2)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TableFrame>
+      </div>
+    );
+  }
+
+  /**
+   * The rule that turns loadings into factor groups, as tiles. The thresholds next to it stay in
+   * effect; the rules differ in what happens to a measure that loads on several factors and in
+   * the least communality.
+   */
+  export function AssignmentChoice({
+    value,
+    onChange,
+    note,
+    id = "fa-assignment",
+  }: {
+    value: AssignmentRule;
+    onChange: (rule: AssignmentRule) => void;
+    /** Where the paper's tables differ from the chosen rule; read with the tiles. */
+    note: string | null;
+    /** The id of the block, and the start of the ids in it. */
+    id?: string;
+  }) {
+    const t = useT();
+    const { locale } = useLocale();
+    const limits = {
+      gap: formatNumber(RULE_LIMITS.gap, locale, 2),
+      h2_multi: formatNumber(RULE_LIMITS.multi_communality, locale, 1),
+      h2_hair: formatNumber(RULE_LIMITS.hair_communality, locale, 1),
+    };
+    const label = t("factor.loadings.assignment_label");
+    return (
+      // Its id is where the rule chip of the settings row leads.
+      <div id={id} className="space-y-2 scroll-mt-24">
+        <HelpLabel as="span" label={label} help={t("factor.help.assignment", limits)} />
+        <div
+          role="radiogroup"
+          aria-label={label}
+          aria-describedby={note ? `${id}-note` : undefined}
+          className="grid gap-2 sm:grid-cols-3"
+        >
+          {ASSIGNMENT_RULES.map((rule) => {
+            const chosen = rule === value;
+            return (
+              <label key={rule} className={cn("flex items-start gap-2.5 rounded-md px-3 py-2.5 min-w-0", choiceTile(chosen))}>
+                <input
+                  type="radio"
+                  name={id}
+                  value={rule}
+                  className="sr-only"
+                  checked={chosen}
+                  onChange={() => onChange(rule)}
+                  aria-label={t(`factor.loadings.rule.${rule}.title`)}
+                  aria-describedby={`${id}-${rule}-source ${id}-${rule}`}
+                />
+                <ChoiceMark type="radio" checked={chosen} className="mt-0.5" />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium">{t(`factor.loadings.rule.${rule}.title`)}</span>
+                  <span id={`${id}-${rule}-source`} className="block text-[11px] text-muted">
+                    {t(`factor.loadings.rule.${rule}.source`)}
+                  </span>
+                  <span id={`${id}-${rule}`} className="mt-1 block text-xs text-fg/80 leading-snug">
+                    {t(`factor.loadings.rule.${rule}.text`, limits)}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+        {note && (
+          <p id={`${id}-note`} className="flex items-start gap-1.5 text-xs text-muted max-w-prose">
+            <Info className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
+            <span>{note}</span>
+          </p>
         )}
       </div>
-      {narrowed && visible.length === 0 && unassignedShown.length === 0 && (
-        <p className="text-xs text-muted">{t("factor.measures.none_match")}</p>
-      )}
-    </div>
-  );
-}
-
-/**
- * Takes over the names an interpretation of this solution suggests, on a click only and only
- * where there is one; the names stay editable like any others.
- */
-function SuggestedNames({ naming }: { naming: FactorNaming }) {
-  const t = useT();
-  const tip = useTip<HTMLButtonElement>({ more: t("factor.names.suggested_more") });
-  if (!naming.suggested || naming.suggested.length === 0) return null;
-  return (
-    <button
-      ref={tip}
-      type="button"
-      onClick={naming.onSuggested}
-      className="inline-flex items-center gap-1 rounded px-1 text-xs font-medium text-accent-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-    >
-      <Tags className="h-3.5 w-3.5" aria-hidden />
-      {t("factor.names.suggested")}
-    </button>
-  );
-}
-
-/**
- * Pins the solution on screen as a column of a comparison, opens the comparison of the pins and
- * clears them: the same dataset with 4 and with 6 factors, say, side by side.
- */
-function PinTools({ pin }: { pin: PinState }) {
-  const t = useT();
-  return (
-    <div role="group" aria-label={t("factor.pin.aria")} className="flex items-center gap-1.5">
-      <IconButton
-        icon={pin.pinned ? PinOff : Pin}
-        tone="tile"
-        name={t(pin.pinned ? "factor.pin.unpin" : "factor.pin.pin")}
-        more={t("factor.pin.more")}
-        reason={pin.reason}
-        aria-pressed={pin.pinned}
-        onClick={pin.onToggle}
-      />
-      {pin.count > 0 && (
-        <>
-          <ActionLink
-            href={pin.href}
-            icon={Columns3}
-            reason={pin.href ? null : t("factor.pin.need_two")}
-            more={t("factor.pin.compare_more")}
-          >
-            {t("factor.pin.compare", { n: pin.count })}
-          </ActionLink>
-          <IconButton size="sm" icon={X} name={t("factor.pin.clear")} onClick={pin.onClear} />
-        </>
-      )}
-    </div>
-  );
-}
-
-/** The title of the measures a card folds below its notable ones, with their number. */
-function otherLabel(t: (key: string) => string, locale: string, n: number): string {
-  return `${t("factor.measures.section_other")} · ${formatNumber(n, locale)}`;
-}
-
-/** Why a measure joined no factor, with the number that decided it. */
-function reasonText(
-  u: UnassignedMeasure,
-  analysis: FactorAnalysis,
-  t: (key: string, params?: Record<string, string | number>) => string,
-  locale: string,
-): string {
-  const row = analysis.loadings[u.measure] ?? [];
-  if (u.reason === "low_loading") {
-    const largest = row.length > 0 ? Math.abs(row[primaryFactor(row)]) : Number.NaN;
-    return t("factor.loadings.reason.low_loading", { value: formatNumber(largest, locale, 2) });
+    );
   }
-  if (u.reason === "low_communality") {
-    return t("factor.loadings.reason.low_communality", {
-      value: formatNumber(analysis.communalities[u.measure] ?? Number.NaN, locale, 2),
+
+  function Legend({
+    threshold,
+    boldBy,
+    crossed,
+    strict,
+  }: {
+    threshold: number;
+    boldBy: BoldBy;
+    crossed: boolean;
+    strict: boolean;
+  }) {
+    const t = useT();
+    const { locale } = useLocale();
+    const value = formatNumber(threshold, locale, 2);
+    return (
+      <div className="flex items-center gap-x-4 gap-y-1 text-[11px] text-muted flex-wrap" aria-hidden>
+        <span className="flex items-center gap-1.5">
+          <span className="h-3 w-3 rounded-sm" style={loadingStyle(-0.9)} />
+          {t("factor.loadings.legend_negative")}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="font-mono text-muted">{formatNumber(0.1, locale, 2)}</span>
+          {t(strict ? "factor.loadings.legend_faded_strict" : "factor.loadings.legend_faded", { threshold: value })}
+        </span>
+        <span>
+          <b className="font-mono text-fg">{formatNumber(0, locale, 2)}</b>{" "}
+          {boldBy === "assigned"
+            ? t("factor.loadings.legend_bold_assigned")
+            : t(boldBy === "exceeds" ? "factor.loadings.legend_bold_strict" : "factor.loadings.legend_bold", {
+                threshold: value,
+              })}
+        </span>
+        {crossed && (
+          <span className="flex items-center gap-1.5">
+            <span className="h-3 w-3 rounded-sm ring-2 ring-inset ring-fg/55" />
+            {t("factor.loadings.legend_cross")}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  function FactorGroups({
+    analysis,
+    measureName,
+    measureDescription,
+    list,
+    figure,
+    naming,
+  }: {
+    analysis: FactorAnalysis;
+    measureName: (key: string) => string;
+    measureDescription: (key: string) => string | undefined;
+    list: LoadingsList;
+    figure?: FigureDownload;
+    naming: FactorNaming;
+  }) {
+    const t = useT();
+    const { locale } = useLocale();
+    const zone = useTipZone<HTMLDivElement>();
+    const cross = crossLoadingsByMeasure(analysis);
+    const unassigned = unassignedMeasures(analysis);
+    // A search or the notable filter leaves some measures out; a card without any is left out too.
+    const narrowed = list.query.trim() !== "" || list.onlyNotable;
+    const matches = (m: string) => (!narrowed || matchesQuery(list.query, measureName(m), m)) && (!list.onlyNotable || list.notable.has(m));
+    const unassignedShown = unassigned.filter((u) => matches(u.measure));
+    const cards = analysis.factors.map((f) => {
+      // The notable members first, then the others behind the fold, as in the matrix.
+      const byKey = new Map(f.measures.map((m) => [m.measure, m]));
+      const sections = arrangeLoadings({
+        measures: f.measures.map((m) => m.measure),
+        name: measureName,
+        query: list.query,
+        onlyNotable: list.onlyNotable,
+        notable: list.notable,
+        folds: list.folds,
+      });
+      return { factor: f, byKey, sections, count: sections.reduce((n, s) => n + s.rows.length, 0) };
     });
+    const visible = cards.filter((c) => !narrowed || c.count > 0);
+    // The measures on screen: card after card, then the unassigned ones; the fact sheet pages through them.
+    const onScreen = [
+      ...visible.flatMap((c) =>
+        c.sections.flatMap((section) => (section.id !== "other" || list.otherOpen ? section.rows : [])),
+      ),
+      ...unassignedShown.map((u) => u.measure),
+    ];
+    return (
+      <div className="space-y-2">
+        <HelpLabel
+          label={t("factor.loadings.groups_heading")}
+          help={t("factor.help.groups")}
+          extra={
+            <>
+              {figure && <FigureMenu name={t("factor.figure.loadings")} figure={figure} />}
+              <SuggestedNames naming={naming} />
+            </>
+          }
+        />
+        <MeasureListScope measures={onScreen}>
+        <div ref={zone} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {visible.map(({ factor: f, byKey, sections, count }) => {
+            // index counts from 0; shares only exist for orthogonal rotations.
+            const share = analysis.variance.proportion?.[f.index];
+            return (
+              <div key={f.index} className="rounded-lg bg-tile p-3.5 space-y-2.5 min-w-0">
+                <div className="flex items-baseline justify-between gap-2">
+                  <h4 className="text-sm font-semibold min-w-0 flex-1">
+                    <FactorTitle
+                      index={f.index}
+                      name={factorName(naming.names, f.index)}
+                      onName={(text) => naming.onName(f.index, text)}
+                      look="card"
+                    />
+                  </h4>
+                  {share !== undefined && (
+                    <span className="text-[11px] text-muted shrink-0">
+                      {t("factor.loadings.factor_variance", { pct: formatPercent(share, locale) })}
+                    </span>
+                  )}
+                </div>
+                {f.measures.length === 0 ? (
+                  <p className="text-xs text-muted">{t("factor.loadings.factor_empty")}</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {count > 0 &&
+                      sections.map((section) => (
+                        <Fragment key={section.id}>
+                          {section.id === "other" && section.rows.length > 0 && (
+                            <li className="text-[11px] font-medium text-muted pt-1">
+                              {list.fold ? (
+                                <FoldButton label={otherLabel(t, locale, section.rows.length)} fold={list.fold} />
+                              ) : (
+                                otherLabel(t, locale, section.rows.length)
+                              )}
+                            </li>
+                          )}
+                          {(section.id !== "other" || list.otherOpen ? section.rows : []).map((key) => {
+                            const m = byKey.get(key)!;
+                            // The other factors of a cross-loaded measure, e.g. "also F1 −0.46".
+                            const c = cross.get(m.measure);
+                            const others = c
+                              ? c.factors.map((i, j) => ({ i, loading: c.loadings[j] })).filter((o) => o.i !== f.index)
+                              : [];
+                            return (
+                              <li key={m.measure} className="text-xs">
+                                <div className="flex items-start justify-between gap-2">
+                                  <span className="min-w-0 break-words" data-tip-more={measureDescription(m.measure)}>
+                                    <MeasureName name={measureName(m.measure)} measure={m.measure} />
+                                  </span>
+                                  <span className="font-mono tabular-nums shrink-0" style={m.loading < 0 ? { color: signInk(m.loading) } : undefined}>
+                                    {formatNumber(m.loading, locale, 2)}
+                                  </span>
+                                </div>
+                                <div className="mt-1 h-1 rounded-full bg-bg/80 overflow-hidden" aria-hidden>
+                                  <div
+                                    className="h-full rounded-full"
+                                    style={{
+                                      width: `${Math.min(1, Math.abs(m.loading)) * 100}%`,
+                                      backgroundColor: signColor(m.loading),
+                                      opacity: 0.7,
+                                    }}
+                                  />
+                                </div>
+                                {others.length > 0 && (
+                                  <span className="mt-1 block text-[11px] text-muted">
+                                    {others.map((o, j) => (
+                                      <span
+                                        key={o.i}
+                                        data-tip-more={t("factor.loadings.also_title", {
+                                          i: o.i + 1,
+                                          value: formatNumber(o.loading, locale, 2),
+                                        })}
+                                      >
+                                        {j > 0 && " · "}
+                                        {t("factor.loadings.also", { i: o.i + 1 })}{" "}
+                                        <span className="font-mono tabular-nums" style={{ color: signInk(o.loading) }}>
+                                          {formatNumber(o.loading, locale, 2)}
+                                        </span>
+                                      </span>
+                                    ))}
+                                  </span>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </Fragment>
+                      ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+          {unassignedShown.length > 0 && (
+            <div className="rounded-lg bg-tile/50 p-3.5 space-y-2 min-w-0">
+              <div>
+                <h4 className="text-sm font-semibold">{t("factor.loadings.unassigned_heading")}</h4>
+                <p className="text-[11px] text-muted">{t("factor.loadings.unassigned_hint")}</p>
+              </div>
+              <ul className="space-y-1">
+                {unassignedShown.map((u) => (
+                  <li key={u.measure} className="flex items-baseline justify-between gap-x-2 flex-wrap text-xs">
+                    <span className="min-w-0 break-words" data-tip-more={measureDescription(u.measure)}>
+                      <MeasureName name={measureName(u.measure)} measure={u.measure} />
+                    </span>
+                    {u.reason && <span className="text-[11px] text-muted">{reasonText(u, analysis, t, locale)}</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+        </MeasureListScope>
+        {narrowed && visible.length === 0 && unassignedShown.length === 0 && (
+          <p className="text-xs text-muted">{t("factor.measures.none_match")}</p>
+        )}
+      </div>
+    );
   }
-  // The server lists the factors by loading, largest first; read as a list they go in order.
-  const factors = [...((analysis.cross_loadings ?? []).find((c) => c.measure === u.measure)?.factors ?? [])].sort(
-    (a, b) => a - b,
-  );
-  // Without the cross-loading listed, the reason is said without its factors.
-  return factors.length > 0
-    ? t("factor.loadings.reason.cross_loading", { factors: factors.map((i) => `F${i + 1}`).join(", ") })
-    : t("factor.loadings.reason.cross_loading_plain");
-}
+
+  /**
+   * Takes over the names an interpretation of this solution suggests, on a click only and only
+   * where there is one; the names stay editable like any others.
+   */
+  function SuggestedNames({ naming }: { naming: FactorNaming }) {
+    const t = useT();
+    const tip = useTip<HTMLButtonElement>({ more: t("factor.names.suggested_more") });
+    if (!naming.suggested || naming.suggested.length === 0) return null;
+    return (
+      <button
+        ref={tip}
+        type="button"
+        onClick={naming.onSuggested}
+        className="inline-flex items-center gap-1 rounded px-1 text-xs font-medium text-accent-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      >
+        <Tags className="h-3.5 w-3.5" aria-hidden />
+        {t("factor.names.suggested")}
+      </button>
+    );
+  }
+
+  /**
+   * Pins the solution on screen as a column of a comparison, opens the comparison of the pins and
+   * clears them: the same dataset with 4 and with 6 factors, say, side by side.
+   */
+  function PinTools({ pin }: { pin: PinState }) {
+    const t = useT();
+    return (
+      <div role="group" aria-label={t("factor.pin.aria")} className="flex items-center gap-1.5">
+        <IconButton
+          icon={pin.pinned ? PinOff : Pin}
+          tone="tile"
+          name={t(pin.pinned ? "factor.pin.unpin" : "factor.pin.pin")}
+          more={t("factor.pin.more")}
+          reason={pin.reason}
+          aria-pressed={pin.pinned}
+          onClick={pin.onToggle}
+        />
+        {pin.count > 0 && (
+          <>
+            <ActionLink
+              href={pin.href}
+              icon={Columns3}
+              reason={pin.href ? null : t("factor.pin.need_two")}
+              more={t("factor.pin.compare_more")}
+            >
+              {t("factor.pin.compare", { n: pin.count })}
+            </ActionLink>
+            <IconButton size="sm" icon={X} name={t("factor.pin.clear")} onClick={pin.onClear} />
+          </>
+        )}
+      </div>
+    );
+  }
+
+  /** The title of the measures a card folds below its notable ones, with their number. */
+  function otherLabel(t: (key: string) => string, locale: string, n: number): string {
+    return `${t("factor.measures.section_other")} · ${formatNumber(n, locale)}`;
+  }
+
+  /** Why a measure joined no factor, with the number that decided it. */
+  function reasonText(
+    u: UnassignedMeasure,
+    analysis: FactorAnalysis,
+    t: (key: string, params?: Record<string, string | number>) => string,
+    locale: string,
+  ): string {
+    const row = analysis.loadings[u.measure] ?? [];
+    if (u.reason === "low_loading") {
+      const largest = row.length > 0 ? Math.abs(row[primaryFactor(row)]) : Number.NaN;
+      return t("factor.loadings.reason.low_loading", { value: formatNumber(largest, locale, 2) });
+    }
+    if (u.reason === "low_communality") {
+      return t("factor.loadings.reason.low_communality", {
+        value: formatNumber(analysis.communalities[u.measure] ?? Number.NaN, locale, 2),
+      });
+    }
+    // The server lists the factors by loading, largest first; read as a list they go in order.
+    const factors = [...((analysis.cross_loadings ?? []).find((c) => c.measure === u.measure)?.factors ?? [])].sort(
+      (a, b) => a - b,
+    );
+    // Without the cross-loading listed, the reason is said without its factors.
+    return factors.length > 0
+      ? t("factor.loadings.reason.cross_loading", { factors: factors.map((i) => `F${i + 1}`).join(", ") })
+      : t("factor.loadings.reason.cross_loading_plain");
+  }

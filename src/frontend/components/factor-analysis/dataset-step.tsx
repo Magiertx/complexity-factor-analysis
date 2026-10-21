@@ -1,16 +1,25 @@
 "use client";
 
-import { useId, useState } from "react";
-import { AlertCircle, AlertTriangle, Ban, Columns3, Info } from "lucide-react";
-import type { Descriptives, FactorDataset, Measurement, MinerSummary } from "@/lib/api";
+import { useEffect, useId, useState } from "react";
+import { AlertCircle, AlertTriangle, Ban, Columns3, FileSearch, Info } from "lucide-react";
+import {
+  fetchRecentLogs,
+  type Descriptives,
+  type FactorDataset,
+  type FactorKind,
+  type Measurement,
+  type MinerSummary,
+} from "@/lib/api";
 import { PREVIEW_ROWS, OBSERVATIONS_PER_MEASURE, countText, rowsChoice, type RowsChoice } from "@/lib/factor-analysis";
 import { NO_VALUE, formatNumber, formatStatistic } from "@/lib/format";
+import { inspectHref, logOfRow } from "@/lib/log-link";
 import { measurementRows, measurementTotals } from "@/lib/measurement";
 import { cn } from "@/lib/utils";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { ActionLink } from "@/components/ui/action-link";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
-import { MeasureName, TableFrame } from "@/components/ui/table";
+import { IconButton, IconLink } from "@/components/ui/icon-button";
+import { MeasureListScope, MeasureName, TableFrame } from "@/components/ui/table";
 import { Term, useTip, useTipZone } from "@/components/ui/tip";
 import { FoldButton } from "./measure-fold";
 import { HelpLabel, StatTile } from "./step-section";
@@ -54,6 +63,12 @@ export function DatasetView({
   const detailOf = (d: FactorDataset["dropped"][number]) =>
     (d.params && tMaybe(`factor.dataset.detail.${d.reason}`, d.params)) || d.detail;
   const failures = dataset.failures ?? [];
+  // A dataset computed from logs has a link at each row to the page of a single log.
+  const logs = useRecentLogNames(dataset.source === "logs");
+  const logLink = (label: string | undefined) =>
+    label && logs ? (
+      <LogLink label={label} kind={dataset.kind} miners={dataset.miners?.map((m) => m.name)} logs={logs} />
+    ) : null;
 
   return (
     <div className="space-y-6">
@@ -73,31 +88,33 @@ export function DatasetView({
         {dataset.dropped.length === 0 ? (
           <p className="text-xs text-muted">{t("factor.dataset.dropped_none")}</p>
         ) : (
-          <TableFrame label={t("factor.dataset.cleaning_heading")}>
-            <table className="data-table">
-              <caption className="sr-only">{t("factor.dataset.cleaning_heading")}</caption>
-              <thead>
-                <tr>
-                  <th scope="col">{t("factor.suitability.col_measure")}</th>
-                  <th scope="col">{t("factor.dataset.col_reason")}</th>
-                  <th scope="col">{t("factor.dataset.col_detail")}</th>
-                </tr>
-              </thead>
-              <tbody ref={cleaningZone}>
-                {dataset.dropped.map((d) => (
-                  <tr key={`${d.measure}:${d.reason}`}>
-                    <th scope="row" className="font-medium break-words">
-                      <span data-tip-more={measureDescription(d.measure)}>
-                        <MeasureName name={measureName(d.measure)} />
-                      </span>
-                    </th>
-                    <td className="whitespace-nowrap">{t(`factor.dataset.reason.${d.reason}`)}</td>
-                    <td className="text-muted break-words">{detailOf(d) ?? NO_VALUE}</td>
+          <MeasureListScope measures={dataset.dropped.map((d) => d.measure)}>
+            <TableFrame label={t("factor.dataset.cleaning_heading")}>
+              <table className="data-table">
+                <caption className="sr-only">{t("factor.dataset.cleaning_heading")}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">{t("factor.suitability.col_measure")}</th>
+                    <th scope="col">{t("factor.dataset.col_reason")}</th>
+                    <th scope="col">{t("factor.dataset.col_detail")}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableFrame>
+                </thead>
+                <tbody ref={cleaningZone}>
+                  {dataset.dropped.map((d) => (
+                    <tr key={`${d.measure}:${d.reason}`}>
+                      <th scope="row" className="font-medium break-words">
+                        <span data-tip-more={measureDescription(d.measure)}>
+                          <MeasureName name={measureName(d.measure)} measure={d.measure} />
+                        </span>
+                      </th>
+                      <td className="whitespace-nowrap">{t(`factor.dataset.reason.${d.reason}`)}</td>
+                      <td className="text-muted break-words">{detailOf(d) ?? NO_VALUE}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TableFrame>
+          </MeasureListScope>
         )}
         {dataset.dropped_rows > 0 && (
           <p className="text-xs text-muted">{countText(t, "factor.dataset.dropped_rows_note", dataset.dropped_rows)}</p>
@@ -130,7 +147,7 @@ export function DatasetView({
         />
       )}
 
-      {dataset.measurement && <MeasurementTable measurement={dataset.measurement} />}
+      {dataset.measurement && <MeasurementTable measurement={dataset.measurement} logLink={logLink} />}
 
       <div className="space-y-2">
         <h3 className="text-sm font-semibold">{t("factor.dataset.preview_heading")}</h3>
@@ -155,12 +172,13 @@ export function DatasetView({
                 return (
                   <tr key={i}>
                     {/* A long label is cut; its tooltip has all of it. */}
-                    <th
-                      scope="row"
-                      className="sticky-col max-w-[16rem] truncate"
-                      data-tip={label && label.length > 36 ? label : undefined}
-                    >
-                      {label ?? i + 1}
+                    <th scope="row" className="sticky-col max-w-[16rem]">
+                      <span className="flex items-center gap-1.5">
+                        <span className="min-w-0 truncate" data-tip={label && label.length > 36 ? label : undefined}>
+                          {label ?? i + 1}
+                        </span>
+                        {logLink(label)}
+                      </span>
                     </th>
                     {row.map((v, j) => (
                       <td key={j} className="num">
@@ -346,55 +364,57 @@ function DescriptivesTable({
       </div>
       {open && (
         <>
-          <TableFrame label={heading} boxed={long} className={long ? "max-h-[28rem]" : undefined}>
-            <table ref={zone} className="data-table">
-              <caption className="sr-only">{heading}</caption>
-              <thead>
-                <tr>
-                  <th scope="col" className="sticky-col">
-                    {t("factor.suitability.col_measure")}
-                  </th>
-                  <th scope="col" className="num" data-tip-more={t("factor.dataset.col_n_more")}>
-                    n
-                  </th>
-                  <th scope="col" className="num">
-                    {t("factor.dataset.col_mean")}
-                  </th>
-                  <th scope="col" className="num">
-                    {t("factor.dataset.col_median")}
-                  </th>
-                  <th scope="col" className="num" data-tip-more={t("factor.dataset.col_sd_more")}>
-                    {t("factor.dataset.col_sd")}
-                  </th>
-                  <th scope="col" className="num">
-                    {t("factor.dataset.col_min")}
-                  </th>
-                  <th scope="col" className="num">
-                    {t("factor.dataset.col_max")}
-                  </th>
-                  <th scope="col">{t("factor.dataset.col_cleaning")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.measure} className={row.dropped ? "text-muted" : undefined}>
-                    <th scope="row" className="sticky-col font-medium break-words min-w-[9rem] max-w-[16rem]">
-                      <span data-tip-more={measureDescription(row.measure)}>
-                        <MeasureName name={measureName(row.measure)} />
-                      </span>
+          <MeasureListScope measures={rows.map((row) => row.measure)}>
+            <TableFrame label={heading} boxed={long} className={long ? "max-h-[28rem]" : undefined}>
+              <table ref={zone} className="data-table">
+                <caption className="sr-only">{heading}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col" className="sticky-col">
+                      {t("factor.suitability.col_measure")}
                     </th>
-                    <td className="num">{formatNumber(row.n, locale)}</td>
-                    <td className="num">{statistic(row.mean, locale)}</td>
-                    <td className="num">{statistic(row.median, locale)}</td>
-                    <td className="num">{statistic(row.std, locale)}</td>
-                    <td className="num">{statistic(row.min, locale)}</td>
-                    <td className="num">{statistic(row.max, locale)}</td>
-                    <td className="whitespace-nowrap">{row.dropped ? t(`factor.dataset.reason.${row.dropped}`) : ""}</td>
+                    <th scope="col" className="num" data-tip-more={t("factor.dataset.col_n_more")}>
+                      n
+                    </th>
+                    <th scope="col" className="num">
+                      {t("factor.dataset.col_mean")}
+                    </th>
+                    <th scope="col" className="num">
+                      {t("factor.dataset.col_median")}
+                    </th>
+                    <th scope="col" className="num" data-tip-more={t("factor.dataset.col_sd_more")}>
+                      {t("factor.dataset.col_sd")}
+                    </th>
+                    <th scope="col" className="num">
+                      {t("factor.dataset.col_min")}
+                    </th>
+                    <th scope="col" className="num">
+                      {t("factor.dataset.col_max")}
+                    </th>
+                    <th scope="col">{t("factor.dataset.col_cleaning")}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableFrame>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.measure} className={row.dropped ? "text-muted" : undefined}>
+                      <th scope="row" className="sticky-col font-medium break-words min-w-[9rem] max-w-[16rem]">
+                        <span data-tip-more={measureDescription(row.measure)}>
+                          <MeasureName name={measureName(row.measure)} measure={row.measure} />
+                        </span>
+                      </th>
+                      <td className="num">{formatNumber(row.n, locale)}</td>
+                      <td className="num">{statistic(row.mean, locale)}</td>
+                      <td className="num">{statistic(row.median, locale)}</td>
+                      <td className="num">{statistic(row.std, locale)}</td>
+                      <td className="num">{statistic(row.min, locale)}</td>
+                      <td className="num">{statistic(row.max, locale)}</td>
+                      <td className="whitespace-nowrap">{row.dropped ? t(`factor.dataset.reason.${row.dropped}`) : ""}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TableFrame>
+          </MeasureListScope>
           <p className="text-[11px] text-muted max-w-prose">
             {descriptives.basis === "input"
               ? t("factor.dataset.descriptives_note", { n: descriptives.n_rows })
@@ -421,7 +441,14 @@ function countCell(value: number | undefined, locale: string): React.ReactNode {
  * of its log and net, and the seconds of reading, discovery and the measures. The numbers a paper
  * reports on the performance of the tool; the ZIP has them per measure as well.
  */
-function MeasurementTable({ measurement }: { measurement: Measurement }) {
+function MeasurementTable({
+  measurement,
+  logLink,
+}: {
+  measurement: Measurement;
+  /** The link of a row to the page of its log, for a dataset computed from logs. */
+  logLink?: (label: string | undefined) => React.ReactNode;
+}) {
   const t = useT();
   const { locale } = useLocale();
   const [open, setOpen] = useState(false);
@@ -491,12 +518,16 @@ function MeasurementTable({ measurement }: { measurement: Measurement }) {
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.observation}>
-                    <th
-                      scope="row"
-                      className="sticky-col max-w-[16rem] break-words font-normal"
-                      data-tip={row.observation.length > 36 ? row.observation : undefined}
-                    >
-                      {row.observation}
+                    <th scope="row" className="sticky-col max-w-[16rem] break-words font-normal">
+                      <span className="flex items-center gap-1.5">
+                        <span
+                          className="min-w-0 break-words"
+                          data-tip={row.observation.length > 36 ? row.observation : undefined}
+                        >
+                          {row.observation}
+                        </span>
+                        {logLink?.(row.observation)}
+                      </span>
                       {row.error && <span className="block text-[11px] text-warn-ink break-words">{row.error}</span>}
                     </th>
                     {logs && (
@@ -540,5 +571,68 @@ function MeasurementTable({ measurement }: { measurement: Measurement }) {
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * The names of the logs among the recent uploads of the session, which the page of a single log can
+ * open; undefined while they are not known, and for a dataset not computed from logs, whose rows
+ * have no link.
+ */
+function useRecentLogNames(wanted: boolean): ReadonlySet<string> | undefined {
+  const [names, setNames] = useState<ReadonlySet<string> | undefined>(undefined);
+  useEffect(() => {
+    if (!wanted) return;
+    let alive = true;
+    fetchRecentLogs().then(
+      (list) => alive && setNames(new Set(list.map((l) => l.id))),
+      // Without the list the rows say that the log cannot be opened.
+      () => alive && setNames(new Set()),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [wanted]);
+  return wanted ? names : undefined;
+}
+
+/**
+ * "View this log" at a row of a dataset computed from logs: the page of a single log with this log
+ * chosen and, for a row of nets, the miner of the row. Only while the server still has the log among
+ * the newest uploads of the session; else the icon stays, with the reason.
+ */
+function LogLink({
+  label,
+  kind,
+  miners,
+  logs,
+}: {
+  label: string;
+  kind: FactorKind;
+  miners: readonly string[] | undefined;
+  logs: ReadonlySet<string>;
+}) {
+  const t = useT();
+  const row = logOfRow(label, kind, miners);
+  if (logs.has(row.log)) {
+    return (
+      <IconLink
+        icon={FileSearch}
+        name={t("factor.dataset.view_log")}
+        more={t("factor.dataset.view_log_more")}
+        href={inspectHref(row)}
+        className="h-6 w-6 -my-1"
+      />
+    );
+  }
+  return (
+    <IconButton
+      icon={FileSearch}
+      size="sm"
+      name={t("factor.dataset.view_log")}
+      more={t("factor.dataset.view_log_more")}
+      reason={t("factor.dataset.view_log_gone")}
+      className="h-6 w-6 -my-1"
+    />
   );
 }

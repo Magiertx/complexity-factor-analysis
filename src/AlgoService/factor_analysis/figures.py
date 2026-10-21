@@ -1,4 +1,4 @@
-"""The scree plot and the loadings heatmap as figures for a paper, as SVG or PNG.
+"""The scree plot, the loadings heatmap and the correlation map as figures for a paper, as SVG or PNG.
 
 Drawn in a print style whatever the theme of the UI: white background, dark text, blue for
 positive and orange for negative loadings (safe for colour-blind readers), 8 pt text at the
@@ -21,11 +21,13 @@ import threading
 from collections import OrderedDict
 from typing import Any
 
+import numpy as np
+
 from .core import _computed_once
 from .short_codes import short_code
 
 FORMATS = ("svg", "png")
-FIGURES = ("scree", "loadings")
+FIGURES = ("scree", "loadings", "correlations")
 LANGUAGES = ("en", "de")
 MEDIA_TYPES = {"svg": "image/svg+xml", "png": "image/png"}
 
@@ -64,6 +66,11 @@ _TEXT = {
         "loadings": "Loadings",
         "pattern": "Pattern loadings",
         "caption": "{what}, {rotation}; coloured: |λ| {compare} {threshold}, bold: assigned ({rule})",
+        "correlations": "Pearson correlations r; outlined: |r| ≥ {high}; {order}",
+        "order_dataset": "measures as in the dataset",
+        "order_cluster": "measures clustered (average linkage on 1 − |r|)",
+        "order_factor": "measures grouped by dimension",
+        "no_dimension": "none",
     },
     "de": {
         "retained": "Behaltene Faktoren ({k})",
@@ -75,6 +82,11 @@ _TEXT = {
         "loadings": "Ladungen",
         "pattern": "Musterladungen",
         "caption": "{what}, {rotation}; farbig: |λ| {compare} {threshold}, fett: zugeordnet ({rule})",
+        "correlations": "Pearson-Korrelationen r; umrandet: |r| ≥ {high}; {order}",
+        "order_dataset": "Maße wie im Datensatz",
+        "order_cluster": "Maße gruppiert (Average Linkage auf 1 − |r|)",
+        "order_factor": "Maße nach Dimension",
+        "no_dimension": "keine",
     },
 }
 
@@ -278,6 +290,113 @@ def loadings(
         return _save(fig, fmt)
 
 
+def _truncated(text: str, limit: int) -> str:
+    return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+def correlation_map(
+    corr: dict[str, Any],
+    kind: str,
+    fmt: str,
+    *,
+    short: bool = False,
+    language: str = "en",
+    names: dict[int, str] | None = None,
+) -> bytes:
+    """The correlation map of ``correlations.build``: one cell per pair of measures, blue for a
+    positive and orange for a negative r, the pairs with |r| of ``correlations.HIGH`` or more
+    outlined. Under the order "factor" a line separates the dimensions, each named at the right
+    (its name, else F1, F2, ...). The cells are as many as the measures: up to 17 measures have
+    their r written in them, more are read from the colour and the labels, which are as small as
+    they must be to keep every measure named; the SVG keeps them as text."""
+    from matplotlib import rc_context
+    from matplotlib.colors import Normalize
+    from matplotlib.figure import Figure
+    from matplotlib.patches import Rectangle
+
+    from .correlations import HIGH
+
+    text = _TEXT[language]
+    measures = corr["measures"]
+    n = len(measures)
+    r = np.asarray(corr["r"], dtype=float)
+    groups = corr.get("groups")
+    cell = min(0.30, 4.6 / max(n, 1))
+    side = cell * n
+    fontsize = min(FONT_PT - 0.5, max(2.5, cell * 72 * 0.9))
+    labels = _labels(kind, measures, short)
+    # The longest label at its font size decides the margin it needs; an estimate, not a measurement.
+    reach = max((len(m) for m in measures), default=1) * fontsize * 0.55 / 72 + 0.1
+    left = min(2.0, max(0.5, reach))
+    top = min(1.8, max(0.5, reach)) + 0.05
+    right = 0.9 if groups else 0.15
+    side = min(side, WIDTH_IN - left - right)
+    cell = side / max(n, 1)
+    bottom = 0.8
+    width, height = left + side + right, top + side + bottom
+    norm = Normalize(-1, 1)
+    order = text[f"order_{corr['order']}"]
+    with _LOCK, rc_context(_STYLE):
+        fig = Figure(figsize=(width, height))
+        ax = fig.add_axes((left / width, bottom / height, side / width, side / height))
+        mesh = ax.pcolormesh(
+            np.arange(n + 1), np.arange(n + 1), r, cmap=_cmap(), norm=norm,
+            edgecolors="white", linewidth=0.15, rasterized=False,
+        )
+        ax.set_xlim(0, n)
+        ax.set_ylim(n, 0)
+        ax.set_aspect("auto")
+        ticks = [i + 0.5 for i in range(n)]
+        ax.set_xticks(ticks)
+        ax.set_yticks(ticks)
+        ax.set_xticklabels(labels, rotation=90, fontsize=fontsize)
+        ax.set_yticklabels(labels, fontsize=fontsize)
+        ax.xaxis.tick_top()
+        ax.tick_params(length=0, pad=1.5, colors=INK)
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+        if cell * 72 >= 19:
+            for i in range(n):
+                for j in range(n):
+                    value = r[i, j]
+                    ax.text(
+                        j + 0.5, i + 0.5, _decimal(f"{value:.2f}".replace("-", "−"), language),
+                        ha="center", va="center", fontsize=FONT_PT - 2,
+                        color="white" if abs(value) > 0.62 else INK,
+                    )
+        outline = 0.7 if n <= 40 else 0.4
+        for i in range(n):
+            for j in range(i + 1, n):
+                if abs(r[i, j]) >= HIGH:
+                    for y, x in ((i, j), (j, i)):
+                        ax.add_patch(Rectangle((x, y), 1, 1, fill=False, edgecolor=INK, linewidth=outline))
+        if groups:
+            edge = 0
+            for group in groups:
+                size = len(group["measures"])
+                if edge:
+                    ax.axhline(edge, color=INK, linewidth=0.5)
+                    ax.axvline(edge, color=INK, linewidth=0.5)
+                factor = group["factor"]
+                label = text["no_dimension"] if factor is None else _factor_label(factor, names)
+                ax.text(
+                    n + 0.4, edge + size / 2, _truncated(label, 16), ha="left", va="center",
+                    fontsize=FONT_PT - 1, color=MUTED if factor is None else INK,
+                )
+                edge += size
+        colorbar_axes = fig.add_axes((left / width, 0.5 / height, min(1.4, side) / width, 0.07 / height))
+        bar = fig.colorbar(mesh, cax=colorbar_axes, orientation="horizontal", ticks=[-1, 0, 1])
+        bar.ax.set_xticklabels(["−1", "0", "1"], fontsize=FONT_PT - 1)
+        bar.ax.tick_params(length=2, pad=1, colors=MUTED)
+        bar.outline.set_visible(False)
+        fig.text(
+            left / width, 0.05 / height,
+            text["correlations"].format(high=_decimal(f"{HIGH:g}", language), order=order),
+            ha="left", va="bottom", fontsize=FONT_PT - 1, color=MUTED,
+        )
+        return _save(fig, fmt)
+
+
 def _rect(x: float, y: int, color: Any, width: float = 1.0) -> Any:
     from matplotlib.patches import Rectangle
 
@@ -298,19 +417,34 @@ def _fingerprint(result: dict[str, Any], parts: tuple[str, ...]) -> str:
     return hashlib.sha1(json.dumps(shown, sort_keys=True, default=repr).encode()).hexdigest()
 
 
+def _correlation_fingerprint(corr: dict[str, Any]) -> str:
+    shown = {part: corr.get(part) for part in ("order", "measures", "r", "groups")}
+    return hashlib.sha1(json.dumps(shown, sort_keys=True, default=repr).encode()).hexdigest()
+
+
 def figure(
     name: str, fmt: str, result: dict[str, Any], kind: str, *,
     short: bool = False, order: str = "factor", language: str = "en", names: dict[int, str] | None = None,
+    correlations: dict[str, Any] | None = None,
 ) -> bytes:
     """One of ``FIGURES`` in one of ``FORMATS``, with the labels in one of ``LANGUAGES``; the
-    loadings with the ``names`` of the factors where given. The same analysis with the same
-    options gives the same bytes, drawn once."""
+    loadings and the correlation map with the ``names`` of the factors where given. The
+    correlation map is drawn from ``correlations``, the map ``correlations.build`` made. The same
+    analysis with the same options gives the same bytes, drawn once."""
     if name == "scree":
         key = (name, fmt, language, _fingerprint(result, _SCREE_PARTS))
         return _computed_once(
             key, _CACHE, _CACHE_LOCK, _IN_FLIGHT, CACHE_SIZE, lambda _: scree(result, fmt, language), None
         )
     titled = tuple(sorted((names or {}).items()))
+    if name == "correlations":
+        if correlations is None:
+            raise ValueError("The correlation map is drawn from its correlations.")
+        key = (name, fmt, language, kind, short, titled, _correlation_fingerprint(correlations))
+        return _computed_once(
+            key, _CACHE, _CACHE_LOCK, _IN_FLIGHT, CACHE_SIZE,
+            lambda _: correlation_map(correlations, kind, fmt, short=short, language=language, names=names), None,
+        )
     key = (name, fmt, language, kind, short, order, titled, _fingerprint(result, _LOADINGS_PARTS))
     return _computed_once(
         key, _CACHE, _CACHE_LOCK, _IN_FLIGHT, CACHE_SIZE,

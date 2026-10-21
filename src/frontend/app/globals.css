@@ -61,10 +61,11 @@
     html { scroll-padding-top: var(--settings-row-offset, 0px); }
   }
   /* On a phone the factor analysis has Back and Next fixed at the bottom of the window; the page
-     keeps room for them at its end, and a toast stands above them. */
+     keeps room for them at its end, and a toast stands above them (the notice of a finished dataset above the undo one). */
   @media (max-width: 1023.98px) {
     body.has-step-bar { padding-bottom: calc(3.5rem + env(safe-area-inset-bottom)); }
     body.has-step-bar .undo-toast { bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
+    body.has-step-bar .job-toast { bottom: calc(8rem + env(safe-area-inset-bottom)); }
   }
   ::selection { background: rgb(var(--accent) / 0.3); }
   /* Safari ehrt Tailwind-Preflights `-webkit-appearance: button` und applied

@@ -429,7 +429,17 @@ one style (`components/ui/table.tsx`, `.data-table` in `globals.css`).
    and in a long list (from 20 measures) the others stay folded below them until a search or a
    sort asks for the whole list. A long list can be searched, sorted and grouped by feature group
    (`lib/measure-list.ts`), which changes the display only, never the column order or the
-   excluded measures.
+   excluded measures. A folded **correlation map** (`correlation-map.tsx`, `lib/correlation.ts`) asks
+   `POST /datasets/{id}/correlations` (the matrix in the order of a clustering, which the page reorders by
+   factor itself from the analysis on screen) only when it is opened: SVG cells up to 40 measures, a
+   canvas above, a crosshair with the pair and its r at the pointer or the arrow keys, a table as its
+   text, and the download menu of the figure (`export/figure` with `figure: correlations`).
+   The name of a measure in any table or card is a button that opens its **fact sheet**
+   (`measure-sheet.tsx` on the generic `ui/sheet.tsx`: a modal panel that keeps the focus, closes with
+   Escape and gives the focus back): the description of the catalog and its `source` (ComFy function or
+   feeed method with a link), the histogram of the descriptive statistics, the numbers of the analysis
+   on screen and the five closest measures of the same correlations. `MeasureName` finds the sheet and
+   the list it stands in (`MeasureScope`, `MeasureListScope` in `ui/table.tsx`) through context.
 4. **Factors**: hand-written SVG scree plot, factor count and rotation.
 5. **Loadings**: the assignment rule and thresholds, then a matrix (loadings, communalities,
    variance) or the dimensions (factor groups). A long list (from 20 measures) can be searched and
@@ -452,14 +462,20 @@ silently. A dataset without a name of its own (`name_auto`) and its job are call
 inputs in the UI language. The jobs drawer slides over the two tabs as a modal dialog that
 keeps the focus and holds the page still (on `/inspect` it is a column on wide screens), and
 dataset jobs there and in the run history link to their tab with `?dataset=<id>`, which also
-works while the tab is open. Every delete of a dataset, there included, is confirmed first.
+works while the tab is open. The same list gives the tab "Recent runs" what it shows (`lib/job-status.ts`): the runs that run
+and their mean progress, a red dot for a failed run not looked at yet (opening the list is looking; the ids seen are kept in
+`localStorage`), and a notice "… is ready · Open" for a dataset job that finished while the page was open. Every delete of
+a dataset, there included, is confirmed first.
 The settings delete all datasets of the session (`DELETE /datasets`) together with their
 `localStorage` entries.
 
 The single-log ComFy workbench lives at `/inspect` ("Inspect a single log" on the model tab):
 
-1. On load: `GET /algorithms` → sidebar grouped by `tool_type`; `GET /sample-logs`, `GET /recent-logs` for the log-source picker.
-2. The user selects a tool → the parameter form is rendered from its `parameters_schema`.
+1. On load: `GET /algorithms` (the page runs the one registered algorithm, ComFy, whose paper and citation are in the
+   header menu), `GET /sample-logs`, `GET /recent-logs` for the log-source picker. An address `?log=<name>&miner=<miner>`
+   ("View this log" at a row of a dataset) chooses that recent log and, for a row of nets, only its miner; the logs of a
+   dataset computed from logs are kept among the recent uploads for that (`_keep_as_recent_logs`).
+2. The parameter form is rendered from the `parameters_schema` of the algorithm.
 3. Picking a log fetches `POST /log-stats` for the log overview card.
 4. **Run** → `POST /algorithms/{id}/analyze` with `FormData`, which returns a `job_id`.
 5. An EventSource subscribes to `/jobs/events`. On each update, the frontend re-fetches `/jobs` (or the specific job).
@@ -506,7 +522,7 @@ Every limit is overridable from the environment (`RATE_LIMIT_DEFAULT`, `_LOG_STA
 | `/algorithms/{id}/analyze` | `60/hour` |
 | `POST /factor-analysis/datasets`, for a new dataset (opening a session's copy of a bundled dataset counts as `any`) | `60/hour` |
 | `GET /factor-analysis/datasets/{id}` (polled while a dataset is computed); listing and deleting datasets, `PUT .../options` | `600/minute` |
-| `/factor-analysis/datasets/{id}/analyze`, `.../export`, `.../export/zip`, `.../interpret` | `120/minute` |
+| `/factor-analysis/datasets/{id}/analyze`, `.../correlations`, `.../export`, `.../export/zip`, `.../interpret` | `120/minute` |
 
 - Disabled when `RATE_LIMIT_DISABLED=1` or when `PYTEST_CURRENT_TEST` is set; `conftest.py` sets this before the app is imported.
 
@@ -556,11 +572,12 @@ A malformed value in any of these stops the service at startup instead of fallin
     │   │   ├── compute.py       # measure values from logs (ProM4Py miners, feeed) or PNML, timed
     │   │   ├── catalog.py       # measures, miners, feature groups, bundled data, samples
     │   │   ├── short_codes.py   # the short codes of the measures, as the papers print them
-    │   │   ├── descriptives.py  # descriptive statistics of a dataset, as ComFy prints them
+    │   │   ├── descriptives.py  # descriptive statistics of a dataset, as ComFy prints them, with the histogram of each measure
+    │   │   ├── correlations.py  # correlations of the measures in the order of the dataset, a clustering or the dimensions
     │   │   ├── storage.py       # session-scoped datasets on disk
     │   │   ├── published.py     # the published numbers of the bundled datasets
     │   │   ├── report.py        # the analysis as a LaTeX report like ComFy's
-    │   │   ├── figures.py       # scree plot and loadings heatmap as SVG / PNG for a paper, in en or de, drawn once
+    │   │   ├── figures.py       # scree plot, loadings heatmap and correlation map as SVG / PNG for a paper, in en or de, drawn once
     │   │   └── export.py        # loadings as CSV / LaTeX, matrix as CSV, analysis as ZIP
     │   ├── interpretation/      # factor names by Claude: payload, prompt, client, cache, limits
     │   ├── scripts/             # precompute_interpretations.py, extract_published.py

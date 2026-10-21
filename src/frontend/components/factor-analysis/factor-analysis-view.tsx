@@ -16,6 +16,7 @@ import {
   exportFigure,
   exportLoadings,
   exportReport,
+  fetchCorrelations,
   fetchDataset,
   fetchFactorCatalog,
   fetchInterpretationStatus,
@@ -23,6 +24,7 @@ import {
   listDatasets,
   saveDatasetOptions,
   type CreateDatasetInput,
+  type Correlations,
   type DatasetSummary,
   type FactorAnalysis,
   type FactorCatalog,
@@ -49,6 +51,7 @@ import {
   sameOptions,
   solutionKey,
   solutionNeedsAttention,
+  MIN_MEASURES,
   suggestedNames,
   trimNames,
   unassignedMeasures,
@@ -70,6 +73,7 @@ import {
   type Pins,
 } from "@/lib/compare";
 import { formatNumber, formatPercent } from "@/lib/format";
+import { measureInfo, toggleExcluded, type MeasureInfo } from "@/lib/measure-list";
 import { ruleNote } from "@/lib/paper-notes";
 import { codeIndexes, codesOf, hasCodes, loadShortCodes, measureLabels, saveShortCodes } from "@/lib/short-codes";
 import { CONTROL_STEPS, parseStep, stepFromHash, stepHref } from "@/lib/steps";
@@ -77,12 +81,14 @@ import { cn } from "@/lib/utils";
 import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
-import { MeasureScope } from "@/components/ui/table";
+import { MeasureScope, type MeasureOpener } from "@/components/ui/table";
 import { UndoToast, type UndoNotice } from "@/components/ui/undo-toast";
 import { useJobsDrawer } from "@/components/jobs-drawer";
 import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
 import { PageHeader } from "@/components/page-header";
 import { DataForm, DataSummary, type OpenPreset } from "./data-step";
+import { useMapOrder, type CorrelationMapProps, type CorrelationsState } from "./correlation-map";
+import { MeasureSheet } from "./measure-sheet";
 import { DatasetView, type MinerChoiceProps } from "./dataset-step";
 import { DEFAULT_MEASURE_VIEW, SuitabilityView, type MeasureGroups, type MeasureView } from "./suitability-step";
 import { FactorsView } from "./factors-step";
@@ -220,6 +226,15 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const [analyzing, setAnalyzing] = useState(false);
   const [exporting, setExporting] = useState<ExportFormat | null>(null);
   const [figureBusy, setFigureBusy] = useState<FigureName | null>(null);
+  // The order of the correlation map; the figure and the ZIP follow it.
+  const [mapOrder, setMapOrder] = useMapOrder();
+  // The correlations of the measures: asked for once the map or the fact sheet of a measure is
+  // opened, then kept for the dataset and the miner chosen.
+  const [corrWanted, setCorrWanted] = useState(false);
+  const [corr, setCorr] = useState<{ key: string; data: Correlations | null; error: string | null } | null>(null);
+  const [corrAttempt, setCorrAttempt] = useState(0);
+  // The fact sheet of a measure: which one, the list its name stood in, and where it was opened from.
+  const [sheet, setSheet] = useState<{ measure: string; list: readonly string[] | null; from: HTMLElement | null } | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [tourOpen, setTourOpen] = useState(false);
   const onboarding = useOnboarding();
@@ -311,6 +326,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       setInterpretError(null);
       setUndo(null);
       setNaming(NO_NAMES);
+      setCorrWanted(false);
+      setCorr(null);
+      setSheet(null);
       // A request for the old dataset is aborted and would not reset this itself.
       setAnalyzing(false);
       // Every dataset has its own options; those saved with it are applied once it has loaded.
@@ -445,6 +463,35 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   }, [datasets, kind]);
 
   const ready = !!dataset && dataset.status === "ready" && dataset.id === datasetId;
+
+  // The correlations once something asks for them, again for another miner.
+  const miner = options.miner;
+  const corrKey = ready && datasetId ? `${datasetId}|${miner ?? ""}` : null;
+  useEffect(() => {
+    if (!corrWanted || !corrKey || !datasetId) return;
+    const ctrl = new AbortController();
+    fetchCorrelations(datasetId, { miner }, "cluster", ctrl.signal).then(
+      (data) => setCorr({ key: corrKey, data, error: null }),
+      (e) => {
+        if (ctrl.signal.aborted) return;
+        if (e instanceof HttpError && e.status === 404) return;
+        setCorr({ key: corrKey, data: null, error: errorTextRef.current(e, tRef.current("common.error_unknown")) });
+      },
+    );
+    return () => ctrl.abort();
+  }, [corrWanted, corrKey, corrAttempt, datasetId, miner]);
+  const correlations = useMemo<CorrelationsState>(() => {
+    const own = corr && corr.key === corrKey ? corr : null;
+    return {
+      data: own?.data ?? null,
+      error: own?.error ?? null,
+      loading: !own,
+      retry: () => {
+        setCorr(null);
+        setCorrAttempt((n) => n + 1);
+      },
+    };
+  }, [corr, corrKey]);
 
   // Re-run the analysis on every parameter change, debounced. A change aborts the request before
   // it, and the server drops a request that a newer one of the session replaced (409
@@ -792,6 +839,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         await downloadAnalysisZip(datasetId, shown, locale, {
           shortCodes: codesShown,
           order: figureOrder,
+          correlationOrder: mapOrder,
         });
       } else if (format === "report") {
         const { blob, filename } = await exportReport(datasetId, shown, locale, codesShown);
@@ -819,6 +867,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         shortCodes: codesShown,
         order: figureOrder,
         language: locale,
+        correlationOrder: mapOrder,
       });
       downloadBlob(blob, filename);
     } catch (e) {
@@ -846,6 +895,26 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // Log codes are written as the papers write them, C with the code as index.
   const indexes = useMemo(() => codeIndexes(kind, codes, codesShown), [kind, codes, codesShown]);
   const measureDescription = labels.description;
+  // What became of each measure in the analysis on screen, for the map and the fact sheet.
+  const measureInfos = useMemo(
+    () => (dataset ? measureInfo(dataset.measures, analysis, options) : new Map<string, MeasureInfo>()),
+    [dataset, analysis, options],
+  );
+  const catalogMeasures = useMemo(() => new Map((catalog?.measures ?? []).map((m) => [m.key, m])), [catalog]);
+  const groupName = useCallback(
+    (key: string) => catalog?.groups?.find((g) => g.key === key)?.name,
+    [catalog],
+  );
+  // Any name of a measure on the page opens its fact sheet; the correlations it shows are asked for then.
+  const opener = useMemo<MeasureOpener>(
+    () => ({
+      open: (measure, list, from) => {
+        setCorrWanted(true);
+        setSheet({ measure, list, from });
+      },
+    }),
+    [],
+  );
   // The feature groups of the log measures, for grouping the list of step 3; model measures have none.
   const measureGroups = useMemo<MeasureGroups | null>(() => {
     if (!catalog?.groups?.length) return null;
@@ -1220,8 +1289,28 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     onDownload: (format: FigureFormat) => void runFigure(name, format),
   });
 
+  // The correlation map of step 3: the measures not excluded by hand, of the miner chosen.
+  const excludedSet = new Set(options.excluded);
+  const chosenMiner = dataset?.miners?.find((m) => m.name === options.miner) ?? null;
+  const mapProps: CorrelationMapProps | null =
+    ready && dataset
+      ? {
+          measureCount: dataset.measures.filter((m) => !excludedSet.has(m) && !chosenMiner?.dropped.includes(m)).length,
+          analysis,
+          excluded: options.excluded,
+          info: measureInfos,
+          names: shownNames,
+          correlations,
+          onOpen: () => setCorrWanted(true),
+          order: mapOrder,
+          onOrder: setMapOrder,
+          figure: figure("correlations"),
+          measureName,
+        }
+      : null;
+
   return (
-    <MeasureScope indexes={indexes} className="space-y-6">
+    <MeasureScope indexes={indexes} opener={opener} className="space-y-6">
       <OnboardingTour open={onboarding.open} onClose={onboarding.close} />
       <FactorTour kind={kind} run={tourOpen} onClose={endTour} onStep={tourStep} />
       <Suspense fallback={null}>
@@ -1469,6 +1558,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                       groups={measureGroups}
                       view={measureView}
                       onView={setMeasureView}
+                      map={mapProps}
                     />
                   </div>
                 </div>
@@ -1568,6 +1658,28 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         </div>
       </div>
       <StepNavBar step={current} locks={locks} onGo={go} />
+      {ready && dataset && sheet && (
+        <MeasureSheet
+          measure={sheet.measure}
+          list={sheet.list ?? dataset.measures}
+          from={sheet.from}
+          onMeasure={(measure) =>
+            setSheet((s) => s && { ...s, measure, list: s.list && !s.list.includes(measure) ? null : s.list })
+          }
+          onClose={() => setSheet(null)}
+          dataset={dataset}
+          analysis={analysis}
+          options={options}
+          info={measureInfos}
+          catalog={catalogMeasures}
+          groupName={groupName}
+          measureName={measureName}
+          correlations={correlations}
+          names={shownNames}
+          locked={dataset.measures.length - options.excluded.length <= MIN_MEASURES}
+          onToggleExcluded={(measure) => updateOptions({ excluded: toggleExcluded(options.excluded, measure) })}
+        />
+      )}
     </MeasureScope>
   );
 }

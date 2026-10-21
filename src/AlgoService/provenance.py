@@ -44,6 +44,14 @@ PROM4PY = {
     "bundle": "https://zenodo.org/records/13853660",
 }
 
+#: The feeed repository at the commit of release 2.2.0, which computes the log measures; the sources of
+#: the measures in the catalog point into it.
+FEEED = {
+    "name": "feeed",
+    "repository": "https://github.com/andreamalhera/feeed",
+    "commit": "b28fb49",
+}
+
 FEEED_NOTE = (
     "feeed 2.2.0 (commit b28fb49) changed five features: simple_trace_diversity, "
     "distinct_activities_mean, distinct_activities_std, event_density and complexity_factor. "

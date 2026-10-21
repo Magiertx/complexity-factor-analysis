@@ -16,20 +16,8 @@ export function SingleRunTour({ run, onClose }: { run: boolean; onClose: () => v
         content: t("tours.single_run.intro_content"),
       },
       {
-        target: '[data-tour="single-algo-list"]',
-        placement: "right",
-        title: t("tours.single_run.algo_pick_title"),
-        content: t("tours.single_run.algo_pick_content"),
-      },
-      {
-        target: '[data-tour="single-algo-help"]',
-        placement: "right",
-        title: t("tours.single_run.algo_help_title"),
-        content: t("tours.single_run.algo_help_content"),
-      },
-      {
         target: '[data-tour="single-logsource"]',
-        placement: "top",
+        placement: "bottom",
         title: t("tours.single_run.logsource_title"),
         content: t("tours.single_run.logsource_content"),
       },

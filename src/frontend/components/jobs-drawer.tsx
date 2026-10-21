@@ -13,6 +13,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   X,
+  ArrowRight,
   Loader2,
   Trash2,
   ChevronRight,
@@ -35,11 +36,20 @@ import {
   fetchJobs,
 } from "@/lib/api";
 import { datasetJobHref, datasetJobSubtitle, jobDisplayName, jobTitle } from "@/lib/factor-analysis";
+import {
+  NO_ACTIVITY,
+  finishedDatasets,
+  jobActivity,
+  loadSeenFailures,
+  saveSeenFailures,
+  statusesOf,
+  type JobActivity,
+} from "@/lib/job-status";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDateTime, formatPercent } from "@/lib/format";
 import { Button } from "./ui/button";
-import { Tip } from "./ui/tip";
+import { Tip, tipTookEscape } from "./ui/tip";
 
 // How a job was started, derived from the `algorithm_id` prefix: runs of the
 // removed batch mode are stored as "_batch:<algo>", factor analysis datasets as
@@ -85,6 +95,10 @@ interface JobsDrawerContextValue {
   // once it has loaded the list (or on an SSE update).
   count: number;
   setCount: (n: number) => void;
+  // What runs and what failed unseen, for the "Recent runs" tab: filled in by the drawer from the
+  // same list.
+  activity: JobActivity;
+  setActivity: (a: JobActivity) => void;
 }
 
 const JobsDrawerContext = createContext<JobsDrawerContextValue | null>(null);
@@ -118,6 +132,7 @@ export function JobsDrawerProvider({ children }: { children: React.ReactNode }) 
   // page. It closes when the page changes.
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [count, setCount] = useState(0);
+  const [activity, setActivity] = useState<JobActivity>(NO_ACTIVITY);
 
   useEffect(() => {
     setOverlayOpen(false);
@@ -157,8 +172,8 @@ export function JobsDrawerProvider({ children }: { children: React.ReactNode }) 
   const setOpen = overlay ? setOverlayOpen : setOpenWithStorage;
   const toggle = useCallback(() => setOpen((v) => !v), [setOpen]);
   const value = useMemo(
-    () => ({ open, overlay, setOpen, toggle, count, setCount }),
-    [open, overlay, setOpen, toggle, count],
+    () => ({ open, overlay, setOpen, toggle, count, setCount, activity, setActivity }),
+    [open, overlay, setOpen, toggle, count, activity],
   );
   return <JobsDrawerContext.Provider value={value}>{children}</JobsDrawerContext.Provider>;
 }
@@ -167,7 +182,7 @@ export function JobsDrawerProvider({ children }: { children: React.ReactNode }) 
 
 export function JobsDrawer() {
   const t = useT();
-  const { open, overlay, setOpen, setCount } = useJobsDrawer();
+  const { open, overlay, setOpen, setCount, setActivity } = useJobsDrawer();
   const pathname = usePathname();
   // The open job always arrives as a ?job=<id> deep link (that is how job
   // cards and the run history navigate), which lets us highlight the active
@@ -177,6 +192,13 @@ export function JobsDrawer() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [algorithms, setAlgorithms] = useState<AlgorithmManifest[]>([]);
   const [loading, setLoading] = useState(true);
+  // A dataset that has just been computed, for the toast.
+  const [ready, setReady] = useState<{ id: number; jobs: Job[] } | null>(null);
+  const statuses = useRef<Map<string, Job["status"]> | null>(null);
+  // The jobs of the first list of the page, and those already reported by the notice.
+  const initialJobs = useRef<Set<string> | null>(null);
+  const reportedJobs = useRef<Set<string>>(new Set());
+  const seenFailures = useRef<Set<string> | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
   // Rendered on the client only: the drawer starts closed anyway, and its texts would follow
@@ -251,6 +273,28 @@ export function JobsDrawer() {
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [setCount]);
+
+  // What the "Recent runs" tab shows of the list: what runs, a failure nobody has looked at (opening
+  // the list is looking), and the datasets that finished while this page was open.
+  useEffect(() => {
+    if (loading) return;
+    if (!seenFailures.current) seenFailures.current = loadSeenFailures();
+    const seen = seenFailures.current;
+    if (open) {
+      for (const job of jobs) if (job.status === "failed") seen.add(job.id);
+      saveSeenFailures(seen);
+    }
+    setActivity(jobActivity(jobs, seen));
+    // The first list of the page is what was there before it: nothing in it counts as finished since.
+    if (!initialJobs.current) {
+      initialJobs.current = new Set(jobs.map((j) => j.id));
+    } else if (statuses.current) {
+      const done = finishedDatasets(statuses.current, jobs, { initial: initialJobs.current, reported: reportedJobs.current });
+      for (const job of done) reportedJobs.current.add(job.id);
+      if (done.length > 0) setReady({ id: Date.now(), jobs: done });
+    }
+    statuses.current = statusesOf(jobs);
+  }, [jobs, open, loading, setActivity]);
 
   // Escape closes, like the workbench mobile drawer.
   useEffect(() => {
@@ -331,10 +375,11 @@ export function JobsDrawer() {
     }
   };
 
-  if (!shown) return null;
+  if (!shown) return <ReadyToast notice={ready} onClose={() => setReady(null)} />;
 
   return (
     <>
+      <ReadyToast notice={ready} onClose={() => setReady(null)} />
       {/* Backdrop below lg and wherever the drawer is an overlay; a column needs no dimming */}
       {open && (
         <div
@@ -480,6 +525,79 @@ export function JobsDrawer() {
         </div>
       </aside>
     </>
+  );
+}
+
+// ----------------------- Toast -----------------------
+
+const READY_SHOW_MS = 10_000;
+
+/**
+ * "<dataset> is ready · Open", a floating notice for a dataset the tool has finished computing, with
+ * a link to its tab. The live region is always there, so a screen reader announces each notice. It
+ * closes after ten seconds, but not while the pointer or the focus is on it.
+ */
+function ReadyToast({ notice, onClose }: { notice: { id: number; jobs: Job[] } | null; onClose: () => void }) {
+  const { t } = useLocale();
+  const [held, setHeld] = useState(false);
+  const closeRef = useRef(onClose);
+  useEffect(() => {
+    closeRef.current = onClose;
+  }, [onClose]);
+  useEffect(() => {
+    if (!notice || held) return;
+    const timer = setTimeout(() => closeRef.current(), READY_SHOW_MS);
+    return () => clearTimeout(timer);
+  }, [notice, held]);
+
+  const jobs = notice?.jobs ?? [];
+  const first = jobs[0];
+  const message = !first
+    ? ""
+    : jobs.length === 1
+      ? t("jobs.ready", { name: jobTitle(first, t) })
+      : t("jobs.ready_several", { n: jobs.length });
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="job-toast fixed inset-x-0 bottom-20 z-50 flex justify-center px-4 pointer-events-none"
+    >
+      {notice && first && (
+        <div
+          key={notice.id}
+          onMouseEnter={() => setHeld(true)}
+          onMouseLeave={() => setHeld(false)}
+          onFocus={() => setHeld(true)}
+          onBlur={() => setHeld(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && !tipTookEscape(e)) onClose();
+          }}
+          className="pointer-events-auto flex items-center gap-2 rounded-lg bg-surface pl-3.5 pr-1.5 py-1.5 text-sm shadow-lg ring-1 ring-border/70 max-w-full"
+        >
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-success-ink" aria-hidden />
+          <span className="min-w-0 break-words">{message}</span>
+          <Link
+            href={datasetJobHref(first) ?? "/"}
+            onClick={onClose}
+            className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-3 text-sm font-medium text-accent-ink hover:bg-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            {t("jobs.ready_open")}
+            <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+          </Link>
+          <Tip name={t("common.close")} keyCap="Esc">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t("common.close")}
+              className="h-7 w-7 grid place-items-center rounded-md text-muted hover:text-fg hover:bg-tile transition shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <X className="h-3.5 w-3.5" aria-hidden />
+            </button>
+          </Tip>
+        </div>
+      )}
+    </div>
   );
 }
 

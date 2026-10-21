@@ -324,6 +324,18 @@ export const DEFAULT_UPLOAD_LIMITS: UploadLimits = {
   max_total_bytes: 500 * 1024 * 1024,
 };
 
+/** Where a measure is implemented: the function of ComFy or feeed behind it, with a link to its file. */
+export interface MeasureSource {
+  /** The tool: "ComFy" or "feeed". */
+  name: string;
+  /** The function or method, e.g. "measure_size" or "TraceLength.trace_len_min". */
+  function: string;
+  file: string;
+  /** The short commit the link points at. */
+  commit: string;
+  url: string;
+}
+
 export interface FactorMeasure {
   key: string;
   name: string;
@@ -332,6 +344,15 @@ export interface FactorMeasure {
   group?: string;
   /** The short code the papers print, e.g. "CNC"; absent from older servers. */
   short?: string;
+  /** Where it is implemented; absent from older servers. */
+  source?: MeasureSource;
+}
+
+/** The distribution of the values of a measure: counts in equal-width bins from `min` to `max`. */
+export interface Histogram {
+  min: number;
+  max: number;
+  counts: number[];
 }
 
 /** Statistics of one measure, as ComFy's report prints them; null where there is no value. */
@@ -347,6 +368,8 @@ export interface DescriptiveRow {
   max: number | null;
   /** Why the cleaning left the measure out of the matrix, if it did. */
   dropped: DropReason | null;
+  /** The values counted in bins; null without values, absent from older servers. */
+  histogram?: Histogram | null;
 }
 
 export interface Descriptives {
@@ -874,6 +897,50 @@ export async function analyzeDataset(
   return r.json();
 }
 
+/** One pair of measures whose correlation reaches the limit of the map. */
+export interface CorrelationPair {
+  a: string;
+  b: string;
+  r: number;
+}
+
+/** The correlations of the measures of a dataset (POST /datasets/{id}/correlations). */
+export interface Correlations {
+  n_observations: number;
+  order: CorrelationOrder;
+  /** The measures in the order asked for, as the rows and columns of `r`. */
+  measures: string[];
+  r: number[][];
+  /** Under the order "factor": the dimensions with their measures, then those without one (factor null). */
+  groups: { factor: number | null; measures: string[] }[] | null;
+  /** The pairs with |r| of `threshold` or more, strongest first; `count` says how many there are. */
+  high: { threshold: number; count: number; pairs: CorrelationPair[] };
+  /** For each measure its five closest partners by |r|. */
+  top: Record<string, { measure: string; r: number }[]>;
+  miner: MinerSelection | null;
+}
+
+/**
+ * The correlations of the measures of a dataset, or of the rows of the `miner` in `options`; the
+ * measures the options exclude are left out. The map loads them when it is opened, and the fact
+ * sheet of a measure takes its closest partners from them.
+ */
+export async function fetchCorrelations(
+  id: string,
+  options: AnalyzeOptions,
+  order: CorrelationOrder = "cluster",
+  signal?: AbortSignal,
+): Promise<Correlations> {
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/correlations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...options, order }),
+    signal,
+  });
+  if (!r.ok) throw await httpError(r, "The correlations could not be loaded");
+  return r.json();
+}
+
 export async function exportLoadings(
   id: string,
   options: AnalyzeOptions,
@@ -891,19 +958,23 @@ export async function exportLoadings(
 /**
  * Downloads the whole analysis as a ZIP: the dataset, every result table, the interpretation
  * if one is stored for these options and language, and a manifest to reproduce it. The rows of
- * its loadings heatmap follow `order`, as the figure menu draws them; its figures are English,
- * as a paper is.
+ * its loadings heatmap follow `order` and the measures of its correlation map `correlationOrder`,
+ * as the figure menu draws them; its figures are English, as a paper is.
  */
 export async function downloadAnalysisZip(
   id: string,
   options: AnalyzeOptions,
   language: InterpretationLanguage,
-  { shortCodes = false, order = "factor" }: { shortCodes?: boolean; order?: FigureOrder } = {},
+  {
+    shortCodes = false,
+    order = "factor",
+    correlationOrder = "factor",
+  }: { shortCodes?: boolean; order?: FigureOrder; correlationOrder?: CorrelationOrder } = {},
 ): Promise<void> {
   const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/export/zip`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...options, language, short_codes: shortCodes, order }),
+    body: JSON.stringify({ ...options, language, short_codes: shortCodes, order, correlation_order: correlationOrder }),
   });
   if (!r.ok) throw await httpError(r, "Export failed");
   const { blob, filename } = await attachment(r, "factor-analysis.zip");
@@ -929,10 +1000,12 @@ export async function exportReport(
   return attachment(r, "report.tex");
 }
 
-export type FigureName = "scree" | "loadings";
+export type FigureName = "scree" | "loadings" | "correlations";
 export type FigureFormat = "svg" | "png";
 /** The rows of the loadings heatmap: grouped by factor as the UI shows them, or as in the dataset. */
 export type FigureOrder = "factor" | "dataset";
+/** The order of the measures of the correlation map: as in the dataset, clustered, or by dimension. */
+export type CorrelationOrder = "dataset" | "cluster" | "factor";
 
 /**
  * A figure of the analysis in the print style: SVG with its text as text, or PNG at 300 dpi, with
@@ -948,13 +1021,27 @@ export async function exportFigure(
     shortCodes = false,
     order = "factor",
     language = "en",
-  }: { shortCodes?: boolean; order?: FigureOrder; language?: InterpretationLanguage } = {},
+    correlationOrder = "factor",
+  }: {
+    shortCodes?: boolean;
+    order?: FigureOrder;
+    language?: InterpretationLanguage;
+    correlationOrder?: CorrelationOrder;
+  } = {},
   signal?: AbortSignal,
 ): Promise<{ blob: Blob; filename: string }> {
   const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/export/figure`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...options, figure, format, short_codes: shortCodes, order, language }),
+    body: JSON.stringify({
+      ...options,
+      figure,
+      format,
+      short_codes: shortCodes,
+      order,
+      language,
+      correlation_order: correlationOrder,
+    }),
     signal,
   });
   if (!r.ok) throw await httpError(r, "Export failed");
