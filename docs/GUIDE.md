@@ -42,6 +42,15 @@ Logs and nets are computed in a job; the jobs drawer shows its progress, and the
 when it is ready. The data step names the upload limits in force. **My datasets** in the toolbar
 reopens a dataset of the session with the settings of its last analysis.
 
+A dataset of nets from several miners has a row per log and miner. The **Dataset** step offers
+**All miners together** or one miner at a time, each tile with its observations n and measures:
+together, the differences between the miners mix into the dimensions and each log counts once
+per miner; one miner, as Important Factors analyses them, has fewer observations. A miner with
+no more observations than measures is blocked (the tile says why); below five observations per
+measure the tile and the analysis warn. A measure without variance within a miner is left out
+for that miner only. The chosen miner stands in the settings row, in the print link and in the
+manifest of the ZIP. **Compare the miners** opens their factor structures side by side.
+
 ## Read the results
 
 - **Dataset**: the cleaned matrix, what cleaning left out and why, the **descriptive statistics**
@@ -59,6 +68,12 @@ reopens a dataset of the session with the settings of its last analysis.
   not count) or as one card per dimension, the loading and communality thresholds, and the
   assignment rule: the largest loading as in ComFy's report, multiple membership as in Important
   Factors (Tab. 6–16), or Hair et al. (Tab. 17). Cross-loadings are ringed.
+- **Names**: press the title of a factor, on its card or at the head of its column, to name it;
+  Enter keeps the name (at most 40 characters), Esc leaves it. The names appear in the matrix,
+  the cards, the factor correlations, the list of steps and every download (loadings, figures,
+  report, ZIP). They belong to the factor count, rotation and rule they were given for: changing
+  one of them clears them, and the toast brings settings and names back. With an interpretation,
+  **Use the suggested names** takes its names over; nothing is named without a click.
 - **Interpretation**: names and summaries for the factors, suggested by a language model only on
   request. It decides nothing; the analysis does not depend on it.
 
@@ -73,6 +88,11 @@ Tab. 17 (Alpha, Directly Follows, Inductive, Hybrid ILP) under Hair et al.
   settings of its paper. "As in Tab. 17" goes back to the four miners and Hair et al. A link can
   also ask for a dataset with a factor count of its own, such as the Inductive miner with 4 and
   with 6 factors (a Start here entry opens it); that column has a tile of its own.
+- **Your own data**: **Compare the miners** in the dataset step puts one column per miner,
+  **Compare** in My datasets one column per dataset picked, and the **pin** at the loadings keeps
+  the solution on screen (dataset, miner, factor count, rotation and rule): pin one with 4
+  factors, change to 6, pin again, and **Compare pinned** shows both. Such a column starts from
+  the settings saved with its dataset and works in this session only.
 - **Assignment rule**: one rule for every dataset, so that a difference between two columns is
   one of the data.
 - **By measure**: a row per measure, grouped by dimension, and above them per dataset n, the

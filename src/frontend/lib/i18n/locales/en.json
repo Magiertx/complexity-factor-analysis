@@ -233,12 +233,12 @@
       "fa_limits": "How many logs and Petri nets, and how many bytes, one dataset request may carry on this server (`max_log_files`, `max_pnml_files`, `max_file_bytes`, `max_total_bytes`).",
       "fa_create": "Create a dataset from a bundled one or a CSV (ready at once), or from event logs or PNML files (computed as a run). If the session already has the bundled dataset, it comes back unchanged, with `reused`.",
       "fa_list": "The datasets of your session, newest first; kind is optional.",
-      "fa_get": "Status, progress, saved settings and the cleaned measure matrix (first 2,000 rows); once ready, the `descriptives` of every measure and, for a computed dataset, the run times and input sizes (`measurement`).",
-      "fa_options": "Keep the settings of an analysis with the dataset.",
+      "fa_get": "Status, progress, saved settings and the cleaned measure matrix (first 2,000 rows); once ready, the `descriptives` of every measure and, for a computed dataset, the run times and input sizes (`measurement`). For a model dataset of several miners, `miners`: the rows and the measures of each.",
+      "fa_options": "Keep the settings of an analysis with the dataset. With the `miner` and the `factor_names`, if there are.",
       "fa_delete": "Delete a dataset with its run and its cached interpretations.",
       "fa_delete_all": "Delete every dataset of your session, or every one of a kind.",
       "fa_download": "The cleaned matrix as CSV.",
-      "fa_analyze": "Bartlett, KMO with the MSA filter, eigenvalues with Kaiser and parallel analysis, rotated loadings and the factor groups by `assignment_rule` (`largest`, `multi`, `hair`) with cross-loadings, and the `timings` of its parts; with the published settings, the comparison with the report (JSON).",
+      "fa_analyze": "Bartlett, KMO with the MSA filter, eigenvalues with Kaiser and parallel analysis, rotated loadings and the factor groups by `assignment_rule` (`largest`, `multi`, `hair`) with cross-loadings, and the `timings` of its parts; with the published settings, the comparison with the report (JSON). `miner` analyses the rows of one miner of a dataset discovered with several; `factor_names` names the factors for the downloads and changes nothing of the analysis.",
       "fa_export": "The loadings table as CSV or LaTeX; the body of analyze plus format.",
       "fa_export_zip": "The whole analysis as a ZIP: result, matrix, tables, report.tex, figures, descriptive statistics, run times, parameters, library versions and provenance (tool version and commit, upstream commits, feeed, pm4py and ProM, miners with their parameters); the body of analyze plus `language`, `short_codes`, and for the figures `order` and `figure_language`, which the manifest records.",
       "fa_interpretation_status": "Whether Claude can interpret factors, and with which model.",
@@ -256,7 +256,7 @@
       "session_start": "Starts the session (the `session_id` cookie) if the request has none, or one the server cannot read. The page does it by itself; a script that sends several requests at once calls it first.",
       "fa_export_report": "The analysis as a LaTeX report built like ComFy's (report.tex); the body of analyze plus `short_codes` and `language`.",
       "fa_export_figure": "The scree plot or the loadings heatmap as SVG or PNG (300 dpi) in print style; the body of analyze plus `figure`, `format`, `short_codes`, `order` and `language` (`en` or `de`).",
-      "fa_compare": "The factor structures of 2 to 8 bundled datasets side by side, like Tab. 17 of Important Factors: per column n, the measures after the MSA filter, KMO, factors, rotation and variance explained, every measure with its dimension per column under one `assignment_rule`, the dimensions per column, and for every pair of measures in how many columns they share a dimension (`co_assignment`). A column may have a factor count of its own (`options`). Needs no dataset of the session.",
+      "fa_compare": "The factor structures of 2 to 8 analyses side by side, like Tab. 17 of Important Factors: per column n, the measures after the MSA filter, KMO, factors, rotation and variance explained, every measure with its dimension per column under one `assignment_rule`, the dimensions per column, and for every pair of measures in how many columns they share a dimension (`co_assignment`). A column is a bundled dataset (`bundled_id`, with the settings of its paper) or a dataset of the session (`dataset_id`, with its saved settings and optionally a `miner`), and may change its settings (`options`). Bundled columns need no dataset of the session.",
       "fa_compare_export": "The comparison as CSV, as a LaTeX table like Tab. 17, or as a ZIP with both, the pairs of measures, the full result and a manifest; the body of compare plus `format` and `short_codes`."
     },
     "notes": {
@@ -1387,7 +1387,8 @@
         "nets": "Petri nets (.pnml): every net is measured.",
         "csv": "A CSV file: one row per observation, one column per measure; a first column of names becomes the row labels."
       },
-      "p2": "Logs and nets are computed in a job; the jobs drawer shows its progress. My datasets in the toolbar reopens a dataset of the session with the settings of its last analysis."
+      "p2": "Logs and nets are computed in a job; the jobs drawer shows its progress. My datasets in the toolbar reopens a dataset of the session with the settings of its last analysis.",
+      "p3": "A dataset of nets from several miners has a row per log and miner. The dataset step offers all miners together or one miner at a time, as Important Factors analyses them: together, the differences between the miners mix into the dimensions and each log counts once per miner; one miner has fewer observations. A miner with no more observations than measures cannot be analysed; below five per measure the analysis warns. Compare the miners there opens their factor structures side by side."
     },
     "results": {
       "title": "Read the results",
@@ -1396,7 +1397,8 @@
         "suitability": "Suitability: Bartlett's test, the overall KMO and the MSA of every measure. The MSA filter removes measures in rounds, as ComFy does; any measure can be excluded by hand.",
         "factors": "Factors: the scree plot with the Kaiser line and parallel analysis, the count each criterion suggests, and the rotation.",
         "loadings": "Loadings: a matrix (orange for negative loadings, faded where a loading does not count) or a card per dimension, the thresholds, and the rule that assigns measures to factors. Cross-loadings are ringed.",
-        "interpretation": "Interpretation: names for the factors, suggested by a language model only on request. It decides nothing."
+        "interpretation": "Interpretation: names for the factors, suggested by a language model only on request. It decides nothing.",
+        "names": "Names: press the title of a factor, on its card or at the head of its column, to name it; Enter keeps the name, Esc leaves it. The names appear in the loadings, the factor correlations, the list of steps and every download. They belong to the factor count, the rotation and the rule: changing one of them clears them, and the toast brings them back. With an interpretation, Use the suggested names takes its names over."
       }
     },
     "export": {
@@ -1425,7 +1427,8 @@
         "matrix": "By measure: a row per measure, grouped by dimension, and above them n, the measures after the MSA filter, the KMO, the factors, the rotation and the variance explained per dataset. A tinted cell is in the dimension of its row; a ring marks a cross-loading, a dashed outline a measure the MSA filter removed.",
         "dimensions": "By dimension: a row per dataset with the measures of each dimension, laid out like Tab. 17.",
         "pairs": "Pairs: a square of the measures, each cell saying in how many of the datasets that analysed both the two share a dimension. It does not depend on how the dimensions are numbered.",
-        "export": "The download menu has the matrix as CSV, the dimensions as a LaTeX table like Tab. 17, and both in a ZIP with a manifest."
+        "export": "The download menu has the matrix as CSV, the dimensions as a LaTeX table like Tab. 17, and both in a ZIP with a manifest.",
+        "own": "Your own data: Compare the miners in the dataset step puts one column per miner, Compare in My datasets one column per dataset, and the pin icon in the loadings keeps the solution on screen (dataset, miner, factor count, rotation, rule), so that, say, the same dataset with 4 and with 6 factors sits side by side. Such a column starts from the settings saved with its dataset and lives in this session."
       },
       "p2": "The factors of every analysis are numbered by the analysis, so they are matched first: the first dataset keeps its numbers, and the factors of every further one go to the dimension with which they share the most measures; where two are equally good, the more alike loadings decide. Tab. 17 renumbered its dimensions by hand, so a number can differ from the paper's, and a match that rests on one shared measure is a guess: the tooltip of a cell in the dimension view names the measures it rests on. How the measures are grouped within a dataset does not depend on the numbers."
     }

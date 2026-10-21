@@ -109,17 +109,17 @@ Details in [Factor analysis](#factor-analysis) below.
 | GET | `/factor-analysis/limits` | Files and bytes one dataset request may carry on this server: `{"max_log_files": 50, "max_pnml_files": 200, "max_file_bytes": 104857600, "max_total_bytes": 524288000}`. The two file counts are set by `MAX_LOG_FILES` and `MAX_PNML_FILES`. |
 | POST | `/factor-analysis/datasets` | Create a dataset from bundled data or a CSV (ready at once), or from logs or PNML files (background job); a bundled dataset the session has already is opened again. |
 | GET | `/factor-analysis/datasets?kind=model` | The datasets of your session, newest first; `kind` is optional. |
-| GET | `/factor-analysis/datasets/{id}` | Status, progress, inputs, saved options, measures, dropped measures and the first 2000 rows; once ready, the `descriptives` of every measure and, for a computed dataset, its run times and input sizes (`measurement`). |
+| GET | `/factor-analysis/datasets/{id}` | Status, progress, inputs, saved options, measures, dropped measures and the first 2000 rows; once ready, the `descriptives` of every measure, for a computed dataset its run times and input sizes (`measurement`), and for a model dataset of several miners its `miners`. |
 | PUT | `/factor-analysis/datasets/{id}/options` | Keep the parameters of an analysis with the dataset. |
 | DELETE | `/factor-analysis/datasets/{id}` | Delete a dataset with its job and cached interpretations. |
 | DELETE | `/factor-analysis/datasets?kind=model` | Delete every dataset of your session, or every one of a kind. |
 | GET | `/factor-analysis/datasets/{id}/download` | The cleaned matrix as CSV. |
-| POST | `/factor-analysis/datasets/{id}/analyze` | Bartlett, KMO with the MSA filter, eigenvalues with the Kaiser criterion and parallel analysis, factor analysis, factor groups by an assignment rule, the comparison with published numbers, and the `timings` of the parts. |
+| POST | `/factor-analysis/datasets/{id}/analyze` | Bartlett, KMO with the MSA filter, eigenvalues with the Kaiser criterion and parallel analysis, factor analysis, factor groups by an assignment rule, the comparison with published numbers, and the `timings` of the parts; of all rows or of one `miner`. |
 | POST | `/factor-analysis/datasets/{id}/export` | The loadings table as CSV or LaTeX. |
 | POST | `/factor-analysis/datasets/{id}/export/report` | The analysis as a LaTeX report built like ComFy's (`report.tex`). |
 | POST | `/factor-analysis/datasets/{id}/export/figure` | The scree plot or the loadings heatmap as SVG or PNG (300 dpi) in print style. |
 | POST | `/factor-analysis/datasets/{id}/export/zip` | The whole analysis as a ZIP archive: result, matrix, tables, report, figures, descriptive statistics, run times, parameters, library versions and provenance. |
-| POST | `/factor-analysis/compare` | The factor structures of 2 to 8 bundled datasets side by side, like Tab. 17 of Important Factors, under one assignment rule; needs no dataset of the session. |
+| POST | `/factor-analysis/compare` | The factor structures of 2 to 8 analyses side by side, like Tab. 17 of Important Factors, under one assignment rule: of bundled datasets (no dataset of the session needed) or of the session's own, per miner if they have several. |
 | POST | `/factor-analysis/compare/export` | The comparison as CSV, as a LaTeX table like Tab. 17, or as a ZIP with both, the full result and a manifest. |
 | GET | `/factor-analysis/interpretation/status` | Whether factors can be interpreted by Claude, and with which model. |
 | POST | `/factor-analysis/datasets/{id}/interpret` | Names and short interpretations of the factors by Claude (optional, needs an API key on the server). |
@@ -305,7 +305,7 @@ limit is marked `failed` here too.
   if columns were selected.
 - `GET /factor-analysis/datasets/{id}` carries the same `name_auto`, `bundled_id` and
   `inputs`, and `options`: the saved parameters or `null`. A ready dataset also has
-  `descriptives` and `measurement`, see below.
+  `descriptives`, `measurement` and `miners`, see below.
 
 `descriptives` describes every measure as ComFy's report does (`FactorAnalysis.perform_factor_analysis`):
 pandas' mean, median, standard deviation with ddof = 1, minimum and maximum over every
@@ -344,14 +344,31 @@ is read twice; feeed's features are computed one by one as its `extract_features
     "stages": { "Size": 0.0004, "…": 0.01 }, "measures_s": 0.52 } ] }
 ```
 
+`miners` is `null` unless the dataset holds model measures and every row is labelled
+`<log> / <miner>` with a miner the tool knows, as the rows of a dataset computed from event logs
+are (and those of a CSV made from such a dataset). Then it lists each miner, in the order the
+dataset was computed with, with its `n_observations`, the `n_measures` that vary within its rows
+and the measures that do not (`dropped`). The analysis option `miner` analyses the rows of one
+of them; see [Analyse](#analyse).
+
+```json
+{ "miners": [
+  { "name": "Alpha miner", "n_observations": 50, "n_measures": 12,
+    "dropped": ["Number of duplicate tasks"] },
+  { "name": "Inductive miner", "n_observations": 50, "n_measures": 12,
+    "dropped": ["Number of empty sequence flows"] } ] }
+```
+
 `PUT /factor-analysis/datasets/{id}/options` takes the body of `analyze` and keeps it with the
 dataset, every field filled in, so that a client reopening the dataset can start from its last
 analysis; the UI saves the parameters after each analysis. The body is checked as `analyze`
 checks it, as far as that needs no analysis: 422 for an invalid value, 400 with the `code` of
 `analyze` for an excluded measure the dataset does not have (`unknown_excluded`), too few
-measures or observations left (`too_few_measures`, `too_few_observations`) or more factors than
-the measures left allow (`n_factors_range`). Whether the MSA filter leaves enough measures only
-the analysis tells. The answer is 204, or 409 if the dataset is not ready.
+measures or observations left (`too_few_measures`, `too_few_observations`; with a `miner`, of
+its rows), more factors than the measures left allow (`n_factors_range`), a miner the dataset
+does not have (`unknown_miner`) or more `factor_names` than factors (`factor_names_too_many`).
+Whether the MSA filter leaves enough measures only the analysis tells. `miner` and
+`factor_names` are kept only when given. The answer is 204, or 409 if the dataset is not ready.
 
 ```python
 s.put(f"{BASE}/factor-analysis/datasets/{dataset_id}/options",
@@ -379,11 +396,33 @@ A dataset of another session answers 404 everywhere, like one that does not exis
 ```json
 { "excluded": [], "auto_msa_filter": true, "msa_threshold": 0.6, "bartlett_alpha": 0.05,
   "n_factors": null, "rotation": "varimax", "loading_threshold": null,
-  "communality_threshold": null, "assignment_rule": "largest" }
+  "communality_threshold": null, "assignment_rule": "largest",
+  "miner": null, "factor_names": null }
 ```
 
 `loading_threshold` and `communality_threshold` default by kind, as in the two upstream
 tools: 0.35 and 0 for `model` (ComFy), 0.5 and 0.5 for `log` (ComFy for log measures).
+
+`miner` analyses the rows of one miner of a dataset with `miners` (see above), as Important
+Factors analyses every miner on its own; `null` analyses every row, so the differences between
+the miners mix into the dimensions and every log counts once per miner. No dataset is made of
+the rows: nothing is stored, and the limits of new datasets are not touched. The rows keep their
+values and the measures their stored order, on which the KMO of singular data depends. A
+measure without variance within the miner's rows, or perfectly correlated with another there,
+is left out for that miner only, as cleaning leaves it out of a dataset; an `excluded` measure
+the miner leaves out anyway is no error. The response then has `miner`: its `name`,
+`n_observations`, `n_measures` and the measures left out (`dropped`, with `measure` and
+`reason`); without a miner `miner` is `null`. An analysis of one miner has no `published_match`.
+A miner the dataset does not have is a 400 with the code `unknown_miner` (`params` `miner` and
+`miners`, the ones it has). More measures than observations of the miner is the usual
+`too_few_observations`; fewer than 5 observations per measure is the warning `small_sample`.
+
+`factor_names` names the factors, the first name for factor 1, each at most 40 characters on one
+line (a longer one is a 422); `null` or `""` keeps `Factor i`. The analysis does not change with
+them: they head the factors in the downloads (`export`, `export/figure`, `export/report`,
+`export/zip`, whose manifest lists them), and `options` keeps them with the dataset. More names
+than factors is a 400 `factor_names_too_many` (`params` `names` and `factors`). The tool never
+names a factor by itself; the UI offers the names of an interpretation only on a click.
 
 The steps match ComFy:
 
@@ -532,7 +571,8 @@ or above the threshold of measures whose communality reaches the communality thr
 ComFy's report leaves them black; for `multi` and `hair`, the loadings by which the rule put a
 measure on a factor, as the dimension tables of Important Factors list them, with a comment
 naming the measures in no factor and why. The CSV keeps its columns; the assignment of each
-measure is in `assignment.csv` of the ZIP.
+measure is in `assignment.csv` of the ZIP. A factor with a name in `factor_names` is headed by
+it in both, e.g. `Measure & Size & Factor 2 & …` instead of `Factor 1`.
 
 `POST /factor-analysis/datasets/{id}/export/report` takes the same body plus `"language":
 "en" | "de"` and `"short_codes": true | false` (default `false`) and returns
@@ -547,8 +587,13 @@ assignment rule put the measure, with the communality and the sums of squares), 
 communalities as a bar chart (up to 40 measures), the factor correlations of an oblique
 rotation, the dimensions the rule forms, and the settings and provenance. With `short_codes`
 the measures are named by the codes of the papers, for log measures as C with the code as
-index. Factors are named after an interpretation stored for exactly this analysis in
-`language`, if there is one; the report never asks for one. It compiles with pdflatex
+index. The factors carry the `factor_names` of the request: a name heads its column of the
+loadings and of the factor correlations (a long one wraps in a box of 2 cm) and follows the
+number in the dimensions, with a sentence that the names were given by whoever ran the analysis.
+Without names the factors are numbered; the report never names them by itself and never asks for
+an interpretation. With a `miner`, the report says which miner's nets it analysed and how many
+of the observations of the dataset, and lists the measures without variance within them. It
+compiles with pdflatex
 (booktabs, longtable, needspace, array, amsmath, tikz, pgfplots and paralist). Compile it with
 `latexmk -pdf`, or run pdflatex twice: long tables settle their column widths in the second run.
 Under the paper settings, the report of a bundled Important Factors dataset prints the numbers
@@ -563,8 +608,9 @@ the caption, with the decimal comma in German) and returns `<dataset name>-<figu
 index. Both are drawn by matplotlib
 in a print style, whatever the theme of the UI: white background, 8 pt text at the text width
 of a CEUR page (15.9 cm), blue for positive and orange for negative loadings, the loadings that
-do not count left white, the assigned ones bold. The SVG keeps its text as text and is the same
-file for the same analysis; the PNG has 300 dpi.
+do not count left white, the assigned ones bold. With `factor_names` the heatmap heads a named
+factor by its name, set at a slant, instead of `F1`. The SVG keeps its text as text and is the
+same file for the same analysis; the PNG has 300 dpi.
 
 `POST /factor-analysis/datasets/{id}/export/zip` takes the same body plus `"language": "en" |
 "de"` (default `en`, the language of the stored interpretation), `"short_codes"` (default
@@ -575,15 +621,15 @@ analysis. The errors of these exports are those of `analyze`.
 
 | File | Content |
 |------|---------|
-| `manifest.json` | `app`, `created_at`, `tool` (`name`, `version` and `commit` of this tool, `null` where not recorded), `dataset` (`id`, `name`, `kind`, `source`, `bundled_id`; `collection`, `citation` and `license` for a bundled dataset, else `null`; `inputs`, `n_observations`, the `measures` left after cleaning, the `dropped` ones as `{name, reason}` and `provenance`, see below), `analysis_params` (the parameters used, with the factor count and rotation of the analysis, the thresholds of the kind and the `assignment_rule`; a single factor is not rotated), `analysis` (`method` minres of `library` factor_analyzer, the upstream code it `follows` with commits, the `assignment_rule` and the `assignment` as the result has it, the random `seed` 20261012 of parallel analysis, and `factor_count`: the factor count `used`, the `kaiser` and `parallel_analysis` suggestions, `method`, `seed`, `simulations` and `percentile`), `analysis_timings` (the `timings` of the analysis), `measure_labels` (`names` or `short_codes`, as the report and the figures name the measures), `figure_order` (`factor` or `dataset`) and `figure_language` (`en` or `de`) of the figures, `measurement` (only for a computed dataset: its run times and input sizes, as the dataset has them), `published` (only if the analysis used the `published_options` of a bundled dataset: these `options`, their `source` and `scope` and the `match`, as `published_match`), `libraries` (versions of factor_analyzer, numpy, pandas, scipy and scikit-learn) and `files` (`{name, description}` of each file). |
+| `manifest.json` | `app`, `created_at`, `tool` (`name`, `version` and `commit` of this tool, `null` where not recorded), `dataset` (`id`, `name`, `kind`, `source`, `bundled_id`; `collection`, `citation` and `license` for a bundled dataset, else `null`; `inputs`, `n_observations`, the `measures` left after cleaning, the `dropped` ones as `{name, reason}` and `provenance`, see below), `analysis_params` (the parameters used, with the factor count and rotation of the analysis, the thresholds of the kind and the `assignment_rule`; a single factor is not rotated; `miner` only for the rows of one miner), `miner` (only then: its `name`, `n_observations`, `n_measures` and `dropped` measures, as `analyze` returns it), `factor_names` (only if given: one name or `null` per factor), `analysis` (`method` minres of `library` factor_analyzer, the upstream code it `follows` with commits, the `assignment_rule` and the `assignment` as the result has it, the random `seed` 20261012 of parallel analysis, and `factor_count`: the factor count `used`, the `kaiser` and `parallel_analysis` suggestions, `method`, `seed`, `simulations` and `percentile`), `analysis_timings` (the `timings` of the analysis), `measure_labels` (`names` or `short_codes`, as the report and the figures name the measures), `figure_order` (`factor` or `dataset`) and `figure_language` (`en` or `de`) of the figures, `measurement` (only for a computed dataset: its run times and input sizes, as the dataset has them), `published` (only if the analysis used the `published_options` of a bundled dataset: these `options`, their `source` and `scope` and the `match`, as `published_match`), `libraries` (versions of factor_analyzer, numpy, pandas, scipy and scikit-learn) and `files` (`{name, description}` of each file). |
 | `README.txt` | The files, how to reproduce the analysis in the UI or with factor_analyzer, and the provenance in short. |
 | `analysis.json` | The response of `analyze` for these parameters. |
-| `dataset.csv` | The cleaned matrix, the same file as `.../download`. |
+| `dataset.csv` | The cleaned matrix, the same file as `.../download`; with a `miner`, its rows only. |
 | `loadings.csv`, `loadings.tex` | The loadings table as `.../export` returns it. |
 | `assignment.csv` | `measure`, `factors` (counted from 1, separated by spaces), `reason` (why it is in no factor) and `cross_loading` (the factors of its cross-loading, largest loading first) for every used measure, by the assignment rule of the analysis. |
 | `structure.csv`, `factor-correlations.csv` | Oblique rotations only: the structure matrix and the factor correlations. |
 | `eigenvalues.csv` | `factor`, `eigenvalue` and `parallel_analysis` (the random eigenvalue it is compared with), largest first. |
-| `msa.csv` | `measure`, `msa`, `status` for every measure of the dataset: `used`, `removed in step k` by the MSA filter (with the MSA of that step) or `excluded` (no MSA). |
+| `msa.csv` | `measure`, `msa`, `status` for every measure of the dataset: `used`, `removed in step k` by the MSA filter (with the MSA of that step), `excluded` (no MSA) or, with a `miner`, `dropped within the miner: <reason>` (no MSA). |
 | `report.tex` | The LaTeX report as `.../export/report` returns it. |
 | `figures/scree.svg`, `figures/loadings.svg` | The figures as `.../export/figure` returns them as SVG. |
 | `descriptives.csv` | `measure`, `n`, `mean`, `median`, `std`, `min`, `max` and `dropped` for every measure, as `descriptives` of the dataset. |
@@ -604,10 +650,11 @@ metadata tell, with today's versions, and `"recorded_at_creation": false`. The Z
 
 ### Compare factor structures
 
-`POST /factor-analysis/compare` puts the factor structures of 2 to 8 bundled datasets side by
-side, like Tab. 17 of Important Factors: which measures form which dimension for which miner.
-Each column is analysed on the bundled CSV itself, with the fit cache, so it makes no dataset of
-the session and counts against no dataset limit. JSON body:
+`POST /factor-analysis/compare` puts the factor structures of 2 to 8 analyses side by side,
+like Tab. 17 of Important Factors: which measures form which dimension for which miner. A column
+of a bundled dataset is analysed on the bundled CSV itself, with the fit cache, so it makes no
+dataset of the session and counts against no dataset limit; a column of a dataset of the session
+on its stored matrix, also with the fit cache. JSON body:
 
 ```json
 { "columns": [
@@ -625,13 +672,29 @@ the session and counts against no dataset limit. JSON body:
   `"n_factors": null` follows the Kaiser criterion) and `label` (the title of the column, at
   most 80 characters; the label of the dataset without one). The same dataset may appear twice
   with other options, e.g. with 4 and 6 factors as in section 6 of the paper.
+- Instead of `bundled_id`, a column may name a dataset of the session by `dataset_id`, with
+  `settings` `"saved"` (default: the options saved with the dataset, else the standard of its
+  kind) or `"standard"`, `options` as above, and `miner` (the rows of one miner, as the
+  analysis option of the same name). One column each of `bundled_id` and `dataset_id` is a 422,
+  as are `"saved"` or a `miner` for a bundled dataset and `"paper"` for one of the session.
+  This is how the UI compares the miners of a dataset, datasets picked in My datasets, and
+  solutions pinned in the loadings step (dataset, miner, factor count and rotation):
+
+```json
+{ "columns": [
+    { "dataset_id": "0c5b0f8e-…", "miner": "Alpha miner" },
+    { "dataset_id": "0c5b0f8e-…", "miner": "Inductive miner", "options": { "n_factors": 4 } } ],
+  "assignment_rule": "largest" }
+```
 - `assignment_rule`: `largest` (default), `multi` or `hair`, the same for every column. Tab. 17
   follows `hair`, which the web page starts with.
 
-An unknown dataset is a 400 with `"code": "compare_unknown_dataset"`, columns of two kinds a 400
-with `"code": "compare_mixed_kinds"`. A column whose analysis fails, e.g. with more factors than
-its measures allow, carries `error` (`code`, `message`, `params`, as an analysis error) and the
-others are compared without it; if none can be analysed, there is nothing to compare, and the
+An unknown dataset, bundled or of the session (also one of another session), is a 400 with
+`"code": "compare_unknown_dataset"`, columns of two kinds a 400 with `"code":
+"compare_mixed_kinds"`. A column whose analysis fails, e.g. with more factors than its measures
+allow, a dataset of the session that is not ready (`dataset_not_ready`) or a miner it does not
+have (`unknown_miner`), carries `error` (`code`, `message`, `params`, as an analysis error) and
+the others are compared without it; if none can be analysed, there is nothing to compare, and the
 answer is a 400 with `"code": "compare_nothing_analysed"` (`params.reasons` lists the codes of
 their errors), from `compare/export` as well.
 
@@ -652,8 +715,9 @@ The response has:
 - `kind`, `assignment_rule`, `cross_loading_gap` and `alignment` (`method`
   `shared_measures`, `reference` 0, a `description`, and the number of `dimensions`: the most
   factors of a column);
-- `columns`, one header per column: `bundled_id`, `label`, `name`, `collection`, `settings`
-  (`paper` or `standard`, as used), `options` (the parameters of the analysis, with the factor
+- `columns`, one header per column: `bundled_id` (`null` for a dataset of the session),
+  `dataset_id` and `miner` (`null` for a bundled dataset), `label`, `name`, `collection`,
+  `settings` (`paper`, `saved` or `standard`, as used), `options` (the parameters of the analysis, with the factor
   count it used), `published_source`, `paper_tables` (the key of the manifest, e.g.
   `other_data`), `n_measures` (of the CSV), `n_observations`, `used_measures`, `msa_removed`,
   `kmo`, `n_factors`, `rotation`, `assignment` (what the rule applied: `rule`,
@@ -675,7 +739,8 @@ The response has:
   `cross_loading`), `unassigned` (`reason` `low_communality`, `low_loading` or `cross_loading`,
   the `factor`, `dimension` and `loading` of its largest loading, `communality`,
   `cross_loading`), `msa_removed` (`msa`, `step`), `dropped` (`reason` of the cleaning, e.g.
-  `constant`), `excluded`, `absent` (not in the dataset) or `failed`. A cross-loaded cell also
+  `constant`; for a column of one miner also a measure without variance within its rows),
+  `excluded`, `absent` (not in the dataset) or `failed`. A cross-loaded cell also
   has `cross_dimensions` and `cross_loadings`;
 - `co_assignment`, for every pair of measures in how many columns both are in the same
   dimension, which needs no matching of the dimensions: `measures` (the keys, in the order of
@@ -718,8 +783,9 @@ by the codes of the papers, as Tab. 17 does) and returns `factor-structures.csv`
   `measure_b`, `code_b`, `together`, `both_assigned`, `both_analysed`), `README.txt` and
   `manifest.json` with `app`, `created_at`, `tool`, the `request` as sent (with the rule and
   `short_codes`), `assignment_rule`, `alignment`, `columns` (per column the `bundled_id`,
-  `label`, `settings`, `analysis_params`, `assignment`, `published_source`, `citation`, `license`,
-  `source_url` and `source_commit`), `measure_labels`, `libraries` and `files`.
+  `dataset_id`, `miner`, `label`, `settings`, `analysis_params`, `assignment`, `published_source`,
+  `citation`, `license`, `source_url` and `source_commit`), `measure_labels`, `libraries` and
+  `files`. Columns with a `dataset_id` can only be posted again in the session that has them.
 
 ### Interpretation by Claude
 

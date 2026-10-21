@@ -233,12 +233,12 @@
       "fa_limits": "Wie viele Logs und Petri-Netze und wie viele Bytes eine Datensatz-Anfrage auf diesem Server umfassen darf (`max_log_files`, `max_pnml_files`, `max_file_bytes`, `max_total_bytes`).",
       "fa_create": "Einen Datensatz aus einem mitgelieferten oder einer CSV anlegen (sofort bereit) oder aus Event-Logs oder PNML-Dateien (als Run berechnet). Hat die Sitzung den mitgelieferten Datensatz schon, kommt er unverändert zurück, mit `reused`.",
       "fa_list": "Die Datensätze deiner Sitzung, neueste zuerst; kind ist optional.",
-      "fa_get": "Status, Fortschritt, gespeicherte Einstellungen und die bereinigte Maßmatrix (erste 2.000 Zeilen); sobald bereit, die deskriptive Statistik jedes Maßes (`descriptives`) und für einen berechneten Datensatz die Laufzeiten und Eingabegrößen (`measurement`).",
-      "fa_options": "Die Einstellungen einer Analyse beim Datensatz speichern.",
+      "fa_get": "Status, Fortschritt, gespeicherte Einstellungen und die bereinigte Maßmatrix (erste 2.000 Zeilen); sobald bereit, die deskriptive Statistik jedes Maßes (`descriptives`) und für einen berechneten Datensatz die Laufzeiten und Eingabegrößen (`measurement`). Für einen Modell-Datensatz mehrerer Miner `miners`: die Zeilen und Maße jedes Miners.",
+      "fa_options": "Die Einstellungen einer Analyse beim Datensatz speichern. Mit dem `miner` und den `factor_names`, sofern es sie gibt.",
       "fa_delete": "Einen Datensatz mit seinem Run und seinen gespeicherten Interpretationen löschen.",
       "fa_delete_all": "Alle Datensätze deiner Sitzung löschen oder alle einer Art.",
       "fa_download": "Die bereinigte Matrix als CSV.",
-      "fa_analyze": "Bartlett, KMO mit MSA-Filter, Eigenwerte mit Kaiser und Parallelanalyse, rotierte Ladungen und die Faktorgruppen nach `assignment_rule` (`largest`, `multi`, `hair`) mit Querladungen sowie die Laufzeiten ihrer Teile (`timings`); mit den veröffentlichten Einstellungen der Abgleich mit dem Report (JSON).",
+      "fa_analyze": "Bartlett, KMO mit MSA-Filter, Eigenwerte mit Kaiser und Parallelanalyse, rotierte Ladungen und die Faktorgruppen nach `assignment_rule` (`largest`, `multi`, `hair`) mit Querladungen sowie die Laufzeiten ihrer Teile (`timings`); mit den veröffentlichten Einstellungen der Abgleich mit dem Report (JSON). `miner` analysiert die Zeilen eines Miners eines Datensatzes, der mit mehreren entdeckt wurde; `factor_names` benennt die Faktoren für die Downloads und ändert nichts an der Analyse.",
       "fa_export": "Die Ladungstabelle als CSV oder LaTeX; der Body von analyze plus format.",
       "fa_export_zip": "Die ganze Analyse als ZIP: Ergebnis, Matrix, Tabellen, report.tex, Abbildungen, deskriptive Statistik, Laufzeiten, Parameter, Bibliotheksversionen und Herkunft (Toolversion und Commit, Upstream-Commits, feeed, pm4py und ProM, Miner mit ihren Parametern); der Body von analyze plus `language`, `short_codes` und für die Abbildungen `order` und `figure_language`, die das Manifest festhält.",
       "fa_interpretation_status": "Ob Claude Faktoren interpretieren kann, und mit welchem Modell.",
@@ -256,7 +256,7 @@
       "session_start": "Startet die Sitzung (das Cookie `session_id`), wenn die Anfrage keines hat oder eines, das der Server nicht lesen kann. Die Seite erledigt das selbst; ein Skript, das mehrere Anfragen gleichzeitig sendet, ruft es zuerst auf.",
       "fa_export_report": "Die Analyse als LaTeX-Report, aufgebaut wie der von ComFy (report.tex); der Body von analyze plus `short_codes` und `language`.",
       "fa_export_figure": "Der Scree-Plot oder die Ladungs-Heatmap als SVG oder PNG (300 dpi) im Druckstil; der Body von analyze plus `figure`, `format`, `short_codes`, `order` und `language` (`en` oder `de`).",
-      "fa_compare": "Die Faktorstrukturen von 2 bis 8 mitgelieferten Datensätzen nebeneinander, wie Tab. 17 von Important Factors: je Spalte n, die Maße nach dem MSA-Filter, KMO, Faktoren, Rotation und erklärte Varianz, jedes Maß mit seiner Dimension je Spalte unter einer `assignment_rule`, die Dimensionen je Spalte und für jedes Paar von Maßen, in wie vielen Spalten es eine Dimension teilt (`co_assignment`). Eine Spalte kann eine eigene Faktorzahl haben (`options`). Braucht keinen Datensatz der Session.",
+      "fa_compare": "Die Faktorstrukturen von 2 bis 8 Analysen nebeneinander, wie Tab. 17 von Important Factors: je Spalte n, die Maße nach dem MSA-Filter, KMO, Faktoren, Rotation und erklärte Varianz, jedes Maß mit seiner Dimension je Spalte unter einer `assignment_rule`, die Dimensionen je Spalte und für jedes Paar von Maßen, in wie vielen Spalten es eine Dimension teilt (`co_assignment`). Eine Spalte ist ein mitgelieferter Datensatz (`bundled_id`, mit den Einstellungen seines Papers) oder ein Datensatz der Sitzung (`dataset_id`, mit seinen gespeicherten Einstellungen und optional einem `miner`) und kann ihre Einstellungen ändern (`options`). Mitgelieferte Spalten brauchen keinen Datensatz der Sitzung.",
       "fa_compare_export": "Der Vergleich als CSV, als LaTeX-Tabelle wie Tab. 17 oder als ZIP mit beidem, den Paaren von Maßen, dem vollständigen Ergebnis und einem Manifest; der Body von compare plus `format` und `short_codes`."
     },
     "notes": {
@@ -1387,7 +1387,8 @@
         "nets": "Petri-Netze (.pnml): Jedes Netz wird gemessen.",
         "csv": "Eine CSV-Datei: eine Zeile je Beobachtung, eine Spalte je Maß; eine erste Spalte mit Namen wird zu den Zeilenbeschriftungen."
       },
-      "p2": "Logs und Netze werden in einem Job berechnet; die Job-Leiste zeigt den Fortschritt. „Meine Datensätze“ in der Werkzeugleiste öffnet einen Datensatz der Sitzung wieder, mit den Einstellungen seiner letzten Analyse."
+      "p2": "Logs und Netze werden in einem Job berechnet; die Job-Leiste zeigt den Fortschritt. „Meine Datensätze“ in der Werkzeugleiste öffnet einen Datensatz der Sitzung wieder, mit den Einstellungen seiner letzten Analyse.",
+      "p3": "Ein Datensatz aus Netzen mehrerer Miner hat eine Zeile je Log und Miner. Der Datensatz-Schritt bietet alle Miner gemeinsam oder je einen Miner an, so wie Important Factors sie analysiert: Gemeinsam mischen sich die Unterschiede zwischen den Minern in die Dimensionen, und jedes Log zählt einmal je Miner; ein einzelner Miner hat weniger Beobachtungen. Ein Miner mit nicht mehr Beobachtungen als Maßen lässt sich nicht analysieren; unter fünf je Maß warnt die Analyse. Miner vergleichen öffnet dort ihre Faktorstrukturen nebeneinander."
     },
     "results": {
       "title": "Die Ergebnisse lesen",
@@ -1396,7 +1397,8 @@
         "suitability": "Eignung: der Bartlett-Test, der KMO insgesamt und der MSA jedes Maßes. Der MSA-Filter entfernt Maße in Runden, wie ComFy; jedes Maß lässt sich von Hand ausschließen.",
         "factors": "Faktoren: der Scree-Plot mit Kaiser-Linie und Parallelanalyse, die Zahl, die jedes Kriterium vorschlägt, und die Rotation.",
         "loadings": "Ladungen: eine Matrix (orange für negative Ladungen, blass, wo eine Ladung nicht zählt) oder eine Karte je Dimension, die Schwellen und die Regel, die Maße Faktoren zuordnet. Querladungen sind umrandet.",
-        "interpretation": "Interpretation: Namen für die Faktoren, von einem Sprachmodell nur auf Anfrage vorgeschlagen. Es entscheidet nichts."
+        "interpretation": "Interpretation: Namen für die Faktoren, von einem Sprachmodell nur auf Anfrage vorgeschlagen. Es entscheidet nichts.",
+        "names": "Namen: Drücke auf den Titel eines Faktors, auf seiner Karte oder im Kopf seiner Spalte, um ihn zu benennen; Enter behält den Namen, Esc lässt ihn. Die Namen erscheinen in den Ladungen, den Faktorkorrelationen, der Schrittliste und jedem Download. Sie gehören zu Faktorzahl, Rotation und Regel: Ändert sich eines davon, verschwinden sie, und der Hinweis holt sie zurück. Mit einer Interpretation übernimmt Vorgeschlagene Namen übernehmen deren Namen."
       }
     },
     "export": {
@@ -1425,7 +1427,8 @@
         "matrix": "Nach Maß: eine Zeile je Maß, nach Dimension gruppiert, und darüber je Datensatz n, die Maße nach dem MSA-Filter, der KMO, die Faktoren, die Rotation und die erklärte Varianz. Eine getönte Zelle liegt in der Dimension ihrer Zeile; ein Ring markiert eine Querladung, eine gestrichelte Kontur ein Maß, das der MSA-Filter entfernt hat.",
         "dimensions": "Nach Dimension: eine Zeile je Datensatz mit den Maßen jeder Dimension, aufgebaut wie Tab. 17.",
         "pairs": "Paare: ein Quadrat der Maße; jede Zelle sagt, in wie vielen der Datensätze, die beide analysiert haben, die beiden eine Dimension teilen. Es hängt nicht davon ab, wie die Dimensionen nummeriert sind.",
-        "export": "Das Download-Menü hat die Matrix als CSV, die Dimensionen als LaTeX-Tabelle wie Tab. 17 und beides in einem ZIP mit Manifest."
+        "export": "Das Download-Menü hat die Matrix als CSV, die Dimensionen als LaTeX-Tabelle wie Tab. 17 und beides in einem ZIP mit Manifest.",
+        "own": "Deine eigenen Daten: Miner vergleichen im Datensatz-Schritt stellt eine Spalte je Miner auf, Vergleichen unter Meine Datensätze eine Spalte je Datensatz, und das Pin-Symbol in den Ladungen heftet die Lösung auf dem Bildschirm an (Datensatz, Miner, Faktorzahl, Rotation, Regel), sodass etwa derselbe Datensatz mit 4 und mit 6 Faktoren nebeneinander steht. Eine solche Spalte geht von den Einstellungen aus, die mit ihrem Datensatz gespeichert sind, und gilt in dieser Sitzung."
       },
       "p2": "Die Faktoren jeder Analyse sind von der Analyse nummeriert, deshalb werden sie zuerst einander zugeordnet: Der erste Datensatz behält seine Nummern, die Faktoren jedes weiteren kommen in die Dimension, mit der sie die meisten Maße teilen; sind zwei gleich gut, entscheiden die ähnlicheren Ladungen. Tab. 17 hat seine Dimensionen von Hand umnummeriert, deshalb kann eine Nummer von der des Papers abweichen, und eine Zuordnung, die auf einem gemeinsamen Maß beruht, ist geraten: Der Tooltip einer Zelle der Dimensionsansicht nennt die Maße, auf denen sie beruht. Wie die Maße innerhalb eines Datensatzes gruppiert sind, hängt nicht von den Nummern ab."
     }

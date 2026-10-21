@@ -79,6 +79,11 @@ figure = {**options, "figure": "loadings", "format": "svg", "short_codes": True}
 with open("loadings.svg", "wb") as f:
     f.write(s.post(f"{url}/figure", json=figure).content)
 
+# Names of the factors head them in every download; the analysis does not change with them
+named = {**options, "factor_names": ["Size", "Connectors", None, "Separability"], "format": "latex"}
+with open("loadings.tex", "wb") as f:
+    f.write(s.post(url, json=named).content)
+
 # 4. Tab. 17: the four miners side by side under Hair et al., and the table for LaTeX
 miners = ["alpha", "directly-follows", "inductive", "hybrid-ilp"]
 body = {"columns": [{"bundled_id": f"comfy-paper-{m}-miner"} for m in miners], "assignment_rule": "hair"}
@@ -102,6 +107,14 @@ six = {
     "assignment_rule": "multi",
 }
 print([c["n_factors"] for c in s.post(f"{BASE}/factor-analysis/compare", json=six).json()["columns"]])
+
+# 7. Your own nets of several miners (rows "<log> / <miner>"): one miner at a time, and side by side
+own = "<dataset_id>"  # a model dataset computed from event logs with several miners
+for m in s.get(f"{BASE}/factor-analysis/datasets/{own}").json()["miners"] or []:
+    alone = s.post(f"{BASE}/factor-analysis/datasets/{own}/analyze", json={"miner": m["name"]}).json()
+    print(m["name"], alone["n_observations"], "observations, KMO", round(alone["kmo"]["overall"], 2))
+per_miner = {"columns": [{"dataset_id": own, "miner": m["name"]} for m in
+                         s.get(f"{BASE}/factor-analysis/datasets/{own}").json()["miners"] or []]}
 `;
 
 const CURL_EXAMPLE = `# List algorithms
