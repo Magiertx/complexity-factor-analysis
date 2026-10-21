@@ -749,7 +749,10 @@
       "col_features_s": "Features (s)",
       "measurement_sum": "Sum",
       "measurement_note": "Wall time in seconds on this server.",
-      "measurement_more": "Measured while the dataset was computed. A log is read once for all its miners. The ZIP has the seconds of every measure or feature group as well."
+      "measurement_more": "Measured while the dataset was computed. A log is read once for all its miners. The ZIP has the seconds of every measure or feature group as well.",
+      "view_log": "View this log",
+      "view_log_more": "Opens the page for a single log with this log and the miner of the row chosen. It works while the log is among the newest uploads of this session.",
+      "view_log_gone": "The log is no longer among the newest uploads of this session."
     },
     "suitability": {
       "passed": "passed",

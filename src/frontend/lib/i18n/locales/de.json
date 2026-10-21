@@ -749,7 +749,10 @@
       "col_features_s": "Features (s)",
       "measurement_sum": "Summe",
       "measurement_note": "Laufzeit in Sekunden auf diesem Server.",
-      "measurement_more": "Gemessen, während der Datensatz berechnet wurde. Ein Log wird für alle seine Miner einmal gelesen. Das ZIP enthält zusätzlich die Sekunden jedes Maßes oder jeder Feature-Gruppe."
+      "measurement_more": "Gemessen, während der Datensatz berechnet wurde. Ein Log wird für alle seine Miner einmal gelesen. Das ZIP enthält zusätzlich die Sekunden jedes Maßes oder jeder Feature-Gruppe.",
+      "view_log": "Dieses Log ansehen",
+      "view_log_more": "Öffnet die Seite für ein einzelnes Log mit diesem Log und dem Miner der Zeile. Das geht, solange das Log zu den neuesten Uploads dieser Sitzung gehört.",
+      "view_log_gone": "Das Log gehört nicht mehr zu den neuesten Uploads dieser Sitzung."
     },
     "suitability": {
       "passed": "bestanden",
