@@ -1290,7 +1290,6 @@
     "correlations": {
       "heading": "Korrelationskarte",
       "help": "Die Korrelation jedes Maßpaares, vor dem MSA-Filter. Orange Zellen sind negative Korrelationen, die anderen farbigen Zellen positive; je kräftiger die Farbe, desto größer |r|. Umrandete Paare haben |r| ≥ {limit}: Solche Maße sagen fast dasselbe und machen die Korrelationsmatrix beinahe singulär. Von dir ausgeschlossene Maße fehlen.",
-      "order_aria": "Reihenfolge der Maße in der Karte",
       "order_label": "Reihenfolge",
       "order_factor": "Nach Faktor",
       "order_cluster": "Gruppiert",
@@ -1309,11 +1308,9 @@
       "failed": "Die Korrelationen konnten nicht geladen werden: {error}",
       "few": "Es sind weniger als zwei Maße übrig, es gibt also nichts zu korrelieren.",
       "block_none": "Ohne Dimension",
-      "removed": "vom MSA-Filter entfernt",
-      "loaded_in": "In {ms} ms gezeichnet"
+      "removed": "vom MSA-Filter entfernt"
     },
     "sheet": {
-      "aria": "Steckbrief von {measure}",
       "close": "Steckbrief schließen",
       "position": "{i} von {n}",
       "announce": "{measure}, {i} von {n}",
@@ -1335,7 +1332,6 @@
       "values": "Verteilung",
       "hist_aria": "Histogramm von {measure}: {bins} Klassen von {min} bis {max}; die meisten Werte, {top}, liegen zwischen {from} und {to}",
       "hist_none": "Keine Werte zum Zeichnen.",
-      "median_mark": "Median",
       "values_input": "Über alle {n} Beobachtungen, vor der Bereinigung.",
       "values_cleaned": "Über die bereinigte Matrix.",
       "analysis": "In dieser Analyse",

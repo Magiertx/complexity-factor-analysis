@@ -1290,7 +1290,6 @@
     "correlations": {
       "heading": "Correlation map",
       "help": "The correlation of every pair of measures, before the MSA filter. Orange cells are negative correlations, the other coloured cells positive ones; the stronger the colour, the larger |r|. Outlined pairs have |r| ≥ {limit}: such measures say almost the same and make the correlation matrix nearly singular. Measures you excluded are left out.",
-      "order_aria": "Order of the measures in the map",
       "order_label": "Order",
       "order_factor": "By factor",
       "order_cluster": "Clustered",
@@ -1309,11 +1308,9 @@
       "failed": "The correlations could not be loaded: {error}",
       "few": "Fewer than two measures are left, so there is nothing to correlate.",
       "block_none": "No dimension",
-      "removed": "removed by the MSA filter",
-      "loaded_in": "Drawn in {ms} ms"
+      "removed": "removed by the MSA filter"
     },
     "sheet": {
-      "aria": "Fact sheet of {measure}",
       "close": "Close the fact sheet",
       "position": "{i} of {n}",
       "announce": "{measure}, {i} of {n}",
@@ -1335,7 +1332,6 @@
       "values": "Distribution",
       "hist_aria": "Histogram of {measure}: {bins} bins from {min} to {max}; the most values, {top}, lie between {from} and {to}",
       "hist_none": "No values to draw.",
-      "median_mark": "median",
       "values_input": "Over all {n} observations, before cleaning.",
       "values_cleaned": "Over the cleaned matrix.",
       "analysis": "In this analysis",
