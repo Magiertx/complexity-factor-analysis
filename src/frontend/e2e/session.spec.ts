@@ -1,10 +1,16 @@
 import type { Page } from "@playwright/test";
 import { expect, expectStep, seedStorage, test } from "./fixtures";
 
-/** The session ids of the session cookies a page is sent, in the order they arrive. */
-function trackSessions(page: Page): string[] {
+/**
+ * The session ids of the session cookies a page is sent, in the order they arrive, and the
+ * answers of the API that were server errors: requests of one new session that arrive together
+ * must not trip over each other where the session is stored.
+ */
+function trackSessions(page: Page): { ids: string[]; errors: string[] } {
   const ids: string[] = [];
+  const errors: string[] = [];
   page.on("response", async (response) => {
+    if (response.status() >= 500) errors.push(`${response.status()} ${response.request().method()} ${response.url()}`);
     for (const header of await response.headersArray().catch(() => [])) {
       if (header.name.toLowerCase() !== "set-cookie") continue;
       const cookie = /^session_id=([^;]+)/.exec(header.value);
@@ -12,7 +18,7 @@ function trackSessions(page: Page): string[] {
       if (cookie) ids.push(JSON.parse(Buffer.from(cookie[1].split(".")[0], "base64").toString()).session_id);
     }
   });
-  return ids;
+  return { ids, errors };
 }
 
 test("a first visit without a cookie gets one session, and the run it starts survives", async ({ browser, baseURL }) => {
@@ -22,7 +28,7 @@ test("a first visit without a cookie gets one session, and the run it starts sur
   try {
     const page = await context.newPage();
     await seedStorage(page);
-    const ids = trackSessions(page);
+    const { ids, errors } = trackSessions(page);
 
     await page.goto("/?bundled=comfy-paper-inductive-miner&preset=published");
     await expectStep(page, "loadings", "done");
@@ -30,6 +36,7 @@ test("a first visit without a cookie gets one session, and the run it starts sur
     // Every session cookie the server sent names the same session, ...
     expect(ids.length).toBeGreaterThan(0);
     expect(new Set(ids).size).toBe(1);
+    expect(errors).toEqual([]);
     // ... so the dataset the first request created is in the session the browser keeps.
     const listed = await page.request.get("/api/factor-analysis/datasets");
     expect(listed.ok()).toBeTruthy();
@@ -48,12 +55,13 @@ test("a cookie the server cannot read is replaced on the next page load", async 
     await context.addCookies([{ name: "session_id", value: "e30=.AAAAAA.not-a-signature", url: baseURL ?? "http://localhost:3000" }]);
     const page = await context.newPage();
     await seedStorage(page);
-    const ids = trackSessions(page);
+    const { ids, errors } = trackSessions(page);
 
     await page.goto("/?bundled=comfy-paper-inductive-miner&preset=published");
     await expectStep(page, "loadings", "done");
     expect(ids.length).toBeGreaterThan(0);
     expect(new Set(ids).size).toBe(1);
+    expect(errors).toEqual([]);
     expect((await (await page.request.get("/api/factor-analysis/datasets")).json()).datasets).toHaveLength(1);
     expect((await page.request.delete("/api/factor-analysis/datasets")).ok()).toBeTruthy();
   } finally {
