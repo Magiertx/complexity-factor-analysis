@@ -1194,7 +1194,7 @@
       "mine_none": "No datasets in this session yet.",
       "more": "More",
       "export_report": "LaTeX report",
-      "export_report_hint": "report.tex built like ComFy's report; compiles with pdflatex",
+      "export_report_hint": "report.tex built like ComFy's report; compile with latexmk, or run pdflatex twice",
       "print": "Print view",
       "print_hint": "The whole analysis on A4 pages in a new tab, to print or save as PDF",
       "help": "Help",
@@ -1345,7 +1345,7 @@
       "p1": "The download menu in the page header has:",
       "items": {
         "zip": "Analysis (ZIP): the result, the matrix, the tables, report.tex, the figures, the descriptive statistics, the run times, and a manifest with settings, versions and provenance.",
-        "report": "LaTeX report: report.tex built like the report of ComFy, with the dimensions and the settings; it compiles with pdflatex.",
+        "report": "LaTeX report: report.tex built like the report of ComFy, with the dimensions and the settings; compile it with latexmk -pdf, or run pdflatex twice, since long tables settle their widths in the second run.",
         "print": "Print view: the whole analysis on A4 pages, to print or save as PDF.",
         "tables": "The loadings as CSV or LaTeX, and the cleaned dataset as CSV."
       },

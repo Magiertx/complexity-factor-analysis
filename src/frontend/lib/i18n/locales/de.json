@@ -1194,7 +1194,7 @@
       "mine_none": "In dieser Sitzung gibt es noch keine Datensätze.",
       "more": "Mehr",
       "export_report": "LaTeX-Report",
-      "export_report_hint": "report.tex, aufgebaut wie der ComFy-Report; läuft durch pdflatex",
+      "export_report_hint": "report.tex, aufgebaut wie der ComFy-Report; mit latexmk oder zweimal pdflatex übersetzen",
       "print": "Druckansicht",
       "print_hint": "Die ganze Analyse auf A4-Seiten in einem neuen Tab, zum Drucken oder Speichern als PDF",
       "help": "Hilfe",
@@ -1345,7 +1345,7 @@
       "p1": "Das Download-Menü im Seitenkopf enthält:",
       "items": {
         "zip": "Analyse (ZIP): das Ergebnis, die Matrix, die Tabellen, report.tex, die Abbildungen, die deskriptive Statistik, die Laufzeiten und ein Manifest mit Einstellungen, Versionen und Herkunft.",
-        "report": "LaTeX-Report: report.tex, aufgebaut wie der ComFy-Report, mit den Dimensionen und den Einstellungen; läuft durch pdflatex.",
+        "report": "LaTeX-Report: report.tex, aufgebaut wie der ComFy-Report, mit den Dimensionen und den Einstellungen; übersetze ihn mit latexmk -pdf oder lasse pdflatex zweimal laufen, denn lange Tabellen finden ihre Spaltenbreiten erst im zweiten Lauf.",
         "print": "Druckansicht: die ganze Analyse auf A4-Seiten, zum Drucken oder Speichern als PDF.",
         "tables": "Die Ladungen als CSV oder LaTeX und den bereinigten Datensatz als CSV."
       },

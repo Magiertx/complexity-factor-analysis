@@ -547,9 +547,10 @@ rotation, the dimensions the rule forms, and the settings and provenance. With `
 the measures are named by the codes of the papers, for log measures as C with the code as
 index. Factors are named after an interpretation stored for exactly this analysis in
 `language`, if there is one; the report never asks for one. It compiles with pdflatex
-(booktabs, longtable, array, amsmath, tikz, pgfplots and paralist). Under the paper settings,
-the report of a bundled Important Factors dataset prints the numbers of the published ComFy
-report to the decimals it prints them with (`tests/test_report.py`).
+(booktabs, longtable, needspace, array, amsmath, tikz, pgfplots and paralist). Compile it with
+`latexmk -pdf`, or run pdflatex twice: long tables settle their column widths in the second run.
+Under the paper settings, the report of a bundled Important Factors dataset prints the numbers
+of the published ComFy report to the decimals it prints them with (`tests/test_report.py`).
 
 `POST /factor-analysis/datasets/{id}/export/figure` takes the same body plus `"figure":
 "scree" | "loadings"`, `"format": "svg" | "png"`, `"short_codes"` and `"order": "factor" |

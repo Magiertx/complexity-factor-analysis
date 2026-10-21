@@ -71,7 +71,8 @@ All downloads are in the **Download** menu of the page header:
   dataset, and a manifest with the settings, the versions and the provenance.
 - **LaTeX report**: `report.tex`, built like the report of ComFy (validity, MSA with the rounds of
   the filter, scree plot, descriptive statistics, loadings, communalities) plus the dimensions, the
-  factor correlations of an oblique rotation and the settings. It compiles with pdflatex.
+  factor correlations of an oblique rotation and the settings. It compiles with pdflatex; compile it with
+  latexmk -pdf, or run pdflatex twice, as long tables settle their column widths in the second run.
 - **Print view**: the whole analysis on A4 pages in a new tab, to print or to save as PDF.
 - **Loadings (CSV, LaTeX)** and **Dataset (CSV)**.
 

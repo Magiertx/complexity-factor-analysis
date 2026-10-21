@@ -460,7 +460,7 @@ def analysis_zip(
             dataset=dataset, params=params, result=result, descriptives=descriptives, tool=tool,
             libraries=libraries, created_at=created_at, short=short_codes, factor_names=factor_names,
             published=published,
-        ), "The analysis as a LaTeX report built like ComFy's report; compiles with pdflatex."),
+        ), "The analysis as a LaTeX report built like ComFy's report; compile it with latexmk -pdf, or run pdflatex twice."),
     ]
     if descriptives is not None:
         files.append((
