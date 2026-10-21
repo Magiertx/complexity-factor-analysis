@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   backend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
       run:
@@ -46,7 +46,7 @@ jobs:
         run: python -m pytest -q -rs
 
   frontend:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
       run:
@@ -94,7 +94,7 @@ jobs:
   # with dataset jobs in-process, and the standalone Next.js server as in the frontend image.
   # Specs tagged @prom need ProM and run only against the Docker stack (README, "Tests").
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       NEXT_TELEMETRY_DISABLED: 1
@@ -190,7 +190,7 @@ jobs:
   # Only the stage that compiles the lp_solve JNI wrapper; the full prom4py image downloads
   # the 430 MB ProM bundle.
   prom4py-lpsolve:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
