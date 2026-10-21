@@ -22,6 +22,7 @@ import {
   type AnalysisOptions,
   type UnassignedMeasure,
 } from "@/lib/factor-analysis";
+import { LONG_LIST, matchesQuery } from "@/lib/measure-list";
 import { formatNumber, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
@@ -29,7 +30,17 @@ import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { Segmented } from "@/components/ui/segmented";
 import { MeasureName, TableFrame } from "@/components/ui/table";
 import { Term, useTipZone } from "@/components/ui/tip";
+import { MeasureSearch, NotableSwitch } from "./measure-search";
 import { FieldLabel, HelpLabel, ThresholdField } from "./step-section";
+
+/** How the matrix of a long list of measures is narrowed; kept by the tab while other steps are open. */
+export interface LoadingsFilter {
+  query: string;
+  /** Only measures that load on several factors or on none. */
+  onlyNotable: boolean;
+}
+
+export const DEFAULT_LOADINGS_FILTER: LoadingsFilter = { query: "", onlyNotable: false };
 
 interface Props {
   analysis: FactorAnalysis;
@@ -40,6 +51,8 @@ interface Props {
   measureDescription: (key: string) => string | undefined;
   /** Where the paper's dimension tables differ from the chosen rule, for a bundled dataset. */
   assignmentNote?: string | null;
+  filter: LoadingsFilter;
+  onFilter: (filter: LoadingsFilter) => void;
 }
 
 /** What makes a loading bold: the rule's assignment, or the threshold reached or exceeded. */
@@ -77,7 +90,16 @@ function useLoadingsLook(): [{ look: LoadingsLook; order: MeasureOrder }, (patch
   return [state, update];
 }
 
-export function LoadingsView({ analysis, options, onOptions, measureName, measureDescription, assignmentNote }: Props) {
+export function LoadingsView({
+  analysis,
+  options,
+  onOptions,
+  measureName,
+  measureDescription,
+  assignmentNote,
+  filter,
+  onFilter,
+}: Props) {
   const t = useT();
   const { locale } = useLocale();
   const [{ look, order }, setLook] = useLoadingsLook();
@@ -196,6 +218,8 @@ export function LoadingsView({ analysis, options, onOptions, measureName, measur
             structureShown={oblique && matrix === "structure"}
             measureName={measureName}
             measureDescription={measureDescription}
+            filter={filter}
+            onFilter={onFilter}
           />
         ) : (
           <FactorGroups analysis={analysis} measureName={measureName} measureDescription={measureDescription} />
@@ -212,6 +236,8 @@ function LoadingsMatrix({
   structureShown,
   measureName,
   measureDescription,
+  filter,
+  onFilter,
 }: {
   analysis: FactorAnalysis;
   options: AnalysisOptions;
@@ -219,13 +245,25 @@ function LoadingsMatrix({
   structureShown: boolean;
   measureName: (key: string) => string;
   measureDescription: (key: string) => string | undefined;
+  filter: LoadingsFilter;
+  onFilter: (filter: LoadingsFilter) => void;
 }) {
   const t = useT();
   const { locale } = useLocale();
   const zone = useTipZone<HTMLTableElement>();
   const k = analysis.n_factors;
   const factorIdx = Array.from({ length: k }, (_, i) => i);
-  const rows = orderMeasures(analysis, order);
+  const ordered = orderMeasures(analysis, order);
+  // A long list can be searched and narrowed to the measures worth a look; only what the table
+  // shows changes, never the analysis.
+  const long = ordered.length >= LONG_LIST;
+  const notable = new Set([...crossLoadingsByMeasure(analysis).keys(), ...analysis.unassigned]);
+  const notableCount = ordered.filter((m) => notable.has(m)).length;
+  const rows = long
+    ? ordered.filter(
+        (m) => matchesQuery(filter.query, measureName(m), m) && (!filter.onlyNotable || notable.has(m)),
+      )
+    : ordered;
   const threshold = options.loading_threshold;
   const oblique = analysis.rotation !== "none" && !(ORTHOGONAL as string[]).includes(analysis.rotation);
   const structure = structureShown ? analysis.structure_loadings : null;
@@ -248,6 +286,21 @@ function LoadingsMatrix({
 
   return (
     <div className="space-y-2">
+      {long && (
+        <div className="flex items-center gap-x-3 gap-y-2 flex-wrap pb-1">
+          <MeasureSearch value={filter.query} onChange={(query) => onFilter({ ...filter, query })} />
+          <NotableSwitch
+            id="fa-loadings-notable"
+            checked={filter.onlyNotable}
+            onChange={(onlyNotable) => onFilter({ ...filter, onlyNotable })}
+            label={
+              <Term more={t("factor.loadings.only_notable_more")}>
+                {t("factor.loadings.only_notable", { n: notableCount })}
+              </Term>
+            }
+          />
+        </div>
+      )}
       <Legend threshold={threshold} boldBy={boldBy} crossed={secondary.size > 0} strict={strict} />
       <TableFrame label={t("factor.loadings.table_heading")}>
         <table ref={zone} className="data-table">
@@ -338,6 +391,7 @@ function LoadingsMatrix({
           )}
         </table>
       </TableFrame>
+      {rows.length === 0 && <p className="text-xs text-muted">{t("factor.measures.none_match")}</p>}
       {/* What the numbers mean, in the tooltips of these words. */}
       <p className="flex gap-x-3 gap-y-1 flex-wrap text-[11px] text-muted">
         <Term more={t("factor.help.loading")}>{t("factor.loadings.table_heading")}</Term>

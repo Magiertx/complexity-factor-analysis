@@ -60,7 +60,7 @@ import { DataForm, DataSummary, type OpenPreset } from "./data-step";
 import { DatasetView } from "./dataset-step";
 import { DEFAULT_MEASURE_VIEW, SuitabilityView, type MeasureGroups, type MeasureView } from "./suitability-step";
 import { FactorsView } from "./factors-step";
-import { LoadingsView } from "./loadings-step";
+import { DEFAULT_LOADINGS_FILTER, LoadingsView, type LoadingsFilter } from "./loadings-step";
 import { InterpretationView } from "./interpretation-step";
 import { FactorTour } from "./factor-tour";
 import { SETTING_CONTROLS, SettingsRow, focusControl } from "./settings-row";
@@ -696,6 +696,16 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   }, [catalog]);
   // How the list of step 3 is shown, kept while other steps are open.
   const [measureView, setMeasureView] = useState<MeasureView>(DEFAULT_MEASURE_VIEW);
+  // The same for the matrix of the loadings.
+  const [loadingsFilter, setLoadingsFilter] = useState<LoadingsFilter>(DEFAULT_LOADINGS_FILTER);
+  // Another dataset starts with whole lists: a search for the measures of the last one would hide
+  // those of this one.
+  const [listsFor, setListsFor] = useState(datasetId);
+  if (listsFor !== datasetId) {
+    setListsFor(datasetId);
+    setMeasureView(DEFAULT_MEASURE_VIEW);
+    setLoadingsFilter(DEFAULT_LOADINGS_FILTER);
+  }
 
   // The catalog entry of a bundled dataset, and the settings of its paper if it has them.
   const bundled = dataset?.bundled_id ? catalog?.bundled.find((b) => b.id === dataset.bundled_id) : undefined;
@@ -1215,6 +1225,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                     measureName={measureName}
                     measureDescription={measureDescription}
                     assignmentNote={assignmentNote}
+                    filter={loadingsFilter}
+                    onFilter={setLoadingsFilter}
                   />
                 </div>
               ) : (

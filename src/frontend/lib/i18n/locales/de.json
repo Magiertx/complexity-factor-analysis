@@ -891,6 +891,8 @@
         }
       },
       "cross_cell": "Querladung",
+      "only_notable": "Nur auffällige ({n})",
+      "only_notable_more": "Maße, die auf mehrere Faktoren laden oder auf keinen.",
       "legend_cross": "Ring: weitere Ladung eines Maßes mit Querladung",
       "also": "auch F{i}",
       "also_title": "Lädt auch auf Faktor {i}: {value}",

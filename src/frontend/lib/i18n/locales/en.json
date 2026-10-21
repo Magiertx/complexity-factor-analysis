@@ -891,6 +891,8 @@
         }
       },
       "cross_cell": "cross-loading",
+      "only_notable": "Only notable ({n})",
+      "only_notable_more": "Measures that load on several factors or on none.",
       "legend_cross": "ring: further loading of a cross-loaded measure",
       "also": "also F{i}",
       "also_title": "Loads on factor {i} as well: {value}",
