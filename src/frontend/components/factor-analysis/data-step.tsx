@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import {
   AlertCircle,
   BookOpen,
   Check,
+  Columns3,
   Copy,
   Database,
   ExternalLink,
@@ -32,6 +34,7 @@ import {
   type InputsSummary,
   type SampleInput,
 } from "@/lib/api";
+import { COMPARE_HREF } from "@/lib/compare";
 import { MIN_MEASURES, countText, datasetName, progressPercent, publishedOptions } from "@/lib/factor-analysis";
 import { formatDateTime, formatFileSize, formatNumber, formatPercent, formatRelative } from "@/lib/format";
 import { datasetNote, orderCollection, settingsSourceText } from "@/lib/paper-notes";
@@ -604,6 +607,15 @@ function CollectionBlock({
           <div className="mt-1.5 flex items-center gap-x-3 gap-y-1 flex-wrap text-[11px] text-muted">
             {size && <span>{t("factor.data.bundled_size", { rows: size.observations, cols: size.measures })}</span>}
             {collection.license && <span>{t("factor.data.license", { license: collection.license })}</span>}
+            {collection.id === "comfy-paper" && (
+              <Link
+                href={COMPARE_HREF}
+                className="inline-flex items-center gap-1 rounded font-medium text-accent-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <Columns3 className="h-3.5 w-3.5" aria-hidden />
+                {t("factor.data.compare_miners")}
+              </Link>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-0.5 shrink-0">

@@ -604,6 +604,7 @@
         "mine": "Datasets you loaded or computed in this session, each with the settings of its last analysis. The server keeps up to 30 per session and removes them after 7 days without use."
       },
       "bundled_empty": "No bundled datasets are available on this server.",
+      "compare_miners": "Compare the four miners (Tab. 17)",
       "bundled_size": "{rows} observations × {cols} measures",
       "cleaned_size": "{rows} observations × {cols} measures after cleaning",
       "license": "License: {license}",

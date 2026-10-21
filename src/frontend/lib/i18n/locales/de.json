@@ -604,6 +604,7 @@
         "mine": "Datensätze, die du in dieser Sitzung geladen oder berechnet hast, jeweils mit den Einstellungen ihrer letzten Analyse. Der Server behält bis zu 30 pro Sitzung und löscht sie nach 7 Tagen ohne Nutzung."
       },
       "bundled_empty": "Auf diesem Server sind keine mitgelieferten Datensätze verfügbar.",
+      "compare_miners": "Die vier Miner vergleichen (Tab. 17)",
       "bundled_size": "{rows} Beobachtungen × {cols} Maße",
       "cleaned_size": "{rows} Beobachtungen × {cols} Maße nach der Bereinigung",
       "license": "Lizenz: {license}",
