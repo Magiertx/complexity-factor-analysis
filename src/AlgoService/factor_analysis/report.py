@@ -135,6 +135,20 @@ class _Labels:
         return f"{self(measure)} ({tex(measure)})" if code else tex(measure)
 
 
+#: A factor name longer than this wraps in its column of the loadings table.
+SHORT_FACTOR_NAME = 12
+
+
+def _factor_heading(j: int, names: dict[int, str] | None) -> str:
+    """The heading of factor ``j`` (from 0) in a table: its name, else "Factor j"."""
+    name = (names or {}).get(j)
+    if not name:
+        return f"Factor {j + 1}"
+    if len(name) <= SHORT_FACTOR_NAME:
+        return tex(name)
+    return f"\\parbox[b]{{2cm}}{{\\centering {tex(name)}}}"
+
+
 def _items(lines: list[str], env: str = "compactitem") -> list[str]:
     return [f"\\begin{{{env}}}", *(f"\\item {line}" for line in lines), f"\\end{{{env}}}", ""]
 
@@ -398,7 +412,7 @@ def _descriptives_section(descriptives: dict[str, Any] | None, label: _Labels) -
     ]
 
 
-def _loadings_section(result: dict[str, Any], label: _Labels) -> list[str]:
+def _loadings_section(result: dict[str, Any], label: _Labels, names: dict[int, str] | None = None) -> list[str]:
     k = result["n_factors"]
     assignment = result.get("assignment") or {
         "rule": "largest", "loading_threshold": result["loading_threshold"], "loading_strict": False,
@@ -432,7 +446,7 @@ def _loadings_section(result: dict[str, Any], label: _Labels) -> list[str]:
         if len(blocks) > 1:
             out += ["\\noindent", f"Factors {block[0] + 1} to {block[-1] + 1}:", ""]
         end = " \\\\"
-        header = " & " + " & ".join(f"Factor {j + 1}" for j in block) + (" & $h^2$" if last else "") + end
+        header = " & " + " & ".join(_factor_heading(j, names) for j in block) + (" & $h^2$" if last else "") + end
         rows = [
             label(m) + " & " + " & ".join(cell(m, j, result["loadings"][m][j]) for j in block)
             + (f" & ${number(result['communalities'][m])}$" if last else "") + end
@@ -487,14 +501,15 @@ def _communalities_section(result: dict[str, Any], label: _Labels) -> list[str]:
     return [*out, ""]
 
 
-def _correlations_section(result: dict[str, Any]) -> list[str]:
+def _correlations_section(result: dict[str, Any], names: dict[int, str] | None = None) -> list[str]:
     correlations = result.get("factor_correlations")
     if not correlations:
         return []
     k = len(correlations)
-    header = " & " + " & ".join(f"Factor {j + 1}" for j in range(k)) + " \\\\"
+    header = " & " + " & ".join(_factor_heading(j, names) for j in range(k)) + " \\\\"
     rows = [
-        f"Factor {i + 1} & " + " & ".join(f"${number(v)}$" for v in row) + " \\\\" for i, row in enumerate(correlations)
+        f"{_factor_heading(i, names)} & " + " & ".join(f"${number(v)}$" for v in row) + " \\\\"
+        for i, row in enumerate(correlations)
     ]
     return [
         _KEEP,
@@ -547,7 +562,11 @@ def _dimensions_section(
             *_items(cross),
         ]
     if factor_names:
-        out += ["The names of the factors were suggested by a language model on request and checked by nobody but the reader.", ""]
+        out += [
+            "The names of the factors were given by whoever ran the analysis; they interpret the factors and are "
+            "not computed.",
+            "",
+        ]
     return out
 
 
@@ -662,7 +681,7 @@ def report_tex(
     describes it, ``params`` the parameters the analysis ran with, ``result`` the analysis,
     ``descriptives`` the statistics kept with the dataset. ``short`` names the measures by the
     short codes of the papers; ``factor_names`` are names of the factors by their index from 0,
-    e.g. of a stored interpretation; ``published`` the comparison with the published numbers. An
+    as the request gave them; ``published`` the comparison with the published numbers. An
     analysis of the rows of one miner (``result["miner"]``) says so where the miners are named."""
     label = _Labels(dataset["kind"], short)
     names = _measures(dataset, descriptives)
@@ -694,9 +713,9 @@ def report_tex(
         *_validity_section(result, params, names, label),
         *_factor_count_section(result),
         *_descriptives_section(descriptives, label),
-        *_loadings_section(result, label),
+        *_loadings_section(result, label, factor_names),
         *_communalities_section(result, label),
-        *_correlations_section(result),
+        *_correlations_section(result, factor_names),
         *_dimensions_section(result, label, factor_names),
         *_settings_section(dataset, params, result, tool, libraries, published, short),
         "\\end{document}",

@@ -191,12 +191,26 @@ def _cmap() -> Any:
     return LinearSegmentedColormap.from_list("loadings", [ORANGE, "white", BLUE])
 
 
+def _factor_label(j: int, names: dict[int, str] | None) -> str:
+    """The heading of factor ``j`` (from 0): its name, else "F1"; a dollar sign stays text."""
+    name = (names or {}).get(j)
+    return name.replace("$", "\\$") if name else f"F{j + 1}"
+
+
 def loadings(
-    result: dict[str, Any], kind: str, fmt: str, *, short: bool = False, order: str = "factor", language: str = "en"
+    result: dict[str, Any],
+    kind: str,
+    fmt: str,
+    *,
+    short: bool = False,
+    order: str = "factor",
+    language: str = "en",
+    names: dict[int, str] | None = None,
 ) -> bytes:
     """The loadings as a heatmap with their values, one row per measure: blue positive, orange
     negative, white for loadings that do not count under the threshold, the assigned ones in
-    bold, as in the loadings table; the communality in a column of its own."""
+    bold, as in the loadings table; the communality in a column of its own. Factors with
+    ``names`` are headed by them, set at a slant so that they keep the width of a cell."""
     from matplotlib import rc_context
     from matplotlib.colors import Normalize
     from matplotlib.figure import Figure
@@ -240,8 +254,14 @@ def loadings(
         ax.set_xlim(0, k + 1.25)
         ax.set_ylim(len(measures), 0)
         ax.set_xticks([j + 0.5 for j in range(k)] + [k + 0.75])
-        ax.set_xticklabels([f"F{j + 1}" for j in range(k)] + ["h²"])
+        named = any((names or {}).get(j) for j in range(k))
+        ax.set_xticklabels([_factor_label(j, names) for j in range(k)] + ["h²"])
         ax.xaxis.tick_top()
+        if named:
+            for tick in ax.get_xticklabels():
+                tick.set_rotation(40)
+                tick.set_horizontalalignment("left")
+                tick.set_rotation_mode("anchor")
         ax.set_yticks([i + 0.5 for i in range(len(measures))])
         ax.set_yticklabels(_labels(kind, measures, short))
         ax.tick_params(length=0, pad=3, colors=INK)
@@ -280,17 +300,19 @@ def _fingerprint(result: dict[str, Any], parts: tuple[str, ...]) -> str:
 
 def figure(
     name: str, fmt: str, result: dict[str, Any], kind: str, *,
-    short: bool = False, order: str = "factor", language: str = "en",
+    short: bool = False, order: str = "factor", language: str = "en", names: dict[int, str] | None = None,
 ) -> bytes:
-    """One of ``FIGURES`` in one of ``FORMATS``, with the labels in one of ``LANGUAGES``. The
-    same analysis with the same options gives the same bytes, drawn once."""
+    """One of ``FIGURES`` in one of ``FORMATS``, with the labels in one of ``LANGUAGES``; the
+    loadings with the ``names`` of the factors where given. The same analysis with the same
+    options gives the same bytes, drawn once."""
     if name == "scree":
         key = (name, fmt, language, _fingerprint(result, _SCREE_PARTS))
         return _computed_once(
             key, _CACHE, _CACHE_LOCK, _IN_FLIGHT, CACHE_SIZE, lambda _: scree(result, fmt, language), None
         )
-    key = (name, fmt, language, kind, short, order, _fingerprint(result, _LOADINGS_PARTS))
+    titled = tuple(sorted((names or {}).items()))
+    key = (name, fmt, language, kind, short, order, titled, _fingerprint(result, _LOADINGS_PARTS))
     return _computed_once(
         key, _CACHE, _CACHE_LOCK, _IN_FLIGHT, CACHE_SIZE,
-        lambda _: loadings(result, kind, fmt, short=short, order=order, language=language), None,
+        lambda _: loadings(result, kind, fmt, short=short, order=order, language=language, names=names), None,
     )

@@ -23,7 +23,7 @@ import pandas as pd
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel, ConfigDict, Field, model_serializer
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_serializer, model_validator
 
 import jobs_db
 import provenance
@@ -36,6 +36,7 @@ from factor_analysis.descriptives import describe, describe_cleaned
 from factor_analysis.core import (
     COMMUNALITY_THRESHOLDS,
     LOADING_THRESHOLDS,
+    MAX_MEASURES,
     MISSING_MARKERS,
     AnalysisError,
     AnalysisParams,
@@ -937,6 +938,10 @@ async def download_dataset(dataset_id: str, session_id: str = Depends(get_sessio
     return _attachment(content, f"{_slug(meta['name'])}.csv", "text/csv; charset=utf-8")
 
 
+#: The longest name of a factor.
+FACTOR_NAME_MAX = 40
+
+
 class AnalyzeRequest(BaseModel):
     excluded: list[str] = Field(default_factory=list, max_length=MAX_CSV_COLUMNS)
     auto_msa_filter: bool = True
@@ -952,6 +957,25 @@ class AnalyzeRequest(BaseModel):
     #: The rows of one miner of a model dataset discovered with several miners, whose rows are
     #: "<log> / <miner>" (factor_analysis/miners.py); null analyses every row.
     miner: str | None = Field(None, max_length=200)
+    #: Names of the factors, the first for factor 1; null or "" keeps "Factor i". The exports
+    #: (loadings, figures, report, ZIP) use them; the analysis does not change with them.
+    factor_names: list[str | None] | None = Field(None, max_length=MAX_MEASURES)
+
+    @field_validator("factor_names")
+    @classmethod
+    def _names(cls, names: list[str | None] | None) -> list[str | None] | None:
+        if names is None:
+            return None
+        out: list[str | None] = []
+        for name in names:
+            # One line, without spaces at either end, so that a name fits a table header.
+            text = " ".join(name.split()) if name is not None else ""
+            if len(text) > FACTOR_NAME_MAX:
+                raise ValueError(f"A factor name has at most {FACTOR_NAME_MAX} characters: '{text[:50]}…'.")
+            out.append(text or None)
+        while out and out[-1] is None:
+            out.pop()
+        return out or None
 
     def params(self, kind: str) -> AnalysisParams:
         values = self.model_dump(include=set(AnalysisParams.__dataclass_fields__))
@@ -963,10 +987,10 @@ class AnalyzeRequest(BaseModel):
 
     @model_serializer(mode="wrap")
     def _dump(self, handler: Any) -> dict[str, Any]:
-        # The miner only where there is one: the parameters of a request without it, e.g. the
-        # published options of a bundled dataset, stay as they were.
+        # The miner and the names only where there are: the parameters of a request without
+        # them, e.g. the published options of a bundled dataset, stay as they were.
         values = handler(self)
-        for key in ("miner",):
+        for key in ("miner", "factor_names"):
             if values.get(key) is None:
                 values.pop(key, None)
         return values
@@ -997,6 +1021,19 @@ def _select(
     selection = miners.select(data, miner)
     kept = set(selection.data.columns)
     return selection.data, dataclasses.replace(params, excluded=[m for m in params.excluded if m in kept]), selection
+
+
+def _named(body: AnalyzeRequest, n_factors: int) -> dict[int, str] | None:
+    """The names of the factors by their index from 0, for an analysis of ``n_factors``."""
+    names = body.factor_names or []
+    if len(names) > n_factors:
+        raise AnalysisError(
+            f"{len(names)} factor names for {n_factors} factor(s).",
+            "factor_names_too_many",
+            names=len(names),
+            factors=n_factors,
+        )
+    return {i: name for i, name in enumerate(names) if name} or None
 
 
 class ExportRequest(AnalyzeRequest):
@@ -1170,13 +1207,16 @@ async def analyze_dataset(
     and dataset replaced, or whose client left; it was not computed to the end.
 
     With ``miner`` the analysis runs on the rows of that miner (``miner`` in the result: its
-    name, rows, measures and the measures without variance within it).
+    name, rows, measures and the measures without variance within it); ``factor_names`` changes
+    nothing here.
     """
     started = time.perf_counter()
     body = body or AnalyzeRequest()
-    # Numbered on arrival, before anything is awaited, so that the newest request wins.
+    # Numbered on arrival, before anything is awaited, so that the newest request wins. The
+    # names of the factors do not change the analysis.
     key = (session_id, _validate_dataset_id(dataset_id))
-    parameters = json.dumps({**body.model_dump(), "excluded": sorted(body.excluded)}, sort_keys=True)
+    asked = {**body.model_dump(exclude={"factor_names"}), "excluded": sorted(body.excluded)}
+    parameters = json.dumps(asked, sort_keys=True)
     watch = _Watch(request, key if latest_wins else None, parameters)
     try:
         meta, data = await _ready_matrix(dataset_id, session_id)
@@ -1209,8 +1249,9 @@ async def save_options(
     """Keep the parameters of an analysis with the dataset, so reopening it starts from them.
 
     Checked like ``analyze`` checks them as far as that needs no fit: unknown excluded
-    measures, too few measures or observations left (of the ``miner``, if one is given), or
-    more factors than they allow are a 400 with ``code`` and ``params``.
+    measures, too few measures or observations left (of the ``miner``, if one is given), more
+    factors than they allow, or more ``factor_names`` than factors are a 400 with ``code`` and
+    ``params``.
     """
     meta = await _ready_meta(dataset_id, session_id)
     params = body.params(meta["kind"])
@@ -1221,6 +1262,8 @@ async def save_options(
             data = await run_in_threadpool(storage.load_matrix, session_id, meta["id"])
             data, params, _ = await run_in_threadpool(_select, meta, data, body.miner, params)
             check_params(list(data.columns), len(data), params)
+        if body.n_factors is not None:
+            _named(body, body.n_factors)
     except AnalysisError as e:
         return _AnalysisFailed(e).response
     storage.update_meta(session_id, meta["id"], options=body.saved())
@@ -1235,16 +1278,17 @@ async def export_loadings(
     body: ExportRequest | None = None,
     session_id: str = Depends(get_session_id),
 ) -> Response:
-    """The loadings table of the analysis as CSV or LaTeX."""
+    """The loadings table of the analysis as CSV or LaTeX, its columns named by
+    ``factor_names`` where given."""
     body = body or ExportRequest()
     exported = await _exported(request, dataset_id, body, session_id)
     if isinstance(exported, Response):
         return exported
-    result = exported.result
+    result, names = exported.result, exported.names
     stem = f"{_slug(exported.meta['name'])}-loadings"
     if body.format == "latex":
-        return _attachment(loadings_latex(result), f"{stem}.tex", "application/x-latex; charset=utf-8")
-    return _attachment(loadings_csv(result), f"{stem}.csv", "text/csv; charset=utf-8")
+        return _attachment(loadings_latex(result, names), f"{stem}.tex", "application/x-latex; charset=utf-8")
+    return _attachment(loadings_csv(result, names), f"{stem}.csv", "text/csv; charset=utf-8")
 
 
 class ArchiveRequest(AnalyzeRequest):
@@ -1326,6 +1370,7 @@ class _Exported:
         params: AnalysisParams,
         result: dict[str, Any],
         selection: miners.Selection | None = None,
+        names: dict[int, str] | None = None,
     ) -> None:
         self.meta = meta
         #: The rows the analysis ran on: all of the dataset, or those of one miner.
@@ -1333,6 +1378,8 @@ class _Exported:
         self.params = params
         self.result = result
         self.selection = selection
+        #: The names of the factors by their index from 0, as the request gave them.
+        self.names = names
         result["miner"] = selection.describe() if selection else None
         self.match = None if selection else _published_match(meta, params, result)
         result["published_match"] = self.match
@@ -1340,6 +1387,12 @@ class _Exported:
         self.used = {**effective_params(params, result["n_factors"]), "rotation": result["rotation"]}
         if selection:
             self.used["miner"] = selection.miner
+
+    def factor_names(self) -> list[str | None] | None:
+        """The names as a list for the manifest, one per factor."""
+        if not self.names:
+            return None
+        return [self.names.get(i) for i in range(self.result["n_factors"])]
 
     def published(self) -> dict[str, Any] | None:
         if self.match is None:
@@ -1360,13 +1413,14 @@ async def _exported(request: Request, dataset_id: str, body: AnalyzeRequest, ses
     try:
         data, params, selection = await run_in_threadpool(_select, meta, data, body.miner, params)
         result = await _analyze(data, params, _Watch(request))
+        names = _named(body, result["n_factors"])
     except AnalysisError as e:
         return _AnalysisFailed(e).response
     except _AnalysisFailed as e:
         return e.response
     except Superseded:
         return _superseded()
-    return _Exported(meta, data, params, result, selection)
+    return _Exported(meta, data, params, result, selection, names)
 
 
 async def _interpretation(exported: _Exported, session_id: str, language: str) -> dict[str, Any] | None:
@@ -1378,17 +1432,12 @@ async def _interpretation(exported: _Exported, session_id: str, language: str) -
     return stored[0] if stored else None
 
 
-def _factor_names(interpretation: dict[str, Any] | None) -> dict[int, str] | None:
-    """The names of the factors of a stored interpretation, by their index from 0."""
-    factors = ((interpretation or {}).get("interpretation") or {}).get("factors") or []
-    return {f["index"] - 1: f["name"] for f in factors} or None
-
-
 def _figure(
     exported: _Exported, name: str, fmt: str, short: bool, order: str = "factor", language: str = "en"
 ) -> bytes:
     return figures.figure(
-        name, fmt, exported.result, exported.meta["kind"], short=short, order=order, language=language
+        name, fmt, exported.result, exported.meta["kind"], short=short, order=order, language=language,
+        names=exported.names,
     )
 
 
@@ -1423,13 +1472,12 @@ async def export_report(
 ) -> Response:
     """The analysis as a LaTeX report built like ComFy's (report.tex): measures, validity
     (sample size, Bartlett, MSA with the rounds of the filter), factor count, descriptive
-    statistics, loadings, communalities, dimensions, settings and provenance. The factors are
-    named after an interpretation stored for exactly this analysis in ``language``, if any."""
+    statistics, loadings, communalities, dimensions, settings and provenance. The factors carry
+    the ``factor_names`` of the request; nothing names them by itself."""
     body = body or ArchiveRequest()
     exported = await _exported(request, dataset_id, body, session_id)
     if isinstance(exported, Response):
         return exported
-    names = _factor_names(await _interpretation(exported, session_id, body.language))
 
     def build() -> str:
         return report_tex(
@@ -1441,7 +1489,7 @@ async def export_report(
             libraries=library_versions(),
             created_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
             short=body.short_codes,
-            factor_names=names,
+            factor_names=exported.names,
             published=exported.published(),
         )
 
@@ -1462,7 +1510,7 @@ async def export_archive(
     the descriptive statistics, the run times of a computed dataset, parameters and library
     versions, with an interpretation of exactly this analysis if one is stored. Never calls the
     API for an interpretation. With ``miner`` the matrix holds the rows of that miner and the
-    manifest names it."""
+    manifest names it; ``factor_names`` name the factors of the tables, figures and report."""
     body = body or ArchiveRequest()
     exported = await _exported(request, dataset_id, body, session_id)
     if isinstance(exported, Response):
@@ -1487,6 +1535,7 @@ async def export_archive(
             short_codes=body.short_codes,
             figure_order=body.order,
             figure_language=body.figure_language,
+            factor_names=exported.names,
         )
 
     archive = await run_in_threadpool(build)
