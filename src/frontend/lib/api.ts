@@ -582,6 +582,8 @@ export interface AnalyzeOptions {
   assignment_rule?: AssignmentRule;
   /** Of a model dataset discovered with several miners: the rows of this miner only. */
   miner?: string | null;
+  /** Names of the factors, the first for factor 1; the exports use them, the analysis does not. */
+  factor_names?: (string | null)[] | null;
 }
 
 /** Why a measure joined no factor. */

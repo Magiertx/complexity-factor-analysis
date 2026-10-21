@@ -2,7 +2,7 @@
 // Only bundled datasets get links: everyone has them, while uploaded data stays in its session.
 
 import { ASSIGNMENT_RULES, ROTATIONS, type AssignmentRule, type Rotation } from "./api";
-import { sameOptions, type AnalysisOptions } from "./factor-analysis";
+import { FACTOR_NAME_MAX, cleanFactorName, namesForApi, sameOptions, type AnalysisOptions, type FactorNames } from "./factor-analysis";
 
 export type LinkPreset = "published" | "standard";
 
@@ -158,21 +158,43 @@ export interface PrintView {
 
 /**
  * The address of the print view of an analysis of a dataset of the session: the dataset, every
- * setting spelled out, and how it is shown. The print view runs the analysis itself.
+ * setting spelled out, the names of the factors, and how it is shown. The print view runs the
+ * analysis itself.
  */
-export function printHref(kind: "model" | "log", datasetId: string, options: AnalysisOptions, standard: AnalysisOptions, view: PrintView): string {
+export function printHref(
+  kind: "model" | "log",
+  datasetId: string,
+  options: AnalysisOptions,
+  standard: AnalysisOptions,
+  view: PrintView,
+  names: FactorNames | null = null,
+): string {
   const q = new URLSearchParams({ kind, dataset: datasetId });
   writeOptions(q, options, standard);
   if (view.codes) q.set("codes", "1");
   if (view.order !== "factor") q.set("order", view.order);
+  // A name may hold commas, so the names go as a JSON list.
+  if (names && names.length > 0) q.set("names", JSON.stringify(names));
   return `/print?${q.toString()}`;
+}
+
+/** The names of the factors in an address, or [] when it has none or they cannot be read. */
+function readNames(text: string | null): FactorNames {
+  if (!text) return [];
+  try {
+    const value: unknown = JSON.parse(text);
+    if (!Array.isArray(value) || value.length > 400) return [];
+    return value.map((n) => (typeof n === "string" && n.length <= FACTOR_NAME_MAX * 4 ? cleanFactorName(n) || null : null));
+  } catch {
+    return [];
+  }
 }
 
 /** What the print view's address asks for, or null if it names no dataset or a setting is unreadable. */
 export function parsePrintLink(
   params: URLSearchParams,
   defaults: (kind: "model" | "log") => AnalysisOptions,
-): { kind: "model" | "log"; datasetId: string; options: AnalysisOptions; view: PrintView } | null {
+): { kind: "model" | "log"; datasetId: string; options: AnalysisOptions; view: PrintView; names: FactorNames } | null {
   const kind = params.get("kind") === "log" ? "log" : "model";
   const datasetId = params.get("dataset");
   if (!datasetId) return null;
@@ -183,5 +205,6 @@ export function parsePrintLink(
     datasetId,
     options,
     view: { codes: params.get("codes") === "1", order: params.get("order") === "dataset" ? "dataset" : "factor" },
+    names: namesForApi(readNames(params.get("names")), Number.MAX_SAFE_INTEGER) ?? [],
   };
 }

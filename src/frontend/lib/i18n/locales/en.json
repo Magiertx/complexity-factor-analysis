@@ -990,7 +990,8 @@
       "interpretation_too_large": "This analysis is too large to interpret: at most {measures} measures, {factors} factors and measure names of {name_length} characters can be sent. Exclude measures or choose fewer factors.",
       "too_many_measures_for_analysis": "{n} measures are more than the {max} the server analyses at once. Exclude measures in the table of step 3.",
       "superseded": "A newer analysis of this dataset, for example in another tab, replaced this one. Change a setting to run it again.",
-      "unknown_miner": "The dataset has no rows of the miner {miner}."
+      "unknown_miner": "The dataset has no rows of the miner {miner}.",
+      "factor_names_too_many": "{names} factor names for {factors} factors."
     },
     "warnings": {
       "bartlett_not_significant": "Bartlett's test is not significant (p = {p} ≥ {alpha}); the measures may be uncorrelated.",
@@ -1271,6 +1272,14 @@
       "few": "Fewer than 5 per measure ({min})",
       "hint_together": "All {miners} miners together: the differences between the miners mix into the dimensions, and each log counts once per miner.",
       "hint_one": "Only the nets of the {miner}: the dimensions of this miner alone, from {n} observations."
+    },
+    "names": {
+      "edit_more": "Press to name the factor: Enter keeps the name, Esc leaves it as it was, at most {max} characters. An empty name gives the factor back its number.",
+      "field": "Name of factor {i}",
+      "cleared": "Factor names cleared: they named the factors of another factor count, rotation or rule.",
+      "suggested": "Use the suggested names",
+      "suggested_more": "Takes over the names the interpretation suggests for this solution; each stays yours to change.",
+      "suggested_done": "Suggested names taken over."
     }
   },
   "inspect": {

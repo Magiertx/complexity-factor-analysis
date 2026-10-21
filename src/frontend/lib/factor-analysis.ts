@@ -10,6 +10,7 @@ import {
   type CrossLoading,
   type FactorAnalysis,
   type FactorCatalog,
+  type FactorInterpretation,
   type FactorKind,
   type InputsSummary,
   type Job,
@@ -244,6 +245,66 @@ export function rowsChoice(
   const p = dataset.measures.filter((m) => !out.has(m) && !without.has(m)).length;
   const blocked = n <= p;
   return { n, p, blocked, few: !blocked && n < OBSERVATIONS_PER_MEASURE * p };
+}
+
+/** The most characters of a factor's name; the server says the same. */
+export const FACTOR_NAME_MAX = 40;
+
+/** The names of the factors, the first for factor 1; null or "" where a factor has none. */
+export type FactorNames = (string | null)[];
+
+/** A name as typed, in one line without spaces at either end, cut to the longest allowed. */
+export function cleanFactorName(text: string): string {
+  return text.split(/\s+/).filter(Boolean).join(" ").slice(0, FACTOR_NAME_MAX);
+}
+
+/** The name of factor `i` (from 0), or null for one without. */
+export function factorName(names: FactorNames | null | undefined, i: number): string | null {
+  const name = names?.[i];
+  return name ? name : null;
+}
+
+/** The names with that of factor `i` set, or cleared by an empty text. */
+export function withFactorName(names: FactorNames, i: number, text: string): FactorNames {
+  const out = [...names];
+  while (out.length <= i) out.push(null);
+  out[i] = cleanFactorName(text) || null;
+  return trimNames(out);
+}
+
+/** The names without the empty ones at the end; [] when there are none. */
+export function trimNames(names: FactorNames): FactorNames {
+  const out = names.map((n) => (n ? n : null));
+  while (out.length > 0 && out[out.length - 1] === null) out.pop();
+  return out;
+}
+
+/** The names as the API takes them, for a solution of `k` factors; null when none is named. */
+export function namesForApi(names: FactorNames | null | undefined, k: number): FactorNames | null {
+  const out = trimNames((names ?? []).slice(0, k));
+  return out.length > 0 ? out : null;
+}
+
+/** Whether any factor has a name. */
+export function hasNames(names: FactorNames | null | undefined): boolean {
+  return !!names && names.some((n) => !!n);
+}
+
+/**
+ * The solution names belong to: the factor count, the rotation and the assignment rule. A change
+ * of any of them clears the names, as they would name other factors.
+ */
+export function solutionKey(k: number, options: Pick<AnalysisOptions, "rotation" | "assignment_rule">): string {
+  return `${k}|${options.rotation}|${options.assignment_rule}`;
+}
+
+/** The names an interpretation suggests, by factor, cut to the longest name allowed. */
+export function suggestedNames(interpretation: FactorInterpretation, k: number): FactorNames {
+  const out: FactorNames = Array.from({ length: k }, () => null);
+  for (const f of interpretation.factors) {
+    if (f.index >= 1 && f.index <= k) out[f.index - 1] = cleanFactorName(f.name) || null;
+  }
+  return trimNames(out);
 }
 
 /** One part of the settings row above steps 3 to 5, e.g. "MSA ≥ 0.6". */

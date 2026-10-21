@@ -40,15 +40,22 @@ import {
   defaultOptions,
   dimensionCount,
   downloadBlob,
+  hasNames,
   initialOptions,
+  namesForApi,
   optionsFromSaved,
   publishedOptions,
   rowsChoice,
   sameOptions,
+  solutionKey,
   solutionNeedsAttention,
+  suggestedNames,
+  trimNames,
   unassignedMeasures,
+  withFactorName,
   type AnalysisOptions,
   type ExportFormat,
+  type FactorNames,
 } from "@/lib/factor-analysis";
 import { formatNumber, formatPercent } from "@/lib/format";
 import { ruleNote } from "@/lib/paper-notes";
@@ -67,7 +74,13 @@ import { DataForm, DataSummary, type OpenPreset } from "./data-step";
 import { DatasetView, type MinerChoiceProps } from "./dataset-step";
 import { DEFAULT_MEASURE_VIEW, SuitabilityView, type MeasureGroups, type MeasureView } from "./suitability-step";
 import { FactorsView } from "./factors-step";
-import { DEFAULT_LOADINGS_FILTER, LoadingsView, useLoadingsLook, type LoadingsFilter } from "./loadings-step";
+import {
+  DEFAULT_LOADINGS_FILTER,
+  LoadingsView,
+  useLoadingsLook,
+  type FactorNaming,
+  type LoadingsFilter,
+} from "./loadings-step";
 import { InterpretationView } from "./interpretation-step";
 import { FactorTour } from "./factor-tour";
 import { SETTING_CONTROLS, SettingsRow, focusControl } from "./settings-row";
@@ -86,6 +99,22 @@ const SAVE_OPTIONS_DEBOUNCE_MS = 1000;
 /** What an interpretation was requested for; a change of any part makes it stale. */
 function interpretationKey(datasetId: string, options: AnalysisOptions, locale: string) {
   return JSON.stringify([datasetId, options, locale]);
+}
+
+/**
+ * The names of the factors and the solution they were given for (`solutionKey`); a key of null
+ * takes the solution of the next analysis, e.g. for the names saved with a dataset just opened.
+ */
+interface Naming {
+  key: string | null;
+  names: FactorNames;
+}
+
+const NO_NAMES: Naming = { key: null, names: [] };
+
+/** The options as saved with a dataset, with the names of the factors where there are. */
+function savedForm(options: AnalysisOptions, names: FactorNames | null): string {
+  return JSON.stringify(names && names.length > 0 ? { ...options, factor_names: names } : options);
 }
 
 function messageOf(e: unknown, fallback: string) {
@@ -149,8 +178,15 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
 
   const [options, setOptions] = useState<AnalysisOptions>(() => defaultOptions(kind));
   const standard = useMemo(() => defaultOptions(kind), [kind]);
-  // "Reset to standard" and "Use paper settings" can be undone once, from a toast.
-  const [undo, setUndo] = useState<(UndoNotice & { previous: AnalysisOptions }) | null>(null);
+  // "Reset to standard" and "Use paper settings" can be undone once, from a toast, and so can a
+  // change that clears the names of the factors, names and settings together.
+  const [undo, setUndo] = useState<(UndoNotice & { previous: AnalysisOptions; naming?: Naming }) | null>(null);
+  // The names of the factors of the solution on screen; kept with the options saved with the dataset.
+  const [naming, setNaming] = useState<Naming>(NO_NAMES);
+  const namingRef = useRef(naming);
+  useEffect(() => {
+    namingRef.current = naming;
+  }, [naming]);
   // The dataset whose saved options were applied, and the options the server has for it.
   const optionsAppliedFor = useRef<string | null>(null);
   // Settings chosen for a dataset about to open (the paper's or the standard), which replace
@@ -195,6 +231,11 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   );
   // The options of the analysis on screen; a stored interpretation is looked up for them.
   const [analyzedOptions, setAnalyzedOptions] = useState<AnalysisOptions | null>(null);
+  // The same for callbacks: the solution the names of the factors were given for.
+  const analyzedRef = useRef(analyzedOptions);
+  useEffect(() => {
+    analyzedRef.current = analyzedOptions;
+  }, [analyzedOptions]);
 
   const [interpStatus, setInterpStatus] = useState<InterpretationStatus | null>(null);
   const [interpStatusFailed, setInterpStatusFailed] = useState(false);
@@ -253,6 +294,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       setInterpretation(null);
       setInterpretError(null);
       setUndo(null);
+      setNaming(NO_NAMES);
       // A request for the old dataset is aborted and would not reset this itself.
       setAnalyzing(false);
       // Every dataset has its own options; those saved with it are applied once it has loaded.
@@ -302,7 +344,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         // the dataset, so that the first analysis already uses them.
         if (d.status === "ready" && optionsAppliedFor.current !== d.id) {
           optionsAppliedFor.current = d.id;
-          const saved = d.options ? JSON.stringify(optionsFromSaved(kind, d.options)) : null;
+          const savedNames = trimNames(d.options?.factor_names ?? []);
+          const saved = d.options ? savedForm(optionsFromSaved(kind, d.options), savedNames) : null;
           savedOptions.current = { id: d.id, json: saved };
           const own = initialOptions(kind, d.options, d.measures, d.miners);
           const chosen = openWith.current?.id === d.id ? openWith.current : null;
@@ -312,9 +355,18 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           // between compares its settings with these, and would else leave them in place.
           optionsRef.current = applied;
           setOptions(applied);
+          // The saved names belong to the saved settings; other settings name other factors.
+          const ownNaming: Naming = { key: null, names: savedNames };
+          setNaming(sameOptions(applied, own) ? ownNaming : NO_NAMES);
           // A copy reopened from the session had settings of its own; they are one click away.
           if (chosen && d.options && !sameOptions(own, chosen.options)) {
-            setUndo({ id: Date.now(), message: chosen.message, previous: own, returnFocus: summaryTitle.current });
+            setUndo({
+              id: Date.now(),
+              message: chosen.message,
+              previous: own,
+              naming: ownNaming,
+              returnFocus: summaryTitle.current,
+            });
           }
         }
         setDataset(d);
@@ -385,6 +437,22 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       setAnalyzing(true);
       try {
         const res = await run();
+        // Names belong to a factor count, rotation and rule: another solution has other
+        // factors, so its names go, and the toast offers the settings and names before.
+        const key = solutionKey(res.n_factors, options);
+        const named = namingRef.current;
+        if (named.key !== key) {
+          if (named.key !== null && hasNames(named.names)) {
+            setUndo({
+              id: Date.now(),
+              message: tRef.current("factor.names.cleared"),
+              previous: analyzedRef.current ?? options,
+              naming: named,
+              returnFocus: null,
+            });
+          }
+          setNaming({ key, names: named.key === null ? named.names : [] });
+        }
         setAnalysis(res);
         setAnalyzedOptions(options);
         setAnalysisError(null);
@@ -405,18 +473,33 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     };
   }, [ready, datasetId, options, datasetGone]);
 
-  // Remember the options of every new analysis with its dataset, so that reopening the dataset
-  // starts from them. Nothing depends on the answer; a failure only costs that convenience.
+  // The solution on screen, and the names of its factors.
+  const analysisKey = analysis && analyzedOptions ? solutionKey(analysis.n_factors, analyzedOptions) : null;
+  const shownNames = useMemo(
+    () => (analysisKey !== null && naming.key === analysisKey ? naming.names : []),
+    [analysisKey, naming],
+  );
+  // As the API takes them, for the analysis on screen: saved with its options, sent with its exports.
+  const apiNames = useMemo(
+    () => (analysis ? namesForApi(shownNames, analysis.n_factors) : null),
+    [analysis, shownNames],
+  );
+  const apiNamesJson = JSON.stringify(apiNames);
+
+  // Remember the options of every new analysis with its dataset, and the names of its factors, so
+  // that reopening the dataset starts from them. Nothing depends on the answer; a failure only
+  // costs that convenience.
   const pendingSave = useRef<(() => void) | null>(null);
   useEffect(() => {
     pendingSave.current = null;
     if (!datasetId || !analyzedOptions) return;
-    const json = JSON.stringify(analyzedOptions);
+    const names = JSON.parse(apiNamesJson) as FactorNames | null;
+    const json = savedForm(analyzedOptions, names);
     const saved = savedOptions.current;
     if (saved?.id === datasetId && saved.json === json) return;
     const save = () => {
       pendingSave.current = null;
-      saveDatasetOptions(datasetId, analyzedOptions).then(
+      saveDatasetOptions(datasetId, names ? { ...analyzedOptions, factor_names: names } : analyzedOptions).then(
         () => {
           if (datasetIdRef.current === datasetId) savedOptions.current = { id: datasetId, json };
         },
@@ -429,7 +512,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     pendingSave.current = save;
     const timer = setTimeout(save, SAVE_OPTIONS_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [datasetId, analyzedOptions]);
+  }, [datasetId, analyzedOptions, apiNamesJson]);
 
   // Leaving the tab, the page or the dataset sends a save still waiting for its debounce.
   useEffect(() => {
@@ -675,18 +758,20 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     if (!datasetId) return;
     setExporting(format);
     setExportError(null);
+    // What is on screen, with the names of its factors.
+    const shown = { ...(analyzedOptions ?? options), factor_names: apiNames };
     try {
       if (format === "zip") {
         // The button is enabled only while both are the same: the ZIP holds what is shown.
-        await downloadAnalysisZip(datasetId, analyzedOptions ?? options, locale, {
+        await downloadAnalysisZip(datasetId, shown, locale, {
           shortCodes: codesShown,
           order: figureOrder,
         });
       } else if (format === "report") {
-        const { blob, filename } = await exportReport(datasetId, analyzedOptions ?? options, locale, codesShown);
+        const { blob, filename } = await exportReport(datasetId, shown, locale, codesShown);
         downloadBlob(blob, filename);
       } else {
-        const { blob, filename } = await exportLoadings(datasetId, options, format);
+        const { blob, filename } = await exportLoadings(datasetId, shown, format);
         downloadBlob(blob, filename);
       }
     } catch (e) {
@@ -703,7 +788,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     setExportError(null);
     try {
       // In the language of the UI: what is on screen is what is downloaded.
-      const { blob, filename } = await exportFigure(datasetId, analyzedOptions, name, format, {
+      const shown = { ...analyzedOptions, factor_names: apiNames };
+      const { blob, filename } = await exportFigure(datasetId, shown, name, format, {
         shortCodes: codesShown,
         order: figureOrder,
         language: locale,
@@ -855,6 +941,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     const unassigned = unassignedMeasures(analysis).length;
     summaries.loadings = [
       countText(t, "factor.rail_summary.dimensions", dimensionCount(analysis)),
+      // The names given to the factors, in their order.
+      hasNames(shownNames) ? shownNames.filter(Boolean).join(", ") : null,
       cross > 0 ? t("factor.rail_summary.cross", { n: cross }) : null,
       unassigned > 0 ? t("factor.rail_summary.unassigned", { n: unassigned }) : null,
     ]
@@ -1017,7 +1105,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     datasetHref: ready && datasetId ? datasetDownloadUrl(datasetId) : null,
     printHref:
       ready && datasetId && analyzedOptions
-        ? printHref(kind, datasetId, analyzedOptions, standard, { codes: codesShown, order: figureOrder })
+        ? printHref(kind, datasetId, analyzedOptions, standard, { codes: codesShown, order: figureOrder }, apiNames)
         : null,
     exporting,
     onExport: runExport,
@@ -1028,6 +1116,27 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     ready && dataset && dataset.miners && dataset.miners.length > 1
       ? { miner: options.miner, excluded: options.excluded, onChange: (miner) => updateOptions({ miner }) }
       : null;
+
+  // The names of the factors on screen, set one by one or taken from an interpretation.
+  const suggested =
+    analysis && interpretation && !interpretationStale ? suggestedNames(interpretation.result, analysis.n_factors) : null;
+  const factorNaming: FactorNaming = {
+    names: shownNames,
+    onName: (index, text) =>
+      setNaming((n) => ({ key: analysisKey, names: withFactorName(n.key === analysisKey ? n.names : [], index, text) })),
+    suggested: suggested && suggested.length > 0 ? suggested : null,
+    onSuggested: () => {
+      if (!suggested) return;
+      setUndo({
+        id: Date.now(),
+        message: t("factor.names.suggested_done"),
+        previous: optionsRef.current,
+        naming: namingRef.current,
+        returnFocus: document.activeElement instanceof HTMLElement ? document.activeElement : null,
+      });
+      setNaming({ key: analysisKey, names: suggested });
+    },
+  };
 
   const shortCodes: ShortCodesSwitch = {
     on: codesShown,
@@ -1135,7 +1244,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           <UndoToast
             notice={undo}
             onUndo={() => {
-              if (undo) setOptions(undo.previous);
+              if (undo) {
+                setOptions(undo.previous);
+                if (undo.naming) setNaming(undo.naming);
+              }
               setUndo(null);
             }}
             onClose={() => setUndo(null)}
@@ -1349,6 +1461,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                     look={loadingsLook}
                     onLook={setLoadingsLook}
                     figure={figure("loadings")}
+                    naming={factorNaming}
                   />
                 </div>
               ) : (

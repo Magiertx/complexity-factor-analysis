@@ -25,7 +25,15 @@ import {
   settingsSummary,
   solutionNeedsAttention,
   unassignedMeasures,
+  FACTOR_NAME_MAX,
+  cleanFactorName,
+  factorName,
+  hasNames,
+  namesForApi,
   rowsChoice,
+  solutionKey,
+  suggestedNames,
+  withFactorName,
 } from "./factor-analysis";
 import { formatNumber } from "./format";
 import de from "./i18n/locales/de.json";
@@ -401,5 +409,56 @@ describe("the rows of one miner", () => {
     const chips = settingsSummary({ ...defaultOptions("model"), miner: "Alpha miner" }, defaultOptions("model"), null, 13, t);
     expect(chips[0]).toEqual({ id: "miner", text: "Alpha miner", differs: true });
     expect(settingsSummary(defaultOptions("model"), defaultOptions("model"), null, 13, t).some((c) => c.id === "miner")).toBe(false);
+  });
+});
+
+describe("the names of the factors", () => {
+  it("are one line of at most forty characters", () => {
+    expect(cleanFactorName("  Size \n of  nets ")).toBe("Size of nets");
+    expect(cleanFactorName("x".repeat(50))).toHaveLength(FACTOR_NAME_MAX);
+  });
+
+  it("are set and cleared one by one, without empty ones at the end", () => {
+    const names = withFactorName([], 2, "Choice");
+    expect(names).toEqual([null, null, "Choice"]);
+    expect(withFactorName(names, 0, "Size")).toEqual(["Size", null, "Choice"]);
+    expect(withFactorName(names, 2, "   ")).toEqual([]);
+    expect(factorName(names, 2)).toBe("Choice");
+    expect(factorName(names, 5)).toBeNull();
+    expect(hasNames(names)).toBe(true);
+    expect(hasNames([null, ""])).toBe(false);
+  });
+
+  it("go to the API for the factors of the solution only", () => {
+    expect(namesForApi(["Size", null, "Choice", "Extra"], 3)).toEqual(["Size", null, "Choice"]);
+    expect(namesForApi([null, ""], 4)).toBeNull();
+    expect(namesForApi(null, 4)).toBeNull();
+  });
+
+  it("belong to a factor count, a rotation and a rule", () => {
+    const options = defaultOptions("model");
+    expect(solutionKey(4, options)).toBe(solutionKey(4, { ...options, excluded: ["a"] } as typeof options));
+    expect(solutionKey(4, options)).not.toBe(solutionKey(5, options));
+    expect(solutionKey(4, options)).not.toBe(solutionKey(4, { ...options, rotation: "promax" }));
+    expect(solutionKey(4, options)).not.toBe(solutionKey(4, { ...options, assignment_rule: "hair" }));
+  });
+
+  it("take the suggestions of an interpretation only for the factors there are", () => {
+    const interpretation = {
+      factors: [
+        { index: 1, name: "Size and flow", summary: "", driving_measures: [], confidence: "high" as const },
+        { index: 3, name: "x".repeat(60), summary: "", driving_measures: [], confidence: "low" as const },
+        { index: 9, name: "Beyond", summary: "", driving_measures: [], confidence: "low" as const },
+      ],
+      overall: "",
+      caveats: [],
+      model: "m",
+      created_at: "",
+      language: "en" as const,
+      prompt_version: "",
+      cached: true,
+      precomputed: false,
+    };
+    expect(suggestedNames(interpretation, 4)).toEqual(["Size and flow", null, "x".repeat(FACTOR_NAME_MAX)]);
   });
 });

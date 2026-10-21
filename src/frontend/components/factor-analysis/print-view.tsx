@@ -23,7 +23,9 @@ import {
   countText,
   datasetName,
   defaultOptions,
+  factorName,
   isSolutionNotice,
+  type FactorNames,
   loadingCounts,
   loadingStyle,
   noticeText,
@@ -70,7 +72,9 @@ export function PrintView() {
     const urls: string[] = [];
     const figure = async (name: "scree" | "loadings") => {
       try {
-        const { blob } = await exportFigure(link.datasetId, link.options, name, "svg", { shortCodes: link.view.codes, order: link.view.order, language: locale }, ctrl.signal);
+        // With the names of the factors, as the heatmap of the tab draws them.
+        const options = { ...link.options, factor_names: link.names.length > 0 ? link.names : null };
+        const { blob } = await exportFigure(link.datasetId, options, name, "svg", { shortCodes: link.view.codes, order: link.view.order, language: locale }, ctrl.signal);
         const url = URL.createObjectURL(blob);
         urls.push(url);
         return url;
@@ -290,7 +294,7 @@ export function PrintView() {
             <LoadingsKey analysis={analysis} options={link.options} />
           )}
           {!figures.loadings && (
-            <LoadingsTable analysis={analysis} options={link.options} order={link.view.order} name={name} />
+            <LoadingsTable analysis={analysis} options={link.options} order={link.view.order} name={name} names={link.names} />
           )}
           <h3 className="mt-3 font-semibold text-sm">{t("factor.loadings.groups_heading")}</h3>
           <p className="text-xs text-muted">{t(`factor.loadings.rule.${analysis.assignment_rule ?? "largest"}.title`)}</p>
@@ -301,10 +305,9 @@ export function PrintView() {
                 <tr key={f.index}>
                   <th scope="row" className="font-medium whitespace-nowrap align-top">
                     {t("factor.loadings.factor_n", { i: f.index + 1 })}
-                    {interpretation?.factors.find((x) => x.index === f.index + 1) && (
-                      <span className="block text-xs font-normal text-muted">
-                        {interpretation.factors.find((x) => x.index === f.index + 1)?.name}
-                      </span>
+                    {/* The name given to the factor; an interpretation's suggestions are in its own section. */}
+                    {factorName(link.names, f.index) && (
+                      <span className="block text-xs font-normal">{factorName(link.names, f.index)}</span>
                     )}
                   </th>
                   <td>
@@ -349,7 +352,10 @@ export function PrintView() {
                 <tbody>
                   {analysis.factor_correlations.map((row, i) => (
                     <tr key={i}>
-                      <th scope="row">F{i + 1}</th>
+                      <th scope="row">
+                        F{i + 1}
+                        {factorName(link.names, i) && <span className="ml-1.5 font-normal">{factorName(link.names, i)}</span>}
+                      </th>
                       {row.map((v, j) => (
                         <td key={j} className="num">{formatNumber(v, locale, 2)}</td>
                       ))}
@@ -457,11 +463,14 @@ function LoadingsTable({
   options,
   order,
   name,
+  names,
 }: {
   analysis: FactorAnalysis;
   options: AnalysisOptions;
   order: "factor" | "dataset";
   name: (key: string) => string;
+  /** The names of the factors. */
+  names: FactorNames;
 }) {
   const t = useT();
   const { locale } = useLocale();
@@ -480,7 +489,10 @@ function LoadingsTable({
             <tr>
               <th scope="col">{t("factor.loadings.col_measure")}</th>
               {Array.from({ length: k }, (_, i) => (
-                <th key={i} scope="col" className="num">F{i + 1}</th>
+                <th key={i} scope="col" className="num">
+                  F{i + 1}
+                  {factorName(names, i) && <span className="block text-[10px] font-normal">{factorName(names, i)}</span>}
+                </th>
               ))}
               <th scope="col" className="num border-l border-border">h²</th>
             </tr>

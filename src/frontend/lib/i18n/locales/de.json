@@ -990,7 +990,8 @@
       "interpretation_too_large": "Diese Analyse ist zu groß für eine Interpretation: gesendet werden höchstens {measures} Maße, {factors} Faktoren und Maßnamen mit {name_length} Zeichen. Schließe Maße aus oder wähle weniger Faktoren.",
       "too_many_measures_for_analysis": "{n} Maße sind mehr als die {max}, die der Server auf einmal analysiert. Schließe in der Tabelle von Schritt 3 Maße aus.",
       "superseded": "Eine neuere Analyse dieses Datensatzes, etwa in einem anderen Tab, hat diese ersetzt. Ändere eine Einstellung, um sie erneut zu starten.",
-      "unknown_miner": "Der Datensatz hat keine Zeilen des Miners {miner}."
+      "unknown_miner": "Der Datensatz hat keine Zeilen des Miners {miner}.",
+      "factor_names_too_many": "{names} Faktornamen für {factors} Faktoren."
     },
     "warnings": {
       "bartlett_not_significant": "Der Test nach Bartlett ist nicht signifikant (p = {p} ≥ {alpha}); die Maße sind womöglich unkorreliert.",
@@ -1271,6 +1272,14 @@
       "few": "Weniger als 5 je Maß ({min})",
       "hint_together": "Alle {miners} Miner gemeinsam: Die Unterschiede zwischen den Minern mischen sich in die Dimensionen, und jedes Log zählt einmal je Miner.",
       "hint_one": "Nur die Netze des {miner}: die Dimensionen dieses Miners allein, aus {n} Beobachtungen."
+    },
+    "names": {
+      "edit_more": "Drücke, um den Faktor zu benennen: Enter behält den Namen, Esc lässt ihn, wie er war, höchstens {max} Zeichen. Ein leerer Name gibt dem Faktor seine Nummer zurück.",
+      "field": "Name von Faktor {i}",
+      "cleared": "Faktornamen entfernt: Sie benannten die Faktoren einer anderen Faktorzahl, Rotation oder Regel.",
+      "suggested": "Vorgeschlagene Namen übernehmen",
+      "suggested_more": "Übernimmt die Namen, die die Interpretation für diese Lösung vorschlägt; jeden kannst du danach ändern.",
+      "suggested_done": "Vorgeschlagene Namen übernommen."
     }
   },
   "inspect": {
