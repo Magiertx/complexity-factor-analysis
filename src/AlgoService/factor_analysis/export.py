@@ -192,12 +192,16 @@ def eigenvalues_csv(result: dict[str, Any]) -> str:
 
 def msa_csv(result: dict[str, Any], measures: list[str], excluded: list[str]) -> str:
     """The MSA of each measure of the dataset and what became of it. A removed measure has the
-    MSA of the step that removed it; an excluded one has none."""
+    MSA of the step that removed it; an excluded one has none, nor has one that does not vary
+    within the miner the analysis is of."""
     removed = {r["measure"]: r for r in result["msa_filter"]["removed"]}
+    within = {d["measure"]: d["reason"] for d in (result.get("miner") or {}).get("dropped", [])}
     lines = [_csv_line(["measure", "msa", "status"])]
     for measure in measures:
         if measure in excluded:
             row = [measure, None, "excluded"]
+        elif measure in within:
+            row = [measure, None, f"dropped within the miner: {within[measure]}"]
         elif measure in removed:
             row = [measure, removed[measure]["msa"], f"removed in step {removed[measure]['step']}"]
         else:
@@ -364,6 +368,14 @@ def _readme(
         f'  In {APP_NAME}: on the "{_TABS[dataset["kind"]]}" tab, choose the source "CSV file" and',
         "  upload dataset.csv, then set the parameters of analysis_params in manifest.json. The",
         "  matrix is already cleaned, so the analysis runs on the same values.",
+        *(
+            [
+                f"  It holds the rows of the miner {result['miner']['name']} only, as the analysis",
+                "  saw them; analysis_params names the miner, which this file has alone.",
+            ]
+            if result.get("miner")
+            else []
+        ),
         "",
         "  In Python with factor_analyzer (minres, its default method), on the measures msa.csv",
         "  marks as used:",
@@ -436,10 +448,16 @@ def analysis_zip(
         factor_names = {
             f["index"] - 1: f["name"] for f in (interpretation[1].get("interpretation") or {}).get("factors", [])
         }
+    miner = result.get("miner")
+    rows = (
+        f"The rows of the miner {miner['name']} the analysis ran on, cleaned, one row per observation."
+        if miner
+        else "The cleaned matrix the analysis ran on, one row per observation."
+    )
     files: list[tuple[str, str | bytes, str]] = [
         ("analysis.json", json.dumps(result, ensure_ascii=False, indent=2),
          "The full result, as POST /factor-analysis/datasets/{id}/analyze returns it."),
-        ("dataset.csv", matrix, "The cleaned matrix the analysis ran on, one row per observation."),
+        ("dataset.csv", matrix, rows),
         ("loadings.csv", loadings_csv(result),
          "Loadings per measure and factor with the communality"
          + ("; the pattern matrix." if result["structure_loadings"] is not None else ".")),
@@ -508,6 +526,9 @@ def analysis_zip(
         "libraries": libraries,
         "files": listing,
     }
+    if miner:
+        # The rows of one miner: which, how many, and the measures without variance in them.
+        manifest["miner"] = miner
     if measurement is not None:
         manifest["measurement"] = measurement
     if published is not None:

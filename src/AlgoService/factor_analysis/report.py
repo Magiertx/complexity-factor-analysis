@@ -186,7 +186,25 @@ def _miners(dataset: dict[str, Any]) -> list[str]:
     return []
 
 
-def _data_section(dataset: dict[str, Any], names: list[str], label: _Labels) -> list[str]:
+def _miner_lines(miner: dict[str, Any], dataset: dict[str, Any], label: _Labels) -> list[str]:
+    """What an analysis of the rows of one miner says about them."""
+    out = [
+        f"Only the nets of the {tex(miner['name'])} were analysed: ${miner['n_observations']}$ of the "
+        f"${dataset['n_observations']}$ observations of the dataset.",
+        "",
+    ]
+    if miner.get("dropped"):
+        out += [
+            "\\noindent",
+            "Within them, the following measures were left out:",
+            *_items([f"{label(d['measure'])}: {_REASONS.get(d['reason'], tex(d['reason']))}" for d in miner["dropped"]]),
+        ]
+    return out
+
+
+def _data_section(
+    dataset: dict[str, Any], names: list[str], label: _Labels, miner: dict[str, Any] | None = None
+) -> list[str]:
     miners = _miners(dataset)
     out: list[str] = []
     if miners:
@@ -200,6 +218,8 @@ def _data_section(dataset: dict[str, Any], names: list[str], label: _Labels) -> 
             "which formed the population.",
             "",
         ]
+        if miner:
+            out += _miner_lines(miner, dataset, label)
     else:
         source = dataset.get("source")
         if source == "pnml":
@@ -211,6 +231,8 @@ def _data_section(dataset: dict[str, Any], names: list[str], label: _Labels) -> 
         else:
             text = "The complexity scores come from a bundled dataset."
         out += ["\\section*{Data}", text, ""]
+        if miner:
+            out += _miner_lines(miner, dataset, label)
     out += ["The following complexity measures were analysed:", *_items([label.listed(m) for m in names])]
     dropped = [d for d in dataset.get("dropped", [])]
     if dropped:
@@ -545,6 +567,11 @@ def _settings_section(
     rows: list[tuple[str, str]] = [
         ("Dataset", tex(dataset["name"]) + f" ({tex(dataset['kind'])} measures, source {tex(dataset['source'])})"),
         ("Observations", f"${result['n_observations']}$ of the cleaned matrix"),
+        *(
+            [("Miner", f"{tex(result['miner']['name'])}: only the rows of this miner")]
+            if result.get("miner")
+            else []
+        ),
         ("Measures excluded by hand", ", ".join(tex(m) for m in params.get("excluded") or []) or "none"),
         (
             "MSA filter",
@@ -635,7 +662,8 @@ def report_tex(
     describes it, ``params`` the parameters the analysis ran with, ``result`` the analysis,
     ``descriptives`` the statistics kept with the dataset. ``short`` names the measures by the
     short codes of the papers; ``factor_names`` are names of the factors by their index from 0,
-    e.g. of a stored interpretation; ``published`` the comparison with the published numbers."""
+    e.g. of a stored interpretation; ``published`` the comparison with the published numbers. An
+    analysis of the rows of one miner (``result["miner"]``) says so where the miners are named."""
     label = _Labels(dataset["kind"], short)
     names = _measures(dataset, descriptives)
     lines = [
@@ -662,7 +690,7 @@ def report_tex(
         f"Factor analysis of the dataset ``{tex(dataset['name'])}'', exported from {tex(APP_NAME)} on "
         f"{tex(created_at)}.",
         "",
-        *_data_section(dataset, names, label),
+        *_data_section(dataset, names, label, result.get("miner")),
         *_validity_section(result, params, names, label),
         *_factor_count_section(result),
         *_descriptives_section(descriptives, label),
