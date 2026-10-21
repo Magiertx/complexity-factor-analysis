@@ -87,12 +87,13 @@ def validate_job_id(job_id: str) -> None:
 import uuid
 from fastapi import Request
 
-async def get_session_id(request: Request) -> str:
-    """The caller's session id, guaranteed to be a well-formed UUID.
+def ensure_session_cookie(request: Request) -> str:
+    """The caller's session id, guaranteed to be a well-formed UUID; starts a session if needed.
 
     The id is used as a path component for the per-session upload directory, so a value like
     ``../..`` must never get through. Anything that is not a UUID is replaced by a fresh one,
     so a tampered or corrupted cookie starts a new session instead of returning an error.
+    The cookie is set by the session middleware when the response goes out.
     """
     session_id = request.session.get("session_id")
     if session_id is not None:
@@ -105,6 +106,12 @@ async def get_session_id(request: Request) -> str:
     if not session_id:
         session_id = str(uuid.uuid4())
         request.session["session_id"] = session_id
+    return session_id
+
+
+async def get_session_id(request: Request) -> str:
+    """The caller's session id (see :func:`ensure_session_cookie`), known to the database."""
+    session_id = ensure_session_cookie(request)
 
     # Lazy import to prevent circular references
     import jobs_db

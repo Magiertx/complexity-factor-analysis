@@ -144,6 +144,7 @@ the connection is `PROM4PY_START_WAIT` seconds (default 180).
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/health` | Readiness probe — 200 when the DB is reachable. |
+| GET | `/session` | 204. Starts the session (`Set-Cookie: session_id`) if the request has no cookie or one the server cannot read. |
 
 ## Notes & limits
 
@@ -161,7 +162,9 @@ the connection is `PROM4PY_START_WAIT` seconds (default 180).
   `.xes.gz`, `.pnml` and `.csv` for factor-analysis datasets.
 - **Session:** a signed cookie is set on the first request. Reuse it (e.g.
   `requests.Session()`) to keep your `recent-logs` and job
-  history in sync with the web UI.
+  history in sync with the web UI. A client that sends several requests at once without a
+  cookie gets a session per request and keeps only the last cookie: call `GET /session` first.
+  The web UI does not need to: the frontend asks for the cookie when it serves a page.
 - **Parameter validation:** every algorithm's parameter schema lives in
   `/algorithms` under `parameters_schema`. Sending unknown keys returns 400
   with a structured error payload (`detail.type == "validation_error"`,

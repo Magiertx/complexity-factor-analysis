@@ -33,7 +33,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import jobs_db
 from config import APP_NAME, CodedHTTPException, JSONFormatter, limiter
-from routes import health, algorithms, jobs, factor_analysis, interpretation
+from routes import health, algorithms, jobs, factor_analysis, interpretation, session
 
 from starlette.middleware.sessions import SessionMiddleware
 from slowapi import _rate_limit_exceeded_handler
@@ -210,3 +210,4 @@ app.include_router(algorithms.router)
 app.include_router(jobs.router)
 app.include_router(factor_analysis.router)
 app.include_router(interpretation.router)
+app.include_router(session.router)

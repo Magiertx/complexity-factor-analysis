@@ -312,6 +312,8 @@ Every browser gets an anonymous session via `SessionMiddleware` (cookie `session
 - `artifacts/datasets/<session_id>/`: factor-analysis datasets.
 - `Run.owner_session_id`: `GET /jobs`, `GET /jobs/{id}`, `DELETE /jobs[/{id}]` all filter by session.
 
+A page fires several requests at once, and requests without a cookie each start a session of their own, of which the browser keeps the last. So the cookie has to exist before the first request: the frontend's middleware (`src/frontend/middleware.ts`) asks `GET /session` whenever the browser requests a page and sends the `Set-Cookie` of the answer with the page. The endpoint touches no database; the session is stored with its first real request. If the API does not answer within two seconds the page is served as before and the session starts with the first request. Pages that carry a cookie are marked `Cache-Control: private, no-store`, so no cache in front can hand one visitor's session to another. A cookie the server cannot read (its secret changed) is replaced the same way.
+
 `User` and `Preset` tables exist in the schema for future authenticated use; no login flow is wired up.
 
 ## Backend: AlgorithmBase interface
