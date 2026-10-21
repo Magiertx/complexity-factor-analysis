@@ -1055,6 +1055,18 @@ async def _analyze(data: pd.DataFrame, params: AnalysisParams, watch: _Watch | N
         listening.cancel()
 
 
+async def precompute_bundled() -> None:
+    """Compute the analyses of the bundled datasets in the background (factor_analysis.precompute),
+    in the slots of the requests so that it never runs more analyses than they may."""
+    from factor_analysis import precompute
+
+    async def analyze(data: pd.DataFrame, params: AnalysisParams) -> dict[str, Any]:
+        async with _ANALYSIS_SLOTS:
+            return await run_in_threadpool(run_analysis, data, params)
+
+    await precompute.run(analyze)
+
+
 def _superseded() -> JSONResponse:
     return JSONResponse(
         status_code=409,

@@ -143,7 +143,9 @@ Measured on Docker Desktop on Windows 11 (12 virtual CPUs), with the images alre
 |---|---|
 | `docker compose up -d` until every service is healthy (cold start) | 75 to 120 s |
 | Bundled model dataset: create / analyse | 0.2 s / 0.1 s |
-| Bundled log dataset (2112 × 128 after cleaning): create / first fit / cached fit | 2 s / 3 to 6 s / 0.2 s |
+| After the start, the analyses of the bundled datasets are computed in the background (15, `PRECOMPUTE_BUNDLED`); requests are answered meanwhile | about 5 s |
+| Bundled log dataset (2112 × 128 after cleaning): create / first analysis / repeated analysis | 0.5 s / 0.05 s / 0.05 s |
+| The same with `PRECOMPUTE_BUNDLED=0`, or before the 5 s are over: create / first analysis (the fit) / repeated | 0.5 s / 3.5 s / 0.1 s |
 | Sample nets: 32 PNML × 12 measures | 6 to 7 s |
 | Sample logs, model tab: 4 logs × Inductive miner × 12 measures | 11 to 20 s |
 | Sample logs, model tab: 4 logs × 6 fast miners × 12 measures | 52 s |

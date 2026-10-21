@@ -163,6 +163,8 @@ MAX_ACTIVE_JOBS_PER_SESSION=3
 # Event logs and PNML nets per factor analysis dataset (defaults 50 and 200)
 # MAX_LOG_FILES=50
 # MAX_PNML_FILES=200
+# Analyses of the bundled datasets, computed after the start (default 1; 0 turns it off)
+# PRECOMPUTE_BUNDLED=1
 # RATE_LIMIT_ANALYZE=60/hour
 # RATE_LIMIT_DATASETS=60/hour
 # RATE_LIMIT_FA_ANALYZE=120/minute

@@ -82,6 +82,11 @@ async def lifespan(app: FastAPI):
     handler.setFormatter(JSONFormatter())
     logging.basicConfig(level=logging.INFO, handlers=[handler], force=True)
 
+    # Read before the report below, which names it if the operator set it.
+    from factor_analysis import precompute
+
+    precompute_on = precompute.enabled()
+
     # Report the tunables an operator actually changed. They are read at import time, before
     # logging is configured, so they are collected there and reported here. Silence would mean
     # a lowered limit and a running deployment are indistinguishable from a typo in .env.
@@ -100,9 +105,21 @@ async def lifespan(app: FastAPI):
     if os.environ.get("REDIS_URL"):
         redis_task = asyncio.create_task(redis_listener())
 
+    # The analyses of the bundled datasets, in the background: requests are served meanwhile, and
+    # whoever opens one of them before it is done waits for the same fit, not for a second one.
+    precompute_task: asyncio.Task[None] | None = None
+    if precompute_on:
+        precompute_task = asyncio.create_task(factor_analysis.precompute_bundled())
+
     try:
         yield
     finally:
+        if precompute_task is not None:
+            precompute_task.cancel()
+            try:
+                await precompute_task
+            except (asyncio.CancelledError, Exception):
+                pass
         # Shutdown: cancel the background listener so it doesn't leak on hot
         # reload or graceful shutdown.
         if redis_task is not None:

@@ -237,8 +237,11 @@ All of this is set in `docker-compose.yml`; reverse proxy, TLS, volumes and back
   200) are tunable in `.env` (see `.env.example`). The data step and `/api-access` show the
   values in force, and `GET /api/factor-analysis/limits` reports them.
 - **Analysis cost.** A factor fit over about a hundred measures takes a few seconds of CPU
-  in the API process. At most two run at once per process; recent fits are cached. BLAS runs
-  single-threaded (`OPENBLAS_NUM_THREADS=1`), which is many times faster for these matrices.
+  in the API process. At most two run at once per process; recent fits are cached, and after the
+  start the API computes those of the bundled datasets in the background
+  (`PRECOMPUTE_BUNDLED`, on in docker-compose), so that opening one for the first time is
+  instant. BLAS runs single-threaded (`OPENBLAS_NUM_THREADS=1`), which is many times faster for
+  these matrices.
 - **Slow miners.** Alpha++ and Alpha Robust are marked slow; Alpha++ can run for many
   minutes on a mid-sized log and ProM4Py cannot interrupt it. Such a discovery fails for its
   input after `PROM4PY_CALL_TIMEOUT` (default 300 s), and the `prom4py` container restarts

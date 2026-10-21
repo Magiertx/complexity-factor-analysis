@@ -214,7 +214,13 @@ A singular correlation matrix (common with log measures, e.g. `iqr = q3 - q1`) i
 upstream does and reported as a warning. KMO then rests on a pseudo-inverse and Bartlett's
 chi-square on clamped eigenvalues (`bartlett.regularised`), so measures with an MSA at the
 threshold can come out differently on different platforms. Fits are cached by data, factor
-count and rotation; at most two run at once per API process (`_ANALYSIS_SLOTS` in
+count and rotation. After the start the API computes the analyses of the bundled datasets
+in the background (`factor_analysis/precompute.py`, `PRECOMPUTE_BUNDLED`, set to 1 by
+docker-compose, off under test): each bundled dataset with the standard settings of its kind
+and, where the manifest has `published_options`, with those, from the matrix as the API stores
+it (`storage.as_stored`, because the cache is keyed on the bits). It runs in the slots of the
+requests, one analysis after the other, and logs each; a request for a fit still being computed
+waits for it. The cache is that of one API process and starts empty with it. At most two fits run at once per API process (`_ANALYSIS_SLOTS` in
 `routes/factor_analysis.py`). A request for a fit or for the random eigenvalues of parallel
 analysis that are being computed waits for them rather than computing them again
 (`core._computed_once`); they are computed in a thread of their own, so a request that gives up
