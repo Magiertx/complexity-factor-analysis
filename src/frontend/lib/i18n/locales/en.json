@@ -60,7 +60,12 @@
     "log_label": "Log complexity",
     "log_desc": "Measures of event logs",
     "runs_label": "Runs",
-    "runs_desc": "All runs of this session"
+    "runs_desc": "All runs of this session",
+    "jobs_running": "{n} running · {pct}",
+    "jobs_running_plural": "{n} running · {pct}",
+    "jobs_waiting": "{n} waiting",
+    "jobs_waiting_plural": "{n} waiting",
+    "jobs_failed": "A run failed. Open the list to see which."
   },
   "tours": {
     "single_run": {
@@ -407,7 +412,10 @@
     "dataset_name": {
       "model": "Factor analysis dataset (model measures)",
       "log": "Factor analysis dataset (log measures)"
-    }
+    },
+    "ready": "{name} is ready",
+    "ready_several": "{n} datasets are ready",
+    "ready_open": "Open"
   },
   "run_history": {
     "heading": "Runs",

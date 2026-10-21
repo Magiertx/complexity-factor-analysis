@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef } from "react";
-import { Network, ScrollText, History, ListChecks } from "lucide-react";
+import { Network, ScrollText, History, ListChecks, Loader2 } from "lucide-react";
+import { countText } from "@/lib/factor-analysis";
+import { formatPercent } from "@/lib/format";
 import { hasJobsPanel, useJobsDrawer } from "./jobs-drawer";
 import { cn } from "@/lib/utils";
-import { useT } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n";
 import { useTip } from "./ui/tip";
 
 type Mode = {
@@ -40,8 +42,9 @@ const descClass = "hidden sm:block text-[10px] font-normal text-muted";
 
 export function ModeBar() {
   const pathname = usePathname();
-  const { toggle, count, open } = useJobsDrawer();
+  const { toggle, count, open, activity } = useJobsDrawer();
   const t = useT();
+  const { locale } = useLocale();
 
   const modes: Mode[] = useMemo(
     () => [
@@ -58,7 +61,18 @@ export function ModeBar() {
   );
 
   const showJobs = hasJobsPanel(pathname);
-  const jobsTip = useTip<HTMLButtonElement>({ more: t("mode_bar.jobs_title") });
+  const jobsTip = useTip<HTMLButtonElement>({
+    more: [t("mode_bar.jobs_title"), activity.failed > 0 ? t("mode_bar.jobs_failed") : ""].filter(Boolean).join(" "),
+  });
+  // What runs, e.g. "1 running · 37 %"; the waiting ones have no percentage yet.
+  const running =
+    activity.active > 0
+      ? activity.percent === null
+        ? countText(t, "mode_bar.jobs_waiting", activity.active)
+        : countText(t, "mode_bar.jobs_running", activity.active, {
+            pct: formatPercent(activity.percent / 100, locale, 0),
+          })
+      : null;
 
   // On a phone the bar scrolls sideways; the tab of the open page is scrolled into view, so
   // /runs does not open with its tab hidden past the edge. Not scrollIntoView, which would
@@ -111,13 +125,32 @@ export function ModeBar() {
                 aria-controls="jobs-drawer"
                 className={toggleClass(open)}
               >
-                <History className={iconClass(open)} />
+                <span className="relative">
+                  <History className={iconClass(open)} />
+                  {/* A failure nobody has looked at; opening the list is looking. */}
+                  {activity.failed > 0 && (
+                    <>
+                      <span
+                        aria-hidden
+                        className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-danger ring-2 ring-bg"
+                      />
+                      <span className="sr-only">{t("mode_bar.jobs_failed")}</span>
+                    </>
+                  )}
+                </span>
                 <div className="flex flex-col items-start leading-tight">
                   <span className="flex items-baseline gap-1.5">
                     {t("mode_bar.jobs_label")}
                     {count > 0 && <span className="text-[10px] font-mono text-muted">({count})</span>}
                   </span>
-                  <span className={descClass}>{t("mode_bar.jobs_desc")}</span>
+                  {running ? (
+                    <span className="flex items-center gap-1 text-[10px] font-normal text-accent-ink tabular-nums">
+                      <Loader2 className="h-2.5 w-2.5 shrink-0 animate-spin" aria-hidden />
+                      {running}
+                    </span>
+                  ) : (
+                    <span className={descClass}>{t("mode_bar.jobs_desc")}</span>
+                  )}
                 </div>
               </button>
             )}

@@ -60,7 +60,12 @@
     "log_label": "Log-Komplexität",
     "log_desc": "Maße von Event-Logs",
     "runs_label": "Runs",
-    "runs_desc": "Alle Runs dieser Sitzung"
+    "runs_desc": "Alle Runs dieser Sitzung",
+    "jobs_running": "{n} läuft · {pct}",
+    "jobs_running_plural": "{n} laufen · {pct}",
+    "jobs_waiting": "{n} wartet",
+    "jobs_waiting_plural": "{n} warten",
+    "jobs_failed": "Ein Run ist fehlgeschlagen. Öffne die Liste, um zu sehen, welcher."
   },
   "tours": {
     "single_run": {
@@ -407,7 +412,10 @@
     "dataset_name": {
       "model": "Datensatz der Faktorenanalyse (Modellmaße)",
       "log": "Datensatz der Faktorenanalyse (Log-Maße)"
-    }
+    },
+    "ready": "{name} ist fertig",
+    "ready_several": "{n} Datensätze sind fertig",
+    "ready_open": "Öffnen"
   },
   "run_history": {
     "heading": "Runs",
