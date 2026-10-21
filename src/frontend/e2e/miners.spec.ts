@@ -175,7 +175,7 @@ test("another miner clears the names of the factors, and Undo brings back both",
   await loadings
     .locator("thead")
     .first()
-    .getByRole("button", { name: new RegExp(`^${text("factor.loadings.factor_n", { i: 1 })}\b`) })
+    .getByRole("button", { name: new RegExp(`^${text("factor.loadings.factor_n", { i: 1 })}\\b`) })
     .click();
   const field = loadings.getByRole("textbox", { name: text("factor.names.field", { i: 1 }) });
   await field.fill("Size");
