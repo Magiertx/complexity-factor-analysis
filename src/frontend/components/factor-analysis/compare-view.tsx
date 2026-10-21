@@ -438,8 +438,8 @@ interface Labels {
 }
 
 /**
- * The bundled datasets as tiles to switch on and off, Tab. 17's first, and a way back to it; then
- * the columns of the session's own data the link brought, which go once switched off.
+ * The columns of the session's own data the link brought, which go once switched off; then the
+ * bundled datasets as tiles to switch on and off, Tab. 17's first, and a way back to it.
  */
 function ColumnChooser({
   datasets,
@@ -490,6 +490,17 @@ function ColumnChooser({
         )}
       </div>
       <div role="group" aria-labelledby="cmp-columns-label" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {/* The analyses of the session's own data first: they are what such a comparison is about. */}
+        {own.map(({ key, column }) => (
+          <ColumnTile
+            key={key}
+            name={ownTitle(column)}
+            note={t("compare.own_note")}
+            on
+            reason={blocked(true)}
+            onToggle={() => onState({ ...state, columns: toggleColumn(state.columns, key, order) })}
+          />
+        ))}
         {datasets.flatMap((d) => {
           const on = chosen.has(d.id);
           const note = datasetNote(d.id, t) ?? d.published_source ?? null;
@@ -519,16 +530,6 @@ function ColumnChooser({
             )),
           ];
         })}
-        {own.map(({ key, column }) => (
-          <ColumnTile
-            key={key}
-            name={ownTitle(column)}
-            note={t("compare.own_note")}
-            on
-            reason={blocked(true)}
-            onToggle={() => onState({ ...state, columns: toggleColumn(state.columns, key, order) })}
-          />
-        ))}
       </div>
     </section>
   );
