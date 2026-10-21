@@ -49,3 +49,24 @@ def test_the_wait_for_prom_to_start_comes_from_the_environment():
     code = "from algorithms import _prom4py; print(_prom4py.START_WAIT_S)"
     assert _python(code, PROM4PY_START_WAIT="3") == "3.0"
     assert _python(code, PROM4PY_START_WAIT="") == "180.0"
+
+
+def test_the_file_count_limits_come_from_the_environment():
+    code = "from routes import factor_analysis as fa; print(fa.MAX_LOG_FILES, fa.MAX_PNML_FILES)"
+    assert _python(code, MAX_LOG_FILES="7", MAX_PNML_FILES="9", RATE_LIMIT_DISABLED="1") == "7 9"
+    # Unset or empty keeps the defaults of the paper's setup.
+    assert _python(code, MAX_LOG_FILES="", MAX_PNML_FILES="", RATE_LIMIT_DISABLED="1") == "50 200"
+
+
+def test_a_malformed_file_count_limit_stops_the_service():
+    code = "from routes import factor_analysis"
+    for bad in ("many", "0"):
+        run = subprocess.run(
+            [sys.executable, "-c", code],
+            cwd=ALGOSERVICE,
+            env={**os.environ, "MAX_LOG_FILES": bad, "RATE_LIMIT_DISABLED": "1"},
+            capture_output=True,
+            text=True,
+        )
+        assert run.returncode != 0 and "MAX_LOG_FILES" in run.stderr
+

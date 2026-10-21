@@ -79,6 +79,28 @@ def _post(client, **data):
 # --- catalog ------------------------------------------------------------------------------
 
 
+def test_upload_limits_are_reported(client):
+    limits = client.get("/factor-analysis/limits").json()
+    assert limits == {
+        "max_log_files": 50,
+        "max_pnml_files": 200,
+        "max_file_bytes": 100 * 1024 * 1024,
+        "max_total_bytes": 500 * 1024 * 1024,
+    }
+    # The catalog carries the same values, so the data step shows them without a second request.
+    for kind in ("model", "log"):
+        assert client.get(f"/factor-analysis/catalog?kind={kind}").json()["limits"] == limits
+
+
+def test_reported_limits_follow_the_file_count_in_force(client, monkeypatch):
+    from routes import factor_analysis as fa
+
+    monkeypatch.setattr(fa, "MAX_LOG_FILES", 2)
+    monkeypatch.setattr(fa, "MAX_PNML_FILES", 3)
+    limits = client.get("/factor-analysis/limits").json()
+    assert (limits["max_log_files"], limits["max_pnml_files"]) == (2, 3)
+
+
 def test_catalog_model(client):
     r = client.get("/factor-analysis/catalog?kind=model")
     assert r.status_code == 200

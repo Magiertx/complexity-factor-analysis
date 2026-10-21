@@ -105,7 +105,8 @@ Details in [Factor analysis](#factor-analysis) below.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/factor-analysis/catalog?kind=model` or `kind=log` | Measures, miners (model) or feature groups (log), each with `slow: true` where it can take long, defaults, bundled datasets with the settings they were published with, and sample inputs. |
+| GET | `/factor-analysis/catalog?kind=model` or `kind=log` | Measures, miners (model) or feature groups (log), each with `slow: true` where it can take long, defaults, bundled datasets with the settings they were published with, sample inputs, and the upload `limits`. |
+| GET | `/factor-analysis/limits` | Files and bytes one dataset request may carry on this server: `{"max_log_files": 50, "max_pnml_files": 200, "max_file_bytes": 104857600, "max_total_bytes": 524288000}`. The two file counts are set by `MAX_LOG_FILES` and `MAX_PNML_FILES`. |
 | POST | `/factor-analysis/datasets` | Create a dataset from bundled data or a CSV (ready at once), or from logs or PNML files (background job); a bundled dataset the session has already is opened again. |
 | GET | `/factor-analysis/datasets?kind=model` | The datasets of your session, newest first; `kind` is optional. |
 | GET | `/factor-analysis/datasets/{id}` | Status, progress, inputs, saved options, measures, dropped measures and the first 2000 rows. |
@@ -153,7 +154,9 @@ the connection is `PROM4PY_START_WAIT` seconds (default 180).
   request of the same session and dataset replaces an older one (409 `superseded`, see
   [Analyse](#analyse)).
 - **Upload size:** 100 MB per file. Factor-analysis datasets: at most 50 logs or 200 PNML
-  files and 500 MB in total per request, `.xes.gz` counted decompressed.
+  files and 500 MB in total per request, `.xes.gz` counted decompressed. The operator sets
+  the numbers of files (`MAX_LOG_FILES`, `MAX_PNML_FILES`); `GET /factor-analysis/limits`
+  and `limits` in the catalog report the values in force.
 - **Allowed extensions:** `.xes`, `.xes.gz`, `.xml`, `.json` for single runs; `.xes`,
   `.xes.gz`, `.pnml` and `.csv` for factor-analysis datasets.
 - **Session:** a signed cookie is set on the first request. Reuse it (e.g.
@@ -193,7 +196,7 @@ either reason takes the job that computed it along, as a delete does.
 | `groups` | Optional JSON array of feeed feature groups, `kind=log, source=logs`; ignored when `measures` is given. |
 | `name` | Optional display name. |
 | `reuse` | `bundled` only, default `true`: return the session's copy of the same bundled dataset instead of a new one, see below. |
-| `files` | Repeated. One `.csv`; up to 50 `.xes` / `.xes.gz`; up to 200 `.pnml`. |
+| `files` | Repeated. One `.csv`; up to `limits.max_log_files` (50) `.xes` / `.xes.gz`; up to `limits.max_pnml_files` (200) `.pnml`. |
 
 `bundled` and `csv` answer `{"dataset_id", "status": "ready", "reused": false}`. `logs` and `pnml` answer
 `{"dataset_id", "status": "computing", "job_id"}`; the job shows up in `/jobs` like any run.

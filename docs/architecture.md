@@ -163,8 +163,8 @@ Sources:
 |---|---|---|
 | `bundled` | at once | `datasets/manifest.json`: the scores of the ComFy paper (7 miners × 288 PDC 2025 logs) and the PDC log measures of ComFy for log measures (2112 logs). |
 | `csv` | at once | One uploaded CSV; a non-numeric first column holds the row labels. |
-| `logs` | job | Up to 50 XES files, or the bundled sample `pdc-sample-logs` (4 PDC logs). |
-| `pnml` | job | Up to 200 PNML files, or the bundled sample `pdc-sample-models` (32 nets). |
+| `logs` | job | Up to `MAX_LOG_FILES` (50) XES files, or the bundled sample `pdc-sample-logs` (4 PDC logs). |
+| `pnml` | job | Up to `MAX_PNML_FILES` (200) PNML files, or the bundled sample `pdc-sample-models` (32 nets). |
 
 ```
 POST /factor-analysis/datasets (logs | pnml)
@@ -448,7 +448,7 @@ Every endpoint that accepts a log enforces:
 
 - Extension whitelist: `.xes`, `.xes.gz`, `.xml`, `.json` for single runs; `.xes`, `.xes.gz`
   for dataset logs, `.pnml` for nets, `.csv` for tables.
-- Size cap: 100 MB per file; per dataset request at most 50 logs or 200 nets and 500 MB in
+- Size cap: 100 MB per file; per dataset request at most `MAX_LOG_FILES` (50) logs or `MAX_PNML_FILES` (200) nets and 500 MB in
   total, counted after decompression. Starlette receives the whole multipart body before the
   route runs, so these checks reject a request after the upload, not during it; the reverse
   proxy's `client_max_body_size` is what stops a larger body early. A CSV may have at most

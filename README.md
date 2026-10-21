@@ -20,8 +20,8 @@ Schalk do it, but interactively in the browser.
   a toolbar of icons holds Start here, My datasets, the link, the downloads and the tour.
 - **Data from anywhere.** Bundled datasets (the scores of the ComFy paper for seven miners,
   and the measures of 2112 Process Discovery Contest logs), an own CSV, up to 50 event logs
-  (`.xes`, `.xes.gz`) that are mined with any of ComFy's nine ProM miners, or up to 200 PNML
-  models. Sample logs and nets are bundled, so the demo works without own files and offline.
+  (`.xes`, `.xes.gz`; `MAX_LOG_FILES`) that are mined with any of ComFy's nine ProM miners, or
+  up to 200 PNML models (`MAX_PNML_FILES`). Sample logs and nets are bundled, so the demo works without own files and offline.
 - **Suitability first.** Data cleaning with reasons, Bartlett's test of sphericity (the
   numerically stable variant), KMO with ComFy's iterative MSA filter, and a per-measure MSA
   list with manual exclusion that shows the measures worth a look first and keeps the others
@@ -230,8 +230,10 @@ All of this is set in `docker-compose.yml`; reverse proxy, TLS, volumes and back
 - **Java heap.** `prom4py` gets `JAVA_HEAP=2G`. Raise it if discovery fails on large logs; the
   symptom is an out-of-memory error from the Java side.
 - **Limits.** 100 MB per uploaded file; per factor-analysis dataset 50 logs or 200 PNML
-  files and 500 MB in total; a per-session cap on queued jobs. Request rate limits and the
-  job cap are tunable in `.env` (see `.env.example`).
+  files and 500 MB in total; a per-session cap on queued jobs. Request rate limits, the job
+  cap and the number of files per dataset (`MAX_LOG_FILES`, `MAX_PNML_FILES`, default 50 and
+  200) are tunable in `.env` (see `.env.example`). The data step and `/api-access` show the
+  values in force, and `GET /api/factor-analysis/limits` reports them.
 - **Analysis cost.** A factor fit over about a hundred measures takes a few seconds of CPU
   in the API process. At most two run at once per process; recent fits are cached. BLAS runs
   single-threaded (`OPENBLAS_NUM_THREADS=1`), which is many times faster for these matrices.
