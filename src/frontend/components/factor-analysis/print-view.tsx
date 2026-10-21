@@ -62,7 +62,7 @@ export function PrintView() {
     const urls: string[] = [];
     const figure = async (name: "scree" | "loadings") => {
       try {
-        const { blob } = await exportFigure(link.datasetId, link.options, name, "svg", { shortCodes: link.view.codes, order: link.view.order }, ctrl.signal);
+        const { blob } = await exportFigure(link.datasetId, link.options, name, "svg", { shortCodes: link.view.codes, order: link.view.order, language: locale }, ctrl.signal);
         const url = URL.createObjectURL(blob);
         urls.push(url);
         return url;

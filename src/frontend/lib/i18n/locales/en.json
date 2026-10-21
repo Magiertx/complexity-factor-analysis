@@ -1235,7 +1235,7 @@
     },
     "figure": {
       "download": "Download the {figure}",
-      "download_more": "As SVG or PNG for a paper: light, with white background, at the text width of a CEUR page.",
+      "download_more": "As SVG or PNG for a paper: light, with white background, at the text width of a CEUR page, labelled in the language of the app.",
       "svg": "SVG",
       "svg_hint": "Vector graphics; the text stays text",
       "png": "PNG",
@@ -1349,7 +1349,7 @@
         "print": "Print view: the whole analysis on A4 pages, to print or save as PDF.",
         "tables": "The loadings as CSV or LaTeX, and the cleaned dataset as CSV."
       },
-      "p2": "The image icon at the scree plot and at the loadings downloads the figure as SVG, whose text stays text, or as PNG with 300 dpi: always light, at the text width of a CEUR paper.",
+      "p2": "The image icon at the scree plot and at the loadings downloads the figure as SVG, whose text stays text, or as PNG with 300 dpi: always light, at the text width of a CEUR paper, with the labels in the language of the app.",
       "p3": "The tag icon in the toolbar names the measures by the short codes of the papers, such as CNC or C_mag; the full name stays in the tooltip, and the figures, the report and the ZIP follow it.",
       "p4": "The link icon copies a link to the analysis of a published dataset with its settings."
     },

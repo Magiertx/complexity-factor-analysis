@@ -860,18 +860,20 @@ export async function exportLoadings(
 
 /**
  * Downloads the whole analysis as a ZIP: the dataset, every result table, the interpretation
- * if one is stored for these options and language, and a manifest to reproduce it.
+ * if one is stored for these options and language, and a manifest to reproduce it. The rows of
+ * its loadings heatmap follow `order`, as the figure menu draws them; its figures are English,
+ * as a paper is.
  */
 export async function downloadAnalysisZip(
   id: string,
   options: AnalyzeOptions,
   language: InterpretationLanguage,
-  shortCodes = false,
+  { shortCodes = false, order = "factor" }: { shortCodes?: boolean; order?: FigureOrder } = {},
 ): Promise<void> {
   const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/export/zip`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...options, language, short_codes: shortCodes }),
+    body: JSON.stringify({ ...options, language, short_codes: shortCodes, order }),
   });
   if (!r.ok) throw await httpError(r, "Export failed");
   const { blob, filename } = await attachment(r, "factor-analysis.zip");
@@ -899,23 +901,30 @@ export async function exportReport(
 
 export type FigureName = "scree" | "loadings";
 export type FigureFormat = "svg" | "png";
+/** The rows of the loadings heatmap: grouped by factor as the UI shows them, or as in the dataset. */
+export type FigureOrder = "factor" | "dataset";
 
 /**
- * A figure of the analysis in the print style: SVG with its text as text, or PNG at 300 dpi. Like
- * every export it runs the analysis it shows without replacing the one on screen.
+ * A figure of the analysis in the print style: SVG with its text as text, or PNG at 300 dpi, with
+ * its labels in `language`. Like every export it runs the analysis it shows without replacing
+ * the one on screen.
  */
 export async function exportFigure(
   id: string,
   options: AnalyzeOptions,
   figure: FigureName,
   format: FigureFormat,
-  { shortCodes = false, order = "factor" }: { shortCodes?: boolean; order?: "factor" | "dataset" } = {},
+  {
+    shortCodes = false,
+    order = "factor",
+    language = "en",
+  }: { shortCodes?: boolean; order?: FigureOrder; language?: InterpretationLanguage } = {},
   signal?: AbortSignal,
 ): Promise<{ blob: Blob; filename: string }> {
   const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/export/figure`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...options, figure, format, short_codes: shortCodes, order }),
+    body: JSON.stringify({ ...options, figure, format, short_codes: shortCodes, order, language }),
     signal,
   });
   if (!r.ok) throw await httpError(r, "Export failed");

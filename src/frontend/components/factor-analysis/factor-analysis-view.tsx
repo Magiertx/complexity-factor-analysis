@@ -675,7 +675,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     try {
       if (format === "zip") {
         // The button is enabled only while both are the same: the ZIP holds what is shown.
-        await downloadAnalysisZip(datasetId, analyzedOptions ?? options, locale, codesShown);
+        await downloadAnalysisZip(datasetId, analyzedOptions ?? options, locale, {
+          shortCodes: codesShown,
+          order: figureOrder,
+        });
       } else if (format === "report") {
         const { blob, filename } = await exportReport(datasetId, analyzedOptions ?? options, locale, codesShown);
         downloadBlob(blob, filename);
@@ -696,9 +699,11 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     setFigureBusy(name);
     setExportError(null);
     try {
+      // In the language of the UI: what is on screen is what is downloaded.
       const { blob, filename } = await exportFigure(datasetId, analyzedOptions, name, format, {
         shortCodes: codesShown,
         order: figureOrder,
+        language: locale,
       });
       downloadBlob(blob, filename);
     } catch (e) {

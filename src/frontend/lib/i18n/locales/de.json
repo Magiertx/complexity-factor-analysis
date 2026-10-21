@@ -1235,7 +1235,7 @@
     },
     "figure": {
       "download": "{figure} herunterladen",
-      "download_more": "Als SVG oder PNG für ein Paper: hell, mit weißem Hintergrund, in der Textbreite einer CEUR-Seite.",
+      "download_more": "Als SVG oder PNG für ein Paper: hell, mit weißem Hintergrund, in der Textbreite einer CEUR-Seite, beschriftet in der Sprache der App.",
       "svg": "SVG",
       "svg_hint": "Vektorgrafik; der Text bleibt Text",
       "png": "PNG",
@@ -1349,7 +1349,7 @@
         "print": "Druckansicht: die ganze Analyse auf A4-Seiten, zum Drucken oder Speichern als PDF.",
         "tables": "Die Ladungen als CSV oder LaTeX und den bereinigten Datensatz als CSV."
       },
-      "p2": "Das Bild-Symbol am Scree-Plot und an den Ladungen lädt die Abbildung als SVG herunter, deren Text Text bleibt, oder als PNG mit 300 dpi: immer hell, in der Textbreite eines CEUR-Papers.",
+      "p2": "Das Bild-Symbol am Scree-Plot und an den Ladungen lädt die Abbildung als SVG herunter, deren Text Text bleibt, oder als PNG mit 300 dpi: immer hell, in der Textbreite eines CEUR-Papers, mit den Beschriftungen in der Sprache der App.",
       "p3": "Das Etikett-Symbol in der Werkzeugleiste nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder C_mag; der volle Name steht im Tooltip, und Abbildungen, Report und ZIP folgen ihm.",
       "p4": "Das Link-Symbol kopiert einen Link auf die Analyse eines veröffentlichten Datensatzes mit ihren Einstellungen."
     },

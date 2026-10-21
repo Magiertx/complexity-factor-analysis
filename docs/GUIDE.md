@@ -67,8 +67,9 @@ reopens a dataset of the session with the settings of its last analysis.
 All downloads are in the **Download** menu of the page header:
 
 - **Analysis (ZIP)**: everything to report and reproduce the analysis: the result, the matrix, the
-  tables, `report.tex`, the figures as SVG, the descriptive statistics, the run times of a computed
-  dataset, and a manifest with the settings, the versions and the provenance.
+  tables, `report.tex`, the figures as SVG (English, with the rows of the loadings in the order
+  shown), the descriptive statistics, the run times of a computed dataset, and a manifest with the
+  settings, the versions and the provenance.
 - **LaTeX report**: `report.tex`, built like the report of ComFy (validity, MSA with the rounds of
   the filter, scree plot, descriptive statistics, loadings, communalities) plus the dimensions, the
   factor correlations of an oblique rotation and the settings. It compiles with pdflatex; compile it with
@@ -77,7 +78,8 @@ All downloads are in the **Download** menu of the page header:
 - **Loadings (CSV, LaTeX)** and **Dataset (CSV)**.
 
 The **image icon** at the scree plot and at the loadings downloads the figure as SVG (the text
-stays text) or as PNG (300 dpi), always light, sized for the text width of a CEUR paper.
+stays text) or as PNG (300 dpi), always light, sized for the text width of a CEUR paper, with its
+labels in the language of the app.
 
 The **tag icon** in the toolbar names the measures by the **short codes** of the papers (CNC,
 dens, C_mag); the full name stays in the tooltip. The figures, the report and the ZIP follow it.

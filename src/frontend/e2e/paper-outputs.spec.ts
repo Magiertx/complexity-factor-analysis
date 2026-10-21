@@ -118,7 +118,44 @@ test("the LaTeX report, the figures and the ZIP take the analysis on screen into
   const files = unzip(await downloaded(await download));
   for (const name of ["report.tex", "descriptives.csv", "figures/scree.svg", "figures/loadings.svg"]) expect(files.has(name), name).toBe(true);
   expect(files.get("figures/loadings.svg")!.toString("utf8")).toContain(">CNC<");
-  expect(JSON.parse(files.get("manifest.json")!.toString("utf8")).measure_labels).toBe("short_codes");
+  const manifest = JSON.parse(files.get("manifest.json")!.toString("utf8"));
+  expect(manifest.measure_labels).toBe("short_codes");
+  // The heatmap of the ZIP is drawn as the figure menu draws it, in English as a paper is.
+  expect(manifest.figure_order).toBe("factor");
+  expect(manifest.figure_language).toBe("en");
+});
+
+test.describe("in the German UI", () => {
+  test.use({ language: "de" });
+
+  test("the figures are labelled in German and the ZIP has the order of the loadings on screen", async ({ page }) => {
+    await page.goto("/");
+    await openBundled(page, "Inductive miner", "de");
+    await expectStep(page, "loadings", "done", "de");
+
+    // The scree plot follows the language of the UI.
+    await goToStep(page, "factors", "de");
+    let download = page.waitForEvent("download");
+    await stepSection(page, "factors")
+      .getByRole("button", { name: text("factor.figure.download", { figure: text("factor.factors.scree_title", {}, "de") }, "de") })
+      .click();
+    await page.getByRole("menuitem", { name: pattern(text("factor.figure.svg_hint", {}, "de")) }).click();
+    const scree = readFileSync(await downloaded(await download), "utf8");
+    expect(scree).toContain(">Eigenwert<");
+    expect(scree).not.toContain(">Eigenvalue<");
+
+    // The ZIP takes the order chosen at the loadings, and keeps its figures English.
+    await goToStep(page, "loadings", "de");
+    await stepSection(page, "loadings").getByRole("button", { name: text("factor.loadings.order_original", {}, "de") }).click();
+    download = page.waitForEvent("download");
+    await page.getByRole("button", { name: text("factor.toolbar.export", {}, "de"), exact: true }).click();
+    await page.getByRole("menuitem", { name: pattern(text("factor.toolbar.export_zip", {}, "de")) }).click();
+    const files = unzip(await downloaded(await download));
+    const manifest = JSON.parse(files.get("manifest.json")!.toString("utf8"));
+    expect(manifest.figure_order).toBe("dataset");
+    expect(manifest.figure_language).toBe("en");
+    expect(files.get("figures/scree.svg")!.toString("utf8")).toContain(">Eigenvalue<");
+  });
 });
 
 test("the print view shows the whole analysis on light pages without controls", async ({ page }) => {
