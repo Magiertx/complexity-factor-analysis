@@ -34,8 +34,10 @@ Schalk do it, but interactively in the browser.
   assignment rules: the largest loading as in ComFy's report (default), multiple membership as in
   Important Factors (Tab. 6-16) or Hair et al. (Tab. 17), with cross-loadings reported under
   each and a note where a table of the paper differs from the rule it states. The loadings show as
-  a matrix (searchable, and narrowable to the cross-loaded and unassigned measures when long) or as
-  one card per dimension. A settings row above every step sums up every choice and
+  a matrix or as one card per dimension. A long list (from 20 measures) can be searched and
+  narrowed to the cross-loaded and unassigned measures; from 30 measures on both looks start
+  with those and keep the others folded below them, like the MSA list, until a search or the
+  dataset's own order asks for the whole list. A settings row above every step sums up every choice and
   marks those that differ from the standard. Every change re-runs the analysis; a newer change
   replaces the analysis still running for the one before.
 - **Same numbers as upstream.** On the bundled paper scores of all seven miners the analysis

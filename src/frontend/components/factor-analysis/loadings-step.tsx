@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { Grid3x3, Info, LayoutGrid } from "lucide-react";
 import { ASSIGNMENT_RULES, type AssignmentRule, type FactorAnalysis } from "@/lib/api";
 import {
@@ -12,6 +12,7 @@ import {
   effectiveCommunality,
   loadingCounts,
   loadingStyle,
+  notableLoadingMeasures,
   orderMeasures,
   primaryFactor,
   ruleStrict,
@@ -22,7 +23,7 @@ import {
   type AnalysisOptions,
   type UnassignedMeasure,
 } from "@/lib/factor-analysis";
-import { LONG_LIST, matchesQuery } from "@/lib/measure-list";
+import { FOLDING_LOADINGS, LONG_LIST, arrangeLoadings, matchesQuery, otherShown } from "@/lib/measure-list";
 import { formatNumber, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
@@ -30,17 +31,37 @@ import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { Segmented } from "@/components/ui/segmented";
 import { MeasureName, TableFrame } from "@/components/ui/table";
 import { Term, useTipZone } from "@/components/ui/tip";
+import { FoldButton, SectionRow, type Fold } from "./measure-fold";
 import { MeasureSearch, NotableSwitch } from "./measure-search";
 import { FieldLabel, HelpLabel, ThresholdField } from "./step-section";
 
-/** How the matrix of a long list of measures is narrowed; kept by the tab while other steps are open. */
+/**
+ * How the loadings of a long list of measures are narrowed and folded, in the matrix and in the
+ * cards of the dimensions alike; kept by the tab while other steps are open.
+ */
 export interface LoadingsFilter {
   query: string;
   /** Only measures that load on several factors or on none. */
   onlyNotable: boolean;
+  /** The measures below the notable ones are unfolded (a list of `FOLDING_LOADINGS` or more). */
+  showOther: boolean;
 }
 
-export const DEFAULT_LOADINGS_FILTER: LoadingsFilter = { query: "", onlyNotable: false };
+export const DEFAULT_LOADINGS_FILTER: LoadingsFilter = { query: "", onlyNotable: false, showOther: false };
+
+/** How a long list of loadings is narrowed and folded, worked out once for the matrix and the cards. */
+interface LoadingsList {
+  query: string;
+  onlyNotable: boolean;
+  /** The measures worth a look: cross-loaded, or without a factor. */
+  notable: ReadonlySet<string>;
+  /** The list starts with the notable measures and folds the others. */
+  folds: boolean;
+  /** The others are shown. */
+  otherOpen: boolean;
+  /** The button that folds and unfolds them; none while a search or the order shows them anyway. */
+  fold: Fold | undefined;
+}
 
 interface Props {
   analysis: FactorAnalysis;
@@ -106,6 +127,30 @@ export function LoadingsView({
   const [matrix, setMatrix] = useState<"pattern" | "structure">("pattern");
   const oblique = analysis.rotation !== "none" && !(ORTHOGONAL as string[]).includes(analysis.rotation);
   const threshold = options.loading_threshold;
+
+  // A long list can be searched and narrowed to the measures worth a look, and from
+  // FOLDING_LOADINGS measures on it starts with those and folds the rest, like the list of the
+  // MSA. Only what the table or the cards show changes, never the analysis.
+  const long = analysis.used_measures.length >= LONG_LIST;
+  const notable = useMemo(() => notableLoadingMeasures(analysis), [analysis]);
+  const notableCount = analysis.used_measures.filter((m) => notable.has(m)).length;
+  const applied = long ? filter : DEFAULT_LOADINGS_FILTER;
+  const folds = analysis.used_measures.length >= FOLDING_LOADINGS;
+  const shown = otherShown({
+    folds,
+    query: applied.query,
+    // Another order than the default is a question about the whole list, as a sort is.
+    reordered: look === "matrix" && order === "original",
+    showOther: applied.showOther,
+  });
+  const list: LoadingsList = {
+    query: applied.query,
+    onlyNotable: applied.onlyNotable,
+    notable,
+    folds,
+    otherOpen: shown.open,
+    fold: shown.byView ? undefined : { open: shown.open, onToggle: () => onFilter({ ...filter, showOther: !filter.showOther }) },
+  };
 
   return (
     <div className="space-y-6">
@@ -210,6 +255,22 @@ export function LoadingsView({
           </div>
         </div>
 
+        {long && (
+          <div className="flex items-center gap-x-3 gap-y-2 flex-wrap">
+            <MeasureSearch value={filter.query} onChange={(query) => onFilter({ ...filter, query })} />
+            <NotableSwitch
+              id="fa-loadings-notable"
+              checked={filter.onlyNotable}
+              onChange={(onlyNotable) => onFilter({ ...filter, onlyNotable })}
+              label={
+                <Term more={t("factor.loadings.only_notable_more")}>
+                  {t("factor.loadings.only_notable", { n: notableCount })}
+                </Term>
+              }
+            />
+          </div>
+        )}
+
         {look === "matrix" ? (
           <LoadingsMatrix
             analysis={analysis}
@@ -218,11 +279,15 @@ export function LoadingsView({
             structureShown={oblique && matrix === "structure"}
             measureName={measureName}
             measureDescription={measureDescription}
-            filter={filter}
-            onFilter={onFilter}
+            list={list}
           />
         ) : (
-          <FactorGroups analysis={analysis} measureName={measureName} measureDescription={measureDescription} />
+          <FactorGroups
+            analysis={analysis}
+            measureName={measureName}
+            measureDescription={measureDescription}
+            list={list}
+          />
         )}
       </div>
     </div>
@@ -236,8 +301,7 @@ function LoadingsMatrix({
   structureShown,
   measureName,
   measureDescription,
-  filter,
-  onFilter,
+  list,
 }: {
   analysis: FactorAnalysis;
   options: AnalysisOptions;
@@ -245,8 +309,7 @@ function LoadingsMatrix({
   structureShown: boolean;
   measureName: (key: string) => string;
   measureDescription: (key: string) => string | undefined;
-  filter: LoadingsFilter;
-  onFilter: (filter: LoadingsFilter) => void;
+  list: LoadingsList;
 }) {
   const t = useT();
   const { locale } = useLocale();
@@ -254,16 +317,18 @@ function LoadingsMatrix({
   const k = analysis.n_factors;
   const factorIdx = Array.from({ length: k }, (_, i) => i);
   const ordered = orderMeasures(analysis, order);
-  // A long list can be searched and narrowed to the measures worth a look; only what the table
-  // shows changes, never the analysis.
-  const long = ordered.length >= LONG_LIST;
-  const notable = new Set([...crossLoadingsByMeasure(analysis).keys(), ...analysis.unassigned]);
-  const notableCount = ordered.filter((m) => notable.has(m)).length;
-  const rows = long
-    ? ordered.filter(
-        (m) => matchesQuery(filter.query, measureName(m), m) && (!filter.onlyNotable || notable.has(m)),
-      )
-    : ordered;
+  const sections = arrangeLoadings({
+    measures: ordered,
+    name: measureName,
+    query: list.query,
+    onlyNotable: list.onlyNotable,
+    notable: list.notable,
+    folds: list.folds,
+  });
+  const shownCount = sections.reduce((n, s) => n + s.rows.length, 0);
+  const headed = sections.length > 1;
+  const sectionLabel = (id: string, n: number) =>
+    `${t(id === "notable" ? "factor.measures.section_notable" : "factor.measures.section_other")} · ${formatNumber(n, locale)}`;
   const threshold = options.loading_threshold;
   const oblique = analysis.rotation !== "none" && !(ORTHOGONAL as string[]).includes(analysis.rotation);
   const structure = structureShown ? analysis.structure_loadings : null;
@@ -286,21 +351,6 @@ function LoadingsMatrix({
 
   return (
     <div className="space-y-2">
-      {long && (
-        <div className="flex items-center gap-x-3 gap-y-2 flex-wrap pb-1">
-          <MeasureSearch value={filter.query} onChange={(query) => onFilter({ ...filter, query })} />
-          <NotableSwitch
-            id="fa-loadings-notable"
-            checked={filter.onlyNotable}
-            onChange={(onlyNotable) => onFilter({ ...filter, onlyNotable })}
-            label={
-              <Term more={t("factor.loadings.only_notable_more")}>
-                {t("factor.loadings.only_notable", { n: notableCount })}
-              </Term>
-            }
-          />
-        </div>
-      )}
       <Legend threshold={threshold} boldBy={boldBy} crossed={secondary.size > 0} strict={strict} />
       <TableFrame label={t("factor.loadings.table_heading")}>
         <table ref={zone} className="data-table">
@@ -324,58 +374,69 @@ function LoadingsMatrix({
             </tr>
           </thead>
           <tbody>
-            {rows.map((m) => {
-              const values = shown[m] ?? [];
-              const h2 = analysis.communalities[m];
-              const name = measureName(m);
-              return (
-                <tr key={m}>
-                  <th scope="row" className="sticky-col font-medium break-words min-w-[9rem] max-w-[16rem]">
-                    <span data-tip-more={measureDescription(m)}>
-                      <MeasureName name={name} />
-                    </span>
-                  </th>
-                  {factorIdx.map((i) => {
-                    const v = values[i];
-                    if (v === undefined) return <td key={i} className={cell} />;
-                    const strong = isBold(m, i, v);
-                    // Loadings that do not count are faded, so the ones that do stand out.
-                    const counts = loadingCounts(v, threshold, strict) || strong;
-                    const crossed = secondary.has(`${m}:${i}`);
-                    const tip = `${name} · ${t("factor.loadings.factor_n", { i: i + 1 })}: ${formatNumber(v, locale, 3)}`;
-                    return (
-                      <td
-                        key={i}
-                        style={counts ? loadingStyle(v) : undefined}
-                        data-tip={crossed ? `${tip} · ${crossLabel}` : tip}
-                        className={cn(
-                          "num",
-                          cell,
-                          strong ? "font-bold text-fg" : counts ? "text-fg/80" : "text-muted",
-                          crossed && "ring-2 ring-inset ring-fg/55",
-                        )}
-                      >
-                        {formatNumber(v, locale, 2)}
-                        {crossed && <span className="sr-only"> ({crossLabel})</span>}
-                      </td>
-                    );
-                  })}
-                  <td className="num border-l border-border">
-                    {h2 !== undefined && (
-                      <span className="flex items-center justify-end gap-2">
-                        <span className="hidden sm:block h-1.5 w-10 rounded-full bg-tile overflow-hidden" aria-hidden>
-                          <span
-                            className="block h-full bg-muted/60 rounded-full"
-                            style={{ width: `${Math.min(1, Math.max(0, h2)) * 100}%` }}
-                          />
+            {sections.map((section) => (
+              <Fragment key={section.id}>
+                {headed && section.rows.length > 0 && (
+                  <SectionRow
+                    colSpan={k + 2}
+                    label={sectionLabel(section.id, section.rows.length)}
+                    fold={section.id === "other" ? list.fold : undefined}
+                  />
+                )}
+                {(section.id !== "other" || list.otherOpen ? section.rows : []).map((m) => {
+                  const values = shown[m] ?? [];
+                  const h2 = analysis.communalities[m];
+                  const name = measureName(m);
+                  return (
+                    <tr key={m}>
+                      <th scope="row" className="sticky-col font-medium break-words min-w-[9rem] max-w-[16rem]">
+                        <span data-tip-more={measureDescription(m)}>
+                          <MeasureName name={name} />
                         </span>
-                        {formatNumber(h2, locale, 2)}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
+                      </th>
+                      {factorIdx.map((i) => {
+                        const v = values[i];
+                        if (v === undefined) return <td key={i} className={cell} />;
+                        const strong = isBold(m, i, v);
+                        // Loadings that do not count are faded, so the ones that do stand out.
+                        const counts = loadingCounts(v, threshold, strict) || strong;
+                        const crossed = secondary.has(`${m}:${i}`);
+                        const tip = `${name} · ${t("factor.loadings.factor_n", { i: i + 1 })}: ${formatNumber(v, locale, 3)}`;
+                        return (
+                          <td
+                            key={i}
+                            style={counts ? loadingStyle(v) : undefined}
+                            data-tip={crossed ? `${tip} · ${crossLabel}` : tip}
+                            className={cn(
+                              "num",
+                              cell,
+                              strong ? "font-bold text-fg" : counts ? "text-fg/80" : "text-muted",
+                              crossed && "ring-2 ring-inset ring-fg/55",
+                            )}
+                          >
+                            {formatNumber(v, locale, 2)}
+                            {crossed && <span className="sr-only"> ({crossLabel})</span>}
+                          </td>
+                        );
+                      })}
+                      <td className="num border-l border-border">
+                        {h2 !== undefined && (
+                          <span className="flex items-center justify-end gap-2">
+                            <span className="hidden sm:block h-1.5 w-10 rounded-full bg-tile overflow-hidden" aria-hidden>
+                              <span
+                                className="block h-full bg-muted/60 rounded-full"
+                                style={{ width: `${Math.min(1, Math.max(0, h2)) * 100}%` }}
+                              />
+                            </span>
+                            {formatNumber(h2, locale, 2)}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </Fragment>
+            ))}
           </tbody>
           {/* The sums of squares are those of the pattern matrix; the structure matrix has none. */}
           {!structure && (
@@ -391,7 +452,7 @@ function LoadingsMatrix({
           )}
         </table>
       </TableFrame>
-      {rows.length === 0 && <p className="text-xs text-muted">{t("factor.measures.none_match")}</p>}
+      {shownCount === 0 && <p className="text-xs text-muted">{t("factor.measures.none_match")}</p>}
       {/* What the numbers mean, in the tooltips of these words. */}
       <p className="flex gap-x-3 gap-y-1 flex-wrap text-[11px] text-muted">
         <Term more={t("factor.help.loading")}>{t("factor.loadings.table_heading")}</Term>
@@ -595,21 +656,41 @@ function FactorGroups({
   analysis,
   measureName,
   measureDescription,
+  list,
 }: {
   analysis: FactorAnalysis;
   measureName: (key: string) => string;
   measureDescription: (key: string) => string | undefined;
+  list: LoadingsList;
 }) {
   const t = useT();
   const { locale } = useLocale();
   const zone = useTipZone<HTMLDivElement>();
   const cross = crossLoadingsByMeasure(analysis);
   const unassigned = unassignedMeasures(analysis);
+  // A search or the notable filter leaves some measures out; a card without any is left out too.
+  const narrowed = list.query.trim() !== "" || list.onlyNotable;
+  const matches = (m: string) => (!narrowed || matchesQuery(list.query, measureName(m), m)) && (!list.onlyNotable || list.notable.has(m));
+  const unassignedShown = unassigned.filter((u) => matches(u.measure));
+  const cards = analysis.factors.map((f) => {
+    // The notable members first, then the others behind the fold, as in the matrix.
+    const byKey = new Map(f.measures.map((m) => [m.measure, m]));
+    const sections = arrangeLoadings({
+      measures: f.measures.map((m) => m.measure),
+      name: measureName,
+      query: list.query,
+      onlyNotable: list.onlyNotable,
+      notable: list.notable,
+      folds: list.folds,
+    });
+    return { factor: f, byKey, sections, count: sections.reduce((n, s) => n + s.rows.length, 0) };
+  });
+  const visible = cards.filter((c) => !narrowed || c.count > 0);
   return (
     <div className="space-y-2">
       <HelpLabel label={t("factor.loadings.groups_heading")} help={t("factor.help.groups")} />
       <div ref={zone} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {analysis.factors.map((f) => {
+        {visible.map(({ factor: f, byKey, sections, count }) => {
           // index counts from 0; shares only exist for orthogonal rotations.
           const share = analysis.variance.proportion?.[f.index];
           return (
@@ -624,67 +705,82 @@ function FactorGroups({
                 <p className="text-xs text-muted">{t("factor.loadings.factor_empty")}</p>
               ) : (
                 <ul className="space-y-1.5">
-                  {f.measures.map((m) => {
-                    // The other factors of a cross-loaded measure, e.g. "also F1 −0.46".
-                    const c = cross.get(m.measure);
-                    const others = c
-                      ? c.factors.map((i, j) => ({ i, loading: c.loadings[j] })).filter((o) => o.i !== f.index)
-                      : [];
-                    return (
-                      <li key={m.measure} className="text-xs">
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="min-w-0 break-words" data-tip-more={measureDescription(m.measure)}>
-                            <MeasureName name={measureName(m.measure)} />
-                          </span>
-                          <span className="font-mono tabular-nums shrink-0" style={m.loading < 0 ? { color: signInk(m.loading) } : undefined}>
-                            {formatNumber(m.loading, locale, 2)}
-                          </span>
-                        </div>
-                        <div className="mt-1 h-1 rounded-full bg-bg/80 overflow-hidden" aria-hidden>
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${Math.min(1, Math.abs(m.loading)) * 100}%`,
-                              backgroundColor: signColor(m.loading),
-                              opacity: 0.7,
-                            }}
-                          />
-                        </div>
-                        {others.length > 0 && (
-                          <span className="mt-1 block text-[11px] text-muted">
-                            {others.map((o, j) => (
-                              <span
-                                key={o.i}
-                                data-tip-more={t("factor.loadings.also_title", {
-                                  i: o.i + 1,
-                                  value: formatNumber(o.loading, locale, 2),
-                                })}
-                              >
-                                {j > 0 && " · "}
-                                {t("factor.loadings.also", { i: o.i + 1 })}{" "}
-                                <span className="font-mono tabular-nums" style={{ color: signInk(o.loading) }}>
-                                  {formatNumber(o.loading, locale, 2)}
-                                </span>
-                              </span>
-                            ))}
-                          </span>
+                  {count > 0 &&
+                    sections.map((section) => (
+                      <Fragment key={section.id}>
+                        {section.id === "other" && section.rows.length > 0 && (
+                          <li className="text-[11px] font-medium text-muted pt-1">
+                            {list.fold ? (
+                              <FoldButton label={otherLabel(t, locale, section.rows.length)} fold={list.fold} />
+                            ) : (
+                              otherLabel(t, locale, section.rows.length)
+                            )}
+                          </li>
                         )}
-                      </li>
-                    );
-                  })}
+                        {(section.id !== "other" || list.otherOpen ? section.rows : []).map((key) => {
+                          const m = byKey.get(key)!;
+                          // The other factors of a cross-loaded measure, e.g. "also F1 −0.46".
+                          const c = cross.get(m.measure);
+                          const others = c
+                            ? c.factors.map((i, j) => ({ i, loading: c.loadings[j] })).filter((o) => o.i !== f.index)
+                            : [];
+                          return (
+                            <li key={m.measure} className="text-xs">
+                              <div className="flex items-start justify-between gap-2">
+                                <span className="min-w-0 break-words" data-tip-more={measureDescription(m.measure)}>
+                                  <MeasureName name={measureName(m.measure)} />
+                                </span>
+                                <span className="font-mono tabular-nums shrink-0" style={m.loading < 0 ? { color: signInk(m.loading) } : undefined}>
+                                  {formatNumber(m.loading, locale, 2)}
+                                </span>
+                              </div>
+                              <div className="mt-1 h-1 rounded-full bg-bg/80 overflow-hidden" aria-hidden>
+                                <div
+                                  className="h-full rounded-full"
+                                  style={{
+                                    width: `${Math.min(1, Math.abs(m.loading)) * 100}%`,
+                                    backgroundColor: signColor(m.loading),
+                                    opacity: 0.7,
+                                  }}
+                                />
+                              </div>
+                              {others.length > 0 && (
+                                <span className="mt-1 block text-[11px] text-muted">
+                                  {others.map((o, j) => (
+                                    <span
+                                      key={o.i}
+                                      data-tip-more={t("factor.loadings.also_title", {
+                                        i: o.i + 1,
+                                        value: formatNumber(o.loading, locale, 2),
+                                      })}
+                                    >
+                                      {j > 0 && " · "}
+                                      {t("factor.loadings.also", { i: o.i + 1 })}{" "}
+                                      <span className="font-mono tabular-nums" style={{ color: signInk(o.loading) }}>
+                                        {formatNumber(o.loading, locale, 2)}
+                                      </span>
+                                    </span>
+                                  ))}
+                                </span>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </Fragment>
+                    ))}
                 </ul>
               )}
             </div>
           );
         })}
-        {unassigned.length > 0 && (
+        {unassignedShown.length > 0 && (
           <div className="rounded-lg bg-tile/50 p-3.5 space-y-2 min-w-0">
             <div>
               <h4 className="text-sm font-semibold">{t("factor.loadings.unassigned_heading")}</h4>
               <p className="text-[11px] text-muted">{t("factor.loadings.unassigned_hint")}</p>
             </div>
             <ul className="space-y-1">
-              {unassigned.map((u) => (
+              {unassignedShown.map((u) => (
                 <li key={u.measure} className="flex items-baseline justify-between gap-x-2 flex-wrap text-xs">
                   <span className="min-w-0 break-words" data-tip-more={measureDescription(u.measure)}>
                     <MeasureName name={measureName(u.measure)} />
@@ -696,8 +792,16 @@ function FactorGroups({
           </div>
         )}
       </div>
+      {narrowed && visible.length === 0 && unassignedShown.length === 0 && (
+        <p className="text-xs text-muted">{t("factor.measures.none_match")}</p>
+      )}
     </div>
   );
+}
+
+/** The title of the measures a card folds below its notable ones, with their number. */
+function otherLabel(t: (key: string) => string, locale: string, n: number): string {
+  return `${t("factor.measures.section_other")} · ${formatNumber(n, locale)}`;
 }
 
 /** Why a measure joined no factor, with the number that decided it. */

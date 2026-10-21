@@ -411,8 +411,12 @@ one style (`components/ui/table.tsx`, `.data-table` in `globals.css`).
    excluded measures.
 4. **Factors**: hand-written SVG scree plot, factor count and rotation.
 5. **Loadings**: the assignment rule and thresholds, then a matrix (loadings, communalities,
-   variance; a long one can be searched and narrowed to the cross-loaded and unassigned
-   measures, which is display only like the list of step 3) or the dimensions (factor groups). The downloads of the toolbar give the loadings as
+   variance) or the dimensions (factor groups). A long list (from 20 measures) can be searched and
+   narrowed to the cross-loaded and unassigned measures in both looks, which is display only like
+   the list of step 3. From 30 measures on (`FOLDING_LOADINGS`) both start with those and fold the
+   others behind "Show" (in a card, the others of that factor), as the MSA list does; a search or
+   the dataset's own order shows them all. The fold button and the section row are shared with the
+   MSA list (`components/factor-analysis/measure-fold.tsx`). The downloads of the toolbar give the loadings as
    CSV/LaTeX, the dataset as CSV and the whole analysis as a ZIP
    (`POST /datasets/{id}/export/zip`, with the options and the language on screen).
 
