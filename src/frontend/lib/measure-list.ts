@@ -70,6 +70,27 @@ export function isNotable(info: MeasureInfo | undefined): boolean {
 /** From this many measures on, a list can be searched, narrowed to the notable ones and folded. */
 export const LONG_LIST = 20;
 
+/**
+ * From this many measures on, the loadings start with the notable measures and fold the others,
+ * as the list of the MSA does from `LONG_LIST`: a matrix of that many rows is a long scroll for
+ * the few rows that need a look. Below it the matrix is shown in full.
+ */
+export const FOLDING_LOADINGS = 30;
+
+/**
+ * Whether the measures below the notable ones are shown. In a list that folds they stay folded
+ * until asked for (`showOther`), and are shown by themselves while the list is searched or put in
+ * another order than its default, where the whole list is what is asked for. `byView` marks the
+ * latter: there is no button to fold them again then.
+ */
+export function otherShown(args: { folds: boolean; query: string; reordered: boolean; showOther: boolean }): {
+  open: boolean;
+  byView: boolean;
+} {
+  const byView = !args.folds || args.query.trim() !== "" || args.reordered;
+  return { open: args.showOther || byView, byView };
+}
+
 /** Whether a measure matches a search: each of its words is in the measure's name or key, in any case. */
 export function matchesQuery(query: string, name: string, key: string): boolean {
   const text = `${name} ${key}`.toLowerCase();
@@ -151,6 +172,35 @@ export function arrangeMeasures(input: ArrangeInput): MeasureSection[] {
     { id: "notable", rows: sorted(first) },
     { id: "other", rows: sorted(shown.filter((m) => !notable.has(m))) },
   ];
+}
+
+/**
+ * The sections of the loadings: the measures in the order given, the notable ones first and,
+ * where the list folds, the others in a section of their own. Measures that only a search or the
+ * notable filter leaves out are not in any section. A list that does not fold has one section.
+ */
+export function arrangeLoadings(input: {
+  /** The measures in the order of the table or the cards. */
+  measures: readonly string[];
+  name: (key: string) => string;
+  query: string;
+  onlyNotable: boolean;
+  notable: ReadonlySet<string>;
+  folds: boolean;
+}): MeasureSection[] {
+  return arrangeMeasures({
+    measures: input.measures,
+    info: new Map(),
+    name: input.name,
+    group: () => null,
+    groupOrder: [],
+    sort: "dataset",
+    grouping: "none",
+    query: input.query,
+    onlyNotable: input.onlyNotable,
+    // Without folding the notable ones keep their place; they only matter for the filter.
+    notable: input.folds || input.onlyNotable ? input.notable : new Set(),
+  });
 }
 
 /** The measures excluded by hand with `measure` ticked or unticked; the others keep their order. */
