@@ -116,6 +116,14 @@ for m in s.get(f"{BASE}/factor-analysis/datasets/{own}").json()["miners"] or []:
 per_miner = {"columns": [{"dataset_id": own, "miner": m["name"]} for m in
                          s.get(f"{BASE}/factor-analysis/datasets/{own}").json()["miners"] or []]}
 
+# Names kept for a solution (names_k: its factor count) head that column of a comparison
+s.put(f"{BASE}/factor-analysis/datasets/{own}/options",
+      json={"miner": "Alpha miner", "n_factors": 3, "factor_names": ["Size", None, "Flow"], "names_k": 3})
+named = s.post(f"{BASE}/factor-analysis/compare", json={"columns": [
+    {"dataset_id": own, "miner": "Alpha miner", "options": {"n_factors": 3}}]
+    + per_miner["columns"][1:]}).json()
+print(named["columns"][0]["factor_names"])
+
 # 8. The correlations of the measures: clustered, with the pairs that say almost the same
 corr = s.post(f"{BASE}/factor-analysis/datasets/{ds['dataset_id']}/correlations", json={"order": "cluster"}).json()
 print(corr["high"]["count"], "pairs with |r| >= 0.95; closest to Size:", corr["top"]["Size"][0])

@@ -110,7 +110,12 @@ Tab. 17 (Alpha, Directly Follows, Inductive, Hybrid ILP) under Hair et al.
   **Compare** in My datasets one column per dataset picked, and the **pin** at the loadings keeps
   the solution on screen (dataset, miner, factor count, rotation and rule): pin one with 4
   factors, change to 6, pin again, and **Compare pinned** shows both. Such a column starts from
-  the settings saved with its dataset and works in this session only.
+  the settings saved with its dataset and works in this session only. Where you named the factors
+  of exactly that solution (miner, factor count, rotation and the rule of the comparison), the
+  column carries the names: in a row of the header, beside the dimension in the matrix and over
+  the measures of its dimension, and in the CSV (`D1 (Size)`), the LaTeX table and the ZIP.
+  Published datasets keep the numbers; the dimensions stay the same across the columns, each
+  column's names are its own.
 - **Assignment rule**: one rule for every dataset, so that a difference between two columns is
   one of the data.
 - **By measure**: a row per measure, grouped by dimension, and above them per dataset n, the

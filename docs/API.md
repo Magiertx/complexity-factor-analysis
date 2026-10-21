@@ -387,6 +387,14 @@ does not have (`unknown_miner`) or more `factor_names` than factors (`factor_nam
 Whether the MSA filter leaves enough measures only the analysis tells. `miner` and
 `factor_names` are kept only when given. The answer is 204, or 409 if the dataset is not ready.
 
+`names_k` (optional, the factor count of the analysis on screen) says which solution the
+`factor_names` belong to, however the count was chosen (also by the Kaiser criterion). With it the
+names are kept for that solution, that is for its miner, `names_k`, `rotation` and
+`assignment_rule`, besides the options themselves: a dataset keeps the names of up to 40
+solutions, the one saved last is the newest, and saving a solution without names forgets its
+names. `names_k` is not part of the saved options. Without it (and without `n_factors`) the names
+stay with the options only. More names than `names_k` is a 400 `factor_names_too_many`.
+
 ```python
 s.put(f"{BASE}/factor-analysis/datasets/{dataset_id}/options",
       json={"n_factors": 3, "rotation": "promax", "excluded": ["Density"]})
@@ -748,7 +756,11 @@ on its stored matrix, also with the fit cache. JSON body:
   The saved factor count was fixed for the rows of the miner saved with it (`miner` of the saved
   options, none for all rows): a `"saved"` column of other rows starts from the standard count.
   This is how the UI compares the miners of a dataset, datasets picked in My datasets, and
-  solutions pinned in the loadings step (dataset, miner, factor count and rotation):
+  solutions pinned in the loadings step (dataset, miner, factor count and rotation). The header
+  of such a column has `factor_names`: the names saved with the dataset for exactly the solution
+  the column came to (its miner, factor count, rotation and the request's `assignment_rule`; see
+  `names_k` of the saved options), one entry per factor and `null` where a factor has none, or
+  `null` without any name; bundled datasets never have names:
 
 ```json
 { "columns": [
@@ -842,18 +854,20 @@ by the codes of the papers, as Tab. 17 does) and returns `factor-structures.csv`
 
 - CSV: `measure`, `code`, `dimension` (of the row) and one column per dataset with `D1` (or
   `D1 D3` under `multi`), `unassigned:<reason>`, `msa_removed`, `excluded`, `dropped:<reason>`,
-  `failed`, or nothing for a measure the dataset does not have.
+  `failed`, or nothing for a measure the dataset does not have. Where the analysis of a column
+  named the factor, the name follows its dimension in parentheses: `D1 (Size)`.
 - LaTeX: a booktabs `tabularx` (needs `booktabs`, `array` and `tabularx`) as wide as the line
   (`\linewidth`), so it fits a one- or a two-column page without a width to set: the names of the
   datasets take what they need and the dimensions share the rest. One row per dataset and one
   column per dimension, laid out like Tab. 17; comments name the rule, the thresholds it
-  applied, how the dimensions were matched and the measures in no dimension.
+  applied, how the dimensions were matched and the measures in no dimension. Where the analysis
+  of a row named the factor, its name in italics and a colon precede the measures of the cell.
 - ZIP: `comparison.json` (the response of `compare`), `membership.csv`, `dimensions.tex`,
   `co_assignment.csv` (one row per pair of measures, each once: `measure_a`, `code_a`,
   `measure_b`, `code_b`, `together`, `both_assigned`, `both_analysed`), `README.txt` and
   `manifest.json` with `app`, `created_at`, `tool`, the `request` as sent (with the rule and
   `short_codes`), `assignment_rule`, `alignment`, `columns` (per column the `bundled_id`,
-  `dataset_id`, `miner`, `label`, `settings`, `analysis_params`, `assignment`, `published_source`,
+  `dataset_id`, `miner`, `label`, `settings`, `analysis_params`, `factor_names`, `assignment`, `published_source`,
   `citation`, `license`, `source_url` and `source_commit`), `measure_labels`, `libraries` and
   `files`. Columns with a `dataset_id` can only be posted again in the session that has them.
 
