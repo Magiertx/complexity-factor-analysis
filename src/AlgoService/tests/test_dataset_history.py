@@ -120,6 +120,7 @@ def test_list_is_newest_first_and_filters_by_kind(client):
         "job_id": None,
         "inputs": {"files": 0},
         "has_options": False,
+        "options_miner": None,
     }
     assert _list(client, "log")[0]["inputs"] == {"files": 1}
 
