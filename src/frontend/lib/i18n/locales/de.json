@@ -240,7 +240,7 @@
       "fa_download": "Die bereinigte Matrix als CSV.",
       "fa_analyze": "Bartlett, KMO mit MSA-Filter, Eigenwerte mit Kaiser und Parallelanalyse, rotierte Ladungen und die Faktorgruppen nach `assignment_rule` (`largest`, `multi`, `hair`) mit Querladungen sowie die Laufzeiten ihrer Teile (`timings`); mit den veröffentlichten Einstellungen der Abgleich mit dem Report (JSON).",
       "fa_export": "Die Ladungstabelle als CSV oder LaTeX; der Body von analyze plus format.",
-      "fa_export_zip": "Die ganze Analyse als ZIP: Ergebnis, Matrix, Tabellen, report.tex, Abbildungen, deskriptive Statistik, Laufzeiten, Parameter, Bibliotheksversionen und Herkunft (Toolversion und Commit, Upstream-Commits, feeed, pm4py und ProM, Miner mit ihren Parametern).",
+      "fa_export_zip": "Die ganze Analyse als ZIP: Ergebnis, Matrix, Tabellen, report.tex, Abbildungen, deskriptive Statistik, Laufzeiten, Parameter, Bibliotheksversionen und Herkunft (Toolversion und Commit, Upstream-Commits, feeed, pm4py und ProM, Miner mit ihren Parametern); der Body von analyze plus `language`, `short_codes` und für die Abbildungen `order` und `figure_language`, die das Manifest festhält.",
       "fa_interpretation_status": "Ob Claude Faktoren interpretieren kann, und mit welchem Modell.",
       "fa_interpret": "Namen und kurze Interpretationen der Faktoren durch Claude; der Body von analyze plus language. Optional, braucht einen API-Schlüssel auf dem Server.",
       "jobs": "Alle Runs deiner Sitzung.",
@@ -255,7 +255,7 @@
       "health": "Bereitschaftsprüfung: 200, wenn die Datenbank erreichbar ist.",
       "session_start": "Startet die Sitzung (das Cookie `session_id`), wenn die Anfrage keines hat oder eines, das der Server nicht lesen kann. Die Seite erledigt das selbst; ein Skript, das mehrere Anfragen gleichzeitig sendet, ruft es zuerst auf.",
       "fa_export_report": "Die Analyse als LaTeX-Report, aufgebaut wie der von ComFy (report.tex); der Body von analyze plus `short_codes` und `language`.",
-      "fa_export_figure": "Der Scree-Plot oder die Ladungs-Heatmap als SVG oder PNG (300 dpi) im Druckstil; der Body von analyze plus `figure`, `format`, `short_codes` und `order`."
+      "fa_export_figure": "Der Scree-Plot oder die Ladungs-Heatmap als SVG oder PNG (300 dpi) im Druckstil; der Body von analyze plus `figure`, `format`, `short_codes`, `order` und `language` (`en` oder `de`)."
     },
     "notes": {
       "rate_limits": "Ratenlimits pro IP: `60/hour` für `POST /algorithms/{id}/analyze` und für neue Datensätze aus `POST /factor-analysis/datasets`, `600/minute` für das Lesen, Auflisten und Löschen von Datensätzen und das Speichern ihrer Optionen, `300/hour` für `POST /log-stats` und `120/minute` überall sonst. Interpretationen durch Claude: `10/hour` pro Sitzung und `200/day` für den Server. Über einem Limit lautet die Antwort 429 mit einem `code`.",

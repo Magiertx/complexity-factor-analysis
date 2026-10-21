@@ -240,7 +240,7 @@
       "fa_download": "The cleaned matrix as CSV.",
       "fa_analyze": "Bartlett, KMO with the MSA filter, eigenvalues with Kaiser and parallel analysis, rotated loadings and the factor groups by `assignment_rule` (`largest`, `multi`, `hair`) with cross-loadings, and the `timings` of its parts; with the published settings, the comparison with the report (JSON).",
       "fa_export": "The loadings table as CSV or LaTeX; the body of analyze plus format.",
-      "fa_export_zip": "The whole analysis as a ZIP: result, matrix, tables, report.tex, figures, descriptive statistics, run times, parameters, library versions and provenance (tool version and commit, upstream commits, feeed, pm4py and ProM, miners with their parameters).",
+      "fa_export_zip": "The whole analysis as a ZIP: result, matrix, tables, report.tex, figures, descriptive statistics, run times, parameters, library versions and provenance (tool version and commit, upstream commits, feeed, pm4py and ProM, miners with their parameters); the body of analyze plus `language`, `short_codes`, and for the figures `order` and `figure_language`, which the manifest records.",
       "fa_interpretation_status": "Whether Claude can interpret factors, and with which model.",
       "fa_interpret": "Names and short interpretations of the factors by Claude; the body of analyze plus language. Optional, needs an API key on the server.",
       "jobs": "All runs of your session.",
@@ -255,7 +255,7 @@
       "health": "Readiness probe: 200 when the database is reachable.",
       "session_start": "Starts the session (the `session_id` cookie) if the request has none, or one the server cannot read. The page does it by itself; a script that sends several requests at once calls it first.",
       "fa_export_report": "The analysis as a LaTeX report built like ComFy's (report.tex); the body of analyze plus `short_codes` and `language`.",
-      "fa_export_figure": "The scree plot or the loadings heatmap as SVG or PNG (300 dpi) in print style; the body of analyze plus `figure`, `format`, `short_codes` and `order`."
+      "fa_export_figure": "The scree plot or the loadings heatmap as SVG or PNG (300 dpi) in print style; the body of analyze plus `figure`, `format`, `short_codes`, `order` and `language` (`en` or `de`)."
     },
     "notes": {
       "rate_limits": "Rate limits per IP: `60/hour` on `POST /algorithms/{id}/analyze` and on new datasets from `POST /factor-analysis/datasets`, `600/minute` on reading, listing and deleting datasets and on saving their options, `300/hour` on `POST /log-stats` and `120/minute` everywhere else. Interpretations by Claude: `10/hour` per session and `200/day` for the server. Over a limit the answer is a 429 with a `code`.",

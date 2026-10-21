@@ -411,6 +411,8 @@ def analysis_zip(
     measurement: dict[str, Any] | None = None,
     figures: dict[str, bytes] | None = None,
     short_codes: bool = False,
+    figure_order: str = "factor",
+    figure_language: str = "en",
 ) -> bytes:
     """Everything needed to report and reproduce one analysis.
 
@@ -421,7 +423,8 @@ def analysis_zip(
     analysis ran with these options. ``descriptives`` are the statistics kept with the dataset,
     ``measurement`` the run times and input sizes of a computed one, ``figures`` the figures by
     their path in the archive, e.g. "figures/scree.svg". ``short_codes`` names the measures in
-    the report by the codes of the papers, as the figures do.
+    the report by the codes of the papers, as the figures do; ``figure_order`` and
+    ``figure_language`` say how the figures were drawn and go into the manifest.
     """
     from .report import report_tex
 
@@ -500,6 +503,8 @@ def analysis_zip(
         # Wall times of this analysis; a cached fit keeps the time its computation took.
         "analysis_timings": result.get("timings"),
         "measure_labels": "short_codes" if short_codes else "names",
+        "figure_order": figure_order,
+        "figure_language": figure_language,
         "libraries": libraries,
         "files": listing,
     }
