@@ -303,10 +303,26 @@ export const ROTATIONS: Rotation[] = ["varimax", "promax", "oblimin", "quartimax
 export type AssignmentRule = "largest" | "multi" | "hair";
 export const ASSIGNMENT_RULES: AssignmentRule[] = ["largest", "multi", "hair"];
 
-/** Upload limits per source, as enforced by the backend. */
-export const MAX_DATASET_FILES: Partial<Record<DatasetSource, number>> = { logs: 50, pnml: 200 };
-/** Budget over all files of one dataset request. */
-export const MAX_DATASET_TOTAL_BYTES = 500 * 1024 * 1024;
+/**
+ * Upload limits of one dataset request, as the server enforces them: `limits` of the catalog
+ * and GET /factor-analysis/limits. The counts are set by the operator (MAX_LOG_FILES,
+ * MAX_PNML_FILES).
+ */
+export interface UploadLimits {
+  max_log_files: number;
+  max_pnml_files: number;
+  max_file_bytes: number;
+  /** Budget over all files of one request. */
+  max_total_bytes: number;
+}
+
+/** The server's defaults, for as long as it has not reported its own. */
+export const DEFAULT_UPLOAD_LIMITS: UploadLimits = {
+  max_log_files: 50,
+  max_pnml_files: 200,
+  max_file_bytes: 100 * 1024 * 1024,
+  max_total_bytes: 500 * 1024 * 1024,
+};
 
 export interface FactorMeasure {
   key: string;
@@ -375,6 +391,7 @@ export interface FactorCatalog {
   collections?: DatasetCollection[];
   samples?: SampleInput[];
   sources: DatasetSource[];
+  limits?: UploadLimits;
 }
 
 export type DropReason = "non_numeric" | "constant" | "missing" | "duplicate";
@@ -649,6 +666,12 @@ async function httpError(r: Response, fallback: string): Promise<HttpError> {
 export async function fetchFactorCatalog(kind: FactorKind, signal?: AbortSignal): Promise<FactorCatalog> {
   const r = await fetch(`${BASE}/factor-analysis/catalog?kind=${kind}`, { cache: "no-store", signal });
   if (!r.ok) throw await httpError(r, "Failed to load the catalog");
+  return r.json();
+}
+
+export async function fetchUploadLimits(signal?: AbortSignal): Promise<UploadLimits> {
+  const r = await fetch(`${BASE}/factor-analysis/limits`, { cache: "no-store", signal });
+  if (!r.ok) throw await httpError(r, "Failed to load the upload limits");
   return r.json();
 }
 

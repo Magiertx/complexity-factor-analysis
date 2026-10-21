@@ -229,7 +229,8 @@
       "recent_logs": "Logs, die deine Sitzung zuletzt hochgeladen hat.",
       "analyze": "Einen Algorithmus auf einem Log ausführen; liefert eine job_id.",
       "log_stats": "Schnelle beschreibende Statistiken eines Logs: Traces, Events, Varianten, Zeitraum.",
-      "fa_catalog": "Maße, Miner oder Feature-Gruppen, mitgelieferte Datensätze mit den Einstellungen, die ihr Paper veröffentlicht hat (`published_options`), Beispieleingaben und die angenommenen Quellen.",
+      "fa_catalog": "Maße, Miner oder Feature-Gruppen, mitgelieferte Datensätze mit den Einstellungen, die ihr Paper veröffentlicht hat (`published_options`), Beispieleingaben, die angenommenen Quellen und die Upload-Grenzen (`limits`).",
+      "fa_limits": "Wie viele Logs und Petri-Netze und wie viele Bytes eine Datensatz-Anfrage auf diesem Server umfassen darf (`max_log_files`, `max_pnml_files`, `max_file_bytes`, `max_total_bytes`).",
       "fa_create": "Einen Datensatz aus einem mitgelieferten oder einer CSV anlegen (sofort bereit) oder aus Event-Logs oder PNML-Dateien (als Run berechnet). Hat die Sitzung den mitgelieferten Datensatz schon, kommt er unverändert zurück, mit `reused`.",
       "fa_list": "Die Datensätze deiner Sitzung, neueste zuerst; kind ist optional.",
       "fa_get": "Status, Fortschritt, gespeicherte Einstellungen und die bereinigte Matrix der Maße (erste 2.000 Zeilen).",
@@ -256,7 +257,7 @@
     "notes": {
       "rate_limits": "Ratenlimits pro IP: `60/hour` für `POST /algorithms/{id}/analyze` und für neue Datensätze aus `POST /factor-analysis/datasets`, `600/minute` für das Lesen, Auflisten und Löschen von Datensätzen und das Speichern ihrer Optionen, `300/hour` für `POST /log-stats` und `120/minute` überall sonst. Interpretationen durch Claude: `10/hour` pro Sitzung und `200/day` für den Server. Über einem Limit lautet die Antwort 429 mit einem `code`.",
       "quota": "Runs: höchstens 12 wartende oder laufende pro Sitzung und höchstens 4 Datensatz-Runs gleichzeitig über alle Sitzungen; weitere werden mit 429 beantwortet.",
-      "uploads": "Uploads: höchstens 100 MB pro Datei. `POST /algorithms/{id}/analyze` und `POST /log-stats` nehmen ein Event-Log (`.xes`, `.xes.gz`, `.xml`, `.json`). `POST /factor-analysis/datasets` nimmt eine `.csv`, bis zu 50 Event-Logs (`.xes`, `.xes.gz`) oder bis zu 200 Petri-Netze (`.pnml`), zusammen höchstens 500 MB.",
+      "uploads": "Uploads: höchstens {file_mb} MB pro Datei. `POST /algorithms/{id}/analyze` und `POST /log-stats` nehmen ein Event-Log (`.xes`, `.xes.gz`, `.xml`, `.json`). `POST /factor-analysis/datasets` nimmt eine `.csv`, bis zu {logs} Event-Logs (`.xes`, `.xes.gz`) oder bis zu {pnml} Petri-Netze (`.pnml`), zusammen höchstens {total_mb} MB. Die Zahl der Dateien legt der Betreiber fest; `GET /factor-analysis/limits` nennt, was dieser Server erlaubt.",
       "session": "Sitzung: Ein signiertes Cookie grenzt jeden Endpoint ein. Verwende es für alle Anfragen (in Python mit `requests.Session()`), damit deine Runs und Datensätze sichtbar bleiben.",
       "schemas": "Die Parameterschemas liefert `GET /algorithms`: Lies vor dem Absenden das `parameters_schema` eines Algorithmus.",
       "analysis": "Analysen: höchstens `400` Maße pro Analyse, mehr ergeben 400 mit dem Code `too_many_measures_for_analysis`. Eine neuere Analyse desselben Datensatzes in einer Sitzung ersetzt eine ältere, die noch wartet; die ältere erhält 409 `superseded`. Skripte, die einen Datensatz parallel mit mehreren Einstellungen analysieren, übergeben `?latest_wins=false`."
@@ -620,7 +621,7 @@
       "clear_files": "Alle entfernen",
       "remove_file_aria": "{name} entfernen",
       "wrong_type": "{name} ist keine {ext}-Datei und wurde übersprungen.",
-      "too_large": "{name} ist größer als 100 MB und wurde übersprungen.",
+      "too_large": "{name} ist größer als {mb} MB und wurde übersprungen.",
       "too_many_files": "Höchstens {max} Dateien; {n} wurden nicht hinzugefügt.",
       "miners_heading": "Miner",
       "miners_hint": "Discovery-Algorithmen aus ComFy. Mehr Miner ergeben mehr Beobachtungen pro Log.",
