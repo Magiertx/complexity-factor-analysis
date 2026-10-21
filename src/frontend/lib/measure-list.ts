@@ -6,10 +6,11 @@ import type { FactorAnalysis } from "./api";
 import { analysisNotices, type AnalysisOptions } from "./factor-analysis";
 
 /** What became of a measure in the analysis on screen. */
-export type MeasureStatus = "used" | "removed" | "dependent" | "below" | "excluded" | "pending";
+/** "miner" is a measure without variance within the rows of the miner the analysis is of. */
+export type MeasureStatus = "used" | "removed" | "dependent" | "below" | "excluded" | "miner" | "pending";
 
 /** Statuses worth a look: the list shows these measures first. */
-export const NOTABLE: readonly MeasureStatus[] = ["removed", "dependent", "below"];
+export const NOTABLE: readonly MeasureStatus[] = ["removed", "dependent", "below", "miner"];
 
 export interface MeasureInfo {
   status: MeasureStatus;
@@ -19,6 +20,8 @@ export interface MeasureInfo {
   round?: number;
   /** The other measures of its linearly dependent group. */
   partners?: string[];
+  /** Why the miner the analysis is of leaves it out: "constant" or "duplicate". */
+  reason?: string;
 }
 
 /**
@@ -44,6 +47,7 @@ export function measureInfo(
 ): Map<string, MeasureInfo> {
   const excluded = new Set(options.excluded);
   const removed = new Map((analysis?.msa_filter.removed ?? []).map((r) => [r.measure, r]));
+  const within = new Map((analysis?.miner?.dropped ?? []).map((d) => [d.measure, d.reason]));
   const partners = new Map<string, string[]>();
   for (const group of dependentGroups(analysis)) {
     for (const m of group) partners.set(m, group.filter((x) => x !== m));
@@ -55,6 +59,7 @@ export function measureInfo(
     const msa = analysis?.kmo.per_measure[m] ?? filtered?.msa ?? null;
     if (excluded.has(m)) out.set(m, { status: "excluded", msa: null });
     else if (!analysis) out.set(m, { status: "pending", msa: null });
+    else if (within.has(m)) out.set(m, { status: "miner", msa: null, reason: within.get(m) });
     else if (filtered) out.set(m, { status: "removed", msa, round: filtered.step });
     else if (partners.has(m)) out.set(m, { status: "dependent", msa, partners: partners.get(m) });
     else if (msa !== null && msa < threshold) out.set(m, { status: "below", msa });

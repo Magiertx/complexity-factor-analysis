@@ -23,7 +23,7 @@ import pandas as pd
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_serializer, model_validator
 
 import jobs_db
 import provenance
@@ -31,16 +31,18 @@ from algorithms._log_io import MAX_DECOMPRESSED_BYTES
 from config import MAX_FILE_SIZE, CodedHTTPException, broadcast_jobs_update, get_session_id, limiter, logger
 from env_config import positive_int, rate_limit
 from factor_analysis import catalog as cat
-from factor_analysis import compare, compute, figures, published, storage
+from factor_analysis import compare, compute, figures, miners, published, storage
 from factor_analysis.descriptives import describe, describe_cleaned
 from factor_analysis.core import (
     COMMUNALITY_THRESHOLDS,
     LOADING_THRESHOLDS,
+    MAX_MEASURES,
     MISSING_MARKERS,
     AnalysisError,
     AnalysisParams,
     Superseded,
     analyze as run_analysis,
+    check_excluded,
     check_params,
 )
 from factor_analysis.export import (
@@ -806,8 +808,10 @@ async def get_dataset(
 ) -> dict[str, Any]:
     """Status, measures and the first ``rows`` rows of the cleaned matrix. Polled while the
     dataset is computed, hence its own, higher rate limit. A ready dataset also has the
-    descriptive statistics of its measures (``descriptives``) and, if the tool computed it from
-    logs or nets, the run times and input sizes (``measurement``, else null)."""
+    descriptive statistics of its measures (``descriptives``), if the tool computed it from
+    logs or nets, the run times and input sizes (``measurement``, else null), and for a model
+    dataset whose rows are "<log> / <miner>" its ``miners``: per miner the rows, the measures
+    that vary within them and those that do not (else null)."""
     meta = await _meta_or_404(dataset_id, session_id)
     out: dict[str, Any] = {
         "id": meta["id"],
@@ -828,6 +832,7 @@ async def get_dataset(
         "created_at": meta["created_at"],
         "inputs": _inputs(meta),
         "options": meta.get("options"),
+        "miners": None,
     }
     if meta.get("job_id"):
         out["job_id"] = meta["job_id"]
@@ -844,6 +849,9 @@ async def get_dataset(
         out["truncated"] = len(data) > rows
         out["descriptives"] = await run_in_threadpool(_descriptives, meta, session_id)
         out["measurement"] = await run_in_threadpool(storage.read_measurement, session_id, meta["id"])
+        found = miners.dataset_miners(meta)
+        if found:
+            out["miners"] = await run_in_threadpool(miners.summary, data, found)
     return out
 
 
@@ -930,6 +938,10 @@ async def download_dataset(dataset_id: str, session_id: str = Depends(get_sessio
     return _attachment(content, f"{_slug(meta['name'])}.csv", "text/csv; charset=utf-8")
 
 
+#: The longest name of a factor.
+FACTOR_NAME_MAX = 40
+
+
 class AnalyzeRequest(BaseModel):
     excluded: list[str] = Field(default_factory=list, max_length=MAX_CSV_COLUMNS)
     auto_msa_filter: bool = True
@@ -942,6 +954,28 @@ class AnalyzeRequest(BaseModel):
     communality_threshold: float | None = Field(None, ge=0.0, le=1.0)
     #: core.ASSIGNMENT_RULES: "largest" as ComFy's report, "multi" and "hair" as Important Factors.
     assignment_rule: Literal["largest", "multi", "hair"] = "largest"
+    #: The rows of one miner of a model dataset discovered with several miners, whose rows are
+    #: "<log> / <miner>" (factor_analysis/miners.py); null analyses every row.
+    miner: str | None = Field(None, max_length=200)
+    #: Names of the factors, the first for factor 1; null or "" keeps "Factor i". The exports
+    #: (loadings, figures, report, ZIP) use them; the analysis does not change with them.
+    factor_names: list[str | None] | None = Field(None, max_length=MAX_MEASURES)
+
+    @field_validator("factor_names")
+    @classmethod
+    def _names(cls, names: list[str | None] | None) -> list[str | None] | None:
+        if names is None:
+            return None
+        out: list[str | None] = []
+        for name in names:
+            # One line, without spaces at either end, so that a name fits a table header.
+            text = " ".join(name.split()) if name is not None else ""
+            if len(text) > FACTOR_NAME_MAX:
+                raise ValueError(f"A factor name has at most {FACTOR_NAME_MAX} characters: '{text[:50]}…'.")
+            out.append(text or None)
+        while out and out[-1] is None:
+            out.pop()
+        return out or None
 
     def params(self, kind: str) -> AnalysisParams:
         values = self.model_dump(include=set(AnalysisParams.__dataclass_fields__))
@@ -950,6 +984,56 @@ class AnalyzeRequest(BaseModel):
         if values["communality_threshold"] is None:
             values["communality_threshold"] = COMMUNALITY_THRESHOLDS[kind]
         return AnalysisParams(**values)
+
+    @model_serializer(mode="wrap")
+    def _dump(self, handler: Any) -> dict[str, Any]:
+        # The miner and the names only where there are: the parameters of a request without
+        # them, e.g. the published options of a bundled dataset, stay as they were.
+        values = handler(self)
+        for key in ("miner", "factor_names"):
+            if values.get(key) is None:
+                values.pop(key, None)
+        return values
+
+    def saved(self) -> dict[str, Any]:
+        """The options as kept with a dataset."""
+        return self.model_dump()
+
+
+def _select(
+    meta: dict[str, Any], data: pd.DataFrame, miner: str | None, params: AnalysisParams
+) -> tuple[pd.DataFrame, AnalysisParams, miners.Selection | None]:
+    """The rows an analysis runs on: every row, or with a ``miner`` those of one miner. A
+    measure without variance within the miner leaves the analysis and the exclusions with it;
+    an exclusion that names no measure of the dataset is an error, as without a miner."""
+    if miner is None:
+        return data, params, None
+    available = miners.dataset_miners(meta)
+    if miner not in available:
+        listed = f" Its miners: {', '.join(available)}." if available else " Its rows name no miner."
+        raise AnalysisError(
+            f"The dataset has no rows of the miner '{miner}'.{listed}",
+            "unknown_miner",
+            miner=miner,
+            miners=", ".join(available),
+        )
+    check_excluded(list(data.columns), params.excluded)
+    selection = miners.select(data, miner)
+    kept = set(selection.data.columns)
+    return selection.data, dataclasses.replace(params, excluded=[m for m in params.excluded if m in kept]), selection
+
+
+def _named(body: AnalyzeRequest, n_factors: int) -> dict[int, str] | None:
+    """The names of the factors by their index from 0, for an analysis of ``n_factors``."""
+    names = body.factor_names or []
+    if len(names) > n_factors:
+        raise AnalysisError(
+            f"{len(names)} factor names for {n_factors} factor(s).",
+            "factor_names_too_many",
+            names=len(names),
+            factors=n_factors,
+        )
+    return {i: name for i, name in enumerate(names) if name} or None
 
 
 class ExportRequest(AnalyzeRequest):
@@ -1121,24 +1205,35 @@ async def analyze_dataset(
     A 400 for data that cannot be analysed carries ``code`` and ``params`` next to ``detail``.
     A 409 with the code ``superseded`` answers a request that a newer one of the same session
     and dataset replaced, or whose client left; it was not computed to the end.
+
+    With ``miner`` the analysis runs on the rows of that miner (``miner`` in the result: its
+    name, rows, measures and the measures without variance within it); ``factor_names`` changes
+    nothing here.
     """
     started = time.perf_counter()
     body = body or AnalyzeRequest()
-    # Numbered on arrival, before anything is awaited, so that the newest request wins.
+    # Numbered on arrival, before anything is awaited, so that the newest request wins. The
+    # names of the factors do not change the analysis.
     key = (session_id, _validate_dataset_id(dataset_id))
-    parameters = json.dumps({**body.model_dump(), "excluded": sorted(body.excluded)}, sort_keys=True)
+    asked = {**body.model_dump(exclude={"factor_names"}), "excluded": sorted(body.excluded)}
+    parameters = json.dumps(asked, sort_keys=True)
     watch = _Watch(request, key if latest_wins else None, parameters)
     try:
         meta, data = await _ready_matrix(dataset_id, session_id)
         params = body.params(meta["kind"])
+        data, params, selection = await run_in_threadpool(_select, meta, data, body.miner, params)
         result = await _analyze(data, params, watch)
+    except AnalysisError as e:
+        return _AnalysisFailed(e).response
     except _AnalysisFailed as e:
         return e.response
     except Superseded:
         return _superseded()
     finally:
         watch.close()
-    result["published_match"] = _published_match(meta, params, result)
+    result["miner"] = selection.describe() if selection else None
+    # The rows of one miner have numbers of their own.
+    result["published_match"] = None if selection else _published_match(meta, params, result)
     result["elapsed_ms"] = round((time.perf_counter() - started) * 1000, 1)
     return result
 
@@ -1154,15 +1249,24 @@ async def save_options(
     """Keep the parameters of an analysis with the dataset, so reopening it starts from them.
 
     Checked like ``analyze`` checks them as far as that needs no fit: unknown excluded
-    measures, too few measures or observations left, or more factors than they allow are a
-    400 with ``code`` and ``params``.
+    measures, too few measures or observations left (of the ``miner``, if one is given), more
+    factors than they allow, or more ``factor_names`` than factors are a 400 with ``code`` and
+    ``params``.
     """
     meta = await _ready_meta(dataset_id, session_id)
+    params = body.params(meta["kind"])
     try:
-        check_params(meta["measures"], meta["n_observations"], body.params(meta["kind"]))
+        if body.miner is None:
+            check_params(meta["measures"], meta["n_observations"], params)
+        else:
+            data = await run_in_threadpool(storage.load_matrix, session_id, meta["id"])
+            data, params, _ = await run_in_threadpool(_select, meta, data, body.miner, params)
+            check_params(list(data.columns), len(data), params)
+        if body.n_factors is not None:
+            _named(body, body.n_factors)
     except AnalysisError as e:
         return _AnalysisFailed(e).response
-    storage.update_meta(session_id, meta["id"], options=body.model_dump())
+    storage.update_meta(session_id, meta["id"], options=body.saved())
     return Response(status_code=204)
 
 
@@ -1174,19 +1278,17 @@ async def export_loadings(
     body: ExportRequest | None = None,
     session_id: str = Depends(get_session_id),
 ) -> Response:
-    """The loadings table of the analysis as CSV or LaTeX."""
+    """The loadings table of the analysis as CSV or LaTeX, its columns named by
+    ``factor_names`` where given."""
     body = body or ExportRequest()
-    meta, data = await _ready_matrix(dataset_id, session_id)
-    try:
-        result = await _analyze(data, body.params(meta["kind"]), _Watch(request))
-    except _AnalysisFailed as e:
-        return e.response
-    except Superseded:
-        return _superseded()
-    stem = f"{_slug(meta['name'])}-loadings"
+    exported = await _exported(request, dataset_id, body, session_id)
+    if isinstance(exported, Response):
+        return exported
+    result, names = exported.result, exported.names
+    stem = f"{_slug(exported.meta['name'])}-loadings"
     if body.format == "latex":
-        return _attachment(loadings_latex(result), f"{stem}.tex", "application/x-latex; charset=utf-8")
-    return _attachment(loadings_csv(result), f"{stem}.csv", "text/csv; charset=utf-8")
+        return _attachment(loadings_latex(result, names), f"{stem}.tex", "application/x-latex; charset=utf-8")
+    return _attachment(loadings_csv(result, names), f"{stem}.csv", "text/csv; charset=utf-8")
 
 
 class ArchiveRequest(AnalyzeRequest):
@@ -1261,15 +1363,36 @@ def _descriptives(meta: dict[str, Any], session_id: str) -> dict[str, Any]:
 class _Exported:
     """What the exports of one analysis share: the dataset, the analysis and its context."""
 
-    def __init__(self, meta: dict[str, Any], data: pd.DataFrame, params: AnalysisParams, result: dict[str, Any]) -> None:
+    def __init__(
+        self,
+        meta: dict[str, Any],
+        data: pd.DataFrame,
+        params: AnalysisParams,
+        result: dict[str, Any],
+        selection: miners.Selection | None = None,
+        names: dict[int, str] | None = None,
+    ) -> None:
         self.meta = meta
+        #: The rows the analysis ran on: all of the dataset, or those of one miner.
         self.data = data
         self.params = params
         self.result = result
-        self.match = _published_match(meta, params, result)
+        self.selection = selection
+        #: The names of the factors by their index from 0, as the request gave them.
+        self.names = names
+        result["miner"] = selection.describe() if selection else None
+        self.match = None if selection else _published_match(meta, params, result)
         result["published_match"] = self.match
         #: The parameters the analysis ran with; a single factor is not rotated, whatever was asked for.
         self.used = {**effective_params(params, result["n_factors"]), "rotation": result["rotation"]}
+        if selection:
+            self.used["miner"] = selection.miner
+
+    def factor_names(self) -> list[str | None] | None:
+        """The names as a list for the manifest, one per factor."""
+        if not self.names:
+            return None
+        return [self.names.get(i) for i in range(self.result["n_factors"])]
 
     def published(self) -> dict[str, Any] | None:
         if self.match is None:
@@ -1288,12 +1411,16 @@ async def _exported(request: Request, dataset_id: str, body: AnalyzeRequest, ses
     meta, data = await _ready_matrix(dataset_id, session_id)
     params = body.params(meta["kind"])
     try:
+        data, params, selection = await run_in_threadpool(_select, meta, data, body.miner, params)
         result = await _analyze(data, params, _Watch(request))
+        names = _named(body, result["n_factors"])
+    except AnalysisError as e:
+        return _AnalysisFailed(e).response
     except _AnalysisFailed as e:
         return e.response
     except Superseded:
         return _superseded()
-    return _Exported(meta, data, params, result)
+    return _Exported(meta, data, params, result, selection, names)
 
 
 async def _interpretation(exported: _Exported, session_id: str, language: str) -> dict[str, Any] | None:
@@ -1305,17 +1432,12 @@ async def _interpretation(exported: _Exported, session_id: str, language: str) -
     return stored[0] if stored else None
 
 
-def _factor_names(interpretation: dict[str, Any] | None) -> dict[int, str] | None:
-    """The names of the factors of a stored interpretation, by their index from 0."""
-    factors = ((interpretation or {}).get("interpretation") or {}).get("factors") or []
-    return {f["index"] - 1: f["name"] for f in factors} or None
-
-
 def _figure(
     exported: _Exported, name: str, fmt: str, short: bool, order: str = "factor", language: str = "en"
 ) -> bytes:
     return figures.figure(
-        name, fmt, exported.result, exported.meta["kind"], short=short, order=order, language=language
+        name, fmt, exported.result, exported.meta["kind"], short=short, order=order, language=language,
+        names=exported.names,
     )
 
 
@@ -1350,13 +1472,12 @@ async def export_report(
 ) -> Response:
     """The analysis as a LaTeX report built like ComFy's (report.tex): measures, validity
     (sample size, Bartlett, MSA with the rounds of the filter), factor count, descriptive
-    statistics, loadings, communalities, dimensions, settings and provenance. The factors are
-    named after an interpretation stored for exactly this analysis in ``language``, if any."""
+    statistics, loadings, communalities, dimensions, settings and provenance. The factors carry
+    the ``factor_names`` of the request; nothing names them by itself."""
     body = body or ArchiveRequest()
     exported = await _exported(request, dataset_id, body, session_id)
     if isinstance(exported, Response):
         return exported
-    names = _factor_names(await _interpretation(exported, session_id, body.language))
 
     def build() -> str:
         return report_tex(
@@ -1368,7 +1489,7 @@ async def export_report(
             libraries=library_versions(),
             created_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
             short=body.short_codes,
-            factor_names=names,
+            factor_names=exported.names,
             published=exported.published(),
         )
 
@@ -1388,7 +1509,8 @@ async def export_archive(
     (rows in the ``order`` and labels in the ``figure_language``, both kept in the manifest),
     the descriptive statistics, the run times of a computed dataset, parameters and library
     versions, with an interpretation of exactly this analysis if one is stored. Never calls the
-    API for an interpretation."""
+    API for an interpretation. With ``miner`` the matrix holds the rows of that miner and the
+    manifest names it; ``factor_names`` name the factors of the tables, figures and report."""
     body = body or ArchiveRequest()
     exported = await _exported(request, dataset_id, body, session_id)
     if isinstance(exported, Response):
@@ -1413,6 +1535,7 @@ async def export_archive(
             short_codes=body.short_codes,
             figure_order=body.order,
             figure_language=body.figure_language,
+            factor_names=exported.names,
         )
 
     archive = await run_in_threadpool(build)
@@ -1444,14 +1567,30 @@ class ColumnOptions(BaseModel):
 
 
 class CompareColumn(BaseModel):
-    """One column of a comparison: a bundled dataset with the settings its paper published
-    ("paper"; the standard ones of its kind if it has none) or the standard ones."""
+    """One column of a comparison: a bundled dataset (``bundled_id``) with the settings its paper
+    published ("paper", the default; the standard ones of its kind if it has none) or the
+    standard ones; or a dataset of the session (``dataset_id``) with the settings saved with it
+    ("saved", the default; the standard ones if none are) or the standard ones, optionally of the
+    rows of one ``miner``."""
 
-    bundled_id: str = Field(..., max_length=200)
-    settings: Literal["paper", "standard"] = "paper"
+    bundled_id: str | None = Field(None, max_length=200)
+    dataset_id: str | None = Field(None, max_length=64)
+    #: Of a model dataset of the session discovered with several miners: the rows of this one.
+    miner: str | None = Field(None, max_length=200)
+    settings: Literal["paper", "standard", "saved"] | None = None
     options: ColumnOptions | None = None
     #: The title of the column; the label of the dataset without one.
     label: str | None = Field(None, max_length=80)
+
+    @model_validator(mode="after")
+    def _one_source(self) -> "CompareColumn":
+        if (self.bundled_id is None) == (self.dataset_id is None):
+            raise ValueError("A column names a bundled dataset (bundled_id) or one of the session (dataset_id).")
+        if self.bundled_id is not None and (self.settings == "saved" or self.miner is not None):
+            raise ValueError("A bundled dataset has the settings 'paper' or 'standard', and no miner to choose.")
+        if self.dataset_id is not None and self.settings == "paper":
+            raise ValueError("A dataset of the session has the settings 'saved' or 'standard'.")
+        return self
 
 
 class CompareRequest(BaseModel):
@@ -1470,22 +1609,94 @@ def _compare_error(code: str, message: str, **params: Any) -> JSONResponse:
     return JSONResponse(status_code=400, content={"detail": message, "code": code, "params": params})
 
 
+def _saved_params(meta: dict[str, Any], settings: str | None) -> tuple[AnalysisParams, str]:
+    """The parameters a column of a dataset of the session starts from: those saved with it
+    ("saved"), else, or for "standard", the standard ones of its kind."""
+    from interpretation.payload import default_params
+
+    saved = meta.get("options") if settings != "standard" else None
+    if saved:
+        try:
+            return AnalyzeRequest.model_validate(saved).params(meta["kind"]), "saved"
+        except ValueError:
+            # Saved in a form this version does not read: the standard instead.
+            pass
+    return default_params(meta["kind"]), "standard"
+
+
+def _own_column(
+    meta: dict[str, Any], session_id: str, column: CompareColumn, rule: str
+) -> tuple[pd.DataFrame | None, AnalysisParams, dict[str, Any]]:
+    """The data, the parameters and the spec of a column of a dataset of the session; no data,
+    and the spec with its ``error``, when the dataset is not ready or has no such miner."""
+    base, settings = _saved_params(meta, column.settings)
+    changes = column.options.changes() if column.options else {}
+    params = dataclasses.replace(base, **changes, assignment_rule=rule)
+    # Every measure of the dataset: those cleaning kept, then those it dropped.
+    kept = list(meta["measures"])
+    measures = [*kept, *(d["measure"] for d in meta["dropped"] if d["measure"] not in kept)]
+    spec: dict[str, Any] = {
+        "entry": {"id": None, "kind": meta["kind"], "name": meta["name"]},
+        "dataset": {
+            "id": meta["id"], "name": meta["name"], "source": meta["source"], "bundled_id": meta.get("bundled_id"),
+        },
+        "miner": column.miner,
+        "settings": settings,
+        "options": dataclasses.asdict(params),
+        "measures": measures,
+        "dropped": {d["measure"]: d["reason"] for d in meta["dropped"]},
+        "label": column.label or (f"{meta['name']}, {column.miner}" if column.miner else meta["name"]),
+    }
+    if meta["status"] != "ready":
+        spec["error"] = {
+            "code": "dataset_not_ready",
+            "message": f"The dataset is {meta['status']}, not ready.",
+            "params": {"status": meta["status"]},
+        }
+        return None, params, spec
+    data = storage.load_matrix(session_id, meta["id"])
+    try:
+        data, params, selection = _select(meta, data, column.miner, params)
+    except AnalysisError as e:
+        spec["error"] = {"code": e.code, "message": str(e), "params": e.params}
+        return None, params, spec
+    if selection:
+        spec["dropped"].update({d["measure"]: d["reason"] for d in selection.dropped})
+        spec["options"] = dataclasses.asdict(params)
+    return data, params, spec
+
+
 async def _comparison(request: Request, body: CompareRequest) -> dict[str, Any] | JSONResponse:
     """The comparison of the columns of ``body``, or the response that says why there is none.
 
-    Each column is analysed on the bundled CSV directly, in the slots of the analyses and with
-    the fit cache, so no dataset of a session is made. A column whose analysis fails carries
-    its error; the others are compared without it.
+    A column of a bundled dataset is analysed on the bundled CSV directly, so no dataset of a
+    session is made; a column of a dataset of the session on its stored matrix, or on the rows
+    of one miner of it. Both run in the slots of the analyses and with the fit cache. A column
+    whose analysis fails carries its error; the others are compared without it.
     """
-    entries = []
+    # Only a column of the session's own data needs the session.
+    session_id = await get_session_id(request) if any(c.dataset_id for c in body.columns) else None
+    sources: list[dict[str, Any]] = []
     for column in body.columns:
-        entry = cat.bundled_entry(column.bundled_id)
-        if entry is None:
+        if column.bundled_id is not None:
+            entry = cat.bundled_entry(column.bundled_id)
+            if entry is None:
+                return _compare_error(
+                    "compare_unknown_dataset", f"Unknown bundled dataset '{column.bundled_id}'.", dataset=column.bundled_id
+                )
+            sources.append({"kind": entry["kind"], "entry": entry})
+            continue
+        try:
+            dataset_id: str | None = str(uuid.UUID(column.dataset_id or ""))
+        except ValueError:
+            dataset_id = None
+        meta = storage.read_meta(session_id, dataset_id) if session_id and dataset_id else None
+        if meta is None:
             return _compare_error(
-                "compare_unknown_dataset", f"Unknown bundled dataset '{column.bundled_id}'.", dataset=column.bundled_id
+                "compare_unknown_dataset", f"The session has no dataset '{column.dataset_id}'.", dataset=column.dataset_id
             )
-        entries.append(entry)
-    kinds = sorted({e["kind"] for e in entries})
+        sources.append({"kind": meta["kind"], "meta": meta})
+    kinds = sorted({s["kind"] for s in sources})
     if len(kinds) > 1:
         return _compare_error(
             "compare_mixed_kinds", "All columns of a comparison must be of one kind, model or log measures.",
@@ -1496,18 +1707,30 @@ async def _comparison(request: Request, body: CompareRequest) -> dict[str, Any] 
     listening = asyncio.create_task(watch.listen())
     specs: list[dict[str, Any]] = []
     try:
-        for column, entry in zip(body.columns, entries):
-            data, measures, dropped = await run_in_threadpool(compare.bundled_data, entry["id"])
-            changes = column.options.changes() if column.options else {}
-            params, settings = compare.column_params(entry, column.settings, changes, body.assignment_rule)
-            spec: dict[str, Any] = {
-                "entry": entry,
-                "settings": settings,
-                "options": dataclasses.asdict(params),
-                "measures": list(measures),
-                "dropped": dict(dropped),
-                "label": column.label,
-            }
+        for column, source in zip(body.columns, sources):
+            if "entry" in source:
+                entry = source["entry"]
+                data, measures, dropped = await run_in_threadpool(compare.bundled_data, entry["id"])
+                changes = column.options.changes() if column.options else {}
+                params, settings = compare.column_params(
+                    entry, column.settings or "paper", changes, body.assignment_rule
+                )
+                spec: dict[str, Any] = {
+                    "entry": entry,
+                    "settings": settings,
+                    "options": dataclasses.asdict(params),
+                    "measures": list(measures),
+                    "dropped": dict(dropped),
+                    "label": column.label,
+                }
+            else:
+                own, params, spec = await run_in_threadpool(
+                    _own_column, source["meta"], session_id, column, body.assignment_rule
+                )
+                if own is None:
+                    specs.append(spec)
+                    continue
+                data = own
             await asyncio.sleep(0)
             if watch.stale():
                 raise Superseded()
@@ -1537,17 +1760,20 @@ async def _comparison(request: Request, body: CompareRequest) -> dict[str, Any] 
 @router.post("/compare")
 @limiter.limit(rate_limit("fa_analyze", "120/minute"))
 async def compare_analyses(request: Request, body: CompareRequest) -> Any:
-    """The factor structures of 2 to 8 analyses of bundled datasets side by side, like Tab. 17
-    of Important Factors: a header per column (n, measures after the MSA filter, KMO, factors,
+    """The factor structures of 2 to 8 analyses side by side, like Tab. 17 of Important
+    Factors, of bundled datasets or of datasets of the session (``dataset_id``, optionally with a
+    ``miner``): a header per column (n, measures after the MSA filter, KMO, factors,
     rotation, cumulative variance), every measure with the dimensions the shared assignment
     rule puts it in per column, the dimensions per column, and for every pair of measures in
     how many columns both are in the same dimension (``co_assignment``). The factors of the
     columns are matched by the measures they share, so that most measures in common get the same
     number.
 
-    Needs no dataset of the session. A 400 with ``code`` names an unknown dataset, columns of
-    two kinds, or that no column could be analysed; a column whose analysis fails has its
-    ``error`` and the others are compared without it.
+    Bundled datasets need no dataset of the session; a column of one names it by ``dataset_id``
+    and starts from the settings saved with it. A 400 with ``code`` names an unknown dataset,
+    columns of two kinds, or that no column could be analysed; a column whose analysis fails
+    (also a dataset not ready, or a miner it does not have) has its ``error`` and the others are
+    compared without it.
     """
     started = time.perf_counter()
     try:

@@ -51,6 +51,7 @@ describe("analysis links", () => {
     }
     // Readable parameters next to a bad one count for nothing.
     expect(parse(`bundled=${id}&rule=multi&k=0`)?.options).toEqual(standard);
+    expect(parse(`bundled=${id}&miner=`)?.invalid).toBe(true);
   });
 });
 
@@ -62,7 +63,19 @@ describe("print view links", () => {
     const href = printHref("model", "abc", own, standard, { codes: true, order: "dataset" });
     expect(href).toBe("/print?kind=model&dataset=abc&k=4&rot=oblimin&msa=0.6&lt=0.35&h2=0.3&rule=multi&ex=Density&codes=1&order=dataset");
     const parsed = parsePrintLink(new URLSearchParams(href.split("?")[1]), defaults);
-    expect(parsed).toEqual({ kind: "model", datasetId: "abc", options: own, view: { codes: true, order: "dataset" } });
+    expect(parsed).toEqual({ kind: "model", datasetId: "abc", options: own, view: { codes: true, order: "dataset" }, names: [] });
+  });
+
+  it("carry the miner and the names of the factors", () => {
+    const own: AnalysisOptions = { ...standard, n_factors: 3, miner: "Inductive miner" };
+    const href = printHref("model", "abc", own, standard, { codes: false, order: "factor" }, ["Größe", null, "a, b"]);
+    expect(href).toContain("miner=Inductive+miner");
+    const parsed = parsePrintLink(new URLSearchParams(href.split("?")[1]), defaults);
+    expect(parsed?.options).toEqual(own);
+    expect(parsed?.names).toEqual(["Größe", null, "a, b"]);
+    // Names that cannot be read count for none.
+    expect(parsePrintLink(new URLSearchParams("dataset=x&names=%5B1"), defaults)?.names).toEqual([]);
+    expect(parsePrintLink(new URLSearchParams("dataset=x&names=%5B%22%20a%20%20b%20%22%5D"), defaults)?.names).toEqual(["a b"]);
   });
 
   it("start from the standard of the kind and need a dataset", () => {

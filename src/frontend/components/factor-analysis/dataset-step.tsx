@@ -1,26 +1,44 @@
 "use client";
 
-import { useState } from "react";
-import { AlertCircle } from "lucide-react";
-import type { Descriptives, FactorDataset, Measurement } from "@/lib/api";
-import { PREVIEW_ROWS, countText } from "@/lib/factor-analysis";
+import { useId, useState } from "react";
+import { AlertCircle, AlertTriangle, Ban, Columns3, Info } from "lucide-react";
+import type { Descriptives, FactorDataset, Measurement, MinerSummary } from "@/lib/api";
+import { PREVIEW_ROWS, OBSERVATIONS_PER_MEASURE, countText, rowsChoice, type RowsChoice } from "@/lib/factor-analysis";
 import { NO_VALUE, formatNumber, formatStatistic } from "@/lib/format";
 import { measurementRows, measurementTotals } from "@/lib/measurement";
+import { cn } from "@/lib/utils";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
+import { ActionLink } from "@/components/ui/action-link";
+import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { MeasureName, TableFrame } from "@/components/ui/table";
-import { Term, useTipZone } from "@/components/ui/tip";
+import { Term, useTip, useTipZone } from "@/components/ui/tip";
 import { FoldButton } from "./measure-fold";
 import { HelpLabel, StatTile } from "./step-section";
+
+/** The choice of the rows of one miner, for a model dataset discovered with several. */
+export interface MinerChoiceProps {
+  /** The miner analysed, or null for all rows together. */
+  miner: string | null;
+  /** The measures excluded by hand, which count for the measures left. */
+  excluded: string[];
+  onChange: (miner: string | null) => void;
+  /** The comparison of the miners that can be analysed; null with a reason when there is none. */
+  compareHref: string | null;
+  compareReason: string | null;
+}
 
 export function DatasetView({
   dataset,
   measureName,
   measureDescription,
+  minerChoice,
 }: {
   dataset: FactorDataset;
   measureName: (key: string) => string;
   /** What a measure measures, for its tooltip. */
   measureDescription: (key: string) => string | undefined;
+  /** For a dataset with the rows of two miners or more. */
+  minerChoice?: MinerChoiceProps | null;
 }) {
   const t = useT();
   const tMaybe = useTMaybe();
@@ -39,6 +57,10 @@ export function DatasetView({
 
   return (
     <div className="space-y-6">
+      {minerChoice && dataset.miners && dataset.miners.length > 1 && (
+        <MinerChoice dataset={dataset} miners={dataset.miners} {...minerChoice} />
+      )}
+
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatTile label={t("factor.dataset.observations")} value={formatNumber(dataset.n_observations, locale)} />
         <StatTile label={t("factor.dataset.measures")} value={formatNumber(dataset.measures.length, locale)} />
@@ -159,6 +181,134 @@ export function DatasetView({
         </p>
       </div>
     </div>
+  );
+}
+
+/**
+ * All miners together or one of them, as tiles with the observations n and the measures p each
+ * has: a miner with no more rows than measures cannot be analysed and is blocked, one with fewer
+ * than five rows per measure is marked. The hint below says what the choice means.
+ */
+function MinerChoice({
+  dataset,
+  miners,
+  miner,
+  excluded,
+  onChange,
+  compareHref,
+  compareReason,
+}: MinerChoiceProps & { dataset: FactorDataset; miners: MinerSummary[] }) {
+  const t = useT();
+  const { locale } = useLocale();
+  const chosen = miners.find((m) => m.name === miner) ?? null;
+  const hint = chosen
+    ? t("factor.miners.hint_one", { miner: chosen.name, n: formatNumber(chosen.n_observations, locale) })
+    : t("factor.miners.hint_together", { miners: miners.length });
+  return (
+    <section id="fa-miner" aria-labelledby="fa-miner-label" className="space-y-2 scroll-mt-24">
+      <div className="flex items-center justify-between gap-x-4 gap-y-1 flex-wrap">
+        <span id="fa-miner-label">
+          <HelpLabel
+            as="span"
+            label={t("factor.miners.label")}
+            help={t("factor.miners.help", { per: OBSERVATIONS_PER_MEASURE })}
+          />
+        </span>
+        <ActionLink href={compareHref} reason={compareReason} icon={Columns3} more={t("factor.miners.compare_more")}>
+          {t("factor.miners.compare")}
+        </ActionLink>
+      </div>
+      <div role="radiogroup" aria-labelledby="fa-miner-label" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <MinerTile
+          title={t("factor.miners.together")}
+          choice={rowsChoice(dataset, null, excluded)}
+          chosen={miner === null}
+          onChoose={() => onChange(null)}
+        />
+        {miners.map((m) => (
+          <MinerTile
+            key={m.name}
+            title={m.name}
+            choice={rowsChoice(dataset, m, excluded)}
+            chosen={m.name === miner}
+            onChoose={() => onChange(m.name)}
+          />
+        ))}
+      </div>
+      <p className="flex items-start gap-1.5 text-xs text-muted max-w-prose">
+        <Info className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
+        <span>{hint}</span>
+      </p>
+    </section>
+  );
+}
+
+function MinerTile({
+  title,
+  choice,
+  chosen,
+  onChoose,
+}: {
+  title: string;
+  choice: RowsChoice;
+  chosen: boolean;
+  onChoose: () => void;
+}) {
+  const t = useT();
+  const { locale } = useLocale();
+  const params = {
+    n: formatNumber(choice.n, locale),
+    p: formatNumber(choice.p, locale),
+    min: formatNumber(OBSERVATIONS_PER_MEASURE * choice.p, locale),
+  };
+  // A blocked tile stays focusable, so that its reason can be read; the chosen one can be left.
+  const reason = choice.blocked && !chosen ? t("factor.miners.blocked_reason", params) : null;
+  // A tooltip needs a name besides the reason; the title is the tile's own.
+  const tip = useTip<HTMLLabelElement>(reason ? { name: title, reason } : null);
+  const size = t("factor.miners.size", params);
+  const state = choice.blocked ? t("factor.miners.blocked", params) : choice.few ? t("factor.miners.few", params) : null;
+  const sizeId = useId();
+  const stateId = useId();
+  return (
+    <label
+      ref={tip}
+      className={cn(
+        "flex items-start gap-2.5 rounded-md px-3 py-2.5 min-w-0",
+        choiceTile(chosen),
+        reason && "cursor-default opacity-60",
+      )}
+    >
+      {/* Named by the title alone, so the numbers describe the choice rather than renaming it. */}
+      <input
+        type="radio"
+        name="fa-miner"
+        className="sr-only"
+        checked={chosen}
+        aria-label={title}
+        aria-describedby={state ? `${sizeId} ${stateId}` : sizeId}
+        aria-disabled={reason ? true : undefined}
+        onChange={() => {
+          if (!reason) onChoose();
+        }}
+      />
+      <ChoiceMark type="radio" checked={chosen} className="mt-0.5" />
+      <span className="min-w-0">
+        <span className="block text-sm font-medium break-words">{title}</span>
+        <span id={sizeId} className="block text-[11px] text-muted tabular-nums">
+          {size}
+        </span>
+        {state && (
+          <span id={stateId} className="mt-0.5 flex items-start gap-1 text-[11px] text-warn-ink leading-snug">
+            {choice.blocked ? (
+              <Ban className="h-3 w-3 mt-px shrink-0" aria-hidden />
+            ) : (
+              <AlertTriangle className="h-3 w-3 mt-px shrink-0" aria-hidden />
+            )}
+            {state}
+          </span>
+        )}
+      </span>
+    </label>
   );
 }
 

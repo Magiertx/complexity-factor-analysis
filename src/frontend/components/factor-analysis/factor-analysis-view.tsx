@@ -40,15 +40,35 @@ import {
   defaultOptions,
   dimensionCount,
   downloadBlob,
+  hasNames,
   initialOptions,
+  namesForApi,
   optionsFromSaved,
   publishedOptions,
+  rowsChoice,
   sameOptions,
+  solutionKey,
   solutionNeedsAttention,
+  suggestedNames,
+  trimNames,
   unassignedMeasures,
+  withFactorName,
   type AnalysisOptions,
   type ExportFormat,
+  type FactorNames,
 } from "@/lib/factor-analysis";
+import {
+  MAX_COLUMNS,
+  NO_PINS,
+  compareHref,
+  keepPins,
+  loadPins,
+  ownColumnKey,
+  pinsHref,
+  savePins,
+  togglePin,
+  type Pins,
+} from "@/lib/compare";
 import { formatNumber, formatPercent } from "@/lib/format";
 import { ruleNote } from "@/lib/paper-notes";
 import { codeIndexes, codesOf, hasCodes, loadShortCodes, measureLabels, saveShortCodes } from "@/lib/short-codes";
@@ -63,10 +83,17 @@ import { useJobsDrawer } from "@/components/jobs-drawer";
 import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
 import { PageHeader } from "@/components/page-header";
 import { DataForm, DataSummary, type OpenPreset } from "./data-step";
-import { DatasetView } from "./dataset-step";
+import { DatasetView, type MinerChoiceProps } from "./dataset-step";
 import { DEFAULT_MEASURE_VIEW, SuitabilityView, type MeasureGroups, type MeasureView } from "./suitability-step";
 import { FactorsView } from "./factors-step";
-import { DEFAULT_LOADINGS_FILTER, LoadingsView, useLoadingsLook, type LoadingsFilter } from "./loadings-step";
+import {
+  DEFAULT_LOADINGS_FILTER,
+  LoadingsView,
+  useLoadingsLook,
+  type FactorNaming,
+  type LoadingsFilter,
+  type PinState,
+} from "./loadings-step";
 import { InterpretationView } from "./interpretation-step";
 import { FactorTour } from "./factor-tour";
 import { SETTING_CONTROLS, SettingsRow, focusControl } from "./settings-row";
@@ -85,6 +112,22 @@ const SAVE_OPTIONS_DEBOUNCE_MS = 1000;
 /** What an interpretation was requested for; a change of any part makes it stale. */
 function interpretationKey(datasetId: string, options: AnalysisOptions, locale: string) {
   return JSON.stringify([datasetId, options, locale]);
+}
+
+/**
+ * The names of the factors and the solution they were given for (`solutionKey`); a key of null
+ * takes the solution of the next analysis, e.g. for the names saved with a dataset just opened.
+ */
+interface Naming {
+  key: string | null;
+  names: FactorNames;
+}
+
+const NO_NAMES: Naming = { key: null, names: [] };
+
+/** The options as saved with a dataset, with the names of the factors where there are. */
+function savedForm(options: AnalysisOptions, names: FactorNames | null): string {
+  return JSON.stringify(names && names.length > 0 ? { ...options, factor_names: names } : options);
 }
 
 function messageOf(e: unknown, fallback: string) {
@@ -148,8 +191,18 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
 
   const [options, setOptions] = useState<AnalysisOptions>(() => defaultOptions(kind));
   const standard = useMemo(() => defaultOptions(kind), [kind]);
-  // "Reset to standard" and "Use paper settings" can be undone once, from a toast.
-  const [undo, setUndo] = useState<(UndoNotice & { previous: AnalysisOptions }) | null>(null);
+  // "Reset to standard" and "Use paper settings" can be undone once, from a toast, and so can a
+  // change that clears the names of the factors, names and settings together.
+  const [undo, setUndo] = useState<(UndoNotice & { previous: AnalysisOptions; naming?: Naming }) | null>(null);
+  // The names of the factors of the solution on screen; kept with the options saved with the dataset.
+  const [naming, setNaming] = useState<Naming>(NO_NAMES);
+  const namingRef = useRef(naming);
+  useEffect(() => {
+    namingRef.current = naming;
+  }, [naming]);
+  // Solutions pinned for a comparison, kept by the browser per kind.
+  const [pins, setPins] = useState<Pins>(NO_PINS);
+  useEffect(() => setPins(loadPins(kind)), [kind]);
   // The dataset whose saved options were applied, and the options the server has for it.
   const optionsAppliedFor = useRef<string | null>(null);
   // Settings chosen for a dataset about to open (the paper's or the standard), which replace
@@ -194,6 +247,11 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   );
   // The options of the analysis on screen; a stored interpretation is looked up for them.
   const [analyzedOptions, setAnalyzedOptions] = useState<AnalysisOptions | null>(null);
+  // The same for callbacks: the solution the names of the factors were given for.
+  const analyzedRef = useRef(analyzedOptions);
+  useEffect(() => {
+    analyzedRef.current = analyzedOptions;
+  }, [analyzedOptions]);
 
   const [interpStatus, setInterpStatus] = useState<InterpretationStatus | null>(null);
   const [interpStatusFailed, setInterpStatusFailed] = useState(false);
@@ -252,6 +310,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       setInterpretation(null);
       setInterpretError(null);
       setUndo(null);
+      setNaming(NO_NAMES);
       // A request for the old dataset is aborted and would not reset this itself.
       setAnalyzing(false);
       // Every dataset has its own options; those saved with it are applied once it has loaded.
@@ -301,9 +360,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         // the dataset, so that the first analysis already uses them.
         if (d.status === "ready" && optionsAppliedFor.current !== d.id) {
           optionsAppliedFor.current = d.id;
-          const saved = d.options ? JSON.stringify(optionsFromSaved(kind, d.options)) : null;
+          const savedNames = trimNames(d.options?.factor_names ?? []);
+          const saved = d.options ? savedForm(optionsFromSaved(kind, d.options), savedNames) : null;
           savedOptions.current = { id: d.id, json: saved };
-          const own = initialOptions(kind, d.options, d.measures);
+          const own = initialOptions(kind, d.options, d.measures, d.miners);
           const chosen = openWith.current?.id === d.id ? openWith.current : null;
           openWith.current = null;
           const applied = chosen ? chosen.options : own;
@@ -311,9 +371,18 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           // between compares its settings with these, and would else leave them in place.
           optionsRef.current = applied;
           setOptions(applied);
+          // The saved names belong to the saved settings; other settings name other factors.
+          const ownNaming: Naming = { key: null, names: savedNames };
+          setNaming(sameOptions(applied, own) ? ownNaming : NO_NAMES);
           // A copy reopened from the session had settings of its own; they are one click away.
           if (chosen && d.options && !sameOptions(own, chosen.options)) {
-            setUndo({ id: Date.now(), message: chosen.message, previous: own, returnFocus: summaryTitle.current });
+            setUndo({
+              id: Date.now(),
+              message: chosen.message,
+              previous: own,
+              naming: ownNaming,
+              returnFocus: summaryTitle.current,
+            });
           }
         }
         setDataset(d);
@@ -365,6 +434,16 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     };
   }, [kind, formOpen, jobCount, datasetStatus]);
 
+  // Pins of datasets the session no longer has go; the open one stays, the list may lag behind it.
+  useEffect(() => {
+    if (!datasets) return;
+    setPins((current) => {
+      const kept = keepPins(current, new Set([...datasets.map((d) => d.id), ...(datasetIdRef.current ? [datasetIdRef.current] : [])]));
+      if (kept !== current) savePins(kind, kept);
+      return kept;
+    });
+  }, [datasets, kind]);
+
   const ready = !!dataset && dataset.status === "ready" && dataset.id === datasetId;
 
   // Re-run the analysis on every parameter change, debounced. A change aborts the request before
@@ -384,6 +463,22 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       setAnalyzing(true);
       try {
         const res = await run();
+        // Names belong to a factor count, rotation and rule: another solution has other
+        // factors, so its names go, and the toast offers the settings and names before.
+        const key = solutionKey(res.n_factors, options);
+        const named = namingRef.current;
+        if (named.key !== key) {
+          if (named.key !== null && hasNames(named.names)) {
+            setUndo({
+              id: Date.now(),
+              message: tRef.current("factor.names.cleared"),
+              previous: analyzedRef.current ?? options,
+              naming: named,
+              returnFocus: null,
+            });
+          }
+          setNaming({ key, names: named.key === null ? named.names : [] });
+        }
         setAnalysis(res);
         setAnalyzedOptions(options);
         setAnalysisError(null);
@@ -404,18 +499,33 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     };
   }, [ready, datasetId, options, datasetGone]);
 
-  // Remember the options of every new analysis with its dataset, so that reopening the dataset
-  // starts from them. Nothing depends on the answer; a failure only costs that convenience.
+  // The solution on screen, and the names of its factors.
+  const analysisKey = analysis && analyzedOptions ? solutionKey(analysis.n_factors, analyzedOptions) : null;
+  const shownNames = useMemo(
+    () => (analysisKey !== null && naming.key === analysisKey ? naming.names : []),
+    [analysisKey, naming],
+  );
+  // As the API takes them, for the analysis on screen: saved with its options, sent with its exports.
+  const apiNames = useMemo(
+    () => (analysis ? namesForApi(shownNames, analysis.n_factors) : null),
+    [analysis, shownNames],
+  );
+  const apiNamesJson = JSON.stringify(apiNames);
+
+  // Remember the options of every new analysis with its dataset, and the names of its factors, so
+  // that reopening the dataset starts from them. Nothing depends on the answer; a failure only
+  // costs that convenience.
   const pendingSave = useRef<(() => void) | null>(null);
   useEffect(() => {
     pendingSave.current = null;
     if (!datasetId || !analyzedOptions) return;
-    const json = JSON.stringify(analyzedOptions);
+    const names = JSON.parse(apiNamesJson) as FactorNames | null;
+    const json = savedForm(analyzedOptions, names);
     const saved = savedOptions.current;
     if (saved?.id === datasetId && saved.json === json) return;
     const save = () => {
       pendingSave.current = null;
-      saveDatasetOptions(datasetId, analyzedOptions).then(
+      saveDatasetOptions(datasetId, names ? { ...analyzedOptions, factor_names: names } : analyzedOptions).then(
         () => {
           if (datasetIdRef.current === datasetId) savedOptions.current = { id: datasetId, json };
         },
@@ -428,7 +538,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     pendingSave.current = save;
     const timer = setTimeout(save, SAVE_OPTIONS_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [datasetId, analyzedOptions]);
+  }, [datasetId, analyzedOptions, apiNamesJson]);
 
   // Leaving the tab, the page or the dataset sends a save still waiting for its debounce.
   useEffect(() => {
@@ -488,9 +598,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     (patch: Partial<AnalysisOptions>) => {
       setOptions((o) => {
         const next = { ...o, ...patch };
-        // Keep an explicit factor count below the number of measures left.
-        if (patch.excluded && next.n_factors !== null && dataset) {
-          const max = Math.max(1, dataset.measures.length - next.excluded.length - 1);
+        // Keep an explicit factor count below the number of measures left, of the miner if one is chosen.
+        if ((patch.excluded || patch.miner !== undefined) && next.n_factors !== null && dataset) {
+          const miner = dataset.miners?.find((m) => m.name === next.miner) ?? null;
+          const max = Math.max(1, rowsChoice(dataset, miner, next.excluded).p - 1);
           next.n_factors = Math.min(next.n_factors, max);
         }
         return next;
@@ -673,18 +784,20 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     if (!datasetId) return;
     setExporting(format);
     setExportError(null);
+    // What is on screen, with the names of its factors.
+    const shown = { ...(analyzedOptions ?? options), factor_names: apiNames };
     try {
       if (format === "zip") {
         // The button is enabled only while both are the same: the ZIP holds what is shown.
-        await downloadAnalysisZip(datasetId, analyzedOptions ?? options, locale, {
+        await downloadAnalysisZip(datasetId, shown, locale, {
           shortCodes: codesShown,
           order: figureOrder,
         });
       } else if (format === "report") {
-        const { blob, filename } = await exportReport(datasetId, analyzedOptions ?? options, locale, codesShown);
+        const { blob, filename } = await exportReport(datasetId, shown, locale, codesShown);
         downloadBlob(blob, filename);
       } else {
-        const { blob, filename } = await exportLoadings(datasetId, options, format);
+        const { blob, filename } = await exportLoadings(datasetId, shown, format);
         downloadBlob(blob, filename);
       }
     } catch (e) {
@@ -701,7 +814,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     setExportError(null);
     try {
       // In the language of the UI: what is on screen is what is downloaded.
-      const { blob, filename } = await exportFigure(datasetId, analyzedOptions, name, format, {
+      const shown = { ...analyzedOptions, factor_names: apiNames };
+      const { blob, filename } = await exportFigure(datasetId, shown, name, format, {
         shortCodes: codesShown,
         order: figureOrder,
         language: locale,
@@ -756,6 +870,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // The catalog entry of a bundled dataset, and the settings of its paper if it has them.
   const bundled = dataset?.bundled_id ? catalog?.bundled.find((b) => b.id === dataset.bundled_id) : undefined;
   const published = useMemo(() => publishedOptions(kind, bundled), [kind, bundled]);
+  // The miner chooses the rows rather than how they are analysed: going back to the standard or
+  // to the paper's settings keeps it.
+  const rowStandard = useMemo(() => ({ ...standard, miner: options.miner }), [standard, options.miner]);
+  const rowPublished = useMemo(() => published && { ...published, miner: options.miner }, [published, options.miner]);
   // Only for the analysis on screen, and only while the settings are still those it ran with.
   const match =
     analysis && analyzedOptions && sameOptions(analyzedOptions, options) ? (analysis.published_match ?? null) : null;
@@ -816,8 +934,14 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     summaries.data = bundled?.label ?? datasetName(dataset, t, catalog);
   }
   if (dataset && finished("dataset")) {
+    // With one miner chosen, its rows; the rest of the steps are of them.
+    const chosenMiner = dataset.miners?.find((m) => m.name === options.miner) ?? null;
     summaries.dataset = [
-      `${formatNumber(dataset.n_observations, locale)} × ${formatNumber(dataset.measures.length, locale)}`,
+      chosenMiner?.name ?? null,
+      `${formatNumber(chosenMiner?.n_observations ?? dataset.n_observations, locale)} × ${formatNumber(
+        chosenMiner?.n_measures ?? dataset.measures.length,
+        locale,
+      )}`,
       dataset.dropped.length > 0 ? countText(t, "factor.rail_summary.removed", dataset.dropped.length) : null,
     ]
       .filter(Boolean)
@@ -843,6 +967,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     const unassigned = unassignedMeasures(analysis).length;
     summaries.loadings = [
       countText(t, "factor.rail_summary.dimensions", dimensionCount(analysis)),
+      // The names given to the factors, in their order.
+      hasNames(shownNames) ? shownNames.filter(Boolean).join(", ") : null,
       cross > 0 ? t("factor.rail_summary.cross", { n: cross }) : null,
       unassigned > 0 ? t("factor.rail_summary.unassigned", { n: unassigned }) : null,
     ]
@@ -1005,11 +1131,80 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     datasetHref: ready && datasetId ? datasetDownloadUrl(datasetId) : null,
     printHref:
       ready && datasetId && analyzedOptions
-        ? printHref(kind, datasetId, analyzedOptions, standard, { codes: codesShown, order: figureOrder })
+        ? printHref(kind, datasetId, analyzedOptions, standard, { codes: codesShown, order: figureOrder }, apiNames)
         : null,
     exporting,
     onExport: runExport,
   };
+
+  // The rows of one miner, chosen in the dataset step, and the comparison of the miners that can
+  // be analysed: one column each, with the settings saved with the dataset.
+  let minerChoice: MinerChoiceProps | null = null;
+  if (ready && dataset && datasetId && dataset.miners && dataset.miners.length > 1) {
+    const analysable = dataset.miners.filter((m) => !rowsChoice(dataset, m, options.excluded).blocked);
+    minerChoice = {
+      miner: options.miner,
+      excluded: options.excluded,
+      onChange: (miner) => updateOptions({ miner }),
+      compareHref:
+        analysable.length > 1
+          ? compareHref({
+              columns: analysable.slice(0, MAX_COLUMNS).map((m) => ownColumnKey(datasetId, { miner: m.name })),
+              rule: options.assignment_rule,
+              ...(kind === "log" ? { kind } : {}),
+            })
+          : null,
+      compareReason: analysable.length > 1 ? null : t("factor.miners.compare_none"),
+    };
+  }
+
+  // The names of the factors on screen, set one by one or taken from an interpretation.
+  const suggested =
+    analysis && interpretation && !interpretationStale ? suggestedNames(interpretation.result, analysis.n_factors) : null;
+  const factorNaming: FactorNaming = {
+    names: shownNames,
+    onName: (index, text) =>
+      setNaming((n) => ({ key: analysisKey, names: withFactorName(n.key === analysisKey ? n.names : [], index, text) })),
+    suggested: suggested && suggested.length > 0 ? suggested : null,
+    onSuggested: () => {
+      if (!suggested) return;
+      setUndo({
+        id: Date.now(),
+        message: t("factor.names.suggested_done"),
+        previous: optionsRef.current,
+        naming: namingRef.current,
+        returnFocus: document.activeElement instanceof HTMLElement ? document.activeElement : null,
+      });
+      setNaming({ key: analysisKey, names: suggested });
+    },
+  };
+
+  // The solution on screen as a column of a comparison: its dataset, miner, count and rotation.
+  const pinKey =
+    datasetId && analysis && analyzedOptions
+      ? ownColumnKey(datasetId, { miner: analyzedOptions.miner, k: analysis.n_factors, rotation: analyzedOptions.rotation })
+      : null;
+  const pinned = !!pinKey && pins.columns.includes(pinKey);
+  const changePins = (next: Pins) => {
+    setPins(next);
+    savePins(kind, next);
+  };
+  const pin: PinState | null = pinKey
+    ? {
+        pinned,
+        count: pins.columns.length,
+        reason: !analysisCurrent
+          ? t("factor.toolbar.wait_update")
+          : !pinned && pins.columns.length >= MAX_COLUMNS
+            ? t("factor.pin.full", { max: MAX_COLUMNS })
+            : null,
+        href: pinsHref(kind, pins),
+        onToggle: () => {
+          if (analyzedOptions) changePins(togglePin(pins, pinKey, analyzedOptions.assignment_rule));
+        },
+        onClear: () => changePins(NO_PINS),
+      }
+    : null;
   const shortCodes: ShortCodesSwitch = {
     on: codesShown,
     reason: !ready ? lockReason : codesAvailable ? null : t("factor.toolbar.codes_none"),
@@ -1098,13 +1293,14 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           {ready && dataset && (
             <SettingsRow
               options={options}
-              standard={standard}
-              published={published}
+              standard={rowStandard}
+              published={rowPublished}
               publishedSource={bundled?.published_source}
               publishedScope={bundled?.published_scope}
               bundledId={bundled?.id}
               analysis={analysis}
-              measureCount={dataset.measures.length}
+              // Of one miner, the measures that vary within its rows.
+              measureCount={dataset.miners?.find((m) => m.name === options.miner)?.n_measures ?? dataset.measures.length}
               match={match}
               onApply={applyOptions}
               onGoToSetting={goToSetting}
@@ -1115,7 +1311,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           <UndoToast
             notice={undo}
             onUndo={() => {
-              if (undo) setOptions(undo.previous);
+              if (undo) {
+                setOptions(undo.previous);
+                if (undo.naming) setNaming(undo.naming);
+              }
               setUndo(null);
             }}
             onClose={() => setUndo(null)}
@@ -1226,7 +1425,12 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               footer={footer("dataset")}
             >
               {ready && dataset ? (
-                <DatasetView dataset={dataset} measureName={measureName} measureDescription={measureDescription} />
+                <DatasetView
+                  dataset={dataset}
+                  measureName={measureName}
+                  measureDescription={measureDescription}
+                  minerChoice={minerChoice}
+                />
               ) : (
                 lockedHint
               )}
@@ -1324,6 +1528,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                     look={loadingsLook}
                     onLook={setLoadingsLook}
                     figure={figure("loadings")}
+                    naming={factorNaming}
+                    pin={pin}
                   />
                 </div>
               ) : (
@@ -1433,6 +1639,8 @@ function AnalysisError({
     filter: !options.auto_msa_filter,
     // A threshold above the default can leave too few measures for the analysis.
     threshold: options.auto_msa_filter && options.msa_threshold > defaultThreshold,
+    // The rows of one miner can be too few for the measures.
+    miner: options.miner !== null,
   };
   const anyFix = Object.values(fixes).some(Boolean);
   return (
@@ -1467,6 +1675,11 @@ function AnalysisError({
             {fixes.threshold && (
               <Button size="sm" variant="outline" onClick={() => onOptions({ msa_threshold: defaultThreshold })}>
                 {t("factor.analysis.default_threshold", { value: defaultThreshold })}
+              </Button>
+            )}
+            {fixes.miner && (
+              <Button size="sm" variant="outline" onClick={() => onOptions({ miner: null })}>
+                {t("factor.analysis.all_miners")}
               </Button>
             )}
           </div>

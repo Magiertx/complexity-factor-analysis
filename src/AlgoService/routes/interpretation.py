@@ -14,11 +14,12 @@ from fastapi.responses import JSONResponse, Response
 
 from config import get_session_id, limiter, logger
 from env_config import rate_limit
+from factor_analysis.core import AnalysisError
 from interpretation import client, quota, store
 from interpretation.client import InterpretationError
 from interpretation.payload import build_payload, data_hash, effective_params
 from interpretation.prompt import PROMPT_VERSION
-from routes.factor_analysis import AnalyzeRequest, _AnalysisFailed, _analyze, _ready_matrix
+from routes.factor_analysis import AnalyzeRequest, _AnalysisFailed, _analyze, _ready_matrix, _select
 
 router = APIRouter(prefix="/factor-analysis", tags=["factor analysis"])
 
@@ -97,6 +98,11 @@ async def interpret_dataset(
     meta, data = await _ready_matrix(dataset_id, session_id)
     kind = meta["kind"]
     params = body.params(kind)
+    # The rows of one miner are data of their own, with interpretations of their own.
+    try:
+        data, params, selection = await run_in_threadpool(_select, meta, data, body.miner, params)
+    except AnalysisError as e:
+        return _AnalysisFailed(e).response
     if body.cached_only and body.n_factors is not None:
         # A lookup needs only the data and the parameters; the analysis runs for a live call.
         result = None
@@ -122,7 +128,8 @@ async def interpret_dataset(
     if api_key is None:
         return _error(client.unavailable())
 
-    payload = build_payload(kind, result, params, meta.get("dropped"))
+    dropped = [*(meta.get("dropped") or []), *(selection.dropped if selection else [])]
+    payload = build_payload(kind, result, params, dropped)
     try:
         # Before any quota is used: the size of the request bounds what one call costs.
         client.check_size(payload, body.language)

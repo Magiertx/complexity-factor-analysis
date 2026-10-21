@@ -34,7 +34,7 @@ import {
   type InputsSummary,
   type SampleInput,
 } from "@/lib/api";
-import { COMPARE_HREF } from "@/lib/compare";
+import { COMPARE_HREF, MAX_COLUMNS, MIN_COLUMNS, compareHref, ownColumnKey } from "@/lib/compare";
 import { MIN_MEASURES, countText, datasetName, progressPercent, publishedOptions } from "@/lib/factor-analysis";
 import { formatDateTime, formatFileSize, formatNumber, formatPercent, formatRelative } from "@/lib/format";
 import { datasetNote, orderCollection, settingsSourceText } from "@/lib/paper-notes";
@@ -762,12 +762,37 @@ function DatasetPicker({
     onFocused?.();
   }, [focus, onFocused]);
 
+  // Several datasets side by side: the tiles turn into checkboxes, and the comparison opens with
+  // one column each, of all their rows, with the settings saved with them.
+  const [comparing, setComparing] = useState(false);
+  const [picked, setPicked] = useState<string[]>([]);
+  const ready = datasets.filter((d) => d.status === "ready");
+  const pickedReady = picked.filter((id) => ready.some((d) => d.id === id));
+  const compareTarget =
+    pickedReady.length >= MIN_COLUMNS
+      ? compareHref({
+          columns: pickedReady.map((id) => ownColumnKey(id)),
+          rule: "largest",
+          ...(kind === "log" ? { kind } : {}),
+        })
+      : null;
+  const togglePicked = (id: string) =>
+    setPicked((list) =>
+      list.includes(id) ? list.filter((x) => x !== id) : list.length >= MAX_COLUMNS ? list : [...list, id],
+    );
+  const startComparing = () => {
+    setComparing(true);
+    // The chosen tile is a start; the focus stays in the list.
+    setPicked(chosen && ready.some((d) => d.id === chosen) ? [chosen] : []);
+    requestAnimationFrame(() => listRef.current?.querySelector<HTMLInputElement>("input")?.focus());
+  };
+
   return (
     <div className="space-y-5">
       <div
         ref={listRef}
-        role="radiogroup"
-        aria-label={t("factor.data.source.mine")}
+        role={comparing ? "group" : "radiogroup"}
+        aria-label={comparing ? t("factor.data.compare_pick_aria") : t("factor.data.source.mine")}
         className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
       >
         {datasets.map((d) => (
@@ -776,24 +801,67 @@ function DatasetPicker({
             name={`fa-mine-${kind}`}
             dataset={d}
             catalog={catalog}
-            chosen={d.id === chosen}
+            chosen={comparing ? picked.includes(d.id) : d.id === chosen}
             open={d.id === openId}
-            onSelect={() => setSelected(d.id)}
+            onSelect={() => (comparing ? togglePicked(d.id) : setSelected(d.id))}
             onDelete={() => remove(d.id)}
+            pick={
+              comparing
+                ? {
+                    reason:
+                      d.status !== "ready"
+                        ? t("factor.data.compare_not_ready")
+                        : !picked.includes(d.id) && picked.length >= MAX_COLUMNS
+                          ? t("compare.columns.max", { max: MAX_COLUMNS })
+                          : null,
+                  }
+                : undefined
+            }
           />
         ))}
       </div>
-      <div className="flex items-center justify-end gap-3 flex-wrap pt-1">
-        {!chosen && <span className="text-xs text-muted mr-auto">{t("factor.data.need_mine")}</span>}
-        {onCancel && (
-          <Button variant="ghost" onClick={onCancel}>
+      {comparing ? (
+        <div className="flex items-center justify-end gap-3 flex-wrap pt-1">
+          <span className="text-xs text-muted mr-auto">
+            {t("factor.data.compare_hint", { min: MIN_COLUMNS, max: MAX_COLUMNS, n: pickedReady.length })}
+          </span>
+          <Button variant="ghost" onClick={() => setComparing(false)}>
             {t("common.cancel")}
           </Button>
-        )}
-        <Button onClick={() => chosen && onOpen(chosen)} disabled={!chosen}>
-          {t("factor.data.submit_open")}
-        </Button>
-      </div>
+          {compareTarget ? (
+            <Link
+              href={compareTarget}
+              className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-md bg-accent text-accent-fg text-sm font-medium hover:opacity-90 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+            >
+              <Columns3 className="h-4 w-4" aria-hidden />
+              {t("factor.data.compare_go", { n: pickedReady.length })}
+            </Link>
+          ) : (
+            <Button disabled>
+              <Columns3 className="h-4 w-4" aria-hidden />
+              {t("factor.data.compare_go", { n: pickedReady.length })}
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center justify-end gap-3 flex-wrap pt-1">
+          {!chosen && <span className="text-xs text-muted mr-auto">{t("factor.data.need_mine")}</span>}
+          {onCancel && (
+            <Button variant="ghost" onClick={onCancel}>
+              {t("common.cancel")}
+            </Button>
+          )}
+          {ready.length >= MIN_COLUMNS && (
+            <Button variant="outline" onClick={startComparing}>
+              <Columns3 className="h-4 w-4" aria-hidden />
+              {t("factor.data.compare_start")}
+            </Button>
+          )}
+          <Button onClick={() => chosen && onOpen(chosen)} disabled={!chosen}>
+            {t("factor.data.submit_open")}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -806,6 +874,7 @@ function DatasetTile({
   open,
   onSelect,
   onDelete,
+  pick,
 }: {
   name: string;
   dataset: DatasetSummary;
@@ -815,6 +884,8 @@ function DatasetTile({
   open: boolean;
   onSelect: () => void;
   onDelete: () => Promise<void>;
+  /** Picked for a comparison, a checkbox among several, instead of the one to open; with why it cannot be. */
+  pick?: { reason: string | null };
 }) {
   const t = useT();
   const { locale } = useLocale();
@@ -830,13 +901,30 @@ function DatasetTile({
     rows !== null && cols !== null ? { more: t("factor.data.cleaned_size", { rows, cols }) } : null,
   );
   const timeTip = useTip<HTMLElement>({ more: formatDateTime(dataset.created_at, locale) });
+  const pickTip = useTip<HTMLLabelElement>(pick?.reason ? { name: title, reason: pick.reason } : null);
   return (
     // min-w-0: a long name wraps instead of widening the grid column beyond the page.
-    <div className={cn("rounded-md min-w-0", choiceTile(chosen))}>
+    <div className={cn("rounded-md min-w-0", choiceTile(chosen), pick?.reason && "opacity-60")}>
       <div className="flex items-start">
-        <label className="flex-1 min-w-0 flex items-start gap-2.5 pl-3 py-2.5 cursor-pointer">
-          <input type="radio" name={name} className="sr-only" checked={chosen} onChange={onSelect} />
-          <ChoiceMark type="radio" checked={chosen} className="mt-0.5" />
+        <label
+          ref={pickTip}
+          className={cn("flex-1 min-w-0 flex items-start gap-2.5 pl-3 py-2.5", pick?.reason ? "cursor-default" : "cursor-pointer")}
+        >
+          {pick ? (
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={chosen}
+              aria-label={title}
+              aria-disabled={pick.reason ? true : undefined}
+              onChange={() => {
+                if (!pick.reason) onSelect();
+              }}
+            />
+          ) : (
+            <input type="radio" name={name} className="sr-only" checked={chosen} onChange={onSelect} />
+          )}
+          <ChoiceMark type={pick ? "checkbox" : "radio"} checked={chosen} className="mt-0.5" />
           <span className="min-w-0 flex-1">
             {/* Two lines: names of one paper differ only at the end; the tooltip has all of it. */}
             <span ref={nameTip} className="block min-w-0 text-sm font-medium line-clamp-2 break-words">

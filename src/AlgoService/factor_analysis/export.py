@@ -35,18 +35,28 @@ def latex_escape(text: str) -> str:
     return "".join(_LATEX_SPECIAL.get(ch, ch) for ch in text)
 
 
-def _factor_names(result: dict[str, Any]) -> list[str]:
-    return [f"Factor {i + 1}" for i in range(result["n_factors"])]
+#: Names of the factors by their index from 0, as a request gives them; a factor without one is
+#: "Factor i".
+Names = dict[int, str] | None
+
+
+def factor_labels(result: dict[str, Any], names: Names = None) -> list[str]:
+    """The heading of each factor: its name, else "Factor i"."""
+    return [(names or {}).get(i) or f"Factor {i + 1}" for i in range(result["n_factors"])]
+
+
+def _factor_names(result: dict[str, Any], names: Names = None) -> list[str]:
+    return factor_labels(result, names)
 
 
 def _csv_line(cells: list[Any]) -> str:
     return ",".join(csv_cell(c) for c in cells) + "\n"
 
 
-def loadings_csv(result: dict[str, Any]) -> str:
+def loadings_csv(result: dict[str, Any], names: Names = None) -> str:
     """One row per measure: the loading on each factor, then the communality. For oblique
-    rotations the loadings are the pattern matrix."""
-    lines = [_csv_line(["measure", *_factor_names(result), "communality"])]
+    rotations the loadings are the pattern matrix. A factor with a name is headed by it."""
+    lines = [_csv_line(["measure", *_factor_names(result, names), "communality"])]
     for measure, row in result["loadings"].items():
         lines.append(_csv_line([measure, *row, result["communalities"][measure]]))
     return "".join(lines)
@@ -97,13 +107,14 @@ _UNASSIGNED_REASONS = {
 }
 
 
-def loadings_latex(result: dict[str, Any]) -> str:
+def loadings_latex(result: dict[str, Any], factor_names: Names = None) -> str:
     """A booktabs ``tabular``. Under the rule "largest", loadings whose absolute value reaches
     the loading threshold are bold, unless the communality of the measure is below the
     communality threshold. Under "multi" and "hair" the loadings by which the rule put a measure
-    on a factor are bold, and a comment names the measures it left out."""
+    on a factor are bold, and a comment names the measures it left out. A factor with a name is
+    headed by it."""
     decimals = _C.number_of_decimals
-    names = _factor_names(result)
+    names = _factor_names(result, factor_names)
     assignment = _assignment(result)
     threshold = assignment["loading_threshold"]
     strict = assignment["loading_strict"]
@@ -143,7 +154,7 @@ def loadings_latex(result: dict[str, Any]) -> str:
     lines += [
         "\\begin{tabular}{l" + "r" * len(names) + "r}",
         "\\toprule",
-        "Measure & " + " & ".join(names) + " & Communality \\\\",
+        "Measure & " + " & ".join(latex_escape(n) for n in names) + " & Communality \\\\",
         "\\midrule",
     ]
     for measure, row in result["loadings"].items():
@@ -158,17 +169,17 @@ def loadings_latex(result: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def structure_csv(result: dict[str, Any]) -> str:
+def structure_csv(result: dict[str, Any], names: Names = None) -> str:
     """Oblique rotations: the correlation of each measure with each factor."""
-    lines = [_csv_line(["measure", *_factor_names(result)])]
+    lines = [_csv_line(["measure", *_factor_names(result, names)])]
     for measure, row in result["structure_loadings"].items():
         lines.append(_csv_line([measure, *row]))
     return "".join(lines)
 
 
-def factor_correlations_csv(result: dict[str, Any]) -> str:
+def factor_correlations_csv(result: dict[str, Any], factor_names: Names = None) -> str:
     """Oblique rotations: the correlations among the factors."""
-    names = _factor_names(result)
+    names = _factor_names(result, factor_names)
     lines = [_csv_line(["factor", *names])]
     for name, row in zip(names, result["factor_correlations"]):
         lines.append(_csv_line([name, *row]))
@@ -192,12 +203,16 @@ def eigenvalues_csv(result: dict[str, Any]) -> str:
 
 def msa_csv(result: dict[str, Any], measures: list[str], excluded: list[str]) -> str:
     """The MSA of each measure of the dataset and what became of it. A removed measure has the
-    MSA of the step that removed it; an excluded one has none."""
+    MSA of the step that removed it; an excluded one has none, nor has one that does not vary
+    within the miner the analysis is of."""
     removed = {r["measure"]: r for r in result["msa_filter"]["removed"]}
+    within = {d["measure"]: d["reason"] for d in (result.get("miner") or {}).get("dropped", [])}
     lines = [_csv_line(["measure", "msa", "status"])]
     for measure in measures:
         if measure in excluded:
             row = [measure, None, "excluded"]
+        elif measure in within:
+            row = [measure, None, f"dropped within the miner: {within[measure]}"]
         elif measure in removed:
             row = [measure, removed[measure]["msa"], f"removed in step {removed[measure]['step']}"]
         else:
@@ -364,6 +379,14 @@ def _readme(
         f'  In {APP_NAME}: on the "{_TABS[dataset["kind"]]}" tab, choose the source "CSV file" and',
         "  upload dataset.csv, then set the parameters of analysis_params in manifest.json. The",
         "  matrix is already cleaned, so the analysis runs on the same values.",
+        *(
+            [
+                f"  It holds the rows of the miner {result['miner']['name']} only, as the analysis",
+                "  saw them; analysis_params names the miner, which this file has alone.",
+            ]
+            if result.get("miner")
+            else []
+        ),
         "",
         "  In Python with factor_analyzer (minres, its default method), on the measures msa.csv",
         "  marks as used:",
@@ -413,6 +436,7 @@ def analysis_zip(
     short_codes: bool = False,
     figure_order: str = "factor",
     figure_language: str = "en",
+    factor_names: Names = None,
 ) -> bytes:
     """Everything needed to report and reproduce one analysis.
 
@@ -425,34 +449,37 @@ def analysis_zip(
     their path in the archive, e.g. "figures/scree.svg". ``short_codes`` names the measures in
     the report by the codes of the papers, as the figures do; ``figure_order`` and
     ``figure_language`` say how the figures were drawn and go into the manifest.
+    ``factor_names`` name the factors in the tables, the report and the manifest, as the
+    request gave them; the figures are drawn with them already.
     """
     from .report import report_tex
 
     created_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     tool = provenance.tool()
     libraries = library_versions()
-    factor_names = None
-    if interpretation is not None:
-        factor_names = {
-            f["index"] - 1: f["name"] for f in (interpretation[1].get("interpretation") or {}).get("factors", [])
-        }
+    miner = result.get("miner")
+    rows = (
+        f"The rows of the miner {miner['name']} the analysis ran on, cleaned, one row per observation."
+        if miner
+        else "The cleaned matrix the analysis ran on, one row per observation."
+    )
     files: list[tuple[str, str | bytes, str]] = [
         ("analysis.json", json.dumps(result, ensure_ascii=False, indent=2),
          "The full result, as POST /factor-analysis/datasets/{id}/analyze returns it."),
-        ("dataset.csv", matrix, "The cleaned matrix the analysis ran on, one row per observation."),
-        ("loadings.csv", loadings_csv(result),
+        ("dataset.csv", matrix, rows),
+        ("loadings.csv", loadings_csv(result, factor_names),
          "Loadings per measure and factor with the communality"
          + ("; the pattern matrix." if result["structure_loadings"] is not None else ".")),
-        ("loadings.tex", loadings_latex(result), "The loadings as a booktabs tabular for LaTeX."),
+        ("loadings.tex", loadings_latex(result, factor_names), "The loadings as a booktabs tabular for LaTeX."),
         ("assignment.csv", assignment_csv(result),
          f"The factors each measure is assigned to by the rule {result.get('assignment_rule', 'largest')}, "
          "or why it is on none, and its cross-loadings."),
     ]
     if result["structure_loadings"] is not None:
         files += [
-            ("structure.csv", structure_csv(result),
+            ("structure.csv", structure_csv(result, factor_names),
              "Structure matrix: correlations of measures and factors."),
-            ("factor-correlations.csv", factor_correlations_csv(result), "Correlations among the factors."),
+            ("factor-correlations.csv", factor_correlations_csv(result, factor_names), "Correlations among the factors."),
         ]
     files += [
         ("eigenvalues.csv", eigenvalues_csv(result),
@@ -508,6 +535,11 @@ def analysis_zip(
         "libraries": libraries,
         "files": listing,
     }
+    if miner:
+        # The rows of one miner: which, how many, and the measures without variance in them.
+        manifest["miner"] = miner
+    if factor_names:
+        manifest["factor_names"] = [factor_names.get(i) for i in range(result["n_factors"])]
     if measurement is not None:
         manifest["measurement"] = measurement
     if published is not None:

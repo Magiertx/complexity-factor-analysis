@@ -25,6 +25,15 @@ import {
   settingsSummary,
   solutionNeedsAttention,
   unassignedMeasures,
+  FACTOR_NAME_MAX,
+  cleanFactorName,
+  factorName,
+  hasNames,
+  namesForApi,
+  rowsChoice,
+  solutionKey,
+  suggestedNames,
+  withFactorName,
 } from "./factor-analysis";
 import { formatNumber } from "./format";
 import de from "./i18n/locales/de.json";
@@ -370,5 +379,86 @@ describe("settingsSummary", () => {
     });
     const chip = settingsSummary(standard, standard, paperResult, 4, t).find((c) => c.id === "factors");
     expect(chip).toEqual({ id: "factors", text: "2 factors (Kaiser)", differs: false });
+  });
+});
+
+describe("the rows of one miner", () => {
+  const dataset = { n_observations: 150, measures: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m"] };
+  const alpha = { name: "Alpha miner", n_observations: 50, n_measures: 12, dropped: ["m"] };
+  const few = { name: "Heuristics miner", n_observations: 4, n_measures: 12, dropped: ["m"] };
+
+  it("count the measures that vary within them, less the excluded ones", () => {
+    expect(rowsChoice(dataset, null, [])).toEqual({ n: 150, p: 13, blocked: false, few: false });
+    expect(rowsChoice(dataset, alpha, [])).toEqual({ n: 50, p: 12, blocked: false, few: true });
+    // An excluded measure the miner drops anyway counts once.
+    expect(rowsChoice(dataset, alpha, ["m", "a", "b"])).toEqual({ n: 50, p: 10, blocked: false, few: false });
+  });
+
+  it("block the analysis with no more rows than measures", () => {
+    expect(rowsChoice(dataset, few, [])).toEqual({ n: 4, p: 12, blocked: true, few: false });
+    expect(rowsChoice({ n_observations: 4, measures: ["a", "b", "c", "d"] }, null, [])).toMatchObject({ blocked: true });
+    expect(rowsChoice({ n_observations: 5, measures: ["a", "b", "c", "d"] }, null, [])).toMatchObject({ blocked: false, few: true });
+  });
+
+  it("open with a saved miner only when the dataset has it, and show it in the settings", () => {
+    const saved = { miner: "Alpha miner", n_factors: 3 };
+    expect(initialOptions("model", saved, dataset.measures, [alpha]).miner).toBe("Alpha miner");
+    expect(initialOptions("model", saved, dataset.measures, [few]).miner).toBeNull();
+    expect(initialOptions("model", saved, dataset.measures, null).miner).toBeNull();
+    const t = (key: string, params?: Record<string, string | number>) => `${key}${params ? JSON.stringify(params) : ""}`;
+    const chips = settingsSummary({ ...defaultOptions("model"), miner: "Alpha miner" }, defaultOptions("model"), null, 13, t);
+    expect(chips[0]).toEqual({ id: "miner", text: "Alpha miner", differs: true });
+    expect(settingsSummary(defaultOptions("model"), defaultOptions("model"), null, 13, t).some((c) => c.id === "miner")).toBe(false);
+  });
+});
+
+describe("the names of the factors", () => {
+  it("are one line of at most forty characters", () => {
+    expect(cleanFactorName("  Size \n of  nets ")).toBe("Size of nets");
+    expect(cleanFactorName("x".repeat(50))).toHaveLength(FACTOR_NAME_MAX);
+  });
+
+  it("are set and cleared one by one, without empty ones at the end", () => {
+    const names = withFactorName([], 2, "Choice");
+    expect(names).toEqual([null, null, "Choice"]);
+    expect(withFactorName(names, 0, "Size")).toEqual(["Size", null, "Choice"]);
+    expect(withFactorName(names, 2, "   ")).toEqual([]);
+    expect(factorName(names, 2)).toBe("Choice");
+    expect(factorName(names, 5)).toBeNull();
+    expect(hasNames(names)).toBe(true);
+    expect(hasNames([null, ""])).toBe(false);
+  });
+
+  it("go to the API for the factors of the solution only", () => {
+    expect(namesForApi(["Size", null, "Choice", "Extra"], 3)).toEqual(["Size", null, "Choice"]);
+    expect(namesForApi([null, ""], 4)).toBeNull();
+    expect(namesForApi(null, 4)).toBeNull();
+  });
+
+  it("belong to a factor count, a rotation and a rule", () => {
+    const options = defaultOptions("model");
+    expect(solutionKey(4, options)).toBe(solutionKey(4, { ...options, excluded: ["a"] } as typeof options));
+    expect(solutionKey(4, options)).not.toBe(solutionKey(5, options));
+    expect(solutionKey(4, options)).not.toBe(solutionKey(4, { ...options, rotation: "promax" }));
+    expect(solutionKey(4, options)).not.toBe(solutionKey(4, { ...options, assignment_rule: "hair" }));
+  });
+
+  it("take the suggestions of an interpretation only for the factors there are", () => {
+    const interpretation = {
+      factors: [
+        { index: 1, name: "Size and flow", summary: "", driving_measures: [], confidence: "high" as const },
+        { index: 3, name: "x".repeat(60), summary: "", driving_measures: [], confidence: "low" as const },
+        { index: 9, name: "Beyond", summary: "", driving_measures: [], confidence: "low" as const },
+      ],
+      overall: "",
+      caveats: [],
+      model: "m",
+      created_at: "",
+      language: "en" as const,
+      prompt_version: "",
+      cached: true,
+      precomputed: false,
+    };
+    expect(suggestedNames(interpretation, 4)).toEqual(["Size and flow", null, "x".repeat(FACTOR_NAME_MAX)]);
   });
 });

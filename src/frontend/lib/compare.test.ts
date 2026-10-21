@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   COMPARE_HREF,
   MAX_COLUMNS,
+  NO_PINS,
   TABLE_17,
   cellInRow,
   columnKey,
@@ -9,11 +10,16 @@ import {
   compareRequest,
   dimensionLabel,
   groupRows,
+  isOwnId,
+  keepPins,
+  ownColumnKey,
   pairTint,
   parseColumnKey,
   parseCompareQuery,
+  pinsHref,
   sameState,
   toggleColumn,
+  togglePin,
 } from "./compare";
 
 const KNOWN = new Set([...TABLE_17, "comfy-paper-heuristics-miner", "comfy-paper-alpha-plus-miner", "comfy-paper-alpha-dollar-miner"]);
@@ -164,5 +170,95 @@ describe("the columns and cells", () => {
     expect(cellInRow(cell, 1)).toBe(true);
     expect(cellInRow(cell, 0)).toBe(false);
     expect(cellInRow({ status: "absent" }, 0)).toBe(false);
+  });
+});
+
+describe("columns of datasets of the session", () => {
+  const ID = "0f8fad5b-d9cb-469f-a165-70867728950e";
+  const OTHER = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
+
+  it("name the dataset, the miner, the factor count and the rotation", () => {
+    expect(isOwnId(ID)).toBe(true);
+    expect(isOwnId("comfy-paper-alpha-miner")).toBe(false);
+    const key = ownColumnKey(ID, { miner: "Inductive miner", k: 4, rotation: "promax" });
+    expect(key).toBe(`${ID}~mInductive miner~k4~rpromax`);
+    expect(parseColumnKey(key)).toEqual({ id: ID, k: 4, own: true, miner: "Inductive miner", rotation: "promax" });
+    expect(parseColumnKey(ID)).toEqual({ id: ID, k: null, own: true, miner: null, rotation: null });
+    expect(parseColumnKey(ownColumnKey(ID, { k: 6 }))).toEqual({ id: ID, k: 6, own: true, miner: null, rotation: null });
+    // Each part once, in its order, and readable.
+    for (const bad of [`${ID}~k4~mAlpha miner`, `${ID}~k4~k5`, `${ID}~rspin`, `${ID}~m`, `${ID}~x1`, `${ID}~k0`]) {
+      expect(parseColumnKey(bad), bad).toBeNull();
+    }
+  });
+
+  it("travel in the link and are checked against the datasets of the session", () => {
+    const a = ownColumnKey(ID, { miner: "Alpha miner" });
+    const b = ownColumnKey(ID, { miner: "Inductive miner" });
+    const state = { columns: [a, b], rule: "largest" as const };
+    const query = compareQuery(state);
+    expect(query).toBe(`cols=${ID}~mAlpha%20miner,${ID}~mInductive%20miner&rule=largest`);
+    expect(parseCompareQuery(new URLSearchParams(query), KNOWN, new Set([ID]))).toEqual({ state, invalid: false });
+    // A dataset the session no longer has is left out.
+    const gone = parseCompareQuery(new URLSearchParams(`cols=${a},${b},${OTHER}`), KNOWN, new Set([ID]));
+    expect(gone.state.columns).toEqual([a, b]);
+    expect(gone.invalid).toBe(true);
+    // Mixed with a bundled dataset.
+    const mixed = parseCompareQuery(new URLSearchParams(`cols=comfy-paper-alpha-miner,${a}`), KNOWN, null);
+    expect(mixed.state.columns).toEqual(["comfy-paper-alpha-miner", a]);
+  });
+
+  it("of log measures say their kind and fall back to nothing", () => {
+    const a = ownColumnKey(ID);
+    const b = ownColumnKey(OTHER);
+    const state = { columns: [a, b], rule: "multi" as const, kind: "log" as const };
+    expect(compareQuery(state)).toBe(`kind=log&cols=${a},${b}&rule=multi`);
+    expect(parseCompareQuery(new URLSearchParams(compareQuery(state)), null)).toEqual({ state, invalid: false });
+    expect(parseCompareQuery(new URLSearchParams("kind=log"), null)).toEqual({
+      state: { columns: [], rule: "largest", kind: "log" },
+      invalid: false,
+    });
+    expect(sameState(state, { ...state, kind: undefined })).toBe(false);
+  });
+
+  it("ask for the saved settings with the miner, count and rotation of the column", () => {
+    const state = {
+      columns: [ownColumnKey(ID, { miner: "Alpha miner", k: 4, rotation: "varimax" }), ownColumnKey(OTHER), "comfy-paper-alpha-miner"],
+      rule: "hair" as const,
+    };
+    const request = compareRequest(state, undefined, (c) => `${c.id.slice(0, 4)} ${c.miner ?? "all"}`);
+    expect(request.columns).toEqual([
+      { dataset_id: ID, miner: "Alpha miner", options: { n_factors: 4, rotation: "varimax" }, label: "0f8f Alpha miner" },
+      { dataset_id: OTHER, label: "7c9e all" },
+      { bundled_id: "comfy-paper-alpha-miner" },
+    ]);
+  });
+});
+
+describe("pinned solutions", () => {
+  const ID = "0f8fad5b-d9cb-469f-a165-70867728950e";
+  const four = ownColumnKey(ID, { k: 4, rotation: "varimax" });
+  const six = ownColumnKey(ID, { k: 6, rotation: "varimax" });
+
+  it("are added and taken off, with the rule of the last one", () => {
+    const one = togglePin(NO_PINS, four, "multi");
+    expect(one).toEqual({ columns: [four], rule: "multi" });
+    const two = togglePin(one, six, "hair");
+    expect(two).toEqual({ columns: [four, six], rule: "hair" });
+    expect(togglePin(two, four, "largest")).toEqual({ columns: [six], rule: "hair" });
+    // No more than a comparison holds.
+    let full = NO_PINS;
+    for (let k = 1; k <= MAX_COLUMNS + 2; k++) full = togglePin(full, ownColumnKey(ID, { k }), "largest");
+    expect(full.columns).toHaveLength(MAX_COLUMNS);
+  });
+
+  it("open a comparison from two on, and go with their dataset", () => {
+    expect(pinsHref("model", togglePin(NO_PINS, four, "multi"))).toBeNull();
+    const pins = { columns: [four, six], rule: "multi" as const };
+    expect(pinsHref("model", pins)).toBe(`/compare?cols=${four},${six}&rule=multi`);
+    expect(pinsHref("log", pins)).toBe(`/compare?kind=log&cols=${four},${six}&rule=multi`);
+    expect(keepPins(pins, new Set([ID]))).toBe(pins);
+    expect(keepPins({ ...pins, columns: [...pins.columns, "comfy-paper-alpha-miner"] }, new Set()).columns).toEqual([
+      "comfy-paper-alpha-miner",
+    ]);
   });
 });

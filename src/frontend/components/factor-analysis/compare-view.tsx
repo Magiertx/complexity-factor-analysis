@@ -8,12 +8,15 @@ import {
   compareAnalyses,
   exportComparison,
   fetchFactorCatalog,
+  listDatasets,
   type BundledDataset,
   type CompareCell,
   type CompareColumn,
   type CompareExportFormat,
   type Comparison,
+  type DatasetSummary,
   type FactorCatalog,
+  type FactorKind,
 } from "@/lib/api";
 import {
   MAX_COLUMNS,
@@ -29,9 +32,10 @@ import {
   parseCompareQuery,
   sameState,
   toggleColumn,
+  type ColumnChoice,
   type CompareState,
 } from "@/lib/compare";
-import { countText, downloadBlob, noticeText } from "@/lib/factor-analysis";
+import { countText, datasetName, downloadBlob, noticeText } from "@/lib/factor-analysis";
 import { formatNumber, formatPercent } from "@/lib/format";
 import { datasetNote, orderCollection, ruleNote } from "@/lib/paper-notes";
 import { codesOf, hasCodes, loadShortCodes, measureLabels, saveShortCodes } from "@/lib/short-codes";
@@ -48,8 +52,8 @@ import { CompareToolbar } from "./toolbar";
 
 type Translate = (key: string, params?: Record<string, string | number>) => string;
 
-/** The collection whose datasets the page compares: the miners of Important Factors. */
-const COLLECTION = "comfy-paper";
+/** The collection whose datasets the page offers per kind: the miners of Important Factors, the logs of the PDC. */
+const COLLECTIONS: Record<FactorKind, string> = { model: "comfy-paper", log: "comfy-log-paper" };
 const LOOK_KEY = "app.compare-look";
 /** Changes in quick succession (several tiles) are compared once. */
 const COMPARE_DEBOUNCE_MS = 150;
@@ -101,6 +105,8 @@ export function CompareView() {
   const { locale } = useLocale();
   const router = useRouter();
   const search = useSearchParams();
+  // Model measures, as the papers compare them, or log measures of the session's own data.
+  const kind: FactorKind = search.get("kind") === "log" ? "log" : "model";
 
   const [rawCatalog, setRawCatalog] = useState<FactorCatalog | null>(null);
   const [catalogError, setCatalogError] = useState<string | null>(null);
@@ -108,7 +114,7 @@ export function CompareView() {
   useEffect(() => {
     const ac = new AbortController();
     setCatalogError(null);
-    fetchFactorCatalog("model", ac.signal)
+    fetchFactorCatalog(kind, ac.signal)
       .then(setRawCatalog)
       .catch((e) => {
         if (!ac.signal.aborted) setCatalogError(errorText(e, tMaybe, t("compare.errors.catalog")));
@@ -116,11 +122,28 @@ export function CompareView() {
     return () => ac.abort();
     // Texts are read once per attempt; a language switch does not refetch.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [catalogAttempt]);
-  const catalog = useMemo(() => rawCatalog && localizeCatalog(rawCatalog, locale), [rawCatalog, locale]);
-  const datasets = useMemo(() => (catalog ? orderCollection(COLLECTION, catalog.bundled) : []), [catalog]);
+  }, [catalogAttempt, kind]);
+  // The datasets of the session, which own columns are made of and named after.
+  const [own, setOwn] = useState<DatasetSummary[] | null>(null);
+  useEffect(() => {
+    const ac = new AbortController();
+    listDatasets(kind, ac.signal).then(
+      (list) => setOwn(list),
+      () => {
+        // Without the list own columns keep a plain title; the server still knows them.
+        if (!ac.signal.aborted) setOwn([]);
+      },
+    );
+    return () => ac.abort();
+  }, [kind]);
+  const catalog = useMemo(
+    () => (rawCatalog && rawCatalog.kind === kind ? localizeCatalog(rawCatalog, locale) : null),
+    [rawCatalog, kind, locale],
+  );
+  const datasets = useMemo(() => (catalog ? orderCollection(COLLECTIONS[kind], catalog.bundled) : []), [catalog, kind]);
   const byId = useMemo(() => new Map(datasets.map((d) => [d.id, d])), [datasets]);
   const order = useMemo(() => datasets.map((d) => d.id), [datasets]);
+  const ownById = useMemo(() => new Map((own ?? []).map((d) => [d.id, d])), [own]);
 
   // The title of a column: its dataset, with the factor count if it has one of its own.
   const datasetTitle = useCallback((id: string) => byId.get(id)?.label ?? byId.get(id)?.name ?? id, [byId]);
@@ -128,17 +151,38 @@ export function CompareView() {
     (id: string, k: number | null) => (k === null ? datasetTitle(id) : t("compare.column_k", { label: datasetTitle(id), k })),
     [datasetTitle, t],
   );
+  // A column of the session's own data: its dataset, the miner, a factor count and rotation of its own.
+  const ownTitle = useCallback(
+    (column: ColumnChoice) => {
+      const dataset = ownById.get(column.id);
+      return [
+        dataset && catalog ? datasetName(dataset, t, catalog) : t("compare.own_unknown"),
+        column.miner ?? null,
+        column.k !== null ? t("compare.own_k", { k: column.k }) : null,
+        column.rotation ? t(`factor.settings.rotation.${column.rotation}`) : null,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+    },
+    [ownById, catalog, t],
+  );
   // The request is made a moment after the address changes: it names its columns as the page does then.
-  const titleRef = useRef(columnTitle);
+  const titleRef = useRef({ columnTitle, ownTitle });
   useEffect(() => {
-    titleRef.current = columnTitle;
-  }, [columnTitle]);
+    titleRef.current = { columnTitle, ownTitle };
+  }, [columnTitle, ownTitle]);
 
-  // The address is the state: the columns and the rule.
+  // The address is the state: the columns and the rule. Own columns are checked against the
+  // session's datasets once they are known.
   const known = useMemo(() => (catalog ? new Set(catalog.bundled.map((b) => b.id)) : null), [catalog]);
+  const ownIds = useMemo(() => (own ? new Set(own.map((d) => d.id)) : null), [own]);
   const query = search.toString();
-  const { state, invalid } = useMemo(() => parseCompareQuery(new URLSearchParams(query), known), [query, known]);
+  const { state, invalid } = useMemo(
+    () => parseCompareQuery(new URLSearchParams(query), known, ownIds),
+    [query, known, ownIds],
+  );
   const stateKey = compareQuery(state);
+  const enough = state.columns.length >= MIN_COLUMNS;
   const setState = useCallback(
     (next: CompareState) => router.replace(`/compare?${compareQuery(next)}`, { scroll: false }),
     [router],
@@ -148,13 +192,16 @@ export function CompareView() {
   const [comparedKey, setComparedKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  // Columns of the session's own data wait for its list, which names them.
+  const waiting = !catalog || (state.columns.some((key) => parseColumnKey(key)?.own) && !own);
   useEffect(() => {
-    if (!catalog) return;
+    if (waiting || !enough) return;
     const ac = new AbortController();
     setError(null);
     const timer = setTimeout(() => {
       const asked = parseCompareQuery(new URLSearchParams(stateKey), null).state;
-      compareAnalyses(compareRequest(asked, (id, k) => titleRef.current(id, k)), ac.signal)
+      const titles = titleRef.current;
+      compareAnalyses(compareRequest(asked, (id, k) => titles.columnTitle(id, k), titles.ownTitle), ac.signal)
         .then((result) => {
           setComparison(result);
           setComparedKey(stateKey);
@@ -168,27 +215,32 @@ export function CompareView() {
       ac.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stateKey, catalog, attempt]);
+  }, [stateKey, waiting, enough, attempt]);
   // What is on screen is of another selection than the tiles show, whether the update is under
   // way or failed: it is dimmed, and what is downloaded would be the new selection, not this table.
   const outdated = comparedKey !== stateKey;
-  const computing = !!catalog && !error && outdated;
+  const computing = !!catalog && enough && !error && outdated;
 
-  // The columns of the table on screen, as they were asked: which ones had a factor count of their own.
-  const ownCounts = useMemo(
+  // The columns of the table on screen, as they were asked.
+  const shownColumns = useMemo(
     () =>
-      (comparedKey ? parseCompareQuery(new URLSearchParams(comparedKey), null).state.columns : []).map(
-        (key) => parseColumnKey(key)?.k ?? null,
+      (comparedKey ? parseCompareQuery(new URLSearchParams(comparedKey), null).state.columns : []).map((key) =>
+        parseColumnKey(key),
       ),
     [comparedKey],
   );
+  // Which of them had a factor count of their own, instead of the one of the paper.
+  const ownCounts = useMemo(() => shownColumns.map((c) => (c && !c.own ? c.k : null)), [shownColumns]);
   const titles = useMemo(
     () =>
       (comparison?.columns ?? []).map((column, i) => {
+        const asked = shownColumns[i];
+        if (asked?.own) return ownTitle(asked);
         const k = ownCounts[i] ?? null;
+        if (!column.bundled_id) return column.label;
         return k === null ? (byId.get(column.bundled_id)?.label ?? column.label) : columnTitle(column.bundled_id, k);
       }),
-    [comparison, ownCounts, byId, columnTitle],
+    [comparison, shownColumns, ownCounts, byId, columnTitle, ownTitle],
   );
 
   // Names of the measures, or the short codes of the papers; the full name stays in the tooltip.
@@ -212,7 +264,7 @@ export function CompareView() {
     setExporting(format);
     setExportError(null);
     try {
-      const { blob, filename } = await exportComparison(compareRequest(state, columnTitle), format, codesShown);
+      const { blob, filename } = await exportComparison(compareRequest(state, columnTitle, ownTitle), format, codesShown);
       downloadBlob(blob, filename);
     } catch (e) {
       setExportError(errorText(e, tMaybe, t("compare.errors.export")));
@@ -234,7 +286,7 @@ export function CompareView() {
       <PageHeader
         title={t("compare.title")}
         subtitle={t("compare.subtitle")}
-        back={{ href: "/", label: t("mode_bar.model_label") }}
+        back={kind === "log" ? { href: "/log", label: t("mode_bar.log_label") } : { href: "/", label: t("mode_bar.model_label") }}
         actions={
           <CompareToolbar
             linkQuery={stateKey}
@@ -270,7 +322,15 @@ export function CompareView() {
         </p>
       )}
 
-      <ColumnChooser datasets={datasets} state={state} order={order} onState={setState} title={columnTitle} />
+      <ColumnChooser
+        datasets={datasets}
+        state={state}
+        order={order}
+        onState={setState}
+        title={columnTitle}
+        ownTitle={ownTitle}
+        tableReset={kind === "model"}
+      />
 
       <AssignmentChoice id="cmp-rule" value={state.rule} onChange={(rule) => setState({ ...state, rule })} note={null} />
 
@@ -341,14 +401,20 @@ export function CompareView() {
             {exportError}
           </p>
         )}
-        {!comparison && !error && !catalogError && (
+        {!enough && catalog && (
+          <p className="flex items-start gap-1.5 text-sm text-muted max-w-prose">
+            <Info className="h-4 w-4 mt-0.5 shrink-0" aria-hidden />
+            <span>{t("compare.empty", { min: MIN_COLUMNS })}</span>
+          </p>
+        )}
+        {enough && !comparison && !error && !catalogError && (
           <p className="flex items-center gap-2 text-sm text-muted">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
             {t("compare.computing")}
           </p>
         )}
 
-        {comparison && (
+        {comparison && enough && (
           <div className={cn("space-y-3 transition-opacity motion-reduce:transition-none", outdated && "opacity-60")}>
             {look === "matrix" ? (
               <MembershipMatrix comparison={comparison} labels={labels} titles={titles} />
@@ -371,19 +437,27 @@ interface Labels {
   description: (key: string) => string | undefined;
 }
 
-/** The bundled datasets as tiles to switch on and off, Tab. 17's first, and a way back to it. */
+/**
+ * The columns of the session's own data the link brought, which go once switched off; then the
+ * bundled datasets as tiles to switch on and off, Tab. 17's first, and a way back to it.
+ */
 function ColumnChooser({
   datasets,
   state,
   order,
   onState,
   title,
+  ownTitle,
+  tableReset,
 }: {
   datasets: BundledDataset[];
   state: CompareState;
   order: string[];
   onState: (state: CompareState) => void;
   title: (id: string, k: number | null) => string;
+  ownTitle: (column: ColumnChoice) => string;
+  /** Offer the way back to Tab. 17. */
+  tableReset: boolean;
 }) {
   const t = useT();
   const chosen = new Set(state.columns);
@@ -394,13 +468,17 @@ function ColumnChooser({
       : !on && state.columns.length >= MAX_COLUMNS
         ? t("compare.columns.max", { max: MAX_COLUMNS })
         : null;
+  const own = state.columns.flatMap((key) => {
+    const column = parseColumnKey(key);
+    return column?.own ? [{ key, column }] : [];
+  });
   return (
     <section className="space-y-2" aria-labelledby="cmp-columns-label">
       <div className="flex items-center justify-between gap-x-4 gap-y-1 flex-wrap">
         <span id="cmp-columns-label">
           <HelpLabel as="span" label={t("compare.columns.label")} help={t("compare.help.columns", { min: MIN_COLUMNS, max: MAX_COLUMNS })} />
         </span>
-        {!sameState(state, TABLE_17_STATE) && (
+        {tableReset && !sameState(state, TABLE_17_STATE) && (
           <button
             type="button"
             onClick={() => onState(TABLE_17_STATE)}
@@ -412,6 +490,17 @@ function ColumnChooser({
         )}
       </div>
       <div role="group" aria-labelledby="cmp-columns-label" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        {/* The analyses of the session's own data first: they are what such a comparison is about. */}
+        {own.map(({ key, column }) => (
+          <ColumnTile
+            key={key}
+            name={ownTitle(column)}
+            note={t("compare.own_note")}
+            on
+            reason={blocked(true)}
+            onToggle={() => onState({ ...state, columns: toggleColumn(state.columns, key, order) })}
+          />
+        ))}
         {datasets.flatMap((d) => {
           const on = chosen.has(d.id);
           const note = datasetNote(d.id, t) ?? d.published_source ?? null;
@@ -460,7 +549,8 @@ function ColumnTile({
   reason: string | null;
   onToggle: () => void;
 }) {
-  const tip = useTip<HTMLLabelElement>(reason ? { reason } : null);
+  // A tooltip needs a name besides the reason; the name is the tile's own.
+  const tip = useTip<HTMLLabelElement>(reason ? { name, reason } : null);
   const noteId = useId();
   return (
     <label ref={tip} className={cn("flex items-start gap-2.5 rounded-md px-3 py-2.5 min-w-0", choiceTile(on), reason && "cursor-default")}>
@@ -1067,11 +1157,15 @@ function ColumnNotes({
     if (column.same_as !== null && column.same_as !== undefined) {
       // Says what the note on the dataset would, for these columns.
       add(t("compare.same_as", { other: titles[column.same_as] }));
-    } else {
+    } else if (column.bundled_id) {
       add(datasetNote(column.bundled_id, t));
     }
     // The notes on a rule are about the settings of the paper, which a factor count of its own leaves.
-    if ((ownCounts[i] ?? null) === null) add(ruleNote(column.bundled_id, comparison.assignment_rule, t, locale));
+    if (column.bundled_id && (ownCounts[i] ?? null) === null) {
+      add(ruleNote(column.bundled_id, comparison.assignment_rule, t, locale));
+    }
+    // Own data start from the settings saved with them; say so where they do not.
+    if (column.dataset_id && column.settings === "standard") add(t("compare.own_standard"));
     for (const w of column.warnings ?? []) add(noticeText(w, tMaybe, measureName), true);
   });
   if (notes.length === 0) return null;

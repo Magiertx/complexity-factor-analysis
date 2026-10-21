@@ -505,6 +505,21 @@ export interface FactorDataset {
   descriptives?: Descriptives | null;
   /** Of a dataset the tool computed from logs or nets: run times and input sizes, else null. */
   measurement?: Measurement | null;
+  /**
+   * Of a model dataset whose rows are "<log> / <miner>": per miner its rows and the measures that
+   * vary within them; null for other datasets, absent from older servers.
+   */
+  miners?: MinerSummary[] | null;
+}
+
+/** The rows of one miner of a model dataset discovered with several miners. */
+export interface MinerSummary {
+  name: string;
+  n_observations: number;
+  /** The measures that vary within the rows of the miner. */
+  n_measures: number;
+  /** The measures without variance (or with a perfectly correlated twin) within them. */
+  dropped: string[];
 }
 
 /** What a dataset was built from. */
@@ -565,6 +580,10 @@ export interface AnalyzeOptions {
   communality_threshold?: number | null;
   /** Default "largest". */
   assignment_rule?: AssignmentRule;
+  /** Of a model dataset discovered with several miners: the rows of this miner only. */
+  miner?: string | null;
+  /** Names of the factors, the first for factor 1; the exports use them, the analysis does not. */
+  factor_names?: (string | null)[] | null;
 }
 
 /** Why a measure joined no factor. */
@@ -695,12 +714,23 @@ export interface FactorAnalysis {
   factor_count?: FactorCount;
   /** Only when the dataset has published numbers and the analysis used the published settings. */
   published_match?: PublishedMatch | null;
+  /** The rows of one miner the analysis ran on; null for every row, absent from older servers. */
+  miner?: MinerSelection | null;
   /** Time the server took for the analysis. */
   elapsed_ms?: number;
   /** The time of each part of the analysis; absent from older servers. */
   timings?: AnalysisTimings;
   warnings: string[];
   warning_details?: AnalysisNotice[];
+}
+
+/** The rows of one miner an analysis ran on. */
+export interface MinerSelection {
+  name: string;
+  n_observations: number;
+  n_measures: number;
+  /** Measures without variance within the miner, or with a perfectly correlated twin in it. */
+  dropped: { measure: string; reason: DropReason | string; detail?: string; params?: Record<string, string | number> }[];
 }
 
 /**
@@ -933,10 +963,15 @@ export async function exportFigure(
 
 // ----------------------- Comparing factor structures -----------------------
 
-/** One column of a comparison: a bundled dataset with the settings of its paper or the standard. */
+/**
+ * One column of a comparison: a bundled dataset with the settings of its paper or the standard, or a
+ * dataset of the session with the settings saved with it or the standard, of one miner's rows.
+ */
 export interface CompareColumnRequest {
-  bundled_id: string;
-  settings?: "paper" | "standard";
+  bundled_id?: string;
+  dataset_id?: string;
+  miner?: string;
+  settings?: "paper" | "standard" | "saved";
   /** Changes to those settings, e.g. another factor count; the rule is the comparison's. */
   options?: Partial<Omit<AnalyzeOptions, "assignment_rule">>;
   label?: string;
@@ -951,11 +986,15 @@ export type CompareExportFormat = "csv" | "latex" | "zip";
 
 /** The header of a column; without `error` it has every field of an analysis. */
 export interface CompareColumn {
-  bundled_id: string;
+  /** null for a dataset of the session. */
+  bundled_id: string | null;
+  /** A dataset of the session, and the miner whose rows the column has. */
+  dataset_id?: string | null;
+  miner?: string | null;
   label: string;
   name: string;
   collection?: string | null;
-  settings: "paper" | "standard";
+  settings: "paper" | "standard" | "saved";
   options: AnalyzeOptions;
   published_source: string | null;
   paper_tables: PaperTables | string | null;
@@ -1056,7 +1095,10 @@ export interface Comparison {
   elapsed_ms?: number;
 }
 
-/** The factor structures of 2 to 8 bundled datasets side by side, like Tab. 17 of Important Factors. */
+/**
+ * The factor structures of 2 to 8 analyses side by side, like Tab. 17 of Important Factors: of
+ * bundled datasets or of datasets of the session.
+ */
 export async function compareAnalyses(body: CompareRequest, signal?: AbortSignal): Promise<Comparison> {
   const r = await fetch(`${BASE}/factor-analysis/compare`, {
     method: "POST",

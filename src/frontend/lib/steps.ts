@@ -45,6 +45,7 @@ export function neighbours(step: StepId): { previous: StepId | null; next: StepI
  * The keys are the ids of the chips (`SettingChip["id"]`).
  */
 export const CONTROL_STEPS = {
+  miner: "dataset",
   measures: "suitability",
   msa: "suitability",
   alpha: "suitability",

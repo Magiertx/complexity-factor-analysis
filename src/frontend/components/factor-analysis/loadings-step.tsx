@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { Grid3x3, Info, LayoutGrid } from "lucide-react";
+import { Columns3, Grid3x3, Info, LayoutGrid, Pin, PinOff, Tags, X } from "lucide-react";
 import { ASSIGNMENT_RULES, type AssignmentRule, type FactorAnalysis } from "@/lib/api";
 import {
   ORTHOGONAL,
@@ -10,6 +10,7 @@ import {
   countText,
   crossLoadingsByMeasure,
   effectiveCommunality,
+  factorName,
   loadingCounts,
   loadingStyle,
   notableLoadingMeasures,
@@ -21,20 +22,47 @@ import {
   signInk,
   unassignedMeasures,
   type AnalysisOptions,
+  type FactorNames,
   type UnassignedMeasure,
 } from "@/lib/factor-analysis";
 import { FOLDING_LOADINGS, LONG_LIST, arrangeLoadings, matchesQuery, otherShown } from "@/lib/measure-list";
 import { formatNumber, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
+import { ActionLink } from "@/components/ui/action-link";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
+import { IconButton } from "@/components/ui/icon-button";
 import { Segmented } from "@/components/ui/segmented";
 import { MeasureName, TableFrame } from "@/components/ui/table";
-import { Term, useTipZone } from "@/components/ui/tip";
+import { Term, useTip, useTipZone } from "@/components/ui/tip";
+import { FactorTitle } from "./factor-title";
 import { FigureMenu, type FigureDownload } from "./figure-menu";
 import { FoldButton, SectionRow, type Fold } from "./measure-fold";
 import { MeasureSearch, NotableSwitch } from "./measure-search";
 import { FieldLabel, HelpLabel, ThresholdField } from "./step-section";
+
+/** The names of the factors of the solution on screen, and how they change. */
+export interface FactorNaming {
+  names: FactorNames;
+  /** Names factor `index` (from 0); an empty text takes the name away. */
+  onName: (index: number, text: string) => void;
+  /** The names an interpretation of this solution suggests; null without one. */
+  suggested: FactorNames | null;
+  onSuggested: () => void;
+}
+
+/** The solution on screen as a column of a comparison to come. */
+export interface PinState {
+  pinned: boolean;
+  /** Solutions pinned, this one included. */
+  count: number;
+  /** Why it cannot be pinned now, e.g. while the analysis catches up with a change. */
+  reason: string | null;
+  /** The comparison of the pins; null with fewer than two. */
+  href: string | null;
+  onToggle: () => void;
+  onClear: () => void;
+}
 
 /**
  * How the loadings of a long list of measures are narrowed and folded, in the matrix and in the
@@ -80,6 +108,9 @@ interface Props {
   onLook: (patch: Partial<LoadingsLookState>) => void;
   /** Downloads the loadings heatmap for a paper. */
   figure?: FigureDownload;
+  naming: FactorNaming;
+  /** Pinning the solution for a comparison; absent where there is nothing to compare it with. */
+  pin?: PinState | null;
 }
 
 /** What makes a loading bold: the rule's assignment, or the threshold reached or exceeded. */
@@ -135,6 +166,8 @@ export function LoadingsView({
   look: { look, order },
   onLook: setLook,
   figure,
+  naming,
+  pin,
 }: Props) {
   const t = useT();
   const { locale } = useLocale();
@@ -267,6 +300,7 @@ export function LoadingsView({
               </div>
             )}
           </div>
+          {pin && <PinTools pin={pin} />}
         </div>
 
         {long && (
@@ -295,6 +329,7 @@ export function LoadingsView({
             measureDescription={measureDescription}
             list={list}
             figure={figure}
+            naming={naming}
           />
         ) : (
           <FactorGroups
@@ -303,6 +338,7 @@ export function LoadingsView({
             measureDescription={measureDescription}
             list={list}
             figure={figure}
+            naming={naming}
           />
         )}
       </div>
@@ -319,6 +355,7 @@ function LoadingsMatrix({
   measureDescription,
   list,
   figure,
+  naming,
 }: {
   analysis: FactorAnalysis;
   options: AnalysisOptions;
@@ -328,6 +365,7 @@ function LoadingsMatrix({
   measureDescription: (key: string) => string | undefined;
   list: LoadingsList;
   figure?: FigureDownload;
+  naming: FactorNaming;
 }) {
   const t = useT();
   const { locale } = useLocale();
@@ -373,7 +411,12 @@ function LoadingsMatrix({
       <HelpLabel
         label={t("factor.loadings.table_heading")}
         help={t("factor.help.loading")}
-        extra={figure && <FigureMenu name={t("factor.figure.loadings")} figure={figure} />}
+        extra={
+          <>
+            {figure && <FigureMenu name={t("factor.figure.loadings")} figure={figure} />}
+            <SuggestedNames naming={naming} />
+          </>
+        }
       />
       <Legend threshold={threshold} boldBy={boldBy} crossed={secondary.size > 0} strict={strict} />
       <TableFrame label={t("factor.loadings.table_heading")}>
@@ -388,8 +431,13 @@ function LoadingsMatrix({
                 {t("factor.loadings.col_measure")}
               </th>
               {factorIdx.map((i) => (
-                <th key={i} scope="col" className={cn("num", cell)} data-tip={t("factor.loadings.factor_n", { i: i + 1 })}>
-                  F{i + 1}
+                <th key={i} scope="col" className={cn("num align-bottom", cell)}>
+                  <FactorTitle
+                    index={i}
+                    name={factorName(naming.names, i)}
+                    onName={(text) => naming.onName(i, text)}
+                    look="column"
+                  />
                 </th>
               ))}
               <th scope="col" className="num border-l border-border" data-tip={t("factor.loadings.col_communality")}>
@@ -425,7 +473,8 @@ function LoadingsMatrix({
                         // Loadings that do not count are faded, so the ones that do stand out.
                         const counts = loadingCounts(v, threshold, strict) || strong;
                         const crossed = secondary.has(`${m}:${i}`);
-                        const tip = `${name} · ${t("factor.loadings.factor_n", { i: i + 1 })}: ${formatNumber(v, locale, 3)}`;
+                        const factor = factorName(naming.names, i) ?? t("factor.loadings.factor_n", { i: i + 1 });
+                        const tip = `${name} · ${factor}: ${formatNumber(v, locale, 3)}`;
                         return (
                           <td
                             key={i}
@@ -493,7 +542,7 @@ function LoadingsMatrix({
         {oblique && ` ${t("factor.loadings.oblique_note", { pct: formatPercent(analysis.variance.explained, locale) })}`}
       </p>
 
-      {analysis.factor_correlations && <FactorCorrelations values={analysis.factor_correlations} />}
+      {analysis.factor_correlations && <FactorCorrelations values={analysis.factor_correlations} names={naming.names} />}
     </div>
   );
 }
@@ -524,21 +573,24 @@ function VarianceRow({
   );
 }
 
-function FactorCorrelations({ values }: { values: number[][] }) {
+function FactorCorrelations({ values, names }: { values: number[][]; names: FactorNames }) {
   const t = useT();
   const { locale } = useLocale();
+  const zone = useTipZone<HTMLTableElement>();
+  // The columns keep the short numbers, the rows say the names; a column's name is in its tooltip.
   return (
     <div className="space-y-2 pt-2">
       <HelpLabel label={t("factor.loadings.correlations_heading")} help={t("factor.help.factor_correlations")} />
       <TableFrame label={t("factor.loadings.correlations_heading")} className="w-fit max-w-full">
-        <table className="data-table w-auto">
+        <table ref={zone} className="data-table w-auto">
           <caption className="sr-only">{t("factor.loadings.correlations_heading")}</caption>
           <thead>
             <tr>
               <td />
               {values.map((_, j) => (
-                <th key={j} scope="col" className="num">
+                <th key={j} scope="col" className="num" data-tip={factorName(names, j) ?? undefined}>
                   F{j + 1}
+                  {factorName(names, j) && <span className="sr-only"> {factorName(names, j)}</span>}
                 </th>
               ))}
             </tr>
@@ -546,8 +598,9 @@ function FactorCorrelations({ values }: { values: number[][] }) {
           <tbody>
             {values.map((row, i) => (
               <tr key={i}>
-                <th scope="row" className="font-medium text-muted">
+                <th scope="row" className="font-medium text-muted max-w-[14rem]">
                   F{i + 1}
+                  {factorName(names, i) && <span className="ml-1.5 font-medium text-fg">{factorName(names, i)}</span>}
                 </th>
                 {row.map((v, j) => (
                   <td key={j} style={i === j ? undefined : loadingStyle(v)} className={cn("num", i === j && "text-muted")}>
@@ -685,12 +738,14 @@ function FactorGroups({
   measureDescription,
   list,
   figure,
+  naming,
 }: {
   analysis: FactorAnalysis;
   measureName: (key: string) => string;
   measureDescription: (key: string) => string | undefined;
   list: LoadingsList;
   figure?: FigureDownload;
+  naming: FactorNaming;
 }) {
   const t = useT();
   const { locale } = useLocale();
@@ -720,7 +775,12 @@ function FactorGroups({
       <HelpLabel
         label={t("factor.loadings.groups_heading")}
         help={t("factor.help.groups")}
-        extra={figure && <FigureMenu name={t("factor.figure.loadings")} figure={figure} />}
+        extra={
+          <>
+            {figure && <FigureMenu name={t("factor.figure.loadings")} figure={figure} />}
+            <SuggestedNames naming={naming} />
+          </>
+        }
       />
       <div ref={zone} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {visible.map(({ factor: f, byKey, sections, count }) => {
@@ -729,9 +789,18 @@ function FactorGroups({
           return (
             <div key={f.index} className="rounded-lg bg-tile p-3.5 space-y-2.5 min-w-0">
               <div className="flex items-baseline justify-between gap-2">
-                <h4 className="text-sm font-semibold">{t("factor.loadings.factor_n", { i: f.index + 1 })}</h4>
+                <h4 className="text-sm font-semibold min-w-0 flex-1">
+                  <FactorTitle
+                    index={f.index}
+                    name={factorName(naming.names, f.index)}
+                    onName={(text) => naming.onName(f.index, text)}
+                    look="card"
+                  />
+                </h4>
                 {share !== undefined && (
-                  <span className="text-[11px] text-muted">{t("factor.loadings.factor_variance", { pct: formatPercent(share, locale) })}</span>
+                  <span className="text-[11px] text-muted shrink-0">
+                    {t("factor.loadings.factor_variance", { pct: formatPercent(share, locale) })}
+                  </span>
                 )}
               </div>
               {f.measures.length === 0 ? (
@@ -827,6 +896,61 @@ function FactorGroups({
       </div>
       {narrowed && visible.length === 0 && unassignedShown.length === 0 && (
         <p className="text-xs text-muted">{t("factor.measures.none_match")}</p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Takes over the names an interpretation of this solution suggests, on a click only and only
+ * where there is one; the names stay editable like any others.
+ */
+function SuggestedNames({ naming }: { naming: FactorNaming }) {
+  const t = useT();
+  const tip = useTip<HTMLButtonElement>({ more: t("factor.names.suggested_more") });
+  if (!naming.suggested || naming.suggested.length === 0) return null;
+  return (
+    <button
+      ref={tip}
+      type="button"
+      onClick={naming.onSuggested}
+      className="inline-flex items-center gap-1 rounded px-1 text-xs font-medium text-accent-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+    >
+      <Tags className="h-3.5 w-3.5" aria-hidden />
+      {t("factor.names.suggested")}
+    </button>
+  );
+}
+
+/**
+ * Pins the solution on screen as a column of a comparison, opens the comparison of the pins and
+ * clears them: the same dataset with 4 and with 6 factors, say, side by side.
+ */
+function PinTools({ pin }: { pin: PinState }) {
+  const t = useT();
+  return (
+    <div role="group" aria-label={t("factor.pin.aria")} className="flex items-center gap-1.5">
+      <IconButton
+        icon={pin.pinned ? PinOff : Pin}
+        tone="tile"
+        name={t(pin.pinned ? "factor.pin.unpin" : "factor.pin.pin")}
+        more={t("factor.pin.more")}
+        reason={pin.reason}
+        aria-pressed={pin.pinned}
+        onClick={pin.onToggle}
+      />
+      {pin.count > 0 && (
+        <>
+          <ActionLink
+            href={pin.href}
+            icon={Columns3}
+            reason={pin.href ? null : t("factor.pin.need_two")}
+            more={t("factor.pin.compare_more")}
+          >
+            {t("factor.pin.compare", { n: pin.count })}
+          </ActionLink>
+          <IconButton size="sm" icon={X} name={t("factor.pin.clear")} onClick={pin.onClear} />
+        </>
       )}
     </div>
   );
