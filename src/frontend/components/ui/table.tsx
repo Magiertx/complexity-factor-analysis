@@ -31,6 +31,7 @@ export function MeasureScope({
  * lies flat on the page, so its header sticks under the settings row while the page scrolls; one
  * wider than the frame scrolls sideways inside it instead, focusable so the keyboard can scroll it.
  * `boxed` puts a long table into a box of its own height that scrolls, with the header at its top.
+ * The frame's width is in `--frame-w`, for a row that must not scroll away (SectionRow).
  */
 export function TableFrame({
   label,
@@ -52,7 +53,11 @@ export function TableFrame({
     const frame = ref.current;
     const table = frame?.querySelector("table");
     if (!frame || !table || typeof ResizeObserver === "undefined") return;
-    const update = () => setWide(table.offsetWidth > frame.clientWidth + 1);
+    const update = () => {
+      setWide(table.offsetWidth > frame.clientWidth + 1);
+      // For what has to stay in view while the table scrolls sideways (SectionRow).
+      frame.style.setProperty("--frame-w", `${frame.clientWidth}px`);
+    };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(frame);
