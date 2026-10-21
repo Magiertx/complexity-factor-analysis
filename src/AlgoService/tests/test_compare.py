@@ -223,6 +223,10 @@ def test_cells_say_why_a_measure_is_in_no_dimension(compared):
     alpha, dfm, inductive, hybrid = range(4)
     assert rows["CH"][alpha]["status"] == "unassigned" and rows["CH"][alpha]["reason"] == "cross_loading"
     assert rows["CH"][alpha]["cross_loading"] is True
+    # CH loads 0.62 on factor 4 and -0.49 on factor 2 of the Alpha miner.
+    assert rows["CH"][alpha]["cross_dimensions"] == [3, 1]
+    assert rows["CH"][alpha]["cross_loadings"] == pytest.approx([0.62, -0.49], abs=0.01)
+    assert "cross_dimensions" not in rows["size"][alpha]
     assert rows["MM"][dfm] == {"status": "msa_removed", "msa": pytest.approx(rows["MM"][dfm]["msa"]), "step": 1}
     assert rows["MM"][dfm]["msa"] < 0.6
     assert rows["ts"][dfm] == {"status": "dropped", "reason": "constant"}

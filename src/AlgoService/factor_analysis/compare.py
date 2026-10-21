@@ -211,6 +211,12 @@ def _cell(measure: str, spec: dict[str, Any], result: dict[str, Any] | None, dim
     assigned = [
         (f["index"], m["loading"]) for f in result["factors"] for m in f["measures"] if m["measure"] == measure
     ]
+    # The dimensions and loadings of a cross-loading, largest absolute loading first.
+    crossed = (
+        {"cross_dimensions": [dimension_of[f] for f in cross["factors"]], "cross_loadings": cross["loadings"]}
+        if cross
+        else {}
+    )
     if assigned:
         assigned.sort(key=lambda fl: -abs(fl[1]))
         return {
@@ -220,6 +226,7 @@ def _cell(measure: str, spec: dict[str, Any], result: dict[str, Any] | None, dim
             "loadings": [v for _, v in assigned],
             "communality": communality,
             "cross_loading": cross is not None,
+            **crossed,
         }
     largest = int(np.argmax(np.abs(np.asarray(row, dtype=float))))
     reason = next((u["reason"] for u in result["unassigned_details"] if u["measure"] == measure), None)
@@ -232,6 +239,7 @@ def _cell(measure: str, spec: dict[str, Any], result: dict[str, Any] | None, dim
         "loading": row[largest],
         "communality": communality,
         "cross_loading": cross is not None,
+        **crossed,
     }
 
 
