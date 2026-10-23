@@ -188,7 +188,7 @@ export function RunHistoryView() {
       <Card>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative flex-1 min-w-[200px]">
+            <div className="relative flex-1 min-w-[200px] max-w-xl">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted pointer-events-none" />
               <Input
                 type="text"
