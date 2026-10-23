@@ -1123,10 +1123,11 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     if (!target) return;
     const pad = wide ? parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0 : 8;
     const top = target.getBoundingClientRect().top;
-    // A wide screen scrolls only when the step begins above the window. On a phone the row of
-    // steps goes to the top of it every time, so the step starts on the first screen and not
-    // below the page's own header.
-    if (wide ? top < pad : Math.abs(top - pad) > 1) window.scrollBy({ top: top - pad });
+    // A wide screen scrolls only when the step begins above the window. On a phone the bar of
+    // steps goes to the top of it, but only when it is out of sight: where it already shows (the
+    // first load, the step after the form on the same screen), the page keeps the header above it.
+    const outOfSight = top < 0 || top > window.innerHeight - 96;
+    if (wide ? top < pad : outOfSight) window.scrollBy({ top: top - pad });
   }, [visit, current, takeFocus]);
 
   // An anchor of the one-page layout before, followed inside the page, opens its step.
