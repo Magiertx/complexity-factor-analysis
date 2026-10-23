@@ -407,7 +407,7 @@ export function StepNavBar({
   return (
     <nav
       aria-label={t("factor.nav.aria")}
-      className="lg:hidden fixed inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
+      className="lg:hidden fixed [@media(max-height:500px)]:static inset-x-0 bottom-0 z-30 border-t border-border bg-surface/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
     >
       <div className="h-14 px-4 flex items-center gap-3">
         <Button
