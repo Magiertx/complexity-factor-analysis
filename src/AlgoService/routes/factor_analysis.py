@@ -830,6 +830,8 @@ def _summary(meta: dict[str, Any], status: str) -> dict[str, Any]:
         "has_options": meta.get("options") is not None,
         # The rows of this miner were analysed last; null for all rows.
         "options_miner": (meta.get("options") or {}).get("miner"),
+        # The settings of its last analysis, as GET /datasets/{id} has them; null before one.
+        "options": meta.get("options"),
     }
 
 

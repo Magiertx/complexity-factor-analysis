@@ -305,7 +305,11 @@ limit is marked `failed` here too.
     "created_at": "2026-10-06T09:12:44.512+00:00",
     "n_observations": 32, "n_measures": 2, "bundled_id": null, "job_id": "a3e04d71-…",
     "inputs": { "files": 32, "measures": ["Size", "Density"], "sample_id": "pdc-sample-models" },
-    "has_options": true, "options_miner": null } ] }
+    "has_options": true, "options_miner": null,
+    "options": { "excluded": [], "auto_msa_filter": true, "msa_threshold": 0.6,
+                 "bartlett_alpha": 0.05, "n_factors": null, "rotation": "varimax",
+                 "loading_threshold": 0.35, "communality_threshold": null,
+                 "assignment_rule": "largest" } } ] }
 ```
 
 - `name_auto` is `true` when no name was given and the server made one up from the inputs,
@@ -316,6 +320,8 @@ limit is marked `failed` here too.
   choices made at creation, where they apply; for `bundled` and `csv`, `measures` is only there
   if columns were selected.
 - `options_miner` is the miner whose rows the saved options analyse, `null` for all rows.
+- `options` are the saved parameters of the last analysis, as `GET /factor-analysis/datasets/{id}`
+  has them, or `null` before the first one.
 - `GET /factor-analysis/datasets/{id}` carries the same `name_auto`, `bundled_id` and
   `inputs`, and `options`: the saved parameters or `null`. A ready dataset also has
   `descriptives`, `measurement` and `miners`, see below.

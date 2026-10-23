@@ -121,6 +121,7 @@ def test_list_is_newest_first_and_filters_by_kind(client):
         "inputs": {"files": 0},
         "has_options": False,
         "options_miner": None,
+        "options": None,
     }
     assert _list(client, "log")[0]["inputs"] == {"files": 1}
 
@@ -218,7 +219,10 @@ def test_options_round_trip(client):
         "communality_threshold": None,
         "assignment_rule": "largest",
     }
-    assert _list(client)[0]["has_options"] is True
+    listed = _list(client)[0]
+    assert listed["has_options"] is True
+    # The list carries the same saved settings, for the history of the session.
+    assert listed["options"] == client.get(f"/factor-analysis/datasets/{dataset_id}").json()["options"]
 
     client.put(f"/factor-analysis/datasets/{dataset_id}/options", json={})
     assert client.get(f"/factor-analysis/datasets/{dataset_id}").json()["options"]["excluded"] == []
