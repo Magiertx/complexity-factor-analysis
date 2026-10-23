@@ -1411,7 +1411,11 @@
     "tour_more": "How inspecting a single log works",
     "from_dataset": "{log} comes from your dataset and is chosen here.",
     "from_dataset_miner": "{log} comes from your dataset and is chosen here, with the {miner} as the only miner.",
-    "log_gone": "{log} is no longer among the newest uploads of this session, so it cannot be opened here. Upload it again."
+    "log_gone": "{log} is no longer among the newest uploads of this session, so it cannot be opened here. Upload it again.",
+    "recent": {
+      "title": "Recent runs of single logs",
+      "all": "All in the History"
+    }
   },
   "algo_text": {
     "summary": "Miners: {miners} · Measures: {measures}",

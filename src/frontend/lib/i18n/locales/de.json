@@ -1411,7 +1411,11 @@
     "tour_more": "Wie das Ansehen eines einzelnen Logs funktioniert",
     "from_dataset": "{log} stammt aus deinem Datensatz und ist hier ausgewählt.",
     "from_dataset_miner": "{log} stammt aus deinem Datensatz und ist hier ausgewählt, mit dem {miner} als einzigem Miner.",
-    "log_gone": "{log} gehört nicht mehr zu den neuesten Uploads dieser Sitzung und lässt sich hier nicht öffnen. Lade es erneut hoch."
+    "log_gone": "{log} gehört nicht mehr zu den neuesten Uploads dieser Sitzung und lässt sich hier nicht öffnen. Lade es erneut hoch.",
+    "recent": {
+      "title": "Letzte Runs einzelner Logs",
+      "all": "Alle im Verlauf"
+    }
   },
   "algo_text": {
     "summary": "Miner: {miners} · Maße: {measures}",
