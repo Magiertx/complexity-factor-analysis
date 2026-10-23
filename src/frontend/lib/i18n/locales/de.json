@@ -583,7 +583,15 @@
       "reset_factors": "Vorgeschlagene Faktorenzahl verwenden",
       "enable_filter": "MSA-Filter einschalten",
       "default_threshold": "Standard-MSA-Schwelle von {value} verwenden",
-      "all_miners": "Alle Miner gemeinsam analysieren"
+      "all_miners": "Alle Miner gemeinsam analysieren",
+      "choose_measures": "Maße auswählen",
+      "observation": {
+        "log": "Eine Beobachtung ist hier ein Log, und es sind {n}.",
+        "log_miner": "Eine Beobachtung ist hier ein Log mit einem Miner, und es sind {n}.",
+        "net": "Eine Beobachtung ist hier ein Petri-Netz, und es sind {n}.",
+        "row": "Eine Beobachtung ist hier eine Zeile der Tabelle, und es sind {n}."
+      },
+      "too_few_observations_way": "Eine Faktorenanalyse braucht mehr Beobachtungen als Maße: mit {n} höchstens {max} Maße, und sinnvoll sind etwa 5 je Maß. Behalte nur wenige Maße, oder wähle andere Daten mit mehr Beobachtungen."
     },
     "data": {
       "source": {
@@ -631,8 +639,13 @@
       "miners_hint": "Discovery-Algorithmen aus ComFy. Mehr Miner ergeben mehr Beobachtungen pro Log.",
       "measures_heading": "Maße",
       "measures_hint": "Komplexitätsmaße, die auf jedem Petri-Netz berechnet werden. Fahre über ein Maß, um seine Definition zu sehen.",
-      "groups_heading": "Feature-Gruppen",
-      "groups_hint": "Gruppen von feeed-Maßen, wie ComFy für Log-Maße sie definiert.",
+      "groups_heading": "Feature-Gruppen und Maße",
+      "groups_hint": "Gruppen von feeed-Maßen, wie in ComFy for log measures definiert. Klappe eine Gruppe auf, um einzelne Maße zu wählen.",
+      "measures_selected": "{n} von {total} Maßen",
+      "measure_search": "Maße durchsuchen",
+      "measure_search_placeholder": "Maße durchsuchen…",
+      "group_unfold": "Einzelne Maße von {group} wählen",
+      "group_fold": "{group} zuklappen",
       "group_measures": "{n} Maße",
       "selected_count": "{n} von {total}",
       "select_all": "Alle",
@@ -649,14 +662,13 @@
         "nets_plural": "Datensatz aus {n} Netzen"
       },
       "estimate": "Das ergibt bis zu {rows} Beobachtungen von {cols} Maßen.",
-      "estimate_too_few": "Zu wenige: Eine Faktorenanalyse braucht mehr Beobachtungen als Maße, mindestens {min}. Füge Dateien hinzu oder entferne Maße.",
       "estimate_thin": "Wenige Beobachtungen pro Maß. Mit etwa fünf pro Maß ({target}) werden die Ergebnisse stabiler.",
+      "estimate_wont_run": "Mit dieser Auswahl läuft die Analyse nicht; die Werte lassen sich trotzdem berechnen und ansehen.",
       "need_bundled": "Wähle einen Datensatz.",
       "need_mine": "Wähle einen Datensatz.",
       "need_csv": "Füge eine CSV-Datei hinzu.",
       "need_files": "Füge mindestens eine Datei hinzu.",
       "need_miner": "Wähle mindestens einen Miner.",
-      "need_group": "Wähle mindestens eine Feature-Gruppe.",
       "need_measures": "Wähle mindestens {n} Maße.",
       "submit_bundled": "Datensatz verwenden",
       "submit_csv": "CSV laden",
@@ -702,6 +714,11 @@
       "sample_name": {
         "pdc_sample_logs": "Vier PDC-Trainingslogs",
         "pdc_sample_models": "Petri-Netze der vier PDC-Logs"
+      },
+      "estimate_too_few": {
+        "logs": "{rows} Logs und {cols} Maße: Eine Faktorenanalyse braucht mehr Logs als Maße, mit {rows} Logs also höchstens {max} Maße, und sinnvoll sind etwa 5 Logs je Maß. Wähle weniger Maße oder lade mehr Logs hoch (bis zu {limit}).",
+        "log_miners": "{logs} Logs × {miners} Miner = {rows} Beobachtungen und {cols} Maße: Eine Faktorenanalyse braucht mehr Beobachtungen als Maße, also höchstens {max} Maße, und sinnvoll sind etwa 5 Beobachtungen je Maß. Wähle weniger Maße oder mehr Miner, oder lade mehr Logs hoch (bis zu {limit}).",
+        "nets": "{rows} Netze und {cols} Maße: Eine Faktorenanalyse braucht mehr Netze als Maße, mit {rows} Netzen also höchstens {max} Maße, und sinnvoll sind etwa 5 Netze je Maß. Wähle weniger Maße oder lade mehr Netze hoch (bis zu {limit})."
       }
     },
     "inputs": {
@@ -714,7 +731,8 @@
       "groups": "{n} Feature-Gruppe",
       "groups_plural": "{n} Feature-Gruppen",
       "measures": "{n} Maß",
-      "measures_plural": "{n} Maße"
+      "measures_plural": "{n} Maße",
+      "measures_of": "{n} von {total} Maßen"
     },
     "dataset": {
       "observations": "Beobachtungen",
@@ -807,7 +825,11 @@
       "status_excluded": "ausgeschlossen",
       "min_measures": "Mindestens {n} Maße müssen übrig bleiben.",
       "excluded_count": "{n} von Hand ausgeschlossen",
-      "include_all": "Alle Maße einbeziehen",
+      "bulk_aria": "Mehrere aus- oder einschließen",
+      "exclude_all": "Alle ausschließen",
+      "exclude_found": "Treffer ausschließen ({n})",
+      "keep_found": "Nur Treffer behalten ({n})",
+      "include_all": "Alle einschließen",
       "regularised": "regularisiert",
       "regularised_title": "Einige Eigenwerte der Korrelationsmatrix sind praktisch null und wurden nach unten begrenzt, daher spiegelt χ² eher diese Grenze als die Daten. Lies den Test zusammen mit KMO.",
       "exclude_aria": "{measure} ausschließen",
@@ -1503,7 +1525,7 @@
       "title": "Eigene Daten analysieren",
       "p1": "Wähle unter Daten eine Quelle:",
       "items": {
-        "logs": "Event-Logs (.xes, .xes.gz): Für Modellmaße wird jedes Log mit jedem gewählten Miner entdeckt und jedes Netz gemessen; für Logmaße berechnet feeed die gewählten Feature-Gruppen.",
+        "logs": "Event-Logs (.xes, .xes.gz): Für Modellmaße wird jedes Log mit jedem gewählten Miner entdeckt und jedes Netz gemessen; für Logmaße berechnet feeed die gewählten Feature-Gruppen. Klappe eine Gruppe auf, um einzelne ihrer Maße zu wählen, damit wenige Logs wenige Maße tragen; unter der Auswahl sagt der Schritt Daten, wie viele Beobachtungen und Maße das ergibt und wann es für eine Faktorenanalyse zu wenige sind.",
         "nets": "Petri-Netze (.pnml): Jedes Netz wird gemessen.",
         "csv": "Eine CSV-Datei: eine Zeile je Beobachtung, eine Spalte je Maß; eine erste Spalte mit Namen wird zu den Zeilenbeschriftungen."
       },
@@ -1516,7 +1538,7 @@
       "title": "Die Ergebnisse lesen",
       "items": {
         "dataset": "Datensatz: was die Bereinigung weggelassen hat und warum, die deskriptive Statistik jedes Maßes, wie der ComFy-Report sie ausgibt, und für einen aus Logs oder Netzen berechneten Datensatz die Laufzeiten und Eingabegrößen. Beide Tabellen sind eingeklappt, bis man sie öffnet.",
-        "suitability": "Eignung: der Bartlett-Test, der KMO insgesamt und der MSA jedes Maßes. Der MSA-Filter entfernt Maße in Runden, wie ComFy; jedes Maß lässt sich von Hand ausschließen.",
+        "suitability": "Eignung: der Bartlett-Test, der KMO insgesamt und der MSA jedes Maßes. Der MSA-Filter entfernt Maße in Runden, wie ComFy; jedes Maß lässt sich von Hand ausschließen, alle auf einmal oder die, die eine Suche findet. Wo die Analyse mangels Beobachtungen nicht läuft, sagt ihre Meldung, was eine Beobachtung ist, und führt zu den Maßen oder zurück zu den Daten.",
         "factors": "Faktoren: der Scree-Plot mit Kaiser-Linie und Parallelanalyse, die Zahl, die jedes Kriterium vorschlägt, und die Rotation.",
         "loadings": "Ladungen: die Regel, die Maße Faktoren zuordnet, und die beiden Schwellen in einer Zeile über dem Ergebnis, jede Regel in ihrem Tooltip erklärt; darunter eine Matrix (orange für negative Ladungen, blass, wo eine Ladung nicht zählt) oder eine Karte je Dimension. Querladungen sind umrandet.",
         "interpretation": "Interpretation: Namen für die Faktoren, von einem Sprachmodell nur auf Anfrage vorgeschlagen. Es entscheidet nichts. Ohne API-Schlüssel auf dem Server und ohne eine für die Einstellungen gespeicherte sagt die Liste der Schritte, dass sie hier nicht verfügbar ist.",

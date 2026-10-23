@@ -226,6 +226,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // The last successful result stays visible while a new one is computed or after an error.
   const [analysis, setAnalysis] = useState<FactorAnalysis | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  // Why it failed, where the server says so, for the ways out the error offers.
+  const [analysisFailure, setAnalysisFailure] = useState<{ code: string; params: Record<string, string | number> } | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [exporting, setExporting] = useState<ExportFormat | null>(null);
   const [figureBusy, setFigureBusy] = useState<FigureName | null>(null);
@@ -546,6 +548,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           return;
         }
         setAnalysisError(errorTextRef.current(e, tRef.current("factor.analysis.failed")));
+        setAnalysisFailure(e instanceof HttpError && e.code ? { code: e.code, params: e.params ?? {} } : null);
       } finally {
         if (!ctrl.signal.aborted) setAnalyzing(false);
       }
@@ -1611,9 +1614,16 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                     <AnalysisError
                       kind={kind}
                       message={analysisError}
+                      failure={analysisFailure}
+                      observation={observationUnit(dataset)}
                       stale={!!analysis}
                       options={options}
                       onOptions={updateOptions}
+                      onChooseMeasures={() => focusControl(SETTING_CONTROLS.measures)}
+                      onChooseData={() => {
+                        go("data");
+                        setChoosing(true);
+                      }}
                     />
                   )}
                   <div className={stale}>
@@ -1799,31 +1809,56 @@ function UrlReader({
   return null;
 }
 
+/** What one row of a dataset is, for the error of too few observations. */
+type ObservationUnit = "log" | "log_miner" | "net" | "row";
+
+function observationUnit(dataset: FactorDataset): ObservationUnit {
+  if (dataset.source === "pnml") return "net";
+  if (dataset.source === "logs") return dataset.kind === "model" ? "log_miner" : "log";
+  return "row";
+}
+
+/** Errors of the size of the data, which the measures or other data put right rather than a setting. */
+const SIZE_ERRORS = ["too_few_observations", "too_few_measures", "msa_filter_left"];
+
 function AnalysisError({
   kind,
   message,
+  failure,
+  observation,
   stale,
   options,
   onOptions,
+  onChooseMeasures,
+  onChooseData,
 }: {
   kind: FactorKind;
   message: string;
+  failure: { code: string; params: Record<string, string | number> } | null;
+  observation: ObservationUnit;
   stale: boolean;
   options: AnalysisOptions;
   onOptions: (patch: Partial<AnalysisOptions>) => void;
+  onChooseMeasures: () => void;
+  onChooseData: () => void;
 }) {
   const t = useT();
   const defaultThreshold = defaultOptions(kind).msa_threshold;
+  const code = failure?.code ?? null;
+  const fewRows = code === "too_few_observations";
+  const size = !!code && SIZE_ERRORS.includes(code);
   const fixes = {
     factors: options.n_factors !== null,
-    excluded: options.excluded.length > 0,
+    // More measures would make too few observations worse.
+    excluded: options.excluded.length > 0 && !fewRows,
     filter: !options.auto_msa_filter,
     // A threshold above the default can leave too few measures for the analysis.
     threshold: options.auto_msa_filter && options.msa_threshold > defaultThreshold,
     // The rows of one miner can be too few for the measures.
     miner: options.miner !== null,
   };
-  const anyFix = Object.values(fixes).some(Boolean);
+  const anyFix = Object.values(fixes).some(Boolean) || size;
+  const n = Number(failure?.params.n ?? 0);
   return (
     <div role="alert" className="rounded-lg bg-danger/10 px-3.5 py-3 flex items-start gap-2.5 text-sm">
       <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
@@ -1832,12 +1867,24 @@ function AnalysisError({
           <div className="font-medium">{t("factor.analysis.failed_title")}</div>
           <div className="text-muted mt-0.5 break-words">{message}</div>
         </div>
+        {/* Too few observations: what one is here, how many measures they carry, and the way out. */}
+        {fewRows && (
+          <p className="text-xs max-w-prose">
+            {t(`factor.analysis.observation.${observation}`, { n })}{" "}
+            {t("factor.analysis.too_few_observations_way", { n, max: Math.max(0, n - 1) })}
+          </p>
+        )}
         <p className="text-xs text-muted">
           {stale && `${t("factor.analysis.stale_note")} `}
           {t(anyFix ? "factor.analysis.failed_hint" : "factor.analysis.failed_hint_no_fix")}
         </p>
         {anyFix && (
           <div className="flex gap-2 flex-wrap">
+            {fewRows && (
+              <Button size="sm" variant="outline" onClick={onChooseMeasures}>
+                {t("factor.analysis.choose_measures")}
+              </Button>
+            )}
             {fixes.factors && (
               <Button size="sm" variant="outline" onClick={() => onOptions({ n_factors: null })}>
                 {t("factor.analysis.reset_factors")}
@@ -1861,6 +1908,11 @@ function AnalysisError({
             {fixes.miner && (
               <Button size="sm" variant="outline" onClick={() => onOptions({ miner: null })}>
                 {t("factor.analysis.all_miners")}
+              </Button>
+            )}
+            {size && (
+              <Button size="sm" variant="outline" onClick={onChooseData}>
+                {t("factor.data.change")}
               </Button>
             )}
           </div>

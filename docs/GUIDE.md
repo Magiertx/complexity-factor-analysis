@@ -39,10 +39,16 @@ In **Data**, choose a source:
 
 - **Event logs** (`.xes`, `.xes.gz`). For model measures, choose miners and measures: every log is
   mined with every miner in ProM, and every net is measured. For log measures, choose feature
-  groups; feeed computes them per log.
+  groups; feeed computes them per log. Unfold a group to choose single measures of it, so that a
+  few logs can carry a few measures.
 - **Petri nets** (`.pnml`): every net is measured.
 - **CSV file**: one row per observation, one column per measure; a first column of names is
   taken as row labels.
+
+Below the choice the data step says how many observations (logs, logs × miners or nets) and
+measures it gives. A factor analysis needs more observations than measures, and about five per
+measure; where there are too few, it says so with the numbers and the way out. The measures can
+still be computed and looked at, but the analysis will not run until fewer measures are kept.
 
 Logs and nets are computed in a job. The tab **History** says what runs ("1 running · 37%") and has a red
 dot for a failed run you have not seen yet; a dataset that has been computed raises a notice "… is ready ·
@@ -77,7 +83,9 @@ log is among the ten newest uploads of the session; the page says when it is not
   the net, seconds of reading, discovery and measures). Both tables are folded until opened.
 - **Suitability**: Bartlett's test of sphericity, the overall KMO and the MSA of every measure.
   The MSA filter removes measures below the threshold in rounds, as ComFy does; any measure can
-  be excluded by hand.
+  be excluded by hand, all of them at once, or those a search finds ("Keep only matches"). Where
+  the analysis cannot run for too few observations, its message says what an observation is
+  here and leads to the list of measures or back to the data.
 - **Correlation map** (in Suitability, folded until it is opened): one cell for each pair of
   measures, orange for a negative and the accent colour for a positive correlation, a pair with
   |r| ≥ 0.95 outlined, ordered by factor or clustered. Point at a cell or move with the arrow

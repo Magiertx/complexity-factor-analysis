@@ -1,17 +1,17 @@
-import { Check } from "lucide-react";
+import { Check, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * The check mark of every selection in the app: a box for several choices, a circle for one.
- * Purely visual; the real <input> sits next to it with `sr-only`, so keyboard and screen
- * readers work as with a native control.
+ * The check mark of every selection in the app: a box for several choices, a circle for one, and
+ * a box with a dash for a group of which only some are chosen. Purely visual; the real <input>
+ * sits next to it with `sr-only`, so keyboard and screen readers work as with a native control.
  */
 export function ChoiceMark({
   checked,
   type = "checkbox",
   className,
 }: {
-  checked: boolean;
+  checked: boolean | "mixed";
   type?: "checkbox" | "radio";
   className?: string;
 }) {
@@ -25,7 +25,11 @@ export function ChoiceMark({
         className,
       )}
     >
-      {checked && <Check className="h-3 w-3" strokeWidth={3} />}
+      {checked === "mixed" ? (
+        <Minus className="h-3 w-3" strokeWidth={3} />
+      ) : (
+        checked && <Check className="h-3 w-3" strokeWidth={3} />
+      )}
     </span>
   );
 }

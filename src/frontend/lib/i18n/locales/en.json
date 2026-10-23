@@ -583,7 +583,15 @@
       "reset_factors": "Use the suggested number of factors",
       "enable_filter": "Turn the MSA filter on",
       "default_threshold": "Use the default MSA threshold of {value}",
-      "all_miners": "Analyse all miners together"
+      "all_miners": "Analyse all miners together",
+      "choose_measures": "Choose measures",
+      "observation": {
+        "log": "Here an observation is one log, and there are {n}.",
+        "log_miner": "Here an observation is one log mined with one miner, and there are {n}.",
+        "net": "Here an observation is one Petri net, and there are {n}.",
+        "row": "Here an observation is one row of the table, and there are {n}."
+      },
+      "too_few_observations_way": "A factor analysis needs more observations than measures: with {n} at most {max}, and about 5 per measure make sense. Keep only a few measures, or choose other data with more observations."
     },
     "data": {
       "source": {
@@ -631,8 +639,13 @@
       "miners_hint": "Discovery algorithms from ComFy. More miners give more observations per log.",
       "measures_heading": "Measures",
       "measures_hint": "Complexity measures computed on every Petri net. Hover a measure for its definition.",
-      "groups_heading": "Feature groups",
-      "groups_hint": "Groups of feeed measures as defined in ComFy for log measures.",
+      "groups_heading": "Feature groups and measures",
+      "groups_hint": "Groups of feeed measures as defined in ComFy for log measures. Unfold a group to choose single measures.",
+      "measures_selected": "{n} of {total} measures",
+      "measure_search": "Search measures",
+      "measure_search_placeholder": "Search measures…",
+      "group_unfold": "Choose single measures of {group}",
+      "group_fold": "Fold {group}",
       "group_measures": "{n} measures",
       "selected_count": "{n} of {total}",
       "select_all": "All",
@@ -649,14 +662,13 @@
         "nets_plural": "Dataset from {n} nets"
       },
       "estimate": "This gives up to {rows} observations of {cols} measures.",
-      "estimate_too_few": "Too few: a factor analysis needs more observations than measures, at least {min}. Add files or remove measures.",
       "estimate_thin": "Few observations per measure. Results get more stable with about five per measure ({target}).",
+      "estimate_wont_run": "With this choice the analysis will not run; the values can still be computed and looked at.",
       "need_bundled": "Pick a dataset.",
       "need_mine": "Pick a dataset.",
       "need_csv": "Add a CSV file.",
       "need_files": "Add at least one file.",
       "need_miner": "Pick at least one miner.",
-      "need_group": "Pick at least one feature group.",
       "need_measures": "Pick at least {n} measures.",
       "submit_bundled": "Use dataset",
       "submit_csv": "Load CSV",
@@ -702,6 +714,11 @@
       "sample_name": {
         "pdc_sample_logs": "Four PDC training logs",
         "pdc_sample_models": "Petri nets of the four PDC logs"
+      },
+      "estimate_too_few": {
+        "logs": "{rows} logs and {cols} measures: a factor analysis needs more logs than measures, so with {rows} logs at most {max} measures, and about 5 logs per measure make sense. Choose fewer measures or upload more logs (up to {limit}).",
+        "log_miners": "{logs} logs × {miners} miners = {rows} observations and {cols} measures: a factor analysis needs more observations than measures, so at most {max} measures, and about 5 observations per measure make sense. Choose fewer measures or more miners, or upload more logs (up to {limit}).",
+        "nets": "{rows} nets and {cols} measures: a factor analysis needs more nets than measures, so with {rows} nets at most {max} measures, and about 5 nets per measure make sense. Choose fewer measures or upload more nets (up to {limit})."
       }
     },
     "inputs": {
@@ -714,7 +731,8 @@
       "groups": "{n} feature group",
       "groups_plural": "{n} feature groups",
       "measures": "{n} measure",
-      "measures_plural": "{n} measures"
+      "measures_plural": "{n} measures",
+      "measures_of": "{n} of {total} measures"
     },
     "dataset": {
       "observations": "Observations",
@@ -807,7 +825,11 @@
       "status_excluded": "excluded",
       "min_measures": "At least {n} measures must remain.",
       "excluded_count": "{n} excluded by hand",
-      "include_all": "Include all measures",
+      "bulk_aria": "Exclude or include several",
+      "exclude_all": "Exclude all",
+      "exclude_found": "Exclude matches ({n})",
+      "keep_found": "Keep only matches ({n})",
+      "include_all": "Include all",
       "regularised": "regularized",
       "regularised_title": "Some eigenvalues of the correlation matrix are practically zero and were clamped, so χ² reflects that floor more than the data. Read the test together with KMO.",
       "exclude_aria": "Exclude {measure}",
@@ -1503,7 +1525,7 @@
       "title": "Analyse your own data",
       "p1": "In Data, choose a source:",
       "items": {
-        "logs": "Event logs (.xes, .xes.gz): for model measures, every log is mined with every miner you choose and every net is measured; for log measures, feeed computes the feature groups you choose.",
+        "logs": "Event logs (.xes, .xes.gz): for model measures, every log is mined with every miner you choose and every net is measured; for log measures, feeed computes the feature groups you choose. Unfold a group to choose single measures of it, so that a few logs can carry a few measures; below the choice the data step says how many observations and measures that gives, and when there are too few for a factor analysis.",
         "nets": "Petri nets (.pnml): every net is measured.",
         "csv": "A CSV file: one row per observation, one column per measure; a first column of names becomes the row labels."
       },
@@ -1516,7 +1538,7 @@
       "title": "Read the results",
       "items": {
         "dataset": "Dataset: what cleaning left out and why, the descriptive statistics of every measure as ComFy's report prints them, and for a dataset computed from logs or nets the run times and input sizes. Both tables are folded until opened.",
-        "suitability": "Suitability: Bartlett's test, the overall KMO and the MSA of every measure. The MSA filter removes measures in rounds, as ComFy does; any measure can be excluded by hand.",
+        "suitability": "Suitability: Bartlett's test, the overall KMO and the MSA of every measure. The MSA filter removes measures in rounds, as ComFy does; any measure can be excluded by hand, all of them at once, or those a search finds. Where the analysis cannot run for too few observations, its message says what an observation is and leads to the measures or back to the data.",
         "factors": "Factors: the scree plot with the Kaiser line and parallel analysis, the count each criterion suggests, and the rotation.",
         "loadings": "Loadings: the rule that assigns measures to factors and the two thresholds in one row above the result, each rule explained in its tooltip; then a matrix (orange for negative loadings, faded where a loading does not count) or a card per dimension. Cross-loadings are ringed.",
         "interpretation": "Interpretation: names for the factors, suggested by a language model only on request. It decides nothing. Without an API key on the server, and without one stored for the settings, the list of steps says that it is not available here.",
