@@ -585,7 +585,6 @@ export function Workbench() {
         <PageHeader
           title={t("inspect.title")}
           subtitle={t("inspect.subtitle")}
-          back={{ href: "/", label: t("mode_bar.model_label") }}
         />
         <Card>
           <CardContent className="flex items-start gap-3 py-6">
@@ -611,7 +610,6 @@ export function Workbench() {
       <PageHeader
         title={t("inspect.title")}
         subtitle={t("inspect.subtitle")}
-        back={{ href: "/", label: t("mode_bar.model_label") }}
         actions={
           selected && (
             <InspectToolbar

@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { APP_NAME } from "@/lib/app-config";
 import { COMPARE_HREF } from "@/lib/compare";
 import { useT } from "@/lib/i18n";
+import { useBackToAnalysis } from "@/components/back-link";
 import { PageHeader } from "@/components/page-header";
 
 interface GuideSection {
@@ -77,6 +78,7 @@ const SECTIONS: GuideSection[] = [
  */
 export function GuideView() {
   const t = useT();
+  const back = useBackToAnalysis();
   const paragraphs = (id: string, from: number, n: number) =>
     Array.from({ length: n }, (_, i) => (
       <p key={`${id}-p${from + i}`} className="text-sm leading-relaxed text-fg/90">
@@ -85,7 +87,7 @@ export function GuideView() {
     ));
   return (
     <div className="space-y-8 max-w-3xl">
-      <PageHeader title={t("guide.title")} subtitle={t("guide.subtitle", { app: APP_NAME })} />
+      <PageHeader title={t("guide.title")} subtitle={t("guide.subtitle", { app: APP_NAME })} back={back} />
 
       <nav aria-label={t("guide.toc")} className="rounded-lg bg-tile/60 px-4 py-3">
         <h2 className="text-xs font-semibold text-muted mb-1.5">{t("guide.toc")}</h2>

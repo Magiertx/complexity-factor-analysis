@@ -25,7 +25,7 @@ export function LocaleToggle({ className }: { className?: string }) {
       aria-label={label}
       onClick={() => setLocale(next)}
       className={cn(
-        "h-9 px-2.5 inline-flex items-center gap-1.5 rounded-md bg-tile hover:bg-accent/[0.08] transition text-xs font-medium text-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+        "h-9 px-2.5 inline-flex items-center gap-1.5 rounded-md hover:bg-tile transition text-xs font-medium text-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
         className,
       )}
     >

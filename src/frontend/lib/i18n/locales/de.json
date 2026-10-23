@@ -20,8 +20,12 @@
   },
   "header": {
     "tagline": "Komplexitätsmaße von Prozessmodellen und Event-Logs",
+    "nav_aria": "Seiten",
+    "guide_label": "Anleitung",
+    "guide_title": "Was {app} tut und wie",
+    "api_label": "API",
     "settings_label": "Einstellungen",
-    "settings_title": "Einstellungen",
+    "settings_title": "Sprache, Darstellung und was dieser Browser speichert",
     "api_title": "{app} programmatisch nutzen",
     "locale_label": "Sprache",
     "switch_to_german": "Auf Deutsch umschalten",
@@ -39,21 +43,22 @@
     "remove_aria": "Datei entfernen"
   },
   "mode_bar": {
-    "aria_label": "Analyse",
-    "jobs_label": "Letzte Runs",
-    "jobs_desc": "Fortschritt und Status",
-    "jobs_title": "Letzte Runs anzeigen",
+    "aria_label": "Bereiche",
     "model_label": "Modellkomplexität",
     "model_desc": "Maße gefundener Prozessmodelle",
     "log_label": "Log-Komplexität",
     "log_desc": "Maße von Event-Logs",
-    "runs_label": "Runs",
-    "runs_desc": "Alle Runs dieser Sitzung",
+    "compare_label": "Vergleich",
+    "compare_desc": "Faktorstrukturen nebeneinander",
+    "inspect_label": "Einzelnes Log",
+    "inspect_desc": "ComFy auf einem Event-Log",
+    "history_label": "Verlauf",
+    "history_desc": "Datensätze und Runs dieser Sitzung",
     "jobs_running": "{n} läuft · {pct}",
     "jobs_running_plural": "{n} laufen · {pct}",
     "jobs_waiting": "{n} wartet",
     "jobs_waiting_plural": "{n} warten",
-    "jobs_failed": "Ein Run ist fehlgeschlagen. Öffne die Liste, um zu sehen, welcher."
+    "jobs_failed": "Ein Run ist fehlgeschlagen. Der Verlauf zeigt, welcher."
   },
   "tours": {
     "single_run": {
@@ -1656,5 +1661,8 @@
     "own_note": "Deine Daten, mit den Einstellungen, die mit ihnen gespeichert sind",
     "own_standard": "Mit dem Datensatz sind keine Einstellungen gespeichert; die Spalte nimmt die Standardeinstellungen.",
     "empty": "Wähle mindestens {min} Analysen: Hefte im Ladungen-Schritt Lösungen deiner Daten an, oder vergleiche Datensätze aus Meine Datensätze."
+  },
+  "nav": {
+    "back_to": "Zurück: {page}"
   }
 }

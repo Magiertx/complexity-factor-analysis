@@ -85,7 +85,7 @@ import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { MeasureScope, type MeasureOpener } from "@/components/ui/table";
 import { UndoToast, type UndoNotice } from "@/components/ui/undo-toast";
-import { useJobsDrawer } from "@/components/jobs-drawer";
+import { useJobs } from "@/components/jobs-provider";
 import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
 import { PageHeader } from "@/components/page-header";
 import { DataForm, DataSummary, type OpenPreset } from "./data-step";
@@ -194,8 +194,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const [choosing, setChoosing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  // Changes whenever jobs come or go, e.g. one deleted in the jobs drawer next to this view.
-  const { count: jobCount } = useJobsDrawer();
+  // Changes whenever jobs come or go, e.g. one deleted in the History.
+  const jobCount = useJobs().jobs.length;
 
   const [options, setOptions] = useState<AnalysisOptions>(() => defaultOptions(kind));
   const standard = useMemo(() => defaultOptions(kind), [kind]);

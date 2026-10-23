@@ -20,8 +20,12 @@
   },
   "header": {
     "tagline": "Complexity measures of process models and event logs",
+    "nav_aria": "Pages",
+    "guide_label": "Guide",
+    "guide_title": "What {app} does and how",
+    "api_label": "API",
     "settings_label": "Settings",
-    "settings_title": "Settings",
+    "settings_title": "Language, theme and what this browser keeps",
     "api_title": "Use {app} programmatically",
     "locale_label": "Language",
     "switch_to_german": "Switch to German",
@@ -39,21 +43,22 @@
     "remove_aria": "Remove file"
   },
   "mode_bar": {
-    "aria_label": "Analysis",
-    "jobs_label": "Recent runs",
-    "jobs_desc": "Progress and status",
-    "jobs_title": "Show the recent runs",
+    "aria_label": "Sections",
     "model_label": "Model complexity",
     "model_desc": "Measures of discovered process models",
     "log_label": "Log complexity",
     "log_desc": "Measures of event logs",
-    "runs_label": "Runs",
-    "runs_desc": "All runs of this session",
+    "compare_label": "Compare",
+    "compare_desc": "Factor structures side by side",
+    "inspect_label": "Single log",
+    "inspect_desc": "ComFy on one event log",
+    "history_label": "History",
+    "history_desc": "Datasets and runs of this session",
     "jobs_running": "{n} running · {pct}",
     "jobs_running_plural": "{n} running · {pct}",
     "jobs_waiting": "{n} waiting",
     "jobs_waiting_plural": "{n} waiting",
-    "jobs_failed": "A run failed. Open the list to see which."
+    "jobs_failed": "A run failed. History shows which."
   },
   "tours": {
     "single_run": {
@@ -1656,5 +1661,8 @@
     "own_note": "Your data, with the settings saved with it",
     "own_standard": "no settings are saved with the dataset; the column uses the standard ones.",
     "empty": "Choose at least {min} analyses: pin solutions in the loadings step of your data, or compare datasets from My datasets."
+  },
+  "nav": {
+    "back_to": "Back to {page}"
   }
 }

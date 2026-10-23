@@ -9,7 +9,6 @@ export function InspectHeader() {
     <PageHeader
       title={t("inspect.title")}
       subtitle={t("inspect.subtitle")}
-      back={{ href: "/", label: t("mode_bar.model_label") }}
     />
   );
 }
