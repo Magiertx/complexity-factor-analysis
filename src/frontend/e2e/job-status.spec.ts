@@ -146,7 +146,7 @@ test("the notice is read out, takes the keyboard and closes with Escape", async 
   await page.waitForLoadState("networkidle");
   list = [job("completed")];
   await refresh(page);
-  const live = page.locator(".job-toast");
+  const live = page.locator(".toast-region");
   // The region is a polite live region that was there before its text came.
   await expect(live).toHaveAttribute("role", "status");
   await expect(live).toHaveAttribute("aria-live", "polite");
@@ -182,7 +182,7 @@ for (const scheme of ["light", "dark"] as const) {
     await expect(tab(page)).toContainText(text("mode_bar.jobs_failed"));
     list = [job("completed"), job("failed", { id: "6c1f1c1e-61b7-4ac3-8b7d-0d1d9d3c0a05" })];
     await refresh(page);
-    await expect(page.locator(".job-toast")).toContainText("Nets of April");
+    await expect(page.locator(".toast-region")).toContainText("Nets of April");
     const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
     const serious = results.violations
       .filter((v) => v.impact === "serious" || v.impact === "critical")
