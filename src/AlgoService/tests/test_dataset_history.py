@@ -148,8 +148,10 @@ def test_computed_dataset_records_its_inputs(client):
 
     job = client.get(f"/jobs/{body['job_id']}").json()
     assert job["params"]["dataset_id"] == body["dataset_id"]
-    assert job["params"]["dataset_name"] == "Petri nets of the four PDC logs"
-    assert d["name_auto"] is False
+    # Called after its sample, a name the UI gives in its own language: made up, not given.
+    assert d["name"] == "Petri nets of the four PDC logs" and d["name_auto"] is True
+    assert job["params"]["sample_id"] == SAMPLE
+    assert "dataset_name" not in job["params"]
 
 
 def test_a_name_made_up_for_an_upload_is_marked(client):

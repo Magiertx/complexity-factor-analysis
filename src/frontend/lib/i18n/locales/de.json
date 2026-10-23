@@ -698,7 +698,11 @@
       "compare_pick_aria": "Zu vergleichende Datensätze",
       "compare_not_ready": "Nur ein fertiger Datensatz lässt sich vergleichen.",
       "compare_hint": "{n} gewählt; ein Vergleich nimmt {min} bis {max} Datensätze, jeden mit den Einstellungen, die mit ihm gespeichert sind.",
-      "compare_go": "{n} vergleichen"
+      "compare_go": "{n} vergleichen",
+      "sample_name": {
+        "pdc_sample_logs": "Vier PDC-Trainingslogs",
+        "pdc_sample_models": "Petri-Netze der vier PDC-Logs"
+      }
     },
     "inputs": {
       "logs": "{n} Log",

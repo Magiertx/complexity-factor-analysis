@@ -313,7 +313,7 @@ limit is marked `failed` here too.
 ```
 
 - `name_auto` is `true` when no name was given and the server made one up from the inputs,
-  e.g. `3 log(s)`; the UI shows a name in its own language instead.
+  e.g. `3 log(s)` or the name of the sample; the UI shows a name in its own language instead.
 - `n_observations` and `n_measures` (after cleaning) are `null` until the dataset is `ready`.
 - `inputs` says what the dataset is made from. `files` counts the uploaded or sample files, 1
   for a CSV and 0 for a bundled dataset. `measures`, `miners`, `groups` and `sample_id` are the

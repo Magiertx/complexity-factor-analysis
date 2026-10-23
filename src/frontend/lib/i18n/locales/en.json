@@ -698,7 +698,11 @@
       "compare_pick_aria": "Datasets to compare",
       "compare_not_ready": "Only a dataset that is ready can be compared.",
       "compare_hint": "{n} chosen; a comparison takes {min} to {max} datasets, each with the settings saved with it.",
-      "compare_go": "Compare {n}"
+      "compare_go": "Compare {n}",
+      "sample_name": {
+        "pdc_sample_logs": "Four PDC training logs",
+        "pdc_sample_models": "Petri nets of the four PDC logs"
+      }
     },
     "inputs": {
       "logs": "{n} log",
