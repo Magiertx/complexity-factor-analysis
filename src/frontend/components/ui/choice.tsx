@@ -30,10 +30,14 @@ export function ChoiceMark({
   );
 }
 
-/** Background of a selectable tile: tinted when chosen, no border either way. */
+/**
+ * A selectable tile: a neutral tile, and once chosen the surface with an accent border beside its
+ * check mark, so the choice stands out without a block of colour. The focus ring stands apart
+ * from the border, outside it.
+ */
 export function choiceTile(checked: boolean) {
   return cn(
-    "cursor-pointer transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/60",
-    checked ? "bg-accent/[0.12]" : "bg-tile hover:bg-accent/[0.06]",
+    "cursor-pointer transition has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent",
+    checked ? "bg-surface ring-[1.5px] ring-inset ring-accent" : "bg-tile hover:ring-1 hover:ring-inset hover:ring-strong",
   );
 }

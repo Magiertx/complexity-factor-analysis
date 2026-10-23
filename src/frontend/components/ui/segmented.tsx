@@ -74,7 +74,8 @@ export function Segmented<T extends string>({
         <div
           aria-hidden
           className={cn(
-            "absolute bg-surface shadow-sm rounded transition-all duration-300 ease-out pointer-events-none",
+            // The chosen option: the surface with an accent border, like a chosen tile.
+            "absolute bg-surface shadow-sm rounded ring-[1.5px] ring-inset ring-accent transition-all duration-300 ease-out pointer-events-none",
             size === "sm" ? "top-0.5 bottom-0.5" : "top-1 bottom-1",
           )}
           style={{ width: pill.width, left: pill.left }}

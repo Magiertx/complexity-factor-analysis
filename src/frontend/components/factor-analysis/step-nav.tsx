@@ -205,8 +205,13 @@ export function StepRail({
                 stateLabel={stateLabels[id] ?? t(`factor.state.${states[id]}`)}
                 onGo={onGo}
                 className={cn(
-                  "group flex items-start gap-2.5 rounded-md px-2.5 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-                  here ? "bg-accent/[0.08]" : lock ? "cursor-default" : "hover:bg-surface",
+                  "group relative flex items-start gap-2.5 rounded-md px-2.5 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                  // The step on screen: a neutral highlight with an accent bar at its left.
+                  here
+                    ? "bg-surface before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-r before:bg-accent"
+                    : lock
+                      ? "cursor-default"
+                      : "hover:bg-surface/60",
                 )}
               >
                 <Icon
@@ -263,7 +268,9 @@ export function StepBar({ current, states, locks, stateLabels, onGo }: NavProps)
                 iconOnly={!here}
                 className={cn(
                   "h-11 flex items-center rounded-md transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-                  here ? "w-full gap-2 px-2.5 bg-accent/[0.08]" : "w-9 flex-col justify-center gap-0.5",
+                  here
+                    ? "relative w-full gap-2 px-2.5 bg-surface before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-r before:bg-accent"
+                    : "w-9 flex-col justify-center gap-0.5",
                   !here && (lock ? "opacity-45 cursor-default" : "hover:bg-surface"),
                 )}
               >
