@@ -5,7 +5,7 @@ browser: the model measures of [ComFy](https://github.com/Pati-nets/ComFy) on di
 nets, and the log measures of [feeed](https://github.com/andreamalhera/feeed) as
 [ComFy for log measures](https://github.com/Pati-nets/ComFy-for-Log-Measures) groups them. This
 guide shows the common tasks. Everything it describes is also available through the REST API
-([API.md](API.md)); the app has the same guide behind the help icon of the toolbar.
+([API.md](API.md)); the app has the same guide behind **Guide** in its header.
 
 ## The six steps
 
@@ -16,6 +16,10 @@ left, on a phone a row at the top) shows what each step found; the settings row 
 sums up every choice, marks those that differ from the tool standard and leads to each control.
 Every change of a setting runs the analysis again.
 
+The tabs at the top are the same on every page: *Model complexity*, *Log complexity*, *Compare*,
+*Single log* and *History*. The guide, the API and the settings are in the header and lead back
+to the tab you came from.
+
 ## Analyse a bundled dataset
 
 1. Open *Model complexity* or *Log complexity*.
@@ -25,7 +29,9 @@ Every change of a setting runs the analysis again.
 
 With the paper settings, a chip in the settings row says whether the numbers equal the published
 ComFy report (Bartlett, KMO, MSA, loadings) and how the tables of the paper relate to it.
-**Start here** in the toolbar lists four ways in, two of them published analyses.
+**Start here**, the first block of the Data step, lists the ways in. A published analysis opens on
+its **Loadings**, the result, with the steps before them done; on *Log complexity* it lists only
+the analyses of log measures, on *Model complexity* it also names the tab an entry opens.
 
 ## Analyse your own data
 
@@ -38,10 +44,16 @@ In **Data**, choose a source:
 - **CSV file**: one row per observation, one column per measure; a first column of names is
   taken as row labels.
 
-Logs and nets are computed in a job. The tab **Recent runs** says what runs ("1 running · 37%") and has a red
-dot for a failed run you have not looked at; a dataset that has been computed raises a notice "… is ready ·
-Open" wherever you are, and the dataset opens from it. The data step names the upload limits in force. **My datasets** in the toolbar
-reopens a dataset of the session with the settings of its last analysis.
+Logs and nets are computed in a job. The tab **History** says what runs ("1 running · 37%") and has a red
+dot for a failed run you have not seen yet; a dataset that has been computed raises a notice "… is ready ·
+Open" wherever you are, and the dataset opens from it. The data step names the upload limits in force. **My datasets**,
+a source of the data step, reopens a dataset of the session with the settings of its last analysis.
+
+**History** lists everything of the session, newest first: every dataset of both tabs with its
+kind, source, size and the settings of its last analysis, and every run of a single log. A row
+opens where it belongs, can be aborted while it runs, and deleted; deleting a dataset deletes the
+run that computed it, and the other way round. It filters by type and status, searches, and
+groups the rows by day.
 
 A dataset of nets from several miners has a row per log and miner. The **Dataset** step offers
 **All miners together** or one miner at a time, each tile with its observations n and measures:
@@ -84,10 +96,11 @@ log is among the ten newest uploads of the session; the page says when it is not
 - **Factors**: the scree plot with the Kaiser line and parallel analysis (95th percentile of 100
   samples of random data with a fixed seed), the factor count each criterion suggests, and the
   rotation.
-- **Loadings**: the loadings as a matrix (orange for negative loadings, faded where a loading does
-  not count) or as one card per dimension, the loading and communality thresholds, and the
-  assignment rule: the largest loading as in ComFy's report, multiple membership as in Important
-  Factors (Tab. 6–16), or Hair et al. (Tab. 17). Cross-loadings are ringed.
+- **Loadings**: the result first. Above it, one row holds the assignment rule (the largest loading
+  as in ComFy's report, multiple membership as in Important Factors (Tab. 6–16), or Hair et al.
+  (Tab. 17), each explained in its tooltip) and the loading and communality thresholds; below,
+  the loadings as a matrix (orange for negative loadings, faded where a loading does not count)
+  or as one card per dimension. Cross-loadings are ringed.
 - **Names**: press the title of a factor, on its card or at the head of its column, to name it;
   Enter keeps the name (at most 40 characters), Esc leaves it. The names appear in the matrix,
   the cards, the factor correlations, the list of steps and every download (loadings, figures,
@@ -95,14 +108,16 @@ log is among the ten newest uploads of the session; the page says when it is not
   one of them clears them, and the toast brings settings and names back. With an interpretation,
   **Use the suggested names** takes its names over; nothing is named without a click.
 - **Interpretation**: names and summaries for the factors, suggested by a language model only on
-  request. It decides nothing; the analysis does not depend on it.
+  request. It decides nothing; the analysis does not depend on it. Without an API key on the
+  server, and without an interpretation stored for the settings, the list of steps says that it
+  is not available here and the loadings are the last step.
 
 ## Compare miners
 
 **Compare miners** puts the factor structures of several published datasets side by side, like
-Tab. 17 of Important Factors: which measures form which dimension for which miner. It opens from
-the column icon in the toolbar of Model complexity and from Start here, with the four miners of
-Tab. 17 (Alpha, Directly Follows, Inductive, Hybrid ILP) under Hair et al.
+Tab. 17 of Important Factors: which measures form which dimension for which miner. It is the tab
+*Compare*, and Start here opens it, with the four miners of Tab. 17 (Alpha, Directly Follows,
+Inductive, Hybrid ILP) under Hair et al.
 
 - **Datasets**: choose 2 to 8 of the miners of Important Factors; each is analysed with the
   settings of its paper. "As in Tab. 17" goes back to the four miners and Hair et al. A link can

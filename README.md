@@ -17,8 +17,9 @@ Schalk do it, but interactively in the browser.
   measures. Both walk through the same five steps: data, dataset, suitability, factors,
   loadings, followed by an optional interpretation. One step is on screen at a time, with its
   own address (`?step=loadings`), a step list that shows what each step found, and Back and Next;
-  a toolbar of icons holds Start here, My datasets, the short codes, the link, the downloads,
-  and the user guide and the tour.
+  the toolbar of the analysis holds the short codes, the link, the downloads and the tour. The
+  tabs are the same on every page (the two analyses, Compare, Single log and History), and the
+  guide, the API and the settings are in the header.
 - **Data from anywhere.** Bundled datasets (the scores of the ComFy paper for seven miners,
   and the measures of 2112 Process Discovery Contest logs), an own CSV, up to 50 event logs
   (`.xes`, `.xes.gz`; `MAX_LOG_FILES`) that are mined with any of ComFy's nine ProM miners, or
@@ -49,8 +50,8 @@ Schalk do it, but interactively in the browser.
   standard or with the paper's settings, and with the paper's settings every analysis checks
   itself against the ComFy report: a chip says whether the numbers are equal, what was compared
   and how the paper's own tables relate to it. "Start here" on the data step opens such an
-  analysis directly, and "Copy link" shares an analysis of any bundled dataset with its settings
-  and the step on screen.
+  analysis directly on its loadings, and "Copy link" shares an analysis of any bundled dataset
+  with its settings and the step on screen.
 - **Compare miners.** A page puts the factor structures of up to eight bundled datasets side by
   side, like Tab. 17 of Important Factors: per miner n, the measures after the MSA filter, KMO,
   factors and explained variance, every measure with its dimension under one shared assignment
@@ -68,10 +69,11 @@ Schalk do it, but interactively in the browser.
   the round of the filter that removed it, communality, uniqueness and loadings, the five measures
   it correlates with most, and the choice to exclude or include it.
 - **Come back to a dataset.** The datasets of a session are listed on the data step, reopen
-  with the parameters of their last analysis and can be deleted one by one or all at once;
-  deleting a dataset job in the run history deletes its dataset too. The tab "Recent runs" says what
-  runs and how far, marks a failed run with a red dot, and a dataset that has been computed raises a
-  notice with a link to it.
+  with the parameters of their last analysis and can be deleted one by one or all at once.
+  "History" lists every dataset and every run of a single log of the session, newest first, with
+  the settings of each dataset's last analysis; deleting a dataset deletes the job that computed
+  it, and the other way round. Its tab says what runs and how far and marks a failed run with a
+  red dot, and a dataset that has been computed raises a notice with a link to it.
 - **Into the paper.** A LaTeX report built like ComFy's (`report.tex`: validity, MSA with the
   rounds of the filter, scree plot, descriptive statistics, loadings with the assigned ones in
   bold, communalities, dimensions, settings and provenance; compiles with latexmk or pdflatex run
@@ -127,7 +129,7 @@ ProM plugins.
 Six services. `prom4py` is the Java bridge to ProM that all miners go through. Details in
 [`docs/architecture.md`](docs/architecture.md), the HTTP API in [`docs/API.md`](docs/API.md),
 and how to use the tool in the user guide [`docs/GUIDE.md`](docs/GUIDE.md), which the app has
-behind the help icon of its toolbar as well.
+behind the Guide link of its header as well.
 
 ## Quick start
 
