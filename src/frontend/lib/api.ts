@@ -577,6 +577,8 @@ export interface DatasetSummary {
   has_options: boolean;
   /** The miner whose rows the saved options analyse; null for all rows (or without options). */
   options_miner?: string | null;
+  /** The settings of its last analysis; null before one (absent from an older server). */
+  options?: AnalyzeOptions | null;
 }
 
 export interface CreateDatasetInput {
