@@ -89,7 +89,7 @@ export function GuideView() {
       </p>
     ));
   return (
-    <div className="space-y-8 max-w-3xl">
+    <div className="space-y-8 max-w-3xl mx-auto">
       <PageHeader title={t("guide.title")} subtitle={t("guide.subtitle", { app: APP_NAME })} back={back} />
 
       <nav aria-label={t("guide.toc")} className="rounded-lg bg-tile/60 px-4 py-3">

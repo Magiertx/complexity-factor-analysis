@@ -238,7 +238,7 @@ export function SettingsView() {
 
   return (
     // The reading width of the guide: rows of a label and a control read badly across the whole width.
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-3xl mx-auto">
       <PageHeader
         title={t("settings.page_title")}
         subtitle={t("settings.page_subtitle")}
