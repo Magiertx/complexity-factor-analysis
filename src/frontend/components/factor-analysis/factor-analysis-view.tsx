@@ -1347,8 +1347,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       <PageHeader
         title={t(`factor.${kind}.title`)}
         subtitle={t(`factor.${kind}.subtitle`)}
-        // On a phone the page's own sentence is gone once a step is open: the step has room.
-        subtitleClassName={ready && current !== "data" ? "max-lg:hidden" : undefined}
+        // The page's own sentence belongs to the data step; once a step of the analysis is open, the
+        // step has its room, so a laptop shows the first rows of the loadings with the settings row.
+        subtitleClassName={ready && current !== "data" ? "hidden" : undefined}
         actions={
           <FactorToolbar
             linkQuery={linkQuery && current !== "data" ? `${linkQuery}&step=${current}` : linkQuery}
