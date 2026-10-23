@@ -1178,6 +1178,8 @@
       "back_to": "Back: {step}",
       "next_to": "Next: {step}",
       "position": "Step {n} of {total}",
+      "summary": "Step {n} of {total} · {step} — next: {next}",
+      "summary_last": "Step {n} of {total} · {step}",
       "to_data": "Go to the data step",
       "locked": {
         "no_dataset": "Open a dataset in the data step first.",

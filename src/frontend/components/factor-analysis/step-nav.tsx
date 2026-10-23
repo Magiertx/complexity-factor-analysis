@@ -239,6 +239,8 @@ export function StepRail({
  */
 export function StepBar({ current, states, locks, stateLabels, onGo }: NavProps) {
   const t = useT();
+  const { next } = neighbours(current);
+  const at = STEP_IDS.indexOf(current) + 1;
   return (
     <nav aria-label={t("factor.steps.aria")} className="lg:hidden">
       <ol className="flex items-stretch gap-1">
@@ -276,11 +278,13 @@ export function StepBar({ current, states, locks, stateLabels, onGo }: NavProps)
                 ) : (
                   <span
                     className={cn(
-                      "text-[10px] leading-none tabular-nums",
+                      "flex items-center gap-0.5 text-[10px] leading-none tabular-nums",
                       state === "warn" ? "text-warn-ink font-semibold" : "text-muted",
                     )}
                     aria-hidden
                   >
+                    {/* The warning is a sign as well as a colour. */}
+                    {state === "warn" && <AlertTriangle className="h-2.5 w-2.5 shrink-0" />}
                     {i + 1}
                   </span>
                 )}
@@ -296,6 +300,17 @@ export function StepBar({ current, states, locks, stateLabels, onGo }: NavProps)
           );
         })}
       </ol>
+      {/* Where the bar is: the step on screen and the one after it. */}
+      <p className="mt-1.5 px-1 text-xs text-muted">
+        {next
+          ? t("factor.nav.summary", {
+              n: at,
+              total: STEP_IDS.length,
+              step: t(`factor.steps.${current}`),
+              next: t(`factor.steps.${next}`),
+            })
+          : t("factor.nav.summary_last", { n: at, total: STEP_IDS.length, step: t(`factor.steps.${current}`) })}
+      </p>
     </nav>
   );
 }
