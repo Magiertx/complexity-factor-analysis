@@ -422,8 +422,8 @@ function LoadingsMatrix({
       />
       <Legend threshold={threshold} boldBy={boldBy} crossed={secondary.size > 0} strict={strict} />
       <MeasureListScope measures={onScreen}>
-        <TableFrame label={t("factor.loadings.table_heading")}>
-          <table ref={zone} className="data-table">
+        <TableFrame label={t("factor.loadings.table_heading")} className="w-fit max-w-full">
+          <table ref={zone} className="data-table w-auto">
             <caption className="sr-only">
               {countText(t, "factor.loadings.caption", k, { rotation: t(`factor.factors.rotation.${analysis.rotation}`) })}
               {oblique && ` (${t(`factor.loadings.matrix_${structure ? "structure" : "pattern"}`)})`}
@@ -709,27 +709,32 @@ function LoadingsMatrix({
     const { locale } = useLocale();
     const value = formatNumber(threshold, locale, 2);
     return (
-      <div className="flex items-center gap-x-4 gap-y-1 text-[11px] text-muted flex-wrap" aria-hidden>
-        <span className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-sm" style={loadingStyle(-0.9)} />
-          {t("factor.loadings.legend_negative")}
+      <div className="flex items-start gap-x-4 gap-y-1 text-[11px] leading-snug text-muted flex-wrap" aria-hidden>
+        {/* One chip per item: a line break falls between items, not inside one. */}
+        <span className="flex items-start gap-1.5">
+          <span className="mt-px h-3 w-3 shrink-0 rounded-sm" style={loadingStyle(-0.9)} />
+          <span>{t("factor.loadings.legend_negative")}</span>
         </span>
-        <span className="flex items-center gap-1.5">
+        <span className="flex items-start gap-1.5">
           <span className="font-mono text-muted">{formatNumber(0.1, locale, 2)}</span>
-          {t(strict ? "factor.loadings.legend_faded_strict" : "factor.loadings.legend_faded", { threshold: value })}
+          <span>
+            {t(strict ? "factor.loadings.legend_faded_strict" : "factor.loadings.legend_faded", { threshold: value })}
+          </span>
         </span>
-        <span>
-          <b className="font-mono text-fg">{formatNumber(0, locale, 2)}</b>{" "}
-          {boldBy === "assigned"
-            ? t("factor.loadings.legend_bold_assigned")
-            : t(boldBy === "exceeds" ? "factor.loadings.legend_bold_strict" : "factor.loadings.legend_bold", {
-                threshold: value,
-              })}
+        <span className="flex items-start gap-1.5">
+          <b className="font-mono text-fg">{formatNumber(0, locale, 2)}</b>
+          <span>
+            {boldBy === "assigned"
+              ? t("factor.loadings.legend_bold_assigned")
+              : t(boldBy === "exceeds" ? "factor.loadings.legend_bold_strict" : "factor.loadings.legend_bold", {
+                  threshold: value,
+                })}
+          </span>
         </span>
         {crossed && (
-          <span className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-sm ring-2 ring-inset ring-fg/55" />
-            {t("factor.loadings.legend_cross")}
+          <span className="flex items-start gap-1.5">
+            <span className="mt-px h-3 w-3 shrink-0 rounded-sm ring-2 ring-inset ring-fg/55" />
+            <span>{t("factor.loadings.legend_cross")}</span>
           </span>
         )}
       </div>

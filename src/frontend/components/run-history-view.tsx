@@ -22,6 +22,7 @@ import { JobNotesField } from "./job-notes-field";
 import { PageHeader } from "./page-header";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
+import { ScrollFade } from "./ui/scroll-fade";
 import { Segmented } from "./ui/segmented";
 import { Input } from "./ui/input";
 import { Select } from "./ui/select";
@@ -187,7 +188,7 @@ export function RunHistoryView() {
       <Card>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative flex-1 min-w-[200px]">
+            <div className="relative flex-1 min-w-[200px] max-w-xl">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted pointer-events-none" />
               <Input
                 type="text"
@@ -217,7 +218,7 @@ export function RunHistoryView() {
           </div>
 
           {/* Scrolls on its own on a phone, where the five filters are wider than the page. */}
-          <div className="overflow-x-auto no-scrollbar">
+          <ScrollFade>
             <Segmented<StatusFilter>
               aria-label={t("run_history.filter_status_aria")}
               className="min-w-max"
@@ -231,7 +232,7 @@ export function RunHistoryView() {
                 { value: "aborted", label: t("run_history.status_aborted", { n: counts.aborted }) },
               ]}
             />
-          </div>
+          </ScrollFade>
         </CardContent>
       </Card>
 

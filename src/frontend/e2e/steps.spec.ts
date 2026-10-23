@@ -200,19 +200,24 @@ test.describe("on a phone", () => {
     await expect(page).toHaveURL(/\?step=dataset$/);
   });
 
-  test("a step starts at the top of the window, without the page's own sentence before it", async ({ page }) => {
+  test("the bar of steps is in view when a step opens, without the page's own sentence before it", async ({ page }) => {
     await page.goto("/");
     // The data step keeps the sentence on what the page is for; a step with a dataset has no room for it.
     await expect(page.getByText(text("factor.model.subtitle"))).toBeVisible();
     await openBundled(page, "Inductive miner");
     await expect(page.getByText(text("factor.model.subtitle"))).toBeHidden();
     const steps = page.getByRole("navigation", { name: text("factor.steps.aria") });
-    await expect.poll(async () => Math.round((await steps.boundingBox())!.y)).toBeLessThanOrEqual(12);
-    // From any scroll position, a step opened by the bar or by Next begins at the top again.
+    // Where the bar already shows, the page does not move; from further down, a step opened by
+    // Next brings it back into view.
+    const inView = async () => {
+      const y = Math.round((await steps.boundingBox())!.y);
+      return y >= 0 && y <= 844 - 96;
+    };
+    await expect.poll(inView).toBe(true);
     await page.mouse.wheel(0, 700);
     await page.getByRole("navigation", { name: text("factor.nav.aria") }).getByRole("button", { name: text("factor.nav.next") }).click();
     await expect(page).toHaveURL(/\?step=suitability$/);
-    await expect.poll(async () => Math.round((await steps.boundingBox())!.y)).toBeLessThanOrEqual(12);
+    await expect.poll(inView).toBe(true);
   });
 
   test("the bottom bar says why Next waits", async ({ page }) => {

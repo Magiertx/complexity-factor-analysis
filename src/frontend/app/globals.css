@@ -67,6 +67,13 @@
     body.has-step-bar .undo-toast { bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
     body.has-step-bar .job-toast { bottom: calc(8rem + env(safe-area-inset-bottom)); }
   }
+  /* A landscape phone has no height to spare: Back and Next sit at the end of the step instead of
+     covering a third of the window (step-nav.tsx makes the bar static), so nothing is kept free. */
+  @media (max-width: 1023.98px) and (max-height: 500px) {
+    body.has-step-bar { padding-bottom: 0; }
+    body.has-step-bar .undo-toast { bottom: 1rem; }
+    body.has-step-bar .job-toast { bottom: 5rem; }
+  }
   ::selection { background: rgb(var(--accent) / 0.3); }
   /* Safari ehrt Tailwind-Preflights `-webkit-appearance: button` und applied
      OS-Button-Metriken (extra Padding, Min-Height, abweichende Font-Metriken).
@@ -416,5 +423,26 @@
   .no-scrollbar {
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
+  }
+
+  /* Fades the edge of a sideways scrolling strip where more content lies beyond it. The widths come
+     from useScrollFade (lib/use-scroll-fade.ts); unset, nothing is masked. */
+  .scroll-fade {
+    --fade-start: 0px;
+    --fade-end: 0px;
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      black var(--fade-start),
+      black calc(100% - var(--fade-end)),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      black var(--fade-start),
+      black calc(100% - var(--fade-end)),
+      transparent
+    );
   }
 }

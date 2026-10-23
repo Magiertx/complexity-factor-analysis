@@ -52,7 +52,7 @@ export function PageHeader({
           </Link>
         )}
         <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{title}</h1>
-        {subtitle && <p className={cn("text-sm text-muted mt-1 leading-relaxed", subtitleClassName)}>{subtitle}</p>}
+        {subtitle && <p className={cn("text-sm text-muted mt-1 leading-relaxed [@media(max-height:500px)]:hidden", subtitleClassName)}>{subtitle}</p>}
       </div>
       {actions && <div className="flex items-center gap-2 flex-wrap">{actions}</div>}
     </header>
