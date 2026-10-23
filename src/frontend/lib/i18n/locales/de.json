@@ -563,7 +563,8 @@
       "active": "offen",
       "done": "erledigt",
       "warn": "bitte prüfen",
-      "busy": "läuft"
+      "busy": "läuft",
+      "unavailable": "hier nicht verfügbar"
     },
     "empty": {
       "no_dataset": "Wähle zuerst im Schritt Daten Daten aus.",
@@ -1034,7 +1035,8 @@
       "stale_again": "Interpretiere neu, um sie zu aktualisieren.",
       "ready": "Die Interpretation von {n} Faktor ist fertig.",
       "ready_plural": "Die Interpretation von {n} Faktoren ist fertig.",
-      "state_needs_key": "braucht einen API-Schlüssel"
+      "unavailable_key": "Nicht verfügbar: Der Server hat keinen API-Schlüssel",
+      "unavailable_settings": "Nicht verfügbar: Für diese Einstellungen ist keine gespeichert, und der Server hat keinen API-Schlüssel"
     },
     "settings": {
       "measures": "{used} von {total} Maßen",
@@ -1182,7 +1184,14 @@
       "dimensions": "{n} Dimension",
       "dimensions_plural": "{n} Dimensionen",
       "cross": "{n} mit Querladung",
-      "unassigned": "{n} ohne Faktor"
+      "unassigned": "{n} ohne Faktor",
+      "bartlett_failed": "Bartlett nicht bestanden",
+      "kmo_low": "KMO unter {value}",
+      "problem": {
+        "heywood": "möglicher Heywood-Fall",
+        "not_identified": "nicht identifiziert",
+        "fit_not_converged": "Anpassung nicht konvergiert"
+      }
     },
     "nav": {
       "aria": "Schrittnavigation",

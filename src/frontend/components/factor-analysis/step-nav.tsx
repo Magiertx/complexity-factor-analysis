@@ -88,9 +88,8 @@ export function useStepNavigation() {
 }
 
 /**
- * What a step's state looks like. A step that is "locked" but can be opened is waiting for a key
- * (the interpretation without an API key): it shows a key, not the lock of a step that cannot be
- * opened yet.
+ * What a step's state looks like. A step that cannot be had in this setup (the interpretation
+ * without an API key) shows a key, not the lock of a step that cannot be opened yet.
  */
 function StateMark({ state, needsKey }: { state: StepState; needsKey?: boolean }) {
   if (needsKey) return <KeyRound className="h-3 w-3 shrink-0 text-muted" aria-hidden />;
@@ -105,6 +104,11 @@ interface NavProps {
   current: StepId;
   states: Record<StepId, StepState>;
   locks: StepLocks;
+  /**
+   * Steps that cannot be had in this setup, with why, e.g. the interpretation without an API key:
+   * a key instead of a lock, and the reason instead of what the step is for.
+   */
+  unavailable: Partial<Record<StepId, string>>;
   /** Replaces the generic text of a state for screen readers, e.g. why a step is locked. */
   stateLabels: Partial<Record<StepId, string>>;
   onGo: (step: StepId) => void;
@@ -178,6 +182,7 @@ export function StepRail({
   current,
   states,
   locks,
+  unavailable,
   stateLabels,
   summaries,
   onGo,
@@ -193,7 +198,7 @@ export function StepRail({
           const Icon = STEP_ICONS[id];
           const here = id === current;
           const lock = locks[id];
-          const needsKey = states[id] === "locked" && !lock && !!stateLabels[id];
+          const needsKey = !!unavailable[id];
           return (
             <li key={id}>
               <StepLink
@@ -242,7 +247,7 @@ export function StepRail({
  * The steps on a phone: number and sign of each in one row, the name of the step on screen beside
  * its own. It fits a narrow screen without scrolling sideways.
  */
-export function StepBar({ current, states, locks, stateLabels, onGo }: NavProps) {
+export function StepBar({ current, states, locks, unavailable, stateLabels, onGo }: NavProps) {
   const t = useT();
   const { next } = neighbours(current);
   const at = STEP_IDS.indexOf(current) + 1;
@@ -254,7 +259,7 @@ export function StepBar({ current, states, locks, stateLabels, onGo }: NavProps)
           const here = id === current;
           const lock = locks[id];
           const state = states[id];
-          const needsKey = state === "locked" && !lock && !!stateLabels[id];
+          const needsKey = !!unavailable[id];
           return (
             <li key={id} className={cn(here ? "min-w-0 flex-1" : "shrink-0")}>
               <StepLink
@@ -322,6 +327,12 @@ export function StepBar({ current, states, locks, stateLabels, onGo }: NavProps)
   );
 }
 
+/** The step before and after `step`; a step that cannot be had in this setup is no next one. */
+function reachable(step: StepId, unavailable: Partial<Record<StepId, string>>) {
+  const { previous, next } = neighbours(step);
+  return { previous, next: next && !unavailable[next] ? next : null };
+}
+
 /** The button to the next step: the primary action of a step, inactive with its reason while the next is locked. */
 function NextButton({
   next,
@@ -358,16 +369,18 @@ function NextButton({
 export function StepFooter({
   step,
   locks,
+  unavailable,
   onGo,
   hideNext,
 }: {
   step: StepId;
   locks: StepLocks;
+  unavailable: Partial<Record<StepId, string>>;
   onGo: (step: StepId) => void;
   hideNext?: boolean;
 }) {
   const t = useT();
-  const { previous, next } = neighbours(step);
+  const { previous, next } = reachable(step, unavailable);
   const lock = next ? locks[next] : null;
   if (!previous && (!next || hideNext)) return null;
   return (
@@ -397,14 +410,16 @@ export function StepFooter({
 export function StepNavBar({
   step,
   locks,
+  unavailable,
   onGo,
 }: {
   step: StepId;
   locks: StepLocks;
+  unavailable: Partial<Record<StepId, string>>;
   onGo: (step: StepId) => void;
 }) {
   const t = useT();
-  const { previous, next } = neighbours(step);
+  const { previous, next } = reachable(step, unavailable);
   const reason = next ? locks[next] : null;
   // The page keeps room for the bar at its end, so the bar never hides the last lines.
   useEffect(() => {

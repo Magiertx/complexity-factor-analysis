@@ -52,7 +52,7 @@ import {
   rowsChoice,
   sameOptions,
   solutionKey,
-  solutionNeedsAttention,
+  solutionProblems,
   MIN_MEASURES,
   suggestedNames,
   trimNames,
@@ -164,6 +164,7 @@ function useErrorText() {
  */
 export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const t = useT();
+  const tMaybe = useTMaybe();
   const { locale } = useLocale();
   const errorText = useErrorText();
   // Effects read texts through refs, so a language switch does not refetch anything.
@@ -619,11 +620,16 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const lookupInterpretation =
     !!interpStatus && (interpStatus.available || (interpStatus.precomputed_only && dataset?.source === "bundled"));
   const analyzedFactors = analysis?.n_factors ?? null;
+  // The settings whose stored interpretation is being looked up; the step waits for the answer
+  // before it says that there is none.
+  const [lookingUp, setLookingUp] = useState<string | null>(null);
   useEffect(() => {
     if (!ready || !datasetId || !analyzedOptions || analyzedFactors === null || !lookupInterpretation) return;
     const key = interpretationKey(datasetId, analyzedOptions, locale);
     if (interpretationRef.current?.key === key) return;
     const ctrl = new AbortController();
+    const done = () => setLookingUp((k) => (k === key ? null : k));
+    setLookingUp(key);
     const lookup = { ...analyzedOptions, n_factors: analyzedFactors };
     interpretDataset(datasetId, lookup, locale, { cachedOnly: true, signal: ctrl.signal })
       .then((res) => {
@@ -631,8 +637,12 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       })
       .catch(() => {
         // Nothing to show; asking for an interpretation reports errors.
-      });
-    return () => ctrl.abort();
+      })
+      .finally(done);
+    return () => {
+      ctrl.abort();
+      done();
+    };
   }, [ready, datasetId, analyzedOptions, analyzedFactors, locale, lookupInterpretation]);
 
   // Only the analysis on screen can be interpreted or downloaded as a whole: during the
@@ -984,9 +994,31 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       : null;
 
   const suitable = analysis ? analysis.bartlett.passed && analysis.kmo.passed : false;
+  // Why suitability or the solution needs a look, said in the list of steps beside the warning.
+  const suitabilityIssues = analysis
+    ? [
+        analysis.bartlett.passed ? null : t("factor.rail_summary.bartlett_failed"),
+        analysis.kmo.passed
+          ? null
+          : t("factor.rail_summary.kmo_low", { value: formatNumber((analyzedOptions ?? options).msa_threshold, locale) }),
+      ].filter((x): x is string => !!x)
+    : [];
+  const solutionIssues = analysis
+    ? [...new Set(solutionProblems(analysis).map((n) => tMaybe(`factor.rail_summary.problem.${n.code}`) ?? t("factor.state.warn")))]
+    : [];
   const interpretationStale =
     !!interpretation && (!datasetId || interpretation.key !== interpretationKey(datasetId, options, locale));
   const pendingAnalysis = ready && !analysis && !analysisError;
+  const interpretationPending =
+    !!datasetId && !!analyzedOptions && lookingUp === interpretationKey(datasetId, analyzedOptions, locale);
+  const interpretationUnavailable =
+    ready && analysis && interpStatus && !interpStatus.available && !interpretation && !interpretationPending
+      ? t(
+          interpStatus.precomputed_only && dataset?.source === "bundled"
+            ? "factor.interpretation.unavailable_settings"
+            : "factor.interpretation.unavailable_key",
+        )
+      : null;
   const resultState: StepState = !ready
     ? "locked"
     : analysis
@@ -1004,12 +1036,13 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           : "done",
     dataset: ready ? "done" : dataset?.status === "computing" ? "busy" : "locked",
     suitability: resultState === "done" ? (suitable ? "done" : "warn") : resultState,
-    factors: resultState === "done" && analysis && solutionNeedsAttention(analysis) ? "warn" : resultState,
+    // Only a real problem of the solution warns; a factor count of one's own or of a paper is a choice.
+    factors: resultState === "done" && solutionIssues.length > 0 ? "warn" : resultState,
     loadings: resultState,
     interpretation:
       resultState !== "done"
         ? "locked"
-        : interpreting
+        : interpreting || interpretationPending
           ? "busy"
           : interpretation
             ? interpretationStale
@@ -1019,11 +1052,14 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               ? "active"
               : "locked",
   };
-  // Locked for want of a key, not because an earlier step is missing.
-  const stateLabels: Partial<Record<StepId, string>> =
-    resultState === "done" && interpStatus && !interpStatus.available && !interpretation
-      ? { interpretation: t("factor.interpretation.state_needs_key") }
-      : {};
+  // Not to be had here at all, rather than not yet: the interpretation without a key on the server
+  // and without one stored for these settings. The list of steps says why, and Next stops before it.
+  const unavailable: Partial<Record<StepId, string>> = interpretationUnavailable
+    ? { interpretation: interpretationUnavailable }
+    : {};
+  const stateLabels: Partial<Record<StepId, string>> = interpretationUnavailable
+    ? { interpretation: t("factor.state.unavailable") }
+    : {};
 
   // One line per finished step for the step rail; settings are in the settings row instead.
   const summaries: Partial<Record<StepId, string>> = {};
@@ -1051,15 +1087,20 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       analysis.msa_filter.removed.length > 0
         ? countText(t, "factor.rail_summary.removed", analysis.msa_filter.removed.length)
         : null,
+      ...suitabilityIssues,
     ]
       .filter(Boolean)
       .join(" · ");
   }
   if (analysis && finished("factors")) {
-    summaries.factors = countText(t, "factor.rail_summary.factors", analysis.n_factors, {
-      pct: formatPercent(analysis.variance.explained, locale),
-    });
+    summaries.factors = [
+      countText(t, "factor.rail_summary.factors", analysis.n_factors, {
+        pct: formatPercent(analysis.variance.explained, locale),
+      }),
+      ...solutionIssues,
+    ].join(" · ");
   }
+  if (interpretationUnavailable) summaries.interpretation = interpretationUnavailable;
   if (analysis && finished("loadings")) {
     const cross = analysis.cross_loadings?.length ?? 0;
     const unassigned = unassignedMeasures(analysis).length;
@@ -1090,7 +1131,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     suitability: lockReason,
     factors: lockReason,
     loadings: lockReason,
-    interpretation: lockReason,
+    interpretation: lockReason ?? interpretationUnavailable,
   };
   const current = nav.step;
 
@@ -1212,9 +1253,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const stale = cn("transition-opacity", (analyzing || analysisError) && "opacity-60");
 
   const footer = (step: StepId) => (
-    <StepFooter step={step} locks={locks} onGo={go} hideNext={step === "data" && formOpen} />
+    <StepFooter step={step} locks={locks} unavailable={unavailable} onGo={go} hideNext={step === "data" && formOpen} />
   );
-  const navProps = { current, states, locks, stateLabels, onGo: go };
+  const navProps = { current, states, locks, unavailable, stateLabels, onGo: go };
 
   const loadingsReason = !ready ? lockReason : !analysis ? t("factor.toolbar.wait_analysis") : null;
   // The ZIP, the report and the print view hold what is on screen, so not while the analysis
@@ -1685,7 +1726,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           )}
         </div>
       </div>
-      <StepNavBar step={current} locks={locks} onGo={go} />
+      <StepNavBar step={current} locks={locks} unavailable={unavailable} onGo={go} />
       {ready && dataset && sheet && (
         <MeasureSheet
           measure={sheet.measure}

@@ -2,7 +2,15 @@
 
 import { Info, Minus, Plus, Sparkles } from "lucide-react";
 import { ROTATIONS, type FactorAnalysis, type Rotation } from "@/lib/api";
-import { ORTHOGONAL, analysisNotices, countText, isSolutionNotice, noticeText, type AnalysisOptions } from "@/lib/factor-analysis";
+import {
+  ORTHOGONAL,
+  analysisNotices,
+  countText,
+  isInfoNotice,
+  isSolutionNotice,
+  noticeText,
+  type AnalysisOptions,
+} from "@/lib/factor-analysis";
 import { formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
@@ -36,9 +44,10 @@ export function FactorsView({ analysis, options, onOptions, paperFactors, paperS
   const t = useT();
   const tMaybe = useTMaybe();
   const { locale } = useLocale();
-  const notes = analysisNotices(analysis)
-    .filter(isSolutionNotice)
-    .map((n) => noticeText(n, tMaybe, measureName));
+  // A problem of the solution is a warning; a note that only says what happened is not.
+  const solution = analysisNotices(analysis).filter(isSolutionNotice);
+  const notes = solution.filter((n) => !isInfoNotice(n)).map((n) => noticeText(n, tMaybe, measureName));
+  const infos = solution.filter(isInfoNotice).map((n) => noticeText(n, tMaybe, measureName));
   const max = Math.max(1, analysis.used_measures.length - 1);
   const counts = analysis.factor_count;
   const kaiser = counts?.kaiser ?? analysis.suggested_n_factors;
@@ -82,6 +91,12 @@ export function FactorsView({ analysis, options, onOptions, paperFactors, paperS
   return (
     <div className="space-y-6">
       <NoticeList heading={t("factor.factors.notes_heading")} notes={notes} />
+      {infos.map((info) => (
+        <p key={info} className="flex items-start gap-1.5 text-xs text-muted">
+          <Info className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
+          <span>{info}</span>
+        </p>
+      ))}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_17rem]">
         <div className="space-y-2 min-w-0">
           <HelpLabel

@@ -563,7 +563,8 @@
       "active": "to do",
       "done": "done",
       "warn": "needs attention",
-      "busy": "in progress"
+      "busy": "in progress",
+      "unavailable": "not available here"
     },
     "empty": {
       "no_dataset": "Choose data in the data step first.",
@@ -1034,7 +1035,8 @@
       "stale_again": "Interpret again to update it.",
       "ready": "The interpretation of {n} factor is ready.",
       "ready_plural": "The interpretation of {n} factors is ready.",
-      "state_needs_key": "needs an API key"
+      "unavailable_key": "Not available: the server has no API key",
+      "unavailable_settings": "Not available: none is stored for these settings, and the server has no API key"
     },
     "settings": {
       "measures": "{used} of {total} measures",
@@ -1182,7 +1184,14 @@
       "dimensions": "{n} dimension",
       "dimensions_plural": "{n} dimensions",
       "cross": "{n} cross-loaded",
-      "unassigned": "{n} unassigned"
+      "unassigned": "{n} unassigned",
+      "bartlett_failed": "Bartlett not passed",
+      "kmo_low": "KMO below {value}",
+      "problem": {
+        "heywood": "possible Heywood case",
+        "not_identified": "not identified",
+        "fit_not_converged": "fit did not converge"
+      }
     },
     "nav": {
       "aria": "Step navigation",

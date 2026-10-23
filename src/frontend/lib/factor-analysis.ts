@@ -444,9 +444,22 @@ export function isSolutionNotice(notice: AnalysisNotice): boolean {
   return SOLUTION_NOTICES.includes(notice.code);
 }
 
+/** A notice that only says what happened, e.g. that a single factor is not rotated. */
+export function isInfoNotice(notice: AnalysisNotice): boolean {
+  return INFO_NOTICES.includes(notice.code);
+}
+
+/**
+ * The notices on the factor solution that need attention, e.g. a possible Heywood case or too many
+ * factors for the measures. A factor count of one's own or of a paper is none: it is a choice.
+ */
+export function solutionProblems(analysis: FactorAnalysis): AnalysisNotice[] {
+  return analysisNotices(analysis).filter((n) => isSolutionNotice(n) && !isInfoNotice(n));
+}
+
 /** The factor solution needs attention, e.g. too many factors for the measures. */
 export function solutionNeedsAttention(analysis: FactorAnalysis): boolean {
-  return analysisNotices(analysis).some((n) => isSolutionNotice(n) && !INFO_NOTICES.includes(n.code));
+  return solutionProblems(analysis).length > 0;
 }
 
 export type KmoGrade =
