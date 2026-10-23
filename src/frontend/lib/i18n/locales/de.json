@@ -526,9 +526,7 @@
     "tour_title": "Rundgang durch die Schritte",
     "model": {
       "title": "Modellkomplexität",
-      "subtitle": "Finde heraus, welche Komplexitätsmaße von Prozessmodellen dieselbe zugrunde liegende Dimension beschreiben. Sammle Maße über viele Modelle, prüfe, ob eine Faktorenanalyse sinnvoll ist, und fasse die Maße zu wenigen Faktoren zusammen.",
-      "inspect_link": "Einzelnes Log untersuchen",
-      "inspect_title": "ComFy auf einem Event-Log ausführen und die gefundenen Modelle ansehen"
+      "subtitle": "Finde heraus, welche Komplexitätsmaße von Prozessmodellen dieselbe zugrunde liegende Dimension beschreiben. Sammle Maße über viele Modelle, prüfe, ob eine Faktorenanalyse sinnvoll ist, und fasse die Maße zu wenigen Faktoren zusammen."
     },
     "log": {
       "title": "Log-Komplexität",
@@ -1150,8 +1148,10 @@
     },
     "start": {
       "title": "Hier starten",
-      "collapsed_hint": "Vier Analysen mit einem Klick und eine Beispiel-CSV",
+      "collapsed_hint": "{n} Analyse mit einem Klick und eine Beispiel-CSV",
+      "collapsed_hint_plural": "{n} Analysen mit einem Klick und eine Beispiel-CSV",
       "intro": "Jede öffnet einen mitgelieferten Datensatz mit seinen Einstellungen; nichts muss hochgeladen oder berechnet werden.",
+      "opens": "Öffnet {page}",
       "scenario": {
         "if_inductive": {
           "title": "Important Factors: Inductive miner",
@@ -1219,24 +1219,17 @@
       "export_dataset_hint": "Die bereinigte Matrix",
       "wait_analysis": "Die Analyse läuft noch.",
       "wait_update": "Die Analyse wird gerade aktualisiert.",
-      "mine_more": "Datensätze dieser Sitzung wieder öffnen oder löschen.",
-      "mine_none": "In dieser Sitzung gibt es noch keine Datensätze.",
-      "more": "Mehr",
       "export_report": "LaTeX-Report",
       "export_report_hint": "report.tex, aufgebaut wie der ComFy-Report; mit latexmk oder zweimal pdflatex übersetzen",
       "print": "Druckansicht",
       "print_hint": "Die ganze Analyse auf A4-Seiten in einem neuen Tab, zum Drucken oder Speichern als PDF",
-      "help": "Hilfe",
-      "help_more": "Die Anleitung oder eine Tour durch die Schritte.",
       "guide": "Anleitung",
-      "guide_hint": "Was das Tool tut und wie, in einem neuen Tab",
+      "guide_hint": "Was das Tool tut und wie",
       "codes": "Kurzzeichen",
       "codes_more": "Nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder C_mag, in den Listen, den Ladungen, den Abbildungen und dem Report. Der volle Name steht im Tooltip.",
       "codes_on": "Kurzzeichen zeigen",
       "codes_off": "Volle Namen zeigen",
-      "codes_none": "Kein Maß dieses Datensatzes hat ein Kurzzeichen.",
-      "compare": "Miner vergleichen",
-      "compare_more": "Die Faktorstrukturen mehrerer Miner nebeneinander, wie in Tab. 17 von Important Factors."
+      "codes_none": "Kein Maß dieses Datensatzes hat ein Kurzzeichen."
     },
     "measures": {
       "search": "Maße durchsuchen",

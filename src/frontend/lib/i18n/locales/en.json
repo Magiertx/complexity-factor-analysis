@@ -526,9 +526,7 @@
     "tour_title": "Walkthrough of the steps",
     "model": {
       "title": "Model complexity",
-      "subtitle": "Find out which complexity measures of process models describe the same underlying dimension. Collect measures over many models, check whether a factor analysis is meaningful, and group the measures into a few factors.",
-      "inspect_link": "Inspect a single log",
-      "inspect_title": "Run ComFy on one event log and look at the discovered models"
+      "subtitle": "Find out which complexity measures of process models describe the same underlying dimension. Collect measures over many models, check whether a factor analysis is meaningful, and group the measures into a few factors."
     },
     "log": {
       "title": "Log complexity",
@@ -1150,8 +1148,10 @@
     },
     "start": {
       "title": "Start here",
-      "collapsed_hint": "Four analyses to open in one click, and an example CSV",
+      "collapsed_hint": "{n} analysis to open in one click, and an example CSV",
+      "collapsed_hint_plural": "{n} analyses to open in one click, and an example CSV",
       "intro": "Each opens a bundled dataset with its settings; nothing needs to be uploaded or computed.",
+      "opens": "Opens {page}",
       "scenario": {
         "if_inductive": {
           "title": "Important Factors: Inductive miner",
@@ -1219,24 +1219,17 @@
       "export_dataset_hint": "The cleaned matrix",
       "wait_analysis": "The analysis is still running.",
       "wait_update": "The analysis is being updated.",
-      "mine_more": "Reopen or delete the datasets of this session.",
-      "mine_none": "No datasets in this session yet.",
-      "more": "More",
       "export_report": "LaTeX report",
       "export_report_hint": "report.tex built like ComFy's report; compile with latexmk, or run pdflatex twice",
       "print": "Print view",
       "print_hint": "The whole analysis on A4 pages in a new tab, to print or save as PDF",
-      "help": "Help",
-      "help_more": "The user guide, or a tour of the steps.",
       "guide": "User guide",
-      "guide_hint": "What the tool does and how, in a new tab",
+      "guide_hint": "What the tool does and how",
       "codes": "Short codes",
       "codes_more": "Names the measures by the codes of the papers, such as CNC or C_mag, in the lists, the loadings, the figures and the report. The full name stays in the tooltip.",
       "codes_on": "Show short codes",
       "codes_off": "Show full names",
-      "codes_none": "No measure of this dataset has a short code.",
-      "compare": "Compare miners",
-      "compare_more": "The factor structures of several miners side by side, like Tab. 17 of Important Factors."
+      "codes_none": "No measure of this dataset has a short code."
     },
     "measures": {
       "search": "Search measures",

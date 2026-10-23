@@ -1154,15 +1154,6 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     else go(step, { focus: { control } });
   };
 
-  // Start here and My datasets of the toolbar: the data step with its form open there.
-  const [formRequest, setFormRequest] = useState<{ kind: "start" | "mine"; n: number } | null>(null);
-  const formRequestHandled = useCallback(() => setFormRequest(null), []);
-  const openForm = (which: "start" | "mine") => {
-    go("data", { focus: null });
-    if (dataset && !formOpen) setChoosing(true);
-    setFormRequest({ kind: which, n: Date.now() });
-  };
-
   // The tour opens the step of each stop, without an entry in the history for each, and puts the
   // reader back on the step it began on once it ends, unless they moved on by themselves (the
   // browser's back, say) while it ran.
@@ -1360,12 +1351,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         subtitleClassName={ready && current !== "data" ? "max-lg:hidden" : undefined}
         actions={
           <FactorToolbar
-            kind={kind}
             linkQuery={linkQuery && current !== "data" ? `${linkQuery}&step=${current}` : linkQuery}
             exports={exports}
-            onStartHere={() => openForm("start")}
-            onMyDatasets={() => openForm("mine")}
-            myDatasetsReason={datasets && datasets.length > 0 ? null : t("factor.toolbar.mine_none")}
             onTour={startTour}
             shortCodes={shortCodes}
           />
@@ -1496,10 +1483,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               </div>
             ) : formOpen ? (
               <div className="space-y-5">
-                <StartHere
-                  request={formRequest?.kind === "start" ? formRequest.n : undefined}
-                  onRequestHandled={formRequestHandled}
-                />
+                <StartHere kind={kind} />
                 <DataForm
                   kind={kind}
                   catalog={catalog}
@@ -1511,19 +1495,22 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                   onOpen={openChosen}
                   onDelete={removeDataset}
                   onCancel={dataset && choosing ? cancelChoice : undefined}
-                  showMine={formRequest?.kind === "mine" ? formRequest.n : undefined}
-                  onRequestHandled={formRequestHandled}
                 />
               </div>
             ) : dataset ? (
-              <DataSummary
-                dataset={dataset}
-                catalog={catalog}
-                titleRef={summaryTitle}
-                onChange={() => setChoosing(true)}
-                onCancelJob={cancelJob}
-                onDelete={() => removeDataset(dataset.id)}
-              />
+              // Start here stays the first block of the step, also with a dataset open; the
+              // datasets of the session are a source of the form behind "Choose other data".
+              <div className="space-y-5">
+                <StartHere kind={kind} />
+                <DataSummary
+                  dataset={dataset}
+                  catalog={catalog}
+                  titleRef={summaryTitle}
+                  onChange={() => setChoosing(true)}
+                  onCancelJob={cancelJob}
+                  onDelete={() => removeDataset(dataset.id)}
+                />
+              </div>
             ) : datasetError ? (
               <Button variant="outline" size="sm" onClick={() => selectDataset(null)}>
                 {t("factor.data.change")}

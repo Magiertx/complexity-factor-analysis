@@ -1,28 +1,20 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import {
   BookOpen,
-  CircleHelp,
   ClipboardCopy,
-  Columns3,
   Download,
-  Ellipsis,
   FileArchive,
   FileCode2,
   FileSpreadsheet,
   FileText,
-  FolderOpen,
-  Microscope,
   Printer,
   Quote,
   Route,
   Sheet,
-  Signpost,
   Tag,
 } from "lucide-react";
-import type { CompareExportFormat, FactorKind } from "@/lib/api";
-import { COMPARE_HREF } from "@/lib/compare";
+import type { CompareExportFormat } from "@/lib/api";
 import type { ExportFormat } from "@/lib/factor-analysis";
 import { useT } from "@/lib/i18n";
 import { IconButton, IconLink, ToolSeparator } from "@/components/ui/icon-button";
@@ -56,34 +48,23 @@ export interface ShortCodesSwitch {
 }
 
 /**
- * The tools of a factor analysis tab as icons in one row, in groups: the way in (Start here, My
- * datasets), the view and the downloads (short codes, link, download menu), and help (guide and
- * tour) with the pages beside the tab (the comparison of miners, a single log). Each icon is
- * named by its tooltip. On a phone only the link and the
- * downloads stay in the row; the rest goes into a "more" menu.
+ * The tools of the analysis on a factor analysis tab, as icons in one row: the short codes, the
+ * link and the downloads, and the tour of the steps at the end. Each icon is named by its tooltip.
+ * The ways to other pages are elsewhere: the tabs for the comparison and a single log, the header
+ * for the guide, the data step for Start here and My datasets.
  */
 export function FactorToolbar({
-  kind,
   linkQuery,
   exports,
   shortCodes,
-  onStartHere,
-  onMyDatasets,
-  myDatasetsReason,
   onTour,
 }: {
-  kind: FactorKind;
   linkQuery: string | null;
   exports: ExportState;
   shortCodes: ShortCodesSwitch;
-  onStartHere: () => void;
-  onMyDatasets: () => void;
-  /** Why My datasets has nothing to open; null when it has. */
-  myDatasetsReason: string | null;
   onTour: () => void;
 }) {
   const t = useT();
-  const router = useRouter();
   const { exporting } = exports;
   const busy = exporting !== null;
 
@@ -169,82 +150,21 @@ export function FactorToolbar({
     />
   );
 
-  const helpItems: MenuItem[] = [
-    { id: "guide", label: t("factor.toolbar.guide"), hint: t("factor.toolbar.guide_hint"), icon: BookOpen, href: GUIDE_HREF, newTab: true },
-    { id: "tour", label: t("factor.tour_button"), hint: t("factor.tour_title"), icon: Route, onSelect: onTour },
-  ];
-
-  const moreItems: MenuItem[] = [
-    { id: "start", label: t("factor.start.title"), icon: Signpost, onSelect: onStartHere },
-    {
-      id: "mine",
-      label: t("factor.data.source.mine"),
-      icon: FolderOpen,
-      hint: myDatasetsReason,
-      disabled: !!myDatasetsReason,
-      onSelect: onMyDatasets,
-    },
-    {
-      id: "codes",
-      label: t(shortCodes.on ? "factor.toolbar.codes_off" : "factor.toolbar.codes_on"),
-      hint: shortCodes.reason,
-      icon: Tag,
-      disabled: !!shortCodes.reason,
-      onSelect: shortCodes.onToggle,
-      separated: true,
-    },
-    { id: "guide", label: t("factor.toolbar.guide"), icon: BookOpen, href: GUIDE_HREF, newTab: true, separated: true },
-    { id: "tour", label: t("factor.tour_button"), icon: Route, onSelect: onTour },
-    ...(kind === "model"
-      ? [
-          { id: "compare", label: t("factor.toolbar.compare"), icon: Columns3, href: COMPARE_HREF, separated: true },
-          {
-            id: "inspect",
-            label: t("factor.model.inspect_link"),
-            icon: Microscope,
-            onSelect: () => router.push("/inspect"),
-          },
-        ]
-      : []),
-  ];
-
   return (
     <div role="group" aria-label={t("factor.toolbar.aria")} className="flex items-center gap-0.5">
-      <span className="hidden sm:contents">
-        <IconButton icon={Signpost} name={t("factor.start.title")} more={t("factor.start.collapsed_hint")} onClick={onStartHere} />
-        <IconButton
-          icon={FolderOpen}
-          name={t("factor.data.source.mine")}
-          more={t("factor.toolbar.mine_more")}
-          reason={myDatasetsReason}
-          onClick={onMyDatasets}
-        />
-        <ToolSeparator />
-        <IconButton
-          icon={Tag}
-          name={t("factor.toolbar.codes")}
-          more={t("factor.toolbar.codes_more")}
-          reason={shortCodes.reason}
-          aria-pressed={shortCodes.on}
-          onClick={shortCodes.onToggle}
-          className={shortCodes.on ? "bg-tile" : undefined}
-        />
-      </span>
+      <IconButton
+        icon={Tag}
+        name={t("factor.toolbar.codes")}
+        more={t("factor.toolbar.codes_more")}
+        reason={shortCodes.reason}
+        aria-pressed={shortCodes.on}
+        onClick={shortCodes.onToggle}
+        className={shortCodes.on ? "bg-tile" : undefined}
+      />
       <CopyLink query={linkQuery} />
       {exportMenu}
-      <span className="hidden sm:contents">
-        <ToolSeparator />
-        <Menu icon={CircleHelp} name={t("factor.toolbar.help")} more={t("factor.toolbar.help_more")} items={helpItems} />
-        {kind === "model" && (
-          <>
-            <IconLink icon={Columns3} name={t("factor.toolbar.compare")} more={t("factor.toolbar.compare_more")} href={COMPARE_HREF} />
-            <IconLink icon={Microscope} name={t("factor.model.inspect_link")} more={t("factor.model.inspect_title")} href="/inspect" />
-          </>
-        )}
-      </span>
-      <span className="sm:hidden contents">
-        <Menu icon={Ellipsis} name={t("factor.toolbar.more")} items={moreItems} />
-      </span>
+      <ToolSeparator />
+      <IconButton icon={Route} name={t("factor.tour_button")} more={t("factor.tour_title")} onClick={onTour} />
     </div>
   );
 }
