@@ -1,0 +1,88 @@
+name: Compose smoke test
+
+# Does what someone setting the tool up on Linux does by hand: a .env from the example with
+# generated secrets, docker compose up --build, then the paper analysis and one dataset mined
+# by ProM from the sample logs. Started by hand, since the first build takes a while.
+on:
+  workflow_dispatch:
+
+jobs:
+  compose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create .env
+        run: |
+          cp .env.example .env
+          sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 24)|" .env
+          sed -i "s|^SESSION_SECRET_KEY=.*|SESSION_SECRET_KEY=$(openssl rand -hex 32)|" .env
+
+      - name: Versions
+        run: |
+          docker --version
+          docker compose version
+
+      - name: Build and start
+        run: |
+          start=$(date +%s)
+          docker compose up -d --build
+          echo "build and start took $(( $(date +%s) - start )) s"
+
+      - name: Wait for the frontend and the API
+        run: |
+          start=$(date +%s)
+          for i in $(seq 1 90); do
+            if curl -fsS -o /dev/null http://localhost:3000/ && curl -fsS http://localhost:3000/api/health; then
+              echo; echo "ready after $(( $(date +%s) - start )) s"
+              exit 0
+            fi
+            sleep 5
+          done
+          docker compose ps
+          exit 1
+
+      - name: Paper analysis of the Inductive miner
+        run: |
+          J=$RUNNER_TEMP/cookies
+          API=http://localhost:3000/api
+          curl -fsS -c $J -b $J -o /dev/null $API/session
+          ds=$(curl -fsS -c $J -b $J -F kind=model -F source=bundled -F bundled_id=comfy-paper-inductive-miner \
+            $API/factor-analysis/datasets | jq -r .dataset_id)
+          curl -fsS -c $J -b $J -H 'Content-Type: application/json' -d '{"n_factors": 4}' \
+            $API/factor-analysis/datasets/$ds/analyze > analysis.json
+          jq '.kmo.overall' analysis.json
+          # ComFy's report: KMO 0.7467
+          jq -e '.kmo.overall > 0.7466 and .kmo.overall < 0.7468' analysis.json
+
+      - name: Dataset mined by ProM from the sample logs
+        run: |
+          J=$RUNNER_TEMP/cookies
+          API=http://localhost:3000/api
+          start=$(date +%s)
+          id=$(curl -fsS -c $J -b $J -F kind=model -F source=logs -F bundled_id=pdc-sample-logs \
+            $API/factor-analysis/datasets | jq -r .dataset_id)
+          for i in $(seq 1 120); do
+            status=$(curl -fsS -c $J -b $J "$API/factor-analysis/datasets/$id?rows=0" | jq -r .status)
+            echo "$status"
+            if [ "$status" = ready ]; then
+              echo "mined after $(( $(date +%s) - start )) s"
+              exit 0
+            fi
+            [ "$status" = failed ] && break
+            sleep 5
+          done
+          curl -fsS -c $J -b $J "$API/factor-analysis/datasets/$id?rows=0" | jq '{status, error, failures}'
+          exit 1
+
+      - name: Images and memory
+        if: always()
+        run: |
+          docker compose ps
+          docker images
+          docker stats --no-stream
+
+      - name: Logs
+        if: failure()
+        run: docker compose logs --tail 150
