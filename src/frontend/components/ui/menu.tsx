@@ -55,7 +55,7 @@ export function Menu({
   const listRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
-  const [pos, setPos] = useState<{ left: number; top?: number; bottom?: number } | null>(null);
+  const [pos, setPos] = useState<{ left: number; top?: number; bottom?: number; maxHeight: number } | null>(null);
   const id = useId();
   const listId = `${id}-menu`;
 
@@ -64,9 +64,18 @@ export function Menu({
     if (!r) return;
     const w = Math.min(width, window.innerWidth - 16);
     const left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8));
-    const height = listRef.current?.offsetHeight ?? items.length * 44 + 8;
-    const below = window.innerHeight - r.bottom;
-    setPos(below < height + 12 && r.top > below ? { left, bottom: window.innerHeight - r.top + 4 } : { left, top: r.bottom + 4 });
+    // The full height of the list, also while a max height cuts it short.
+    const height = listRef.current?.scrollHeight ?? items.length * 44 + 8;
+    const below = window.innerHeight - r.bottom - 4;
+    const above = r.top - 4;
+    // It opens to the side with room for all of it, else to the one with more; there it scrolls.
+    const downward = below >= height + 12 || below >= above;
+    const maxHeight = Math.max(80, (downward ? below : above) - 12);
+    setPos(
+      downward
+        ? { left, top: r.bottom + 4, maxHeight }
+        : { left, bottom: window.innerHeight - r.top + 4, maxHeight },
+    );
   }, [items.length, width]);
 
   const close = useCallback((refocus: boolean) => {
@@ -166,10 +175,11 @@ export function Menu({
               left: pos?.left ?? -9999,
               top: pos?.top,
               bottom: pos?.bottom,
+              maxHeight: pos?.maxHeight,
               width: Math.min(width, typeof window === "undefined" ? width : window.innerWidth - 16),
               visibility: pos ? undefined : "hidden",
             }}
-            className="z-50 rounded-lg bg-surface p-1 shadow-xl ring-1 ring-border/70 focus:outline-none"
+            className="z-50 overflow-y-auto overscroll-contain rounded-lg bg-surface p-1 shadow-xl ring-1 ring-border/70 focus:outline-none"
           >
             {items.map((item, i) => {
               const Icon = item.icon;
