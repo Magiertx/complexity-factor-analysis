@@ -588,12 +588,18 @@
       "all_miners": "Analyse all miners together",
       "choose_measures": "Choose measures",
       "observation": {
-        "log": "Here an observation is one log, and there are {n}.",
-        "log_miner": "Here an observation is one log mined with one miner, and there are {n}.",
-        "net": "Here an observation is one Petri net, and there are {n}.",
-        "row": "Here an observation is one row of the table, and there are {n}."
+        "log": "Here an observation is one log, and there is {n}.",
+        "log_plural": "Here an observation is one log, and there are {n}.",
+        "log_miner": "Here an observation is one log mined with one miner, and there is {n}.",
+        "log_miner_plural": "Here an observation is one log mined with one miner, and there are {n}.",
+        "net": "Here an observation is one Petri net, and there is {n}.",
+        "net_plural": "Here an observation is one Petri net, and there are {n}.",
+        "row": "Here an observation is one row of the table, and there is {n}.",
+        "row_plural": "Here an observation is one row of the table, and there are {n}."
       },
-      "too_few_observations_way": "A factor analysis needs more observations than measures: with {n} at most {max}, and about 5 per measure make sense. Keep only a few measures, or choose other data with more observations."
+      "too_few_observations_way": "A factor analysis needs more observations than measures: with {n} at most {max}, and about 5 per measure make sense. Keep only a few measures, or choose other data with more observations.",
+      "too_few_observations_any": "With {n} observation no factor analysis runs; it needs at least {needed}. Choose other data with more observations.",
+      "too_few_observations_any_plural": "With {n} observations no factor analysis runs; it needs at least {needed}. Choose other data with more observations."
     },
     "data": {
       "source": {
@@ -721,6 +727,14 @@
         "logs": "{rows} logs and {cols} measures: a factor analysis needs more logs than measures, so with {rows} logs at most {max} measures, and about 5 logs per measure make sense. Choose fewer measures or upload more logs (up to {limit}).",
         "log_miners": "{logs} logs × {miners} miners = {rows} observations and {cols} measures: a factor analysis needs more observations than measures, so at most {max} measures, and about 5 observations per measure make sense. Choose fewer measures or more miners, or upload more logs (up to {limit}).",
         "nets": "{rows} nets and {cols} measures: a factor analysis needs more nets than measures, so with {rows} nets at most {max} measures, and about 5 nets per measure make sense. Choose fewer measures or upload more nets (up to {limit})."
+      },
+      "estimate_too_few_any": {
+        "logs": "With {n} log no factor analysis runs; it needs at least {needed} logs. Upload more logs (up to {limit}).",
+        "logs_plural": "With {n} logs no factor analysis runs; it needs at least {needed} logs. Upload more logs (up to {limit}).",
+        "log_miners": "{logs} logs × {miners} miners give {n} observation; a factor analysis needs at least {needed}. Add more miners or upload more logs (up to {limit}).",
+        "log_miners_plural": "{logs} logs × {miners} miners give {n} observations; a factor analysis needs at least {needed}. Add more miners or upload more logs (up to {limit}).",
+        "nets": "With {n} net no factor analysis runs; it needs at least {needed} nets. Upload more nets (up to {limit}).",
+        "nets_plural": "With {n} nets no factor analysis runs; it needs at least {needed} nets. Upload more nets (up to {limit})."
       }
     },
     "inputs": {

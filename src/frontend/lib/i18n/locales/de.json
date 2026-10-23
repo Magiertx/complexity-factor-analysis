@@ -588,12 +588,18 @@
       "all_miners": "Alle Miner gemeinsam analysieren",
       "choose_measures": "Maße auswählen",
       "observation": {
-        "log": "Eine Beobachtung ist hier ein Log, und es sind {n}.",
-        "log_miner": "Eine Beobachtung ist hier ein Log mit einem Miner, und es sind {n}.",
-        "net": "Eine Beobachtung ist hier ein Petri-Netz, und es sind {n}.",
-        "row": "Eine Beobachtung ist hier eine Zeile der Tabelle, und es sind {n}."
+        "log": "Eine Beobachtung ist hier ein Log, und es gibt {n}.",
+        "log_plural": "Eine Beobachtung ist hier ein Log, und es gibt {n}.",
+        "log_miner": "Eine Beobachtung ist hier ein Log mit einem Miner, und es gibt {n}.",
+        "log_miner_plural": "Eine Beobachtung ist hier ein Log mit einem Miner, und es gibt {n}.",
+        "net": "Eine Beobachtung ist hier ein Petri-Netz, und es gibt {n}.",
+        "net_plural": "Eine Beobachtung ist hier ein Petri-Netz, und es gibt {n}.",
+        "row": "Eine Beobachtung ist hier eine Zeile der Tabelle, und es gibt {n}.",
+        "row_plural": "Eine Beobachtung ist hier eine Zeile der Tabelle, und es gibt {n}."
       },
-      "too_few_observations_way": "Eine Faktorenanalyse braucht mehr Beobachtungen als Maße: mit {n} höchstens {max} Maße, und sinnvoll sind etwa 5 je Maß. Behalte nur wenige Maße, oder wähle andere Daten mit mehr Beobachtungen."
+      "too_few_observations_way": "Eine Faktorenanalyse braucht mehr Beobachtungen als Maße: mit {n} höchstens {max} Maße, und sinnvoll sind etwa 5 je Maß. Behalte nur wenige Maße, oder wähle andere Daten mit mehr Beobachtungen.",
+      "too_few_observations_any": "Mit {n} Beobachtung läuft keine Faktorenanalyse; sie braucht mindestens {needed}. Wähle andere Daten mit mehr Beobachtungen.",
+      "too_few_observations_any_plural": "Mit {n} Beobachtungen läuft keine Faktorenanalyse; sie braucht mindestens {needed}. Wähle andere Daten mit mehr Beobachtungen."
     },
     "data": {
       "source": {
@@ -721,6 +727,14 @@
         "logs": "{rows} Logs und {cols} Maße: Eine Faktorenanalyse braucht mehr Logs als Maße, mit {rows} Logs also höchstens {max} Maße, und sinnvoll sind etwa 5 Logs je Maß. Wähle weniger Maße oder lade mehr Logs hoch (bis zu {limit}).",
         "log_miners": "{logs} Logs × {miners} Miner = {rows} Beobachtungen und {cols} Maße: Eine Faktorenanalyse braucht mehr Beobachtungen als Maße, also höchstens {max} Maße, und sinnvoll sind etwa 5 Beobachtungen je Maß. Wähle weniger Maße oder mehr Miner, oder lade mehr Logs hoch (bis zu {limit}).",
         "nets": "{rows} Netze und {cols} Maße: Eine Faktorenanalyse braucht mehr Netze als Maße, mit {rows} Netzen also höchstens {max} Maße, und sinnvoll sind etwa 5 Netze je Maß. Wähle weniger Maße oder lade mehr Netze hoch (bis zu {limit})."
+      },
+      "estimate_too_few_any": {
+        "logs": "Mit {n} Log läuft keine Faktorenanalyse; sie braucht mindestens {needed} Logs. Lade mehr Logs hoch (bis zu {limit}).",
+        "logs_plural": "Mit {n} Logs läuft keine Faktorenanalyse; sie braucht mindestens {needed} Logs. Lade mehr Logs hoch (bis zu {limit}).",
+        "log_miners": "{logs} Logs × {miners} Miner ergeben {n} Beobachtung; eine Faktorenanalyse braucht mindestens {needed}. Nimm mehr Miner dazu oder lade mehr Logs hoch (bis zu {limit}).",
+        "log_miners_plural": "{logs} Logs × {miners} Miner ergeben {n} Beobachtungen; eine Faktorenanalyse braucht mindestens {needed}. Nimm mehr Miner dazu oder lade mehr Logs hoch (bis zu {limit}).",
+        "nets": "Mit {n} Netz läuft keine Faktorenanalyse; sie braucht mindestens {needed} Netze. Lade mehr Netze hoch (bis zu {limit}).",
+        "nets_plural": "Mit {n} Netzen läuft keine Faktorenanalyse; sie braucht mindestens {needed} Netze. Lade mehr Netze hoch (bis zu {limit})."
       }
     },
     "inputs": {

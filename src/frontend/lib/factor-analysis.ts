@@ -394,6 +394,17 @@ export const STORAGE_PREFIXES = ["app.factor-dataset-", "app.factor-options-", "
 /** Fewest measures the backend accepts for an analysis. */
 export const MIN_MEASURES = 3;
 
+/** The fewest observations a factor analysis runs with: one more than the fewest measures. */
+export const MIN_OBSERVATIONS = MIN_MEASURES + 1;
+
+/**
+ * Which text says that there are too few observations: "any" where no choice of measures helps,
+ * since even the fewest measures need more observations, else "some", where fewer measures do.
+ */
+export function tooFewKind(rows: number): "any" | "some" {
+  return rows < MIN_OBSERVATIONS ? "any" : "some";
+}
+
 /** Rows of a dataset the browser loads and shows as a preview. */
 export const PREVIEW_ROWS = 8;
 
