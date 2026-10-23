@@ -5,6 +5,7 @@ import { Copy, Check, ExternalLink, Code2, FileJson, Terminal } from "lucide-rea
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
+import { useBackToAnalysis } from "./back-link";
 import { PageHeader } from "./page-header";
 import { DEFAULT_UPLOAD_LIMITS, fetchUploadLimits, type UploadLimits } from "@/lib/api";
 
@@ -261,6 +262,7 @@ function WithCode({ text }: { text: string }) {
 
 export function ApiAccessView() {
   const t = useT();
+  const back = useBackToAnalysis();
   // The numbers of files are set by the operator of the server; the defaults stand in until
   // it has answered, or if it does not.
   const [limits, setLimits] = useState<UploadLimits>(DEFAULT_UPLOAD_LIMITS);
@@ -281,8 +283,8 @@ export function ApiAccessView() {
   };
   return (
     // Code and endpoint rows read badly across the whole width.
-    <div className="space-y-6 max-w-5xl">
-      <PageHeader title={t("api_access.heading")} subtitle={t("api_access.subtitle")} />
+    <div className="space-y-6 max-w-5xl mx-auto">
+      <PageHeader title={t("api_access.heading")} subtitle={t("api_access.subtitle")} back={back} />
 
       <Card>
         <CardHeader>

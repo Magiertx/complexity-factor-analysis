@@ -26,7 +26,7 @@ export function ThemeToggle() {
       aria-label={t("header.dark_mode")}
       aria-pressed={mounted ? isDark : undefined}
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="h-9 w-9 grid place-items-center rounded-md bg-tile hover:bg-accent/[0.08] transition text-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      className="h-9 w-9 grid place-items-center rounded-md hover:bg-tile transition text-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
     >
       {/* Both icons are rendered and the class of <html> picks one, so the first paint already
           shows the right one. */}

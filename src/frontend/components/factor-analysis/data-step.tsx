@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertCircle,
+  AlertTriangle,
   BookOpen,
   Check,
   Columns3,
@@ -35,7 +36,14 @@ import {
   type SampleInput,
 } from "@/lib/api";
 import { COMPARE_HREF, MAX_COLUMNS, MIN_COLUMNS, compareHref, ownColumnKey } from "@/lib/compare";
-import { MIN_MEASURES, countText, datasetName, progressPercent, publishedOptions } from "@/lib/factor-analysis";
+import {
+  MIN_MEASURES,
+  OBSERVATIONS_PER_MEASURE,
+  countText,
+  datasetName,
+  progressPercent,
+  publishedOptions,
+} from "@/lib/factor-analysis";
 import { formatDateTime, formatFileSize, formatNumber, formatPercent, formatRelative } from "@/lib/format";
 import { datasetNote, orderCollection, settingsSourceText } from "@/lib/paper-notes";
 import { cn } from "@/lib/utils";
@@ -47,6 +55,7 @@ import { mergeRefs, useTip, useTipZone } from "@/components/ui/tip";
 import { Input } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
 import { UploadZone } from "@/components/upload-zone";
+import { FeatureChecklist } from "./feature-checklist";
 
 const SOURCE_ICON: Record<DatasetSource, React.ComponentType<{ className?: string }>> = {
   bundled: Database,
@@ -80,9 +89,6 @@ interface Props {
   onDelete: (id: string) => Promise<boolean>;
   /** Shown when a dataset already exists, to return to it without building a new one. */
   onCancel?: () => void;
-  /** Set by the toolbar: show My datasets with the focus on its list; `onRequestHandled` says it did. */
-  showMine?: number;
-  onRequestHandled?: () => void;
 }
 
 export function DataForm({
@@ -96,8 +102,6 @@ export function DataForm({
   onOpen,
   onDelete,
   onCancel,
-  showMine,
-  onRequestHandled,
 }: Props) {
   const t = useT();
   const sources = catalog.sources.filter((s) => kind === "model" || s !== "pnml");
@@ -111,23 +115,12 @@ export function DataForm({
   const [pnmlFiles, setPnmlFiles] = useState<File[]>([]);
   const [measures, setMeasures] = useState<string[]>(catalog.defaults.measures);
   const [miners, setMiners] = useState<string[]>(catalog.defaults.miners ?? []);
-  const [groups, setGroups] = useState<string[]>(catalog.defaults.groups ?? []);
   const [name, setName] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   // Kept across the bundled datasets, so several open alike.
   const [preset, setPreset] = useState<OpenPreset>("standard");
   // Chosen sample per source; a sample replaces the uploaded files.
   const [sampleIds, setSampleIds] = useState<Partial<Record<DatasetSource, string>>>({});
-
-  const [focusMine, setFocusMine] = useState(false);
-  useEffect(() => {
-    if (!showMine) return;
-    if (datasets.length > 0) {
-      setMineChosen(true);
-      setFocusMine(true);
-    }
-    onRequestHandled?.();
-  }, [showMine, datasets.length, onRequestHandled]);
 
   const files = source === "logs" ? logFiles : pnmlFiles;
   const setFiles = source === "logs" ? setLogFiles : setPnmlFiles;
@@ -175,28 +168,47 @@ export function DataForm({
       }
       setFiles([...files, ...fitting]);
     }
-    setNotice(messages.length > 0 ? messages.join(" ") : null);
+    // A few lines at most: the same message once, and of many the first three with a count.
+    const distinct = [...new Set(messages)];
+    setNotice(
+      distinct.length > 0
+        ? [...distinct.slice(0, 3), ...(distinct.length > 3 ? [t("toasts.more", { n: distinct.length - 3 })] : [])].join(" ")
+        : null,
+    );
   };
 
-  // Measures computed for the chosen groups; only used for the size estimate on the log tab.
-  const groupMeasureCount = useMemo(
-    () => catalog.measures.filter((m) => m.group && groups.includes(m.group)).length,
-    [catalog.measures, groups],
+  // On the log tab the measures are chosen within their feature groups; a group with one measure
+  // chosen is computed, and only the chosen measures are kept.
+  const groupOf = useMemo(() => new Map(catalog.measures.map((m) => [m.key, m.group ?? null])), [catalog.measures]);
+  const groups = useMemo(
+    () => (catalog.groups ?? []).map((g) => g.key).filter((g) => measures.some((m) => groupOf.get(m) === g)),
+    [catalog.groups, measures, groupOf],
+  );
+  const wholeGroups = useMemo(
+    () => catalog.measures.filter((m) => m.group && groups.includes(m.group)).length === measures.length,
+    [catalog.measures, groups, measures.length],
   );
 
-  const estimate = useMemo(() => {
-    if (source === "logs" && kind === "model") return { rows: nInputs * miners.length, cols: measures.length };
-    if (source === "logs") return { rows: nInputs, cols: groupMeasureCount };
-    if (source === "pnml") return { rows: nInputs, cols: measures.length };
+  // How many rows the inputs give and how many measures; an observation is a log, a log with one
+  // miner, or a net.
+  const estimate = useMemo((): EstimateProps | null => {
+    if (source === "logs" && kind === "model")
+      return { unit: "log_miners", rows: nInputs * miners.length, cols: measures.length, logs: nInputs, miners: miners.length, limit: maxFiles };
+    if (source === "logs") return { unit: "logs", rows: nInputs, cols: measures.length, limit: maxFiles };
+    if (source === "pnml") return { unit: "nets", rows: nInputs, cols: measures.length, limit: maxFiles };
     return null;
-  }, [source, kind, nInputs, miners.length, measures.length, groupMeasureCount]);
+  }, [source, kind, nInputs, miners.length, measures.length, maxFiles]);
+  // Computed anyway, but too few rows for the measures: the analysis will not run.
+  const tooFew = !!estimate && estimate.rows > 0 && estimate.cols > 0 && estimate.rows <= estimate.cols;
 
   const blocker: string | null = (() => {
     if (source === "bundled") return bundledId ? null : t("factor.data.need_bundled");
     if (source === "csv") return csvFile ? null : t("factor.data.need_csv");
     if (nInputs === 0) return t("factor.data.need_files");
     if (source === "logs" && kind === "model" && miners.length === 0) return t("factor.data.need_miner");
-    if (source === "logs" && kind === "log") return groups.length === 0 ? t("factor.data.need_group") : null;
+    if (source === "logs" && kind === "log") {
+      return measures.length < MIN_MEASURES ? t("factor.data.need_measures", { n: MIN_MEASURES }) : null;
+    }
     if (measures.length < MIN_MEASURES) return t("factor.data.need_measures", { n: MIN_MEASURES });
     return null;
   })();
@@ -217,6 +229,8 @@ export function DataForm({
         input.measures = measures;
       } else {
         input.groups = groups;
+        // Single measures only where they are not whole groups.
+        if (!wholeGroups) input.measures = measures;
       }
     }
     if (source === "pnml") {
@@ -299,8 +313,6 @@ export function DataForm({
           onOpen={onOpen}
           onDelete={onDelete}
           onCancel={onCancel}
-          focus={focusMine}
-          onFocused={() => setFocusMine(false)}
         />
       </div>
     );
@@ -387,22 +399,16 @@ export function DataForm({
       )}
 
       {source === "logs" && kind === "log" && catalog.groups && (
-        <Checklist
+        <FeatureChecklist
           heading={t("factor.data.groups_heading")}
           hint={t("factor.data.groups_hint")}
-          items={catalog.groups.map((g) => ({
-            key: g.key,
-            name: g.name,
-            description: g.description,
-            slow: g.slow,
-            detail: t("factor.data.group_measures", {
-              n: catalog.measures.filter((m) => m.group === g.key).length,
-            }),
-          }))}
-          selected={groups}
-          onChange={setGroups}
-          defaults={catalog.defaults.groups ?? []}
-          wide
+          groups={catalog.groups}
+          measures={catalog.measures
+            .filter((m) => m.group)
+            .map((m) => ({ key: m.key, name: m.name, description: m.description, group: m.group as string }))}
+          selected={measures}
+          onChange={setMeasures}
+          defaults={catalog.defaults.measures}
         />
       )}
 
@@ -437,7 +443,7 @@ export function DataForm({
         </div>
       )}
 
-      {estimate && estimate.rows > 0 && estimate.cols > 0 && <Estimate rows={estimate.rows} cols={estimate.cols} />}
+      {estimate && estimate.rows > 0 && estimate.cols > 0 && <Estimate {...estimate} />}
 
       {submitError && (
         <div role="alert" className="rounded-lg bg-danger/10 px-3.5 py-2.5 flex items-start gap-2.5 text-sm">
@@ -447,7 +453,16 @@ export function DataForm({
       )}
 
       <div className="flex items-center justify-end gap-3 flex-wrap pt-1">
-        {blocker && <span className="text-xs text-muted mr-auto">{blocker}</span>}
+        {blocker ? (
+          <span className="text-xs text-muted mr-auto">{blocker}</span>
+        ) : (
+          tooFew && (
+            <span className="text-xs text-warn-ink mr-auto flex items-start gap-1.5 max-w-prose">
+              <AlertTriangle className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
+              {t("factor.data.estimate_wont_run")}
+            </span>
+          )
+        )}
         {onCancel && (
           <Button variant="ghost" onClick={onCancel} disabled={submitting}>
             {t("common.cancel")}
@@ -718,8 +733,6 @@ function DatasetPicker({
   onOpen,
   onDelete,
   onCancel,
-  focus,
-  onFocused,
 }: {
   kind: FactorKind;
   catalog: FactorCatalog;
@@ -728,9 +741,6 @@ function DatasetPicker({
   onOpen: (id: string) => void;
   onDelete: (id: string) => Promise<boolean>;
   onCancel?: () => void;
-  /** Give the chosen tile the focus, e.g. when the toolbar asked for My datasets. */
-  focus?: boolean;
-  onFocused?: () => void;
 }) {
   const t = useT();
   // The newest dataset that is not open already; opening the open one only closes the form.
@@ -753,14 +763,6 @@ function DatasetPicker({
     refocus.current = true;
     if (!(await onDelete(id))) refocus.current = false;
   };
-
-  useEffect(() => {
-    if (!focus) return;
-    const input = listRef.current?.querySelector<HTMLInputElement>("input:checked");
-    input?.focus({ preventScroll: true });
-    listRef.current?.scrollIntoView({ block: "nearest" });
-    onFocused?.();
-  }, [focus, onFocused]);
 
   // Several datasets side by side: the tiles turn into checkboxes, and the comparison opens with
   // one column each, of all their rows, with the settings saved with them.
@@ -1234,26 +1236,44 @@ function SlowMark() {
   );
 }
 
-function Estimate({ rows, cols }: { rows: number; cols: number }) {
+interface EstimateProps {
+  /** What one row is: a log, a log with one miner, or a net. */
+  unit: "logs" | "log_miners" | "nets";
+  rows: number;
+  cols: number;
+  /** For logs with miners: how many of each. */
+  logs?: number;
+  miners?: number;
+  /** The most files of the source. */
+  limit: number;
+}
+
+/**
+ * How many observations and measures the inputs give, and what that means: in plain words with
+ * the numbers and the way out where there are too few observations for the measures, which a
+ * factor analysis cannot work with. Computing stays possible, so the values can be looked at.
+ */
+function Estimate({ unit, rows, cols, logs, miners, limit }: EstimateProps) {
   const t = useT();
   const tooFew = rows <= cols;
-  const thin = !tooFew && rows < 5 * cols;
+  const thin = !tooFew && rows < OBSERVATIONS_PER_MEASURE * cols;
   return (
     <div
-      className={cn(
-        "rounded-lg px-3.5 py-2.5 text-xs flex items-start gap-2.5",
-        tooFew ? "bg-danger/10" : thin ? "bg-warn/10" : "bg-tile",
-      )}
+      role="status"
+      className={cn("rounded-lg px-3.5 py-2.5 text-xs flex items-start gap-2.5", tooFew || thin ? "bg-warn/10" : "bg-tile")}
     >
       {tooFew || thin ? (
-        <AlertCircle className={cn("h-4 w-4 shrink-0", tooFew ? "text-danger-ink" : "text-warn-ink")} />
+        <AlertTriangle className="h-4 w-4 shrink-0 text-warn-ink" aria-hidden />
       ) : (
-        <Check className="h-4 w-4 shrink-0 text-success-ink" />
+        <Check className="h-4 w-4 shrink-0 text-success-ink" aria-hidden />
       )}
-      <div className="space-y-0.5">
-        <div>{t("factor.data.estimate", { rows, cols })}</div>
-        {tooFew && <div className="text-muted">{t("factor.data.estimate_too_few", { min: cols + 1 })}</div>}
-        {thin && <div className="text-muted">{t("factor.data.estimate_thin", { target: 5 * cols })}</div>}
+      <div className="space-y-0.5 max-w-prose">
+        {tooFew ? (
+          <div>{t(`factor.data.estimate_too_few.${unit}`, { rows, cols, max: Math.max(0, rows - 1), logs: logs ?? 0, miners: miners ?? 0, limit })}</div>
+        ) : (
+          <div>{t("factor.data.estimate", { rows, cols })}</div>
+        )}
+        {thin && <div className="text-muted">{t("factor.data.estimate_thin", { target: OBSERVATIONS_PER_MEASURE * cols })}</div>}
       </div>
     </div>
   );
@@ -1404,6 +1424,11 @@ function InputChips({ dataset, catalog }: { dataset: FactorDataset; catalog: Fac
       text: countText(t, "factor.inputs.groups", inputs.groups.length),
       more: names(inputs.groups, catalog.groups),
     });
+    // Single measures of the groups rather than whole groups.
+    const whole = catalog.measures.filter((m) => m.group && inputs.groups?.includes(m.group)).length;
+    if (inputs.measures?.length && inputs.measures.length < whole) {
+      parts.push({ key: "chosen", text: t("factor.inputs.measures_of", { n: inputs.measures.length, total: whole }) });
+    }
   }
   if (dataset.status === "ready") {
     // After the cleaning, so it can be smaller than the size of a bundled dataset in the list.

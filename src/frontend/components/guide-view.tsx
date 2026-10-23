@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { APP_NAME } from "@/lib/app-config";
 import { COMPARE_HREF } from "@/lib/compare";
 import { useT } from "@/lib/i18n";
+import { useBackToAnalysis } from "@/components/back-link";
 import { PageHeader } from "@/components/page-header";
 
 interface GuideSection {
@@ -23,7 +24,7 @@ interface GuideSection {
 const SECTIONS: GuideSection[] = [
   {
     id: "steps",
-    before: 2,
+    before: 3,
     links: [
       { href: "/", key: "model" },
       { href: "/log", key: "log" },
@@ -41,8 +42,11 @@ const SECTIONS: GuideSection[] = [
     id: "own",
     before: 1,
     items: ["logs", "nets", "csv"],
-    after: 3,
-    links: [{ href: "/", key: "data" }],
+    after: 4,
+    links: [
+      { href: "/", key: "data" },
+      { href: "/runs", key: "history" },
+    ],
   },
   {
     id: "results",
@@ -73,10 +77,11 @@ const SECTIONS: GuideSection[] = [
 
 /**
  * The user guide in the language of the UI: the tasks of the tool in a few sections, each with a
- * way to the place in the tool it describes. Reached by the help icon of the toolbar.
+ * way to the place in the tool it describes. Reached by Guide in the header.
  */
 export function GuideView() {
   const t = useT();
+  const back = useBackToAnalysis();
   const paragraphs = (id: string, from: number, n: number) =>
     Array.from({ length: n }, (_, i) => (
       <p key={`${id}-p${from + i}`} className="text-sm leading-relaxed text-fg/90">
@@ -84,8 +89,8 @@ export function GuideView() {
       </p>
     ));
   return (
-    <div className="space-y-8 max-w-3xl">
-      <PageHeader title={t("guide.title")} subtitle={t("guide.subtitle", { app: APP_NAME })} />
+    <div className="space-y-8 max-w-3xl mx-auto">
+      <PageHeader title={t("guide.title")} subtitle={t("guide.subtitle", { app: APP_NAME })} back={back} />
 
       <nav aria-label={t("guide.toc")} className="rounded-lg bg-tile/60 px-4 py-3">
         <h2 className="text-xs font-semibold text-muted mb-1.5">{t("guide.toc")}</h2>

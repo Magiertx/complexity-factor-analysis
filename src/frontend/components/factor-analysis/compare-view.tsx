@@ -286,7 +286,6 @@ export function CompareView() {
       <PageHeader
         title={t("compare.title")}
         subtitle={t("compare.subtitle")}
-        back={kind === "log" ? { href: "/log", label: t("mode_bar.log_label") } : { href: "/", label: t("mode_bar.model_label") }}
         actions={
           <CompareToolbar
             linkQuery={stateKey}

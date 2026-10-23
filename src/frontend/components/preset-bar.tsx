@@ -119,7 +119,7 @@ export function PresetBar({ algorithmId, currentParams, onLoad, defaults, disabl
                     className={cn(
                       "flex-1 text-left px-2 py-1.5 rounded text-xs transition flex items-center gap-2",
                       activeName === p.name
-                        ? "bg-accent/[0.32] text-fg"
+                        ? "bg-tile font-medium text-fg"
                         : "hover:bg-tile text-fg",
                     )}
                     title={t("preset_bar.load_preset_item_title", { name: p.name })}

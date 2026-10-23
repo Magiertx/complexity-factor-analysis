@@ -61,18 +61,16 @@
     html { scroll-padding-top: var(--settings-row-offset, 0px); }
   }
   /* On a phone the factor analysis has Back and Next fixed at the bottom of the window; the page
-     keeps room for them at its end, and a toast stands above them (the notice of a finished dataset above the undo one). */
+     keeps room for them at its end, and the notices stand above them. */
   @media (max-width: 1023.98px) {
     body.has-step-bar { padding-bottom: calc(3.5rem + env(safe-area-inset-bottom)); }
-    body.has-step-bar .undo-toast { bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
-    body.has-step-bar .job-toast { bottom: calc(8rem + env(safe-area-inset-bottom)); }
+    body.has-step-bar .toast-region { bottom: calc(4.5rem + env(safe-area-inset-bottom)); }
   }
   /* A landscape phone has no height to spare: Back and Next sit at the end of the step instead of
      covering a third of the window (step-nav.tsx makes the bar static), so nothing is kept free. */
   @media (max-width: 1023.98px) and (max-height: 500px) {
     body.has-step-bar { padding-bottom: 0; }
-    body.has-step-bar .undo-toast { bottom: 1rem; }
-    body.has-step-bar .job-toast { bottom: 5rem; }
+    body.has-step-bar .toast-region { bottom: 1rem; }
   }
   ::selection { background: rgb(var(--accent) / 0.3); }
   /* Safari ehrt Tailwind-Preflights `-webkit-appearance: button` und applied

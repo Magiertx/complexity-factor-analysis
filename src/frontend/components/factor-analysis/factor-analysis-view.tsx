@@ -52,7 +52,7 @@ import {
   rowsChoice,
   sameOptions,
   solutionKey,
-  solutionNeedsAttention,
+  solutionProblems,
   MIN_MEASURES,
   suggestedNames,
   trimNames,
@@ -85,7 +85,7 @@ import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { MeasureScope, type MeasureOpener } from "@/components/ui/table";
 import { UndoToast, type UndoNotice } from "@/components/ui/undo-toast";
-import { useJobsDrawer } from "@/components/jobs-drawer";
+import { useJobs } from "@/components/jobs-provider";
 import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
 import { PageHeader } from "@/components/page-header";
 import { DataForm, DataSummary, type OpenPreset } from "./data-step";
@@ -164,6 +164,7 @@ function useErrorText() {
  */
 export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const t = useT();
+  const tMaybe = useTMaybe();
   const { locale } = useLocale();
   const errorText = useErrorText();
   // Effects read texts through refs, so a language switch does not refetch anything.
@@ -194,8 +195,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const [choosing, setChoosing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  // Changes whenever jobs come or go, e.g. one deleted in the jobs drawer next to this view.
-  const { count: jobCount } = useJobsDrawer();
+  // Changes whenever jobs come or go, e.g. one deleted in the History.
+  const jobCount = useJobs().jobs.length;
 
   const [options, setOptions] = useState<AnalysisOptions>(() => defaultOptions(kind));
   const standard = useMemo(() => defaultOptions(kind), [kind]);
@@ -225,6 +226,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // The last successful result stays visible while a new one is computed or after an error.
   const [analysis, setAnalysis] = useState<FactorAnalysis | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  // Why it failed, where the server says so, for the ways out the error offers.
+  const [analysisFailure, setAnalysisFailure] = useState<{ code: string; params: Record<string, string | number> } | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [exporting, setExporting] = useState<ExportFormat | null>(null);
   const [figureBusy, setFigureBusy] = useState<FigureName | null>(null);
@@ -545,6 +548,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           return;
         }
         setAnalysisError(errorTextRef.current(e, tRef.current("factor.analysis.failed")));
+        setAnalysisFailure(e instanceof HttpError && e.code ? { code: e.code, params: e.params ?? {} } : null);
       } finally {
         if (!ctrl.signal.aborted) setAnalyzing(false);
       }
@@ -619,11 +623,16 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const lookupInterpretation =
     !!interpStatus && (interpStatus.available || (interpStatus.precomputed_only && dataset?.source === "bundled"));
   const analyzedFactors = analysis?.n_factors ?? null;
+  // The settings whose stored interpretation is being looked up; the step waits for the answer
+  // before it says that there is none.
+  const [lookingUp, setLookingUp] = useState<string | null>(null);
   useEffect(() => {
     if (!ready || !datasetId || !analyzedOptions || analyzedFactors === null || !lookupInterpretation) return;
     const key = interpretationKey(datasetId, analyzedOptions, locale);
     if (interpretationRef.current?.key === key) return;
     const ctrl = new AbortController();
+    const done = () => setLookingUp((k) => (k === key ? null : k));
+    setLookingUp(key);
     const lookup = { ...analyzedOptions, n_factors: analyzedFactors };
     interpretDataset(datasetId, lookup, locale, { cachedOnly: true, signal: ctrl.signal })
       .then((res) => {
@@ -631,8 +640,12 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       })
       .catch(() => {
         // Nothing to show; asking for an interpretation reports errors.
-      });
-    return () => ctrl.abort();
+      })
+      .finally(done);
+    return () => {
+      ctrl.abort();
+      done();
+    };
   }, [ready, datasetId, analyzedOptions, analyzedFactors, locale, lookupInterpretation]);
 
   // Only the analysis on screen can be interpreted or downloaded as a whole: during the
@@ -984,9 +997,31 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       : null;
 
   const suitable = analysis ? analysis.bartlett.passed && analysis.kmo.passed : false;
+  // Why suitability or the solution needs a look, said in the list of steps beside the warning.
+  const suitabilityIssues = analysis
+    ? [
+        analysis.bartlett.passed ? null : t("factor.rail_summary.bartlett_failed"),
+        analysis.kmo.passed
+          ? null
+          : t("factor.rail_summary.kmo_low", { value: formatNumber((analyzedOptions ?? options).msa_threshold, locale) }),
+      ].filter((x): x is string => !!x)
+    : [];
+  const solutionIssues = analysis
+    ? [...new Set(solutionProblems(analysis).map((n) => tMaybe(`factor.rail_summary.problem.${n.code}`) ?? t("factor.state.warn")))]
+    : [];
   const interpretationStale =
     !!interpretation && (!datasetId || interpretation.key !== interpretationKey(datasetId, options, locale));
   const pendingAnalysis = ready && !analysis && !analysisError;
+  const interpretationPending =
+    !!datasetId && !!analyzedOptions && lookingUp === interpretationKey(datasetId, analyzedOptions, locale);
+  const interpretationUnavailable =
+    ready && analysis && interpStatus && !interpStatus.available && !interpretation && !interpretationPending
+      ? t(
+          interpStatus.precomputed_only && dataset?.source === "bundled"
+            ? "factor.interpretation.unavailable_settings"
+            : "factor.interpretation.unavailable_key",
+        )
+      : null;
   const resultState: StepState = !ready
     ? "locked"
     : analysis
@@ -1004,12 +1039,13 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           : "done",
     dataset: ready ? "done" : dataset?.status === "computing" ? "busy" : "locked",
     suitability: resultState === "done" ? (suitable ? "done" : "warn") : resultState,
-    factors: resultState === "done" && analysis && solutionNeedsAttention(analysis) ? "warn" : resultState,
+    // Only a real problem of the solution warns; a factor count of one's own or of a paper is a choice.
+    factors: resultState === "done" && solutionIssues.length > 0 ? "warn" : resultState,
     loadings: resultState,
     interpretation:
       resultState !== "done"
         ? "locked"
-        : interpreting
+        : interpreting || interpretationPending
           ? "busy"
           : interpretation
             ? interpretationStale
@@ -1019,11 +1055,14 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               ? "active"
               : "locked",
   };
-  // Locked for want of a key, not because an earlier step is missing.
-  const stateLabels: Partial<Record<StepId, string>> =
-    resultState === "done" && interpStatus && !interpStatus.available && !interpretation
-      ? { interpretation: t("factor.interpretation.state_needs_key") }
-      : {};
+  // Not to be had here at all, rather than not yet: the interpretation without a key on the server
+  // and without one stored for these settings. The list of steps says why, and Next stops before it.
+  const unavailable: Partial<Record<StepId, string>> = interpretationUnavailable
+    ? { interpretation: interpretationUnavailable }
+    : {};
+  const stateLabels: Partial<Record<StepId, string>> = interpretationUnavailable
+    ? { interpretation: t("factor.state.unavailable") }
+    : {};
 
   // One line per finished step for the step rail; settings are in the settings row instead.
   const summaries: Partial<Record<StepId, string>> = {};
@@ -1051,15 +1090,20 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       analysis.msa_filter.removed.length > 0
         ? countText(t, "factor.rail_summary.removed", analysis.msa_filter.removed.length)
         : null,
+      ...suitabilityIssues,
     ]
       .filter(Boolean)
       .join(" · ");
   }
   if (analysis && finished("factors")) {
-    summaries.factors = countText(t, "factor.rail_summary.factors", analysis.n_factors, {
-      pct: formatPercent(analysis.variance.explained, locale),
-    });
+    summaries.factors = [
+      countText(t, "factor.rail_summary.factors", analysis.n_factors, {
+        pct: formatPercent(analysis.variance.explained, locale),
+      }),
+      ...solutionIssues,
+    ].join(" · ");
   }
+  if (interpretationUnavailable) summaries.interpretation = interpretationUnavailable;
   if (analysis && finished("loadings")) {
     const cross = analysis.cross_loadings?.length ?? 0;
     const unassigned = unassignedMeasures(analysis).length;
@@ -1090,7 +1134,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     suitability: lockReason,
     factors: lockReason,
     loadings: lockReason,
-    interpretation: lockReason,
+    interpretation: lockReason ?? interpretationUnavailable,
   };
   const current = nav.step;
 
@@ -1154,15 +1198,6 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     else go(step, { focus: { control } });
   };
 
-  // Start here and My datasets of the toolbar: the data step with its form open there.
-  const [formRequest, setFormRequest] = useState<{ kind: "start" | "mine"; n: number } | null>(null);
-  const formRequestHandled = useCallback(() => setFormRequest(null), []);
-  const openForm = (which: "start" | "mine") => {
-    go("data", { focus: null });
-    if (dataset && !formOpen) setChoosing(true);
-    setFormRequest({ kind: which, n: Date.now() });
-  };
-
   // The tour opens the step of each stop, without an entry in the history for each, and puts the
   // reader back on the step it began on once it ends, unless they moved on by themselves (the
   // browser's back, say) while it ran.
@@ -1221,9 +1256,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const stale = cn("transition-opacity", (analyzing || analysisError) && "opacity-60");
 
   const footer = (step: StepId) => (
-    <StepFooter step={step} locks={locks} onGo={go} hideNext={step === "data" && formOpen} />
+    <StepFooter step={step} locks={locks} unavailable={unavailable} onGo={go} hideNext={step === "data" && formOpen} />
   );
-  const navProps = { current, states, locks, stateLabels, onGo: go };
+  const navProps = { current, states, locks, unavailable, stateLabels, onGo: go };
 
   const loadingsReason = !ready ? lockReason : !analysis ? t("factor.toolbar.wait_analysis") : null;
   // The ZIP, the report and the print view hold what is on screen, so not while the analysis
@@ -1356,16 +1391,13 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       <PageHeader
         title={t(`factor.${kind}.title`)}
         subtitle={t(`factor.${kind}.subtitle`)}
-        // On a phone the page's own sentence is gone once a step is open: the step has room.
-        subtitleClassName={ready && current !== "data" ? "max-lg:hidden" : undefined}
+        // The page's own sentence belongs to the data step; once a step of the analysis is open, the
+        // step has its room, so a laptop shows the first rows of the loadings with the settings row.
+        subtitleClassName={ready && current !== "data" ? "hidden" : undefined}
         actions={
           <FactorToolbar
-            kind={kind}
             linkQuery={linkQuery && current !== "data" ? `${linkQuery}&step=${current}` : linkQuery}
             exports={exports}
-            onStartHere={() => openForm("start")}
-            onMyDatasets={() => openForm("mine")}
-            myDatasetsReason={datasets && datasets.length > 0 ? null : t("factor.toolbar.mine_none")}
             onTour={startTour}
             shortCodes={shortCodes}
           />
@@ -1496,10 +1528,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               </div>
             ) : formOpen ? (
               <div className="space-y-5">
-                <StartHere
-                  request={formRequest?.kind === "start" ? formRequest.n : undefined}
-                  onRequestHandled={formRequestHandled}
-                />
+                <StartHere kind={kind} />
                 <DataForm
                   kind={kind}
                   catalog={catalog}
@@ -1511,19 +1540,22 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                   onOpen={openChosen}
                   onDelete={removeDataset}
                   onCancel={dataset && choosing ? cancelChoice : undefined}
-                  showMine={formRequest?.kind === "mine" ? formRequest.n : undefined}
-                  onRequestHandled={formRequestHandled}
                 />
               </div>
             ) : dataset ? (
-              <DataSummary
-                dataset={dataset}
-                catalog={catalog}
-                titleRef={summaryTitle}
-                onChange={() => setChoosing(true)}
-                onCancelJob={cancelJob}
-                onDelete={() => removeDataset(dataset.id)}
-              />
+              // Start here stays the first block of the step, also with a dataset open; the
+              // datasets of the session are a source of the form behind "Choose other data".
+              <div className="space-y-5">
+                <StartHere kind={kind} />
+                <DataSummary
+                  dataset={dataset}
+                  catalog={catalog}
+                  titleRef={summaryTitle}
+                  onChange={() => setChoosing(true)}
+                  onCancelJob={cancelJob}
+                  onDelete={() => removeDataset(dataset.id)}
+                />
+              </div>
             ) : datasetError ? (
               <Button variant="outline" size="sm" onClick={() => selectDataset(null)}>
                 {t("factor.data.change")}
@@ -1582,9 +1614,16 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                     <AnalysisError
                       kind={kind}
                       message={analysisError}
+                      failure={analysisFailure}
+                      observation={observationUnit(dataset)}
                       stale={!!analysis}
                       options={options}
                       onOptions={updateOptions}
+                      onChooseMeasures={() => focusControl(SETTING_CONTROLS.measures)}
+                      onChooseData={() => {
+                        go("data");
+                        setChoosing(true);
+                      }}
                     />
                   )}
                   <div className={stale}>
@@ -1697,7 +1736,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           )}
         </div>
       </div>
-      <StepNavBar step={current} locks={locks} onGo={go} />
+      <StepNavBar step={current} locks={locks} unavailable={unavailable} onGo={go} />
       {ready && dataset && sheet && (
         <MeasureSheet
           measure={sheet.measure}
@@ -1770,31 +1809,56 @@ function UrlReader({
   return null;
 }
 
+/** What one row of a dataset is, for the error of too few observations. */
+type ObservationUnit = "log" | "log_miner" | "net" | "row";
+
+function observationUnit(dataset: FactorDataset): ObservationUnit {
+  if (dataset.source === "pnml") return "net";
+  if (dataset.source === "logs") return dataset.kind === "model" ? "log_miner" : "log";
+  return "row";
+}
+
+/** Errors of the size of the data, which the measures or other data put right rather than a setting. */
+const SIZE_ERRORS = ["too_few_observations", "too_few_measures", "msa_filter_left"];
+
 function AnalysisError({
   kind,
   message,
+  failure,
+  observation,
   stale,
   options,
   onOptions,
+  onChooseMeasures,
+  onChooseData,
 }: {
   kind: FactorKind;
   message: string;
+  failure: { code: string; params: Record<string, string | number> } | null;
+  observation: ObservationUnit;
   stale: boolean;
   options: AnalysisOptions;
   onOptions: (patch: Partial<AnalysisOptions>) => void;
+  onChooseMeasures: () => void;
+  onChooseData: () => void;
 }) {
   const t = useT();
   const defaultThreshold = defaultOptions(kind).msa_threshold;
+  const code = failure?.code ?? null;
+  const fewRows = code === "too_few_observations";
+  const size = !!code && SIZE_ERRORS.includes(code);
   const fixes = {
     factors: options.n_factors !== null,
-    excluded: options.excluded.length > 0,
+    // More measures would make too few observations worse.
+    excluded: options.excluded.length > 0 && !fewRows,
     filter: !options.auto_msa_filter,
     // A threshold above the default can leave too few measures for the analysis.
     threshold: options.auto_msa_filter && options.msa_threshold > defaultThreshold,
     // The rows of one miner can be too few for the measures.
     miner: options.miner !== null,
   };
-  const anyFix = Object.values(fixes).some(Boolean);
+  const anyFix = Object.values(fixes).some(Boolean) || size;
+  const n = Number(failure?.params.n ?? 0);
   return (
     <div role="alert" className="rounded-lg bg-danger/10 px-3.5 py-3 flex items-start gap-2.5 text-sm">
       <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
@@ -1803,12 +1867,24 @@ function AnalysisError({
           <div className="font-medium">{t("factor.analysis.failed_title")}</div>
           <div className="text-muted mt-0.5 break-words">{message}</div>
         </div>
+        {/* Too few observations: what one is here, how many measures they carry, and the way out. */}
+        {fewRows && (
+          <p className="text-xs max-w-prose">
+            {t(`factor.analysis.observation.${observation}`, { n })}{" "}
+            {t("factor.analysis.too_few_observations_way", { n, max: Math.max(0, n - 1) })}
+          </p>
+        )}
         <p className="text-xs text-muted">
           {stale && `${t("factor.analysis.stale_note")} `}
           {t(anyFix ? "factor.analysis.failed_hint" : "factor.analysis.failed_hint_no_fix")}
         </p>
         {anyFix && (
           <div className="flex gap-2 flex-wrap">
+            {fewRows && (
+              <Button size="sm" variant="outline" onClick={onChooseMeasures}>
+                {t("factor.analysis.choose_measures")}
+              </Button>
+            )}
             {fixes.factors && (
               <Button size="sm" variant="outline" onClick={() => onOptions({ n_factors: null })}>
                 {t("factor.analysis.reset_factors")}
@@ -1832,6 +1908,11 @@ function AnalysisError({
             {fixes.miner && (
               <Button size="sm" variant="outline" onClick={() => onOptions({ miner: null })}>
                 {t("factor.analysis.all_miners")}
+              </Button>
+            )}
+            {size && (
+              <Button size="sm" variant="outline" onClick={onChooseData}>
+                {t("factor.data.change")}
               </Button>
             )}
           </div>

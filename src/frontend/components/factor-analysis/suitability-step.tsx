@@ -15,6 +15,7 @@ import {
   LONG_LIST,
   arrangeMeasures,
   isNotable,
+  matchesQuery,
   measureInfo,
   otherShown,
   toggleExcluded,
@@ -299,6 +300,13 @@ function MeasureList({ dataset, analysis, options, onOptions, measureName, measu
   // Tick the few measures to keep, then invert, instead of ticking all the others.
   const canInvert = options.excluded.length >= MIN_MEASURES;
   const invert = () => onOptions({ excluded: dataset.measures.filter((m) => !excluded.has(m)) });
+  // Many at once: all of them, or those the search finds, so keeping three of a hundred is a few
+  // clicks. The analysis says it while fewer than three are left.
+  const query = viewOf.query.trim();
+  const found = query ? dataset.measures.filter((m) => matchesQuery(query, measureName(m), m)) : [];
+  const exclude = (list: readonly string[]) => onOptions({ excluded: dataset.measures.filter((m) => excluded.has(m) || list.includes(m)) });
+  const keepOnly = (list: readonly string[]) => onOptions({ excluded: dataset.measures.filter((m) => !list.includes(m)) });
+  const bulk = "rounded hover:text-fg transition aria-disabled:opacity-40 aria-disabled:hover:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
   const sectionLabel = (id: string, group: string | null | undefined, n: number) => {
     const name =
       id === "notable"
@@ -316,19 +324,37 @@ function MeasureList({ dataset, analysis, options, onOptions, measureName, measu
     <div id="fa-msa-table" className="space-y-3">
       <div className="flex items-center justify-between gap-x-4 gap-y-2 flex-wrap">
         <HelpLabel label={t("factor.suitability.msa_heading")} help={t("factor.help.msa")} />
-        {options.excluded.length > 0 && (
-          <span className="flex items-center gap-3 text-xs text-muted flex-wrap">
-            <span>{t("factor.suitability.excluded_count", { n: options.excluded.length })}</span>
-            <InvertButton canInvert={canInvert} onInvert={invert} />
+        <span role="group" aria-label={t("factor.suitability.bulk_aria")} className="flex items-center gap-3 text-xs text-muted flex-wrap">
+          {options.excluded.length > 0 && <span>{t("factor.suitability.excluded_count", { n: options.excluded.length })}</span>}
+          {/* With a search, for what it finds; else for all of them. */}
+          {query ? (
+            <>
+              <button type="button" className={bulk} aria-disabled={found.length === 0 || undefined} onClick={() => found.length > 0 && exclude(found)}>
+                {t("factor.suitability.exclude_found", { n: found.length })}
+              </button>
+              <button type="button" className={bulk} aria-disabled={found.length === 0 || undefined} onClick={() => found.length > 0 && keepOnly(found)}>
+                {t("factor.suitability.keep_found", { n: found.length })}
+              </button>
+            </>
+          ) : (
             <button
               type="button"
-              onClick={() => onOptions({ excluded: [] })}
-              className="rounded hover:text-fg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className={bulk}
+              aria-disabled={options.excluded.length === dataset.measures.length || undefined}
+              onClick={() => exclude(dataset.measures)}
             >
-              {t("factor.suitability.include_all")}
+              {t("factor.suitability.exclude_all")}
             </button>
-          </span>
-        )}
+          )}
+          {options.excluded.length > 0 && (
+            <>
+              <InvertButton canInvert={canInvert} onInvert={invert} />
+              <button type="button" onClick={() => onOptions({ excluded: [] })} className={bulk}>
+                {t("factor.suitability.include_all")}
+              </button>
+            </>
+          )}
+        </span>
       </div>
 
       {long && (

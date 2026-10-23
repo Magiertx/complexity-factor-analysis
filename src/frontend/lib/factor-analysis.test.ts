@@ -248,6 +248,27 @@ describe("datasetName", () => {
     );
     expect(datasetName({ name: "mine.csv", source: "csv" }, t)).toBe("mine.csv");
   });
+
+  it("names a dataset of a sample after the sample, in the UI language", () => {
+    const sample = { name: "Four PDC training logs", name_auto: true, source: "logs", inputs: { files: 4, sample_id: "pdc-sample-logs" } };
+    const tDe = translator("de").t;
+    expect(datasetName(sample, tDe)).toBe(de.factor.data.sample_name.pdc_sample_logs);
+    expect(datasetName(sample, t)).toBe(en.factor.data.sample_name.pdc_sample_logs);
+    // Stored before the name of a sample counted as made up.
+    expect(datasetName({ ...sample, name_auto: false }, tDe)).toBe(de.factor.data.sample_name.pdc_sample_logs);
+    // A name of one's own stays.
+    expect(datasetName({ ...sample, name: "My logs", name_auto: false }, tDe)).toBe("My logs");
+    // A sample the UI does not know is named after its inputs.
+    expect(datasetName({ ...sample, inputs: { files: 4, sample_id: "new-sample" } }, tDe)).toBe(
+      countText(tDe, "factor.data.auto_name.logs", 4),
+    );
+  });
+
+  it("names the job of a sample after the sample", () => {
+    const tDe = translator("de").t;
+    expect(jobTitle(job({ params: { sample_id: "pdc-sample-models" } }), tDe)).toBe(de.factor.data.sample_name.pdc_sample_models);
+    expect(jobTitle(job({ params: { dataset_name: "Four PDC training logs" } }), tDe)).toBe(de.factor.data.sample_name.pdc_sample_logs);
+  });
 });
 
 describe("assignment rules", () => {

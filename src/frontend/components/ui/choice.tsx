@@ -1,17 +1,17 @@
-import { Check } from "lucide-react";
+import { Check, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * The check mark of every selection in the app: a box for several choices, a circle for one.
- * Purely visual; the real <input> sits next to it with `sr-only`, so keyboard and screen
- * readers work as with a native control.
+ * The check mark of every selection in the app: a box for several choices, a circle for one, and
+ * a box with a dash for a group of which only some are chosen. Purely visual; the real <input>
+ * sits next to it with `sr-only`, so keyboard and screen readers work as with a native control.
  */
 export function ChoiceMark({
   checked,
   type = "checkbox",
   className,
 }: {
-  checked: boolean;
+  checked: boolean | "mixed";
   type?: "checkbox" | "radio";
   className?: string;
 }) {
@@ -25,15 +25,23 @@ export function ChoiceMark({
         className,
       )}
     >
-      {checked && <Check className="h-3 w-3" strokeWidth={3} />}
+      {checked === "mixed" ? (
+        <Minus className="h-3 w-3" strokeWidth={3} />
+      ) : (
+        checked && <Check className="h-3 w-3" strokeWidth={3} />
+      )}
     </span>
   );
 }
 
-/** Background of a selectable tile: tinted when chosen, no border either way. */
+/**
+ * A selectable tile: a neutral tile, and once chosen the surface with an accent border beside its
+ * check mark, so the choice stands out without a block of colour. The focus ring stands apart
+ * from the border, outside it.
+ */
 export function choiceTile(checked: boolean) {
   return cn(
-    "cursor-pointer transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/60",
-    checked ? "bg-accent/[0.12]" : "bg-tile hover:bg-accent/[0.06]",
+    "cursor-pointer transition has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent",
+    checked ? "bg-surface ring-[1.5px] ring-inset ring-accent" : "bg-tile hover:ring-1 hover:ring-inset hover:ring-strong",
   );
 }

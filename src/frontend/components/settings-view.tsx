@@ -44,6 +44,7 @@ import {
 import { localizedAlgoName, useLocale, useT } from "@/lib/i18n";
 import { formatDateTime } from "@/lib/format";
 import { LocaleSegmented } from "./locale-toggle";
+import { useBackToAnalysis } from "./back-link";
 import { PageHeader } from "./page-header";
 
 const ALGO_PARAMS_PREFIX = "app.params-";
@@ -53,6 +54,7 @@ type ThemeChoice = "system" | "light" | "dark";
 export function SettingsView() {
   const { theme, setTheme } = useTheme();
   const { t, locale } = useLocale();
+  const back = useBackToAnalysis();
   const [mounted, setMounted] = useState(false);
   const [algorithms, setAlgorithms] = useState<AlgorithmManifest[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -236,10 +238,11 @@ export function SettingsView() {
 
   return (
     // The reading width of the guide: rows of a label and a control read badly across the whole width.
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-3xl mx-auto">
       <PageHeader
         title={t("settings.page_title")}
         subtitle={t("settings.page_subtitle")}
+        back={back}
         actions={
           // Always rendered, so screen readers announce each toast that appears in it.
           <div role="status">

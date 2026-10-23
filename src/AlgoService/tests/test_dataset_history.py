@@ -121,6 +121,7 @@ def test_list_is_newest_first_and_filters_by_kind(client):
         "inputs": {"files": 0},
         "has_options": False,
         "options_miner": None,
+        "options": None,
     }
     assert _list(client, "log")[0]["inputs"] == {"files": 1}
 
@@ -147,8 +148,10 @@ def test_computed_dataset_records_its_inputs(client):
 
     job = client.get(f"/jobs/{body['job_id']}").json()
     assert job["params"]["dataset_id"] == body["dataset_id"]
-    assert job["params"]["dataset_name"] == "Petri nets of the four PDC logs"
-    assert d["name_auto"] is False
+    # Called after its sample, a name the UI gives in its own language: made up, not given.
+    assert d["name"] == "Petri nets of the four PDC logs" and d["name_auto"] is True
+    assert job["params"]["sample_id"] == SAMPLE
+    assert "dataset_name" not in job["params"]
 
 
 def test_a_name_made_up_for_an_upload_is_marked(client):
@@ -218,7 +221,10 @@ def test_options_round_trip(client):
         "communality_threshold": None,
         "assignment_rule": "largest",
     }
-    assert _list(client)[0]["has_options"] is True
+    listed = _list(client)[0]
+    assert listed["has_options"] is True
+    # The list carries the same saved settings, for the history of the session.
+    assert listed["options"] == client.get(f"/factor-analysis/datasets/{dataset_id}").json()["options"]
 
     client.put(f"/factor-analysis/datasets/{dataset_id}/options", json={})
     assert client.get(f"/factor-analysis/datasets/{dataset_id}").json()["options"]["excluded"] == []

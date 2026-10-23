@@ -63,6 +63,8 @@ import { IconButton, ToolSeparator } from "./ui/icon-button";
 import { Menu, type MenuItem } from "./ui/menu";
 import { useTip } from "./ui/tip";
 import { PageHeader } from "./page-header";
+import { useJobs } from "./jobs-provider";
+import { RecentSingleRuns, isSingleRun } from "./recent-single-runs";
 import { Segmented } from "./ui/segmented";
 import { ChoiceMark, choiceTile } from "./ui/choice";
 import { cn } from "@/lib/utils";
@@ -572,6 +574,9 @@ export function Workbench() {
     }
   }
 
+  // The last runs of single logs are listed beside the page.
+  const hasRuns = useJobs().jobs.some(isSingleRun);
+
   // A log is chosen in the source tab that is shown.
   const hasLog = activeSourceTab === "sample" ? !!selectedSampleId : !!file || !!selectedRecentId;
 
@@ -585,7 +590,6 @@ export function Workbench() {
         <PageHeader
           title={t("inspect.title")}
           subtitle={t("inspect.subtitle")}
-          back={{ href: "/", label: t("mode_bar.model_label") }}
         />
         <Card>
           <CardContent className="flex items-start gap-3 py-6">
@@ -611,7 +615,6 @@ export function Workbench() {
       <PageHeader
         title={t("inspect.title")}
         subtitle={t("inspect.subtitle")}
-        back={{ href: "/", label: t("mode_bar.model_label") }}
         actions={
           selected && (
             <InspectToolbar
@@ -623,6 +626,8 @@ export function Workbench() {
         }
       />
 
+      {/* The last runs beside the page on a wide screen, after it on a smaller one. */}
+      <div className={cn("space-y-6", hasRuns && "xl:grid xl:grid-cols-[minmax(0,1fr)_17rem] xl:gap-6 xl:items-start xl:space-y-0")}>
       <div className="space-y-4 min-w-0">
         {selected && (
           <>
@@ -1187,6 +1192,12 @@ export function Workbench() {
         )}
 
         {result && <ResultPanel result={result} runId={selectedJobId} />}
+      </div>
+      {hasRuns && (
+        <aside className="xl:sticky xl:top-6 min-w-0">
+          <RecentSingleRuns activeId={selectedJobId} />
+        </aside>
+      )}
       </div>
     </div>
   );

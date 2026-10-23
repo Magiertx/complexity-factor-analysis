@@ -2,9 +2,9 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, pattern, test, text } from "./fixtures";
 
-// The tab "Recent runs" says what runs without opening the list ("1 running · 37%", a spinner), has a
+// The History tab says what runs without opening the page ("1 running · 37%", a spinner), has a
 // red dot for a failure nobody has looked at, and a dataset that has just been computed raises a
-// notice "<dataset> is ready · Open". The jobs of the server are replaced here by a list of the
+// notice "<dataset> is ready · Open" on any page. The jobs of the server are replaced here by a list of the
 // spec's own, so that a run stays at 37% as long as the spec wants; e2e/dataset-logs.spec.ts
 // computes a real dataset and waits for its notice.
 
@@ -38,9 +38,11 @@ async function refresh(page: Page) {
   await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
 }
 
-/** The tab of the recent runs; the button that closes the list has nearly the same name in German. */
-function tab(page: Page) {
-  return page.locator('button[aria-controls="jobs-drawer"]');
+/** The History tab of the mode bar. */
+function tab(page: Page, language: "en" | "de" = "en") {
+  return page
+    .getByRole("navigation", { name: text("mode_bar.aria_label", {}, language) })
+    .getByRole("link", { name: pattern(text("mode_bar.history_label", {}, language)) });
 }
 
 test("the tab says how many runs run and how far they are, and goes back when they are done", async ({ page }) => {
@@ -50,7 +52,7 @@ test("the tab says how many runs run and how far they are, and goes back when th
   await expect(tab(page)).toContainText(text("mode_bar.jobs_running", { n: 1, pct: "37%" }));
   // A spinner stands before it, and the usual line is gone while it runs.
   await expect(tab(page).locator("svg.animate-spin")).toBeVisible();
-  await expect(tab(page)).not.toContainText(text("mode_bar.jobs_desc"));
+  await expect(tab(page)).not.toContainText(text("mode_bar.history_desc"));
 
   // A second run that waits: two are active, the one that runs sets the progress.
   list = [job("running"), job("pending", { id: "6c1f1c1e-61b7-4ac3-8b7d-0d1d9d3c0a02" })];
@@ -62,23 +64,26 @@ test("the tab says how many runs run and how far they are, and goes back when th
   await refresh(page);
   await expect(tab(page)).toContainText(text("mode_bar.jobs_waiting", { n: 1 }));
 
-  // Nothing runs: the line of the tab as before, with the number of runs.
+  // Nothing runs: the line of the tab as before.
   list = [job("aborted")];
   await refresh(page);
-  await expect(tab(page)).toContainText(text("mode_bar.jobs_desc"));
+  await expect(tab(page)).toContainText(text("mode_bar.history_desc"));
   await expect(tab(page).locator("svg.animate-spin")).toHaveCount(0);
 });
 
-test("a failed run has a red dot that goes when the list has been opened, and stays gone", async ({ page }) => {
+test("a failed run has a red dot that goes once the History has shown it, and stays gone", async ({ page }) => {
   const failed = job("failed", { error: "The miner broke down." });
   await serve(page, () => [failed]);
   await page.goto("/");
   await expect(tab(page)).toContainText(text("mode_bar.jobs_failed"));
   await expect(tab(page).locator("span.bg-danger")).toBeVisible();
 
+  // The tab leads to the History, which lists the failure; there is no drawer any more.
   await tab(page).click();
-  await expect(page.getByRole("dialog", { name: text("jobs.archive_aria") })).toBeVisible();
-  await page.keyboard.press("Escape");
+  await expect(page).toHaveURL(/\/runs$/);
+  await expect(page.getByRole("main")).toContainText("The miner broke down.");
+  await expect(tab(page)).not.toContainText(text("mode_bar.jobs_failed"));
+  await page.goto("/");
   await expect(tab(page)).not.toContainText(text("mode_bar.jobs_failed"));
   await expect(tab(page).locator("span.bg-danger")).toHaveCount(0);
   await page.reload();
@@ -141,7 +146,7 @@ test("the notice is read out, takes the keyboard and closes with Escape", async 
   await page.waitForLoadState("networkidle");
   list = [job("completed")];
   await refresh(page);
-  const live = page.locator(".job-toast");
+  const live = page.locator(".toast-region");
   // The region is a polite live region that was there before its text came.
   await expect(live).toHaveAttribute("role", "status");
   await expect(live).toHaveAttribute("aria-live", "polite");
@@ -158,7 +163,7 @@ test.describe("German", () => {
     let list: unknown[] = [job("running")];
     await serve(page, () => list);
     await page.goto("/");
-    await expect(tab(page)).toContainText(
+    await expect(tab(page, "de")).toContainText(
       // The German percentage has a no-break space before the sign.
       text("mode_bar.jobs_running", { n: 1, pct: "37 %" }, "de"),
     );
@@ -177,7 +182,7 @@ for (const scheme of ["light", "dark"] as const) {
     await expect(tab(page)).toContainText(text("mode_bar.jobs_failed"));
     list = [job("completed"), job("failed", { id: "6c1f1c1e-61b7-4ac3-8b7d-0d1d9d3c0a05" })];
     await refresh(page);
-    await expect(page.locator(".job-toast")).toContainText("Nets of April");
+    await expect(page.locator(".toast-region")).toContainText("Nets of April");
     const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
     const serious = results.violations
       .filter((v) => v.impact === "serious" || v.impact === "critical")

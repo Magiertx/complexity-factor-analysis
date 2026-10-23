@@ -8,6 +8,7 @@ import {
   Layers,
   History,
   Code2,
+  Columns3,
   Microscope,
   ChevronLeft,
   ChevronRight,
@@ -95,6 +96,10 @@ export function OnboardingTour({
         title: t("tours.onboarding.step3_title"),
         body: (
           <ul className="space-y-2 text-sm">
+            <li className="flex items-start gap-2">
+              <Columns3 className="h-3.5 w-3.5 text-muted mt-1 shrink-0" />
+              <span>{t("tours.onboarding.step3_compare")}</span>
+            </li>
             <li className="flex items-start gap-2">
               <Microscope className="h-3.5 w-3.5 text-muted mt-1 shrink-0" />
               <span>{t("tours.onboarding.step3_inspect")}</span>

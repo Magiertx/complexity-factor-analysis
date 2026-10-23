@@ -20,8 +20,12 @@
   },
   "header": {
     "tagline": "Komplexitätsmaße von Prozessmodellen und Event-Logs",
+    "nav_aria": "Seiten",
+    "guide_label": "Anleitung",
+    "guide_title": "Was {app} tut und wie",
+    "api_label": "API",
     "settings_label": "Einstellungen",
-    "settings_title": "Einstellungen",
+    "settings_title": "Sprache, Darstellung und was dieser Browser speichert",
     "api_title": "{app} programmatisch nutzen",
     "locale_label": "Sprache",
     "switch_to_german": "Auf Deutsch umschalten",
@@ -39,21 +43,22 @@
     "remove_aria": "Datei entfernen"
   },
   "mode_bar": {
-    "aria_label": "Analyse",
-    "jobs_label": "Letzte Runs",
-    "jobs_desc": "Fortschritt und Status",
-    "jobs_title": "Letzte Runs anzeigen",
+    "aria_label": "Bereiche",
     "model_label": "Modellkomplexität",
     "model_desc": "Maße gefundener Prozessmodelle",
     "log_label": "Log-Komplexität",
     "log_desc": "Maße von Event-Logs",
-    "runs_label": "Runs",
-    "runs_desc": "Alle Runs dieser Sitzung",
+    "compare_label": "Vergleich",
+    "compare_desc": "Faktorstrukturen nebeneinander",
+    "inspect_label": "Einzelnes Log",
+    "inspect_desc": "ComFy auf einem Event-Log",
+    "history_label": "Verlauf",
+    "history_desc": "Datensätze und Runs dieser Sitzung",
     "jobs_running": "{n} läuft · {pct}",
     "jobs_running_plural": "{n} laufen · {pct}",
     "jobs_waiting": "{n} wartet",
     "jobs_waiting_plural": "{n} warten",
-    "jobs_failed": "Ein Run ist fehlgeschlagen. Öffne die Liste, um zu sehen, welcher."
+    "jobs_failed": "Ein Run ist fehlgeschlagen. Der Verlauf zeigt, welcher."
   },
   "tours": {
     "single_run": {
@@ -64,13 +69,13 @@
       "params_title": "2 · Miner und Maße",
       "params_content": "Wähle die Miner, die laufen sollen, und die Maße, die berechnet werden. Über die Preset-Leiste darüber speicherst du eine Auswahl für später.",
       "run_title": "3 · Den Run starten",
-      "run_content": "Starte mit dem Knopf oder Strg+Enter (Cmd+Enter auf dem Mac). Das Ergebnis erscheint darunter mit den Maßen, den gefundenen Netzen und Downloads; der Run steht unter Letzte Runs."
+      "run_content": "Starte mit dem Knopf oder Strg+Enter (Cmd+Enter auf dem Mac). Das Ergebnis erscheint darunter mit den Maßen, den gefundenen Netzen und Downloads; der Run steht im Verlauf."
     },
     "onboarding": {
       "step0_title": "Willkommen bei {app}",
       "step0_p1": "Finde heraus, welche Komplexitätsmaße von Prozessmodellen und Event-Logs dasselbe erfassen. Lade oder berechne eine Tabelle von Maßen, prüfe, ob sie sich für eine Faktorenanalyse eignet, und lies Gruppen verwandter Maße ab.",
       "step0_p2": "Diese kurze Tour zeigt die vier Dinge, die du am häufigsten brauchst.",
-      "step1_title": "Zwei Reiter: Modelle und Logs",
+      "step1_title": "Zwei Analysen: Modelle und Logs",
       "step1_p1": "Modellkomplexität analysiert Maße von Petri-Netzen, die aus Event-Logs gefunden und mit ComFy vermessen werden. Log-Komplexität analysiert Maße der Event-Logs selbst, berechnet mit feeed.",
       "step1_p2": "Beide Reiter funktionieren gleich.",
       "step2_title": "Ein Schritt nach dem anderen",
@@ -78,9 +83,10 @@
       "step2_p2": "Halte den Zeiger über ein Bedienelement oder ein gepunktet unterstrichenes Wort, um zu sehen, was es tut; der Tour-Knopf führt durch die Schritte.",
       "step3_title": "Mehr, wenn du es brauchst",
       "step3_api": "API: alles per Python oder curl steuern; siehe die API-Seite im Header.",
+      "step3_compare": "Vergleich: die Faktorstrukturen mehrerer Analysen nebeneinander, wie Tab. 17 von Important Factors.",
       "progress_aria": "Fortschritt",
-      "step3_history": "Runs: alle Runs deiner Sitzung, auch Datensatz-Berechnungen.",
-      "step3_inspect": "Einzelnes Log untersuchen: ComFy auf einem Log ausführen und die gefundenen Modelle ansehen."
+      "step3_history": "Verlauf: alle Datensätze und Runs deiner Sitzung.",
+      "step3_inspect": "Einzelnes Log: ComFy auf einem Log ausführen und die gefundenen Modelle ansehen."
     },
     "factor": {
       "intro": "Fünf Schritte von den Rohmaßen zu den Faktoren und eine optionale Interpretation, einer nach dem anderen: Die Liste der Schritte links (am Telefon die Zeile oben) und Zurück und Weiter wechseln zwischen ihnen. Halte den Zeiger über ein Bedienelement oder ein gepunktet unterstrichenes Wort, um zu sehen, was es tut. Esc oder Überspringen beendet die Tour jederzeit.",
@@ -339,7 +345,9 @@
   },
   "result_panel": {
     "heading": "Ergebnis",
-    "download_all": "Ergebnisse herunterladen (ZIP)"
+    "download_all": "Ergebnisse herunterladen (ZIP)",
+    "notes_more": "{n} weitere zeigen",
+    "notes_fewer": "Weniger zeigen"
   },
   "artifacts": {
     "petri_nets_heading": "Gefundene Petri-Netze ({n})",
@@ -406,37 +414,45 @@
     "ready_open": "Öffnen"
   },
   "run_history": {
-    "heading": "Runs",
-    "subtitle": "Alle Runs dieser Sitzung: berechnete Datensätze und untersuchte Logs. Durchsuchen, filtern, mit Notizen versehen oder löschen.",
-    "refresh_button": "Aktualisieren",
-    "search_placeholder": "Name, Dateiname oder Run-ID suchen…",
-    "search_aria": "Runs suchen",
-    "filter_kind_aria": "Nach Art filtern",
+    "heading": "Verlauf",
+    "subtitle": "Alles aus dieser Sitzung, das Neueste zuerst: die Datensätze beider Tabs, jeweils mit den Einstellungen ihrer letzten Analyse, und die Runs einzelner Logs.",
+    "search_placeholder": "Name, Datei oder ID suchen…",
+    "search_aria": "Verlauf durchsuchen",
+    "filter_type_aria": "Nach Art filtern",
     "filter_status_aria": "Nach Status filtern",
-    "filter_all_kinds": "Alle Arten",
     "status_all": "Alle ({n})",
     "status_active": "Aktiv ({n})",
-    "status_completed": "Abgeschlossen ({n})",
+    "status_completed": "Fertig ({n})",
     "status_failed": "Fehlgeschlagen ({n})",
     "status_aborted": "Abgebrochen ({n})",
     "status_label_pending": "Ausstehend",
     "status_label_running": "Läuft",
-    "status_label_completed": "Abgeschlossen",
+    "status_label_completed": "Fertig",
     "status_label_failed": "Fehlgeschlagen",
     "status_label_aborted": "Abgebrochen",
-    "loading_runs": "Runs werden geladen…",
-    "no_runs_empty": "Noch keine Runs in dieser Sitzung. Berechnete Datensätze und untersuchte Logs erscheinen hier.",
-    "no_runs_filter": "Keine Runs stimmen mit den aktuellen Filtern überein.",
     "open_button": "Öffnen",
-    "open_title": "Dort öffnen, wo der Run gestartet wurde",
     "confirm_delete": "Bestätigen",
-    "delete_run_aria": "Run {id} löschen",
-    "delete_run_title": "Run löschen",
-    "delete_dataset_run_title": "Run und seinen Datensatz löschen",
+    "delete_run_aria": "Run von {name} löschen",
     "toast_run_deleted": "Run gelöscht",
     "toast_delete_failed": "Löschen des Runs fehlgeschlagen",
     "load_error": "Runs konnten nicht geladen werden: {error}",
-    "load_failed_fallback": "Runs konnten nicht geladen werden."
+    "load_failed_fallback": "Runs konnten nicht geladen werden.",
+    "type": {
+      "all": "Alle",
+      "model": "Modellkomplexität",
+      "log": "Log-Komplexität",
+      "single": "Einzelnes Log"
+    },
+    "today": "Heute",
+    "yesterday": "Gestern",
+    "empty": "Noch nichts. Hier landet jeder Datensatz, den du auf einem der Tabs öffnest oder berechnest, und jeder Run eines einzelnen Logs.",
+    "none_match": "Nichts passt zu den Filtern.",
+    "settings_label": "Einstellungen der letzten Analyse",
+    "abort": "Abbrechen",
+    "abort_more": "Hält den Run an; ein Datensatz, den er berechnet, bleibt, als fehlgeschlagen markiert.",
+    "delete_dataset_aria": "{name} löschen",
+    "delete_with_dataset": "Löscht auch den Datensatz, den er berechnet.",
+    "toast_dataset_deleted": "Datensatz gelöscht"
   },
   "workbench": {
     "job_badge": "Run {id}: {status}",
@@ -513,9 +529,7 @@
     "tour_title": "Rundgang durch die Schritte",
     "model": {
       "title": "Modellkomplexität",
-      "subtitle": "Finde heraus, welche Komplexitätsmaße von Prozessmodellen dieselbe zugrunde liegende Dimension beschreiben. Sammle Maße über viele Modelle, prüfe, ob eine Faktorenanalyse sinnvoll ist, und fasse die Maße zu wenigen Faktoren zusammen.",
-      "inspect_link": "Einzelnes Log untersuchen",
-      "inspect_title": "ComFy auf einem Event-Log ausführen und die gefundenen Modelle ansehen"
+      "subtitle": "Finde heraus, welche Komplexitätsmaße von Prozessmodellen dieselbe zugrunde liegende Dimension beschreiben. Sammle Maße über viele Modelle, prüfe, ob eine Faktorenanalyse sinnvoll ist, und fasse die Maße zu wenigen Faktoren zusammen."
     },
     "log": {
       "title": "Log-Komplexität",
@@ -552,7 +566,8 @@
       "active": "offen",
       "done": "erledigt",
       "warn": "bitte prüfen",
-      "busy": "läuft"
+      "busy": "läuft",
+      "unavailable": "hier nicht verfügbar"
     },
     "empty": {
       "no_dataset": "Wähle zuerst im Schritt Daten Daten aus.",
@@ -570,7 +585,15 @@
       "reset_factors": "Vorgeschlagene Faktorenzahl verwenden",
       "enable_filter": "MSA-Filter einschalten",
       "default_threshold": "Standard-MSA-Schwelle von {value} verwenden",
-      "all_miners": "Alle Miner gemeinsam analysieren"
+      "all_miners": "Alle Miner gemeinsam analysieren",
+      "choose_measures": "Maße auswählen",
+      "observation": {
+        "log": "Eine Beobachtung ist hier ein Log, und es sind {n}.",
+        "log_miner": "Eine Beobachtung ist hier ein Log mit einem Miner, und es sind {n}.",
+        "net": "Eine Beobachtung ist hier ein Petri-Netz, und es sind {n}.",
+        "row": "Eine Beobachtung ist hier eine Zeile der Tabelle, und es sind {n}."
+      },
+      "too_few_observations_way": "Eine Faktorenanalyse braucht mehr Beobachtungen als Maße: mit {n} höchstens {max} Maße, und sinnvoll sind etwa 5 je Maß. Behalte nur wenige Maße, oder wähle andere Daten mit mehr Beobachtungen."
     },
     "data": {
       "source": {
@@ -618,8 +641,13 @@
       "miners_hint": "Discovery-Algorithmen aus ComFy. Mehr Miner ergeben mehr Beobachtungen pro Log.",
       "measures_heading": "Maße",
       "measures_hint": "Komplexitätsmaße, die auf jedem Petri-Netz berechnet werden. Fahre über ein Maß, um seine Definition zu sehen.",
-      "groups_heading": "Feature-Gruppen",
-      "groups_hint": "Gruppen von feeed-Maßen, wie ComFy für Log-Maße sie definiert.",
+      "groups_heading": "Feature-Gruppen und Maße",
+      "groups_hint": "Gruppen von feeed-Maßen, wie in ComFy for log measures definiert. Klappe eine Gruppe auf, um einzelne Maße zu wählen.",
+      "measures_selected": "{n} von {total} Maßen",
+      "measure_search": "Maße durchsuchen",
+      "measure_search_placeholder": "Maße durchsuchen…",
+      "group_unfold": "Einzelne Maße von {group} wählen",
+      "group_fold": "{group} zuklappen",
       "group_measures": "{n} Maße",
       "selected_count": "{n} von {total}",
       "select_all": "Alle",
@@ -636,14 +664,13 @@
         "nets_plural": "Datensatz aus {n} Netzen"
       },
       "estimate": "Das ergibt bis zu {rows} Beobachtungen von {cols} Maßen.",
-      "estimate_too_few": "Zu wenige: Eine Faktorenanalyse braucht mehr Beobachtungen als Maße, mindestens {min}. Füge Dateien hinzu oder entferne Maße.",
       "estimate_thin": "Wenige Beobachtungen pro Maß. Mit etwa fünf pro Maß ({target}) werden die Ergebnisse stabiler.",
+      "estimate_wont_run": "Mit dieser Auswahl läuft die Analyse nicht; die Werte lassen sich trotzdem berechnen und ansehen.",
       "need_bundled": "Wähle einen Datensatz.",
       "need_mine": "Wähle einen Datensatz.",
       "need_csv": "Füge eine CSV-Datei hinzu.",
       "need_files": "Füge mindestens eine Datei hinzu.",
       "need_miner": "Wähle mindestens einen Miner.",
-      "need_group": "Wähle mindestens eine Feature-Gruppe.",
       "need_measures": "Wähle mindestens {n} Maße.",
       "submit_bundled": "Datensatz verwenden",
       "submit_csv": "CSV laden",
@@ -659,7 +686,7 @@
       "catalog_failed": "Der Katalog konnte nicht geladen werden.",
       "catalog_error": "Die verfügbaren Datensätze und Maße konnten nicht geladen werden: {error}",
       "load_failed": "Der Datensatz konnte nicht geladen werden. Neuer Versuch…",
-      "cancel_failed": "Der Run ließ sich nicht abbrechen. Versuche es noch einmal oder brich ihn unter Letzte Runs ab.",
+      "cancel_failed": "Der Run ließ sich nicht abbrechen. Versuche es noch einmal oder brich ihn im Verlauf ab.",
       "too_large_total": "Einige Dateien wurden übersprungen: Alle Dateien eines Datensatzes dürfen zusammen höchstens {mb} MB groß sein.",
       "mine_open": "geöffnet",
       "mine_computing": "wird berechnet",
@@ -685,7 +712,16 @@
       "compare_pick_aria": "Zu vergleichende Datensätze",
       "compare_not_ready": "Nur ein fertiger Datensatz lässt sich vergleichen.",
       "compare_hint": "{n} gewählt; ein Vergleich nimmt {min} bis {max} Datensätze, jeden mit den Einstellungen, die mit ihm gespeichert sind.",
-      "compare_go": "{n} vergleichen"
+      "compare_go": "{n} vergleichen",
+      "sample_name": {
+        "pdc_sample_logs": "Vier PDC-Trainingslogs",
+        "pdc_sample_models": "Petri-Netze der vier PDC-Logs"
+      },
+      "estimate_too_few": {
+        "logs": "{rows} Logs und {cols} Maße: Eine Faktorenanalyse braucht mehr Logs als Maße, mit {rows} Logs also höchstens {max} Maße, und sinnvoll sind etwa 5 Logs je Maß. Wähle weniger Maße oder lade mehr Logs hoch (bis zu {limit}).",
+        "log_miners": "{logs} Logs × {miners} Miner = {rows} Beobachtungen und {cols} Maße: Eine Faktorenanalyse braucht mehr Beobachtungen als Maße, also höchstens {max} Maße, und sinnvoll sind etwa 5 Beobachtungen je Maß. Wähle weniger Maße oder mehr Miner, oder lade mehr Logs hoch (bis zu {limit}).",
+        "nets": "{rows} Netze und {cols} Maße: Eine Faktorenanalyse braucht mehr Netze als Maße, mit {rows} Netzen also höchstens {max} Maße, und sinnvoll sind etwa 5 Netze je Maß. Wähle weniger Maße oder lade mehr Netze hoch (bis zu {limit})."
+      }
     },
     "inputs": {
       "logs": "{n} Log",
@@ -697,7 +733,8 @@
       "groups": "{n} Feature-Gruppe",
       "groups_plural": "{n} Feature-Gruppen",
       "measures": "{n} Maß",
-      "measures_plural": "{n} Maße"
+      "measures_plural": "{n} Maße",
+      "measures_of": "{n} von {total} Maßen"
     },
     "dataset": {
       "observations": "Beobachtungen",
@@ -756,7 +793,8 @@
       "measurement_more": "Gemessen, während der Datensatz berechnet wurde. Ein Log wird für alle seine Miner einmal gelesen. Das ZIP enthält zusätzlich die Sekunden jedes Maßes oder jeder Feature-Gruppe.",
       "view_log": "Dieses Log ansehen",
       "view_log_more": "Öffnet die Seite für ein einzelnes Log mit diesem Log und dem Miner der Zeile. Das geht, solange das Log zu den neuesten Uploads dieser Sitzung gehört.",
-      "view_log_gone": "Das Log gehört nicht mehr zu den neuesten Uploads dieser Sitzung."
+      "view_log_gone": "Das Log gehört nicht mehr zu den neuesten Uploads dieser Sitzung.",
+      "failures_more": "und {n} weitere"
     },
     "suitability": {
       "passed": "bestanden",
@@ -790,7 +828,11 @@
       "status_excluded": "ausgeschlossen",
       "min_measures": "Mindestens {n} Maße müssen übrig bleiben.",
       "excluded_count": "{n} von Hand ausgeschlossen",
-      "include_all": "Alle Maße einbeziehen",
+      "bulk_aria": "Mehrere aus- oder einschließen",
+      "exclude_all": "Alle ausschließen",
+      "exclude_found": "Treffer ausschließen ({n})",
+      "keep_found": "Nur Treffer behalten ({n})",
+      "include_all": "Alle einschließen",
       "regularised": "regularisiert",
       "regularised_title": "Einige Eigenwerte der Korrelationsmatrix sind praktisch null und wurden nach unten begrenzt, daher spiegelt χ² eher diese Grenze als die Daten. Lies den Test zusammen mit KMO.",
       "exclude_aria": "{measure} ausschließen",
@@ -1023,7 +1065,8 @@
       "stale_again": "Interpretiere neu, um sie zu aktualisieren.",
       "ready": "Die Interpretation von {n} Faktor ist fertig.",
       "ready_plural": "Die Interpretation von {n} Faktoren ist fertig.",
-      "state_needs_key": "braucht einen API-Schlüssel"
+      "unavailable_key": "Nicht verfügbar: Der Server hat keinen API-Schlüssel",
+      "unavailable_settings": "Nicht verfügbar: Für diese Einstellungen ist keine gespeichert, und der Server hat keinen API-Schlüssel"
     },
     "settings": {
       "measures": "{used} von {total} Maßen",
@@ -1137,8 +1180,10 @@
     },
     "start": {
       "title": "Hier starten",
-      "collapsed_hint": "Vier Analysen mit einem Klick und eine Beispiel-CSV",
+      "collapsed_hint": "{n} Analyse mit einem Klick und eine Beispiel-CSV",
+      "collapsed_hint_plural": "{n} Analysen mit einem Klick und eine Beispiel-CSV",
       "intro": "Jede öffnet einen mitgelieferten Datensatz mit seinen Einstellungen; nichts muss hochgeladen oder berechnet werden.",
+      "opens": "Öffnet {page}",
       "scenario": {
         "if_inductive": {
           "title": "Important Factors: Inductive miner",
@@ -1169,7 +1214,14 @@
       "dimensions": "{n} Dimension",
       "dimensions_plural": "{n} Dimensionen",
       "cross": "{n} mit Querladung",
-      "unassigned": "{n} ohne Faktor"
+      "unassigned": "{n} ohne Faktor",
+      "bartlett_failed": "Bartlett nicht bestanden",
+      "kmo_low": "KMO unter {value}",
+      "problem": {
+        "heywood": "möglicher Heywood-Fall",
+        "not_identified": "nicht identifiziert",
+        "fit_not_converged": "Anpassung nicht konvergiert"
+      }
     },
     "nav": {
       "aria": "Schrittnavigation",
@@ -1206,24 +1258,17 @@
       "export_dataset_hint": "Die bereinigte Matrix",
       "wait_analysis": "Die Analyse läuft noch.",
       "wait_update": "Die Analyse wird gerade aktualisiert.",
-      "mine_more": "Datensätze dieser Sitzung wieder öffnen oder löschen.",
-      "mine_none": "In dieser Sitzung gibt es noch keine Datensätze.",
-      "more": "Mehr",
       "export_report": "LaTeX-Report",
       "export_report_hint": "report.tex, aufgebaut wie der ComFy-Report; mit latexmk oder zweimal pdflatex übersetzen",
       "print": "Druckansicht",
       "print_hint": "Die ganze Analyse auf A4-Seiten in einem neuen Tab, zum Drucken oder Speichern als PDF",
-      "help": "Hilfe",
-      "help_more": "Die Anleitung oder eine Tour durch die Schritte.",
       "guide": "Anleitung",
-      "guide_hint": "Was das Tool tut und wie, in einem neuen Tab",
+      "guide_hint": "Was das Tool tut und wie",
       "codes": "Kurzzeichen",
       "codes_more": "Nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder C_mag, in den Listen, den Ladungen, den Abbildungen und dem Report. Der volle Name steht im Tooltip.",
       "codes_on": "Kurzzeichen zeigen",
       "codes_off": "Volle Namen zeigen",
-      "codes_none": "Kein Maß dieses Datensatzes hat ein Kurzzeichen.",
-      "compare": "Miner vergleichen",
-      "compare_more": "Die Faktorstrukturen mehrerer Miner nebeneinander, wie in Tab. 17 von Important Factors."
+      "codes_none": "Kein Maß dieses Datensatzes hat ein Kurzzeichen."
     },
     "measures": {
       "search": "Maße durchsuchen",
@@ -1390,7 +1435,7 @@
     "section_settings": "Miner und Maße",
     "section_settings_hint": "Welche Miner die Netze entdecken und welche Maße ComFy darauf berechnet.",
     "section_run": "Run",
-    "section_run_hint": "Startet im Hintergrund; das Ergebnis erscheint darunter, und der Run steht unter „Letzte Runs“.",
+    "section_run_hint": "Startet im Hintergrund; das Ergebnis erscheint darunter, und der Run steht im Verlauf.",
     "about": "Was ComFy macht",
     "about_hint": "Wie es arbeitet und wann es hilft",
     "about_menu": "Über {name}",
@@ -1398,7 +1443,11 @@
     "tour_more": "Wie das Ansehen eines einzelnen Logs funktioniert",
     "from_dataset": "{log} stammt aus deinem Datensatz und ist hier ausgewählt.",
     "from_dataset_miner": "{log} stammt aus deinem Datensatz und ist hier ausgewählt, mit dem {miner} als einzigem Miner.",
-    "log_gone": "{log} gehört nicht mehr zu den neuesten Uploads dieser Sitzung und lässt sich hier nicht öffnen. Lade es erneut hoch."
+    "log_gone": "{log} gehört nicht mehr zu den neuesten Uploads dieser Sitzung und lässt sich hier nicht öffnen. Lade es erneut hoch.",
+    "recent": {
+      "title": "Letzte Runs einzelner Logs",
+      "all": "Alle im Verlauf"
+    }
   },
   "algo_text": {
     "summary": "Miner: {miners} · Maße: {measures}",
@@ -1421,7 +1470,7 @@
   },
   "errors": {
     "rate_limited": "Zu viele Anfragen. Warte kurz und versuche es noch einmal.",
-    "job_quota": "Du hast schon {active} wartende oder laufende Runs, und das käme mit {requested} dazu; erlaubt sind höchstens {limit}. Warte, bis sie fertig sind, oder brich einige unter Letzte Runs ab.",
+    "job_quota": "Du hast schon {active} wartende oder laufende Runs, und das käme mit {requested} dazu; erlaubt sind höchstens {limit}. Warte, bis sie fertig sind, oder brich einige im Verlauf ab.",
     "dataset_jobs_busy": "Der Server berechnet schon {active} Datensätze, mehr gleichzeitig nicht. Versuche es in ein paar Minuten noch einmal.",
     "prom_unavailable": "ProM, das die Miner ausführt, ist gerade nicht erreichbar, daher konnte kein Petri-Netz entdeckt werden. Versuche es in ein paar Minuten noch einmal; bleibt es dabei, muss auf dem Server der Dienst prom4py gestartet werden."
   },
@@ -1454,6 +1503,7 @@
       "log": "Log-Komplexität",
       "paper": "Important Factors: Inductive Miner mit den Paper-Einstellungen öffnen",
       "data": "Zum Schritt Daten",
+      "history": "Zum Verlauf",
       "results": "Zum Schritt Datensatz",
       "loadings": "Zu den Ladungen",
       "api": "API-Zugang",
@@ -1462,7 +1512,8 @@
     "steps": {
       "title": "Die sechs Schritte",
       "p1": "Modellkomplexität analysiert die Maße von ComFy auf Petri-Netzen, Log-Komplexität die Maße von feeed auf Event-Logs. Beide führen durch dieselben Schritte: Daten, Datensatz, Eignung, Faktoren, Ladungen und eine optionale Interpretation. Es ist immer ein Schritt zu sehen; die Liste der Schritte zeigt, was jeder Schritt ergeben hat.",
-      "p2": "Die Einstellungszeile über den Schritten fasst jede Entscheidung zusammen, markiert die, die vom Standard des Tools abweichen, und führt zu jedem Regler. Jede Änderung einer Einstellung rechnet die Analyse neu."
+      "p2": "Die Einstellungszeile über den Schritten fasst jede Entscheidung zusammen, markiert die, die vom Standard des Tools abweichen, und führt zu jedem Regler. Jede Änderung einer Einstellung rechnet die Analyse neu.",
+      "p3": "Die Reiter oben sind auf jeder Seite dieselben: die beiden Analysen, Vergleich, Einzelnes Log und Verlauf. Anleitung, API und Einstellungen stehen im Header und führen zurück zu dem Reiter, von dem du kamst."
     },
     "bundled": {
       "title": "Einen veröffentlichten Datensatz analysieren",
@@ -1471,28 +1522,29 @@
         "choose": "Wähle unter Daten einen Datensatz eines Papers, etwa Important Factors: Inductive Miner.",
         "settings": "Wähle Paper-Einstellungen, um ihn wie im Paper zu analysieren, oder Standard des Tools für die Voreinstellungen von ComFy, dann Datensatz verwenden."
       },
-      "p1": "Mit den Paper-Einstellungen sagt ein Chip in der Einstellungszeile, ob die Zahlen dem veröffentlichten ComFy-Report gleichen und wie sich die Tabellen des Papers dazu verhalten. „Hier starten“ in der Werkzeugleiste nennt vier Einstiege."
+      "p1": "Mit den Paper-Einstellungen sagt ein Chip in der Einstellungszeile, ob die Zahlen dem veröffentlichten ComFy-Report gleichen und wie sich die Tabellen des Papers dazu verhalten. „Hier starten“, der erste Block im Schritt Daten, öffnet eine solche Analyse mit einem Klick, direkt auf ihren Ladungen."
     },
     "own": {
       "title": "Eigene Daten analysieren",
       "p1": "Wähle unter Daten eine Quelle:",
       "items": {
-        "logs": "Event-Logs (.xes, .xes.gz): Für Modellmaße wird jedes Log mit jedem gewählten Miner entdeckt und jedes Netz gemessen; für Logmaße berechnet feeed die gewählten Feature-Gruppen.",
+        "logs": "Event-Logs (.xes, .xes.gz): Für Modellmaße wird jedes Log mit jedem gewählten Miner entdeckt und jedes Netz gemessen; für Logmaße berechnet feeed die gewählten Feature-Gruppen. Klappe eine Gruppe auf, um einzelne ihrer Maße zu wählen, damit wenige Logs wenige Maße tragen; unter der Auswahl sagt der Schritt Daten, wie viele Beobachtungen und Maße das ergibt und wann es für eine Faktorenanalyse zu wenige sind.",
         "nets": "Petri-Netze (.pnml): Jedes Netz wird gemessen.",
         "csv": "Eine CSV-Datei: eine Zeile je Beobachtung, eine Spalte je Maß; eine erste Spalte mit Namen wird zu den Zeilenbeschriftungen."
       },
-      "p2": "Logs und Netze werden in einem Job berechnet. Der Reiter „Letzte Runs“ sagt, was läuft („1 läuft · 37 %“), und hat einen roten Punkt für einen fehlgeschlagenen Run, den du noch nicht angesehen hast; ein fertig berechneter Datensatz meldet sich mit „… ist fertig · Öffnen“, wo du auch bist. „Meine Datensätze“ in der Werkzeugleiste öffnet einen Datensatz der Sitzung wieder, mit den Einstellungen seiner letzten Analyse.",
+      "p2": "Logs und Netze werden in einem Job berechnet. Der Reiter „Verlauf“ sagt, was läuft („1 läuft · 37 %“), und hat einen roten Punkt für einen fehlgeschlagenen Run, den du noch nicht gesehen hast; ein fertig berechneter Datensatz meldet sich mit „… ist fertig · Öffnen“, wo du auch bist. „Meine Datensätze“, eine Quelle im Schritt Daten, öffnet einen Datensatz der Sitzung wieder, mit den Einstellungen seiner letzten Analyse.",
       "p3": "Ein Datensatz aus Netzen mehrerer Miner hat eine Zeile je Log und Miner. Der Datensatz-Schritt bietet alle Miner gemeinsam oder je einen Miner an, so wie Important Factors sie analysiert: Gemeinsam mischen sich die Unterschiede zwischen den Minern in die Dimensionen, und jedes Log zählt einmal je Miner; ein einzelner Miner hat weniger Beobachtungen. Ein Miner mit nicht mehr Beobachtungen als Maßen lässt sich nicht analysieren; unter fünf je Maß warnt die Analyse. Miner vergleichen öffnet dort ihre Faktorstrukturen nebeneinander.",
-      "p4": "Eine Zeile eines aus Logs berechneten Datensatzes hat im Datensatz-Schritt einen Link „Dieses Log ansehen“. Er öffnet die Seite „Ein einzelnes Log ansehen“ mit diesem Log und, bei einer Zeile aus Netzen, nur dem Miner der Zeile, solange das Log zu den zehn neuesten Uploads der Sitzung gehört; die Seite sagt es, wenn nicht."
+      "p4": "Eine Zeile eines aus Logs berechneten Datensatzes hat im Datensatz-Schritt einen Link „Dieses Log ansehen“. Er öffnet die Seite „Ein einzelnes Log ansehen“ mit diesem Log und, bei einer Zeile aus Netzen, nur dem Miner der Zeile, solange das Log zu den zehn neuesten Uploads der Sitzung gehört; die Seite sagt es, wenn nicht.",
+      "p5": "Der Verlauf listet alles aus der Sitzung, das Neueste zuerst: jeden Datensatz beider Tabs mit den Einstellungen seiner letzten Analyse und jeden Run eines einzelnen Logs. Eine Zeile öffnet sich dort, wo sie hingehört, lässt sich abbrechen, solange sie läuft, und löschen; ein gelöschter Datensatz nimmt den Run mit, der ihn berechnet hat, und umgekehrt."
     },
     "results": {
       "title": "Die Ergebnisse lesen",
       "items": {
         "dataset": "Datensatz: was die Bereinigung weggelassen hat und warum, die deskriptive Statistik jedes Maßes, wie der ComFy-Report sie ausgibt, und für einen aus Logs oder Netzen berechneten Datensatz die Laufzeiten und Eingabegrößen. Beide Tabellen sind eingeklappt, bis man sie öffnet.",
-        "suitability": "Eignung: der Bartlett-Test, der KMO insgesamt und der MSA jedes Maßes. Der MSA-Filter entfernt Maße in Runden, wie ComFy; jedes Maß lässt sich von Hand ausschließen.",
+        "suitability": "Eignung: der Bartlett-Test, der KMO insgesamt und der MSA jedes Maßes. Der MSA-Filter entfernt Maße in Runden, wie ComFy; jedes Maß lässt sich von Hand ausschließen, alle auf einmal oder die, die eine Suche findet. Wo die Analyse mangels Beobachtungen nicht läuft, sagt ihre Meldung, was eine Beobachtung ist, und führt zu den Maßen oder zurück zu den Daten.",
         "factors": "Faktoren: der Scree-Plot mit Kaiser-Linie und Parallelanalyse, die Zahl, die jedes Kriterium vorschlägt, und die Rotation.",
-        "loadings": "Ladungen: eine Matrix (orange für negative Ladungen, blass, wo eine Ladung nicht zählt) oder eine Karte je Dimension, die Schwellen und die Regel, die Maße Faktoren zuordnet. Querladungen sind umrandet.",
-        "interpretation": "Interpretation: Namen für die Faktoren, von einem Sprachmodell nur auf Anfrage vorgeschlagen. Es entscheidet nichts.",
+        "loadings": "Ladungen: die Regel, die Maße Faktoren zuordnet, und die beiden Schwellen in einer Zeile über dem Ergebnis, jede Regel in ihrem Tooltip erklärt; darunter eine Matrix (orange für negative Ladungen, blass, wo eine Ladung nicht zählt) oder eine Karte je Dimension. Querladungen sind umrandet.",
+        "interpretation": "Interpretation: Namen für die Faktoren, von einem Sprachmodell nur auf Anfrage vorgeschlagen. Es entscheidet nichts. Ohne API-Schlüssel auf dem Server und ohne eine für die Einstellungen gespeicherte sagt die Liste der Schritte, dass sie hier nicht verfügbar ist.",
         "names": "Namen: Drücke auf den Titel eines Faktors, auf seiner Karte oder im Kopf seiner Spalte, um ihn zu benennen; Enter behält den Namen, Esc lässt ihn. Die Namen erscheinen in den Ladungen, den Faktorkorrelationen, der Schrittliste und jedem Download. Sie gehören zu Faktorzahl, Rotation und Regel: Ändert sich eines davon, verschwinden sie, und der Hinweis holt sie zurück. Mit einer Interpretation übernimmt Vorgeschlagene Namen übernehmen deren Namen.",
         "correlations": "Korrelationskarte: in Eignung, eingeklappt, bis man sie öffnet. Eine Zelle je Maßpaar, orange für eine negative Korrelation und in der Akzentfarbe für eine positive, ein Paar mit |r| ≥ 0,95 umrandet, nach Faktor oder gruppiert geordnet. Zeige auf eine Zelle oder nimm die Pfeiltasten, um das Paar und sein r zu lesen; eine Tabelle unter der Karte hat jeden Wert. Das Bild-Symbol lädt sie wie die anderen Abbildungen herunter.",
         "sheet": "Steckbrief: Drücke auf den Namen eines Maßes (oder Enter darauf), wo er auch steht, um ein Fenster neben der Seite zu öffnen. Es zeigt, was das Maß ist (die Beschreibung des Tools und die Funktion in ComFy oder feeed dahinter, mit Link zur Quelle), ein Histogramm seiner Werte, seinen MSA und die Runde des Filters, die es entfernt hat, Kommunalität und Einzigartigkeit, seine Ladungen, die fünf am stärksten korrelierten Maße und eine Schaltfläche zum Ausschließen oder Einbeziehen. Die Pfeiltasten links und rechts blättern durch die Liste, aus der du kommst, Esc schließt das Fenster, und der Fokus kehrt zum Namen zurück."
@@ -1517,7 +1569,7 @@
     },
     "compare": {
       "title": "Miner vergleichen",
-      "p1": "Miner vergleichen stellt die Faktorstrukturen mehrerer veröffentlichter Datensätze nebeneinander, wie Tab. 17 von Important Factors: welche Maße für welchen Miner welche Dimension bilden. Es öffnet sich über das Spalten-Icon in der Werkzeugleiste von Modellkomplexität und über Hier starten.",
+      "p1": "Miner vergleichen stellt die Faktorstrukturen mehrerer veröffentlichter Datensätze nebeneinander, wie Tab. 17 von Important Factors: welche Maße für welchen Miner welche Dimension bilden. Es ist der Reiter „Vergleich“, und zwei Einträge von „Hier starten“ öffnen ihn.",
       "items": {
         "columns": "Datensätze: Wähle 2 bis 8 der Miner aus Important Factors; jeder wird mit den Einstellungen seines Papers analysiert. Die ersten vier sind die aus Tab. 17. Ein Link kann auch einen Datensatz mit eigener Faktorzahl verlangen, etwa 4 gegen 6 Faktoren (Hier starten).",
         "rule": "Zuordnungsregel: eine Regel für jeden Datensatz, zu Beginn Hair et al. wie in Tab. 17.",
@@ -1656,5 +1708,13 @@
     "own_note": "Deine Daten, mit den Einstellungen, die mit ihnen gespeichert sind",
     "own_standard": "Mit dem Datensatz sind keine Einstellungen gespeichert; die Spalte nimmt die Standardeinstellungen.",
     "empty": "Wähle mindestens {min} Analysen: Hefte im Ladungen-Schritt Lösungen deiner Daten an, oder vergleiche Datensätze aus Meine Datensätze."
+  },
+  "nav": {
+    "back_to": "Zurück: {page}"
+  },
+  "toasts": {
+    "more": "+{n} weitere",
+    "dismiss_more": "Ausblenden",
+    "count": "×{n}"
   }
 }

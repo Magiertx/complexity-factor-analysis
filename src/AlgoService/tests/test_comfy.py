@@ -176,3 +176,11 @@ def test_discover_does_not_repeat_other_errors():
     with pytest.raises(Exception, match="no traces"):
         discover(miner, None)
     assert miner.calls == 1
+
+
+def test_the_same_failure_on_many_miners_or_measures_is_one_note():
+    from algorithms.comfy import _failure_note
+
+    assert _failure_note("boom", ["Alpha miner × Size"]) == "Alpha miner × Size: boom"
+    assert _failure_note("boom", ["a", "b", "c"]) == "a, b, c: boom"
+    assert _failure_note("boom", ["a", "b", "c", "d", "e"]) == "a, b, c and 2 more: boom"

@@ -1,6 +1,18 @@
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
-import { deleteSessionDatasets, expect, expectStep, FIT_TIMEOUT, goToStep, openBundled, pattern, stepSection, test, text } from "./fixtures";
+import {
+  deleteSessionDatasets,
+  expect,
+  expectStep,
+  FIT_TIMEOUT,
+  goToStep,
+  openBundled,
+  pattern,
+  stepLink,
+  stepSection,
+  test,
+  text,
+} from "./fixtures";
 
 /** The serious and critical problems axe finds on the page, one line each. */
 async function seriousProblems(page: Page): Promise<string[]> {
@@ -82,6 +94,8 @@ for (const scheme of ["light", "dark"] as const) {
     await page.goto("/?bundled=comfy-paper-inductive-miner&preset=published");
     await expectStep(page, "loadings", "done");
     for (const step of ["data", "dataset", "suitability", "factors", "loadings", "interpretation"]) {
+      // Without an API key or a stored interpretation the last step cannot be opened.
+      if (step === "interpretation" && (await stepLink(page, step).getAttribute("aria-disabled")) === "true") continue;
       await goToStep(page, step);
       await page.waitForLoadState("networkidle");
       expect(await seriousProblems(page), step).toEqual([]);

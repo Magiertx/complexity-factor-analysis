@@ -649,8 +649,9 @@ async def _create_dataset(
 
     n_inputs = len(sample["files"]) if sample else len(uploads)
     noun = "log(s)" if source == "logs" else "net(s)"
-    given = name or (sample["name"] if sample else None)
-    display = given or f"{n_inputs} {noun}"
+    # Without a name of its own a dataset is called after its sample or its inputs; the name is
+    # made up then (name_auto), so the UI names it in its own language.
+    display = name or (sample["name"] if sample else f"{n_inputs} {noun}")
     chosen = {k: v for k, v in spec.items() if k in ("measures", "miners", "groups")}
     names = [Path(f).name for f in sample["files"]] if sample else _unique_labels(
         [_sanitize_filename(f.filename or "") for f in uploads]
@@ -659,7 +660,7 @@ async def _create_dataset(
     meta = storage.create(
         session_id, kind=kind, name=display, source=source, status="computing",
         inputs={"files": n_inputs, **chosen, **({"sample_id": sample["id"]} if sample else {})},
-        params=chosen, name_auto=given is None, provenance=origin,
+        params=chosen, name_auto=name is None, provenance=origin,
     )
     dataset_id = meta["id"]
     try:
@@ -675,9 +676,11 @@ async def _create_dataset(
         await run_in_threadpool(_keep_as_recent_logs, session_id, spec["inputs"])
 
     job_params = {"dataset_id": dataset_id, "source": source, **chosen}
-    if given:
+    if sample:
+        job_params["sample_id"] = sample["id"]
+    if name:
         # Without one, the UI names the job like the dataset, in its own language.
-        job_params["dataset_name"] = given
+        job_params["dataset_name"] = name
     job_id = str(uuid.uuid4())
     await jobs_db.create_job(
         job_id=job_id,
@@ -830,6 +833,8 @@ def _summary(meta: dict[str, Any], status: str) -> dict[str, Any]:
         "has_options": meta.get("options") is not None,
         # The rows of this miner were analysed last; null for all rows.
         "options_miner": (meta.get("options") or {}).get("miner"),
+        # The settings of its last analysis, as GET /datasets/{id} has them; null before one.
+        "options": meta.get("options"),
     }
 
 

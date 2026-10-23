@@ -444,9 +444,22 @@ export function isSolutionNotice(notice: AnalysisNotice): boolean {
   return SOLUTION_NOTICES.includes(notice.code);
 }
 
+/** A notice that only says what happened, e.g. that a single factor is not rotated. */
+export function isInfoNotice(notice: AnalysisNotice): boolean {
+  return INFO_NOTICES.includes(notice.code);
+}
+
+/**
+ * The notices on the factor solution that need attention, e.g. a possible Heywood case or too many
+ * factors for the measures. A factor count of one's own or of a paper is none: it is a choice.
+ */
+export function solutionProblems(analysis: FactorAnalysis): AnalysisNotice[] {
+  return analysisNotices(analysis).filter((n) => isSolutionNotice(n) && !isInfoNotice(n));
+}
+
 /** The factor solution needs attention, e.g. too many factors for the measures. */
 export function solutionNeedsAttention(analysis: FactorAnalysis): boolean {
-  return analysisNotices(analysis).some((n) => isSolutionNotice(n) && !INFO_NOTICES.includes(n.code));
+  return solutionProblems(analysis).length > 0;
 }
 
 export type KmoGrade =
@@ -582,6 +595,10 @@ export function jobTitle(job: Job, t: Translate): string {
   const kind = datasetJobKind(job);
   const name = job.params?.dataset_name;
   if (!kind) return jobDisplayName(job, t);
+  // A job of a sample is called after the sample; one stored before the sample was named apart
+  // carries its English name.
+  const sample = sampleName(t, job.params?.sample_id) ?? sampleName(t, SAMPLE_BY_NAME.get(name as string));
+  if (sample) return sample;
   if (typeof name === "string" && name) return name;
   // The backend names the input of a dataset job "<n> log(s)" or "<n> net(s)".
   const n = parseInt(job.filename, 10);
@@ -598,15 +615,34 @@ function inputsName(t: Translate, nets: boolean, n: number): string {
   return countText(t, `factor.data.auto_name.${nets ? "nets" : "logs"}`, n);
 }
 
+/** The bundled samples of logs and nets: the text of their name, and the server's English one. */
+const SAMPLES: Record<string, { key: string; en: string }> = {
+  "pdc-sample-logs": { key: "factor.data.sample_name.pdc_sample_logs", en: "Four PDC training logs" },
+  "pdc-sample-models": { key: "factor.data.sample_name.pdc_sample_models", en: "Petri nets of the four PDC logs" },
+};
+const SAMPLE_BY_NAME = new Map(Object.entries(SAMPLES).map(([id, s]) => [s.en, id]));
+
+/** The name of a bundled sample in the UI language; null for an id the UI does not know. */
+function sampleName(t: Translate, id: unknown): string | null {
+  const sample = typeof id === "string" ? SAMPLES[id] : undefined;
+  return sample ? t(sample.key) : null;
+}
+
 /**
  * The name of a dataset in the UI language where the server's is English: one it made up from
- * the inputs, or that of a bundled dataset, which the (localized) catalog has.
+ * the sample or the inputs, or that of a bundled dataset, which the (localized) catalog has.
  */
 export function datasetName(
   dataset: { name: string; name_auto?: boolean; source: string; inputs?: InputsSummary; bundled_id?: string | null },
   t: Translate,
   catalog?: FactorCatalog | null,
 ): string {
+  const sampleId = dataset.inputs?.sample_id;
+  // Called after its sample: made up by the server, or stored before that counted as made up.
+  if (sampleId && (dataset.name_auto || SAMPLES[sampleId]?.en === dataset.name)) {
+    const sample = sampleName(t, sampleId);
+    if (sample) return sample;
+  }
   if (dataset.name_auto) return inputsName(t, dataset.source === "pnml", dataset.inputs?.files ?? 0);
   // The server names a bundled dataset after its catalog entry; the UI gives it no other name.
   const bundled = dataset.bundled_id ? catalog?.bundled.find((b) => b.id === dataset.bundled_id) : undefined;
