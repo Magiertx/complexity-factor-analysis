@@ -43,8 +43,9 @@ export function useToasts(): ToastContextValue {
 
 /**
  * The one place for floating notices, at the bottom of the window: the newest on top, at most
- * three, the same notice once with a count, and the older ones folded into a line that leads to
- * the History. Each closes after ten seconds, but not while the pointer or the focus is on it.
+ * MAX_TOASTS (two) and the undo slot, the same notice once with a count, and the older ones folded
+ * into a line that leads to the History. Each closes after ten seconds, but not while the pointer
+ * or the focus is on it.
  */
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const t = useT();
