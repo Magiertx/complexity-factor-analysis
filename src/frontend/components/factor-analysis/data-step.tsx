@@ -168,7 +168,13 @@ export function DataForm({
       }
       setFiles([...files, ...fitting]);
     }
-    setNotice(messages.length > 0 ? messages.join(" ") : null);
+    // A few lines at most: the same message once, and of many the first three with a count.
+    const distinct = [...new Set(messages)];
+    setNotice(
+      distinct.length > 0
+        ? [...distinct.slice(0, 3), ...(distinct.length > 3 ? [t("toasts.more", { n: distinct.length - 3 })] : [])].join(" ")
+        : null,
+    );
   };
 
   // On the log tab the measures are chosen within their feature groups; a group with one measure

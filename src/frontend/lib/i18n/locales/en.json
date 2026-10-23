@@ -345,7 +345,9 @@
   },
   "result_panel": {
     "heading": "Result",
-    "download_all": "Download results (ZIP)"
+    "download_all": "Download results (ZIP)",
+    "notes_more": "Show {n} more",
+    "notes_fewer": "Show fewer"
   },
   "artifacts": {
     "petri_nets_heading": "Discovered Petri nets ({n})",
@@ -791,7 +793,8 @@
       "measurement_more": "Measured while the dataset was computed. A log is read once for all its miners. The ZIP has the seconds of every measure or feature group as well.",
       "view_log": "View this log",
       "view_log_more": "Opens the page for a single log with this log and the miner of the row chosen. It works while the log is among the newest uploads of this session.",
-      "view_log_gone": "The log is no longer among the newest uploads of this session."
+      "view_log_gone": "The log is no longer among the newest uploads of this session.",
+      "failures_more": "and {n} more"
     },
     "suitability": {
       "passed": "passed",
@@ -1708,5 +1711,10 @@
   },
   "nav": {
     "back_to": "Back to {page}"
+  },
+  "toasts": {
+    "more": "+{n} more",
+    "dismiss_more": "Hide",
+    "count": "×{n}"
   }
 }

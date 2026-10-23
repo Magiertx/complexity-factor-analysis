@@ -5,6 +5,7 @@ import { Undo2, X } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { Button } from "./button";
 import { Tip } from "./tip";
+import { ToastSlot } from "./toasts";
 
 const SHOW_MS = 10_000;
 
@@ -17,9 +18,10 @@ export interface UndoNotice {
 }
 
 /**
- * A floating notice at the bottom of the page with a one-step "Undo". It closes after ten
+ * A floating notice with a one-step "Undo", in the one place for notices at the bottom of the
+ * window (ToastProvider), whose live region screen readers announce it from. It closes after ten
  * seconds, but not while the pointer or the focus is on it, so there is time to reach it by
- * keyboard. The live region is always there, so screen readers announce each notice.
+ * keyboard. A new notice replaces the one before.
  */
 export function UndoToast({
   notice,
@@ -54,11 +56,7 @@ export function UndoToast({
   }, [notice, held]);
 
   return (
-    <div
-      role="status"
-      aria-live="polite"
-      className="undo-toast fixed inset-x-0 bottom-4 z-50 flex justify-center px-4 pointer-events-none"
-    >
+    <ToastSlot>
       {notice && (
         <div
           key={notice.id}
@@ -89,6 +87,6 @@ export function UndoToast({
           </Tip>
         </div>
       )}
-    </div>
+    </ToastSlot>
   );
 }

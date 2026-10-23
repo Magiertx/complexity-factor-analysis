@@ -63,6 +63,13 @@ export function DatasetView({
   const detailOf = (d: FactorDataset["dropped"][number]) =>
     (d.params && tMaybe(`factor.dataset.detail.${d.reason}`, d.params)) || d.detail;
   const failures = dataset.failures ?? [];
+  // The same error of many inputs is one line with the inputs it hit.
+  const failureGroups: { error: string; inputs: string[] }[] = [];
+  for (const f of failures) {
+    const group = failureGroups.find((g) => g.error === f.error);
+    if (group) group.inputs.push(f.input);
+    else failureGroups.push({ error: f.error, inputs: [f.input] });
+  }
   // A dataset computed from logs has a link at each row to the page of a single log.
   const logs = useRecentLogNames(dataset.source === "logs");
   const logLink = (label: string | undefined) =>
@@ -129,10 +136,13 @@ export function DatasetView({
           </summary>
           <p className="text-muted mt-2">{t("factor.dataset.failures_hint")}</p>
           <ul className="mt-2 space-y-1 max-h-48 overflow-y-auto">
-            {failures.map((f, i) => (
-              <li key={i} className="break-words">
-                <span className="font-medium">{f.input}</span>
-                <span className="text-muted">: {f.error}</span>
+            {failureGroups.map((g) => (
+              <li key={g.error} className="break-words">
+                <span className="font-medium">
+                  {g.inputs.slice(0, 3).join(", ")}
+                  {g.inputs.length > 3 && ` ${t("factor.dataset.failures_more", { n: g.inputs.length - 3 })}`}
+                </span>
+                <span className="text-muted">: {g.error}</span>
               </li>
             ))}
           </ul>

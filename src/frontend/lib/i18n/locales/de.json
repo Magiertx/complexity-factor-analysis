@@ -345,7 +345,9 @@
   },
   "result_panel": {
     "heading": "Ergebnis",
-    "download_all": "Ergebnisse herunterladen (ZIP)"
+    "download_all": "Ergebnisse herunterladen (ZIP)",
+    "notes_more": "{n} weitere zeigen",
+    "notes_fewer": "Weniger zeigen"
   },
   "artifacts": {
     "petri_nets_heading": "Gefundene Petri-Netze ({n})",
@@ -791,7 +793,8 @@
       "measurement_more": "Gemessen, während der Datensatz berechnet wurde. Ein Log wird für alle seine Miner einmal gelesen. Das ZIP enthält zusätzlich die Sekunden jedes Maßes oder jeder Feature-Gruppe.",
       "view_log": "Dieses Log ansehen",
       "view_log_more": "Öffnet die Seite für ein einzelnes Log mit diesem Log und dem Miner der Zeile. Das geht, solange das Log zu den neuesten Uploads dieser Sitzung gehört.",
-      "view_log_gone": "Das Log gehört nicht mehr zu den neuesten Uploads dieser Sitzung."
+      "view_log_gone": "Das Log gehört nicht mehr zu den neuesten Uploads dieser Sitzung.",
+      "failures_more": "und {n} weitere"
     },
     "suitability": {
       "passed": "bestanden",
@@ -1708,5 +1711,10 @@
   },
   "nav": {
     "back_to": "Zurück: {page}"
+  },
+  "toasts": {
+    "more": "+{n} weitere",
+    "dismiss_more": "Ausblenden",
+    "count": "×{n}"
   }
 }

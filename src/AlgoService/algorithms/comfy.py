@@ -184,8 +184,9 @@ class ComFyAlgorithm(AlgorithmBase):
         get_prom4py()
         event_log = read_event_log(file_path)
 
-        # Compute one row per miner.
-        notes: list[str] = []
+        # Compute one row per miner. A failure is noted once per message, with where it happened:
+        # one error of a measure on every miner is one note, not one per miner.
+        failures: dict[str, list[str]] = {}
         columns = ["Miner"] + [str(m) for m in measures]
         rows: list[list[Any]] = []
         pn_images: list[Any] = []
@@ -220,7 +221,7 @@ class ComFyAlgorithm(AlgorithmBase):
                         ))
             except Exception as e:
                 row.extend([f"ERR: {type(e).__name__}"] * len(measures))
-                notes.append(f"{miner}: discovery failed: {e}")
+                failures.setdefault(f"discovery failed: {e}", []).append(str(miner))
                 rows.append(row)
                 unreachable += isinstance(e, ProMUnavailable)
                 continue
@@ -231,8 +232,10 @@ class ComFyAlgorithm(AlgorithmBase):
                     row.append(_round(measure_value(measure, net, im, fm)))
                 except Exception as e:
                     row.append(f"ERR: {type(e).__name__}")
-                    notes.append(f"{miner} × {measure}: {e}")
+                    failures.setdefault(str(e), []).append(f"{miner} × {measure}")
             rows.append(row)
+
+        notes = [_failure_note(message, where) for message, where in failures.items()]
 
         # Single failures become ERR cells; if nothing computed at all (usually ProM4Py
         # being down), fail the job instead of returning a table of errors.
@@ -267,6 +270,14 @@ class ComFyAlgorithm(AlgorithmBase):
         if notes:
             artifacts.append(text("Notes", "\n\n".join(notes)))
         return AnalysisResult(artifacts=artifacts, summary=summary)
+
+
+def _failure_note(message: str, where: list[str]) -> str:
+    """One note for a failure: where it happened (the first few of many, with their count) and why."""
+    shown = ", ".join(where[:3])
+    if len(where) > 3:
+        shown += f" and {len(where) - 3} more"
+    return f"{shown}: {message}"
 
 
 def _round(value: Any) -> Any:
