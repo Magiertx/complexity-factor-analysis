@@ -14,6 +14,8 @@ import {
   isSolutionNotice,
   jobErrorText,
   jobTitle,
+  MIN_OBSERVATIONS,
+  tooFewKind,
   kmoGrade,
   noticeText,
   optionsFromSaved,
@@ -268,6 +270,26 @@ describe("datasetName", () => {
     const tDe = translator("de").t;
     expect(jobTitle(job({ params: { sample_id: "pdc-sample-models" } }), tDe)).toBe(de.factor.data.sample_name.pdc_sample_models);
     expect(jobTitle(job({ params: { dataset_name: "Four PDC training logs" } }), tDe)).toBe(de.factor.data.sample_name.pdc_sample_logs);
+  });
+
+  it("keeps the name a person gave a sample", () => {
+    const tDe = translator("de").t;
+    expect(jobTitle(job({ params: { sample_id: "pdc-sample-logs", dataset_name: "Mein Satz" } }), tDe)).toBe("Mein Satz");
+  });
+});
+
+describe("too few observations", () => {
+  it("says no choice of measures helps up to the fewest observations", () => {
+    expect(MIN_OBSERVATIONS).toBe(4);
+    expect(tooFewKind(1)).toBe("any");
+    expect(tooFewKind(3)).toBe("any");
+    expect(tooFewKind(4)).toBe("some");
+  });
+
+  it("counts one observation in the singular", () => {
+    const tDe = translator("de").t;
+    expect(countText(tDe, "factor.data.estimate_too_few_any.logs", 1, { needed: 4, limit: 10 })).toMatch(/^Mit 1 Log /);
+    expect(countText(tDe, "factor.data.estimate_too_few_any.logs", 3, { needed: 4, limit: 10 })).toMatch(/^Mit 3 Logs /);
   });
 });
 

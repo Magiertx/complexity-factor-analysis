@@ -394,6 +394,17 @@ export const STORAGE_PREFIXES = ["app.factor-dataset-", "app.factor-options-", "
 /** Fewest measures the backend accepts for an analysis. */
 export const MIN_MEASURES = 3;
 
+/** The fewest observations a factor analysis runs with: one more than the fewest measures. */
+export const MIN_OBSERVATIONS = MIN_MEASURES + 1;
+
+/**
+ * Which text says that there are too few observations: "any" where no choice of measures helps,
+ * since even the fewest measures need more observations, else "some", where fewer measures do.
+ */
+export function tooFewKind(rows: number): "any" | "some" {
+  return rows < MIN_OBSERVATIONS ? "any" : "some";
+}
+
 /** Rows of a dataset the browser loads and shows as a preview. */
 export const PREVIEW_ROWS = 8;
 
@@ -595,8 +606,9 @@ export function jobTitle(job: Job, t: Translate): string {
   const kind = datasetJobKind(job);
   const name = job.params?.dataset_name;
   if (!kind) return jobDisplayName(job, t);
-  // A job of a sample is called after the sample; one stored before the sample was named apart
+  // A name the person gave wins over the sample's; one stored before the sample was named apart
   // carries its English name.
+  if (typeof name === "string" && name && !SAMPLE_BY_NAME.has(name)) return name;
   const sample = sampleName(t, job.params?.sample_id) ?? sampleName(t, SAMPLE_BY_NAME.get(name as string));
   if (sample) return sample;
   if (typeof name === "string" && name) return name;

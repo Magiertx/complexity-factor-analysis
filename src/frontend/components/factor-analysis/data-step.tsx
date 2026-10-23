@@ -38,6 +38,8 @@ import {
 import { COMPARE_HREF, MAX_COLUMNS, MIN_COLUMNS, compareHref, ownColumnKey } from "@/lib/compare";
 import {
   MIN_MEASURES,
+  MIN_OBSERVATIONS,
+  tooFewKind,
   OBSERVATIONS_PER_MEASURE,
   countText,
   datasetName,
@@ -1269,7 +1271,11 @@ function Estimate({ unit, rows, cols, logs, miners, limit }: EstimateProps) {
       )}
       <div className="space-y-0.5 max-w-prose">
         {tooFew ? (
-          <div>{t(`factor.data.estimate_too_few.${unit}`, { rows, cols, max: Math.max(0, rows - 1), logs: logs ?? 0, miners: miners ?? 0, limit })}</div>
+          <div>
+            {tooFewKind(rows) === "any"
+              ? countText(t, `factor.data.estimate_too_few_any.${unit}`, rows, { needed: MIN_OBSERVATIONS, logs: logs ?? 0, miners: miners ?? 0, limit })
+              : t(`factor.data.estimate_too_few.${unit}`, { rows, cols, max: Math.max(0, rows - 1), logs: logs ?? 0, miners: miners ?? 0, limit })}
+          </div>
         ) : (
           <div>{t("factor.data.estimate", { rows, cols })}</div>
         )}

@@ -54,6 +54,8 @@ import {
   solutionKey,
   solutionProblems,
   MIN_MEASURES,
+  MIN_OBSERVATIONS,
+  tooFewKind,
   suggestedNames,
   trimNames,
   unassignedMeasures,
@@ -1859,6 +1861,8 @@ function AnalysisError({
   };
   const anyFix = Object.values(fixes).some(Boolean) || size;
   const n = Number(failure?.params.n ?? 0);
+  // With so few observations no choice of measures helps; only other data does.
+  const noneToChoose = fewRows && tooFewKind(n) === "any";
   return (
     <div role="alert" className="rounded-lg bg-danger/10 px-3.5 py-3 flex items-start gap-2.5 text-sm">
       <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
@@ -1870,8 +1874,10 @@ function AnalysisError({
         {/* Too few observations: what one is here, how many measures they carry, and the way out. */}
         {fewRows && (
           <p className="text-xs max-w-prose">
-            {t(`factor.analysis.observation.${observation}`, { n })}{" "}
-            {t("factor.analysis.too_few_observations_way", { n, max: Math.max(0, n - 1) })}
+            {countText(t, `factor.analysis.observation.${observation}`, n)}{" "}
+            {noneToChoose
+              ? countText(t, "factor.analysis.too_few_observations_any", n, { needed: MIN_OBSERVATIONS })
+              : t("factor.analysis.too_few_observations_way", { n, max: Math.max(0, n - 1) })}
           </p>
         )}
         <p className="text-xs text-muted">
@@ -1880,7 +1886,7 @@ function AnalysisError({
         </p>
         {anyFix && (
           <div className="flex gap-2 flex-wrap">
-            {fewRows && (
+            {fewRows && !noneToChoose && (
               <Button size="sm" variant="outline" onClick={onChooseMeasures}>
                 {t("factor.analysis.choose_measures")}
               </Button>

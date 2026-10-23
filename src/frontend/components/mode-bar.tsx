@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Columns3, History, Loader2, Microscope, Network, ScrollText } from "lucide-react";
 import { countText } from "@/lib/factor-analysis";
 import { formatPercent } from "@/lib/format";
-import { TAB_HREFS, activeTab, type TabId } from "@/lib/nav";
+import { TAB_HREFS, activeHeaderLink, activeTab, lastAnalysis, type TabId } from "@/lib/nav";
 import { useScrollFade } from "@/lib/use-scroll-fade";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
@@ -35,7 +35,7 @@ const descClass = "hidden sm:block text-[10px] font-normal text-muted";
 /**
  * The tabs of the app, the same on every page: the four analyses, and History at the end, which
  * also says what runs ("1 running · 37 %") and has a red dot for a run that failed unseen.
- * Exactly one is active on the page of a tab; the pages of the header activate none. On a phone the
+ * Exactly one is drawn active: the tab of the page, or on a page of the header the tab it leads back to. On a phone the
  * bar scrolls sideways, fading at the edge where more tabs lie beyond it.
  */
 export function ModeBar() {
@@ -45,10 +45,17 @@ export function ModeBar() {
   const { locale } = useLocale();
   // The print view belongs to the tab of its analysis, which its query names.
   const [search, setSearch] = useState("");
+  // The tab a page of the header leads back to; known only in the browser, which remembers it.
+  const [lastTab, setLastTab] = useState<TabId | null>(null);
   useEffect(() => {
     setSearch(window.location.search);
+    setLastTab(activeHeaderLink(pathname) ? activeTab(lastAnalysis().split("?")[0]) : null);
   }, [pathname]);
+  // The page of the open tab; on a page of the header it is not a page of the tabs.
   const active = activeTab(pathname, search);
+  // The tab drawn as the active one: on a page of the header the tab it leads back to, so the bar
+  // always shows one, but without marking it as the page, which the header link is.
+  const shown = active ?? (activeHeaderLink(pathname) ? (lastTab ?? "model") : null);
 
   // What runs, e.g. "1 running · 37 %"; the waiting ones have no percentage yet.
   const running =
@@ -82,12 +89,13 @@ export function ModeBar() {
 
   const tab = (id: TabId, extra?: React.ReactNode, line?: React.ReactNode) => {
     const Icon = ICONS[id];
-    const on = active === id;
+    const on = shown === id;
     return (
       <Link
         key={id}
         href={TAB_HREFS[id]}
-        aria-current={on ? "page" : undefined}
+        aria-current={active === id ? "page" : undefined}
+        data-active={on ? "true" : undefined}
         className={cn(tabClass(on), id === "history" && "ml-auto")}
       >
         <span className="relative">

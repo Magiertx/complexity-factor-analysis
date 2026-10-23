@@ -32,6 +32,8 @@ test("every page marks exactly one entry, and History is at the same place on ea
     const marked = page.locator('header [aria-current="page"], nav[aria-label] [aria-current="page"]').filter({ visible: true });
     await expect(marked, route).toHaveCount(1);
     await expect(marked, route).toHaveAccessibleName(pattern(text(label)));
+    // One tab is drawn active on every page; on a page of the header it is the tab it leads back to.
+    await expect(tabs(page).locator('[data-active="true"]'), route).toHaveCount(1);
     // History is always there, leads to its page, and does not move.
     await expect(history(page), route).toHaveAttribute("href", "/runs");
     // Measured from the right end of the bar, which a scrollbar of the page does not move.

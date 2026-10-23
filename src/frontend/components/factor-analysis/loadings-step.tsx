@@ -247,6 +247,7 @@ export function LoadingsView({
         <div className="flex items-center justify-between gap-x-4 gap-y-2 flex-wrap">
           <div className="flex items-center gap-x-2 gap-y-2 flex-wrap">
             <Segmented<LoadingsLook>
+              variant="view"
               size="sm"
               aria-label={t("factor.loadings.look_label")}
               value={look}
@@ -274,6 +275,7 @@ export function LoadingsView({
             />
             {look === "matrix" && oblique && analysis.structure_loadings && (
               <Segmented
+                variant="view"
                 size="sm"
                 aria-label={t("factor.loadings.matrix_label")}
                 value={matrix}
@@ -286,6 +288,7 @@ export function LoadingsView({
             )}
             {look === "matrix" && (
               <Segmented<MeasureOrder>
+                variant="view"
                 size="sm"
                 aria-label={t("factor.loadings.order_label")}
                 value={order}

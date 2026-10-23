@@ -279,6 +279,7 @@ export function RunHistoryView() {
           <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-4">
             <ScrollFade className="min-w-0">
               <Segmented<TypeFilter>
+                variant="view"
                 aria-label={t("run_history.filter_type_aria")}
                 className="min-w-max"
                 value={type}
@@ -288,6 +289,7 @@ export function RunHistoryView() {
             </ScrollFade>
             <ScrollFade className="min-w-0">
               <Segmented<StatusFilter>
+                variant="view"
                 aria-label={t("run_history.filter_status_aria")}
                 className="min-w-max"
                 value={status}

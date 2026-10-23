@@ -76,7 +76,7 @@ test("too few observations: the error says what one is, and the measures are kep
   await goToStep(page, "suitability");
   const step = stepSection(page, "suitability");
   const error = step.getByRole("alert").filter({ hasText: text("factor.analysis.failed_title") });
-  await expect(error).toContainText(text("factor.analysis.observation.row", { n: 6 }));
+  await expect(error).toContainText(text("factor.analysis.observation.row_plural", { n: 6 }));
   await expect(error).toContainText(text("factor.analysis.too_few_observations_way", { n: 6, max: 5 }));
   await expect(error.getByRole("button", { name: text("factor.data.change") })).toBeVisible();
 
