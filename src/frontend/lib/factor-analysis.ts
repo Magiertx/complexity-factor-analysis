@@ -595,8 +595,9 @@ export function jobTitle(job: Job, t: Translate): string {
   const kind = datasetJobKind(job);
   const name = job.params?.dataset_name;
   if (!kind) return jobDisplayName(job, t);
-  // A job of a sample is called after the sample; one stored before the sample was named apart
+  // A name the person gave wins over the sample's; one stored before the sample was named apart
   // carries its English name.
+  if (typeof name === "string" && name && !SAMPLE_BY_NAME.has(name)) return name;
   const sample = sampleName(t, job.params?.sample_id) ?? sampleName(t, SAMPLE_BY_NAME.get(name as string));
   if (sample) return sample;
   if (typeof name === "string" && name) return name;

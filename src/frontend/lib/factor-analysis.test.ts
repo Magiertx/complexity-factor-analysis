@@ -269,6 +269,11 @@ describe("datasetName", () => {
     expect(jobTitle(job({ params: { sample_id: "pdc-sample-models" } }), tDe)).toBe(de.factor.data.sample_name.pdc_sample_models);
     expect(jobTitle(job({ params: { dataset_name: "Four PDC training logs" } }), tDe)).toBe(de.factor.data.sample_name.pdc_sample_logs);
   });
+
+  it("keeps the name a person gave a sample", () => {
+    const tDe = translator("de").t;
+    expect(jobTitle(job({ params: { sample_id: "pdc-sample-logs", dataset_name: "Mein Satz" } }), tDe)).toBe("Mein Satz");
+  });
 });
 
 describe("assignment rules", () => {
