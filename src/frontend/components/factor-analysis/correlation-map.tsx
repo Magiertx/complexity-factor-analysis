@@ -173,6 +173,7 @@ function MapBody({
             {t("factor.correlations.order_label")}
           </span>
           <Segmented<MapOrder>
+            variant="view"
             size="sm"
             aria-labelledby="fa-map-order-label"
             value={byFactor ? "factor" : "cluster"}

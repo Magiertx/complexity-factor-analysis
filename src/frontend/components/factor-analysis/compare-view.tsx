@@ -349,6 +349,7 @@ export function CompareView() {
           <div className="space-y-1.5">
             <FieldLabel id="cmp-look-label">{t("factor.loadings.look_label")}</FieldLabel>
             <Segmented<Look>
+              variant="view"
               size="sm"
               aria-labelledby="cmp-look-label"
               value={look}
