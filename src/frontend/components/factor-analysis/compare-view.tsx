@@ -660,8 +660,8 @@ function MembershipMatrix({
   return (
     <div className="space-y-2">
       <MatrixLegend />
-      <TableFrame label={t("compare.matrix_label")}>
-        <table ref={zone} className="data-table">
+      <TableFrame label={t("compare.matrix_label")} className="w-fit max-w-full">
+        <table ref={zone} className="data-table w-auto">
           <caption className="sr-only">
             {t("compare.matrix_caption", {
               rule: t(`factor.loadings.rule.${comparison.assignment_rule}.title`),
@@ -972,8 +972,8 @@ function DimensionTable({
       </Fragment>
     ));
   return (
-    <TableFrame label={t("compare.dimensions_label")}>
-      <table ref={zone} className="data-table">
+    <TableFrame label={t("compare.dimensions_label")} className="w-fit max-w-full">
+      <table ref={zone} className="data-table w-auto">
         <caption className="sr-only">
           {t("compare.dimensions_caption", { rule: t(`factor.loadings.rule.${comparison.assignment_rule}.title`) })}
         </caption>
@@ -1075,8 +1075,8 @@ function PairsMatrix({
   return (
     <div className="space-y-2">
       <p className="text-[11px] text-muted max-w-prose">{t("compare.pairs.legend")}</p>
-      <TableFrame label={t("compare.pairs.label")}>
-        <table ref={zone} className="data-table">
+      <TableFrame label={t("compare.pairs.label")} className="w-fit max-w-full">
+        <table ref={zone} className="data-table w-auto">
           <caption className="sr-only">
             {t("compare.pairs.caption", {
               rule: t(`factor.loadings.rule.${comparison.assignment_rule}.title`),

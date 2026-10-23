@@ -422,8 +422,8 @@ function LoadingsMatrix({
       />
       <Legend threshold={threshold} boldBy={boldBy} crossed={secondary.size > 0} strict={strict} />
       <MeasureListScope measures={onScreen}>
-        <TableFrame label={t("factor.loadings.table_heading")}>
-          <table ref={zone} className="data-table">
+        <TableFrame label={t("factor.loadings.table_heading")} className="w-fit max-w-full">
+          <table ref={zone} className="data-table w-auto">
             <caption className="sr-only">
               {countText(t, "factor.loadings.caption", k, { rotation: t(`factor.factors.rotation.${analysis.rotation}`) })}
               {oblique && ` (${t(`factor.loadings.matrix_${structure ? "structure" : "pattern"}`)})`}
