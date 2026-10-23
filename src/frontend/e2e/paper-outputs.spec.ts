@@ -210,20 +210,19 @@ test("the print view sets the loadings of many measures as a table, as the heatm
   await print.close();
 });
 
-test("the help icon opens the user guide", async ({ page }) => {
-  await page.goto("/");
-  await toolbar(page).getByRole("button", { name: text("factor.toolbar.help") }).click();
-  const [guide] = await Promise.all([
-    page.waitForEvent("popup"),
-    page.getByRole("menuitem", { name: pattern(text("factor.toolbar.guide")) }).click(),
-  ]);
+test("the guide in the header opens the user guide in the same tab, and leads back", async ({ page }) => {
+  await page.goto("/log");
+  await page.getByRole("navigation", { name: text("header.nav_aria") }).getByRole("link", { name: text("header.guide_label") }).click();
+  const guide = page;
   await expect(guide).toHaveURL(/\/guide$/);
   await expect(guide.getByRole("heading", { level: 1, name: text("guide.title") })).toBeVisible();
   const toc = guide.getByRole("navigation", { name: text("guide.toc") });
   await toc.getByRole("link", { name: text("guide.export.title") }).click();
   await expect(guide).toHaveURL(/#guide-export$/);
   await expect(guide.getByRole("heading", { level: 2, name: text("guide.export.title") })).toBeInViewport();
-  await guide.close();
+  // Back to the tab it came from.
+  await guide.getByRole("link", { name: text("nav.back_to", { page: text("mode_bar.log_label") }) }).click();
+  await expect(guide).toHaveURL(/\/log$/);
 });
 
 for (const language of ["en", "de"] as const) {

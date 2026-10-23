@@ -28,15 +28,21 @@ test("IF Inductive goes through all six steps and exports the analysis as ZIP", 
   // Kaiser's two factors leave a measure at the bound of the fit (a possible Heywood case),
   // which step 4 points out.
   await expectStep(page, "factors", "done|warn");
-  // Step 6 is reached: it offers an interpretation (with an API key on the server), shows a
-  // precomputed one, or says that the key is missing. It is never "not available yet" once
-  // the analysis is there. The test never starts an interpretation, which would cost money.
-  await expect(stepLink(page, "interpretation")).not.toHaveAccessibleName(pattern(`(${text("factor.state.locked")})`));
-  await goToStep(page, "interpretation");
-  const interpretation = stepSection(page, "interpretation");
-  await expect(interpretation.getByRole("button", { name: text("factor.interpretation.button") }).or(
-    interpretation.getByText(text("factor.interpretation.precomputed"), { exact: true }),
-  ).first()).toBeVisible();
+  // Step 6 offers an interpretation (with an API key on the server) or shows a stored one; without
+  // either the list of steps says it is not available here, and why. It is never "not available
+  // yet" once the analysis is there. The test never starts an interpretation, which would cost money.
+  const step6 = stepLink(page, "interpretation");
+  await expect(step6).not.toHaveAccessibleName(pattern(`(${text("factor.state.locked")})`));
+  if ((await step6.getAttribute("aria-disabled")) === "true") {
+    await expect(step6).toHaveAccessibleName(pattern(`(${text("factor.state.unavailable")})`));
+    await expect(step6).toContainText(/API key/);
+  } else {
+    await goToStep(page, "interpretation");
+    const interpretation = stepSection(page, "interpretation");
+    await expect(interpretation.getByRole("button", { name: text("factor.interpretation.button") }).or(
+      interpretation.getByText(text("factor.interpretation.precomputed"), { exact: true }),
+    ).first()).toBeVisible();
+  }
 
   // Step 2: 288 logs, 12 of the 13 measures (one is constant).
   await goToStep(page, "dataset");

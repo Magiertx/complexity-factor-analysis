@@ -70,16 +70,21 @@ test("each step is a view of its own, with an address, Back and Next, and the br
   await expect(page).toHaveURL(/\/\?step=loadings$/);
   await expect(stepSection(page, "loadings")).toBeVisible();
 
-  // The last step has Back but no Next.
-  await goToStep(page, "interpretation");
-  await expect(back("loadings")).toBeVisible();
+  // The last step to be had has Back but no Next: the interpretation, or the loadings where the
+  // server can give none.
+  if ((await stepLink(page, "interpretation").getAttribute("aria-disabled")) === "true") {
+    await goToStep(page, "loadings");
+    await expect(back("factors")).toBeVisible();
+  } else {
+    await goToStep(page, "interpretation");
+    await expect(back("loadings")).toBeVisible();
+  }
   await expect(page.getByRole("button", { name: /^Next:/ })).toHaveCount(0);
 });
 
-/** Starts the tour from the help menu of the toolbar. */
+/** Starts the tour from its icon at the end of the toolbar. */
 async function startTour(page: Page) {
-  await toolbar(page).getByRole("button", { name: text("factor.toolbar.help") }).click();
-  await page.getByRole("menuitem", { name: pattern(text("factor.tour_button")) }).click();
+  await toolbar(page).getByRole("button", { name: text("factor.tour_button"), exact: true }).click();
 }
 
 test("the tour opens the step of each stop", async ({ page }) => {
@@ -121,21 +126,26 @@ test("the tour keeps its spotlight below the settings row and ends on the step i
   await expect(stepSection(page, "loadings")).toBeVisible();
 });
 
-test("an interpretation that waits for a key is a key in the list of steps, not a lock", async ({ page }) => {
+test("an interpretation the server cannot give is unavailable with its reason, and no Next leads into it", async ({ page }) => {
   const status = await (await page.request.get("/api/factor-analysis/interpretation/status")).json();
-  test.skip(status.available, "the server has a key, so there is nothing to wait for");
+  test.skip(status.available || status.precomputed_only, "the server has a key or stored interpretations");
   await page.goto("/");
   await openBundled(page, "Inductive miner");
   await expectStep(page, "loadings", "done");
   const link = stepLink(page, "interpretation");
-  // Not disabled like a step that cannot be opened yet, and the tooltip says what it waits for.
-  await expect(link).not.toHaveAttribute("aria-disabled", "true");
-  await expect(link).toHaveAttribute("aria-description", pattern(text("factor.interpretation.state_needs_key")));
+  // Not a dead end to walk into: the list of steps says why, with a key instead of a lock.
+  await expect(link).toHaveAttribute("aria-disabled", "true");
+  await expect(link).toHaveAttribute("aria-description", pattern(text("factor.interpretation.unavailable_key")));
+  await expect(link).toContainText(text("factor.interpretation.unavailable_key"));
+  await expect(link).toHaveAccessibleName(pattern(`(${text("factor.state.unavailable")})`));
   await expect(link.locator("svg.lucide-key-round")).toBeVisible();
   await expect(link.locator("svg.lucide-lock")).toHaveCount(0);
+  // The loadings are the last step to go to.
+  await goToStep(page, "loadings");
+  await expect(page.getByRole("button", { name: /^Next:/ })).toHaveCount(0);
 });
 
-test("the toolbar opens Start here and My datasets, and says why a download waits", async ({ page }) => {
+test("the toolbar has the tools of the analysis only, and says why a download waits", async ({ page }) => {
   await page.goto("/");
   // Without a dataset the downloads are listed with the reason.
   await toolbar(page).getByRole("button", { name: text("factor.toolbar.export") }).click();
@@ -145,32 +155,38 @@ test("the toolbar opens Start here and My datasets, and says why a download wait
   await page.keyboard.press("Escape");
   await expect(zip).toHaveCount(0);
 
-  await openBundled(page, "Inductive miner");
-  await goToStep(page, "loadings");
-  await toolbar(page).getByRole("button", { name: text("factor.start.title"), exact: true }).click();
-  await expect(page).toHaveURL(/\/$/);
-  const card = stepSection(page, "data").getByRole("button", { name: pattern(text("factor.start.title")) });
-  await expect(card).toBeFocused();
-  await expect(card).toHaveAttribute("aria-expanded", "true");
+  // The ways to other pages are the tabs and the header, not icons of the toolbar.
+  await expect(toolbar(page).getByRole("link")).toHaveCount(0);
+  for (const gone of ["factor.start.title", "factor.data.source.mine", "factor.toolbar.guide"]) {
+    await expect(toolbar(page).getByRole("button", { name: text(gone), exact: true })).toHaveCount(0);
+  }
+  await expect(toolbar(page).getByRole("button")).toHaveCount(4);
+});
 
-  await goToStep(page, "dataset");
-  await toolbar(page).getByRole("button", { name: text("factor.data.source.mine"), exact: true }).click();
-  const mine = stepSection(page, "data").getByRole("radiogroup", { name: text("factor.data.source.mine") });
+test("the data step has Start here first and the datasets of the session as a source", async ({ page }) => {
+  await page.goto("/");
+  await openBundled(page, "Inductive miner");
+  await goToStep(page, "data");
+  const data = stepSection(page, "data");
+  // With a dataset open, Start here stays above it.
+  await expect(data.getByRole("button", { name: pattern(text("factor.start.title")) })).toBeVisible();
+  await data.getByRole("button", { name: text("factor.data.change") }).click();
+  const mine = data.getByRole("radiogroup", { name: text("factor.data.source.mine") });
   await expect(mine).toBeVisible();
-  await expect(mine.getByRole("radio", { checked: true })).toBeFocused();
+  await expect(mine.getByRole("radio", { name: "Important Factors: Inductive miner" })).toBeVisible();
 });
 
 test("an icon names itself in a tooltip, and explains itself after a while", async ({ page }) => {
   await page.goto("/");
-  const help = toolbar(page).getByRole("button", { name: text("factor.toolbar.help") });
-  await expect(help).toHaveAttribute("aria-description", text("factor.toolbar.help_more"));
-  await help.hover();
+  const tour = toolbar(page).getByRole("button", { name: text("factor.tour_button"), exact: true });
+  await expect(tour).toHaveAttribute("aria-description", text("factor.tour_title"));
+  await tour.hover();
   const tip = page.getByRole("tooltip");
-  await expect(tip).toContainText(text("factor.toolbar.help"));
+  await expect(tip).toContainText(text("factor.tour_button"));
   await expect(tip).not.toHaveClass(/tip--stage2/);
   // The explanation joins the name in the same box, 2 s after the pointer arrived.
   await expect(tip).toHaveClass(/tip--stage2/, { timeout: 4000 });
-  await expect(tip).toContainText(text("factor.toolbar.help_more"));
+  await expect(tip).toContainText(text("factor.tour_title"));
   await page.keyboard.press("Escape");
   await expect(tip).toHaveCount(0);
 });

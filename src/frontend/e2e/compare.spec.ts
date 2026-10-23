@@ -279,13 +279,17 @@ test("the comparison downloads as CSV, as LaTeX like Tab. 17 and as a ZIP with a
   expect(manifest.measure_labels).toBe("short_codes");
 });
 
-test("the toolbar of Model complexity leads to the comparison", async ({ page }) => {
+test("the Compare tab opens the comparison of Tab. 17, and is the one tab marked", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("link", { name: text("factor.toolbar.compare"), exact: true }).click();
-  await expect(page).toHaveURL(/\/compare\?/);
+  const tabs = page.getByRole("navigation", { name: text("mode_bar.aria_label") });
+  const tab = tabs.getByRole("link", { name: pattern(text("mode_bar.compare_label")) });
+  await tab.click();
+  await expect(page).toHaveURL(/\/compare$/);
   await expect(matrix(page)).toBeVisible({ timeout: FIT_TIMEOUT });
-  // The page belongs to the tab of the model measures.
-  await expect(page.getByRole("navigation", { name: text("mode_bar.aria_label") }).getByRole("link", { name: pattern(text("mode_bar.model_label")) })).toHaveAttribute("data-active", "true");
+  await expect(tab).toHaveAttribute("aria-current", "page");
+  await expect(tabs.locator('[aria-current="page"]')).toHaveCount(1);
+  // A tab of its own needs no way back to another one.
+  await expect(page.getByRole("main").getByRole("link", { name: pattern(text("mode_bar.model_label")) })).toHaveCount(0);
 });
 
 test.describe("on a phone", () => {

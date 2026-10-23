@@ -260,18 +260,21 @@ for (const lang of ["en", "de"] as const) {
   test.describe(`Start here (${lang})`, () => {
     test.use({ language: lang });
 
-    test("opens Important Factors with the paper settings in one click", async ({ page }) => {
+    test("opens Important Factors with the paper settings on its loadings in one click", async ({ page }) => {
       await page.goto("/");
       const data = stepSection(page, "data");
       await data.getByRole("link", { name: pattern(text("factor.start.scenario.if_inductive.title", {}, lang)) }).click();
-      await expectStep(page, "loadings", "done", lang);
-      // A link without a step opens the dataset step.
-      await expect(stepSection(page, "dataset")).toBeVisible();
+      // The result first: the loadings, with the chip of the published numbers at the top and the
+      // steps before them done.
+      await expect(page).toHaveURL(/\/\?step=loadings$/);
+      await expect(stepSection(page, "loadings").locator("table.data-table").first()).toBeVisible();
+      const chip = settingsRow(page, lang).getByRole("button", { name: text("factor.match.chip_match", {}, lang) });
+      await expect(chip).toBeVisible();
+      await expect(chip).toBeInViewport();
+      for (const step of ["data", "dataset", "suitability", "loadings"]) await expectStep(page, step, "done", lang);
+      await expect(page.locator('input[name="fa-assignment"]:checked')).toHaveValue("multi");
       await goToStep(page, "factors", lang);
       await expect(factorCount(page)).toHaveText("4");
-      await expect(
-        settingsRow(page, lang).getByRole("button", { name: text("factor.match.chip_match", {}, lang) }),
-      ).toBeVisible();
       // The card stays as it was left.
       await goToStep(page, "data", lang);
       await data.getByRole("button", { name: text("factor.data.change", {}, lang) }).click();
