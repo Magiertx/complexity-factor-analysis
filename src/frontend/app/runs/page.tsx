@@ -1,9 +1,11 @@
+"use client";
+
+// A client module itself: as a server page importing the view, the production build on Linux
+// (Next.js 15.5) failed to prerender /runs with "Could not find the module ... in the React
+// Client Manifest", once the page of a single log listed its recent runs as well.
 import { Suspense } from "react";
-import type { Metadata } from "next";
 import { RunHistoryView } from "@/components/run-history-view";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
-
-export const metadata: Metadata = { title: "History" };
 
 export default function RunsPage() {
   return (
