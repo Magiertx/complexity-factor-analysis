@@ -12,6 +12,7 @@ import { IconButton } from "@/components/ui/icon-button";
 import { Popover } from "@/components/ui/popover";
 import { TableFrame } from "@/components/ui/table";
 import { useTip } from "@/components/ui/tip";
+import { useScrollFade } from "@/lib/use-scroll-fade";
 
 /** The control each chip of the row leads to; see the ids in the steps. */
 export const SETTING_CONTROLS: Record<SettingChip["id"], string> = {
@@ -73,29 +74,6 @@ function useStickyOffset(ref: RefObject<HTMLElement | null>) {
   }, [ref]);
 }
 
-/** Whether a container that scrolls sideways has more content to its right. */
-function useMoreToTheRight(ref: RefObject<HTMLElement | null>): boolean {
-  const [more, setMore] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const update = () => setMore(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
-    update();
-    el.addEventListener("scroll", update, { passive: true });
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(update);
-    observer?.observe(el);
-    if (el.firstElementChild) observer?.observe(el.firstElementChild);
-    return () => {
-      el.removeEventListener("scroll", update);
-      observer?.disconnect();
-    };
-  }, [ref]);
-  return more;
-}
-
-/** Fades the right edge of the chips while more of them lie beyond it, on a phone. */
-const FADE_RIGHT = "linear-gradient(to right, black calc(100% - 2rem), transparent)";
-
 interface Props {
   options: AnalysisOptions;
   standard: AnalysisOptions;
@@ -143,7 +121,7 @@ export function SettingsRow({
   const rowRef = useRef<HTMLElement>(null);
   const chipsRef = useRef<HTMLDivElement>(null);
   useStickyOffset(rowRef);
-  const fade = useMoreToTheRight(chipsRef);
+  useScrollFade(chipsRef);
   const chips = settingsSummary(options, standard, analysis, measureCount, t);
   const source = settingsSourceText(publishedSource, publishedScope, t);
   const isStandard = sameOptions(options, standard);
@@ -161,8 +139,7 @@ export function SettingsRow({
       <div className="relative flex flex-col gap-1 px-2 py-1.5 lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-2 lg:gap-y-1">
         <div
           ref={chipsRef}
-          className="relative min-w-0 overflow-x-auto no-scrollbar lg:overflow-x-visible"
-          style={fade ? { maskImage: FADE_RIGHT, WebkitMaskImage: FADE_RIGHT } : undefined}
+          className="scroll-fade relative min-w-0 overflow-x-auto no-scrollbar lg:overflow-x-visible lg:[mask-image:none] lg:[-webkit-mask-image:none]"
         >
           <ul className="flex items-center text-xs whitespace-nowrap lg:flex-wrap">
             {chips.map((chip, i) => (

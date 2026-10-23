@@ -2,6 +2,7 @@
 
 import { Fragment, createContext, useContext, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useScrollFade } from "@/lib/use-scroll-fade";
 
 /**
  * The measures to write as C with an index (the codes of log measures, lib/short-codes.ts), by
@@ -89,6 +90,7 @@ export function TableFrame({
     observer.observe(table);
     return () => observer.disconnect();
   }, []);
+  useScrollFade(ref);
   const scrolls = boxed || wide;
   return (
     <div
@@ -98,7 +100,7 @@ export function TableFrame({
       tabIndex={scrolls ? 0 : undefined}
       className={cn(
         // relative: screen-reader texts of the cells stay inside a frame that scrolls.
-        "table-frame relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+        "table-frame scroll-fade relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
         scrolls && "table-frame--scrolls",
         boxed ? "overflow-auto" : wide && "overflow-x-auto",
         className,
