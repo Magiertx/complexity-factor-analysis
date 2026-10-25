@@ -46,6 +46,8 @@
   },
   "mode_bar": {
     "aria_label": "Bereiche",
+    "analyses_aria": "Analysen",
+    "tools_aria": "Werkzeuge",
     "model_label": "Modellkomplexität",
     "model_desc": "Maße gefundener Prozessmodelle",
     "log_label": "Log-Komplexität",

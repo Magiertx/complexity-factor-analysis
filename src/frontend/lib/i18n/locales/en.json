@@ -46,6 +46,8 @@
   },
   "mode_bar": {
     "aria_label": "Sections",
+    "analyses_aria": "Analyses",
+    "tools_aria": "Tools",
     "model_label": "Model complexity",
     "model_desc": "Measures of discovered process models",
     "log_label": "Log complexity",

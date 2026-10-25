@@ -1,8 +1,13 @@
 // The navigation of the app: the tabs of the mode bar and the links of the header, which one of
 // them a route makes active, and the page of the tabs that a page of the header leads back to.
 
-/** The tabs of the mode bar, in their order; History stands apart at the end. */
-export const TABS = ["model", "log", "compare", "inspect", "history"] as const;
+/**
+ * The tabs of the mode bar, in their order: the analyses, then the tools of the app (the comparison
+ * and the History), set apart at the end.
+ */
+export const ANALYSIS_TABS = ["model", "log", "inspect"] as const;
+export const TOOL_TABS = ["compare", "history"] as const;
+export const TABS = [...ANALYSIS_TABS, ...TOOL_TABS] as const;
 export type TabId = (typeof TABS)[number];
 
 export const TAB_HREFS: Record<TabId, string> = {

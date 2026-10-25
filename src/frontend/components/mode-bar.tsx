@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Columns3, History, Loader2, Microscope, Network, ScrollText } from "lucide-react";
 import { countText } from "@/lib/factor-analysis";
 import { formatPercent } from "@/lib/format";
-import { TAB_HREFS, activeTab, type TabId } from "@/lib/nav";
+import { ANALYSIS_TABS, TAB_HREFS, activeTab, type TabId } from "@/lib/nav";
 import { useScrollFade } from "@/lib/use-scroll-fade";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
@@ -20,9 +20,17 @@ const ICONS: Record<TabId, React.ComponentType<{ className?: string; "aria-hidde
   history: History,
 };
 
+/** A tab of an analysis: icon, label and from a small screen on the line that says what it is for. */
 const tabClass = (active: boolean) =>
   cn(
     "group relative inline-flex items-center gap-2.5 px-4 py-3 text-sm font-medium border-b-2 transition whitespace-nowrap shrink-0 appearance-none focus-visible:outline-none focus-visible:bg-surface focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
+    active ? "border-accent text-fg" : "border-transparent text-muted hover:text-fg hover:bg-surface/40",
+  );
+
+/** A tool of the app: smaller than the analyses, without the description line. */
+const toolClass = (active: boolean) =>
+  cn(
+    "group relative inline-flex items-center gap-2 px-3 py-3 text-[13px] font-medium border-b-2 transition whitespace-nowrap shrink-0 appearance-none focus-visible:outline-none focus-visible:bg-surface focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent",
     active ? "border-accent text-fg" : "border-transparent text-muted hover:text-fg hover:bg-surface/40",
   );
 
@@ -33,10 +41,12 @@ const iconClass = (active: boolean) =>
 const descClass = "hidden sm:block text-[10px] font-normal text-muted";
 
 /**
- * The tabs of the app, the same on every page: the four analyses, and History at the end, which
- * also says what runs ("1 running · 37 %") and has a red dot for a run that failed unseen.
- * Exactly one is active on the page of a tab; the pages of the header activate none. On a phone the
- * bar scrolls sideways, fading at the edge where more tabs lie beyond it.
+ * The tabs of the app, the same on every page, in two groups: the analyses (model and log
+ * complexity, a single log), and set apart on the right the tools of the app, the comparison and
+ * the History, which also says what runs ("1 running · 37 %") and has a red dot for a run that
+ * failed unseen. One nav with two labelled lists. Exactly one tab is active on the page of a tab;
+ * the pages of the header activate none. On a phone the bar scrolls sideways in the same order,
+ * fading at the edge where more tabs lie beyond it.
  */
 export function ModeBar() {
   const pathname = usePathname();
@@ -80,25 +90,38 @@ export function ModeBar() {
     return () => cancelAnimationFrame(frame);
   }, [active, locale]);
 
-  const tab = (id: TabId, extra?: React.ReactNode, line?: React.ReactNode) => {
+  const tab = (id: TabId) => {
     const Icon = ICONS[id];
     const on = active === id;
     return (
-      <Link
-        key={id}
-        href={TAB_HREFS[id]}
-        aria-current={on ? "page" : undefined}
-        className={cn(tabClass(on), id === "history" && "ml-auto")}
-      >
-        <span className="relative">
+      <li key={id} className="flex">
+        <Link href={TAB_HREFS[id]} aria-current={on ? "page" : undefined} className={tabClass(on)}>
           <Icon className={iconClass(on)} aria-hidden />
-          {extra}
-        </span>
-        <span className="flex flex-col items-start leading-tight">
-          <span>{t(`mode_bar.${id}_label`)}</span>
-          {line ?? <span className={descClass}>{t(`mode_bar.${id}_desc`)}</span>}
-        </span>
-      </Link>
+          <span className="flex flex-col items-start leading-tight">
+            <span>{t(`mode_bar.${id}_label`)}</span>
+            <span className={descClass}>{t(`mode_bar.${id}_desc`)}</span>
+          </span>
+        </Link>
+      </li>
+    );
+  };
+
+  const tool = (id: TabId, extra?: React.ReactNode, line?: React.ReactNode) => {
+    const Icon = ICONS[id];
+    const on = active === id;
+    return (
+      <li key={id} className="flex">
+        <Link href={TAB_HREFS[id]} aria-current={on ? "page" : undefined} className={toolClass(on)}>
+          <span className="relative">
+            <Icon className={iconClass(on)} aria-hidden />
+            {extra}
+          </span>
+          <span className="flex flex-col items-start leading-tight">
+            <span>{t(`mode_bar.${id}_label`)}</span>
+            {line}
+          </span>
+        </Link>
+      </li>
     );
   };
 
@@ -110,26 +133,32 @@ export function ModeBar() {
           className="scroll-fade flex items-stretch gap-1 overflow-x-auto no-scrollbar -mb-px"
           aria-label={t("mode_bar.aria_label")}
         >
-          {tab("model")}
-          {tab("log")}
-          {tab("compare")}
-          {tab("inspect")}
-          {tab(
-            "history",
-            // A failure nobody has seen yet; the History page shows it.
-            activity.failed > 0 && (
-              <>
-                <span aria-hidden className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-danger ring-2 ring-bg" />
-                <span className="sr-only">{t("mode_bar.jobs_failed")}</span>
-              </>
-            ),
-            running && (
-              <span className="flex items-center gap-1 text-[10px] font-normal text-accent-ink tabular-nums">
-                <Loader2 className="h-2.5 w-2.5 shrink-0 animate-spin" aria-hidden />
-                {running}
-              </span>
-            ),
-          )}
+          <ul aria-label={t("mode_bar.analyses_aria")} className="flex items-stretch gap-1 shrink-0">
+            {ANALYSIS_TABS.map((id) => tab(id))}
+          </ul>
+          {/* The tools of the app, set apart at the right end by a line before them. */}
+          <ul
+            aria-label={t("mode_bar.tools_aria")}
+            className="relative ml-auto flex items-stretch gap-0.5 shrink-0 pl-4 before:absolute before:left-1.5 before:top-1/2 before:h-6 before:w-px before:-translate-y-1/2 before:bg-border"
+          >
+            {tool("compare")}
+            {tool(
+              "history",
+              // A failure nobody has seen yet; the History page shows it.
+              activity.failed > 0 && (
+                <>
+                  <span aria-hidden className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-danger ring-2 ring-bg" />
+                  <span className="sr-only">{t("mode_bar.jobs_failed")}</span>
+                </>
+              ),
+              running && (
+                <span className="flex items-center gap-1 text-[10px] font-normal text-accent-ink tabular-nums">
+                  <Loader2 className="h-2.5 w-2.5 shrink-0 animate-spin" aria-hidden />
+                  {running}
+                </span>
+              ),
+            )}
+          </ul>
         </nav>
       </div>
     </div>
