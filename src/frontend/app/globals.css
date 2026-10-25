@@ -218,6 +218,17 @@
     display: block;
     animation: tip-wait var(--tip-wait, 1300ms) linear forwards;
   }
+  /* A marker of the steps that has just changed, e.g. to done (step-nav.tsx). */
+  @keyframes marker-in {
+    from {
+      transform: scale(0.6);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
   @keyframes tip-wait {
     to {
       transform: scaleX(1);
