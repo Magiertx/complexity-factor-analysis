@@ -1433,8 +1433,8 @@ export function DataSummary({
   const { locale } = useLocale();
   const name = datasetName(dataset, t, catalog);
   const withRun = !!dataset.job_id;
-  const title =
-    "rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
+  // Only a focus target for screen readers after a load: no ring around plain text.
+  const title = "outline-none";
 
   if (dataset.status === "computing") {
     const pct = progressPercent(dataset.progress);
@@ -1505,7 +1505,7 @@ export function DataSummary({
   }
 
   return (
-    <div className="rounded-lg bg-tile/50 p-4 space-y-4">
+    <div data-summary className="rounded-lg bg-tile/50 p-4 space-y-4 scroll-mb-24">
       <div className="flex items-start gap-3 min-w-0">
         <div className="h-8 w-8 rounded-full bg-success/15 grid place-items-center shrink-0" aria-hidden>
           <Check className="h-4 w-4 text-success-ink" strokeWidth={2.5} />

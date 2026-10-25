@@ -504,14 +504,18 @@ export function StepNavBar({
   locks,
   unavailable,
   onGo,
+  hideNext = false,
 }: {
   step: StepId;
   locks: StepLocks;
   unavailable: Partial<Record<StepId, string>>;
   onGo: (step: StepId) => void;
+  /** The data step has its own way on, so the bar offers none there, as the footer of a wide screen. */
+  hideNext?: boolean;
 }) {
   const t = useT();
-  const { previous, next } = reachable(step, unavailable);
+  const { previous, next: reachableNext } = reachable(step, unavailable);
+  const next = hideNext ? null : reachableNext;
   const reason = next ? locks[next] : null;
   // The page keeps room for the bar at its end, so the bar never hides the last lines.
   useEffect(() => {
@@ -544,7 +548,7 @@ export function StepNavBar({
         )}
         {/* The data step has its own primary button (load, or on from the loaded dataset). */}
         {next ? (
-          <NextButton next={next} lock={locks[next]} onGo={onGo} compact quiet={step === "data"} />
+          <NextButton next={next} lock={locks[next]} onGo={onGo} compact />
         ) : (
           <span className="w-[4.5rem]" />
         )}

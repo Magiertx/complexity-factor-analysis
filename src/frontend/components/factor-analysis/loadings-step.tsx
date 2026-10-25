@@ -664,7 +664,7 @@ function LoadingsMatrix({
           role="radiogroup"
           aria-label={label}
           aria-describedby={note ? `${id}-note` : undefined}
-          className={cn("flex gap-1 rounded-md bg-tile p-1 max-w-full", vertical ? "flex-col" : "flex-wrap w-fit")}
+          className={cn("flex gap-2 max-w-full", vertical ? "flex-col" : "flex-wrap w-fit")}
         >
           {ASSIGNMENT_RULES.map((rule) => (
             <RuleOption
@@ -701,7 +701,7 @@ function LoadingsMatrix({
       <label
         ref={tip}
         // The one look of a chosen tile (docs/UI.md).
-        className={cn("flex items-start gap-2 rounded px-2.5 py-1.5 min-w-0", choiceTile(chosen))}
+        className={cn("flex items-start gap-2 rounded-md px-2.5 py-1.5 min-w-0", choiceTile(chosen))}
       >
         <input
           type="radio"

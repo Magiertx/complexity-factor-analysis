@@ -1,5 +1,6 @@
 "use client";
 
+import { InfoTip } from "@/components/ui/info-tip";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -315,7 +316,14 @@ export function RunHistoryView() {
           ) : filtered.length === 0 ? (
             <div className="p-4">
               <EmptyState icon={<HistoryIcon className="h-5 w-5" aria-hidden />}>
-                {rows.length === 0 ? t("run_history.empty") : t("run_history.none_match")}
+                {rows.length === 0 ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    {t("run_history.empty")}
+                    <InfoTip topic={t("run_history.empty")} text={t("run_history.empty_more")} />
+                  </span>
+                ) : (
+                  t("run_history.none_match")
+                )}
               </EmptyState>
             </div>
           ) : (
