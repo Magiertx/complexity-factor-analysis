@@ -1,0 +1,49 @@
+name: Audit
+
+on:
+  schedule:
+    # Mondays, 05:17 UTC.
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: src/frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - run: npm ci
+
+      # Production dependencies only; fails on high and critical advisories.
+      - run: npm audit --omit=dev --audit-level=high
+
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - run: pip install pip-audit
+
+      # PYSEC-2026-1976 (tqdm 4.65.0) is ignored: feeed 2.2.0, the newest release,
+      # requires exactly tqdm==4.65.0. Drop the flag once feeed lifts that pin.
+      - run: >-
+          pip-audit -r src/AlgoService/constraints.txt --no-deps --disable-pip
+          --ignore-vuln PYSEC-2026-1976
