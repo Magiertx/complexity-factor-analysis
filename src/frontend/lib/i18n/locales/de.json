@@ -18,7 +18,9 @@
     "try_again": "Erneut versuchen",
     "undo": "Rückgängig",
     "info_aria": "Erklärung: {topic}",
-    "dismiss": "Ausblenden"
+    "dismiss": "Ausblenden",
+    "more": "mehr",
+    "less": "weniger"
   },
   "header": {
     "tagline": "Komplexitätsmaße von Prozessmodellen und Event-Logs",
@@ -1615,6 +1617,8 @@
   "compare": {
     "title": "Faktorstrukturen vergleichen",
     "subtitle": "Welche Maße für welchen Miner welche Dimension bilden, wie in Tab. 17 von Important Factors. Jede Spalte ist eine Analyse: ein veröffentlichter Datensatz mit den Einstellungen seines Papers oder einer deiner Datensätze mit den Einstellungen, die mit ihm gespeichert sind. Eine Zuordnungsregel gilt für alle.",
+    "subtitle_short": "Welche Maße für welchen Miner welche Dimension bilden.",
+    "choice": "Auswahl",
     "wait": "Der Vergleich wird noch berechnet.",
     "wait_update": "Der Vergleich wird aktualisiert.",
     "stale": "Die Tabelle zeigt die vorherige Auswahl; die Aktualisierung ist fehlgeschlagen.",
@@ -1647,7 +1651,6 @@
     "group_none_plural": "In keiner Dimension · {n} Maße",
     "alignment_note": "D1, D2, … sind die Dimensionen nach dem Abgleich: Der erste Datensatz behält die Nummern seiner Faktoren, die Faktoren jedes weiteren werden ihnen so zugeordnet, dass möglichst viele ihrer gemeinsamen Maße dieselbe Nummer bekommen. Eine Nummer kann von der des Papers abweichen (Tab. 17 wurde von Hand umnummeriert); wie die Maße innerhalb eines Datensatzes gruppiert sind, hängt nicht davon ab.",
     "same_as": "dieselben Ladungen wie {other}.",
-    "column_notes": "Hinweise zu den Datensätzen",
     "codes_more": "Nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder dens, in den Tabellen und in der LaTeX-Tabelle. Der volle Name steht im Tooltip.",
     "link_more": "Einen Link kopieren, der diesen Vergleich öffnet: die Datensätze und die Regel",
     "header": {
@@ -1731,13 +1734,20 @@
       "self_plural": "In einer Dimension in {assigned} von {n} Datensätzen, die es analysiert haben.",
       "never": "Kein Datensatz hat beide analysiert.",
       "never_self": "Kein Datensatz hat es analysiert.",
-      "fraction": "{together} von {analysed}"
+      "fraction": "{together} von {analysed}",
+      "legend_short": "Wie oft zwei Maße eine Dimension teilen."
     },
     "own_unknown": "Datensatz dieser Sitzung",
     "own_k": "k = {k}",
     "own_note": "Deine Daten, mit den Einstellungen, die mit ihnen gespeichert sind",
     "own_standard": "Mit dem Datensatz sind keine Einstellungen gespeichert; die Spalte nimmt die Standardeinstellungen.",
-    "empty": "Wähle mindestens {min} Analysen: Hefte im Ladungen-Schritt Lösungen deiner Daten an, oder vergleiche Datensätze aus Meine Datensätze."
+    "empty": "Wähle mindestens {min} Analysen: Hefte im Ladungen-Schritt Lösungen deiner Daten an, oder vergleiche Datensätze aus Meine Datensätze.",
+    "notes": {
+      "title": "Hinweise ({n})",
+      "column_aria": "Hinweise zu {column}: {n}",
+      "warning": "Warnung",
+      "info": "Hinweis"
+    }
   },
   "nav": {
     "back_to": "Zurück: {page}"

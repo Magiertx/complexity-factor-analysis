@@ -55,6 +55,7 @@ import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
+import { ChoiceCard } from "@/components/ui/choice-card";
 import { IconButton } from "@/components/ui/icon-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { InfoTip } from "@/components/ui/info-tip";
@@ -597,45 +598,6 @@ function BundledList({
   );
 }
 
-/** The frame of a choosable card: the label covers it, the (i) sits in its top right corner. */
-function CardChoice({
-  name,
-  label,
-  chosen,
-  onSelect,
-  info,
-  describedBy,
-  children,
-}: {
-  name: string;
-  label: string;
-  chosen: boolean;
-  onSelect: () => void;
-  info?: React.ReactNode;
-  describedBy?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className={cn("relative rounded-md min-w-0", choiceTile(chosen))}>
-      <label className={cn("flex items-start gap-2.5 px-3 py-2.5 cursor-pointer min-w-0", info && "pr-9")}>
-        {/* Named by the label alone, so the short line describes the choice rather than renaming it. */}
-        <input
-          type="radio"
-          name={name}
-          className="sr-only"
-          checked={chosen}
-          onChange={onSelect}
-          aria-label={label}
-          aria-describedby={describedBy}
-        />
-        <ChoiceMark type="radio" checked={chosen} className="mt-0.5" />
-        <span className="min-w-0 flex-1">{children}</span>
-      </label>
-      {info && <span className="absolute right-2 top-2">{info}</span>}
-    </div>
-  );
-}
-
 const BADGE = "inline-flex items-center gap-1 rounded-full bg-tile px-2 py-0.5 text-[10px] font-medium text-muted";
 
 /** A way in of Get started: its name, one short line, and a badge of what it opens. */
@@ -663,11 +625,11 @@ function StartTile({
         ? t("factor.start.opens", { page: t(`mode_bar.${entry.to}_label`) })
         : t(`factor.data.preset.${entry.preset ?? "standard"}`);
   return (
-    <CardChoice
+    <ChoiceCard
       name={name}
       label={title}
-      chosen={chosen}
-      onSelect={onSelect}
+      checked={chosen}
+      onChange={onSelect}
       describedBy={shortId}
       info={<InfoTip size="xs" topic={title} text={t(`factor.start.scenario.${entry.id}.text`)} align="end" />}
     >
@@ -679,7 +641,7 @@ function StartTile({
         {(entry.to === "compare" || entry.to !== kind) && <Icon className="h-3 w-3" aria-hidden />}
         {badge}
       </span>
-    </CardChoice>
+    </ChoiceCard>
   );
 }
 
@@ -861,11 +823,11 @@ function BundledTile({
     note,
   ].filter((x): x is string => !!x);
   return (
-    <CardChoice
+    <ChoiceCard
       name={name}
       label={label}
-      chosen={chosen}
-      onSelect={onSelect}
+      checked={chosen}
+      onChange={onSelect}
       describedBy={shortId}
       info={
         <InfoTip size="xs" topic={label} text={details.join(" · ")} align="end">
@@ -880,7 +842,7 @@ function BundledTile({
         {short}
         {note && <span className="sr-only">. {note}</span>}
       </span>
-    </CardChoice>
+    </ChoiceCard>
   );
 }
 

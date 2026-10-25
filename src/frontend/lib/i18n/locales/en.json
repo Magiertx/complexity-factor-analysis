@@ -18,7 +18,9 @@
     "try_again": "Try again",
     "undo": "Undo",
     "info_aria": "About: {topic}",
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "more": "more",
+    "less": "less"
   },
   "header": {
     "tagline": "Complexity measures of process models and event logs",
@@ -1615,6 +1617,8 @@
   "compare": {
     "title": "Compare factor structures",
     "subtitle": "Which measures form which dimension for which miner, like Tab. 17 of Important Factors. Each column is an analysis: a published dataset with the settings of its paper, or one of your datasets with the settings saved with it. One assignment rule applies to all.",
+    "subtitle_short": "Which measures form which dimension for which miner.",
+    "choice": "Selection",
     "wait": "The comparison is still being computed.",
     "wait_update": "The comparison is being updated.",
     "stale": "The table shows the previous selection; the update failed.",
@@ -1647,7 +1651,6 @@
     "group_none_plural": "In no dimension · {n} measures",
     "alignment_note": "D1, D2, … are the dimensions after matching: the first dataset keeps the numbers of its factors, and the factors of every further one are matched to them so that most of the measures they share get the same number. A number can differ from the paper's (Tab. 17 was renumbered by hand); how the measures are grouped within a dataset does not depend on it.",
     "same_as": "the same loadings as {other}.",
-    "column_notes": "Notes on the datasets",
     "codes_more": "Names the measures by the codes of the papers, such as CNC or dens, in the tables and the LaTeX table. The full name stays in the tooltip.",
     "link_more": "Copy a link that opens this comparison: the datasets and the rule",
     "header": {
@@ -1731,13 +1734,20 @@
       "self_plural": "In a dimension in {assigned} of {n} datasets that analysed it.",
       "never": "No dataset analysed both.",
       "never_self": "No dataset analysed it.",
-      "fraction": "{together} of {analysed}"
+      "fraction": "{together} of {analysed}",
+      "legend_short": "How often two measures share a dimension."
     },
     "own_unknown": "Dataset of this session",
     "own_k": "k = {k}",
     "own_note": "Your data, with the settings saved with it",
     "own_standard": "no settings are saved with the dataset; the column uses the standard ones.",
-    "empty": "Choose at least {min} analyses: pin solutions in the loadings step of your data, or compare datasets from My datasets."
+    "empty": "Choose at least {min} analyses: pin solutions in the loadings step of your data, or compare datasets from My datasets.",
+    "notes": {
+      "title": "Notes ({n})",
+      "column_aria": "Notes on {column}: {n}",
+      "warning": "Warning",
+      "info": "Note"
+    }
   },
   "nav": {
     "back_to": "Back to {page}"

@@ -625,97 +625,28 @@ function LoadingsMatrix({
   }
 
   /**
-   * The rule that turns loadings into factor groups, as tiles. The thresholds next to it stay in
-   * effect; the rules differ in what happens to a measure that loads on several factors and in
-   * the least communality.
+   * The rule that turns loadings into factor groups, compact: one option per rule with the source it
+   * follows, and what it does in its tooltip. A row above the result of the loadings step, a column
+   * in the comparison. Radios, so the rule chip of the settings row lands on the chosen one.
    */
-  export function AssignmentChoice({
+  export function RuleChoice({
     value,
     onChange,
     note,
     id = "fa-assignment",
-  }: {
-    value: AssignmentRule;
-    onChange: (rule: AssignmentRule) => void;
-    /** Where the paper's tables differ from the chosen rule; read with the tiles. */
-    note: string | null;
-    /** The id of the block, and the start of the ids in it. */
-    id?: string;
-  }) {
-    const t = useT();
-    const { locale } = useLocale();
-    const limits = {
-      gap: formatNumber(RULE_LIMITS.gap, locale, 2),
-      h2_multi: formatNumber(RULE_LIMITS.multi_communality, locale, 1),
-      h2_hair: formatNumber(RULE_LIMITS.hair_communality, locale, 1),
-    };
-    const label = t("factor.loadings.assignment_label");
-    return (
-      // Its id is where the rule chip of the settings row leads.
-      <div id={id} className="space-y-2 scroll-mt-24">
-        <HelpLabel as="span" label={label} help={t("factor.help.assignment", limits)} />
-        <div
-          role="radiogroup"
-          aria-label={label}
-          aria-describedby={note ? `${id}-note` : undefined}
-          className="grid gap-2 sm:grid-cols-3"
-        >
-          {ASSIGNMENT_RULES.map((rule) => {
-            const chosen = rule === value;
-            return (
-              <label key={rule} className={cn("flex items-start gap-2.5 rounded-md px-3 py-2.5 min-w-0", choiceTile(chosen))}>
-                <input
-                  type="radio"
-                  name={id}
-                  value={rule}
-                  className="sr-only"
-                  checked={chosen}
-                  onChange={() => onChange(rule)}
-                  aria-label={t(`factor.loadings.rule.${rule}.title`)}
-                  aria-describedby={`${id}-${rule}-source ${id}-${rule}`}
-                />
-                <ChoiceMark type="radio" checked={chosen} className="mt-0.5" />
-                <span className="min-w-0">
-                  <span className="block text-sm font-medium">{t(`factor.loadings.rule.${rule}.title`)}</span>
-                  <span id={`${id}-${rule}-source`} className="block text-[11px] text-muted">
-                    {t(`factor.loadings.rule.${rule}.source`)}
-                  </span>
-                  <span id={`${id}-${rule}`} className="mt-1 block text-xs text-fg/80 leading-snug">
-                    {t(`factor.loadings.rule.${rule}.text`, limits)}
-                  </span>
-                </span>
-              </label>
-            );
-          })}
-        </div>
-        {note && (
-          <p id={`${id}-note`} className="flex items-start gap-1.5 text-xs text-muted max-w-prose">
-            <Info className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
-            <span>{note}</span>
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  /**
-   * The rule that turns loadings into factor groups, compact above the result of the loadings step:
-   * one option per rule with the source it follows, and what it does in its tooltip. Radios, so the
-   * rule chip of the settings row lands on the chosen one.
-   */
-  function RuleChoice({
-    value,
-    onChange,
-    note,
+    vertical,
   }: {
     value: AssignmentRule;
     onChange: (rule: AssignmentRule) => void;
     /** A note on the paper's tables follows the row, read with the options. */
     note: boolean;
+    /** The id of the block, and the name of its radios. */
+    id?: string;
+    /** One option under the other, for a narrow column. */
+    vertical?: boolean;
   }) {
     const t = useT();
     const { locale } = useLocale();
-    const id = "fa-assignment";
     const limits = {
       gap: formatNumber(RULE_LIMITS.gap, locale, 2),
       h2_multi: formatNumber(RULE_LIMITS.multi_communality, locale, 1),
@@ -730,7 +661,7 @@ function LoadingsMatrix({
           role="radiogroup"
           aria-label={label}
           aria-describedby={note ? `${id}-note` : undefined}
-          className="flex flex-wrap gap-1 rounded-md bg-tile p-1 w-fit max-w-full"
+          className={cn("flex gap-1 rounded-md bg-tile p-1 max-w-full", vertical ? "flex-col" : "flex-wrap w-fit")}
         >
           {ASSIGNMENT_RULES.map((rule) => (
             <RuleOption
@@ -766,10 +697,8 @@ function LoadingsMatrix({
     return (
       <label
         ref={tip}
-        className={cn(
-          "flex items-start gap-2 rounded px-2.5 py-1.5 min-w-0 cursor-pointer transition has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-accent",
-          chosen ? "bg-surface shadow-sm ring-[1.5px] ring-inset ring-accent" : "hover:bg-surface/60",
-        )}
+        // The one look of a chosen tile (docs/UI.md).
+        className={cn("flex items-start gap-2 rounded px-2.5 py-1.5 min-w-0", choiceTile(chosen))}
       >
         <input
           type="radio"
