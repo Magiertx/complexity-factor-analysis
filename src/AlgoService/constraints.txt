@@ -68,7 +68,7 @@ numpy==2.4.6
 opentelemetry-api==1.45.0
 packaging==26.3
 pandas==3.0.6
-pillow==12.3.0
+pillow==13.0.0
 pm4py==2.7.23.8
 prompt_toolkit==3.0.53
 pydantic==2.13.5
