@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Ban, ChevronLeft, ChevronRight, ExternalLink, Loader2, Plus, X } from "lucide-react";
+import { AlertTriangle, Ban, ChevronLeft, ChevronRight, ExternalLink, Loader2, Plus, X } from "lucide-react";
 import { fetchDescriptives, type Descriptives, type FactorAnalysis, type FactorDataset, type FactorMeasure } from "@/lib/api";
 import { assignedCells, factorName, signColor, type AnalysisOptions, type FactorNames } from "@/lib/factor-analysis";
 import { MIN_MEASURES } from "@/lib/factor-analysis";
@@ -225,12 +225,14 @@ function SheetBody({
             )}
             <span
               className={cn(
-                "rounded px-1.5 py-0.5",
+                "inline-flex items-center gap-1 rounded px-1.5 py-0.5",
                 status.tone === "ok" && "bg-success/10 text-success-ink",
                 status.tone === "warn" && "bg-warn/10 text-warn-ink",
                 status.tone === "muted" && "bg-tile text-muted",
               )}
             >
+              {/* A warning is a glyph as well as a colour. */}
+              {status.tone === "warn" && <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden />}
               {status.text}
             </span>
           </div>
