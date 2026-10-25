@@ -226,7 +226,7 @@ function MapBody({
             : t(high === 1 ? "factor.correlations.legend_high" : "factor.correlations.legend_high_plural", { n: high, limit })}
         </span>
       </div>
-      <p className="text-[11px] text-muted max-w-prose">{t("factor.correlations.hint")}</p>
+      <Brief className="text-[11px]" text={t("factor.correlations.hint")} topic={t("factor.correlations.heading")} />
 
       <MapTable data={data} layout={layout} measureName={measureName} />
     </div>

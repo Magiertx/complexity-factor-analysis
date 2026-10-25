@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
-import { AlertCircle, AlertTriangle, Ban, Columns3, FileSearch, Info } from "lucide-react";
+import { AlertCircle, AlertTriangle, Ban, Columns3, FileSearch } from "lucide-react";
 import {
   fetchRecentLogs,
   type Descriptives,
@@ -22,6 +22,7 @@ import { IconButton, IconLink } from "@/components/ui/icon-button";
 import { MeasureListScope, MeasureName, TableFrame } from "@/components/ui/table";
 import { useTip, useTipZone } from "@/components/ui/tip";
 import { InfoTip } from "@/components/ui/info-tip";
+import { Brief } from "@/components/ui/brief";
 import { FoldButton } from "./measure-fold";
 import { HelpLabel, StatTile } from "./step-section";
 
@@ -264,10 +265,7 @@ function MinerChoice({
           />
         ))}
       </div>
-      <p className="flex items-start gap-1.5 text-xs text-muted max-w-prose">
-        <Info className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
-        <span>{hint}</span>
-      </p>
+      <Brief text={hint} topic={t("factor.miners.label")} />
     </section>
   );
 }
@@ -426,11 +424,15 @@ function DescriptivesTable({
               </table>
             </TableFrame>
           </MeasureListScope>
-          <p className="text-[11px] text-muted max-w-prose">
-            {descriptives.basis === "input"
-              ? t("factor.dataset.descriptives_note", { n: descriptives.n_rows })
-              : t("factor.dataset.descriptives_note_cleaned")}
-          </p>
+          <Brief
+            className="text-[11px]"
+            topic={t("factor.dataset.descriptives_heading")}
+            text={
+              descriptives.basis === "input"
+                ? t("factor.dataset.descriptives_note", { n: descriptives.n_rows })
+                : t("factor.dataset.descriptives_note_cleaned")
+            }
+          />
         </>
       )}
     </div>
