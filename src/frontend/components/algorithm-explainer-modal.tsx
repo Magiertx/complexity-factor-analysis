@@ -47,8 +47,8 @@ export function AlgorithmExplainerModal({
       <div className="relative w-full max-w-2xl max-h-[85vh] rounded-lg bg-surface shadow-2xl ring-1 ring-border/70 overflow-hidden flex flex-col">
         <div className="flex items-start justify-between px-6 py-4 border-b border-border shrink-0">
           <div className="flex items-start gap-3 min-w-0">
-            <div className="h-10 w-10 rounded-md bg-accent/10 grid place-items-center shrink-0">
-              <HelpCircle className="h-5 w-5 text-accent-ink" />
+            <div className="h-10 w-10 rounded-md bg-tile text-muted grid place-items-center shrink-0">
+              <HelpCircle className="h-5 w-5" />
             </div>
             <div className="min-w-0">
               <h2 id="explainer-title" className="text-base font-semibold tracking-tight truncate">

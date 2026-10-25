@@ -108,9 +108,9 @@ export function InterpretationView({
         {announcement}
       </p>
       {error && (
-        <p role="alert" className="text-xs text-danger-ink">
+        <Notice tone="error" size="sm" role="alert">
           {error}
-        </p>
+        </Notice>
       )}
 
       {interpretation && (

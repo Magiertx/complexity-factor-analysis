@@ -8,7 +8,9 @@ phone.
 
 - **Tiles and cards** that can be chosen (dataset cards, the assignment rules, the datasets of a
   comparison) use `choiceTile` from `components/ui/choice.tsx`: a neutral surface, a 1.5 px
-  accent ring once chosen, and the check mark (`ChoiceMark`) beside the name.
+  accent ring once chosen, and the check mark (`ChoiceMark`) beside the name. `ChoiceCard`
+  (`components/ui/choice-card.tsx`) is such a card with its (i) in the corner. The entry on screen
+  in a list of links (the recent runs of a single log) has the same ring.
 - **Every Segmented control** (`components/ui/segmented.tsx`: view toggles, filters, the source
   of the data, language, theme, the toggles of the workbench) has one look: the chosen option is a
   raised neutral pill (surface, small shadow, a ring in the border colour). There is no variant.
@@ -18,7 +20,9 @@ phone.
 ## Colour
 
 - The accent (pink) marks the one primary action of a view, links, focus rings, the underline of
-  the active tab, the ring of a chosen tile and the marker of the current step.
+  the active tab, the ring of a chosen tile and the marker of the current step. A run in progress
+  (the activity line of the History, a progress bar) is the one other use.
+- Decorative icons sit on a neutral tile in the muted colour, never on an accent tint.
 - Warning and danger colours always come with a glyph (`AlertTriangle`, `AlertCircle`), never as
   colour alone.
 - Done is a quiet success tone with a check.

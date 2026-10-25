@@ -4,7 +4,6 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  AlertCircle,
   AlertTriangle,
   Check,
   ChevronRight,
@@ -1483,15 +1482,17 @@ export function DataSummary({
   if (dataset.status === "failed") {
     return (
       <div className="space-y-3">
-        <div role="alert" className="rounded-lg bg-danger/10 px-3.5 py-3 flex items-start gap-2.5">
-          <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
-          <div className="text-sm">
-            <div ref={titleRef} tabIndex={-1} className={cn("font-medium", title)}>
+        <Notice
+          tone="error"
+          role="alert"
+          title={
+            <div ref={titleRef} tabIndex={-1} className={title}>
               {t("factor.data.failed_title")}
             </div>
-            {dataset.error && <div className="text-muted mt-1 break-words">{dataset.error}</div>}
-          </div>
-        </div>
+          }
+        >
+          {dataset.error}
+        </Notice>
         {/* The same buttons, in the same order, as for a ready dataset. */}
         <div className="flex items-center gap-2 flex-wrap">
           <DeleteDataset withRun={withRun} onDelete={onDelete} />

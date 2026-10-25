@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { RotateCcw, Search } from "lucide-react";
+import { AlertCircle, Hourglass, RotateCcw, Search } from "lucide-react";
 import type { ParameterSpec } from "@/lib/api";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { InfoTip } from "@/components/ui/info-tip";
@@ -174,7 +174,12 @@ function Field({
           />
         </div>
         {hint}
-        {error && <span className="block text-[11px] text-danger-ink mt-1.5 font-medium">{error}</span>}
+        {error && (
+          <span className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-danger-ink">
+            <AlertCircle className="h-3 w-3 shrink-0" aria-hidden />
+            {error}
+          </span>
+        )}
       </div>
     );
   }
@@ -263,9 +268,10 @@ function Field({
                   <span className="font-medium">{o}</span>
                   {info?.slow && (
                     <span
-                      className="rounded bg-warn/15 text-warn-ink px-1 text-[10px] font-medium"
+                      className="inline-flex items-center gap-0.5 rounded bg-surface/70 text-muted px-1 text-[10px] font-medium"
                       title={t("parameter_form.slow_title")}
                     >
+                      <Hourglass className="h-2.5 w-2.5" aria-hidden />
                       {t("parameter_form.slow_badge")}
                     </span>
                   )}
@@ -279,7 +285,12 @@ function Field({
             {t("parameter_form.recommended", { value: spec.recommended })}
           </p>
         )}
-        {error && <span className="block text-[11px] text-danger-ink font-medium">{error}</span>}
+        {error && (
+          <span className="flex items-center gap-1 text-[11px] font-medium text-danger-ink">
+            <AlertCircle className="h-3 w-3 shrink-0" aria-hidden />
+            {error}
+          </span>
+        )}
       </fieldset>
     );
   }
@@ -300,7 +311,12 @@ function Field({
           />
         </div>
         {hint}
-        {error && <span className="block text-[11px] text-danger-ink mt-1.5 font-medium">{error}</span>}
+        {error && (
+          <span className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-danger-ink">
+            <AlertCircle className="h-3 w-3 shrink-0" aria-hidden />
+            {error}
+          </span>
+        )}
       </div>
     );
   }
@@ -324,7 +340,12 @@ function Field({
         />
       </div>
       {hint}
-      {error && <span className="block text-[11px] text-danger-ink mt-1.5 font-medium">{error}</span>}
+      {error && (
+          <span className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-danger-ink">
+            <AlertCircle className="h-3 w-3 shrink-0" aria-hidden />
+            {error}
+          </span>
+        )}
     </div>
   );
 }

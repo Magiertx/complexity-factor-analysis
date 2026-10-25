@@ -56,6 +56,7 @@ import { PageHeader } from "./page-header";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { EmptyState } from "./ui/empty-state";
+import { Notice } from "./ui/notice";
 import { IconButton } from "./ui/icon-button";
 import { Input } from "./ui/input";
 import { ScrollFade } from "./ui/scroll-fade";
@@ -259,10 +260,9 @@ export function RunHistoryView() {
       />
 
       {loadError && (
-        <div role="alert" className="rounded-lg bg-danger/10 px-4 py-3 flex items-start gap-3">
-          <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" aria-hidden />
-          <div className="text-sm">{t("run_history.load_error", { error: loadError })}</div>
-        </div>
+        <Notice tone="error" role="alert">
+          {t("run_history.load_error", { error: loadError })}
+        </Notice>
       )}
 
       <Card>
@@ -452,7 +452,10 @@ function HistoryItem({
           </div>
         )}
         {(row.status === "failed" || row.status === "aborted") && errorText && (
-          <p className="text-[11px] text-danger-ink break-words">{errorText}</p>
+          <p className="flex items-start gap-1 text-[11px] text-danger-ink break-words">
+            <AlertCircle className="h-3 w-3 mt-px shrink-0" aria-hidden />
+            {errorText}
+          </p>
         )}
         {job && (
           <div className="pt-0.5">

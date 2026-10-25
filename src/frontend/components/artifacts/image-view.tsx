@@ -167,7 +167,7 @@ export function ImageView({ artifact, runId, fixedHeight = false }: { artifact: 
           <figcaption className="px-3 py-2 text-xs text-muted border-t border-border bg-surface relative z-20 flex items-center justify-between gap-3 flex-wrap">
             <span>{caption || t("artifacts.image.process_model_fallback")}</span>
             {runId && (
-              <span className="text-[10px] font-mono bg-accent/15 text-accent-ink px-2 py-0.5 rounded-full shrink-0">
+              <span className="text-[10px] font-mono bg-tile text-muted px-2 py-0.5 rounded-full shrink-0">
                 {t("artifacts.image.run_label", { id: runId.slice(0, 8) })}
               </span>
             )}
@@ -228,7 +228,7 @@ export function ImageView({ artifact, runId, fixedHeight = false }: { artifact: 
             <button
               onClick={handleClose}
               title={t("artifacts.image.close_title")}
-              className="h-8 w-8 rounded-full flex items-center justify-center bg-accent/20 hover:bg-accent text-accent-ink hover:text-accent-fg transition"
+              className="h-8 w-8 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 text-zinc-100 transition"
             >
               <X className="h-4 w-4" />
             </button>
@@ -273,7 +273,7 @@ export function ImageView({ artifact, runId, fixedHeight = false }: { artifact: 
             {caption && <span className="text-zinc-500">·</span>}
             {caption && <span className="text-zinc-400">{caption}</span>}
             <span className="text-zinc-500">·</span>
-            <span className="text-accent-ink text-[11px] bg-accent/20 px-2 py-0.5 rounded-full">{bgLabel}</span>
+            <span className="text-zinc-200 text-[11px] bg-white/10 px-2 py-0.5 rounded-full">{bgLabel}</span>
           </div>
         </div>
       )}

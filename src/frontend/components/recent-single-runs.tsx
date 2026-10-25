@@ -60,9 +60,8 @@ function RunItem({ job, active }: { job: Job; active: boolean }) {
         aria-current={active ? "true" : undefined}
         className={cn(
           "relative flex items-start gap-2 rounded-md px-2 py-1.5 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-          active
-            ? "bg-tile before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-0.5 before:rounded-r before:bg-accent"
-            : "hover:bg-tile",
+          // The run on screen, marked like a chosen tile (docs/UI.md).
+          active ? "bg-surface ring-[1.5px] ring-inset ring-accent" : "hover:bg-tile",
         )}
       >
         <span className="min-w-0 flex-1">

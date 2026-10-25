@@ -13,6 +13,7 @@ import { IconButton } from "@/components/ui/icon-button";
 import { Sheet } from "@/components/ui/sheet";
 import { useTip } from "@/components/ui/tip";
 import { InfoTip } from "@/components/ui/info-tip";
+import { Notice } from "@/components/ui/notice";
 import type { CorrelationsState } from "./correlation-map";
 import { Histogram } from "./histogram";
 
@@ -560,7 +561,9 @@ function Closest({
         <InfoTip topic={t("factor.sheet.closest")} text={t("factor.sheet.closest_more")} />
       </div>
       {correlations.error ? (
-        <p className="text-xs text-danger-ink">{t("factor.sheet.closest_failed")}</p>
+        <Notice tone="error" size="sm">
+          {t("factor.sheet.closest_failed")}
+        </Notice>
       ) : !correlations.data ? (
         <p role="status" className="flex items-center gap-2 text-xs text-muted">
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
