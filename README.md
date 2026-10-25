@@ -49,8 +49,8 @@ Schalk do it, but interactively in the browser.
 - **Published analyses in one click.** The Important Factors datasets open with the tool
   standard or with the paper's settings, and with the paper's settings every analysis checks
   itself against the ComFy report: a chip says whether the numbers are equal, what was compared
-  and how the paper's own tables relate to it. "Start here" on the data step opens such an
-  analysis directly on its loadings, and "Copy link" shares an analysis of any bundled dataset
+  and how the paper's own tables relate to it. "Get started" on the data step loads such an
+  analysis in one click and leads to its loadings, and "Copy link" shares an analysis of any bundled dataset
   with its settings and the step on screen.
 - **Compare miners.** A page puts the factor structures of up to eight bundled datasets side by
   side, like Tab. 17 of Important Factors: per miner n, the measures after the MSA filter, KMO,

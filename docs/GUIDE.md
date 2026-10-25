@@ -12,26 +12,29 @@ guide shows the common tasks. Everything it describes is also available through 
 *Model complexity* (`/`) and *Log complexity* (`/log`) walk through the same steps: **Data**,
 **Dataset**, **Suitability**, **Factors**, **Loadings** and an optional **Interpretation**. One
 step is on screen at a time and has its own address (`?step=loadings`). The list of steps (on the
-left, on a phone a row at the top) shows what each step found; the settings row above the steps
+left, on a phone a row at the top) is a stepper: each marker fills in once its step is done and
+says in a line what it found; the settings row above the steps
 sums up every choice, marks those that differ from the tool standard and leads to each control.
 Every change of a setting runs the analysis again.
 
-The tabs at the top are the same on every page: *Model complexity*, *Log complexity*, *Compare*,
-*Single log* and *History*. The guide, the API and the settings are in the header and lead back
-to the tab you came from.
+The tabs at the top are the same on every page: the analyses *Model complexity*, *Log complexity*
+and *Single log*, and set apart on the right the tools *Compare* and *History*. The guide, the API
+and the settings are in the header and lead back to the tab you came from.
 
 ## Analyse a bundled dataset
 
 1. Open *Model complexity* or *Log complexity*.
 2. In **Data**, choose a dataset of a paper, for example *Important Factors: Inductive miner*.
 3. Choose **Paper settings** to analyse it as the paper did, or **Standard** for the defaults of
-   ComFy, then **Use dataset**.
+   ComFy, then **Load dataset**. The Data step stays on screen with what was loaded; its button
+   leads on.
 
 With the paper settings, a chip in the settings row says whether the numbers equal the published
 ComFy report (Bartlett, KMO, MSA, loadings) and how the tables of the paper relate to it.
-**Start here**, the first block of the Data step, lists the ways in. A published analysis opens on
-its **Loadings**, the result, with the steps before them done; on *Log complexity* it lists only
-the analyses of log measures, on *Model complexity* it also names the tab an entry opens.
+**Get started**, the first cards of the bundled datasets in the Data step, lists the ways in, each
+with a badge of what it opens. A published analysis loads in one click, and **View result** opens
+its **Loadings**, with the steps before them done; on *Log complexity* it lists only the analyses
+of log measures, on *Model complexity* it also names the tab or the comparison an entry opens.
 
 ## Analyse your own data
 
@@ -123,14 +126,16 @@ log is among the ten newest uploads of the session; the page says when it is not
 ## Compare miners
 
 **Compare miners** puts the factor structures of several published datasets side by side, like
-Tab. 17 of Important Factors: which measures form which dimension for which miner. It is the tab
-*Compare*, and Start here opens it, with the four miners of Tab. 17 (Alpha, Directly Follows,
-Inductive, Hybrid ILP) under Hair et al.
+Tab. 17 of Important Factors: which measures form which dimension for which miner. It is the tool
+*Compare*, at the right of the tabs, and Get started opens it, with the four miners of Tab. 17
+(Alpha, Directly Follows, Inductive, Hybrid ILP) under Hair et al. The datasets and the rule are on
+the left, the result on the right; the notes on a column are a count in its header and one folded
+list below the table.
 
 - **Datasets**: choose 2 to 8 of the miners of Important Factors; each is analysed with the
   settings of its paper. "As in Tab. 17" goes back to the four miners and Hair et al. A link can
   also ask for a dataset with a factor count of its own, such as the Inductive miner with 4 and
-  with 6 factors (a Start here entry opens it); that column has a tile of its own.
+  with 6 factors (a Get started card opens it); that column has a tile of its own.
 - **Your own data**: **Compare the miners** in the dataset step puts one column per miner,
   **Compare** in My datasets one column per dataset picked, and the **pin** at the loadings keeps
   the solution on screen (dataset, miner, factor count, rotation and rule): pin one with 4
