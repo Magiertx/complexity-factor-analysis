@@ -285,7 +285,7 @@ export function SettingsView() {
               ]}
             />
           </SettingRow>
-          <SettingRow label={t("settings.appearance.language_label")} hint={t("settings.appearance.language_hint")}>
+          <SettingRow label={t("settings.appearance.language_label")} hint={t("settings.appearance.language_hint")} short={t("settings.appearance.language_short")}>
             <LocaleSegmented />
           </SettingRow>
         </CardContent>
