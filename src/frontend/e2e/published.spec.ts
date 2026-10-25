@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import {
+  chooseOpenWith,
   deleteSessionDatasets,
   expect,
   expectStep,
@@ -44,7 +45,7 @@ async function expectRule(page: Page, rule: string) {
 async function openWith(page: Page, label: string, preset: "standard" | "published") {
   const data = stepSection(page, "data");
   await data.getByRole("radio", { name: label, exact: true }).check({ force: true });
-  await data.getByRole("radio", { name: text(`factor.data.preset.${preset}`), exact: true }).check({ force: true });
+  await chooseOpenWith(page, preset);
   await data.getByRole("button", { name: text("factor.data.submit_bundled") }).click();
   await expectStep(page, "loadings", "done");
 }
@@ -260,11 +261,16 @@ for (const lang of ["en", "de"] as const) {
   test.describe(`Start here (${lang})`, () => {
     test.use({ language: lang });
 
-    test("opens Important Factors with the paper settings on its loadings in one click", async ({ page }) => {
+    test("loads Important Factors with the paper settings and offers its loadings", async ({ page }) => {
       await page.goto("/");
       const data = stepSection(page, "data");
-      await data.getByRole("link", { name: pattern(text("factor.start.scenario.if_inductive.title", {}, lang)) }).click();
-      // The result first: the loadings, with the chip of the published numbers at the top and the
+      await data.getByRole("radio", { name: text("factor.start.scenario.if_inductive.title", {}, lang), exact: true }).check({ force: true });
+      await data.getByRole("button", { name: text("factor.data.submit_bundled", {}, lang) }).click();
+      // No jump: the data step says what was loaded, with which settings, and leads to the result.
+      await expect(data).toContainText(text("factor.data.preset.published", {}, lang));
+      await expect(page).toHaveURL(/\/$/);
+      await data.getByRole("button", { name: pattern(text("factor.data.to_result", {}, lang)) }).click();
+      // The result: the loadings, with the chip of the published numbers at the top and the
       // steps before them done.
       await expect(page).toHaveURL(/\/\?step=loadings$/);
       await expect(stepSection(page, "loadings").locator("table.data-table").first()).toBeVisible();
@@ -275,15 +281,6 @@ for (const lang of ["en", "de"] as const) {
       await expect(page.locator('input[name="fa-assignment"]:checked')).toHaveValue("multi");
       await goToStep(page, "factors", lang);
       await expect(factorCount(page)).toHaveText("4");
-      // The card stays as it was left.
-      await goToStep(page, "data", lang);
-      await data.getByRole("button", { name: text("factor.data.change", {}, lang) }).click();
-      const toggle = data.getByRole("button", { name: pattern(text("factor.start.title", {}, lang)) });
-      await expect(toggle).toHaveAttribute("aria-expanded", "true");
-      await toggle.click();
-      await page.reload();
-      await data.getByRole("button", { name: text("factor.data.change", {}, lang) }).click();
-      await expect(toggle).toHaveAttribute("aria-expanded", "false");
     });
   });
 }

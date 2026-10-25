@@ -6,6 +6,7 @@ import {
   expect,
   expectStep,
   goToStep,
+  nextFromData,
   openBundled,
   stepSection,
   test,
@@ -46,7 +47,9 @@ test("an uploaded CSV reopens from My datasets with its excluded measure", async
   });
   await data.getByRole("button", { name: text("factor.data.submit_csv") }).click();
   await expectStep(page, "suitability", "done");
-  // Loading the CSV opens the dataset step.
+  // The CSV is loaded in the data step, which leads on to the dataset step.
+  await expect(data).toContainText(text("factor.data.loaded", { name: "measures.csv" }).split(":")[0]);
+  await nextFromData(page).click();
   await expect(stepSection(page, "dataset")).toContainText("80");
 
   // Excluding a measure runs the analysis again and keeps the setting with the dataset.

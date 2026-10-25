@@ -30,11 +30,16 @@ async function openCompare(page: Page, query = "") {
   await expect(page.getByRole("status").filter({ hasText: text("compare.computing") })).toHaveCount(0, { timeout: FIT_TIMEOUT });
 }
 
-test("Start here opens the four miners of Tab. 17 under Hair et al., without a dataset of the session", async ({ page }) => {
+/** Chooses a card of Get started in the data step and opens the comparison it names. */
+async function openFromStart(page: Page, scenario: string) {
   await page.goto("/");
-  await stepSection(page, "data")
-    .getByRole("link", { name: pattern(text("factor.start.scenario.if_four_miners.title")) })
-    .click();
+  const data = stepSection(page, "data");
+  await data.getByRole("radio", { name: text(`factor.start.scenario.${scenario}.title`), exact: true }).check({ force: true });
+  await data.getByRole("button", { name: text("factor.data.submit_compare") }).click();
+}
+
+test("Get started opens the four miners of Tab. 17 under Hair et al., without a dataset of the session", async ({ page }) => {
+  await openFromStart(page, "if_four_miners");
   await expect(page).toHaveURL(new RegExp(`/compare\\?cols=${TABLE_17.join(",")}&rule=hair$`));
   await expect(matrix(page)).toBeVisible({ timeout: FIT_TIMEOUT });
 
@@ -61,18 +66,8 @@ test("Start here opens the four miners of Tab. 17 under Hair et al., without a d
   expect((await datasets.json()).datasets).toEqual([]);
 });
 
-test("the card of Important Factors in the data step leads to the comparison of its four miners", async ({ page }) => {
-  await page.goto("/");
-  await stepSection(page, "data").getByRole("link", { name: text("factor.data.compare_miners") }).click();
-  await expect(page).toHaveURL(new RegExp(`/compare\\?cols=${TABLE_17.join(",")}&rule=hair$`));
-  await expect(matrix(page)).toBeVisible({ timeout: FIT_TIMEOUT });
-});
-
-test("Start here opens the Inductive miner with 4 and with 6 factors, as section 6 does", async ({ page }) => {
-  await page.goto("/");
-  await stepSection(page, "data")
-    .getByRole("link", { name: pattern(text("factor.start.scenario.if_k4_k6.title")) })
-    .click();
+test("Get started opens the Inductive miner with 4 and with 6 factors, as section 6 does", async ({ page }) => {
+  await openFromStart(page, "if_k4_k6");
   await expect(page).toHaveURL(/\/compare\?cols=comfy-paper-inductive-miner,comfy-paper-inductive-miner~k6&rule=multi$/);
   await expect(matrix(page)).toBeVisible({ timeout: FIT_TIMEOUT });
   const second = "Inductive miner, k = 6";
