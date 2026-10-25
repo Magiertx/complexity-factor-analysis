@@ -50,7 +50,7 @@ test("the tab says how many runs run and how far they are, and goes back when th
   await serve(page, () => list);
   await page.goto("/");
   await expect(tab(page)).toContainText(text("mode_bar.jobs_running", { n: 1, pct: "37%" }));
-  // A spinner stands before it, and the usual line is gone while it runs.
+  // A spinner stands before it. History is a tool of the app: its line is there only while something runs.
   await expect(tab(page).locator("svg.animate-spin")).toBeVisible();
   await expect(tab(page)).not.toContainText(text("mode_bar.history_desc"));
 
@@ -64,10 +64,11 @@ test("the tab says how many runs run and how far they are, and goes back when th
   await refresh(page);
   await expect(tab(page)).toContainText(text("mode_bar.jobs_waiting", { n: 1 }));
 
-  // Nothing runs: the line of the tab as before.
+  // Nothing runs: the tab is its name alone again.
   list = [job("aborted")];
   await refresh(page);
-  await expect(tab(page)).toContainText(text("mode_bar.history_desc"));
+  await expect(tab(page)).not.toContainText(text("mode_bar.jobs_waiting", { n: 1 }));
+  await expect(tab(page)).toHaveAccessibleName(text("mode_bar.history_label"));
   await expect(tab(page).locator("svg.animate-spin")).toHaveCount(0);
 });
 
