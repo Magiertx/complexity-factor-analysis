@@ -17,6 +17,11 @@ import {
 
 test.afterEach(async ({ page }) => deleteSessionDatasets(page));
 
+/** The header of a column as its text reads: the title, then the count of its notes where it has any. */
+function column(title: string): RegExp {
+  return new RegExp(`^${pattern(title).source}\\d*$`);
+}
+
 function matrix(page: Page) {
   return page.getByRole("table", { name: pattern(text("compare.matrix_caption", { rule: "", columns: "" }).split(":")[0]) });
 }
@@ -56,8 +61,8 @@ test("two pinned solutions of one dataset, with 4 and 6 factors, side by side", 
   const label = "Important Factors: Inductive miner";
   await expect(matrix(page).locator("thead").getByRole("columnheader")).toHaveText([
     text("factor.loadings.col_measure"),
-    `${label} · k = 4 · ${text("factor.settings.rotation.varimax")}`,
-    `${label} · k = 6 · ${text("factor.settings.rotation.varimax")}`,
+    column(`${label} · k = 4 · ${text("factor.settings.rotation.varimax")}`),
+    column(`${label} · k = 6 · ${text("factor.settings.rotation.varimax")}`),
   ]);
   await expect(headerCells(page, text("compare.header.factors"))).toHaveText(["4", "6"]);
   await expect(page.locator('input[name="cmp-rule"]:checked')).toHaveValue("multi");
@@ -90,7 +95,8 @@ test("datasets picked in My datasets are compared side by side, each with its sa
   await expect(matrix(page)).toBeVisible({ timeout: FIT_TIMEOUT });
   await expect(matrix(page).locator("thead").getByRole("columnheader")).toHaveCount(3);
   await expect(headerCells(page, text("compare.header.n"))).toHaveText(["288", "288"]);
-  // No settings were saved with the copies: each column says it took the standard ones.
+  // No settings were saved with the copies: each column says it took the standard ones, in its notes.
+  await page.locator("summary").filter({ hasText: /^Notes \(\d+\)$/ }).click();
   await expect(page.getByText(text("compare.own_standard")).first()).toBeVisible();
 });
 

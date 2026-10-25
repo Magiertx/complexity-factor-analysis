@@ -12,6 +12,12 @@ const TABLE_17 = [
   "comfy-paper-inductive-miner",
   "comfy-paper-hybrid-ilp-miner",
 ];
+
+/** The header of a column as its text reads: the title, then the count of its notes where it has any. */
+function column(title: string): RegExp {
+  return new RegExp(`^${pattern(title).source}\\d*$`);
+}
+
 const FOUR = ["Alpha miner", "Directly Follows miner", "Inductive miner", "Hybrid ILP miner"];
 
 function matrix(page: Page, lang: "en" | "de" = "en") {
@@ -21,6 +27,17 @@ function matrix(page: Page, lang: "en" | "de" = "en") {
 /** The cells of a measure's row in the matrix, after its name. */
 function cells(page: Page, measure: string) {
   return matrix(page).getByRole("row", { name: new RegExp("^" + pattern(measure).source) }).getByRole("cell");
+}
+
+/** The folded notes below the table, by their summary "Notes (n)". */
+function notesSummary(page: Page, lang: "en" | "de" = "en") {
+  const [before, after] = text("compare.notes.title", { n: "#" }, lang).split("#");
+  return page.locator("summary").filter({ hasText: new RegExp(`^${pattern(before).source}\\d+${pattern(after).source}$`) });
+}
+
+/** The notes on one dataset in the folded list below the table. */
+function notesOf(page: Page, column: string) {
+  return page.locator("details section").filter({ has: page.getByRole("heading", { name: column, exact: true }) });
 }
 
 async function openCompare(page: Page, query = "") {
@@ -44,7 +61,7 @@ test("Get started opens the four miners of Tab. 17 under Hair et al., without a 
   await expect(matrix(page)).toBeVisible({ timeout: FIT_TIMEOUT });
 
   const headers = matrix(page).locator("thead").getByRole("columnheader");
-  await expect(headers).toHaveText([text("factor.loadings.col_measure"), ...FOUR]);
+  await expect(headers).toHaveText([text("factor.loadings.col_measure"), ...FOUR.map(column)]);
   await expect(page.locator('input[name="cmp-rule"]:checked')).toHaveValue("hair");
   // The header of every column: n and the factors of the paper settings.
   await expect(cells(page, text("compare.header.n"))).toHaveText(["288", "288", "288", "288"]);
@@ -54,11 +71,19 @@ test("Get started opens the four miners of Tab. 17 under Hair et al., without a 
   await expect(cells(page, "Separability")).toHaveText([/^D3/, /^D3/, /^D3/, /^D3/]);
   await expect(cells(page, "Connector Heterogeneity").first()).toHaveText(/D4 · D2/);
   await expect(cells(page, "Connector Heterogeneity").first()).toContainText(text("factor.loadings.cross_cell"));
-  // The one rule is in the tiles and the caption, not in a row of its own; the possible Heywood
-  // cases of three miners are in the notes below the table, not marked in the headers.
+  // The one rule is in the tiles and the caption, not in a row of its own. No column failed; the
+  // possible Heywood cases of three miners are notes: a count in the header of their column, which
+  // opens them, and the folded list below the table.
   await expect(matrix(page).getByRole("row", { name: /^Rule\b/ })).toHaveCount(0);
   await expect(matrix(page).locator("thead").getByRole("img")).toHaveCount(0);
-  await expect(page.getByText(text("compare.column_notes"), { exact: true })).toBeVisible();
+  const indicator = matrix(page).locator("thead").getByRole("button", { name: pattern(text("compare.notes.column_aria", { column: "Directly Follows miner", n: 2 })) });
+  await indicator.click();
+  await expect(page.getByRole("dialog", { name: "Directly Follows miner" })).toContainText(/Heywood/);
+  await page.keyboard.press("Escape");
+  await expect(indicator).toBeFocused();
+  await expect(notesSummary(page)).toBeVisible();
+  await notesSummary(page).click();
+  await expect(notesOf(page, "Inductive miner")).toContainText(/Heywood/);
   // A group says what its number counts.
   await expect(matrix(page).locator("tr.table-group th").filter({ hasText: /^Dimension 1 · \d+ measures$/ })).toHaveCount(1);
 
@@ -71,7 +96,7 @@ test("Get started opens the Inductive miner with 4 and with 6 factors, as sectio
   await expect(page).toHaveURL(/\/compare\?cols=comfy-paper-inductive-miner,comfy-paper-inductive-miner~k6&rule=multi$/);
   await expect(matrix(page)).toBeVisible({ timeout: FIT_TIMEOUT });
   const second = "Inductive miner, k = 6";
-  await expect(matrix(page).locator("thead").getByRole("columnheader")).toHaveText([text("factor.loadings.col_measure"), "Inductive miner", second]);
+  await expect(matrix(page).locator("thead").getByRole("columnheader")).toHaveText([text("factor.loadings.col_measure"), column("Inductive miner"), column(second)]);
   await expect(cells(page, text("compare.header.factors"))).toHaveText(["4", "6"]);
   // Only MM has its largest loading beyond the fourth factor, 0.50 on the fifth; with four
   // factors its communality is too low for any dimension.
@@ -81,7 +106,8 @@ test("Get started opens the Inductive miner with 4 and with 6 factors, as sectio
   // with a factor count of its own does not.
   const ruleNote = pattern(text("factor.paper_notes.rules.inductive_multi"));
   await expect(page.getByText(ruleNote)).toHaveCount(1);
-  await expect(page.getByText(new RegExp(`^Inductive miner: ${ruleNote.source}`))).toHaveCount(1);
+  await notesSummary(page).click();
+  await expect(notesOf(page, "Inductive miner").getByText(ruleNote)).toHaveCount(1);
 
   // The column has a tile of its own, which a comparison cannot lose below two columns.
   const tiles = page.getByRole("group", { name: text("compare.columns.label") });
@@ -101,7 +127,7 @@ test("Get started opens the Inductive miner with 4 and with 6 factors, as sectio
   await variant.click({ force: true });
   await expect(variant).toHaveCount(0);
   await expect(page).toHaveURL(/cols=comfy-paper-alpha-miner,comfy-paper-inductive-miner&rule=multi$/);
-  await expect(matrix(page).locator("thead").getByRole("columnheader")).toHaveText([text("factor.loadings.col_measure"), "Alpha miner", "Inductive miner"], {
+  await expect(matrix(page).locator("thead").getByRole("columnheader")).toHaveText([text("factor.loadings.col_measure"), column("Alpha miner"), column("Inductive miner")], {
     timeout: FIT_TIMEOUT,
   });
 });
@@ -111,7 +137,8 @@ test("the rule and the datasets change the comparison and its link", async ({ pa
   const tiles = page.getByRole("group", { name: text("compare.columns.label") });
 
   // The rule and the datasets are in the address, which the page follows a moment later.
-  await page.getByRole("radio", { name: text("factor.loadings.rule.multi.title") }).click({ force: true });
+  // A click on the radio itself, which the corner badge of a dev server can cover at the bottom left.
+  await page.getByRole("radio", { name: text("factor.loadings.rule.multi.title") }).dispatchEvent("click");
   await expect(page).toHaveURL(/rule=multi/);
   // Multiple membership: acd of the Inductive miner in three dimensions.
   await expect(cells(page, "Average connector degree").nth(2)).toHaveText(/^D2 · D1 · D4/, { timeout: FIT_TIMEOUT });
@@ -119,7 +146,8 @@ test("the rule and the datasets change the comparison and its link", async ({ pa
   // Alpha Dollar has the values of Alpha: the note says so.
   await tiles.getByRole("checkbox", { name: "Alpha Dollar miner", exact: true }).click({ force: true });
   await expect(matrix(page).locator("thead").getByRole("columnheader")).toHaveCount(6, { timeout: FIT_TIMEOUT });
-  await expect(page.getByText(`Alpha Dollar miner: ${text("compare.same_as", { other: "Alpha miner" })}`)).toBeVisible();
+  await notesSummary(page).click();
+  await expect(notesOf(page, "Alpha Dollar miner")).toContainText(text("compare.same_as", { other: "Alpha miner" }));
 
   // Down to two datasets, and no further.
   for (const label of ["Directly Follows miner", "Inductive miner", "Hybrid ILP miner"]) {
@@ -128,7 +156,7 @@ test("the rule and the datasets change the comparison and its link", async ({ pa
     await expect(tile).not.toBeChecked();
   }
   await expect(page).toHaveURL(/cols=comfy-paper-alpha-miner,comfy-paper-alpha-dollar-miner&rule=multi$/);
-  await expect(matrix(page).locator("thead").getByRole("columnheader")).toHaveText([text("factor.loadings.col_measure"), "Alpha miner", "Alpha Dollar miner"], {
+  await expect(matrix(page).locator("thead").getByRole("columnheader")).toHaveText([text("factor.loadings.col_measure"), column("Alpha miner"), column("Alpha Dollar miner")], {
     timeout: FIT_TIMEOUT,
   });
   const alpha = tiles.getByRole("checkbox", { name: "Alpha miner", exact: true });
@@ -140,7 +168,7 @@ test("the rule and the datasets change the comparison and its link", async ({ pa
   // Back to Tab. 17 in one click.
   await page.getByRole("button", { name: text("compare.columns.reset") }).click();
   await expect(page).toHaveURL(new RegExp(`cols=${TABLE_17.join(",")}&rule=hair$`));
-  await expect(matrix(page).locator("thead").getByRole("columnheader")).toHaveText([text("factor.loadings.col_measure"), ...FOUR], { timeout: FIT_TIMEOUT });
+  await expect(matrix(page).locator("thead").getByRole("columnheader")).toHaveText([text("factor.loadings.col_measure"), ...FOUR.map(column)], { timeout: FIT_TIMEOUT });
 });
 
 test("the dimensions look like Tab. 17, with the names or the short codes", async ({ page }) => {
@@ -200,7 +228,8 @@ test("the pairs of measures count the datasets in which two share a dimension, w
   await expect(pair("mcd", "CNC")).toHaveAttribute("data-tip-more", text("compare.pairs.pair_plural", { together: 3, n: 4, assigned: 3 }));
 
   // Another rule changes who is in a dimension, not the way the pairs are counted.
-  await page.getByRole("radio", { name: text("factor.loadings.rule.multi.title") }).click({ force: true });
+  // A click on the radio itself, which the corner badge of a dev server can cover at the bottom left.
+  await page.getByRole("radio", { name: text("factor.loadings.rule.multi.title") }).dispatchEvent("click");
   await expect(page).toHaveURL(/rule=multi/);
   await expect(fraction("mcd", "CNC")).toHaveText("4/4", { timeout: FIT_TIMEOUT });
   await expect(fraction("ts", "CFC")).toHaveText("2/2");
@@ -311,6 +340,6 @@ test.describe("in German", () => {
     await expect(matrix(page, "de").getByRole("row", { name: new RegExp("^" + text("compare.header.measures", {}, "de")) }).getByRole("cell").first()).toHaveText(
       text("compare.header.measures_value", { used: 12, total: 13 }, "de"),
     );
-    await expect(page.getByText(text("compare.column_notes", {}, "de"), { exact: true })).toBeVisible();
+    await expect(notesSummary(page, "de")).toBeVisible();
   });
 });
