@@ -15,12 +15,6 @@ interface Props<T extends string> {
   value: T;
   onChange: (value: T) => void;
   size?: "sm" | "md";
-  /**
-   * "choice" (the default) marks the chosen option with the accent border of a chosen tile, for
-   * a choice that changes what is computed. "view" is a quieter raised pill for toggles that only
-   * change how something is shown, and for filters.
-   */
-  variant?: "choice" | "view";
   className?: string;
   /** The label of the group, e.g. the id of a FieldLabel above it. */
   "aria-labelledby"?: string;
@@ -33,7 +27,6 @@ export function Segmented<T extends string>({
   value,
   onChange,
   size = "md",
-  variant = "choice",
   className,
   "aria-labelledby": labelledBy,
   "aria-label": label,
@@ -81,10 +74,9 @@ export function Segmented<T extends string>({
         <div
           aria-hidden
           className={cn(
-            // The chosen option: the surface with an accent border, like a chosen tile; a view toggle
-            // is only raised, with a neutral edge.
-            "absolute bg-surface shadow-sm rounded ring-inset transition-all duration-300 ease-out pointer-events-none",
-            variant === "view" ? "ring-1 ring-border" : "ring-[1.5px] ring-accent",
+            // The chosen option, the same in every Segmented control (docs/UI.md): a raised neutral
+            // pill, never an accent ring or fill.
+            "absolute bg-surface shadow-sm rounded ring-1 ring-inset ring-border transition-all duration-300 ease-out pointer-events-none motion-reduce:transition-none",
             size === "sm" ? "top-0.5 bottom-0.5" : "top-1 bottom-1",
           )}
           style={{ width: pill.width, left: pill.left }}

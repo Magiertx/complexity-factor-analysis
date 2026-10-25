@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { Search } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { Switch } from "@/components/ui/switch";
+import { InfoTip } from "@/components/ui/info-tip";
 import { mergeRefs, useTip } from "@/components/ui/tip";
 
 /**
@@ -50,17 +51,19 @@ export function MeasureSearch({ value, onChange }: { value: string; onChange: (v
   );
 }
 
-/** The switch that narrows a list to its notable measures; `label` says what it counts. */
+/** The switch that narrows a list to its notable measures; `label` says what it counts, `help` what counts as notable. */
 export function NotableSwitch({
   id,
   checked,
   onChange,
   label,
+  help,
 }: {
   id: string;
   checked: boolean;
   onChange: (value: boolean) => void;
-  label: React.ReactNode;
+  label: string;
+  help?: string;
 }) {
   return (
     <span className="flex items-center gap-2 text-xs">
@@ -68,6 +71,7 @@ export function NotableSwitch({
       <label id={`${id}-label`} htmlFor={id} className="cursor-pointer">
         {label}
       </label>
+      {help && <InfoTip size="xs" topic={label} text={help} />}
     </span>
   );
 }

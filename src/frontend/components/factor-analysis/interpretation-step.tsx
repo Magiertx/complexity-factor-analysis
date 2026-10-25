@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { AlertTriangle, Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import type { FactorInterpretation, InterpretationStatus } from "@/lib/api";
 import { countText } from "@/lib/factor-analysis";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { InfoTip } from "@/components/ui/info-tip";
+import { Notice } from "@/components/ui/notice";
 import { MeasureListScope, MeasureName } from "@/components/ui/table";
 import { useTip, useTipZone } from "@/components/ui/tip";
 
@@ -66,16 +68,16 @@ export function InterpretationView({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted leading-relaxed max-w-3xl">{t("factor.interpretation.intro")}</p>
+      <p className="flex items-center gap-1 text-xs text-muted">
+        {t("factor.interpretation.sent_label")}
+        <InfoTip size="xs" topic={t("factor.interpretation.sent_label")} text={t("factor.interpretation.intro")} width={400} />
+      </p>
 
       {stale && (
-        <div role="status" className="rounded-lg bg-warn/10 px-3.5 py-2.5 flex items-start gap-2.5 text-sm">
-          <AlertTriangle className="h-4 w-4 text-warn-ink shrink-0 mt-0.5" />
-          <span>
-            {t("factor.interpretation.stale")}
-            {available && ` ${t("factor.interpretation.stale_again")}`}
-          </span>
-        </div>
+        <Notice tone="warn" role="status">
+          {t("factor.interpretation.stale")}
+          {available && ` ${t("factor.interpretation.stale_again")}`}
+        </Notice>
       )}
       {!fresh && (
         <div className="flex items-center gap-3 flex-wrap">
@@ -101,16 +103,14 @@ export function InterpretationView({
           )}
         </div>
       )}
-      {status?.precomputed_only && !interpretation && (
-        <p className="text-xs text-muted max-w-3xl">{t("factor.interpretation.precomputed_only")}</p>
-      )}
+      {status?.precomputed_only && !interpretation && <Notice size="sm">{t("factor.interpretation.precomputed_only")}</Notice>}
       <p role="status" className="sr-only">
         {announcement}
       </p>
       {error && (
-        <p role="alert" className="text-xs text-danger-ink">
+        <Notice tone="error" size="sm" role="alert">
           {error}
-        </p>
+        </Notice>
       )}
 
       {interpretation && (

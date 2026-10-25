@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { Columns3, Grid3x3, Info, LayoutGrid, Pin, PinOff, Tags, X } from "lucide-react";
+import { Columns3, Grid3x3, LayoutGrid, Pin, PinOff, Tags, X } from "lucide-react";
 import { ASSIGNMENT_RULES, type AssignmentRule, type FactorAnalysis } from "@/lib/api";
 import {
   ORTHOGONAL,
@@ -34,7 +34,8 @@ import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { IconButton } from "@/components/ui/icon-button";
 import { Segmented } from "@/components/ui/segmented";
 import { MeasureListScope, MeasureName, TableFrame } from "@/components/ui/table";
-import { Term, useTip, useTipZone } from "@/components/ui/tip";
+import { useTip, useTipZone } from "@/components/ui/tip";
+import { InfoTip } from "@/components/ui/info-tip";
 import { FactorTitle } from "./factor-title";
 import { FigureMenu, type FigureDownload } from "./figure-menu";
 import { FoldButton, SectionRow, type Fold } from "./measure-fold";
@@ -235,9 +236,12 @@ export function LoadingsView({
           />
         </div>
         {assignmentNote && (
-          <p id="fa-assignment-note" className="flex items-start gap-1.5 text-xs text-muted max-w-prose">
-            <Info className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
-            <span>{assignmentNote}</span>
+          <p className="flex items-center gap-1 text-xs text-muted">
+            <span id="fa-assignment-note">
+              {t("factor.loadings.rule_note_short")}
+              <span className="sr-only">: {assignmentNote}</span>
+            </span>
+            <InfoTip size="xs" topic={t("factor.loadings.rule_note_short")} text={assignmentNote} />
           </p>
         )}
       </div>
@@ -247,7 +251,6 @@ export function LoadingsView({
         <div className="flex items-center justify-between gap-x-4 gap-y-2 flex-wrap">
           <div className="flex items-center gap-x-2 gap-y-2 flex-wrap">
             <Segmented<LoadingsLook>
-              variant="view"
               size="sm"
               aria-label={t("factor.loadings.look_label")}
               value={look}
@@ -275,7 +278,6 @@ export function LoadingsView({
             />
             {look === "matrix" && oblique && analysis.structure_loadings && (
               <Segmented
-                variant="view"
                 size="sm"
                 aria-label={t("factor.loadings.matrix_label")}
                 value={matrix}
@@ -288,7 +290,6 @@ export function LoadingsView({
             )}
             {look === "matrix" && (
               <Segmented<MeasureOrder>
-                variant="view"
                 size="sm"
                 aria-label={t("factor.loadings.order_label")}
                 value={order}
@@ -310,11 +311,8 @@ export function LoadingsView({
               id="fa-loadings-notable"
               checked={filter.onlyNotable}
               onChange={(onlyNotable) => onFilter({ ...filter, onlyNotable })}
-              label={
-                <Term more={t("factor.loadings.only_notable_more")}>
-                  {t("factor.loadings.only_notable", { n: notableCount })}
-                </Term>
-              }
+              label={t("factor.loadings.only_notable", { n: notableCount })}
+              help={t("factor.loadings.only_notable_more")}
             />
           </div>
         )}
@@ -530,20 +528,29 @@ function LoadingsMatrix({
         </TableFrame>
         </MeasureListScope>
         {shownCount === 0 && <p className="text-xs text-muted">{t("factor.measures.none_match")}</p>}
-        {/* What the numbers mean, in the tooltips of these words. */}
-        <p className="flex gap-x-3 gap-y-1 flex-wrap text-[11px] text-muted">
-          <Term more={t("factor.help.loading")}>{t("factor.loadings.table_heading")}</Term>
-          <Term more={t("factor.help.communality")}>{t("factor.loadings.col_communality")}</Term>
-          <Term more={t("factor.help.variance")}>{t("factor.loadings.variance_label")}</Term>
-        </p>
-        <p className="text-[11px] text-muted max-w-prose">
-          {t("factor.loadings.h2_note")}{" "}
-          {!oblique
-            ? t("factor.loadings.footer_rows")
-            : structure
-              ? t("factor.loadings.structure_note")
-              : t("factor.loadings.footer_row_pattern")}
-          {oblique && ` ${t("factor.loadings.oblique_note", { pct: formatPercent(analysis.variance.explained, locale) })}`}
+        {/* What the numbers mean, behind one (i). */}
+        <p className="flex items-center gap-1 text-[11px] text-muted">
+          {t("factor.loadings.numbers_label")}
+          <InfoTip size="xs" topic={t("factor.loadings.numbers_label")} text={t("factor.help.loading")} width={380}>
+            <p>
+              <span className="font-semibold">{t("factor.loadings.table_heading")}: </span>
+              {t("factor.help.loading")}
+            </p>
+            <p>
+              <span className="font-semibold">{t("factor.loadings.col_communality")}: </span>
+              {t("factor.help.communality")} {t("factor.loadings.h2_note")}
+            </p>
+            <p>
+              <span className="font-semibold">{t("factor.loadings.variance_label")}: </span>
+              {t("factor.help.variance")}{" "}
+              {!oblique
+                ? t("factor.loadings.footer_rows")
+                : structure
+                  ? t("factor.loadings.structure_note")
+                  : t("factor.loadings.footer_row_pattern")}
+              {oblique && ` ${t("factor.loadings.oblique_note", { pct: formatPercent(analysis.variance.explained, locale) })}`}
+            </p>
+          </InfoTip>
         </p>
 
         {analysis.factor_correlations && <FactorCorrelations values={analysis.factor_correlations} names={naming.names} />}
@@ -621,97 +628,28 @@ function LoadingsMatrix({
   }
 
   /**
-   * The rule that turns loadings into factor groups, as tiles. The thresholds next to it stay in
-   * effect; the rules differ in what happens to a measure that loads on several factors and in
-   * the least communality.
+   * The rule that turns loadings into factor groups, compact: one option per rule with the source it
+   * follows, and what it does in its tooltip. A row above the result of the loadings step, a column
+   * in the comparison. Radios, so the rule chip of the settings row lands on the chosen one.
    */
-  export function AssignmentChoice({
+  export function RuleChoice({
     value,
     onChange,
     note,
     id = "fa-assignment",
-  }: {
-    value: AssignmentRule;
-    onChange: (rule: AssignmentRule) => void;
-    /** Where the paper's tables differ from the chosen rule; read with the tiles. */
-    note: string | null;
-    /** The id of the block, and the start of the ids in it. */
-    id?: string;
-  }) {
-    const t = useT();
-    const { locale } = useLocale();
-    const limits = {
-      gap: formatNumber(RULE_LIMITS.gap, locale, 2),
-      h2_multi: formatNumber(RULE_LIMITS.multi_communality, locale, 1),
-      h2_hair: formatNumber(RULE_LIMITS.hair_communality, locale, 1),
-    };
-    const label = t("factor.loadings.assignment_label");
-    return (
-      // Its id is where the rule chip of the settings row leads.
-      <div id={id} className="space-y-2 scroll-mt-24">
-        <HelpLabel as="span" label={label} help={t("factor.help.assignment", limits)} />
-        <div
-          role="radiogroup"
-          aria-label={label}
-          aria-describedby={note ? `${id}-note` : undefined}
-          className="grid gap-2 sm:grid-cols-3"
-        >
-          {ASSIGNMENT_RULES.map((rule) => {
-            const chosen = rule === value;
-            return (
-              <label key={rule} className={cn("flex items-start gap-2.5 rounded-md px-3 py-2.5 min-w-0", choiceTile(chosen))}>
-                <input
-                  type="radio"
-                  name={id}
-                  value={rule}
-                  className="sr-only"
-                  checked={chosen}
-                  onChange={() => onChange(rule)}
-                  aria-label={t(`factor.loadings.rule.${rule}.title`)}
-                  aria-describedby={`${id}-${rule}-source ${id}-${rule}`}
-                />
-                <ChoiceMark type="radio" checked={chosen} className="mt-0.5" />
-                <span className="min-w-0">
-                  <span className="block text-sm font-medium">{t(`factor.loadings.rule.${rule}.title`)}</span>
-                  <span id={`${id}-${rule}-source`} className="block text-[11px] text-muted">
-                    {t(`factor.loadings.rule.${rule}.source`)}
-                  </span>
-                  <span id={`${id}-${rule}`} className="mt-1 block text-xs text-fg/80 leading-snug">
-                    {t(`factor.loadings.rule.${rule}.text`, limits)}
-                  </span>
-                </span>
-              </label>
-            );
-          })}
-        </div>
-        {note && (
-          <p id={`${id}-note`} className="flex items-start gap-1.5 text-xs text-muted max-w-prose">
-            <Info className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
-            <span>{note}</span>
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  /**
-   * The rule that turns loadings into factor groups, compact above the result of the loadings step:
-   * one option per rule with the source it follows, and what it does in its tooltip. Radios, so the
-   * rule chip of the settings row lands on the chosen one.
-   */
-  function RuleChoice({
-    value,
-    onChange,
-    note,
+    vertical,
   }: {
     value: AssignmentRule;
     onChange: (rule: AssignmentRule) => void;
     /** A note on the paper's tables follows the row, read with the options. */
     note: boolean;
+    /** The id of the block, and the name of its radios. */
+    id?: string;
+    /** One option under the other, for a narrow column. */
+    vertical?: boolean;
   }) {
     const t = useT();
     const { locale } = useLocale();
-    const id = "fa-assignment";
     const limits = {
       gap: formatNumber(RULE_LIMITS.gap, locale, 2),
       h2_multi: formatNumber(RULE_LIMITS.multi_communality, locale, 1),
@@ -726,7 +664,7 @@ function LoadingsMatrix({
           role="radiogroup"
           aria-label={label}
           aria-describedby={note ? `${id}-note` : undefined}
-          className="flex flex-wrap gap-1 rounded-md bg-tile p-1 w-fit max-w-full"
+          className={cn("flex gap-1 rounded-md bg-tile p-1 max-w-full", vertical ? "flex-col" : "flex-wrap w-fit")}
         >
           {ASSIGNMENT_RULES.map((rule) => (
             <RuleOption
@@ -762,10 +700,8 @@ function LoadingsMatrix({
     return (
       <label
         ref={tip}
-        className={cn(
-          "flex items-start gap-2 rounded px-2.5 py-1.5 min-w-0 cursor-pointer transition has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-accent",
-          chosen ? "bg-surface shadow-sm ring-[1.5px] ring-inset ring-accent" : "hover:bg-surface/60",
-        )}
+        // The one look of a chosen tile (docs/UI.md).
+        className={cn("flex items-start gap-2 rounded px-2.5 py-1.5 min-w-0", choiceTile(chosen))}
       >
         <input
           type="radio"

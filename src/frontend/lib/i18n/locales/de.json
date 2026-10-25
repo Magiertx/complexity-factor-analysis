@@ -16,7 +16,11 @@
     "error_description": "Auf dieser Seite ist ein unerwarteter Fehler aufgetreten.",
     "error_unknown": "Unbekannter Fehler",
     "try_again": "Erneut versuchen",
-    "undo": "Rückgängig"
+    "undo": "Rückgängig",
+    "info_aria": "Erklärung: {topic}",
+    "dismiss": "Ausblenden",
+    "more": "mehr",
+    "less": "weniger"
   },
   "header": {
     "tagline": "Komplexitätsmaße von Prozessmodellen und Event-Logs",
@@ -44,6 +48,8 @@
   },
   "mode_bar": {
     "aria_label": "Bereiche",
+    "analyses_aria": "Analysen",
+    "tools_aria": "Werkzeuge",
     "model_label": "Modellkomplexität",
     "model_desc": "Maße gefundener Prozessmodelle",
     "log_label": "Log-Komplexität",
@@ -90,7 +96,7 @@
     },
     "factor": {
       "intro": "Fünf Schritte von den Rohmaßen zu den Faktoren und eine optionale Interpretation, einer nach dem anderen: Die Liste der Schritte links (am Telefon die Zeile oben) und Zurück und Weiter wechseln zwischen ihnen. Halte den Zeiger über ein Bedienelement oder ein gepunktet unterstrichenes Wort, um zu sehen, was es tut. Esc oder Überspringen beendet die Tour jederzeit.",
-      "data": "Hier geht es los: Wähle einen mitgelieferten Datensatz, lade eine CSV hoch oder berechne die Maße aus eigenen Dateien. Große Berechnungen laufen im Hintergrund.",
+      "data": "Woher die Daten kommen: Zum Einstieg und die mitgelieferten Datensätze, eine eigene CSV-Datei oder Maße aus deinen Dateien. Große Berechnungen laufen im Hintergrund.",
       "dataset": "Prüfe die Größe der Matrix und was die Bereinigung entfernt hat. Die bereinigten Daten kannst du als CSV herunterladen.",
       "suitability": "Bartlett und KMO zeigen, ob eine Faktorenanalyse überhaupt sinnvoll ist. Schließe hier Maße mit niedrigem MSA aus, von Hand oder per Filter.",
       "factors": "Der Screeplot schlägt vor, wie viele Faktoren du behältst. Ändere die Anzahl oder die Rotation; alles darunter aktualisiert sich sofort.",
@@ -124,6 +130,7 @@
     "presets": {
       "title": "Parameter-Presets",
       "description": "Benannte Parameter-Sets, die du beim Untersuchen eines einzelnen Logs gespeichert hast. Lokal auf diesem Gerät gespeichert.",
+      "description_short": "Gespeicherte Parameter-Sets einzelner Logs.",
       "empty_hint_before": "Noch keine Presets. Konfiguriere unter Einzelnes Log untersuchen einen Algorithmus und klicke auf",
       "empty_hint_action": "Preset speichern",
       "empty_hint_after": "über dem Parameter-Formular.",
@@ -140,6 +147,7 @@
       "clear_button": "Presets löschen",
       "transfer_label": "Export & Import",
       "transfer_hint": "Sichere deine Presets als JSON-Datei oder führe eine Datei mit der aktuellen Sammlung zusammen. Bestehende Presets werden nie überschrieben.",
+      "transfer_short": "Presets als JSON sichern oder eine Datei zusammenführen.",
       "export_button": "JSON exportieren",
       "export_title": "Alle Presets als JSON-Datei herunterladen",
       "import_button": "JSON importieren",
@@ -176,11 +184,14 @@
       "open_run_history": "Alle Runs anzeigen",
       "clear_jobs_label": "Run-Verlauf löschen",
       "clear_jobs_hint": "Löscht jeden Run dieser Sitzung auf dem Server, mit seinen Ergebnissen und den aus Logs oder Netzen berechneten Datensätzen. Das lässt sich nicht rückgängig machen.",
+      "clear_jobs_short": "Löscht jeden Run dieser Sitzung, endgültig.",
       "confirm_delete": "Löschen bestätigen",
       "delete_all_jobs": "Alle Runs löschen",
       "clear_datasets_label": "Datensätze der Faktorenanalyse löschen",
       "clear_datasets_hint": "{n} Datensatz der Tabs Modell- und Log-Komplexität liegt auf dem Server, mit den Einstellungen seiner letzten Analyse. Wurde er aus Logs oder Netzen berechnet, wird der Run, der ihn berechnet hat, mitgelöscht.",
       "clear_datasets_hint_plural": "{n} Datensätze der Tabs Modell- und Log-Komplexität liegen auf dem Server, jeder mit den Einstellungen seiner letzten Analyse. Aus Logs oder Netzen berechnete werden mit den Runs gelöscht, die sie berechnet haben.",
+      "clear_datasets_short": "{n} Datensatz liegt auf dem Server.",
+      "clear_datasets_short_plural": "{n} Datensätze liegen auf dem Server.",
       "clear_datasets_empty": "Für diese Sitzung liegen keine Datensätze der Tabs Modell- und Log-Komplexität auf dem Server.",
       "clear_datasets_unknown": "Datensätze der Tabs Modell- und Log-Komplexität, jeder mit den Einstellungen seiner letzten Analyse. Aus Logs oder Netzen berechnete werden mit den Runs gelöscht, die sie berechnet haben.",
       "delete_all_datasets": "Datensätze löschen",
@@ -200,6 +211,7 @@
   "api_access": {
     "heading": "API-Zugang",
     "subtitle": "Runs starten und Ergebnisse abrufen ohne die Weboberfläche. Die Endpoints brauchen keine Anmeldung; ein Cookie beschränkt sie auf deine Browsersitzung.",
+    "subtitle_short": "Runs starten und Ergebnisse abrufen, ohne die Weboberfläche.",
     "interactive_ref_title": "Interaktive Referenz",
     "interactive_ref_desc": "Vollständige OpenAPI-3-Spezifikation — Endpoints direkt im Browser ausprobieren.",
     "quick_start_title": "Schnellstart",
@@ -416,6 +428,7 @@
   "run_history": {
     "heading": "Verlauf",
     "subtitle": "Alles aus dieser Sitzung, das Neueste zuerst: die Datensätze beider Tabs, jeweils mit den Einstellungen ihrer letzten Analyse, und die Runs einzelner Logs.",
+    "subtitle_short": "Alles aus dieser Sitzung, das Neueste zuerst.",
     "search_placeholder": "Name, Datei oder ID suchen…",
     "search_aria": "Verlauf durchsuchen",
     "filter_type_aria": "Nach Art filtern",
@@ -529,11 +542,13 @@
     "tour_title": "Rundgang durch die Schritte",
     "model": {
       "title": "Modellkomplexität",
-      "subtitle": "Finde heraus, welche Komplexitätsmaße von Prozessmodellen dieselbe zugrunde liegende Dimension beschreiben. Sammle Maße über viele Modelle, prüfe, ob eine Faktorenanalyse sinnvoll ist, und fasse die Maße zu wenigen Faktoren zusammen."
+      "subtitle": "Finde heraus, welche Komplexitätsmaße von Prozessmodellen dieselbe zugrunde liegende Dimension beschreiben. Sammle Maße über viele Modelle, prüfe, ob eine Faktorenanalyse sinnvoll ist, und fasse die Maße zu wenigen Faktoren zusammen.",
+      "subtitle_short": "Welche Maße von Prozessmodellen dieselbe Dimension beschreiben."
     },
     "log": {
       "title": "Log-Komplexität",
-      "subtitle": "Finde heraus, welche Komplexitätsmaße von Event-Logs sich überschneiden. Berechne die Maße für viele Logs, prüfe, ob eine Faktorenanalyse sinnvoll ist, und fasse die Maße zu wenigen Faktoren zusammen."
+      "subtitle": "Finde heraus, welche Komplexitätsmaße von Event-Logs sich überschneiden. Berechne die Maße für viele Logs, prüfe, ob eine Faktorenanalyse sinnvoll ist, und fasse die Maße zu wenigen Faktoren zusammen.",
+      "subtitle_short": "Welche Maße von Event-Logs sich überschneiden."
     },
     "steps": {
       "aria": "Analyseschritte",
@@ -545,8 +560,8 @@
       "interpretation": "Interpretation"
     },
     "step_desc": {
-      "data_model": "Nutze einen veröffentlichten Datensatz, lade eine Maßtabelle hoch oder berechne die Maße aus Event-Logs oder Petri-Netzen.",
-      "data_log": "Nutze einen veröffentlichten Datensatz, lade eine Maßtabelle hoch oder berechne die Maße aus Event-Logs.",
+      "data_model": "Woher kommen die Daten?",
+      "data_log": "Woher kommen die Daten?",
       "dataset": "Was geladen wurde und was die Bereinigung entfernt hat.",
       "suitability": "Sind die Maße stark genug korreliert für eine Faktorenanalyse?",
       "factors": "Wie viele Faktoren behalten und wie rotieren?",
@@ -618,7 +633,8 @@
         "mine": "Datensätze, die du in dieser Sitzung geladen oder berechnet hast, jeweils mit den Einstellungen ihrer letzten Analyse. Der Server behält bis zu 30 pro Sitzung und löscht sie nach 7 Tagen ohne Nutzung."
       },
       "bundled_empty": "Auf diesem Server sind keine mitgelieferten Datensätze verfügbar.",
-      "compare_miners": "Die vier Miner vergleichen (Tab. 17)",
+      "all_bundled": "Alle Datensätze",
+      "collection_note": "Hinweis zu diesen Daten",
       "bundled_size": "{rows} Beobachtungen × {cols} Maße",
       "cleaned_size": "{rows} Beobachtungen × {cols} Maße nach der Bereinigung",
       "license": "Lizenz: {license}",
@@ -630,6 +646,7 @@
       "own_files": "Eigene Dateien",
       "csv_drop_label": "CSV-Datei hier ablegen",
       "csv_drop_hint": "oder klicken zum Auswählen · .csv",
+      "csv_format_short": "Eine Zeile je Beobachtung, eine Spalte je Maß.",
       "csv_format": "Die erste Zeile enthält die Namen der Maße. Eine erste Spalte, die nicht numerisch ist oder observation, id, name oder label heißt, enthält die Zeilennamen. Nicht-numerische, konstante und doppelte Spalten sowie Spalten mit fehlenden Werten werden entfernt.",
       "logs_drop_label": "Event-Logs hier ablegen",
       "logs_drop_hint": "oder klicken zum Auswählen · .xes, .xes.gz · bis zu {max} Dateien",
@@ -678,7 +695,8 @@
       "need_files": "Füge mindestens eine Datei hinzu.",
       "need_miner": "Wähle mindestens einen Miner.",
       "need_measures": "Wähle mindestens {n} Maße.",
-      "submit_bundled": "Datensatz verwenden",
+      "submit_bundled": "Datensatz laden",
+      "submit_compare": "Vergleich öffnen",
       "submit_csv": "CSV laden",
       "submit_compute": "Maße berechnen",
       "submit_open": "Datensatz öffnen",
@@ -689,6 +707,9 @@
       "cancel": "Berechnung abbrechen",
       "failed_title": "Der Datensatz konnte nicht erstellt werden",
       "change": "Andere Daten wählen",
+      "loaded": "Geladen: {name}",
+      "to_result": "Ergebnis ansehen",
+      "settings_own": "Eigene Einstellungen",
       "catalog_failed": "Der Katalog konnte nicht geladen werden.",
       "catalog_error": "Die verfügbaren Datensätze und Maße konnten nicht geladen werden: {error}",
       "load_failed": "Der Datensatz konnte nicht geladen werden. Neuer Versuch…",
@@ -735,6 +756,10 @@
         "log_miners_plural": "{logs} Logs × {miners} Miner ergeben {n} Beobachtungen; eine Faktorenanalyse braucht mindestens {needed}. Nimm mehr Miner dazu oder lade mehr Logs hoch (bis zu {limit}).",
         "nets": "Mit {n} Netz läuft keine Faktorenanalyse; sie braucht mindestens {needed} Netze. Lade mehr Netze hoch (bis zu {limit}).",
         "nets_plural": "Mit {n} Netzen läuft keine Faktorenanalyse; sie braucht mindestens {needed} Netze. Lade mehr Netze hoch (bis zu {limit})."
+      },
+      "scope": {
+        "paper": "im Paper",
+        "report": "nur im Report"
       }
     },
     "inputs": {
@@ -989,7 +1014,9 @@
       "look_matrix": "Matrix",
       "look_dimensions": "Dimensionen",
       "legend_faded": "blass: |Ladung| < {threshold}",
-      "legend_faded_strict": "blass: |Ladung| ≤ {threshold}"
+      "legend_faded_strict": "blass: |Ladung| ≤ {threshold}",
+      "numbers_label": "Was die Zahlen bedeuten",
+      "rule_note_short": "Hinweis zu den Tabellen des Papers"
     },
     "help": {
       "cleaning": "Vor der Analyse werden Zeilen entfernt, in denen die meisten Werte fehlen. Danach werden Spalten entfernt, die nicht numerisch sind, keine Varianz haben, fehlende Werte enthalten oder exakte Kopien einer früheren Spalte sind, wie in ComFy für Log-Maße. Solche Spalten würden die Korrelationsmatrix verzerren oder unbrauchbar machen.",
@@ -1055,6 +1082,7 @@
     },
     "interpretation": {
       "intro": "Claude liest die Ladungen zusammen mit den Definitionen der Maße und schlägt für jeden Faktor einen Namen und eine kurze Interpretation vor. An Anthropic gehen die Namen der Maße (Spalten), ihre Katalogdefinitionen und aggregierte Ergebnisse wie Ladungen und Teststatistiken; Messwerte, Zeilenbezeichnungen und Dateinamen werden nicht gesendet. Jede Anfrage kostet Geld, daher läuft sie nur, wenn du sie anforderst.",
+      "sent_label": "Was dabei an Anthropic geht",
       "button": "Faktoren interpretieren",
       "again": "Neu interpretieren",
       "running": "Claude interpretiert die Faktoren. Das kann bis zu drei Minuten dauern.",
@@ -1193,27 +1221,28 @@
       "failed": "Der verlinkte Datensatz ließ sich nicht öffnen."
     },
     "start": {
-      "title": "Hier starten",
-      "collapsed_hint": "{n} Analyse mit einem Klick und eine Beispiel-CSV",
-      "collapsed_hint_plural": "{n} Analysen mit einem Klick und eine Beispiel-CSV",
-      "intro": "Jede öffnet einen mitgelieferten Datensatz mit seinen Einstellungen; nichts muss hochgeladen oder berechnet werden.",
+      "title": "Zum Einstieg",
       "opens": "Öffnet {page}",
       "scenario": {
         "if_inductive": {
           "title": "Important Factors: Inductive miner",
-          "text": "Mit den Paper-Einstellungen: 4 Faktoren und Mehrfachzuordnung, abgeglichen mit dem ComFy-Report. Die Zahlen sind die aus Tab. 10–11, die Gruppen die aus Tab. 12 mit einer Zuordnung mehr (Average connector degree auch in Faktor 2)."
+          "text": "Mit den Paper-Einstellungen: 4 Faktoren und Mehrfachzuordnung, abgeglichen mit dem ComFy-Report. Die Zahlen sind die aus Tab. 10–11, die Gruppen die aus Tab. 12 mit einer Zuordnung mehr (Average connector degree auch in Faktor 2).",
+          "short": "4 Faktoren und Mehrfachzuordnung, abgeglichen mit dem ComFy-Report."
         },
         "log_standard": {
           "title": "Log-Maße von 2.112 PDC-Logs",
-          "text": "Die Daten des Log-Papers mit dem Standard des Tools: feeed-Maße, Faktorzahl nach Kaiser, varimax."
+          "text": "Die Daten des Log-Papers mit dem Standard des Tools: feeed-Maße, Faktorzahl nach Kaiser, varimax.",
+          "short": "feeed-Maße von 2.112 Logs, Faktorzahl nach Kaiser."
         },
         "if_four_miners": {
           "title": "Important Factors: vier Miner im Vergleich",
-          "text": "Die Dimensionen von Alpha, Directly Follows, Inductive und Hybrid ILP miner nebeneinander nach Hair et al., wie in Tab. 17."
+          "text": "Die Dimensionen von Alpha, Directly Follows, Inductive und Hybrid ILP miner nebeneinander nach Hair et al., wie in Tab. 17.",
+          "short": "Alpha, Directly Follows, Inductive und Hybrid ILP nach Hair et al."
         },
         "if_k4_k6": {
           "title": "Important Factors: 4 gegen 6 Faktoren",
-          "text": "Der Inductive miner mit den 4 Faktoren des Papers neben 6, bei Mehrfachzuordnung wie in Abschnitt 6: MM (Ladung 0,50) bildet eine fünfte Dimension, die sechste bleibt leer."
+          "text": "Der Inductive miner mit den 4 Faktoren des Papers neben 6, bei Mehrfachzuordnung wie in Abschnitt 6: MM (Ladung 0,50) bildet eine fünfte Dimension, die sechste bleibt leer.",
+          "short": "Der Inductive miner mit 4 und mit 6 Faktoren, wie in Abschnitt 6."
         }
       },
       "example_csv": "Beispiel-CSV",
@@ -1527,16 +1556,16 @@
       "title": "Die sechs Schritte",
       "p1": "Modellkomplexität analysiert die Maße von ComFy auf Petri-Netzen, Log-Komplexität die Maße von feeed auf Event-Logs. Beide führen durch dieselben Schritte: Daten, Datensatz, Eignung, Faktoren, Ladungen und eine optionale Interpretation. Es ist immer ein Schritt zu sehen; die Liste der Schritte zeigt, was jeder Schritt ergeben hat.",
       "p2": "Die Einstellungszeile über den Schritten fasst jede Entscheidung zusammen, markiert die, die vom Standard des Tools abweichen, und führt zu jedem Regler. Jede Änderung einer Einstellung rechnet die Analyse neu.",
-      "p3": "Die Reiter oben sind auf jeder Seite dieselben: die beiden Analysen, Vergleich, Einzelnes Log und Verlauf. Anleitung, API und Einstellungen stehen im Header und führen zurück zu dem Reiter, von dem du kamst."
+      "p3": "Die Reiter oben sind auf jeder Seite dieselben: die Analysen (die beiden der Komplexität und Einzelnes Log) und rechts abgesetzt die Werkzeuge Vergleich und Verlauf. Anleitung, API und Einstellungen stehen im Header und führen zurück zu dem Reiter, von dem du kamst."
     },
     "bundled": {
       "title": "Einen veröffentlichten Datensatz analysieren",
       "items": {
         "open": "Öffne Modellkomplexität oder Log-Komplexität.",
         "choose": "Wähle unter Daten einen Datensatz eines Papers, etwa Important Factors: Inductive Miner.",
-        "settings": "Wähle Paper-Einstellungen, um ihn wie im Paper zu analysieren, oder Standard des Tools für die Voreinstellungen von ComFy, dann Datensatz verwenden."
+        "settings": "Wähle Paper-Einstellungen, um ihn wie im Paper zu analysieren, oder Standard des Tools für die Voreinstellungen von ComFy, dann Datensatz laden. Der Schritt Daten bleibt stehen und zeigt, was geladen ist, und den Weg weiter."
       },
-      "p1": "Mit den Paper-Einstellungen sagt ein Chip in der Einstellungszeile, ob die Zahlen dem veröffentlichten ComFy-Report gleichen und wie sich die Tabellen des Papers dazu verhalten. „Hier starten“, der erste Block im Schritt Daten, öffnet eine solche Analyse mit einem Klick, direkt auf ihren Ladungen."
+      "p1": "Mit den Paper-Einstellungen sagt ein Chip in der Einstellungszeile, ob die Zahlen dem veröffentlichten ComFy-Report gleichen und wie sich die Tabellen des Papers dazu verhalten. „Zum Einstieg“, die ersten Karten der mitgelieferten Datensätze im Schritt Daten, lädt eine solche Analyse mit einem Klick; „Ergebnis ansehen“ öffnet dann ihre Ladungen."
     },
     "own": {
       "title": "Eigene Daten analysieren",
@@ -1583,9 +1612,9 @@
     },
     "compare": {
       "title": "Miner vergleichen",
-      "p1": "Miner vergleichen stellt die Faktorstrukturen mehrerer veröffentlichter Datensätze nebeneinander, wie Tab. 17 von Important Factors: welche Maße für welchen Miner welche Dimension bilden. Es ist der Reiter „Vergleich“, und zwei Einträge von „Hier starten“ öffnen ihn.",
+      "p1": "Miner vergleichen stellt die Faktorstrukturen mehrerer veröffentlichter Datensätze nebeneinander, wie Tab. 17 von Important Factors: welche Maße für welchen Miner welche Dimension bilden. Es ist das Werkzeug „Vergleich“ rechts neben den Reitern, und zwei Karten von „Zum Einstieg“ öffnen es. Links stehen die Datensätze und die Regel, rechts das Ergebnis; die Hinweise zu einer Spalte sind eine Zahl in ihrem Kopf und eine eingeklappte Liste unter der Tabelle.",
       "items": {
-        "columns": "Datensätze: Wähle 2 bis 8 der Miner aus Important Factors; jeder wird mit den Einstellungen seines Papers analysiert. Die ersten vier sind die aus Tab. 17. Ein Link kann auch einen Datensatz mit eigener Faktorzahl verlangen, etwa 4 gegen 6 Faktoren (Hier starten).",
+        "columns": "Datensätze: Wähle 2 bis 8 der Miner aus Important Factors; jeder wird mit den Einstellungen seines Papers analysiert. Die ersten vier sind die aus Tab. 17. Ein Link kann auch einen Datensatz mit eigener Faktorzahl verlangen, etwa 4 gegen 6 Faktoren (Zum Einstieg).",
         "rule": "Zuordnungsregel: eine Regel für jeden Datensatz, zu Beginn Hair et al. wie in Tab. 17.",
         "matrix": "Nach Maß: eine Zeile je Maß, nach Dimension gruppiert, und darüber je Datensatz n, die Maße nach dem MSA-Filter, der KMO, die Faktoren, die Rotation und die erklärte Varianz. Eine getönte Zelle liegt in der Dimension ihrer Zeile; ein Ring markiert eine Querladung, eine gestrichelte Kontur ein Maß, das der MSA-Filter entfernt hat.",
         "dimensions": "Nach Dimension: eine Zeile je Datensatz mit den Maßen jeder Dimension, aufgebaut wie Tab. 17.",
@@ -1599,6 +1628,8 @@
   "compare": {
     "title": "Faktorstrukturen vergleichen",
     "subtitle": "Welche Maße für welchen Miner welche Dimension bilden, wie in Tab. 17 von Important Factors. Jede Spalte ist eine Analyse: ein veröffentlichter Datensatz mit den Einstellungen seines Papers oder einer deiner Datensätze mit den Einstellungen, die mit ihm gespeichert sind. Eine Zuordnungsregel gilt für alle.",
+    "subtitle_short": "Welche Maße für welchen Miner welche Dimension bilden.",
+    "choice": "Auswahl",
     "wait": "Der Vergleich wird noch berechnet.",
     "wait_update": "Der Vergleich wird aktualisiert.",
     "stale": "Die Tabelle zeigt die vorherige Auswahl; die Aktualisierung ist fehlgeschlagen.",
@@ -1631,7 +1662,6 @@
     "group_none_plural": "In keiner Dimension · {n} Maße",
     "alignment_note": "D1, D2, … sind die Dimensionen nach dem Abgleich: Der erste Datensatz behält die Nummern seiner Faktoren, die Faktoren jedes weiteren werden ihnen so zugeordnet, dass möglichst viele ihrer gemeinsamen Maße dieselbe Nummer bekommen. Eine Nummer kann von der des Papers abweichen (Tab. 17 wurde von Hand umnummeriert); wie die Maße innerhalb eines Datensatzes gruppiert sind, hängt nicht davon ab.",
     "same_as": "dieselben Ladungen wie {other}.",
-    "column_notes": "Hinweise zu den Datensätzen",
     "codes_more": "Nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder dens, in den Tabellen und in der LaTeX-Tabelle. Der volle Name steht im Tooltip.",
     "link_more": "Einen Link kopieren, der diesen Vergleich öffnet: die Datensätze und die Regel",
     "header": {
@@ -1715,13 +1745,20 @@
       "self_plural": "In einer Dimension in {assigned} von {n} Datensätzen, die es analysiert haben.",
       "never": "Kein Datensatz hat beide analysiert.",
       "never_self": "Kein Datensatz hat es analysiert.",
-      "fraction": "{together} von {analysed}"
+      "fraction": "{together} von {analysed}",
+      "legend_short": "Wie oft zwei Maße eine Dimension teilen."
     },
     "own_unknown": "Datensatz dieser Sitzung",
     "own_k": "k = {k}",
     "own_note": "Deine Daten, mit den Einstellungen, die mit ihnen gespeichert sind",
     "own_standard": "Mit dem Datensatz sind keine Einstellungen gespeichert; die Spalte nimmt die Standardeinstellungen.",
-    "empty": "Wähle mindestens {min} Analysen: Hefte im Ladungen-Schritt Lösungen deiner Daten an, oder vergleiche Datensätze aus Meine Datensätze."
+    "empty": "Wähle mindestens {min} Analysen: Hefte im Ladungen-Schritt Lösungen deiner Daten an, oder vergleiche Datensätze aus Meine Datensätze.",
+    "notes": {
+      "title": "Hinweise ({n})",
+      "column_aria": "Hinweise zu {column}: {n}",
+      "warning": "Warnung",
+      "info": "Hinweis"
+    }
   },
   "nav": {
     "back_to": "Zurück: {page}"

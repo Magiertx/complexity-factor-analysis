@@ -104,7 +104,8 @@ test("the sheet of a model measure says what it is, what became of it and what i
   await expect(loadings).toHaveCount(4);
   await expect(loadings.first()).toContainText("0.97");
   // The five closest measures, the strongest first.
-  const closest = dialog.getByRole("region", { name: text("factor.sheet.closest") });
+  // The buttons of the list, not the (i) beside its heading.
+  const closest = dialog.getByRole("region", { name: text("factor.sheet.closest") }).getByRole("list");
   await expect(closest.getByRole("button")).toHaveCount(5);
   await expect(closest.getByRole("button").first()).toContainText("Number of duplicate tasks");
   await expect(closest.getByRole("button").first()).toContainText("0.99");
@@ -218,7 +219,7 @@ test("the sheet of a log measure names its feeed group and function, with a link
   const loadings = dialog.getByRole("heading", { name: text("factor.sheet.loadings") }).locator("xpath=following-sibling::ul[1]/li");
   await expect(loadings).toHaveCount(15);
   // The closest measures come from the same map.
-  await expect(dialog.getByRole("region", { name: text("factor.sheet.closest") }).getByRole("button")).toHaveCount(5);
+  await expect(dialog.getByRole("region", { name: text("factor.sheet.closest") }).getByRole("list").getByRole("button")).toHaveCount(5);
 });
 
 test.describe("German", () => {
@@ -241,7 +242,7 @@ for (const scheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: scheme });
     await openModel(page);
     await nameIn(stepSection(page, "suitability").locator("#fa-msa-table"), "Size").click();
-    await expect(sheet(page, "Size").getByRole("region", { name: text("factor.sheet.closest") }).getByRole("button")).toHaveCount(5);
+    await expect(sheet(page, "Size").getByRole("region", { name: text("factor.sheet.closest") }).getByRole("list").getByRole("button")).toHaveCount(5);
     await page.waitForLoadState("networkidle");
     const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
     const serious = results.violations

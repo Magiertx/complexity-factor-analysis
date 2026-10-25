@@ -11,7 +11,6 @@ import {
   localizeCatalog,
 } from "@/lib/i18n";
 import {
-  AlertCircle,
   BookOpen,
   Check,
   Copy,
@@ -20,7 +19,6 @@ import {
   FileCheck2,
   FileUp,
   History,
-  Info,
   LayoutGrid,
   List,
   Play,
@@ -58,7 +56,7 @@ import { LogOverviewCard } from "./log-overview-card";
 import { JobNotesField } from "./job-notes-field";
 import { ResultPanel } from "./result-panel";
 import { Button } from "./ui/button";
-import { Card, CardContent } from "./ui/card";
+import { Card } from "./ui/card";
 import { IconButton, ToolSeparator } from "./ui/icon-button";
 import { Menu, type MenuItem } from "./ui/menu";
 import { useTip } from "./ui/tip";
@@ -66,6 +64,7 @@ import { PageHeader } from "./page-header";
 import { useJobs } from "./jobs-provider";
 import { RecentSingleRuns, isSingleRun } from "./recent-single-runs";
 import { Segmented } from "./ui/segmented";
+import { Notice } from "./ui/notice";
 import { ChoiceMark, choiceTile } from "./ui/choice";
 import { cn } from "@/lib/utils";
 import { formatDateTime, formatFileSize, formatPercent } from "@/lib/format";
@@ -591,18 +590,10 @@ export function Workbench() {
           title={t("inspect.title")}
           subtitle={t("inspect.subtitle")}
         />
-        <Card>
-          <CardContent className="flex items-start gap-3 py-6">
-            <AlertCircle className="h-5 w-5 text-danger-ink shrink-0 mt-0.5" />
-            <div>
-              <div className="font-medium">{t("workbench.load_error.title")}</div>
-              <div className="text-sm text-muted mt-1">{loadError}</div>
-              <div className="text-xs text-muted mt-2 font-mono">
-                {API_BASE}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <Notice tone="error" role="alert" title={t("workbench.load_error.title")}>
+          {loadError}
+          <span className="mt-1 block font-mono text-xs">{API_BASE}</span>
+        </Notice>
       </div>
     );
   }
@@ -642,8 +633,8 @@ export function Workbench() {
                 <>
                   <div className="rounded-lg bg-tile p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="h-9 w-9 rounded-md bg-accent/10 grid place-items-center">
-                        <FileCheck2 className="h-4 w-4 text-accent-ink" />
+                      <div className="h-9 w-9 rounded-md bg-surface text-muted grid place-items-center">
+                        <FileCheck2 className="h-4 w-4" />
                       </div>
                       <div className="min-w-0">
                         <div className="text-sm font-medium truncate">{selectedJobDetail.filename}</div>
@@ -681,13 +672,7 @@ export function Workbench() {
                   {/* A log named by a link from a dataset: opened, or no longer there. */}
                   <div role="status" className="empty:hidden">
                     {prefill && (
-                      <p
-                        className={cn(
-                          "flex items-start gap-2 rounded-lg px-3 py-2 text-xs",
-                          prefill.found ? "bg-tile" : "bg-warn/10 text-warn-ink",
-                        )}
-                      >
-                        <Info className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
+                      <Notice size="sm" tone={prefill.found ? "info" : "warn"}>
                         <span className="min-w-0 flex-1 break-words">
                           {prefill.found
                             ? t(prefill.miner ? "inspect.from_dataset_miner" : "inspect.from_dataset", {
@@ -704,7 +689,7 @@ export function Workbench() {
                         >
                           <X className="h-3.5 w-3.5" aria-hidden />
                         </button>
-                      </p>
+                      </Notice>
                     )}
                   </div>
 
@@ -778,7 +763,6 @@ export function Workbench() {
                               <span>{t("workbench.recent.label")}</span>
                             </div>
                             <Segmented
-                              variant="view"
                               size="sm"
                               aria-label={t("workbench.layout.aria")}
                               value={recentLayout}
@@ -880,7 +864,6 @@ export function Workbench() {
                         </div>
                         {sampleLogs.length > 1 && (
                           <Segmented
-                            variant="view"
                             size="sm"
                             aria-label={t("workbench.layout.aria")}
                             value={sampleLayout}
@@ -1018,7 +1001,7 @@ export function Workbench() {
                         </div>
                         {chosen ? (
                           <div className="bg-tile rounded-md px-2.5 py-2 flex items-center gap-2 text-[11px]">
-                            <FileCheck2 className="h-3.5 w-3.5 text-accent-ink shrink-0" />
+                            <FileCheck2 className="h-3.5 w-3.5 text-muted shrink-0" />
                             <span className="truncate flex-1">{chosen.name}</span>
                             <button
                               type="button"
@@ -1107,7 +1090,7 @@ export function Workbench() {
                       selectedJobDetail.status === "failed" && "bg-danger/15 text-danger-ink",
                       selectedJobDetail.status === "aborted" && "bg-muted/15 text-muted",
                       (selectedJobDetail.status === "running" || selectedJobDetail.status === "pending") &&
-                        "bg-accent/15 text-accent-ink animate-pulse",
+                        "bg-surface text-fg animate-pulse",
                     )}
                   >
                     {t("workbench.job_badge", {
@@ -1124,7 +1107,7 @@ export function Workbench() {
                     <span className="font-medium text-muted truncate max-w-[80%]">
                       {localizedAlgoText(progress.status, t)}
                     </span>
-                    <span className="font-bold text-accent-ink shrink-0">
+                    <span className="font-semibold tabular-nums shrink-0">
                       {formatPercent(progress.percentage / 100, locale, 0)}
                     </span>
                   </div>
@@ -1187,10 +1170,9 @@ export function Workbench() {
         )}
 
         {error && (
-          <div role="alert" className="rounded-lg bg-danger/10 px-4 py-3 flex items-start gap-3">
-            <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
-            <div className="text-sm">{error}</div>
-          </div>
+          <Notice tone="error" role="alert">
+            {error}
+          </Notice>
         )}
 
         {result && <ResultPanel result={result} runId={selectedJobId} />}
@@ -1225,18 +1207,18 @@ function InspectSection({
   return (
     <section aria-labelledby={id} data-tour={tour}>
       <Card>
-        <div className="px-4 sm:px-5 pt-4 pb-3 flex items-start gap-3 flex-wrap">
+        <div className="px-4 sm:px-5 pt-5 pb-4 flex items-start gap-3 flex-wrap">
           <span
             aria-hidden
-            className="h-7 w-7 rounded-md bg-tile text-muted grid place-items-center text-xs font-semibold tabular-nums shrink-0"
+            className="h-8 w-8 rounded-md bg-tile text-muted grid place-items-center text-xs font-semibold tabular-nums shrink-0"
           >
             {n}
           </span>
           <div className="flex-1 min-w-[12rem]">
-            <h2 id={id} className="text-sm font-semibold tracking-tight">
+            <h2 id={id} className="text-base font-semibold tracking-tight">
               {title}
             </h2>
-            <p className="text-xs text-muted mt-0.5">{hint}</p>
+            <p className="text-sm text-muted mt-0.5">{hint}</p>
           </div>
           {aside}
         </div>

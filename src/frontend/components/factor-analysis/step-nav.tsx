@@ -13,7 +13,6 @@ import {
   Grid3x3,
   KeyRound,
   Loader2,
-  Lock,
   Sparkles,
   Table2,
 } from "lucide-react";
@@ -87,19 +86,6 @@ export function useStepNavigation() {
   return { step, visit, goTo, fromUrl, takeFocus, getStep };
 }
 
-/**
- * What a step's state looks like. A step that cannot be had in this setup (the interpretation
- * without an API key) shows a key, not the lock of a step that cannot be opened yet.
- */
-function StateMark({ state, needsKey }: { state: StepState; needsKey?: boolean }) {
-  if (needsKey) return <KeyRound className="h-3 w-3 shrink-0 text-muted" aria-hidden />;
-  if (state === "done") return <Check className="h-3.5 w-3.5 shrink-0 text-success-ink" aria-hidden />;
-  if (state === "warn") return <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-warn-ink" aria-hidden />;
-  if (state === "busy") return <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted" aria-hidden />;
-  if (state === "locked") return <Lock className="h-3 w-3 shrink-0 text-muted" aria-hidden />;
-  return null;
-}
-
 interface NavProps {
   current: StepId;
   states: Record<StepId, StepState>;
@@ -127,6 +113,7 @@ function StepLink({
   stateLabel,
   onGo,
   iconOnly,
+  more,
   className,
   children,
 }: {
@@ -138,8 +125,10 @@ function StepLink({
   needsKey: boolean;
   stateLabel: string;
   onGo: (step: StepId) => void;
-  /** Shows only its sign and number, so its tooltip names it. */
+  /** Shows only its marker, so its tooltip names it. */
   iconOnly?: boolean;
+  /** The whole summary of a step whose line is cut off, for the tooltip. */
+  more?: string;
   className: string;
   children: React.ReactNode;
 }) {
@@ -147,7 +136,15 @@ function StepLink({
   const pathname = usePathname();
   const name = t(`factor.steps.${id}`);
   const tip = useTip<HTMLAnchorElement>(
-    lock ? { name, reason: lock } : needsKey ? { name, reason: stateLabel } : iconOnly ? { name } : null,
+    lock
+      ? { name, reason: lock, more }
+      : needsKey
+        ? { name, reason: stateLabel, more }
+        : iconOnly
+          ? { name, more }
+          : more
+            ? { more }
+            : null,
   );
   return (
     <a
@@ -177,7 +174,104 @@ function StepLink({
   );
 }
 
-/** The steps with what each found, as the navigation of a wide screen. */
+/** How long a finished step waits after the one before it as the steps fill in. */
+const FILL_MS = 120;
+
+const finishedState = (state: StepState) => state === "done" || state === "warn";
+
+/**
+ * The states as the steps show them: steps that become done (or done with a warning) show so one
+ * after another, FILL_MS apart, so the steps visibly fill in once a dataset is loaded; any other
+ * change shows at once, and every change with reduced motion.
+ */
+function useFilling(states: Record<StepId, StepState>): Record<StepId, StepState> {
+  const key = STEP_IDS.map((id) => states[id]).join(",");
+  const [shown, setShown] = useState(states);
+  const shownRef = useRef(states);
+  useEffect(() => {
+    const values = key.split(",") as StepState[];
+    const target = Object.fromEntries(STEP_IDS.map((id, i) => [id, values[i]])) as Record<StepId, StepState>;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const before = shownRef.current;
+    const now = { ...before };
+    const later: StepId[] = [];
+    for (const id of STEP_IDS) {
+      if (!reduce && finishedState(target[id]) && !finishedState(before[id])) later.push(id);
+      else now[id] = target[id];
+    }
+    const apply = (next: Record<StepId, StepState>) => {
+      shownRef.current = next;
+      setShown(next);
+    };
+    apply(now);
+    const timers = later.map((id, i) =>
+      setTimeout(() => apply({ ...shownRef.current, [id]: target[id] }), (i + 1) * FILL_MS),
+    );
+    return () => timers.forEach(clearTimeout);
+  }, [key]);
+  return shown;
+}
+
+/**
+ * The round marker of a step: its number, a check once done, the warning glyph for a step that
+ * needs a look, a spinner while it is computed, a key for a step this setup cannot give. The step on
+ * screen has the accent ring. Purely visual; the link says the state in words.
+ */
+function StepMarker({
+  n,
+  state,
+  current,
+  needsKey,
+}: {
+  n: number;
+  state: StepState;
+  current: boolean;
+  needsKey: boolean;
+}) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "relative grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-semibold tabular-nums transition-colors duration-300 motion-reduce:transition-none",
+        needsKey
+          ? "bg-tile text-muted"
+          : state === "done"
+            ? "bg-success/15 text-success-ink"
+            : state === "warn"
+              ? "bg-warn/15 text-warn-ink"
+              : current
+                ? "bg-surface text-accent-ink"
+                : "bg-tile text-muted",
+        current && "ring-2 ring-accent ring-offset-2 ring-offset-bg",
+      )}
+    >
+      {/* Keyed by the state, so a step that has just become done pops in. */}
+      <span key={needsKey ? "key" : state} className="grid place-items-center motion-safe:animate-[marker-in_220ms_ease-out]">
+        {needsKey ? (
+          <KeyRound className="h-3.5 w-3.5" />
+        ) : state === "done" ? (
+          <Check className="h-4 w-4" strokeWidth={2.5} />
+        ) : state === "warn" ? (
+          <AlertTriangle className="h-3.5 w-3.5" />
+        ) : state === "busy" ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          n
+        )}
+      </span>
+    </span>
+  );
+}
+
+/** A summary longer than this is cut off in the rail; its tooltip has all of it. */
+const SUMMARY_FITS = 26;
+
+/**
+ * The steps as a vertical stepper on a wide screen: a numbered marker per step, a line to the next,
+ * and beside it the step's name with one line of what it found ("288 × 12", "KMO 0.75") or, before
+ * that, what it is for. A step that cannot be opened yet is muted, with what it needs first in its
+ * tooltip.
+ */
 export function StepRail({
   current,
   states,
@@ -191,16 +285,30 @@ export function StepRail({
   summaries: Partial<Record<StepId, string>>;
 }) {
   const t = useT();
+  const shown = useFilling(states);
   return (
     <nav aria-label={t("factor.steps.aria")} className="hidden lg:block lg:sticky lg:top-6">
-      <ol className="flex flex-col gap-0.5">
-        {STEP_IDS.map((id) => {
-          const Icon = STEP_ICONS[id];
+      <ol className="flex flex-col">
+        {STEP_IDS.map((id, i) => {
           const here = id === current;
           const lock = locks[id];
           const needsKey = !!unavailable[id];
+          const state = shown[id];
+          const next = STEP_IDS[i + 1];
+          const summary = summaries[id] ?? t(`factor.rail.${id}`);
+          const muted = !!lock && !here;
           return (
-            <li key={id}>
+            <li key={id} className="relative">
+              {/* The line to the next marker; between two finished steps in the tone of done. */}
+              {next && (
+                <span
+                  aria-hidden
+                  className={cn(
+                    "absolute left-[1.5rem] top-[calc(50%+17px)] h-[calc(100%-34px)] w-px -translate-x-1/2 rounded-full transition-colors duration-300",
+                    finishedState(state) && finishedState(shown[next]) ? "bg-success/45" : "bg-border",
+                  )}
+                />
+              )}
               <StepLink
                 id={id}
                 current={here}
@@ -209,30 +317,30 @@ export function StepRail({
                 needsKey={needsKey}
                 stateLabel={stateLabels[id] ?? t(`factor.state.${states[id]}`)}
                 onGo={onGo}
+                more={summary.length > SUMMARY_FITS ? summary : undefined}
                 className={cn(
-                  "group relative flex items-start gap-2.5 rounded-md px-2.5 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-                  // The step on screen: a neutral highlight with an accent bar at its left.
-                  here
-                    ? "bg-surface before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-r before:bg-accent"
-                    : lock
-                      ? "cursor-default"
-                      : "hover:bg-surface/60",
+                  "group flex items-center gap-3 rounded-md px-2.5 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                  lock ? "cursor-default" : "hover:bg-surface/70",
                 )}
               >
-                <Icon
-                  className={cn("h-4 w-4 mt-0.5 shrink-0", here ? "text-accent-ink" : lock ? "text-muted/60" : "text-muted")}
-                  aria-hidden
-                />
+                <StepMarker n={i + 1} state={state} current={here} needsKey={needsKey} />
                 <span className="min-w-0 flex-1">
-                  <span className={cn("block text-sm", here ? "font-semibold" : "font-medium", lock && "text-muted")}>
+                  <span
+                    className={cn(
+                      "block truncate text-sm",
+                      here ? "font-semibold text-fg" : muted || needsKey ? "font-medium text-muted" : "font-medium",
+                    )}
+                  >
                     {t(`factor.steps.${id}`)}
                   </span>
-                  <span className={cn("block text-[11px] leading-snug break-words", summaries[id] ? "text-fg/75" : "text-muted")}>
-                    {summaries[id] ?? t(`factor.rail.${id}`)}
+                  <span
+                    className={cn(
+                      "block truncate text-[11px] leading-snug",
+                      summaries[id] && !needsKey ? "text-fg/75" : "text-muted",
+                    )}
+                  >
+                    {summary}
                   </span>
-                </span>
-                <span className="mt-1">
-                  <StateMark state={states[id]} needsKey={needsKey} />
                 </span>
               </StepLink>
             </li>
@@ -244,76 +352,56 @@ export function StepRail({
 }
 
 /**
- * The steps on a phone: number and sign of each in one row, the name of the step on screen beside
- * its own. It fits a narrow screen without scrolling sideways.
+ * The steps on a phone: the same markers in a row, joined by lines, and under them which step is on
+ * screen and which comes next. It fits a narrow screen without scrolling sideways.
  */
 export function StepBar({ current, states, locks, unavailable, stateLabels, onGo }: NavProps) {
   const t = useT();
+  const shown = useFilling(states);
   const { next } = neighbours(current);
   const at = STEP_IDS.indexOf(current) + 1;
   return (
     <nav aria-label={t("factor.steps.aria")} className="lg:hidden">
-      <ol className="flex items-stretch gap-1">
+      <ol className="flex items-center">
         {STEP_IDS.map((id, i) => {
-          const Icon = STEP_ICONS[id];
           const here = id === current;
-          const lock = locks[id];
-          const state = states[id];
-          const needsKey = !!unavailable[id];
+          const state = shown[id];
+          const before = STEP_IDS[i - 1];
           return (
-            <li key={id} className={cn(here ? "min-w-0 flex-1" : "shrink-0")}>
+            <li key={id} className={cn("flex items-center", i > 0 && "min-w-0 flex-1")}>
+              {before && (
+                <span
+                  aria-hidden
+                  className={cn(
+                    "mx-0.5 h-px min-w-2 flex-1 rounded-full transition-colors duration-300",
+                    finishedState(state) && finishedState(shown[before]) ? "bg-success/45" : "bg-border",
+                  )}
+                />
+              )}
               <StepLink
                 id={id}
                 current={here}
-                state={state}
-                lock={lock}
-                needsKey={needsKey}
-                stateLabel={stateLabels[id] ?? t(`factor.state.${state}`)}
+                state={states[id]}
+                lock={locks[id]}
+                needsKey={!!unavailable[id]}
+                stateLabel={stateLabels[id] ?? t(`factor.state.${states[id]}`)}
                 onGo={onGo}
-                iconOnly={!here}
+                iconOnly
                 className={cn(
-                  "h-11 flex items-center rounded-md transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-                  here
-                    ? "relative w-full gap-2 px-2.5 bg-surface before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[3px] before:rounded-r before:bg-accent"
-                    : "w-9 flex-col justify-center gap-0.5",
-                  !here && (lock ? "opacity-45 cursor-default" : "hover:bg-surface"),
+                  "grid h-11 w-11 shrink-0 place-items-center rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                  locks[id] && !here ? "cursor-default" : "hover:bg-surface/70",
                 )}
               >
-                <Icon className={cn("h-4 w-4 shrink-0", here ? "text-accent-ink" : "text-muted")} aria-hidden />
-                {here ? (
-                  <span className="min-w-0 flex items-baseline gap-1.5">
-                    <span className="text-[11px] tabular-nums text-muted" aria-hidden>
-                      {i + 1}
-                    </span>
-                    <span className="truncate text-sm font-semibold">{t(`factor.steps.${id}`)}</span>
-                  </span>
-                ) : (
-                  <span
-                    className={cn(
-                      "flex items-center gap-0.5 text-[10px] leading-none tabular-nums",
-                      state === "warn" ? "text-warn-ink font-semibold" : "text-muted",
-                    )}
-                    aria-hidden
-                  >
-                    {/* The warning is a sign as well as a colour. */}
-                    {state === "warn" && <AlertTriangle className="h-2.5 w-2.5 shrink-0" />}
-                    {i + 1}
-                  </span>
-                )}
-                {/* The name for screen readers, which the row only shows for the step on screen. */}
-                {!here && <span className="sr-only">{t(`factor.steps.${id}`)}</span>}
-                {here && (
-                  <span className="ml-auto">
-                    <StateMark state={state} needsKey={needsKey} />
-                  </span>
-                )}
+                <StepMarker n={i + 1} state={state} current={here} needsKey={!!unavailable[id]} />
+                {/* The name for screen readers; the line below names the step on screen. */}
+                <span className="sr-only">{t(`factor.steps.${id}`)}</span>
               </StepLink>
             </li>
           );
         })}
       </ol>
       {/* Where the bar is: the step on screen and the one after it. */}
-      <p className="mt-1.5 px-1 text-xs text-muted">
+      <p className="mt-1 px-1 text-xs text-muted">
         {next
           ? t("factor.nav.summary", {
               n: at,
@@ -339,11 +427,14 @@ function NextButton({
   lock,
   onGo,
   compact,
+  quiet,
 }: {
   next: StepId;
   lock: string | null;
   onGo: (step: StepId) => void;
   compact?: boolean;
+  /** Not the primary action, where the step has one of its own. */
+  quiet?: boolean;
 }) {
   const t = useT();
   const label = compact ? t("factor.nav.next") : t("factor.nav.next_to", { step: t(`factor.steps.${next}`) });
@@ -352,6 +443,7 @@ function NextButton({
     <Button
       ref={tip}
       size="sm"
+      variant={quiet ? "outline" : "primary"}
       aria-disabled={lock ? true : undefined}
       onClick={() => !lock && onGo(next)}
       className="shrink-0 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:hover:opacity-50"
@@ -450,7 +542,12 @@ export function StepNavBar({
             {t("factor.nav.position", { n: STEP_IDS.indexOf(step) + 1, total: STEP_IDS.length })}
           </span>
         )}
-        {next ? <NextButton next={next} lock={locks[next]} onGo={onGo} compact /> : <span className="w-[4.5rem]" />}
+        {/* The data step has its own primary button (load, or on from the loaded dataset). */}
+        {next ? (
+          <NextButton next={next} lock={locks[next]} onGo={onGo} compact quiet={step === "data"} />
+        ) : (
+          <span className="w-[4.5rem]" />
+        )}
       </div>
     </nav>
   );

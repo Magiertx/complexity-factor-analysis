@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { StickyNote, Edit2, Check, X } from "lucide-react";
+import { AlertCircle, StickyNote, Edit2, Check, X } from "lucide-react";
 import { updateJobNotes } from "@/lib/api";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
@@ -108,7 +108,12 @@ export function JobNotesField({ jobId, initialNotes, variant = "panel", onSaved 
                 <Check className="h-3 w-3" /> {t("common.save")}
               </Button>
             </div>
-            {error && <div className="text-[10px] text-danger-ink">{error}</div>}
+            {error && (
+              <div className="flex items-center gap-1 text-[10px] text-danger-ink">
+                <AlertCircle className="h-3 w-3 shrink-0" aria-hidden />
+                {error}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -166,7 +171,12 @@ export function JobNotesField({ jobId, initialNotes, variant = "panel", onSaved 
               </Button>
             </div>
           </div>
-          {error && <div className="text-xs text-danger-ink">{error}</div>}
+          {error && (
+            <div className="flex items-center gap-1 text-xs text-danger-ink">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {error}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Ban, ChevronLeft, ChevronRight, ExternalLink, Loader2, Plus, X } from "lucide-react";
+import { AlertTriangle, Ban, ChevronLeft, ChevronRight, ExternalLink, Loader2, Plus, X } from "lucide-react";
 import { fetchDescriptives, type Descriptives, type FactorAnalysis, type FactorDataset, type FactorMeasure } from "@/lib/api";
 import { assignedCells, factorName, signColor, type AnalysisOptions, type FactorNames } from "@/lib/factor-analysis";
 import { MIN_MEASURES } from "@/lib/factor-analysis";
@@ -11,7 +11,9 @@ import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
 import { IconButton } from "@/components/ui/icon-button";
 import { Sheet } from "@/components/ui/sheet";
-import { Term, useTip } from "@/components/ui/tip";
+import { useTip } from "@/components/ui/tip";
+import { InfoTip } from "@/components/ui/info-tip";
+import { Notice } from "@/components/ui/notice";
 import type { CorrelationsState } from "./correlation-map";
 import { Histogram } from "./histogram";
 
@@ -202,8 +204,9 @@ function SheetBody({
       <div className="flex items-start gap-1.5 px-4 pt-4 pb-3 border-b border-border shrink-0">
         <div className="min-w-0 flex-1">
           {position && (
-            <p className="text-[11px] text-muted tabular-nums">
-              <Term more={t("factor.sheet.paging_more")}>{t("factor.sheet.position", position)}</Term>
+            <p className="flex items-center gap-1 text-[11px] text-muted tabular-nums">
+              {t("factor.sheet.position", position)}
+              <InfoTip size="xs" topic={t("factor.sheet.position", position)} text={t("factor.sheet.paging_more")} />
             </p>
           )}
           <h2
@@ -222,12 +225,14 @@ function SheetBody({
             )}
             <span
               className={cn(
-                "rounded px-1.5 py-0.5",
+                "inline-flex items-center gap-1 rounded px-1.5 py-0.5",
                 status.tone === "ok" && "bg-success/10 text-success-ink",
                 status.tone === "warn" && "bg-warn/10 text-warn-ink",
                 status.tone === "muted" && "bg-tile text-muted",
               )}
             >
+              {/* A warning is a glyph as well as a colour. */}
+              {status.tone === "warn" && <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden />}
               {status.text}
             </span>
           </div>
@@ -455,8 +460,9 @@ function InAnalysis({
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-2">
         <div className="rounded-md bg-tile/60 px-2.5 py-1.5 min-w-0">
-          <div className="text-[10px] text-muted">
-            <Term more={t("factor.sheet.msa_more", { threshold: formatNumber(threshold, locale) })}>{t("factor.sheet.msa")}</Term>
+          <div className="flex items-center gap-0.5 text-[10px] text-muted">
+            {t("factor.sheet.msa")}
+            <InfoTip size="xs" topic={t("factor.sheet.msa")} text={t("factor.sheet.msa_more", { threshold: formatNumber(threshold, locale) })} />
           </div>
           <div
             className={cn(
@@ -517,7 +523,10 @@ function ShareTile({ label, value, more }: { label: string; value: number | unde
   const { locale } = useLocale();
   return (
     <div className="rounded-md bg-tile/60 px-2.5 py-1.5 min-w-0">
-      <div className="text-[10px] text-muted">{more ? <Term more={more}>{label}</Term> : label}</div>
+      <div className="flex items-center gap-0.5 text-[10px] text-muted">
+        {label}
+        {more && <InfoTip size="xs" topic={label} text={more} />}
+      </div>
       <div className="font-mono tabular-nums text-sm">{value === undefined ? NO_VALUE : formatNumber(value, locale, 2)}</div>
       {value !== undefined && (
         <div aria-hidden className="mt-1 h-1 rounded-full bg-bg/70 overflow-hidden">
@@ -547,11 +556,16 @@ function Closest({
   const partners = correlations.data?.top[measure];
   return (
     <section className="space-y-2" aria-labelledby={`${titleId}-closest`}>
-      <h3 id={`${titleId}-closest`} className="text-sm font-semibold">
-        <Term more={t("factor.sheet.closest_more")}>{t("factor.sheet.closest")}</Term>
-      </h3>
+      <div className="flex items-center gap-1">
+        <h3 id={`${titleId}-closest`} className="text-sm font-semibold">
+          {t("factor.sheet.closest")}
+        </h3>
+        <InfoTip topic={t("factor.sheet.closest")} text={t("factor.sheet.closest_more")} />
+      </div>
       {correlations.error ? (
-        <p className="text-xs text-danger-ink">{t("factor.sheet.closest_failed")}</p>
+        <Notice tone="error" size="sm">
+          {t("factor.sheet.closest_failed")}
+        </Notice>
       ) : !correlations.data ? (
         <p role="status" className="flex items-center gap-2 text-xs text-muted">
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />

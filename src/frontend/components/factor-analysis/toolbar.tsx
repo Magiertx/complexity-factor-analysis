@@ -51,7 +51,7 @@ export interface ShortCodesSwitch {
  * The tools of the analysis on a factor analysis tab, as icons in one row: the short codes, the
  * link and the downloads, and the tour of the steps at the end. Each icon is named by its tooltip.
  * The ways to other pages are elsewhere: the tabs for the comparison and a single log, the header
- * for the guide, the data step for Start here and My datasets.
+ * for the guide, the data step for Get started and My datasets.
  */
 export function FactorToolbar({
   linkQuery,

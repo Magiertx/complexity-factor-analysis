@@ -125,13 +125,39 @@ export function stepSection(page: Page, step: string): Locator {
   return page.locator(`#fa-step-${step}`);
 }
 
-/** Opens a bundled dataset of the data step by its label, e.g. "Inductive miner"; the dataset step opens with it. */
-export async function openBundled(page: Page, label: string, locale: "en" | "de" = "en") {
+/**
+ * Loads a bundled dataset of the data step by its label, e.g. "Inductive miner". The data step stays
+ * on screen with what was loaded; its button leads on to the dataset step.
+ */
+export async function loadBundled(page: Page, label: string, locale: "en" | "de" = "en") {
   const data = stepSection(page, "data");
   await data.getByRole("radio", { name: label, exact: true }).check({ force: true });
   await data.getByRole("button", { name: text("factor.data.submit_bundled", {}, locale) }).click();
   await expectStep(page, "dataset", "done", locale);
+  await expect(data).toBeVisible();
+  await expect(data).toContainText(text("factor.data.loaded", { name: `Important Factors: ${label}` }, locale).split(":")[0]);
+}
+
+/** The button of a loaded dataset in the data step that leads on to the dataset step. */
+export function nextFromData(page: Page, locale: "en" | "de" = "en"): Locator {
+  return stepSection(page, "data").getByRole("button", {
+    name: text("factor.nav.next_to", { step: text("factor.steps.dataset", {}, locale) }, locale),
+  });
+}
+
+/** Opens a bundled dataset of the data step by its label, e.g. "Inductive miner", and goes on to the dataset step. */
+export async function openBundled(page: Page, label: string, locale: "en" | "de" = "en") {
+  await loadBundled(page, label, locale);
+  await nextFromData(page, locale).click();
   await expect(stepSection(page, "dataset")).toBeVisible();
+}
+
+/** Chooses the settings a bundled dataset with published settings opens with, in the data step. */
+export async function chooseOpenWith(page: Page, preset: "standard" | "published", locale: "en" | "de" = "en") {
+  await stepSection(page, "data")
+    .getByRole("group", { name: text("factor.data.preset_label", {}, locale) })
+    .getByRole("button", { name: text(`factor.data.preset.${preset}`, {}, locale) })
+    .click();
 }
 
 /** The download menu of the toolbar, opened, and one of its entries chosen by its text key. */

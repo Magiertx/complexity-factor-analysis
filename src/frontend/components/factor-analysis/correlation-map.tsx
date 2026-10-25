@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, Loader2, RotateCcw } from "lucide-react";
+import { Loader2, RotateCcw } from "lucide-react";
 import type { Correlations, FactorAnalysis } from "@/lib/api";
 import {
   HIGH_CORRELATION,
@@ -22,7 +22,9 @@ import { formatNumber } from "@/lib/format";
 import type { MeasureInfo } from "@/lib/measure-list";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
+import { Brief } from "@/components/ui/brief";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/notice";
 import { Segmented } from "@/components/ui/segmented";
 import { MeasureName, TableFrame } from "@/components/ui/table";
 import { useTip, useTipZone } from "@/components/ui/tip";
@@ -108,18 +110,20 @@ export function CorrelationMap(props: CorrelationMapProps) {
       </div>
       {open && (
         <div className="space-y-3">
-          <p className="text-xs text-muted max-w-prose">{t("factor.correlations.help", { limit })}</p>
+          <Brief text={t("factor.correlations.help", { limit })} topic={t("factor.correlations.heading")} />
           {correlations.error ? (
-            <div role="alert" className="rounded-lg bg-danger/10 px-3.5 py-3 flex items-start gap-2.5 text-sm">
-              <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" aria-hidden />
-              <div className="space-y-2">
-                <div>{t("factor.correlations.failed", { error: correlations.error })}</div>
+            <Notice
+              tone="error"
+              role="alert"
+              action={
                 <Button size="sm" variant="outline" onClick={correlations.retry}>
                   <RotateCcw className="h-3.5 w-3.5" aria-hidden />
                   {t("common.try_again")}
                 </Button>
-              </div>
-            </div>
+              }
+            >
+              {t("factor.correlations.failed", { error: correlations.error })}
+            </Notice>
           ) : !correlations.data ? (
             <div role="status" className="flex items-center gap-2 text-sm text-muted">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -173,7 +177,6 @@ function MapBody({
             {t("factor.correlations.order_label")}
           </span>
           <Segmented<MapOrder>
-            variant="view"
             size="sm"
             aria-labelledby="fa-map-order-label"
             value={byFactor ? "factor" : "cluster"}
@@ -223,7 +226,7 @@ function MapBody({
             : t(high === 1 ? "factor.correlations.legend_high" : "factor.correlations.legend_high_plural", { n: high, limit })}
         </span>
       </div>
-      <p className="text-[11px] text-muted max-w-prose">{t("factor.correlations.hint")}</p>
+      <Brief className="text-[11px]" text={t("factor.correlations.hint")} topic={t("factor.correlations.heading")} />
 
       <MapTable data={data} layout={layout} measureName={measureName} />
     </div>

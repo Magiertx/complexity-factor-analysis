@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import type { Page } from "@playwright/test";
 import {
   chooseDownload,
+  chooseOpenWith,
   deleteSessionDatasets,
   downloaded,
   expect,
@@ -34,7 +35,7 @@ async function openPaper(page: Page) {
   await page.goto("/");
   const data = stepSection(page, "data");
   await data.getByRole("radio", { name: "Inductive miner", exact: true }).check({ force: true });
-  await data.getByRole("radio", { name: text("factor.data.preset.published"), exact: true }).check({ force: true });
+  await chooseOpenWith(page, "published");
   await data.getByRole("button", { name: text("factor.data.submit_bundled") }).click();
   await expectStep(page, "loadings", "done");
 }

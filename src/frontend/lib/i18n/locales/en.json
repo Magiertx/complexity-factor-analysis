@@ -16,7 +16,11 @@
     "error_description": "This page ran into an unexpected error.",
     "error_unknown": "Unknown error",
     "try_again": "Try again",
-    "undo": "Undo"
+    "undo": "Undo",
+    "info_aria": "About: {topic}",
+    "dismiss": "Dismiss",
+    "more": "more",
+    "less": "less"
   },
   "header": {
     "tagline": "Complexity measures of process models and event logs",
@@ -44,6 +48,8 @@
   },
   "mode_bar": {
     "aria_label": "Sections",
+    "analyses_aria": "Analyses",
+    "tools_aria": "Tools",
     "model_label": "Model complexity",
     "model_desc": "Measures of discovered process models",
     "log_label": "Log complexity",
@@ -90,7 +96,7 @@
     },
     "factor": {
       "intro": "Five steps from raw measures to factors, and an optional interpretation, one at a time: the list of steps on the left (on a phone the row at the top) and Back and Next move between them. Hover a control or a dotted word for what it does. Esc or Skip ends the tour at any time.",
-      "data": "Start here: pick a bundled dataset, upload a CSV, or compute the measures from your own files. Large computations run in the background.",
+      "data": "Where the data come from: Get started and the bundled datasets, a CSV of your own, or measures computed from your files. Large computations run in the background.",
       "dataset": "Check the size of the matrix and what the cleaning removed. You can download the cleaned data as CSV.",
       "suitability": "Bartlett and KMO tell you whether a factor analysis makes sense at all. Exclude measures with low MSA here, by hand or with the filter.",
       "factors": "The scree plot suggests how many factors to keep. Change the number or the rotation; everything below updates right away.",
@@ -124,6 +130,7 @@
     "presets": {
       "title": "Parameter presets",
       "description": "Named parameter sets you saved while inspecting a single log. Stored locally on this device.",
+      "description_short": "Saved parameter sets of single logs.",
       "empty_hint_before": "No presets yet. Under Inspect a single log, configure an algorithm and click",
       "empty_hint_action": "Save preset",
       "empty_hint_after": "above the parameter form.",
@@ -140,6 +147,7 @@
       "clear_button": "Clear presets",
       "transfer_label": "Export & import",
       "transfer_hint": "Back up your presets to a JSON file or merge a file into the current collection. Existing presets are never overwritten.",
+      "transfer_short": "Back up presets as JSON, or merge a file in.",
       "export_button": "Export JSON",
       "export_title": "Download all presets as a JSON file",
       "import_button": "Import JSON",
@@ -176,11 +184,14 @@
       "open_run_history": "View all runs",
       "clear_jobs_label": "Delete the run history",
       "clear_jobs_hint": "Deletes every run of this session on the server, with its results and the datasets computed from logs or nets. This cannot be undone.",
+      "clear_jobs_short": "Deletes every run of this session, for good.",
       "confirm_delete": "Confirm delete",
       "delete_all_jobs": "Delete all runs",
       "clear_datasets_label": "Delete the factor analysis datasets",
       "clear_datasets_hint": "{n} dataset of the model and log complexity tabs is stored on the server, with the settings of its last analysis. If it was computed from logs or nets, the run that computed it is deleted as well.",
       "clear_datasets_hint_plural": "{n} datasets of the model and log complexity tabs are stored on the server, each with the settings of its last analysis. Those computed from logs or nets are deleted with the runs that computed them.",
+      "clear_datasets_short": "{n} dataset on the server.",
+      "clear_datasets_short_plural": "{n} datasets on the server.",
       "clear_datasets_empty": "No datasets of the model and log complexity tabs are stored for this session.",
       "clear_datasets_unknown": "Datasets of the model and log complexity tabs, each with the settings of its last analysis. Those computed from logs or nets are deleted with the runs that computed them.",
       "delete_all_datasets": "Delete datasets",
@@ -200,6 +211,7 @@
   "api_access": {
     "heading": "API access",
     "subtitle": "Start runs and read results without the web UI. The endpoints need no login; a cookie scopes them to your browser session.",
+    "subtitle_short": "Start runs and fetch results without the web interface.",
     "interactive_ref_title": "Interactive reference",
     "interactive_ref_desc": "Full OpenAPI 3 spec — try endpoints directly from the browser.",
     "quick_start_title": "Quick start",
@@ -416,6 +428,7 @@
   "run_history": {
     "heading": "History",
     "subtitle": "Everything of this session, newest first: the datasets of both tabs, each with the settings of its last analysis, and the runs of single logs.",
+    "subtitle_short": "Everything of this session, newest first.",
     "search_placeholder": "Search name, file or ID…",
     "search_aria": "Search the history",
     "filter_type_aria": "Filter by type",
@@ -529,11 +542,13 @@
     "tour_title": "Walkthrough of the steps",
     "model": {
       "title": "Model complexity",
-      "subtitle": "Find out which complexity measures of process models describe the same underlying dimension. Collect measures over many models, check whether a factor analysis is meaningful, and group the measures into a few factors."
+      "subtitle": "Find out which complexity measures of process models describe the same underlying dimension. Collect measures over many models, check whether a factor analysis is meaningful, and group the measures into a few factors.",
+      "subtitle_short": "Which measures of process models describe the same dimension."
     },
     "log": {
       "title": "Log complexity",
-      "subtitle": "Find out which event log complexity measures overlap. Compute the measures for many logs, check whether a factor analysis is meaningful, and group the measures into a few factors."
+      "subtitle": "Find out which event log complexity measures overlap. Compute the measures for many logs, check whether a factor analysis is meaningful, and group the measures into a few factors.",
+      "subtitle_short": "Which measures of event logs overlap."
     },
     "steps": {
       "aria": "Analysis steps",
@@ -545,8 +560,8 @@
       "interpretation": "Interpretation"
     },
     "step_desc": {
-      "data_model": "Use a published dataset, upload a measure table, or compute the measures from event logs or Petri nets.",
-      "data_log": "Use a published dataset, upload a measure table, or compute the measures from event logs.",
+      "data_model": "Where do the data come from?",
+      "data_log": "Where do the data come from?",
       "dataset": "What was loaded, and what the cleaning removed.",
       "suitability": "Are the measures correlated enough for a factor analysis?",
       "factors": "How many factors to keep, and how to rotate them.",
@@ -618,7 +633,8 @@
         "mine": "Datasets you loaded or computed in this session, each with the settings of its last analysis. The server keeps up to 30 per session and removes them after 7 days without use."
       },
       "bundled_empty": "No bundled datasets are available on this server.",
-      "compare_miners": "Compare the four miners (Tab. 17)",
+      "all_bundled": "All datasets",
+      "collection_note": "Note on these data",
       "bundled_size": "{rows} observations × {cols} measures",
       "cleaned_size": "{rows} observations × {cols} measures after cleaning",
       "license": "License: {license}",
@@ -630,6 +646,7 @@
       "own_files": "Own files",
       "csv_drop_label": "Drop a CSV file here",
       "csv_drop_hint": "or click to browse · .csv",
+      "csv_format_short": "One row per observation, one column per measure.",
       "csv_format": "The first row holds the measure names. A first column that is not numeric or is named observation, id, name or label holds the row labels. Columns that are non-numeric, constant, duplicate or have missing values are dropped.",
       "logs_drop_label": "Drop event logs here",
       "logs_drop_hint": "or click to browse · .xes, .xes.gz · up to {max} files",
@@ -678,7 +695,8 @@
       "need_files": "Add at least one file.",
       "need_miner": "Pick at least one miner.",
       "need_measures": "Pick at least {n} measures.",
-      "submit_bundled": "Use dataset",
+      "submit_bundled": "Load dataset",
+      "submit_compare": "Open comparison",
       "submit_csv": "Load CSV",
       "submit_compute": "Compute measures",
       "submit_open": "Open dataset",
@@ -689,6 +707,9 @@
       "cancel": "Stop computing",
       "failed_title": "The dataset could not be built",
       "change": "Choose other data",
+      "loaded": "Loaded: {name}",
+      "to_result": "View result",
+      "settings_own": "Own settings",
       "catalog_failed": "The catalog could not be loaded.",
       "catalog_error": "Could not load the available datasets and measures: {error}",
       "load_failed": "The dataset could not be loaded. Retrying…",
@@ -735,6 +756,10 @@
         "log_miners_plural": "{logs} logs × {miners} miners give {n} observations; a factor analysis needs at least {needed}. Add more miners or upload more logs (up to {limit}).",
         "nets": "With {n} net no factor analysis runs; it needs at least {needed} nets. Upload more nets (up to {limit}).",
         "nets_plural": "With {n} nets no factor analysis runs; it needs at least {needed} nets. Upload more nets (up to {limit})."
+      },
+      "scope": {
+        "paper": "in the paper",
+        "report": "report only"
       }
     },
     "inputs": {
@@ -989,7 +1014,9 @@
       "look_matrix": "Matrix",
       "look_dimensions": "Dimensions",
       "legend_faded": "faded: |loading| < {threshold}",
-      "legend_faded_strict": "faded: |loading| ≤ {threshold}"
+      "legend_faded_strict": "faded: |loading| ≤ {threshold}",
+      "numbers_label": "What the numbers mean",
+      "rule_note_short": "Note on the paper's tables"
     },
     "help": {
       "cleaning": "Before the analysis, rows where most values are missing are dropped. Then columns that are not numeric, that have no variance, that have missing values, or that are perfect copies of an earlier column are removed, as in ComFy for log measures. Such columns would distort or break the correlation matrix.",
@@ -1055,6 +1082,7 @@
     },
     "interpretation": {
       "intro": "Claude reads the loadings together with the definitions of the measures and proposes a name and a short interpretation for each factor. Sent to Anthropic are the measure (column) names, their catalog definitions and aggregated results such as loadings and test statistics; measure values, row labels and file names are not sent. Each request costs money, so it runs only when you ask for it.",
+      "sent_label": "What is sent to Anthropic",
       "button": "Interpret factors",
       "again": "Interpret again",
       "running": "Claude is interpreting the factors. This can take up to three minutes.",
@@ -1193,27 +1221,28 @@
       "failed": "The linked dataset could not be opened."
     },
     "start": {
-      "title": "Start here",
-      "collapsed_hint": "{n} analysis to open in one click, and an example CSV",
-      "collapsed_hint_plural": "{n} analyses to open in one click, and an example CSV",
-      "intro": "Each opens a bundled dataset with its settings; nothing needs to be uploaded or computed.",
+      "title": "Get started",
       "opens": "Opens {page}",
       "scenario": {
         "if_inductive": {
           "title": "Important Factors: Inductive miner",
-          "text": "With the paper settings: 4 factors and multiple membership, checked against the ComFy report. The numbers are those of Tab. 10–11, the groups those of Tab. 12 with one assignment more (Average connector degree also in factor 2)."
+          "text": "With the paper settings: 4 factors and multiple membership, checked against the ComFy report. The numbers are those of Tab. 10–11, the groups those of Tab. 12 with one assignment more (Average connector degree also in factor 2).",
+          "short": "4 factors and multiple membership, checked against the ComFy report."
         },
         "log_standard": {
           "title": "Log measures of 2,112 PDC logs",
-          "text": "The data of the log paper with the tool standard: feeed measures, Kaiser's factor count, varimax."
+          "text": "The data of the log paper with the tool standard: feeed measures, Kaiser's factor count, varimax.",
+          "short": "feeed measures of 2,112 logs, factor count by Kaiser."
         },
         "if_four_miners": {
           "title": "Important Factors: four miners compared",
-          "text": "The dimensions of the Alpha, Directly Follows, Inductive and Hybrid ILP miner side by side under Hair et al., like Tab. 17."
+          "text": "The dimensions of the Alpha, Directly Follows, Inductive and Hybrid ILP miner side by side under Hair et al., like Tab. 17.",
+          "short": "Alpha, Directly Follows, Inductive and Hybrid ILP under Hair et al."
         },
         "if_k4_k6": {
           "title": "Important Factors: 4 against 6 factors",
-          "text": "The Inductive miner with the 4 factors of the paper beside 6, under multiple membership, as in section 6: MM (loading 0.50) forms a fifth dimension, the sixth stays empty."
+          "text": "The Inductive miner with the 4 factors of the paper beside 6, under multiple membership, as in section 6: MM (loading 0.50) forms a fifth dimension, the sixth stays empty.",
+          "short": "The Inductive miner with 4 and with 6 factors, as in section 6."
         }
       },
       "example_csv": "Example CSV",
@@ -1527,16 +1556,16 @@
       "title": "The six steps",
       "p1": "Model complexity analyses the measures of ComFy on Petri nets, Log complexity the measures of feeed on event logs. Both walk through the same steps: Data, Dataset, Suitability, Factors, Loadings and an optional Interpretation. One step is on screen at a time; the list of steps shows what each step found.",
       "p2": "The settings row above the steps sums up every choice, marks those that differ from the tool standard and leads to each control. Every change of a setting runs the analysis again.",
-      "p3": "The tabs at the top are the same on every page: the two analyses, Compare, Single log and History. The guide, the API and the settings are in the header and lead back to the tab you came from."
+      "p3": "The tabs at the top are the same on every page: the analyses (the two of complexity and Single log), and set apart on the right the tools Compare and History. The guide, the API and the settings are in the header and lead back to the tab you came from."
     },
     "bundled": {
       "title": "Analyse a published dataset",
       "items": {
         "open": "Open Model complexity or Log complexity.",
         "choose": "In Data, choose a dataset of a paper, for example Important Factors: Inductive miner.",
-        "settings": "Choose Paper settings to analyse it as the paper did, or Tool standard for the defaults of ComFy, then Use dataset."
+        "settings": "Choose Paper settings to analyse it as the paper did, or Tool standard for the defaults of ComFy, then Load dataset. The data step stays on screen with what was loaded and the way on."
       },
-      "p1": "With the paper settings, a chip in the settings row says whether the numbers equal the published ComFy report and how the tables of the paper relate to it. Start here, the first block of the data step, opens such an analysis in one click, on its loadings."
+      "p1": "With the paper settings, a chip in the settings row says whether the numbers equal the published ComFy report and how the tables of the paper relate to it. Get started, the first cards of the bundled datasets in the data step, loads such an analysis in one click; View result then opens its loadings."
     },
     "own": {
       "title": "Analyse your own data",
@@ -1583,9 +1612,9 @@
     },
     "compare": {
       "title": "Compare miners",
-      "p1": "Compare miners puts the factor structures of several published datasets side by side, like Tab. 17 of Important Factors: which measures form which dimension for which miner. It is the tab Compare, and two entries of Start here open it.",
+      "p1": "Compare miners puts the factor structures of several published datasets side by side, like Tab. 17 of Important Factors: which measures form which dimension for which miner. It is the tool Compare, at the right of the tabs, and two cards of Get started open it. The datasets and the rule are on the left, the result on the right; the notes on a column are a count in its header and one folded list below the table.",
       "items": {
-        "columns": "Datasets: choose 2 to 8 of the miners of Important Factors; each is analysed with the settings of its paper. The first four are those of Tab. 17. A link can also ask for a dataset with a factor count of its own, such as 4 against 6 factors (Start here).",
+        "columns": "Datasets: choose 2 to 8 of the miners of Important Factors; each is analysed with the settings of its paper. The first four are those of Tab. 17. A link can also ask for a dataset with a factor count of its own, such as 4 against 6 factors (Get started).",
         "rule": "Assignment rule: one rule for every dataset, Hair et al. as in Tab. 17 to begin with.",
         "matrix": "By measure: a row per measure, grouped by dimension, and above them n, the measures after the MSA filter, the KMO, the factors, the rotation and the variance explained per dataset. A tinted cell is in the dimension of its row; a ring marks a cross-loading, a dashed outline a measure the MSA filter removed.",
         "dimensions": "By dimension: a row per dataset with the measures of each dimension, laid out like Tab. 17.",
@@ -1599,6 +1628,8 @@
   "compare": {
     "title": "Compare factor structures",
     "subtitle": "Which measures form which dimension for which miner, like Tab. 17 of Important Factors. Each column is an analysis: a published dataset with the settings of its paper, or one of your datasets with the settings saved with it. One assignment rule applies to all.",
+    "subtitle_short": "Which measures form which dimension for which miner.",
+    "choice": "Selection",
     "wait": "The comparison is still being computed.",
     "wait_update": "The comparison is being updated.",
     "stale": "The table shows the previous selection; the update failed.",
@@ -1631,7 +1662,6 @@
     "group_none_plural": "In no dimension · {n} measures",
     "alignment_note": "D1, D2, … are the dimensions after matching: the first dataset keeps the numbers of its factors, and the factors of every further one are matched to them so that most of the measures they share get the same number. A number can differ from the paper's (Tab. 17 was renumbered by hand); how the measures are grouped within a dataset does not depend on it.",
     "same_as": "the same loadings as {other}.",
-    "column_notes": "Notes on the datasets",
     "codes_more": "Names the measures by the codes of the papers, such as CNC or dens, in the tables and the LaTeX table. The full name stays in the tooltip.",
     "link_more": "Copy a link that opens this comparison: the datasets and the rule",
     "header": {
@@ -1715,13 +1745,20 @@
       "self_plural": "In a dimension in {assigned} of {n} datasets that analysed it.",
       "never": "No dataset analysed both.",
       "never_self": "No dataset analysed it.",
-      "fraction": "{together} of {analysed}"
+      "fraction": "{together} of {analysed}",
+      "legend_short": "How often two measures share a dimension."
     },
     "own_unknown": "Dataset of this session",
     "own_k": "k = {k}",
     "own_note": "Your data, with the settings saved with it",
     "own_standard": "no settings are saved with the dataset; the column uses the standard ones.",
-    "empty": "Choose at least {min} analyses: pin solutions in the loadings step of your data, or compare datasets from My datasets."
+    "empty": "Choose at least {min} analyses: pin solutions in the loadings step of your data, or compare datasets from My datasets.",
+    "notes": {
+      "title": "Notes ({n})",
+      "column_aria": "Notes on {column}: {n}",
+      "warning": "Warning",
+      "info": "Note"
+    }
   },
   "nav": {
     "back_to": "Back to {page}"

@@ -218,6 +218,17 @@
     display: block;
     animation: tip-wait var(--tip-wait, 1300ms) linear forwards;
   }
+  /* A marker of the steps that has just changed, e.g. to done (step-nav.tsx). */
+  @keyframes marker-in {
+    from {
+      transform: scale(0.6);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
   @keyframes tip-wait {
     to {
       transform: scaleX(1);
@@ -392,23 +403,6 @@
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-  }
-
-  /* A word with an explanation in its tooltip. */
-  .term {
-    text-decoration-line: underline;
-    text-decoration-style: dotted;
-    text-decoration-color: rgb(var(--muted) / 0.7);
-    text-underline-offset: 3px;
-    cursor: help;
-    border-radius: 2px;
-  }
-  .term:hover {
-    text-decoration-color: rgb(var(--fg) / 0.8);
-  }
-  .term:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px rgb(var(--accent));
   }
 }
 

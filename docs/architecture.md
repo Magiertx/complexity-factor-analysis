@@ -406,14 +406,17 @@ five-step view (`components/factor-analysis/`) for the two kinds. One step is on
 time (`step-nav.tsx`): its address is `?step=<id>` (none for the data step), written with
 `history.pushState`, so the browser's back and forward move between steps and an old anchor
 `#fa-step-<id>` opens its step. The step rail of a wide screen and the row of steps on a phone
-navigate; a step whose dataset is not ready is listed but locked, with the reason in its tooltip.
-Back and Next end each step (fixed at the bottom on a phone). "Use dataset" and a link without a
-step open the dataset step once the dataset is ready, and the focus moves to the heading of
-every step that is opened (on a phone the row of steps is scrolled to the top of the window
-as well, and the page's own subtitle is gone once a step is open). The settings row stays at the top of the steps, and a chip opens the
-step of its control. A toolbar in the page header (`toolbar.tsx`) holds Start here, My datasets,
-the copy link (with the step), one download menu and the tour, which opens the step of each stop
-and puts the reader back on the step it began on. Every icon-only control is named
+navigate, as a stepper of numbered markers that fill in as the steps are done; a step whose
+dataset is not ready is listed, muted, with what it needs first in its tooltip. Back and Next end
+each step (fixed at the bottom on a phone). A dataset loaded in the data step does not jump
+elsewhere: the step stays with what was loaded and one way on, the result for a load from Get
+started or with the paper settings, else the dataset step. A link without a step opens the
+dataset step once the dataset is ready, and the focus moves to the heading of every step that is
+opened (on a phone the row of steps is scrolled to the top of the window as well, and the page's
+own subtitle is gone once a step is open). The settings row stays at the top of the steps, and a
+chip opens the step of its control. A toolbar in the page header (`toolbar.tsx`) holds the copy
+link (with the step), one download menu and the tour, which opens the step of each stop and puts
+the reader back on the step it began on. The rules of the look are in `docs/UI.md`. Every icon-only control is named
 by the two-stage tooltip (`components/ui/tip.tsx`, timing in `lib/tip.ts`), and every table uses
 one style (`components/ui/table.tsx`, `.data-table` in `globals.css`).
 

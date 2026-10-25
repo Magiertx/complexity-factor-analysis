@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   NO_VALUE,
   formatDate,
+  splitSentence,
   formatDateTime,
   formatFileSize,
   formatInputNumber,
@@ -146,5 +147,23 @@ describe("dates", () => {
     expect(formatRelative(now - 3 * 3600 * 1000, "de", now)).toBe("vor 3 Stunden");
     expect(formatRelative(now - 2 * 24 * 3600 * 1000, "en", now)).toBe("2 days ago");
     expect(formatRelative(now - 10 * 1000, "en", now)).toBe("now");
+  });
+});
+
+describe("splitSentence", () => {
+  it("splits at the end of the first sentence", () => {
+    expect(splitSentence("Prüft, ob die Maße korreliert sind. Bestanden, wenn p klein ist.")).toEqual([
+      "Prüft, ob die Maße korreliert sind.",
+      "Bestanden, wenn p klein ist.",
+    ]);
+  });
+  it("does not end a sentence at an abbreviation before a number", () => {
+    expect(splitSentence("Tab. 7–8 des Papers nutzen zusätzlich dup ohne τ.")).toEqual([
+      "Tab. 7–8 des Papers nutzen zusätzlich dup ohne τ.",
+      "",
+    ]);
+  });
+  it("keeps a text of one sentence whole", () => {
+    expect(splitSentence("One sentence only")).toEqual(["One sentence only", ""]);
   });
 });

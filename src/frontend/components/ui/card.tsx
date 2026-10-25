@@ -6,7 +6,7 @@ export const Card = ({ className, ...p }: React.HTMLAttributes<HTMLDivElement>) 
 );
 
 export const CardHeader = ({ className, ...p }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("px-5 pt-5 pb-3 border-b border-border", className)} {...p} />
+  <div className={cn("px-4 sm:px-5 pt-5 pb-4 border-b border-border", className)} {...p} />
 );
 
 export const CardTitle = ({ className, ...p }: React.HTMLAttributes<HTMLHeadingElement>) => (
@@ -14,13 +14,13 @@ export const CardTitle = ({ className, ...p }: React.HTMLAttributes<HTMLHeadingE
 );
 
 export const CardDescription = ({ className, ...p }: React.HTMLAttributes<HTMLParagraphElement>) => (
-  <p className={cn("text-sm text-muted mt-1", className)} {...p} />
+  <p className={cn("text-sm text-muted mt-0.5", className)} {...p} />
 );
 
 export const CardContent = ({ className, ...p }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("px-5 py-4", className)} {...p} />
+  <div className={cn("px-4 sm:px-5 py-5", className)} {...p} />
 );
 
 export const CardFooter = ({ className, ...p }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("px-5 pb-5 pt-3 border-t border-border", className)} {...p} />
+  <div className={cn("px-4 sm:px-5 py-4 border-t border-border", className)} {...p} />
 );

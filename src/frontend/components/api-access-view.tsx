@@ -284,7 +284,12 @@ export function ApiAccessView() {
   return (
     // Code and endpoint rows read badly across the whole width.
     <div className="space-y-6 max-w-5xl mx-auto">
-      <PageHeader title={t("api_access.heading")} subtitle={t("api_access.subtitle")} back={back} />
+      <PageHeader
+        title={t("api_access.heading")}
+        subtitle={t("api_access.subtitle_short")}
+        info={t("api_access.subtitle")}
+        back={back}
+      />
 
       <Card>
         <CardHeader>
@@ -380,13 +385,8 @@ export function ApiAccessView() {
 }
 
 function MethodBadge({ method }: { method: Method }) {
-  const styles = {
-    GET: "bg-success/15 text-success-ink",
-    POST: "bg-accent/15 text-accent-ink",
-    PUT: "bg-warn/15 text-warn-ink",
-    PATCH: "bg-warn/15 text-warn-ink",
-    DELETE: "bg-danger/15 text-danger-ink",
-  }[method];
+  // Neutral, the method in words: colour is kept for the primary action and for warnings (docs/UI.md).
+  const styles = method === "GET" ? "bg-tile text-muted" : "bg-tile text-fg";
   return (
     <span
       className={cn(

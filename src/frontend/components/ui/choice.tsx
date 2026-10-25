@@ -41,7 +41,7 @@ export function ChoiceMark({
  */
 export function choiceTile(checked: boolean) {
   return cn(
-    "cursor-pointer transition has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent",
+    "relative cursor-pointer transition has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent",
     checked ? "bg-surface ring-[1.5px] ring-inset ring-accent" : "bg-tile hover:ring-1 hover:ring-inset hover:ring-strong",
   );
 }

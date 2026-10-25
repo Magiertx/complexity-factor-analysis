@@ -21,9 +21,9 @@ import { cn } from "@/lib/utils";
 
 /*
  * The one tooltip of the app, in two stages, instead of the `title` attribute (timing: lib/tip.ts,
- * place: lib/tip-place.ts). `useTip` or `<Tip>` hang it on an element, `<Term>` on a word that needs
- * an explanation, `useTipZone` on the cells of a table; `<TipLayer>` draws the one box for the
- * document in a portal.
+ * place: lib/tip-place.ts). `useTip` or `<Tip>` hang it on an element, `useTipZone` on the cells of a
+ * table; InfoTip (info-tip.tsx) puts an explanation behind an (i). `<TipLayer>` draws the one box
+ * for the document in a portal.
  *
  * Screen readers: the name becomes the element's `aria-label` when it has no text or label of its
  * own (those win); the reason and the explanation are its `aria-description` from the start, and
@@ -40,7 +40,7 @@ export const TIP_ID = "app-tip";
 
 /** What counts as a control: a tooltip with only an explanation waits the full 2 s on one. */
 const CONTROL =
-  'button, a[href], summary, input, select, textarea, label, [tabindex]:not([tabindex="-1"]):not(.term), [role="button"],' +
+  'button, a[href], summary, input, select, textarea, label, [tabindex]:not([tabindex="-1"]), [role="button"],' +
   ' [role="link"], [role="menuitem"], [role="tab"], [role="option"], [role="switch"], [role="checkbox"], [role="radio"]';
 
 let controller: TipController<HTMLElement> | null = null;
@@ -205,14 +205,19 @@ function attach(el: HTMLElement, entry: TipEntry<HTMLElement>): () => void {
 
 /**
  * Hangs the tooltip on an element: pass the returned ref to it. `null` or `false` shows nothing.
- * The element is a control or, with the class `term`, a word that needs an explanation.
+ * With `explains` the element is there for its explanation only (the (i) of InfoTip): the
+ * explanation comes after the short wait of a name, not after the full wait of a control.
  */
-export function useTip<T extends HTMLElement = HTMLElement>(args: TipArgs | null | undefined | false): RefCallback<T> {
+export function useTip<T extends HTMLElement = HTMLElement>(
+  args: TipArgs | null | undefined | false,
+  opts?: { explains?: boolean },
+): RefCallback<T> {
   const latest = useRef<TipArgs | null>(cleanTip(args));
   const entryRef = useRef<TipEntry<HTMLElement> | null>(null);
+  const explains = !!opts?.explains;
   const ref = useCallback((el: T | null) => {
     if (!el) return;
-    const entry = tipEntry<HTMLElement>(el, latest.current, el.matches(CONTROL));
+    const entry = tipEntry<HTMLElement>(el, latest.current, !explains && el.matches(CONTROL));
     entryRef.current = entry;
     const off = attach(el, entry);
     syncAria(el, entry.args);
@@ -223,7 +228,7 @@ export function useTip<T extends HTMLElement = HTMLElement>(args: TipArgs | null
       syncAria(el, null);
       if (entryRef.current === entry) entryRef.current = null;
     };
-  }, []);
+  }, [explains]);
   const key = JSON.stringify(cleanTip(args));
   useLayoutEffect(() => {
     const next = JSON.parse(key) as TipArgs | null;
@@ -264,19 +269,6 @@ export function Tip({ children, ...args }: TipArgs & { children: ReactElement })
   // Changes only with the child's own ref, so the tooltip is not hung anew with each render.
   const ref = useMemo(() => mergeRefs(own, tip), [own, tip]);
   return cloneElement(child, { ref });
-}
-
-/**
- * A word that needs an explanation: dotted under, its explanation after the wait of a name, at once
- * for the keyboard. Focusable, so the keyboard reaches what the pointer does.
- */
-export function Term({ more, children, className }: { more: string; children: React.ReactNode; className?: string }) {
-  const ref = useTip<HTMLSpanElement>({ more });
-  return (
-    <span ref={ref} tabIndex={0} className={cn("term", className)}>
-      {children}
-    </span>
-  );
 }
 
 /**

@@ -4,6 +4,8 @@ import {
   expect,
   expectStep,
   goToStep,
+  loadBundled,
+  nextFromData,
   openBundled,
   pattern,
   stepLink,
@@ -163,13 +165,24 @@ test("the toolbar has the tools of the analysis only, and says why a download wa
   await expect(toolbar(page).getByRole("button")).toHaveCount(4);
 });
 
-test("the data step has Start here first and the datasets of the session as a source", async ({ page }) => {
+test("the data step starts with Get started, stays after a load, and has the datasets of the session as a source", async ({ page }) => {
   await page.goto("/");
-  await openBundled(page, "Inductive miner");
-  await goToStep(page, "data");
   const data = stepSection(page, "data");
-  // With a dataset open, Start here stays above it.
-  await expect(data.getByRole("button", { name: pattern(text("factor.start.title")) })).toBeVisible();
+  // Get started heads the bundled cards, its first card chosen.
+  const bundled = data.getByRole("radiogroup", { name: text("factor.data.source.bundled") });
+  await expect(bundled.getByRole("heading", { name: text("factor.start.title") })).toBeVisible();
+  await expect(bundled.getByRole("radio").first()).toHaveAccessibleName(text("factor.start.scenario.if_inductive.title"));
+  await expect(bundled.getByRole("radio").first()).toBeChecked();
+  // A load does not jump: the step stays with what was loaded, and the steps fill in.
+  await loadBundled(page, "Inductive miner");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(data.locator("#fa-step-data-title")).toBeVisible();
+  await expectStep(page, "loadings", "done");
+  // The one way on, here the next step, as the dataset opened with the tool standard.
+  await expect(data.getByRole("button", { name: text("factor.data.to_result") })).toHaveCount(0);
+  await nextFromData(page).click();
+  await expect(page).toHaveURL(/\?step=dataset$/);
+  await goToStep(page, "data");
   await data.getByRole("button", { name: text("factor.data.change") }).click();
   const mine = data.getByRole("radiogroup", { name: text("factor.data.source.mine") });
   await expect(mine).toBeVisible();
@@ -219,9 +232,9 @@ test.describe("on a phone", () => {
   test("the bar of steps is in view when a step opens, without the page's own sentence before it", async ({ page }) => {
     await page.goto("/");
     // The data step keeps the sentence on what the page is for; a step with a dataset has no room for it.
-    await expect(page.getByText(text("factor.model.subtitle"))).toBeVisible();
+    await expect(page.getByText(text("factor.model.subtitle_short"))).toBeVisible();
     await openBundled(page, "Inductive miner");
-    await expect(page.getByText(text("factor.model.subtitle"))).toBeHidden();
+    await expect(page.getByText(text("factor.model.subtitle_short"))).toBeHidden();
     const steps = page.getByRole("navigation", { name: text("factor.steps.aria") });
     // Where the bar already shows, the page does not move; from further down, a step opened by
     // Next brings it back into view.

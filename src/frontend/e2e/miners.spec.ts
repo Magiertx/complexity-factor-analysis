@@ -10,6 +10,7 @@ import {
   expect,
   expectStep,
   goToStep,
+  nextFromData,
   pattern,
   stepLink,
   stepSection,
@@ -61,6 +62,8 @@ async function uploadMiners(page: Page, logs: number) {
   await data.locator('input[type="file"]').setInputFiles({ name: `miners-${logs}.csv`, mimeType: "text/csv", buffer: threeMiners(logs) });
   await data.getByRole("button", { name: text("factor.data.submit_csv") }).click();
   await expectStep(page, "dataset", "done");
+  // The data step stays after the load; its button leads on to the dataset step.
+  await nextFromData(page).click();
 }
 
 function minerTiles(page: Page) {
@@ -118,9 +121,10 @@ test("a dataset of three miners is analysed per miner and the miners are compare
   await expect(page).toHaveURL(/\/compare\?cols=[0-9a-f-]{36}~mAlpha%20miner,[0-9a-f-]{36}~mInductive%20miner,[0-9a-f-]{36}~mHeuristics%20miner&rule=largest$/);
   const matrix = page.getByRole("table", { name: pattern(text("compare.matrix_caption", { rule: "", columns: "" }).split(":")[0]) });
   await expect(matrix).toBeVisible({ timeout: FIT_TIMEOUT });
+  // A column's header is its title, then the count of its notes where it has any.
   await expect(matrix.locator("thead").getByRole("columnheader")).toHaveText([
     text("factor.loadings.col_measure"),
-    ...MINERS.map((m) => `miners-50.csv · ${m}`),
+    ...MINERS.map((m) => new RegExp(`^${pattern(`miners-50.csv · ${m}`).source}\\d*$`)),
   ]);
   await expect(matrix.getByRole("row", { name: new RegExp(`^${text("compare.header.n")}\\b`) }).getByRole("cell")).toHaveText(["50", "50", "50"]);
   // A measure constant for the Alpha miner is no analysis there, but is one for the others.
@@ -176,7 +180,14 @@ test("another miner clears the names of the factors, and Undo brings back both",
   test.setTimeout(FIT_TIMEOUT + 120_000);
   await uploadMiners(page, 50);
   const tiles = minerTiles(page);
+  // The loadings stay done while the analysis of the miner runs; the names are for its solution,
+  // so the test waits for that analysis before it names a factor.
+  const analysed = page.waitForResponse(
+    (r) => r.url().includes("/analyze") && (r.request().postData() ?? "").includes("Inductive miner"),
+    { timeout: FIT_TIMEOUT },
+  );
   await tiles.getByRole("radio", { name: "Inductive miner" }).check({ force: true });
+  expect((await analysed).ok()).toBeTruthy();
   await expectStep(page, "loadings", "done", "en", FIT_TIMEOUT);
   await goToStep(page, "loadings");
   const loadings = stepSection(page, "loadings");

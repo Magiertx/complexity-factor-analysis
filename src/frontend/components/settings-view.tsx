@@ -9,7 +9,6 @@ import {
   Sun,
   Trash2,
   ExternalLink,
-  AlertCircle,
   Check,
   Github,
   PlayCircle,
@@ -31,6 +30,10 @@ import { APP_NAME, REPO_URL } from "@/lib/app-config";
 import { STORAGE_PREFIXES, countText } from "@/lib/factor-analysis";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
+import { Brief } from "./ui/brief";
+import { EmptyState } from "./ui/empty-state";
+import { InfoTip } from "./ui/info-tip";
+import { Notice } from "./ui/notice";
 import { Segmented } from "./ui/segmented";
 import {
   Preset,
@@ -257,10 +260,9 @@ export function SettingsView() {
       />
 
       {loadError && (
-        <div role="alert" className="rounded-lg bg-danger/10 px-4 py-3 flex items-start gap-3">
-          <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
-          <div className="text-sm">{t("settings.load_error", { error: loadError })}</div>
-        </div>
+        <Notice tone="error" role="alert">
+          {t("settings.load_error", { error: loadError })}
+        </Notice>
       )}
 
       {/* Appearance */}
@@ -292,15 +294,17 @@ export function SettingsView() {
       {/* Parameter presets */}
       <Card>
         <CardHeader>
-          <CardTitle>{t("settings.presets.title")}</CardTitle>
-          <CardDescription>
-            {t("settings.presets.description")}
-          </CardDescription>
+          <div className="flex items-center gap-1.5">
+            <CardTitle>{t("settings.presets.title")}</CardTitle>
+            <InfoTip topic={t("settings.presets.title")} text={t("settings.presets.description")} />
+          </div>
+          <CardDescription>{t("settings.presets.description_short")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <SettingRow
             label={t("settings.presets.transfer_label")}
             hint={t("settings.presets.transfer_hint")}
+            short={t("settings.presets.transfer_short")}
           >
             <div className="flex items-center gap-2 flex-wrap justify-end">
               <Button
@@ -332,15 +336,14 @@ export function SettingsView() {
             </div>
           </SettingRow>
           {presetImportError && (
-            <div className="flex items-start gap-2 rounded-md bg-danger/10 px-3 py-2 text-xs text-danger-ink">
-              <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-              <span className="leading-relaxed">{presetImportError}</span>
-            </div>
+            <Notice tone="error" size="sm" role="alert">
+              {presetImportError}
+            </Notice>
           )}
           {presetGroups.length === 0 ? (
-            <p className="text-sm text-muted">
+            <EmptyState>
               {t("settings.presets.empty_hint_before")} <span className="font-medium text-fg">{t("settings.presets.empty_hint_action")}</span> {t("settings.presets.empty_hint_after")}
-            </p>
+            </EmptyState>
           ) : (
             <div className="space-y-4">
               {presetGroups.map((group) => {
@@ -469,6 +472,7 @@ export function SettingsView() {
           <SettingRow
             label={t("settings.storage.clear_jobs_label")}
             hint={t("settings.storage.clear_jobs_hint")}
+            short={t("settings.storage.clear_jobs_short")}
           >
             <ConfirmButton
               label={t("settings.storage.delete_all_jobs")}
@@ -488,6 +492,11 @@ export function SettingsView() {
                   : datasetCount === 1
                     ? t("settings.storage.clear_datasets_hint", { n: datasetCount })
                     : t("settings.storage.clear_datasets_hint_plural", { n: datasetCount })
+            }
+            short={
+              datasetCount !== null && datasetCount > 0
+                ? countText(t, "settings.storage.clear_datasets_short", datasetCount)
+                : undefined
             }
           >
             <ConfirmButton
@@ -543,11 +552,14 @@ export function SettingsView() {
 function SettingRow({
   label,
   hint,
+  short,
   rowRef,
   children,
 }: {
   label: string;
   hint?: string;
+  /** The line shown when the hint is longer than one short line; the hint is then behind the (i). */
+  short?: string;
   /** Makes the row focusable from script, for when its control can take no focus. */
   rowRef?: React.Ref<HTMLDivElement>;
   children: React.ReactNode;
@@ -560,7 +572,13 @@ function SettingRow({
     >
       <div className="min-w-0 max-w-md">
         <div className="text-sm font-medium">{label}</div>
-        {hint && <div className="text-[11px] text-muted mt-1 leading-relaxed">{hint}</div>}
+        {hint && short ? (
+          <p className="mt-1 text-[11px] text-muted">
+            {short} <InfoTip size="xs" topic={label} text={hint} className="-mt-0.5" />
+          </p>
+        ) : (
+          hint && <Brief text={hint} topic={label} className="mt-1 text-[11px]" />
+        )}
       </div>
       <div className="shrink-0">{children}</div>
     </div>

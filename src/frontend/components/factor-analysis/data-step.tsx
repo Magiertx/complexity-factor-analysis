@@ -2,14 +2,15 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
-  AlertCircle,
   AlertTriangle,
-  BookOpen,
   Check,
+  ChevronRight,
   Columns3,
   Copy,
   Database,
+  Download,
   ExternalLink,
   FileSpreadsheet,
   FileText,
@@ -19,6 +20,7 @@ import {
   Network,
   Package,
   RotateCcw,
+  ScrollText,
   Trash2,
   X,
 } from "lucide-react";
@@ -35,7 +37,7 @@ import {
   type InputsSummary,
   type SampleInput,
 } from "@/lib/api";
-import { COMPARE_HREF, MAX_COLUMNS, MIN_COLUMNS, compareHref, ownColumnKey } from "@/lib/compare";
+import { MAX_COLUMNS, MIN_COLUMNS, compareHref, ownColumnKey } from "@/lib/compare";
 import {
   MIN_MEASURES,
   MIN_OBSERVATIONS,
@@ -46,18 +48,23 @@ import {
   progressPercent,
   publishedOptions,
 } from "@/lib/factor-analysis";
-import { formatDateTime, formatFileSize, formatNumber, formatPercent, formatRelative } from "@/lib/format";
+import { formatDateTime, formatFileSize, formatNumber, formatPercent, formatRelative, splitSentence } from "@/lib/format";
 import { datasetNote, orderCollection, settingsSourceText } from "@/lib/paper-notes";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
+import { ChoiceCard } from "@/components/ui/choice-card";
 import { IconButton } from "@/components/ui/icon-button";
-import { mergeRefs, useTip, useTipZone } from "@/components/ui/tip";
+import { EmptyState } from "@/components/ui/empty-state";
+import { InfoTip } from "@/components/ui/info-tip";
+import { Notice } from "@/components/ui/notice";
+import { Tip, mergeRefs, useTip, useTipZone } from "@/components/ui/tip";
 import { Input } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
 import { UploadZone } from "@/components/upload-zone";
 import { FeatureChecklist } from "./feature-checklist";
+import { EXAMPLE_CSV, startEntries, startEntryHref, type OpenPreset, type StartEntry } from "./start-here";
 
 const SOURCE_ICON: Record<DatasetSource, React.ComponentType<{ className?: string }>> = {
   bundled: Database,
@@ -72,8 +79,13 @@ const ACCEPT: Record<Exclude<DatasetSource, "bundled">, { accept: string; test: 
   pnml: { accept: ".pnml", test: (n) => n.endsWith(".pnml"), ext: ".pnml" },
 };
 
-/** The settings a bundled dataset opens with: the tool's standard, or those of its paper. */
-export type OpenPreset = "standard" | "published";
+export type { OpenPreset } from "./start-here";
+
+/** Where a load from the data step leads: the result (Get started, the paper settings) or the next step. */
+export type LeadTo = "result" | "next";
+
+/** The value of a card of Get started among the bundled cards. */
+const START = "start:";
 
 interface Props {
   kind: FactorKind;
@@ -84,8 +96,11 @@ interface Props {
   openId: string | null;
   submitting: boolean;
   submitError: string | null;
-  /** `preset` says which settings a bundled dataset with published settings opens with. */
-  onSubmit: (input: CreateDatasetInput, preset: OpenPreset) => void;
+  /**
+   * `preset` says which settings a bundled dataset with published settings opens with, `leadTo`
+   * what the data step offers once it is loaded.
+   */
+  onSubmit: (input: CreateDatasetInput, preset: OpenPreset, leadTo: LeadTo) => void;
   onOpen: (id: string) => void;
   /** Resolves to whether the dataset was deleted. */
   onDelete: (id: string) => Promise<boolean>;
@@ -106,12 +121,22 @@ export function DataForm({
   onCancel,
 }: Props) {
   const t = useT();
+  const router = useRouter();
   const sources = catalog.sources.filter((s) => kind === "model" || s !== "pnml");
   const [source, setSource] = useState<DatasetSource>(sources[0] ?? "bundled");
   // The own datasets come first when there are any; the tab goes away with the last of them.
   const [mineChosen, setMineChosen] = useState(datasets.length > 0);
   const mine = mineChosen && datasets.length > 0;
-  const [bundledId, setBundledId] = useState<string | null>(catalog.bundled[0]?.id ?? null);
+  const entries = useMemo(
+    () => startEntries(kind).filter((e) => !e.bundledId || e.to !== kind || catalog.bundled.some((b) => b.id === e.bundledId)),
+    [kind, catalog.bundled],
+  );
+  // A card of Get started (START + its id) or a bundled dataset; the first way in to begin with.
+  const [choice, setChoice] = useState<string | null>(
+    entries[0] ? START + entries[0].id : (catalog.bundled[0]?.id ?? null),
+  );
+  const entry = choice?.startsWith(START) ? (entries.find((e) => START + e.id === choice) ?? null) : null;
+  const bundledId = choice && !entry ? choice : null;
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [logFiles, setLogFiles] = useState<File[]>([]);
   const [pnmlFiles, setPnmlFiles] = useState<File[]>([]);
@@ -204,7 +229,7 @@ export function DataForm({
   const tooFew = !!estimate && estimate.rows > 0 && estimate.cols > 0 && estimate.rows <= estimate.cols;
 
   const blocker: string | null = (() => {
-    if (source === "bundled") return bundledId ? null : t("factor.data.need_bundled");
+    if (source === "bundled") return choice ? null : t("factor.data.need_bundled");
     if (source === "csv") return csvFile ? null : t("factor.data.need_csv");
     if (nInputs === 0) return t("factor.data.need_files");
     if (source === "logs" && kind === "model" && miners.length === 0) return t("factor.data.need_miner");
@@ -215,8 +240,22 @@ export function DataForm({
     return null;
   })();
 
+  // The open-with choice, for a bundled dataset with the settings of its paper.
+  const chosenBundled = catalog.bundled.find((b) => b.id === bundledId);
+  const paper = source === "bundled" && !entry ? publishedOptions(kind, chosenBundled) : null;
+
   const submit = () => {
     if (blocker) return;
+    if (source === "bundled" && entry) {
+      // A comparison, or a dataset of the other tab: opened there.
+      if (entry.to !== kind) {
+        const href = startEntryHref(entry);
+        if (href) router.push(href);
+        return;
+      }
+      onSubmit({ kind, source: "bundled", bundledId: entry.bundledId }, entry.preset ?? "standard", "result");
+      return;
+    }
     const input: CreateDatasetInput = { kind, source, name: name.trim() || undefined };
     if (source === "bundled") input.bundledId = bundledId ?? undefined;
     if (source === "csv" && csvFile) input.files = [csvFile];
@@ -240,22 +279,32 @@ export function DataForm({
       if (sample) input.bundledId = sample.id;
       input.measures = measures;
     }
-    onSubmit(input, preset);
+    // The paper's settings are an analysis to look at; anything else goes on step by step.
+    onSubmit(input, preset, source === "bundled" && paper && preset === "published" ? "result" : "next");
   };
 
   const submitLabel =
     source === "bundled"
-      ? t("factor.data.submit_bundled")
+      ? entry?.to === "compare"
+        ? t("factor.data.submit_compare")
+        : t("factor.data.submit_bundled")
       : source === "csv"
         ? t("factor.data.submit_csv")
         : t("factor.data.submit_compute");
 
+  const hint = t(
+    mine
+      ? "factor.data.source_hint.mine"
+      : source === "logs"
+        ? `factor.data.source_hint.logs_${kind}`
+        : `factor.data.source_hint.${source}`,
+  );
   const tabs = (
-    <div className="space-y-2">
-      <div className="overflow-x-auto no-scrollbar">
+    <div className="flex items-center gap-1.5">
+      <div className="min-w-0 overflow-x-auto no-scrollbar">
         <Segmented<DatasetSource | "mine">
           aria-label={t("factor.data.source_aria")}
-          className="min-w-max sm:max-w-[560px]"
+          className="min-w-max"
           value={mine ? "mine" : source}
           onChange={(s) => {
             setMineChosen(s === "mine");
@@ -291,15 +340,7 @@ export function DataForm({
           ]}
         />
       </div>
-      <p className="text-xs text-muted max-w-prose">
-        {t(
-          mine
-            ? "factor.data.source_hint.mine"
-            : source === "logs"
-              ? `factor.data.source_hint.logs_${kind}`
-              : `factor.data.source_hint.${source}`,
-        )}
-      </p>
+      <InfoTip topic={t(mine ? "factor.data.source.mine" : `factor.data.source.${source}`)} text={hint} />
     </div>
   );
 
@@ -321,21 +362,15 @@ export function DataForm({
   }
 
   return (
-    <div className="space-y-5">
+    // Anything the keyboard or a scroll brings into view stays clear of the button bar at the bottom.
+    <div className="space-y-5 [&_:is(input,button,a)]:scroll-mb-32 lg:[&_:is(input,button,a)]:scroll-mb-20">
       {tabs}
 
       {source === "bundled" && (
-        <BundledList kind={kind} catalog={catalog} selected={bundledId} onSelect={setBundledId} />
+        <BundledList kind={kind} catalog={catalog} entries={entries} selected={choice} onSelect={setChoice} />
       )}
 
-      {source === "bundled" && (
-        <PresetChoice
-          kind={kind}
-          dataset={catalog.bundled.find((b) => b.id === bundledId)}
-          value={preset}
-          onChange={setPreset}
-        />
-      )}
+      {paper && <PresetChoice kind={kind} dataset={chosenBundled} value={preset} onChange={setPreset} />}
 
       {source === "csv" && (
         <div className="space-y-2">
@@ -349,7 +384,21 @@ export function DataForm({
               hint={t("factor.data.csv_drop_hint")}
             />
           )}
-          <p className="text-xs text-muted max-w-prose">{t("factor.data.csv_format")}</p>
+          <div className="flex items-center gap-x-3 gap-y-1 flex-wrap text-xs text-muted">
+            <span className="inline-flex items-center gap-1">
+              {t("factor.data.csv_format_short")}
+              <InfoTip size="xs" topic={t("factor.data.csv_format_short")} text={t("factor.data.csv_format")} />
+            </span>
+            <a
+              href={EXAMPLE_CSV}
+              download
+              className="inline-flex items-center gap-1 rounded font-medium text-accent-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <Download className="h-3.5 w-3.5" aria-hidden />
+              {t("factor.start.example_csv")}
+            </a>
+            <InfoTip size="xs" topic={t("factor.start.example_csv")} text={t("factor.start.example_csv_hint")} />
+          </div>
         </div>
       )}
 
@@ -383,10 +432,9 @@ export function DataForm({
       )}
 
       {notice && (
-        <p role="status" className="text-xs text-warn-ink flex items-start gap-1.5">
-          <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+        <Notice tone="warn" size="sm" role="status">
           {notice}
-        </p>
+        </Notice>
       )}
 
       {source === "logs" && kind === "model" && catalog.miners && (
@@ -448,13 +496,13 @@ export function DataForm({
       {estimate && estimate.rows > 0 && estimate.cols > 0 && <Estimate {...estimate} />}
 
       {submitError && (
-        <div role="alert" className="rounded-lg bg-danger/10 px-3.5 py-2.5 flex items-start gap-2.5 text-sm">
-          <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
-          <span>{submitError}</span>
-        </div>
+        <Notice tone="error" role="alert">
+          {submitError}
+        </Notice>
       )}
 
-      <div className="flex items-center justify-end gap-3 flex-wrap pt-1">
+      {/* The one action of the step, at its end and in view while the cards scroll above it. */}
+      <div className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom))] [@media(max-height:500px)]:bottom-0 lg:bottom-0 z-10 -mx-4 sm:-mx-5 -mb-5 px-4 sm:px-5 py-3 rounded-b-lg bg-surface/95 backdrop-blur border-t border-border flex items-center justify-end gap-3 flex-wrap">
         {blocker ? (
           <span className="text-xs text-muted mr-auto">{blocker}</span>
         ) : (
@@ -472,6 +520,7 @@ export function DataForm({
         )}
         <Button onClick={submit} disabled={!!blocker || submitting}>
           {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+          {!submitting && entry?.to === "compare" && <Columns3 className="h-4 w-4" aria-hidden />}
           {submitting ? t("factor.data.submitting") : submitLabel}
         </Button>
       </div>
@@ -479,56 +528,125 @@ export function DataForm({
   );
 }
 
+/**
+ * The bundled source as one list of cards: first the ways in of Get started, each with a badge of
+ * what it opens, then all bundled datasets, by paper. A click chooses a card; the button at the end
+ * of the step loads it.
+ */
 function BundledList({
   kind,
   catalog,
+  entries,
   selected,
   onSelect,
 }: {
   kind: FactorKind;
   catalog: FactorCatalog;
+  entries: StartEntry[];
   selected: string | null;
-  onSelect: (id: string) => void;
+  onSelect: (value: string) => void;
 }) {
   const t = useT();
-  if (catalog.bundled.length === 0) {
-    return <p className="text-sm text-muted">{t("factor.data.bundled_empty")}</p>;
+  if (catalog.bundled.length === 0 && entries.length === 0) {
+    return <EmptyState>{t("factor.data.bundled_empty")}</EmptyState>;
   }
   const collections = catalog.collections ?? [];
   const grouped = collections
     .map((c) => ({ collection: c, items: orderCollection(c.id, catalog.bundled.filter((b) => b.collection === c.id)) }))
     .filter((g) => g.items.length > 0);
   const loose = catalog.bundled.filter((b) => !collections.some((c) => c.id === b.collection));
-  const tile = (b: BundledDataset, showSize: boolean) => (
-    <BundledTile
-      key={b.id}
-      name={`fa-bundled-${kind}`}
-      dataset={b}
-      chosen={b.id === selected}
-      showSize={showSize}
-      onSelect={() => onSelect(b.id)}
-    />
+  const name = `fa-bundled-${kind}`;
+  const tile = (b: BundledDataset) => (
+    <BundledTile key={b.id} name={name} dataset={b} chosen={b.id === selected} onSelect={() => onSelect(b.id)} />
   );
   return (
-    <div role="radiogroup" aria-label={t("factor.data.source.bundled")} className="space-y-3">
-      {grouped.map(({ collection, items }) => {
-        const sameSize = items.every(
-          (b) => b.observations === items[0].observations && b.measures === items[0].measures,
-        );
-        return (
-          <CollectionBlock key={collection.id} collection={collection} size={sameSize ? items[0] : null}>
-            {items.map((b) => tile(b, !sameSize))}
-          </CollectionBlock>
-        );
-      })}
-      {loose.length > 0 && <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{loose.map((b) => tile(b, true))}</div>}
+    <div role="radiogroup" aria-label={t("factor.data.source.bundled")} className="space-y-5">
+      {entries.length > 0 && (
+        <section aria-labelledby={`${name}-start`} className="space-y-2">
+          <h3 id={`${name}-start`} className="text-xs font-semibold uppercase tracking-wide text-muted">
+            {t("factor.start.title")}
+          </h3>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {entries.map((e) => (
+              <StartTile
+                key={e.id}
+                name={name}
+                kind={kind}
+                entry={e}
+                chosen={selected === START + e.id}
+                onSelect={() => onSelect(START + e.id)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+      {catalog.bundled.length > 0 && (
+        <section aria-labelledby={`${name}-all`} className="space-y-3">
+          <h3 id={`${name}-all`} className="text-xs font-semibold uppercase tracking-wide text-muted">
+            {t("factor.data.all_bundled")}
+          </h3>
+          {grouped.map(({ collection, items }) => (
+            <CollectionBlock key={collection.id} collection={collection} items={items}>
+              {items.map(tile)}
+            </CollectionBlock>
+          ))}
+          {loose.length > 0 && <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{loose.map(tile)}</div>}
+        </section>
+      )}
     </div>
   );
 }
 
+const BADGE = "inline-flex items-center gap-1 rounded-full bg-tile px-2 py-0.5 text-[10px] font-medium text-muted";
+
+/** A way in of Get started: its name, one short line, and a badge of what it opens. */
+function StartTile({
+  name,
+  kind,
+  entry,
+  chosen,
+  onSelect,
+}: {
+  name: string;
+  kind: FactorKind;
+  entry: StartEntry;
+  chosen: boolean;
+  onSelect: () => void;
+}) {
+  const t = useT();
+  const shortId = useId();
+  const title = t(`factor.start.scenario.${entry.id}.title`);
+  const Icon = entry.to === "compare" ? Columns3 : entry.to === "log" ? ScrollText : Network;
+  const badge =
+    entry.to === "compare"
+      ? t("factor.start.opens", { page: t("mode_bar.compare_label") })
+      : entry.to !== kind
+        ? t("factor.start.opens", { page: t(`mode_bar.${entry.to}_label`) })
+        : t(`factor.data.preset.${entry.preset ?? "standard"}`);
+  return (
+    <ChoiceCard
+      name={name}
+      label={title}
+      checked={chosen}
+      onChange={onSelect}
+      describedBy={shortId}
+      info={<InfoTip size="xs" topic={title} text={t(`factor.start.scenario.${entry.id}.text`)} align="end" />}
+    >
+      <span className="block text-sm font-medium">{title}</span>
+      <span id={shortId} className="block text-[11px] text-muted leading-snug">
+        {t(`factor.start.scenario.${entry.id}.short`)}
+      </span>
+      <span className={cn(BADGE, "mt-1.5")}>
+        {(entry.to === "compare" || entry.to !== kind) && <Icon className="h-3 w-3" aria-hidden />}
+        {badge}
+      </span>
+    </ChoiceCard>
+  );
+}
+
 /**
- * For a bundled dataset with published settings: whether it opens with the tool standard or
- * with the settings of its paper. Nothing for other datasets, which open with the standard.
+ * For a bundled dataset with published settings: whether it opens with the tool standard or with the
+ * settings of its paper, as one compact switch; what each means is behind its (i).
  */
 function PresetChoice({
   kind,
@@ -545,58 +663,43 @@ function PresetChoice({
   const paper = publishedOptions(kind, dataset);
   if (!paper) return null;
   const source = settingsSourceText(dataset?.published_source, dataset?.published_scope, t);
-  const details: Record<OpenPreset, string> = {
-    standard: t("factor.data.preset_standard_detail"),
-    published: [
-      paper.n_factors !== null ? countText(t, "factor.factors.criterion_count", paper.n_factors) : null,
-      t(`factor.settings.rotation.${paper.rotation}`),
-      t(`factor.settings.rule.${paper.assignment_rule}`),
-    ]
-      .filter(Boolean)
-      .join(" · "),
-  };
+  const published = [
+    paper.n_factors !== null ? countText(t, "factor.factors.criterion_count", paper.n_factors) : null,
+    t(`factor.settings.rotation.${paper.rotation}`),
+    t(`factor.settings.rule.${paper.assignment_rule}`),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const help = [
+    `${t("factor.data.preset.standard")}: ${t("factor.data.preset_standard_detail")}.`,
+    `${t("factor.data.preset.published")}: ${published}${source ? ` (${source})` : ""}.`,
+  ].join(" ");
+  const labelId = `fa-preset-${kind}`;
   return (
-    <div className="space-y-1.5">
-      <div id={`fa-preset-${kind}`} className="text-xs font-medium text-muted">
+    <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap">
+      <span id={labelId} className="text-xs font-medium text-muted">
         {t("factor.data.preset_label")}
-      </div>
-      <div role="radiogroup" aria-labelledby={`fa-preset-${kind}`} className="grid gap-2 sm:grid-cols-2 max-w-2xl">
-        {(["standard", "published"] as const).map((p) => (
-          <label key={p} className={cn("flex items-start gap-2.5 rounded-md px-3 py-2", choiceTile(value === p))}>
-            <input
-              type="radio"
-              name="fa-open-preset"
-              value={p}
-              className="sr-only"
-              checked={value === p}
-              onChange={() => onChange(p)}
-              aria-label={t(`factor.data.preset.${p}`)}
-              aria-describedby={`fa-preset-${kind}-${p}`}
-            />
-            <ChoiceMark type="radio" checked={value === p} className="mt-0.5" />
-            <span className="min-w-0">
-              <span className="block text-sm font-medium">{t(`factor.data.preset.${p}`)}</span>
-              <span id={`fa-preset-${kind}-${p}`} className="block text-[11px] text-muted">
-                {details[p]}
-                {p === "published" && source && <span className="block">{source}</span>}
-              </span>
-            </span>
-          </label>
-        ))}
-      </div>
+      </span>
+      <Segmented<OpenPreset>
+        size="sm"
+        aria-labelledby={labelId}
+        value={value}
+        onChange={onChange}
+        options={(["standard", "published"] as const).map((p) => ({ value: p, label: t(`factor.data.preset.${p}`) }))}
+      />
+      <InfoTip size="xs" topic={t("factor.data.preset_label")} text={help} />
     </div>
   );
 }
 
-/** One paper with its datasets: what they are and how to cite them, said once. */
+/** One paper with its datasets: its name in a line, what it is and how to cite it behind its (i). */
 function CollectionBlock({
   collection,
-  size,
+  items,
   children,
 }: {
   collection: DatasetCollection;
-  /** Shown in the header when every dataset of the paper has the same shape. */
-  size: { observations: number; measures: number } | null;
+  items: BundledDataset[];
   children: React.ReactNode;
 }) {
   const t = useT();
@@ -609,33 +712,48 @@ function CollectionBlock({
       },
       () => {},
     );
+  // The size, said once where every dataset of the paper has the same shape.
+  const sameSize = items.every((b) => b.observations === items[0].observations && b.measures === items[0].measures);
+  const about = [
+    collection.description,
+    sameSize ? t("factor.data.bundled_size", { rows: items[0].observations, cols: items[0].measures }) : null,
+    collection.license ? t("factor.data.license", { license: collection.license }) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   return (
-    <section className="rounded-lg bg-tile/40 p-3.5 sm:p-4 space-y-3">
-      <div className="flex items-start gap-3">
-        <div className="h-8 w-8 rounded-md bg-tile text-muted grid place-items-center shrink-0" aria-hidden>
-          <BookOpen className="h-4 w-4" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h4 className="text-sm font-semibold leading-snug">
-            {collection.name}
-            {collection.venue && <span className="ml-2 text-xs font-normal text-muted">{collection.venue}</span>}
-          </h4>
-          <p className="text-xs text-muted mt-0.5 max-w-prose">{collection.description}</p>
-          <div className="mt-1.5 flex items-center gap-x-3 gap-y-1 flex-wrap text-[11px] text-muted">
-            {size && <span>{t("factor.data.bundled_size", { rows: size.observations, cols: size.measures })}</span>}
-            {collection.license && <span>{t("factor.data.license", { license: collection.license })}</span>}
-            {collection.id === "comfy-paper" && (
-              <Link
-                href={COMPARE_HREF}
-                className="inline-flex items-center gap-1 rounded font-medium text-accent-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                <Columns3 className="h-3.5 w-3.5" aria-hidden />
-                {t("factor.data.compare_miners")}
-              </Link>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-0.5 shrink-0">
+    <div className="space-y-2">
+      <div className="flex items-center gap-1 min-w-0">
+        <h4 className="min-w-0 truncate text-sm font-semibold">
+          {collection.name}
+          {collection.venue && <span className="ml-2 text-xs font-normal text-muted">{collection.venue}</span>}
+        </h4>
+        <InfoTip topic={collection.name} text={about} width={380}>
+          <p>{collection.description}</p>
+          <p className="text-muted">
+            {[
+              sameSize ? t("factor.data.bundled_size", { rows: items[0].observations, cols: items[0].measures }) : null,
+              collection.license ? t("factor.data.license", { license: collection.license }) : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+          {collection.note && (
+            <p className="flex items-start gap-1.5 text-warn-ink">
+              <AlertTriangle className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
+              {collection.note}
+            </p>
+          )}
+        </InfoTip>
+        {collection.note && (
+          <Tip name={t("factor.data.collection_note")} more={collection.note}>
+            <span tabIndex={0} className="inline-grid h-5 w-5 place-items-center rounded-full text-warn-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+              <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
+              <span className="sr-only">{t("factor.data.collection_note")}</span>
+            </span>
+          </Tip>
+        )}
+        <span className="ml-auto flex items-center gap-0.5 shrink-0">
           {collection.citation && (
             <IconButton
               size="sm"
@@ -647,16 +765,10 @@ function CollectionBlock({
             />
           )}
           {collection.source_url && <SourceLink href={collection.source_url} />}
-        </div>
+        </span>
       </div>
-      {collection.note && (
-        <p className="text-[11px] text-warn-ink flex items-start gap-1.5">
-          <AlertCircle className="h-3.5 w-3.5 mt-px shrink-0" />
-          {collection.note}
-        </p>
-      )}
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
-    </section>
+    </div>
   );
 }
 
@@ -678,51 +790,58 @@ function SourceLink({ href }: { href: string }) {
   );
 }
 
+/** A bundled dataset as a card: its name and one short line (size, where it is analysed); the rest behind its (i). */
 function BundledTile({
   name,
   dataset,
   chosen,
-  showSize,
   onSelect,
 }: {
   name: string;
   dataset: BundledDataset;
   chosen: boolean;
-  showSize: boolean;
   onSelect: () => void;
 }) {
   const t = useT();
-  const noteId = useId();
+  const { locale } = useLocale();
+  const shortId = useId();
   const label = dataset.label ?? dataset.name;
   const note = datasetNote(dataset.id, t);
-  const tip = useTip<HTMLLabelElement>(dataset.description ? { more: dataset.description } : null);
+  const short = [
+    `${formatNumber(dataset.observations, locale)} × ${formatNumber(dataset.measures, locale)}`,
+    dataset.published_scope === "paper" || dataset.published_scope === "report"
+      ? t(`factor.data.scope.${dataset.published_scope}`)
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const details = [
+    dataset.description,
+    t("factor.data.bundled_size", { rows: dataset.observations, cols: dataset.measures }),
+    dataset.published_source ?? null,
+    note,
+  ].filter((x): x is string => !!x);
   return (
-    <label ref={tip} className={cn("flex items-center gap-2.5 rounded-md px-3 py-2.5", choiceTile(chosen))}>
-      {/* Named by the label alone, so the note describes the choice rather than renaming it. */}
-      <input
-        type="radio"
-        name={name}
-        className="sr-only"
-        checked={chosen}
-        onChange={onSelect}
-        aria-label={label}
-        aria-describedby={note ? noteId : undefined}
-      />
-      <ChoiceMark type="radio" checked={chosen} />
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-medium truncate">{label}</span>
-        {showSize && (
-          <span className="block text-[11px] text-muted">
-            {t("factor.data.bundled_size", { rows: dataset.observations, cols: dataset.measures })}
-          </span>
-        )}
-        {note && (
-          <span id={noteId} className="block text-[11px] text-muted leading-snug">
-            {note}
-          </span>
-        )}
+    <ChoiceCard
+      name={name}
+      label={label}
+      checked={chosen}
+      onChange={onSelect}
+      describedBy={shortId}
+      info={
+        <InfoTip size="xs" topic={label} text={details.join(" · ")} align="end">
+          {details.map((d) => (
+            <p key={d}>{d}</p>
+          ))}
+        </InfoTip>
+      }
+    >
+      <span className="block text-sm font-medium truncate">{label}</span>
+      <span id={shortId} className="block text-[11px] text-muted">
+        {short}
+        {note && <span className="sr-only">. {note}</span>}
       </span>
-    </label>
+    </ChoiceCard>
   );
 }
 
@@ -1158,15 +1277,13 @@ function Checklist({
   return (
     <fieldset className="space-y-2">
       <div className="flex items-end justify-between gap-3 flex-wrap">
-        <div>
-          <legend className="text-sm font-semibold">
-            {heading}{" "}
-            <span className="text-xs font-normal text-muted">
-              {t("factor.data.selected_count", { n: selected.length, total: items.length })}
-            </span>
-          </legend>
-          <p className="text-xs text-muted mt-0.5 max-w-prose">{hint}</p>
-        </div>
+        <legend className="flex items-center gap-1 text-sm font-semibold">
+          {heading}
+          <span className="text-xs font-normal text-muted">
+            {t("factor.data.selected_count", { n: selected.length, total: items.length })}
+          </span>
+          <InfoTip topic={heading} text={hint} />
+        </legend>
         <div className="flex items-center gap-3">
           <button type="button" className={linkClass} onClick={() => onChange(items.map((i) => i.key))}>
             {t("factor.data.select_all")}
@@ -1260,15 +1377,7 @@ function Estimate({ unit, rows, cols, logs, miners, limit }: EstimateProps) {
   const tooFew = rows <= cols;
   const thin = !tooFew && rows < OBSERVATIONS_PER_MEASURE * cols;
   return (
-    <div
-      role="status"
-      className={cn("rounded-lg px-3.5 py-2.5 text-xs flex items-start gap-2.5", tooFew || thin ? "bg-warn/10" : "bg-tile")}
-    >
-      {tooFew || thin ? (
-        <AlertTriangle className="h-4 w-4 shrink-0 text-warn-ink" aria-hidden />
-      ) : (
-        <Check className="h-4 w-4 shrink-0 text-success-ink" aria-hidden />
-      )}
+    <Notice role="status" size="sm" tone={tooFew || thin ? "warn" : "success"}>
       <div className="space-y-0.5 max-w-prose">
         {tooFew ? (
           <div>
@@ -1281,14 +1390,29 @@ function Estimate({ unit, rows, cols, logs, miners, limit }: EstimateProps) {
         )}
         {thin && <div className="text-muted">{t("factor.data.estimate_thin", { target: OBSERVATIONS_PER_MEASURE * cols })}</div>}
       </div>
-    </div>
+    </Notice>
   );
 }
 
-/** The data step once a dataset exists: what is loaded, or the progress while it is computed. */
+/** The way on from a loaded dataset: the result, or the next step; busy while the result is computed. */
+export interface DataNext {
+  label: string;
+  busy: boolean;
+  /** Why it waits, for its tooltip. */
+  reason?: string | null;
+  onGo: () => void;
+}
+
+/**
+ * The data step once a dataset exists: what is loaded and with which settings, and the one way on
+ * (the result or the next step); or the progress while it is computed. The step stays on screen
+ * after a load, so the steps can be seen filling in.
+ */
 export function DataSummary({
   dataset,
   catalog,
+  settings,
+  next,
   titleRef,
   onChange,
   onCancelJob,
@@ -1296,6 +1420,9 @@ export function DataSummary({
 }: {
   dataset: FactorDataset;
   catalog: FactorCatalog;
+  /** The settings it is analysed with, e.g. "Paper settings", once it is ready. */
+  settings: string | null;
+  next: DataNext | null;
   /** The title of the summary, which takes the focus when the summary replaces the form. */
   titleRef?: React.Ref<HTMLDivElement>;
   onChange: () => void;
@@ -1343,9 +1470,10 @@ export function DataSummary({
             <div className="h-full bg-accent rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
           )}
         </div>
-        <p className="text-xs text-muted">
-          {pct !== null && <span className="font-mono mr-2">{formatPercent(pct / 100, locale, 0)}</span>}
-          {t("factor.data.computing_hint")}
+        <p className="flex items-center gap-1 text-xs text-muted">
+          {pct !== null && <span className="font-mono mr-1">{formatPercent(pct / 100, locale, 0)}</span>}
+          {splitSentence(t("factor.data.computing_hint"))[0]}
+          <InfoTip size="xs" topic={t("factor.data.computing_title", { name })} text={t("factor.data.computing_hint")} />
         </p>
       </div>
     );
@@ -1354,15 +1482,17 @@ export function DataSummary({
   if (dataset.status === "failed") {
     return (
       <div className="space-y-3">
-        <div role="alert" className="rounded-lg bg-danger/10 px-3.5 py-3 flex items-start gap-2.5">
-          <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
-          <div className="text-sm">
-            <div ref={titleRef} tabIndex={-1} className={cn("font-medium", title)}>
+        <Notice
+          tone="error"
+          role="alert"
+          title={
+            <div ref={titleRef} tabIndex={-1} className={title}>
               {t("factor.data.failed_title")}
             </div>
-            {dataset.error && <div className="text-muted mt-1 break-words">{dataset.error}</div>}
-          </div>
-        </div>
+          }
+        >
+          {dataset.error}
+        </Notice>
         {/* The same buttons, in the same order, as for a ready dataset. */}
         <div className="flex items-center gap-2 flex-wrap">
           <DeleteDataset withRun={withRun} onDelete={onDelete} />
@@ -1375,14 +1505,15 @@ export function DataSummary({
   }
 
   return (
-    <div className="flex items-start justify-between gap-3 flex-wrap">
+    <div className="rounded-lg bg-tile/50 p-4 space-y-4">
       <div className="flex items-start gap-3 min-w-0">
-        <div className="h-9 w-9 rounded-md bg-tile grid place-items-center shrink-0" aria-hidden>
-          <Check className="h-4 w-4 text-success-ink" />
+        <div className="h-8 w-8 rounded-full bg-success/15 grid place-items-center shrink-0" aria-hidden>
+          <Check className="h-4 w-4 text-success-ink" strokeWidth={2.5} />
         </div>
-        <div className="min-w-0 space-y-1.5">
-          <div ref={titleRef} tabIndex={-1} className={cn("text-sm font-medium truncate", title)}>
-            {name}
+        <div className="min-w-0 space-y-1">
+          <div ref={titleRef} tabIndex={-1} className={cn("text-sm font-medium break-words", title)}>
+            {t("factor.data.loaded", { name })}
+            {settings && <span className="font-normal text-muted"> · {settings}</span>}
           </div>
           <InputChips dataset={dataset} catalog={catalog} />
         </div>
@@ -1392,8 +1523,26 @@ export function DataSummary({
         <Button variant="outline" size="sm" onClick={onChange}>
           {t("factor.data.change")}
         </Button>
+        {next && <NextFromData next={next} />}
       </div>
     </div>
+  );
+}
+
+/** The primary button of a loaded dataset: on to the result or to the next step. */
+function NextFromData({ next }: { next: DataNext }) {
+  const tip = useTip<HTMLButtonElement>(next.reason ? { name: next.label, reason: next.reason } : null);
+  return (
+    <Button
+      ref={tip}
+      aria-disabled={next.busy || undefined}
+      onClick={() => !next.busy && next.onGo()}
+      className="ml-auto aria-disabled:opacity-60 aria-disabled:cursor-wait"
+    >
+      {next.busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+      {next.label}
+      {!next.busy && <ChevronRight className="h-4 w-4 -mr-1" aria-hidden />}
+    </Button>
   );
 }
 

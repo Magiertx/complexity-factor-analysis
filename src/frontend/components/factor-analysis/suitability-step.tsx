@@ -23,14 +23,15 @@ import {
   type MeasureInfo,
   type MeasureSort,
 } from "@/lib/measure-list";
-import { NO_VALUE, formatNumber, formatPValue } from "@/lib/format";
+import { NO_VALUE, formatNumber, formatPValue, splitSentence } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { ChoiceMark } from "@/components/ui/choice";
 import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { MeasureListScope, MeasureName, TableFrame } from "@/components/ui/table";
-import { Term, useTip, useTipZone } from "@/components/ui/tip";
+import { useTip, useTipZone } from "@/components/ui/tip";
+import { InfoLabel, InfoTip } from "@/components/ui/info-tip";
 import { CorrelationMap, type CorrelationMapProps } from "./correlation-map";
 import { SectionRow } from "./measure-fold";
 import { MeasureSearch, NotableSwitch } from "./measure-search";
@@ -105,10 +106,13 @@ export function SuitabilityView(props: Props) {
             aria-describedby="fa-auto-msa-hint"
           />
           <div className="min-w-0">
-            <label id="fa-auto-msa-label" htmlFor="fa-auto-msa" className="text-sm font-medium cursor-pointer">
-              {t("factor.suitability.auto_filter_label")}
-            </label>
-            <p id="fa-auto-msa-hint" className="text-xs text-muted mt-0.5 max-w-prose">
+            <span className="flex items-center gap-1">
+              <label id="fa-auto-msa-label" htmlFor="fa-auto-msa" className="text-sm font-medium cursor-pointer">
+                {t("factor.suitability.auto_filter_label")}
+              </label>
+              <InfoTip topic={t("factor.suitability.auto_filter_label")} text={t("factor.help.msa_filter")} />
+            </span>
+            <p id="fa-auto-msa-hint" className="sr-only">
               {t("factor.help.msa_filter")}
             </p>
           </div>
@@ -156,24 +160,28 @@ function BartlettCard({ analysis, alpha }: { analysis: FactorAnalysis | null; al
   const t = useT();
   const { locale } = useLocale();
   const b = analysis?.bartlett;
+  const explain = t("factor.suitability.bartlett_explain", { alpha: b?.alpha ?? alpha });
   return (
     <div className="rounded-lg bg-tile p-4 space-y-3">
-      <HelpLabel
+      {/* One short line; what passes, the test itself and that it sees the measures before the MSA
+          filter (as in ComFy, so its df can stand for more measures than KMO uses) are behind the (i). */}
+      <InfoLabel
         label={t("factor.suitability.bartlett_title")}
-        help={t("factor.help.bartlett")}
+        help={explain}
         extra={b && <PassBadge passed={b.passed} />}
-      />
-      <p className="text-xs text-muted">{t("factor.suitability.bartlett_explain", { alpha: b?.alpha ?? alpha })}</p>
-      {/* As in ComFy, the test sees the measures before the MSA filter, so its df can stand for
-          more measures than KMO and the later steps use. */}
-      {analysis && analysis.msa_filter.removed.length > 0 && (
-        <p className="text-xs text-muted">
-          {t("factor.suitability.bartlett_before_filter", {
-            n: analysis.used_measures.length + analysis.msa_filter.removed.length,
-            left: analysis.used_measures.length,
-          })}
-        </p>
-      )}
+      >
+        <p>{explain}</p>
+        <p>{t("factor.help.bartlett")}</p>
+        {analysis && analysis.msa_filter.removed.length > 0 && (
+          <p>
+            {t("factor.suitability.bartlett_before_filter", {
+              n: analysis.used_measures.length + analysis.msa_filter.removed.length,
+              left: analysis.used_measures.length,
+            })}
+          </p>
+        )}
+      </InfoLabel>
+      <p className="text-xs text-muted">{splitSentence(explain)[0]}</p>
       {/* The chi-square is the widest value: it gets the widest column, and wraps rather than being cut. */}
       <dl className="grid grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 text-xs">
         <Value
@@ -193,14 +201,14 @@ function KmoCard({ analysis, threshold }: { analysis: FactorAnalysis | null; thr
   const { locale } = useLocale();
   const k = analysis?.kmo;
   const limit = k?.threshold ?? threshold;
+  const explain = t("factor.suitability.kmo_explain", { threshold: limit });
   return (
     <div className="rounded-lg bg-tile p-4 space-y-3">
-      <HelpLabel
-        label={t("factor.suitability.kmo_title")}
-        help={t("factor.help.kmo")}
-        extra={k && <PassBadge passed={k.passed} />}
-      />
-      <p className="text-xs text-muted">{t("factor.suitability.kmo_explain", { threshold: limit })}</p>
+      <InfoLabel label={t("factor.suitability.kmo_title")} help={explain} extra={k && <PassBadge passed={k.passed} />}>
+        <p>{explain}</p>
+        <p>{t("factor.help.kmo")}</p>
+      </InfoLabel>
+      <p className="text-xs text-muted">{splitSentence(explain)[0]}</p>
       <div className="flex items-baseline gap-2">
         <span className="text-2xl font-semibold font-mono tabular-nums">{k ? formatNumber(k.overall, locale, 2) : NO_VALUE}</span>
         {k && <span className="text-xs text-muted">{t(`factor.suitability.grade.${kmoGrade(k.overall)}`)}</span>}
@@ -232,7 +240,10 @@ function Scale({ value, threshold }: { value: number | null; threshold: number }
 function Value({ label, value, more }: { label: string; value: string; more?: string }) {
   return (
     <div className="rounded-md bg-bg/60 px-2.5 py-1.5 min-w-0">
-      <dt className="text-[10px] text-muted">{more ? <Term more={more}>{label}</Term> : label}</dt>
+      <dt className="flex items-center gap-0.5 text-[10px] text-muted">
+        {label}
+        {more && <InfoTip size="xs" topic={label} text={more} />}
+      </dt>
       <dd className="font-mono tabular-nums text-sm [overflow-wrap:anywhere]">{value}</dd>
     </div>
   );

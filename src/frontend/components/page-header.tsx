@@ -5,21 +5,27 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { APP_NAME } from "@/lib/app-config";
 import { cn } from "@/lib/utils";
+import { InfoTip } from "@/components/ui/info-tip";
 
 /**
- * The heading of every page: the title, a sentence on what the page is for, and the page's own
- * actions on the right. It also names the browser tab after the page in the language of the UI;
- * the route's metadata can only give the English title.
+ * The heading of every page (docs/UI.md): the title, at most one short line on what the page is for,
+ * a longer explanation behind the (i) beside the title, and the page's own actions on the right. It
+ * also names the browser tab after the page in the language of the UI; the route's metadata can only
+ * give the English title.
  */
 export function PageHeader({
   title,
   subtitle,
+  info,
   subtitleClassName,
   back,
   actions,
 }: {
   title: string;
+  /** One short line. */
   subtitle?: React.ReactNode;
+  /** What the page is for at length, behind the (i) beside the title. */
+  info?: string;
   /** For the sentence under the title, e.g. to hide it where room is short. */
   subtitleClassName?: string;
   /** For a page below another one: a link back to it above the title. */
@@ -51,7 +57,10 @@ export function PageHeader({
             {back.label}
           </Link>
         )}
-        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{title}</h1>
+        <div className="flex items-center gap-1.5">
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{title}</h1>
+          {info && <InfoTip topic={title} text={info} width={400} />}
+        </div>
         {subtitle && <p className={cn("text-sm text-muted mt-1 leading-relaxed [@media(max-height:500px)]:hidden", subtitleClassName)}>{subtitle}</p>}
       </div>
       {actions && <div className="flex items-center gap-2 flex-wrap">{actions}</div>}

@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { AlertCircle, Check, Info, Loader2, RotateCcw, X } from "lucide-react";
+import { AlertCircle, Loader2, RotateCcw } from "lucide-react";
 import { analysisLinkQuery, parseAnalysisLink, printHref } from "@/lib/analysis-link";
 import {
   HttpError,
@@ -84,13 +84,13 @@ import { CONTROL_STEPS, parseStep, stepFromHash, stepHref } from "@/lib/steps";
 import { cn } from "@/lib/utils";
 import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
-import { IconButton } from "@/components/ui/icon-button";
 import { MeasureScope, type MeasureOpener } from "@/components/ui/table";
+import { Notice } from "@/components/ui/notice";
 import { UndoToast, type UndoNotice } from "@/components/ui/undo-toast";
 import { useJobs } from "@/components/jobs-provider";
 import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
 import { PageHeader } from "@/components/page-header";
-import { DataForm, DataSummary, type OpenPreset } from "./data-step";
+import { DataForm, DataSummary, type DataNext, type LeadTo, type OpenPreset } from "./data-step";
 import { useMapOrder, type CorrelationMapProps, type CorrelationsState } from "./correlation-map";
 import { MeasureSheet } from "./measure-sheet";
 import { DatasetView, type MinerChoiceProps } from "./dataset-step";
@@ -109,7 +109,6 @@ import { FactorTour } from "./factor-tour";
 import { SETTING_CONTROLS, SettingsRow, focusControl } from "./settings-row";
 import { FactorToolbar, type ExportState, type ShortCodesSwitch } from "./toolbar";
 import type { FigureDownload } from "./figure-menu";
-import { StartHere } from "./start-here";
 import { EmptyStep, StepSection, stepAnchor, type StepId, type StepState } from "./step-section";
 import { StepBar, StepFooter, StepNavBar, StepRail, useStepNavigation, type StepLocks } from "./step-nav";
 
@@ -255,9 +254,12 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // One step on screen at a time, named in the address (?step=...).
   const nav = useStepNavigation();
   const { goTo } = nav;
-  // The step to open once a dataset just chosen is ready: the dataset step after "Use dataset" or
-  // a link without a step of its own. Any navigation by hand before that cancels it.
+  // The step to open once a dataset of a link is ready: the dataset step for a link without a step
+  // of its own. Any navigation by hand before that cancels it. A dataset loaded in the data step
+  // stays there instead, with the way on (`leadTo`): the result for a load from Get started or with
+  // the paper settings, else the next step.
   const [advance, setAdvance] = useState<{ id: string; to: StepId; replace: boolean } | null>(null);
+  const [leadTo, setLeadTo] = useState<{ id: string; to: LeadTo } | null>(null);
   const go = useCallback(
     (step: StepId, opts?: Parameters<typeof goTo>[1]) => {
       setAdvance(null);
@@ -711,7 +713,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const openChosen = (id: string) => {
     focusSummary.current = true;
     openDataset(id);
-    setAdvance({ id, to: "dataset", replace: false });
+    setLeadTo({ id, to: "next" });
   };
 
   // A dataset of the session from a link (?dataset=<id>, e.g. a job card): without a step of its
@@ -794,20 +796,23 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           message: tRef.current(invalid ? "factor.data.opened_standard" : "factor.link.opened"),
         });
         if (!step) setAdvance({ id: res.dataset_id, to: "dataset", replace: true });
+        // A link to the data step comes from Get started on the other tab: it offers the result.
+        if (step === "data") setLeadTo({ id: res.dataset_id, to: "result" });
         setLinkNotice(invalid ? { tone: "info", text: tRef.current("factor.link.invalid") } : null);
       },
       (e) => setLinkNotice({ tone: "error", text: errorTextRef.current(e, tRef.current("factor.link.failed")) }),
     );
   }, [linkRequest, rawCatalog, kind, openCreated]);
 
-  const submit = async (input: CreateDatasetInput, preset: OpenPreset) => {
+  const submit = async (input: CreateDatasetInput, preset: OpenPreset, lead: LeadTo) => {
     setSubmitting(true);
     setSubmitError(null);
     try {
       const res = await createDataset(input);
       focusSummary.current = true;
       openCreated(res.dataset_id, input.source === "bundled" && input.bundledId ? presetOptions(input.bundledId, preset) : null);
-      setAdvance({ id: res.dataset_id, to: "dataset", replace: false });
+      // No jump: the data step stays, with the summary and the way on.
+      setLeadTo({ id: res.dataset_id, to: lead });
     } catch (e) {
       setSubmitError(errorText(e, t("factor.data.submit_failed")));
     } finally {
@@ -1257,9 +1262,30 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // Results that no longer match the parameters are dimmed until the new ones arrive.
   const stale = cn("transition-opacity", (analyzing || analysisError) && "opacity-60");
 
+  // The data step has its own way on: the button of the form, or the one of the loaded dataset.
   const footer = (step: StepId) => (
-    <StepFooter step={step} locks={locks} unavailable={unavailable} onGo={go} hideNext={step === "data" && formOpen} />
+    <StepFooter step={step} locks={locks} unavailable={unavailable} onGo={go} hideNext={step === "data"} />
   );
+
+  // What the summary of a loaded dataset says about its settings, and where its button leads.
+  const settingsText = !ready
+    ? null
+    : published && sameOptions(options, { ...published, miner: options.miner })
+      ? t("factor.data.preset.published")
+      : sameOptions(options, rowStandard)
+        ? t("factor.data.preset.standard")
+        : t("factor.data.settings_own");
+  const toResult = ready && leadTo?.id === datasetId && leadTo.to === "result" && !analysisError;
+  const dataNext: DataNext | null = !ready
+    ? null
+    : toResult
+      ? {
+          label: t("factor.data.to_result"),
+          busy: !analysis,
+          reason: analysis ? null : t("factor.toolbar.wait_analysis"),
+          onGo: () => go("loadings"),
+        }
+      : { label: t("factor.nav.next_to", { step: t("factor.steps.dataset") }), busy: false, onGo: () => go("dataset") };
   const navProps = { current, states, locks, unavailable, stateLabels, onGo: go };
 
   const loadingsReason = !ready ? lockReason : !analysis ? t("factor.toolbar.wait_analysis") : null;
@@ -1392,7 +1418,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
 
       <PageHeader
         title={t(`factor.${kind}.title`)}
-        subtitle={t(`factor.${kind}.subtitle`)}
+        subtitle={t(`factor.${kind}.subtitle_short`)}
+        info={t(`factor.${kind}.subtitle`)}
         // The page's own sentence belongs to the data step; once a step of the analysis is open, the
         // step has its room, so a laptop shows the first rows of the loadings with the settings row.
         subtitleClassName={ready && current !== "data" ? "hidden" : undefined}
@@ -1416,42 +1443,27 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               empty, it takes back the gap before it. */}
           <div role="status" className="empty:-mt-4">
             {linkNotice && (
-              <div
-                className={cn(
-                  "rounded-lg px-3.5 py-2.5 flex items-start gap-2.5 text-sm",
-                  linkNotice.tone === "error" ? "bg-danger/10" : "bg-surface",
-                )}
+              <Notice
+                tone={linkNotice.tone === "error" ? "error" : "info"}
+                icon={linkNotice.tone === "busy" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : undefined}
+                onDismiss={linkNotice.tone !== "busy" ? () => setLinkNotice(null) : undefined}
               >
-                {linkNotice.tone === "busy" ? (
-                  <Loader2 className="h-4 w-4 text-accent-ink shrink-0 mt-0.5 animate-spin" />
-                ) : linkNotice.tone === "error" ? (
-                  <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
-                ) : (
-                  <Info className="h-4 w-4 text-muted shrink-0 mt-0.5" />
-                )}
-                <p className="flex-1 min-w-0">{linkNotice.text}</p>
-                {linkNotice.tone !== "busy" && (
-                  <IconButton
-                    size="sm"
-                    icon={X}
-                    name={t("factor.data.dismiss_aria")}
-                    onClick={() => setLinkNotice(null)}
-                    className="h-6 w-6 -my-0.5"
-                  />
-                )}
-          </div>
-          )}
+                {linkNotice.text}
+              </Notice>
+            )}
           </div>
           {exportError && (
-            <p role="alert" className="flex items-start gap-1.5 text-xs text-danger-ink">
-              <AlertCircle className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
+            <Notice tone="error" size="sm" role="alert">
               {exportError}
-            </p>
+            </Notice>
           )}
-          <p role="status" className={exportNote ? "flex items-start gap-1.5 text-xs text-success-ink" : "sr-only"}>
-            {exportNote && <Check className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />}
-            {exportNote}
-          </p>
+          <div role="status" className={exportNote ? undefined : "sr-only"}>
+            {exportNote && (
+              <Notice tone="success" size="sm">
+                {exportNote}
+              </Notice>
+            )}
+          </div>
           {/* At the top of every step once a dataset is ready, and in view while a step scrolls. */}
           {ready && dataset && (
             <SettingsRow
@@ -1495,69 +1507,62 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             {/* Always rendered, so screen readers announce the notice that appears in it. */}
             <div role="status">
               {gone && (
-                <div className="mb-4 rounded-lg bg-tile px-3.5 py-2.5 flex items-start gap-2.5 text-sm">
-                  <Info className="h-4 w-4 text-muted shrink-0 mt-0.5" />
-                  <p className="flex-1 min-w-0">{t("factor.data.gone")}</p>
-                  <IconButton
-                    size="sm"
-                    icon={X}
-                    name={t("factor.data.dismiss_aria")}
-                    onClick={() => {
-                      // The button goes with the notice; the form below takes the focus.
-                      focusForm.current = true;
-                      setGone(false);
-                    }}
-                    className="h-6 w-6 -my-0.5"
-                  />
-                </div>
+                <Notice
+                  className="mb-4"
+                  onDismiss={() => {
+                    // The button goes with the notice; the form below takes the focus.
+                    focusForm.current = true;
+                    setGone(false);
+                  }}
+                >
+                  {t("factor.data.gone")}
+                </Notice>
               )}
             </div>
             {catalogError ? (
-              <div role="alert" className="rounded-lg bg-danger/10 px-3.5 py-3 flex items-start gap-2.5 text-sm">
-                <AlertCircle className="h-4 w-4 text-danger-ink shrink-0 mt-0.5" />
-                <div className="space-y-2">
-                  <div>{t("factor.data.catalog_error", { error: catalogError })}</div>
+              <Notice
+                tone="error"
+                role="alert"
+                action={
                   <Button size="sm" variant="outline" onClick={() => setCatalogAttempt((n) => n + 1)}>
                     <RotateCcw className="h-3.5 w-3.5" />
                     {t("common.try_again")}
                   </Button>
-                </div>
-              </div>
+                }
+              >
+                {t("factor.data.catalog_error", { error: catalogError })}
+              </Notice>
             ) : !catalog || (formOpen && !datasets) ? (
               <div className="text-sm text-muted flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 {t("common.loading")}
               </div>
             ) : formOpen ? (
-              <div className="space-y-5">
-                <StartHere kind={kind} />
-                <DataForm
-                  kind={kind}
-                  catalog={catalog}
-                  datasets={datasets ?? []}
-                  openId={datasetId}
-                  submitting={submitting}
-                  submitError={submitError}
-                  onSubmit={submit}
-                  onOpen={openChosen}
-                  onDelete={removeDataset}
-                  onCancel={dataset && choosing ? cancelChoice : undefined}
-                />
-              </div>
+              <DataForm
+                kind={kind}
+                catalog={catalog}
+                datasets={datasets ?? []}
+                openId={datasetId}
+                submitting={submitting}
+                submitError={submitError}
+                onSubmit={submit}
+                onOpen={openChosen}
+                onDelete={removeDataset}
+                onCancel={dataset && choosing ? cancelChoice : undefined}
+              />
             ) : dataset ? (
-              // Start here stays the first block of the step, also with a dataset open; the
-              // datasets of the session are a source of the form behind "Choose other data".
-              <div className="space-y-5">
-                <StartHere kind={kind} />
-                <DataSummary
-                  dataset={dataset}
-                  catalog={catalog}
-                  titleRef={summaryTitle}
-                  onChange={() => setChoosing(true)}
-                  onCancelJob={cancelJob}
-                  onDelete={() => removeDataset(dataset.id)}
-                />
-              </div>
+              // The loaded dataset, its settings and the way on; Get started and the datasets of
+              // the session are in the form behind "Choose other data".
+              <DataSummary
+                dataset={dataset}
+                catalog={catalog}
+                settings={settingsText}
+                next={dataNext}
+                titleRef={summaryTitle}
+                onChange={() => setChoosing(true)}
+                onCancelJob={cancelJob}
+                onDelete={() => removeDataset(dataset.id)}
+              />
             ) : datasetError ? (
               <Button variant="outline" size="sm" onClick={() => selectDataset(null)}>
                 {t("factor.data.change")}
@@ -1569,14 +1574,14 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               </div>
             )}
             {datasetError && (
-              <p role="alert" className="mt-3 text-xs text-danger-ink">
+              <Notice tone="error" size="sm" role="alert" className="mt-3">
                 {datasetError}
-              </p>
+              </Notice>
             )}
             {deleteError && (
-              <p role="alert" className="mt-3 text-xs text-danger-ink">
+              <Notice tone="error" size="sm" role="alert" className="mt-3">
                 {deleteError}
-              </p>
+              </Notice>
             )}
           </StepSection>
 
