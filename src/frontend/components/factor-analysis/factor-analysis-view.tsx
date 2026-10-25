@@ -1418,7 +1418,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
 
       <PageHeader
         title={t(`factor.${kind}.title`)}
-        subtitle={t(`factor.${kind}.subtitle`)}
+        subtitle={t(`factor.${kind}.subtitle_short`)}
+        info={t(`factor.${kind}.subtitle`)}
         // The page's own sentence belongs to the data step; once a step of the analysis is open, the
         // step has its room, so a laptop shows the first rows of the loadings with the settings row.
         subtitleClassName={ready && current !== "data" ? "hidden" : undefined}

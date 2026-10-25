@@ -9,6 +9,7 @@ import {
   Check,
   CircleSlash,
   CircleStop,
+  History as HistoryIcon,
   Loader2,
   Microscope,
   Network,
@@ -54,6 +55,7 @@ import { JobNotesField } from "./job-notes-field";
 import { PageHeader } from "./page-header";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
+import { EmptyState } from "./ui/empty-state";
 import { IconButton } from "./ui/icon-button";
 import { Input } from "./ui/input";
 import { ScrollFade } from "./ui/scroll-fade";
@@ -241,7 +243,8 @@ export function RunHistoryView() {
     <div className="space-y-6">
       <PageHeader
         title={t("run_history.heading")}
-        subtitle={t("run_history.subtitle")}
+        subtitle={t("run_history.subtitle_short")}
+        info={t("run_history.subtitle")}
         actions={
           // Always rendered, so screen readers announce each toast that appears in it.
           <div role="status">
@@ -310,8 +313,10 @@ export function RunHistoryView() {
               {t("common.loading")}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="p-10 text-center text-sm text-muted max-w-prose mx-auto">
-              {rows.length === 0 ? t("run_history.empty") : t("run_history.none_match")}
+            <div className="p-4">
+              <EmptyState icon={<HistoryIcon className="h-5 w-5" aria-hidden />}>
+                {rows.length === 0 ? t("run_history.empty") : t("run_history.none_match")}
+              </EmptyState>
             </div>
           ) : (
             <div ref={listRef} tabIndex={-1} className="outline-none">

@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { Columns3, Grid3x3, Info, LayoutGrid, Pin, PinOff, Tags, X } from "lucide-react";
+import { Columns3, Grid3x3, LayoutGrid, Pin, PinOff, Tags, X } from "lucide-react";
 import { ASSIGNMENT_RULES, type AssignmentRule, type FactorAnalysis } from "@/lib/api";
 import {
   ORTHOGONAL,
@@ -236,9 +236,12 @@ export function LoadingsView({
           />
         </div>
         {assignmentNote && (
-          <p id="fa-assignment-note" className="flex items-start gap-1.5 text-xs text-muted max-w-prose">
-            <Info className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
-            <span>{assignmentNote}</span>
+          <p className="flex items-center gap-1 text-xs text-muted">
+            <span id="fa-assignment-note">
+              {t("factor.loadings.rule_note_short")}
+              <span className="sr-only">: {assignmentNote}</span>
+            </span>
+            <InfoTip size="xs" topic={t("factor.loadings.rule_note_short")} text={assignmentNote} />
           </p>
         )}
       </div>

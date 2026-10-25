@@ -130,6 +130,7 @@
     "presets": {
       "title": "Parameter presets",
       "description": "Named parameter sets you saved while inspecting a single log. Stored locally on this device.",
+      "description_short": "Saved parameter sets of single logs.",
       "empty_hint_before": "No presets yet. Under Inspect a single log, configure an algorithm and click",
       "empty_hint_action": "Save preset",
       "empty_hint_after": "above the parameter form.",
@@ -206,6 +207,7 @@
   "api_access": {
     "heading": "API access",
     "subtitle": "Start runs and read results without the web UI. The endpoints need no login; a cookie scopes them to your browser session.",
+    "subtitle_short": "Start runs and fetch results without the web interface.",
     "interactive_ref_title": "Interactive reference",
     "interactive_ref_desc": "Full OpenAPI 3 spec — try endpoints directly from the browser.",
     "quick_start_title": "Quick start",
@@ -422,6 +424,7 @@
   "run_history": {
     "heading": "History",
     "subtitle": "Everything of this session, newest first: the datasets of both tabs, each with the settings of its last analysis, and the runs of single logs.",
+    "subtitle_short": "Everything of this session, newest first.",
     "search_placeholder": "Search name, file or ID…",
     "search_aria": "Search the history",
     "filter_type_aria": "Filter by type",
@@ -535,11 +538,13 @@
     "tour_title": "Walkthrough of the steps",
     "model": {
       "title": "Model complexity",
-      "subtitle": "Find out which complexity measures of process models describe the same underlying dimension. Collect measures over many models, check whether a factor analysis is meaningful, and group the measures into a few factors."
+      "subtitle": "Find out which complexity measures of process models describe the same underlying dimension. Collect measures over many models, check whether a factor analysis is meaningful, and group the measures into a few factors.",
+      "subtitle_short": "Which measures of process models describe the same dimension."
     },
     "log": {
       "title": "Log complexity",
-      "subtitle": "Find out which event log complexity measures overlap. Compute the measures for many logs, check whether a factor analysis is meaningful, and group the measures into a few factors."
+      "subtitle": "Find out which event log complexity measures overlap. Compute the measures for many logs, check whether a factor analysis is meaningful, and group the measures into a few factors.",
+      "subtitle_short": "Which measures of event logs overlap."
     },
     "steps": {
       "aria": "Analysis steps",
@@ -1006,7 +1011,8 @@
       "look_dimensions": "Dimensions",
       "legend_faded": "faded: |loading| < {threshold}",
       "legend_faded_strict": "faded: |loading| ≤ {threshold}",
-      "numbers_label": "What the numbers mean"
+      "numbers_label": "What the numbers mean",
+      "rule_note_short": "Note on the paper's tables"
     },
     "help": {
       "cleaning": "Before the analysis, rows where most values are missing are dropped. Then columns that are not numeric, that have no variance, that have missing values, or that are perfect copies of an earlier column are removed, as in ComFy for log measures. Such columns would distort or break the correlation matrix.",
@@ -1072,6 +1078,7 @@
     },
     "interpretation": {
       "intro": "Claude reads the loadings together with the definitions of the measures and proposes a name and a short interpretation for each factor. Sent to Anthropic are the measure (column) names, their catalog definitions and aggregated results such as loadings and test statistics; measure values, row labels and file names are not sent. Each request costs money, so it runs only when you ask for it.",
+      "sent_label": "What is sent to Anthropic",
       "button": "Interpret factors",
       "again": "Interpret again",
       "running": "Claude is interpreting the factors. This can take up to three minutes.",

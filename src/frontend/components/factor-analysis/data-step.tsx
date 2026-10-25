@@ -49,7 +49,7 @@ import {
   progressPercent,
   publishedOptions,
 } from "@/lib/factor-analysis";
-import { formatDateTime, formatFileSize, formatNumber, formatPercent, formatRelative } from "@/lib/format";
+import { formatDateTime, formatFileSize, formatNumber, formatPercent, formatRelative, splitSentence } from "@/lib/format";
 import { datasetNote, orderCollection, settingsSourceText } from "@/lib/paper-notes";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
@@ -1471,9 +1471,10 @@ export function DataSummary({
             <div className="h-full bg-accent rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
           )}
         </div>
-        <p className="text-xs text-muted">
-          {pct !== null && <span className="font-mono mr-2">{formatPercent(pct / 100, locale, 0)}</span>}
-          {t("factor.data.computing_hint")}
+        <p className="flex items-center gap-1 text-xs text-muted">
+          {pct !== null && <span className="font-mono mr-1">{formatPercent(pct / 100, locale, 0)}</span>}
+          {splitSentence(t("factor.data.computing_hint"))[0]}
+          <InfoTip size="xs" topic={t("factor.data.computing_title", { name })} text={t("factor.data.computing_hint")} />
         </p>
       </div>
     );

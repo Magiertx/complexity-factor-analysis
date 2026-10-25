@@ -130,6 +130,7 @@
     "presets": {
       "title": "Parameter-Presets",
       "description": "Benannte Parameter-Sets, die du beim Untersuchen eines einzelnen Logs gespeichert hast. Lokal auf diesem Gerät gespeichert.",
+      "description_short": "Gespeicherte Parameter-Sets einzelner Logs.",
       "empty_hint_before": "Noch keine Presets. Konfiguriere unter Einzelnes Log untersuchen einen Algorithmus und klicke auf",
       "empty_hint_action": "Preset speichern",
       "empty_hint_after": "über dem Parameter-Formular.",
@@ -206,6 +207,7 @@
   "api_access": {
     "heading": "API-Zugang",
     "subtitle": "Runs starten und Ergebnisse abrufen ohne die Weboberfläche. Die Endpoints brauchen keine Anmeldung; ein Cookie beschränkt sie auf deine Browsersitzung.",
+    "subtitle_short": "Runs starten und Ergebnisse abrufen, ohne die Weboberfläche.",
     "interactive_ref_title": "Interaktive Referenz",
     "interactive_ref_desc": "Vollständige OpenAPI-3-Spezifikation — Endpoints direkt im Browser ausprobieren.",
     "quick_start_title": "Schnellstart",
@@ -422,6 +424,7 @@
   "run_history": {
     "heading": "Verlauf",
     "subtitle": "Alles aus dieser Sitzung, das Neueste zuerst: die Datensätze beider Tabs, jeweils mit den Einstellungen ihrer letzten Analyse, und die Runs einzelner Logs.",
+    "subtitle_short": "Alles aus dieser Sitzung, das Neueste zuerst.",
     "search_placeholder": "Name, Datei oder ID suchen…",
     "search_aria": "Verlauf durchsuchen",
     "filter_type_aria": "Nach Art filtern",
@@ -535,11 +538,13 @@
     "tour_title": "Rundgang durch die Schritte",
     "model": {
       "title": "Modellkomplexität",
-      "subtitle": "Finde heraus, welche Komplexitätsmaße von Prozessmodellen dieselbe zugrunde liegende Dimension beschreiben. Sammle Maße über viele Modelle, prüfe, ob eine Faktorenanalyse sinnvoll ist, und fasse die Maße zu wenigen Faktoren zusammen."
+      "subtitle": "Finde heraus, welche Komplexitätsmaße von Prozessmodellen dieselbe zugrunde liegende Dimension beschreiben. Sammle Maße über viele Modelle, prüfe, ob eine Faktorenanalyse sinnvoll ist, und fasse die Maße zu wenigen Faktoren zusammen.",
+      "subtitle_short": "Welche Maße von Prozessmodellen dieselbe Dimension beschreiben."
     },
     "log": {
       "title": "Log-Komplexität",
-      "subtitle": "Finde heraus, welche Komplexitätsmaße von Event-Logs sich überschneiden. Berechne die Maße für viele Logs, prüfe, ob eine Faktorenanalyse sinnvoll ist, und fasse die Maße zu wenigen Faktoren zusammen."
+      "subtitle": "Finde heraus, welche Komplexitätsmaße von Event-Logs sich überschneiden. Berechne die Maße für viele Logs, prüfe, ob eine Faktorenanalyse sinnvoll ist, und fasse die Maße zu wenigen Faktoren zusammen.",
+      "subtitle_short": "Welche Maße von Event-Logs sich überschneiden."
     },
     "steps": {
       "aria": "Analyseschritte",
@@ -1006,7 +1011,8 @@
       "look_dimensions": "Dimensionen",
       "legend_faded": "blass: |Ladung| < {threshold}",
       "legend_faded_strict": "blass: |Ladung| ≤ {threshold}",
-      "numbers_label": "Was die Zahlen bedeuten"
+      "numbers_label": "Was die Zahlen bedeuten",
+      "rule_note_short": "Hinweis zu den Tabellen des Papers"
     },
     "help": {
       "cleaning": "Vor der Analyse werden Zeilen entfernt, in denen die meisten Werte fehlen. Danach werden Spalten entfernt, die nicht numerisch sind, keine Varianz haben, fehlende Werte enthalten oder exakte Kopien einer früheren Spalte sind, wie in ComFy für Log-Maße. Solche Spalten würden die Korrelationsmatrix verzerren oder unbrauchbar machen.",
@@ -1072,6 +1078,7 @@
     },
     "interpretation": {
       "intro": "Claude liest die Ladungen zusammen mit den Definitionen der Maße und schlägt für jeden Faktor einen Namen und eine kurze Interpretation vor. An Anthropic gehen die Namen der Maße (Spalten), ihre Katalogdefinitionen und aggregierte Ergebnisse wie Ladungen und Teststatistiken; Messwerte, Zeilenbezeichnungen und Dateinamen werden nicht gesendet. Jede Anfrage kostet Geld, daher läuft sie nur, wenn du sie anforderst.",
+      "sent_label": "Was dabei an Anthropic geht",
       "button": "Faktoren interpretieren",
       "again": "Neu interpretieren",
       "running": "Claude interpretiert die Faktoren. Das kann bis zu drei Minuten dauern.",

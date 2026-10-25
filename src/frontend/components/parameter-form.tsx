@@ -4,6 +4,7 @@ import { useState } from "react";
 import { RotateCcw, Search } from "lucide-react";
 import type { ParameterSpec } from "@/lib/api";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -196,20 +197,21 @@ function Field({
 
     return (
       <fieldset className={cn("sm:col-span-2 space-y-2", disabled && "opacity-60")} aria-describedby={help ? hintId : undefined}>
-        <legend className="text-sm font-semibold">
-          {label}{" "}
-          <span className="text-xs font-normal text-muted">
-            {t("parameter_form.selected_count", { n: selected.length, total: options.length })}
-          </span>
-        </legend>
-        <div className="flex items-start justify-between gap-x-4 gap-y-2 flex-wrap">
+        <div className="flex items-center justify-between gap-x-4 gap-y-2 flex-wrap">
+          <legend className="flex items-center gap-1 text-sm font-semibold">
+            {label}
+            <span className="text-xs font-normal text-muted">
+              {t("parameter_form.selected_count", { n: selected.length, total: options.length })}
+            </span>
+            {help && <InfoTip topic={label} text={help} />}
+          </legend>
           {help && (
-            <p id={hintId} className="text-xs text-muted max-w-prose">
+            <p id={hintId} className="sr-only">
               {help}
             </p>
           )}
           {!disabled && (
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap ml-auto">
               <div className="relative flex items-center">
                 <Search className="absolute left-2.5 h-3.5 w-3.5 text-muted pointer-events-none" aria-hidden />
                 <input

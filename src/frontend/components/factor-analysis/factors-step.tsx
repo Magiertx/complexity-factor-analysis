@@ -1,6 +1,6 @@
 "use client";
 
-import { Info, Minus, Plus, Sparkles } from "lucide-react";
+import { Minus, Plus, Sparkles } from "lucide-react";
 import { ROTATIONS, type FactorAnalysis, type Rotation } from "@/lib/api";
 import {
   ORTHOGONAL,
@@ -15,6 +15,8 @@ import { formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
+import { Brief } from "@/components/ui/brief";
+import { Notice } from "@/components/ui/notice";
 import { Select } from "@/components/ui/select";
 import { Tip } from "@/components/ui/tip";
 import { FigureMenu, type FigureDownload } from "./figure-menu";
@@ -92,10 +94,9 @@ export function FactorsView({ analysis, options, onOptions, paperFactors, paperS
     <div className="space-y-6">
       <NoticeList heading={t("factor.factors.notes_heading")} notes={notes} />
       {infos.map((info) => (
-        <p key={info} className="flex items-start gap-1.5 text-xs text-muted">
-          <Info className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
-          <span>{info}</span>
-        </p>
+        <Notice key={info} size="sm">
+          {info}
+        </Notice>
       ))}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_17rem]">
         <div className="space-y-2 min-w-0">
@@ -114,7 +115,7 @@ export function FactorsView({ analysis, options, onOptions, paperFactors, paperS
             maxSelectable={max}
             onSelect={setCount}
           />
-          <p className="text-xs text-muted">{t("factor.factors.scree_hint")}</p>
+          <Brief text={t("factor.factors.scree_hint")} topic={t("factor.factors.scree_title")} />
         </div>
 
         <div className="space-y-6">
@@ -200,18 +201,16 @@ export function FactorsView({ analysis, options, onOptions, paperFactors, paperS
               })}
             </div>
             {disagree && (
-              <p className="flex items-start gap-1.5 text-xs text-muted">
-                <Info className="h-3.5 w-3.5 mt-px shrink-0" aria-hidden />
-                <span>
-                  {t(
-                    paperFactors === null
-                      ? "factor.factors.criteria_differ"
-                      : published === "report"
-                        ? "factor.factors.criteria_differ_report"
-                        : "factor.factors.criteria_differ_paper",
-                  )}
-                </span>
-              </p>
+              <Brief
+                topic={t("factor.factors.criteria_label")}
+                text={t(
+                  paperFactors === null
+                    ? "factor.factors.criteria_differ"
+                    : published === "report"
+                      ? "factor.factors.criteria_differ_report"
+                      : "factor.factors.criteria_differ_paper",
+                )}
+              />
             )}
           </div>
 
@@ -224,7 +223,7 @@ export function FactorsView({ analysis, options, onOptions, paperFactors, paperS
               onValueChange={(v) => onOptions({ rotation: v as Rotation })}
               options={ROTATIONS.map((r) => ({ value: r, label: t(`factor.factors.rotation.${r}`) }))}
             />
-            <p className="text-xs text-muted">{t(`factor.factors.rotation_hint.${rotationKind}`)}</p>
+            <Brief text={t(`factor.factors.rotation_hint.${rotationKind}`)} topic={t("factor.factors.rotation_label")} />
           </div>
         </div>
       </div>

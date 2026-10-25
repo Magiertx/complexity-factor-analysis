@@ -284,7 +284,12 @@ export function ApiAccessView() {
   return (
     // Code and endpoint rows read badly across the whole width.
     <div className="space-y-6 max-w-5xl mx-auto">
-      <PageHeader title={t("api_access.heading")} subtitle={t("api_access.subtitle")} back={back} />
+      <PageHeader
+        title={t("api_access.heading")}
+        subtitle={t("api_access.subtitle_short")}
+        info={t("api_access.subtitle")}
+        back={back}
+      />
 
       <Card>
         <CardHeader>

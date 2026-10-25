@@ -163,3 +163,13 @@ export function formatRelative(input: DateInput, locale: string, now = Date.now(
   }
   return format.format(0, "second");
 }
+
+/**
+ * The first sentence of a text and the rest, for a line that shows the first sentence and puts the
+ * whole text behind an (i). A sentence ends at ".", "!" or "?" before a capital letter, so an
+ * abbreviation such as "Tab. 17" or "z. B." before a lower-case word does not end one.
+ */
+export function splitSentence(text: string): [string, string] {
+  const m = /^(.+?[.!?])\s+(?=[A-ZÄÖÜ])/.exec(text);
+  return m ? [m[1], text.slice(m[0].length)] : [text, ""];
+}
