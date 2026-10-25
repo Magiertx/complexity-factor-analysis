@@ -428,7 +428,7 @@ export function CompareView() {
               )}
 
               {comparison && enough && (
-                <div className={cn("space-y-4 transition-opacity motion-reduce:transition-none", outdated && "opacity-60")}>
+                <div className={cn("space-y-4 w-fit max-w-full transition-opacity motion-reduce:transition-none", outdated && "opacity-60")}>
                   {look === "matrix" ? (
                     <MembershipMatrix comparison={comparison} labels={labels} titles={titles} notes={notes} />
                   ) : look === "dimensions" ? (
