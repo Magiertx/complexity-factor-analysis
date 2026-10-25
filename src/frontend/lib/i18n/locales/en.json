@@ -1552,7 +1552,7 @@
       "title": "The six steps",
       "p1": "Model complexity analyses the measures of ComFy on Petri nets, Log complexity the measures of feeed on event logs. Both walk through the same steps: Data, Dataset, Suitability, Factors, Loadings and an optional Interpretation. One step is on screen at a time; the list of steps shows what each step found.",
       "p2": "The settings row above the steps sums up every choice, marks those that differ from the tool standard and leads to each control. Every change of a setting runs the analysis again.",
-      "p3": "The tabs at the top are the same on every page: the two analyses, Compare, Single log and History. The guide, the API and the settings are in the header and lead back to the tab you came from."
+      "p3": "The tabs at the top are the same on every page: the analyses (the two of complexity and Single log), and set apart on the right the tools Compare and History. The guide, the API and the settings are in the header and lead back to the tab you came from."
     },
     "bundled": {
       "title": "Analyse a published dataset",
@@ -1608,7 +1608,7 @@
     },
     "compare": {
       "title": "Compare miners",
-      "p1": "Compare miners puts the factor structures of several published datasets side by side, like Tab. 17 of Important Factors: which measures form which dimension for which miner. It is the tool Compare, right in the bar of tabs, and two cards of Get started open it.",
+      "p1": "Compare miners puts the factor structures of several published datasets side by side, like Tab. 17 of Important Factors: which measures form which dimension for which miner. It is the tool Compare, at the right of the tabs, and two cards of Get started open it. The datasets and the rule are on the left, the result on the right; the notes on a column are a count in its header and one folded list below the table.",
       "items": {
         "columns": "Datasets: choose 2 to 8 of the miners of Important Factors; each is analysed with the settings of its paper. The first four are those of Tab. 17. A link can also ask for a dataset with a factor count of its own, such as 4 against 6 factors (Get started).",
         "rule": "Assignment rule: one rule for every dataset, Hair et al. as in Tab. 17 to begin with.",

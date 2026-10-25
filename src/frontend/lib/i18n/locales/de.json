@@ -1552,7 +1552,7 @@
       "title": "Die sechs Schritte",
       "p1": "Modellkomplexität analysiert die Maße von ComFy auf Petri-Netzen, Log-Komplexität die Maße von feeed auf Event-Logs. Beide führen durch dieselben Schritte: Daten, Datensatz, Eignung, Faktoren, Ladungen und eine optionale Interpretation. Es ist immer ein Schritt zu sehen; die Liste der Schritte zeigt, was jeder Schritt ergeben hat.",
       "p2": "Die Einstellungszeile über den Schritten fasst jede Entscheidung zusammen, markiert die, die vom Standard des Tools abweichen, und führt zu jedem Regler. Jede Änderung einer Einstellung rechnet die Analyse neu.",
-      "p3": "Die Reiter oben sind auf jeder Seite dieselben: die beiden Analysen, Vergleich, Einzelnes Log und Verlauf. Anleitung, API und Einstellungen stehen im Header und führen zurück zu dem Reiter, von dem du kamst."
+      "p3": "Die Reiter oben sind auf jeder Seite dieselben: die Analysen (die beiden der Komplexität und Einzelnes Log) und rechts abgesetzt die Werkzeuge Vergleich und Verlauf. Anleitung, API und Einstellungen stehen im Header und führen zurück zu dem Reiter, von dem du kamst."
     },
     "bundled": {
       "title": "Einen veröffentlichten Datensatz analysieren",
@@ -1608,7 +1608,7 @@
     },
     "compare": {
       "title": "Miner vergleichen",
-      "p1": "Miner vergleichen stellt die Faktorstrukturen mehrerer veröffentlichter Datensätze nebeneinander, wie Tab. 17 von Important Factors: welche Maße für welchen Miner welche Dimension bilden. Es ist das Werkzeug „Vergleich“ rechts in der Leiste der Reiter, und zwei Karten von „Zum Einstieg“ öffnen ihn.",
+      "p1": "Miner vergleichen stellt die Faktorstrukturen mehrerer veröffentlichter Datensätze nebeneinander, wie Tab. 17 von Important Factors: welche Maße für welchen Miner welche Dimension bilden. Es ist das Werkzeug „Vergleich“ rechts neben den Reitern, und zwei Karten von „Zum Einstieg“ öffnen es. Links stehen die Datensätze und die Regel, rechts das Ergebnis; die Hinweise zu einer Spalte sind eine Zahl in ihrem Kopf und eine eingeklappte Liste unter der Tabelle.",
       "items": {
         "columns": "Datensätze: Wähle 2 bis 8 der Miner aus Important Factors; jeder wird mit den Einstellungen seines Papers analysiert. Die ersten vier sind die aus Tab. 17. Ein Link kann auch einen Datensatz mit eigener Faktorzahl verlangen, etwa 4 gegen 6 Faktoren (Zum Einstieg).",
         "rule": "Zuordnungsregel: eine Regel für jeden Datensatz, zu Beginn Hair et al. wie in Tab. 17.",
