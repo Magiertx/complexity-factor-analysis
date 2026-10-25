@@ -180,7 +180,14 @@ test("another miner clears the names of the factors, and Undo brings back both",
   test.setTimeout(FIT_TIMEOUT + 120_000);
   await uploadMiners(page, 50);
   const tiles = minerTiles(page);
+  // The loadings stay done while the analysis of the miner runs; the names are for its solution,
+  // so the test waits for that analysis before it names a factor.
+  const analysed = page.waitForResponse(
+    (r) => r.url().includes("/analyze") && (r.request().postData() ?? "").includes("Inductive miner"),
+    { timeout: FIT_TIMEOUT },
+  );
   await tiles.getByRole("radio", { name: "Inductive miner" }).check({ force: true });
+  expect((await analysed).ok()).toBeTruthy();
   await expectStep(page, "loadings", "done", "en", FIT_TIMEOUT);
   await goToStep(page, "loadings");
   const loadings = stepSection(page, "loadings");
