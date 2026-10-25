@@ -16,7 +16,9 @@
     "error_description": "This page ran into an unexpected error.",
     "error_unknown": "Unknown error",
     "try_again": "Try again",
-    "undo": "Undo"
+    "undo": "Undo",
+    "info_aria": "About: {topic}",
+    "dismiss": "Dismiss"
   },
   "header": {
     "tagline": "Complexity measures of process models and event logs",
@@ -989,7 +991,8 @@
       "look_matrix": "Matrix",
       "look_dimensions": "Dimensions",
       "legend_faded": "faded: |loading| < {threshold}",
-      "legend_faded_strict": "faded: |loading| ≤ {threshold}"
+      "legend_faded_strict": "faded: |loading| ≤ {threshold}",
+      "numbers_label": "What the numbers mean"
     },
     "help": {
       "cleaning": "Before the analysis, rows where most values are missing are dropped. Then columns that are not numeric, that have no variance, that have missing values, or that are perfect copies of an earlier column are removed, as in ComFy for log measures. Such columns would distort or break the correlation matrix.",

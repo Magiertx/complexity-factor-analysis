@@ -778,7 +778,6 @@ export function Workbench() {
                               <span>{t("workbench.recent.label")}</span>
                             </div>
                             <Segmented
-                              variant="view"
                               size="sm"
                               aria-label={t("workbench.layout.aria")}
                               value={recentLayout}
@@ -880,7 +879,6 @@ export function Workbench() {
                         </div>
                         {sampleLogs.length > 1 && (
                           <Segmented
-                            variant="view"
                             size="sm"
                             aria-label={t("workbench.layout.aria")}
                             value={sampleLayout}

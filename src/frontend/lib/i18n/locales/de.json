@@ -16,7 +16,9 @@
     "error_description": "Auf dieser Seite ist ein unerwarteter Fehler aufgetreten.",
     "error_unknown": "Unbekannter Fehler",
     "try_again": "Erneut versuchen",
-    "undo": "Rückgängig"
+    "undo": "Rückgängig",
+    "info_aria": "Erklärung: {topic}",
+    "dismiss": "Ausblenden"
   },
   "header": {
     "tagline": "Komplexitätsmaße von Prozessmodellen und Event-Logs",
@@ -989,7 +991,8 @@
       "look_matrix": "Matrix",
       "look_dimensions": "Dimensionen",
       "legend_faded": "blass: |Ladung| < {threshold}",
-      "legend_faded_strict": "blass: |Ladung| ≤ {threshold}"
+      "legend_faded_strict": "blass: |Ladung| ≤ {threshold}",
+      "numbers_label": "Was die Zahlen bedeuten"
     },
     "help": {
       "cleaning": "Vor der Analyse werden Zeilen entfernt, in denen die meisten Werte fehlen. Danach werden Spalten entfernt, die nicht numerisch sind, keine Varianz haben, fehlende Werte enthalten oder exakte Kopien einer früheren Spalte sind, wie in ComFy für Log-Maße. Solche Spalten würden die Korrelationsmatrix verzerren oder unbrauchbar machen.",

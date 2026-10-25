@@ -31,6 +31,7 @@ export function Popover({
   titleId,
   id,
   width = 360,
+  align = "end",
   children,
 }: {
   open: boolean;
@@ -41,6 +42,8 @@ export function Popover({
   titleId: string;
   id: string;
   width?: number;
+  /** Which edge of the trigger the panel lines up with: its right ("end") or its left ("start"). */
+  align?: "start" | "end";
   children: React.ReactNode;
 }) {
   const t = useT();
@@ -55,13 +58,23 @@ export function Popover({
     const r = anchor.current?.getBoundingClientRect();
     if (!r) return;
     const w = Math.min(width, window.innerWidth - 16);
-    setPos({ left: Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8)), top: r.bottom + 6, width: w });
-  }, [anchor, width]);
+    const left = align === "start" ? r.left - 8 : r.right - w;
+    // Below the trigger, or above it where the panel would leave the window at its bottom.
+    const height = panelRef.current?.offsetHeight ?? 0;
+    const below = r.bottom + 6;
+    const top = height && below + height > window.innerHeight - 8 && r.top - 6 - height >= 8 ? r.top - 6 - height : below;
+    setPos({ left: Math.max(8, Math.min(left, window.innerWidth - w - 8)), top, width: w });
+  }, [anchor, width, align]);
 
   useLayoutEffect(() => {
     if (open) place();
     else setPos(null);
   }, [open, place]);
+  // Placed again once the panel has a height, so it can go above a trigger near the bottom.
+  const measured = pos !== null;
+  useLayoutEffect(() => {
+    if (measured) place();
+  }, [measured, place]);
 
   const shown = open && pos !== null;
   useEffect(() => {

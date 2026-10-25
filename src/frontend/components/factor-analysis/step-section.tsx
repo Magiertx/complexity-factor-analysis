@@ -1,11 +1,13 @@
 "use client";
 
-import { useId, useState } from "react";
-import { AlertTriangle, Check, Info } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, Check } from "lucide-react";
 import { stepAnchor, type StepId } from "@/lib/steps";
 import { Card } from "@/components/ui/card";
-import { IconButton } from "@/components/ui/icon-button";
-import { Term, useTip } from "@/components/ui/tip";
+import { EmptyState } from "@/components/ui/empty-state";
+import { InfoLabel } from "@/components/ui/info-tip";
+import { Notice } from "@/components/ui/notice";
+import { useTip } from "@/components/ui/tip";
 import { formatInputNumber, parseInputNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
@@ -64,22 +66,17 @@ export function StepSection({ id, title, description, actions, footer, hidden, c
 }
 
 /** Placeholder for a step that has nothing to show yet; says what to do first. */
-export function EmptyStep({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
+export function EmptyStep({ icon, children, action }: { icon?: React.ReactNode; children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-dashed border-border px-4 py-8 flex flex-col items-center gap-2 text-center text-sm text-muted">
-      {icon}
-      <div className="max-w-md">{children}</div>
-    </div>
+    <EmptyState icon={icon} action={action}>
+      {children}
+    </EmptyState>
   );
 }
 
-/** Explanations up to this length are a tooltip of their label; longer ones unfold below it. */
-const LONG_HELP = 400;
-
 /**
- * A label with its explanation: as the tooltip of the label (dotted under), or for a long
- * reference text as a panel that an info button unfolds below it. With `htmlFor` the label is a
- * <label> of that control.
+ * A label with its explanation behind an (i) (docs/UI.md). With `htmlFor` the label is a <label>
+ * of that control.
  */
 export function HelpLabel({
   label,
@@ -96,47 +93,7 @@ export function HelpLabel({
   className?: string;
   extra?: React.ReactNode;
 }) {
-  const t = useT();
-  const [open, setOpen] = useState(false);
-  const panelId = useId();
-  const long = help.length > LONG_HELP;
-  const text = long ? label : <Term more={help}>{label}</Term>;
-  return (
-    <div className={className}>
-      <div className="flex items-center gap-1.5 flex-wrap">
-        {htmlFor ? (
-          <label htmlFor={htmlFor} className="text-sm font-semibold">
-            {text}
-          </label>
-        ) : as === "span" ? (
-          <span className="text-sm font-semibold">{text}</span>
-        ) : (
-          <h3 className="text-sm font-semibold">{text}</h3>
-        )}
-        {long && (
-          <IconButton
-            size="sm"
-            icon={Info}
-            name={t("factor.help_aria", { topic: label })}
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            aria-controls={panelId}
-            className={cn("h-6 w-6", open && "text-accent-ink hover:text-accent-ink")}
-          />
-        )}
-        {extra}
-      </div>
-      {long && (
-        <p
-          id={panelId}
-          hidden={!open}
-          className="mt-2 text-xs leading-relaxed text-fg/80 bg-tile/60 rounded-md px-3 py-2 max-w-prose"
-        >
-          {help}
-        </p>
-      )}
-    </div>
-  );
+  return <InfoLabel label={label} help={help} as={as} htmlFor={htmlFor} className={className} extra={extra} />;
 }
 
 /**
@@ -301,16 +258,12 @@ export function FieldLabel({ id, children }: { id?: string; children: React.Reac
 export function NoticeList({ heading, notes }: { heading: string; notes: string[] }) {
   if (notes.length === 0) return null;
   return (
-    <div className="rounded-lg bg-warn/10 px-3.5 py-3 flex items-start gap-2.5 text-sm">
-      <AlertTriangle className="h-4 w-4 text-warn-ink shrink-0 mt-0.5" />
-      <div className="min-w-0">
-        <div className="font-medium">{heading}</div>
-        <ul className="mt-1 text-xs text-muted space-y-0.5 list-disc pl-4">
-          {notes.map((note) => (
-            <li key={note}>{note}</li>
-          ))}
-        </ul>
-      </div>
-    </div>
+    <Notice tone="warn" title={heading}>
+      <ul className="text-xs space-y-0.5 list-disc pl-4">
+        {notes.map((note) => (
+          <li key={note}>{note}</li>
+        ))}
+      </ul>
+    </Notice>
   );
 }

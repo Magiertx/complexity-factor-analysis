@@ -34,7 +34,8 @@ import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { IconButton } from "@/components/ui/icon-button";
 import { Segmented } from "@/components/ui/segmented";
 import { MeasureListScope, MeasureName, TableFrame } from "@/components/ui/table";
-import { Term, useTip, useTipZone } from "@/components/ui/tip";
+import { useTip, useTipZone } from "@/components/ui/tip";
+import { InfoTip } from "@/components/ui/info-tip";
 import { FactorTitle } from "./factor-title";
 import { FigureMenu, type FigureDownload } from "./figure-menu";
 import { FoldButton, SectionRow, type Fold } from "./measure-fold";
@@ -247,7 +248,6 @@ export function LoadingsView({
         <div className="flex items-center justify-between gap-x-4 gap-y-2 flex-wrap">
           <div className="flex items-center gap-x-2 gap-y-2 flex-wrap">
             <Segmented<LoadingsLook>
-              variant="view"
               size="sm"
               aria-label={t("factor.loadings.look_label")}
               value={look}
@@ -275,7 +275,6 @@ export function LoadingsView({
             />
             {look === "matrix" && oblique && analysis.structure_loadings && (
               <Segmented
-                variant="view"
                 size="sm"
                 aria-label={t("factor.loadings.matrix_label")}
                 value={matrix}
@@ -288,7 +287,6 @@ export function LoadingsView({
             )}
             {look === "matrix" && (
               <Segmented<MeasureOrder>
-                variant="view"
                 size="sm"
                 aria-label={t("factor.loadings.order_label")}
                 value={order}
@@ -310,11 +308,8 @@ export function LoadingsView({
               id="fa-loadings-notable"
               checked={filter.onlyNotable}
               onChange={(onlyNotable) => onFilter({ ...filter, onlyNotable })}
-              label={
-                <Term more={t("factor.loadings.only_notable_more")}>
-                  {t("factor.loadings.only_notable", { n: notableCount })}
-                </Term>
-              }
+              label={t("factor.loadings.only_notable", { n: notableCount })}
+              help={t("factor.loadings.only_notable_more")}
             />
           </div>
         )}
@@ -530,20 +525,29 @@ function LoadingsMatrix({
         </TableFrame>
         </MeasureListScope>
         {shownCount === 0 && <p className="text-xs text-muted">{t("factor.measures.none_match")}</p>}
-        {/* What the numbers mean, in the tooltips of these words. */}
-        <p className="flex gap-x-3 gap-y-1 flex-wrap text-[11px] text-muted">
-          <Term more={t("factor.help.loading")}>{t("factor.loadings.table_heading")}</Term>
-          <Term more={t("factor.help.communality")}>{t("factor.loadings.col_communality")}</Term>
-          <Term more={t("factor.help.variance")}>{t("factor.loadings.variance_label")}</Term>
-        </p>
-        <p className="text-[11px] text-muted max-w-prose">
-          {t("factor.loadings.h2_note")}{" "}
-          {!oblique
-            ? t("factor.loadings.footer_rows")
-            : structure
-              ? t("factor.loadings.structure_note")
-              : t("factor.loadings.footer_row_pattern")}
-          {oblique && ` ${t("factor.loadings.oblique_note", { pct: formatPercent(analysis.variance.explained, locale) })}`}
+        {/* What the numbers mean, behind one (i). */}
+        <p className="flex items-center gap-1 text-[11px] text-muted">
+          {t("factor.loadings.numbers_label")}
+          <InfoTip size="xs" topic={t("factor.loadings.numbers_label")} text={t("factor.help.loading")} width={380}>
+            <p>
+              <span className="font-semibold">{t("factor.loadings.table_heading")}: </span>
+              {t("factor.help.loading")}
+            </p>
+            <p>
+              <span className="font-semibold">{t("factor.loadings.col_communality")}: </span>
+              {t("factor.help.communality")} {t("factor.loadings.h2_note")}
+            </p>
+            <p>
+              <span className="font-semibold">{t("factor.loadings.variance_label")}: </span>
+              {t("factor.help.variance")}{" "}
+              {!oblique
+                ? t("factor.loadings.footer_rows")
+                : structure
+                  ? t("factor.loadings.structure_note")
+                  : t("factor.loadings.footer_row_pattern")}
+              {oblique && ` ${t("factor.loadings.oblique_note", { pct: formatPercent(analysis.variance.explained, locale) })}`}
+            </p>
+          </InfoTip>
         </p>
 
         {analysis.factor_correlations && <FactorCorrelations values={analysis.factor_correlations} names={naming.names} />}

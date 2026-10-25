@@ -20,7 +20,8 @@ import { ActionLink } from "@/components/ui/action-link";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { IconButton, IconLink } from "@/components/ui/icon-button";
 import { MeasureListScope, MeasureName, TableFrame } from "@/components/ui/table";
-import { Term, useTip, useTipZone } from "@/components/ui/tip";
+import { useTip, useTipZone } from "@/components/ui/tip";
+import { InfoTip } from "@/components/ui/info-tip";
 import { FoldButton } from "./measure-fold";
 import { HelpLabel, StatTile } from "./step-section";
 
@@ -575,8 +576,9 @@ function MeasurementTable({
               </tfoot>
             </table>
           </TableFrame>
-          <p className="text-[11px] text-muted max-w-prose">
-            <Term more={t("factor.dataset.measurement_more")}>{t("factor.dataset.measurement_note")}</Term>
+          <p className="flex items-center gap-1 text-[11px] text-muted">
+            {t("factor.dataset.measurement_note")}
+            <InfoTip size="xs" topic={t("factor.dataset.measurement_note")} text={t("factor.dataset.measurement_more")} />
           </p>
         </>
       )}

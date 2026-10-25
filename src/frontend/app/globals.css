@@ -393,23 +393,6 @@
       print-color-adjust: exact;
     }
   }
-
-  /* A word with an explanation in its tooltip. */
-  .term {
-    text-decoration-line: underline;
-    text-decoration-style: dotted;
-    text-decoration-color: rgb(var(--muted) / 0.7);
-    text-underline-offset: 3px;
-    cursor: help;
-    border-radius: 2px;
-  }
-  .term:hover {
-    text-decoration-color: rgb(var(--fg) / 0.8);
-  }
-  .term:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px rgb(var(--accent));
-  }
 }
 
 @layer utilities {

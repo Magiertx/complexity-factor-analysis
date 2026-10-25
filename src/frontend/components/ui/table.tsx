@@ -155,7 +155,7 @@ export function MeasureName({ name, measure }: { name: string; measure?: string 
       data-measure-link={measure}
       aria-haspopup="dialog"
       onClick={(e) => opener.open(measure, list, e.currentTarget)}
-      className="measure-link inline text-left font-[inherit] rounded-sm hover:underline hover:decoration-dotted underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      className="measure-link inline text-left font-[inherit] rounded-sm hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
     >
       {text}
     </button>

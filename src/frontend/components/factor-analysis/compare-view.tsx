@@ -45,7 +45,8 @@ import { PageHeader } from "@/components/page-header";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { Segmented } from "@/components/ui/segmented";
 import { MeasureName, TableFrame } from "@/components/ui/table";
-import { Term, useTip, useTipZone } from "@/components/ui/tip";
+import { useTip, useTipZone } from "@/components/ui/tip";
+import { InfoTip } from "@/components/ui/info-tip";
 import { AssignmentChoice } from "./loadings-step";
 import { FieldLabel, HelpLabel } from "./step-section";
 import { CompareToolbar } from "./toolbar";
@@ -337,8 +338,9 @@ export function CompareView() {
         <div className="flex items-end justify-between gap-x-6 gap-y-3 flex-wrap">
           <div className="flex items-center gap-2">
             <h2 id="cmp-result" className="text-sm font-semibold">
-              <Term more={t("compare.help.result")}>{t("compare.result")}</Term>
+              {t("compare.result")}
             </h2>
+            <InfoTip topic={t("compare.result")} text={t("compare.help.result")} />
             {computing && (
               <span className="inline-flex items-center gap-1.5 text-xs text-muted" role="status">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -349,7 +351,6 @@ export function CompareView() {
           <div className="space-y-1.5">
             <FieldLabel id="cmp-look-label">{t("factor.loadings.look_label")}</FieldLabel>
             <Segmented<Look>
-              variant="view"
               size="sm"
               aria-labelledby="cmp-look-label"
               value={look}
@@ -695,7 +696,10 @@ function MembershipMatrix({
             {rows.map((row) => (
               <tr key={row.id}>
                 <th scope="row" className="sticky-col font-medium">
-                  <Term more={row.help}>{row.label}</Term>
+                  <span className="inline-flex items-center gap-1">
+                    {row.label}
+                    <InfoTip size="xs" topic={row.label} text={row.help} />
+                  </span>
                 </th>
                 {columns.map((c, i) => (
                   <td key={i} className={cn("tabular-nums", row.id === "rotation" && "text-muted")}>
@@ -707,7 +711,10 @@ function MembershipMatrix({
             {named && (
               <tr>
                 <th scope="row" className="sticky-col font-medium align-top">
-                  <Term more={t("compare.help.names")}>{t("compare.header.names")}</Term>
+                  <span className="inline-flex items-center gap-1">
+                    {t("compare.header.names")}
+                    <InfoTip size="xs" topic={t("compare.header.names")} text={t("compare.help.names")} />
+                  </span>
                 </th>
                 {columns.map((c, i) => (
                   <td key={i} className="!whitespace-normal align-top">

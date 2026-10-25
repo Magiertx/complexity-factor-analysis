@@ -85,7 +85,6 @@ export function Artifacts({ artifacts, runId }: Props) {
                 <div className="flex items-center justify-between border-b border-border/40 pb-2">
                   <h3 className="text-sm font-medium text-muted">{t("artifacts.petri_nets_heading", { n: g.images.length })}</h3>
                   <Segmented
-                    variant="view"
                     size="sm"
                     aria-label={t("artifacts.layout_aria")}
                     value={imageLayout}
