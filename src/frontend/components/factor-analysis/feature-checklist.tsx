@@ -6,6 +6,7 @@ import { matchesQuery } from "@/lib/measure-list";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
+import { InfoTip } from "@/components/ui/info-tip";
 import { useTip } from "@/components/ui/tip";
 
 export interface FeatureGroup {
@@ -74,15 +75,13 @@ export function FeatureChecklist({
   return (
     <fieldset className="space-y-2">
       <div className="flex items-end justify-between gap-3 flex-wrap">
-        <div>
-          <legend className="text-sm font-semibold">
-            {heading}{" "}
-            <span className="text-xs font-normal text-muted">
-              {t("factor.data.measures_selected", { n: selected.length, total: measures.length })}
-            </span>
-          </legend>
-          <p className="text-xs text-muted mt-0.5 max-w-prose">{hint}</p>
-        </div>
+        <legend className="flex items-center gap-1 text-sm font-semibold">
+          {heading}
+          <span className="text-xs font-normal text-muted">
+            {t("factor.data.measures_selected", { n: selected.length, total: measures.length })}
+          </span>
+          <InfoTip topic={heading} text={hint} />
+        </legend>
         <div className="flex items-center gap-3">
           <button type="button" className={linkClass} onClick={() => set(new Set(measures.map((m) => m.key)))}>
             {t("factor.data.select_all")}

@@ -128,7 +128,7 @@ export function compareHref(state: CompareState): string {
   return `/compare?${compareQuery(state)}`;
 }
 
-/** The page of the comparison of Tab. 17, for the entries in the toolbar and in Start here. */
+/** The page of the comparison of Tab. 17, for the entries in the toolbar and in Get started. */
 export const COMPARE_HREF = `/compare?${compareQuery(TABLE_17_STATE)}`;
 
 /**

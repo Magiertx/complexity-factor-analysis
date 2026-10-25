@@ -427,11 +427,14 @@ function NextButton({
   lock,
   onGo,
   compact,
+  quiet,
 }: {
   next: StepId;
   lock: string | null;
   onGo: (step: StepId) => void;
   compact?: boolean;
+  /** Not the primary action, where the step has one of its own. */
+  quiet?: boolean;
 }) {
   const t = useT();
   const label = compact ? t("factor.nav.next") : t("factor.nav.next_to", { step: t(`factor.steps.${next}`) });
@@ -440,6 +443,7 @@ function NextButton({
     <Button
       ref={tip}
       size="sm"
+      variant={quiet ? "outline" : "primary"}
       aria-disabled={lock ? true : undefined}
       onClick={() => !lock && onGo(next)}
       className="shrink-0 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:hover:opacity-50"
@@ -538,7 +542,12 @@ export function StepNavBar({
             {t("factor.nav.position", { n: STEP_IDS.indexOf(step) + 1, total: STEP_IDS.length })}
           </span>
         )}
-        {next ? <NextButton next={next} lock={locks[next]} onGo={onGo} compact /> : <span className="w-[4.5rem]" />}
+        {/* The data step has its own primary button (load, or on from the loaded dataset). */}
+        {next ? (
+          <NextButton next={next} lock={locks[next]} onGo={onGo} compact quiet={step === "data"} />
+        ) : (
+          <span className="w-[4.5rem]" />
+        )}
       </div>
     </nav>
   );
