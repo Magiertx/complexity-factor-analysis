@@ -304,6 +304,7 @@ export function SettingsView() {
           <SettingRow
             label={t("settings.presets.transfer_label")}
             hint={t("settings.presets.transfer_hint")}
+            short={t("settings.presets.transfer_short")}
           >
             <div className="flex items-center gap-2 flex-wrap justify-end">
               <Button
@@ -471,6 +472,7 @@ export function SettingsView() {
           <SettingRow
             label={t("settings.storage.clear_jobs_label")}
             hint={t("settings.storage.clear_jobs_hint")}
+            short={t("settings.storage.clear_jobs_short")}
           >
             <ConfirmButton
               label={t("settings.storage.delete_all_jobs")}
@@ -490,6 +492,11 @@ export function SettingsView() {
                   : datasetCount === 1
                     ? t("settings.storage.clear_datasets_hint", { n: datasetCount })
                     : t("settings.storage.clear_datasets_hint_plural", { n: datasetCount })
+            }
+            short={
+              datasetCount !== null && datasetCount > 0
+                ? countText(t, "settings.storage.clear_datasets_short", datasetCount)
+                : undefined
             }
           >
             <ConfirmButton
@@ -545,11 +552,14 @@ export function SettingsView() {
 function SettingRow({
   label,
   hint,
+  short,
   rowRef,
   children,
 }: {
   label: string;
   hint?: string;
+  /** The line shown when the hint is longer than one short line; the hint is then behind the (i). */
+  short?: string;
   /** Makes the row focusable from script, for when its control can take no focus. */
   rowRef?: React.Ref<HTMLDivElement>;
   children: React.ReactNode;
@@ -562,7 +572,13 @@ function SettingRow({
     >
       <div className="min-w-0 max-w-md">
         <div className="text-sm font-medium">{label}</div>
-        {hint && <Brief text={hint} topic={label} className="mt-1 text-[11px]" />}
+        {hint && short ? (
+          <p className="mt-1 text-[11px] text-muted">
+            {short} <InfoTip size="xs" topic={label} text={hint} className="-mt-0.5" />
+          </p>
+        ) : (
+          hint && <Brief text={hint} topic={label} className="mt-1 text-[11px]" />
+        )}
       </div>
       <div className="shrink-0">{children}</div>
     </div>
