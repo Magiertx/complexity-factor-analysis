@@ -1210,7 +1210,7 @@ function InspectSection({
         <div className="px-4 sm:px-5 pt-5 pb-4 flex items-start gap-3 flex-wrap">
           <span
             aria-hidden
-            className="h-8 w-8 rounded-md bg-tile text-muted grid place-items-center text-xs font-semibold tabular-nums shrink-0"
+            className="h-7 w-7 rounded-full bg-tile text-muted grid place-items-center text-xs font-semibold tabular-nums shrink-0"
           >
             {n}
           </span>
