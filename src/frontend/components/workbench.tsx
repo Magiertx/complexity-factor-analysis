@@ -1207,18 +1207,18 @@ function InspectSection({
   return (
     <section aria-labelledby={id} data-tour={tour}>
       <Card>
-        <div className="px-4 sm:px-5 pt-4 pb-3 flex items-start gap-3 flex-wrap">
+        <div className="px-4 sm:px-5 pt-5 pb-4 flex items-start gap-3 flex-wrap">
           <span
             aria-hidden
-            className="h-7 w-7 rounded-md bg-tile text-muted grid place-items-center text-xs font-semibold tabular-nums shrink-0"
+            className="h-8 w-8 rounded-md bg-tile text-muted grid place-items-center text-xs font-semibold tabular-nums shrink-0"
           >
             {n}
           </span>
           <div className="flex-1 min-w-[12rem]">
-            <h2 id={id} className="text-sm font-semibold tracking-tight">
+            <h2 id={id} className="text-base font-semibold tracking-tight">
               {title}
             </h2>
-            <p className="text-xs text-muted mt-0.5">{hint}</p>
+            <p className="text-sm text-muted mt-0.5">{hint}</p>
           </div>
           {aside}
         </div>
