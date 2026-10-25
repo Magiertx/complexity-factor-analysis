@@ -707,7 +707,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   useEffect(() => {
     if (!focusSummary.current || formOpen || !dataset) return;
     focusSummary.current = false;
-    summaryTitle.current?.focus();
+    summaryTitle.current?.focus({ preventScroll: true });
+    // Bring the whole card into view, clear of the fixed bar of a phone.
+    summaryTitle.current?.closest("[data-summary]")?.scrollIntoView({ block: "nearest" });
   }, [formOpen, dataset]);
 
   const openChosen = (id: string) => {
@@ -795,9 +797,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           options: paper ?? parsed.options,
           message: tRef.current(invalid ? "factor.data.opened_standard" : "factor.link.opened"),
         });
-        if (!step) setAdvance({ id: res.dataset_id, to: "dataset", replace: true });
         // A link to the data step comes from Get started on the other tab: it offers the result.
-        if (step === "data") setLeadTo({ id: res.dataset_id, to: "result" });
+        // Any other link stays on the data step too, like every load inside the app.
+        setLeadTo({ id: res.dataset_id, to: step === "data" ? "result" : "next" });
         setLinkNotice(invalid ? { tone: "info", text: tRef.current("factor.link.invalid") } : null);
       },
       (e) => setLinkNotice({ tone: "error", text: errorTextRef.current(e, tRef.current("factor.link.failed")) }),
@@ -1422,7 +1424,6 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         info={t(`factor.${kind}.subtitle`)}
         // The page's own sentence belongs to the data step; once a step of the analysis is open, the
         // step has its room, so a laptop shows the first rows of the loadings with the settings row.
-        subtitleClassName={ready && current !== "data" ? "hidden" : undefined}
         actions={
           <FactorToolbar
             linkQuery={linkQuery && current !== "data" ? `${linkQuery}&step=${current}` : linkQuery}
@@ -1743,7 +1744,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           )}
         </div>
       </div>
-      <StepNavBar step={current} locks={locks} unavailable={unavailable} onGo={go} />
+      <StepNavBar step={current} locks={locks} unavailable={unavailable} onGo={go} hideNext={current === "data"} />
       {ready && dataset && sheet && (
         <MeasureSheet
           measure={sheet.measure}
