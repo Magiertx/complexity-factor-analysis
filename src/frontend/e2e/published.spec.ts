@@ -249,10 +249,11 @@ test("a copied link opens the same analysis in a fresh browser", async ({ page, 
     expect(listed.datasets.map((d: { bundled_id: string }) => d.bundled_id)).toEqual([INDUCTIVE]);
 
     // A link with a setting that cannot be read opens the standard and says so, above the
-    // dataset step that a link without a step opens.
+    // data step, where a link without a step stays like every load.
     await fresh.page.goto(`/?bundled=${INDUCTIVE}&k=many`);
     await expect(fresh.page.getByText(text("factor.link.invalid"))).toBeVisible();
-    await expect(fresh.page).toHaveURL(/\/\?step=dataset$/);
+    await expect(fresh.page).not.toHaveURL(/step=/);
+    await fresh.page.getByRole("navigation", { name: text("factor.steps.aria") }).getByRole("link", { name: pattern(text("factor.steps.factors")) }).click();
     await expectFactors(fresh.page, 2);
   } finally {
     await deleteSessionDatasets(fresh.page);

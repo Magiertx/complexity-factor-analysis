@@ -231,10 +231,10 @@ test.describe("on a phone", () => {
 
   test("the bar of steps is in view when a step opens, without the page's own sentence before it", async ({ page }) => {
     await page.goto("/");
-    // The data step keeps the sentence on what the page is for; a step with a dataset has no room for it.
+    // The sentence on what the page is for stays on every step, so the header never changes height.
     await expect(page.getByText(text("factor.model.subtitle_short"))).toBeVisible();
     await openBundled(page, "Inductive miner");
-    await expect(page.getByText(text("factor.model.subtitle_short"))).toBeHidden();
+    await expect(page.getByText(text("factor.model.subtitle_short"))).toBeVisible();
     const steps = page.getByRole("navigation", { name: text("factor.steps.aria") });
     // Where the bar already shows, the page does not move; from further down, a step opened by
     // Next brings it back into view.
@@ -249,11 +249,11 @@ test.describe("on a phone", () => {
     await expect.poll(inView).toBe(true);
   });
 
-  test("the bottom bar says why Next waits", async ({ page }) => {
+  test("the bottom bar shows the position and no Next on the data step", async ({ page }) => {
     await page.goto("/");
     const bar = page.getByRole("navigation", { name: text("factor.nav.aria") });
-    await expect(bar).toContainText(text("factor.nav.locked.no_dataset"));
-    await expect(bar).not.toContainText(text("factor.nav.position", { n: 1, total: 6 }));
-    await expect(bar.getByRole("button", { name: text("factor.nav.next") })).toHaveAttribute("aria-disabled", "true");
+    // On the data step the form has its own button, so the bar shows the position and no Next.
+    await expect(bar).toContainText(text("factor.nav.position", { n: 1, total: 6 }));
+    await expect(bar.getByRole("button", { name: text("factor.nav.next") })).toHaveCount(0);
   });
 });
