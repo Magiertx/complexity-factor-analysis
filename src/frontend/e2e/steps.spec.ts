@@ -232,9 +232,9 @@ test.describe("on a phone", () => {
   test("the bar of steps is in view when a step opens, without the page's own sentence before it", async ({ page }) => {
     await page.goto("/");
     // The data step keeps the sentence on what the page is for; a step with a dataset has no room for it.
-    await expect(page.getByText(text("factor.model.subtitle"))).toBeVisible();
+    await expect(page.getByText(text("factor.model.subtitle_short"))).toBeVisible();
     await openBundled(page, "Inductive miner");
-    await expect(page.getByText(text("factor.model.subtitle"))).toBeHidden();
+    await expect(page.getByText(text("factor.model.subtitle_short"))).toBeHidden();
     const steps = page.getByRole("navigation", { name: text("factor.steps.aria") });
     // Where the bar already shows, the page does not move; from further down, a step opened by
     // Next brings it back into view.

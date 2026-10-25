@@ -161,7 +161,10 @@ test("a criterion tile sets the number of factors", async ({ page }) => {
   await tile("paper", 4).check({ force: true });
   await expect(factorCount(page)).toHaveText("4");
   await expect(tile("paper", 4)).toBeChecked();
-  await expect(factors).toContainText(text("factor.factors.criteria_differ_paper"));
+  // Why the criteria differ: its first sentence, and all of it behind the (i).
+  const differ = text("factor.factors.criteria_differ_paper");
+  await expect(factors).toContainText(differ.slice(0, differ.indexOf(".") + 1));
+  await expect(factors.locator(`button[aria-description="${differ}"]`)).toHaveCount(1);
 
   await tile("kaiser", 2).check({ force: true });
   await expect(factorCount(page)).toHaveText("2");
