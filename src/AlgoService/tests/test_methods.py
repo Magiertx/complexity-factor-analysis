@@ -7,6 +7,8 @@ compare the numbers in the text with those of the analysis."""
 from __future__ import annotations
 
 import re
+import shutil
+import subprocess
 
 import pytest
 
@@ -112,7 +114,7 @@ def test_the_kaiser_criterion_in_german_with_an_oblique_rotation_and_the_filter_
     )
     for part in (
         "Die Faktorenanalyse wurde mit Complexity Factor Analysis (Commit 01234567)~\\cite{cfa_tool} durchgef\u00fchrt",
-        "Bartletts Test auf Sph\u00e4rizit\u00e4t~\\cite{bartlett1950} war nicht signifikant ($\\chi^2(91) = 120,0$, $p = 0,012$, $\\alpha = 0,01$)",
+        "Bartletts Test auf Sph\u00e4rizit\u00e4t~\\cite{bartlett1950} war nicht signifikant ($\\chi^2(91) = 120{,}0$, $p = 0{,}012$, $\\alpha = 0{,}01$)",
         "Kaiser-Meyer-Olkin-Ma\u00df der Stichprobeneignung insgesamt~\\cite{kaiser1974} betrug 0,50.",
         "Die Korrelationsmatrix ist singul\u00e4r",
         "Von den 15 Ma\u00dfen, die nach der Bereinigung blieben, gingen 14 in die Analyse ein (1 von Hand ausgeschlossen; der MSA-Filter war aus).",
@@ -279,3 +281,41 @@ def test_the_bibtex_matches_the_paragraph(client, url):
 def test_a_dataset_that_does_not_exist_has_no_paragraph(client):
     r = client.post("/factor-analysis/datasets/00000000-0000-0000-0000-000000000000/export/methods", json={})
     assert r.status_code == 404
+
+
+def _german_paragraph(**changes) -> str:
+    result = _result(
+        bartlett={"chi_square": 6822.4, "df": 66, "p_value": 0.0004, "alpha": 0.05, "passed": True, "regularised": False},
+        kmo={"overall": 0.7467, "threshold": 0.6, "per_measure": {}},
+        **changes,
+    )
+    return methods.methods(
+        language="de", dataset=_dataset(), result=result, requested_factors=None, excluded=[], tool=TOOL,
+        libraries=LIBRARIES,
+    ).text
+
+
+def test_german_numbers_inside_math_keep_their_comma_out_of_the_spacing():
+    """In math LaTeX sets a space after a comma, so 6822,4 would read "6822, 4"."""
+    text = _german_paragraph()
+    spans = re.findall(r"\$[^$]*\$", text)
+    assert spans and any("6822{,}4" in span for span in spans) and any("0{,}001" in span for span in spans)
+    for span in spans:
+        assert not re.search(r"\d,\d", span), span
+    # Outside math the plain comma stays.
+    assert "betrug 0,75." in text
+
+
+@pytest.mark.skipif(shutil.which("pdflatex") is None, reason="no pdflatex; the paragraph is compiled where TeX is installed")
+def test_the_german_paragraph_compiles_with_pdflatex(tmp_path):
+    document = (
+        "\\documentclass{article}\n\\usepackage[T1]{fontenc}\n\\usepackage{amsmath}\n\\begin{document}\n"
+        + _german_paragraph()
+        + "\n\\end{document}\n"
+    )
+    (tmp_path / "paragraph.tex").write_text(document, encoding="utf-8")
+    run = subprocess.run(
+        ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "paragraph.tex"],
+        cwd=tmp_path, capture_output=True, text=True, timeout=120,
+    )
+    assert run.returncode == 0, run.stdout[-1500:]
