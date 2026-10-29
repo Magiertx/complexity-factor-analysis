@@ -40,15 +40,20 @@ import {
 import {
   PREVIEW_ROWS,
   countText,
+  datasetEnded,
   datasetName,
   defaultOptions,
   dimensionCount,
   downloadBlob,
   hasNames,
   initialOptions,
+  knownTooFew,
   namesForApi,
+  noticeText,
   optionsFromSaved,
+  plainFailure,
   publishedOptions,
+  retryInput,
   rowsChoice,
   sameOptions,
   solutionKey,
@@ -86,6 +91,7 @@ import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { MeasureScope, type MeasureOpener } from "@/components/ui/table";
 import { Notice } from "@/components/ui/notice";
+import { useToasts } from "@/components/ui/toasts";
 import { UndoToast, type UndoNotice } from "@/components/ui/undo-toast";
 import { useJobs } from "@/components/jobs-provider";
 import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
@@ -168,6 +174,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const tMaybe = useTMaybe();
   const { locale } = useLocale();
   const errorText = useErrorText();
+  const { notify } = useToasts();
   // Effects read texts through refs, so a language switch does not refetch anything.
   const tRef = useRef(t);
   const errorTextRef = useRef(errorText);
@@ -195,7 +202,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const [datasets, setDatasets] = useState<DatasetSummary[] | null>(null);
   const [choosing, setChoosing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<{ text: string; details: string | null } | null>(null);
   // Changes whenever jobs come or go, e.g. one deleted in the History.
   const jobCount = useJobs().jobs.length;
 
@@ -242,13 +249,6 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // The fact sheet of a measure: which one, the list its name stood in, and where it was opened from.
   const [sheet, setSheet] = useState<{ measure: string; list: readonly string[] | null; from: HTMLElement | null } | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
-  // What an export that downloads nothing did, e.g. that the methods text is on the clipboard.
-  const [exportNote, setExportNote] = useState<string | null>(null);
-  useEffect(() => {
-    if (!exportNote) return;
-    const timer = setTimeout(() => setExportNote(null), 6000);
-    return () => clearTimeout(timer);
-  }, [exportNote]);
   const [tourOpen, setTourOpen] = useState(false);
   const onboarding = useOnboarding();
   // One step on screen at a time, named in the address (?step=...).
@@ -513,8 +513,23 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // it, and the server drops a request that a newer one of the session replaced (409
   // "superseded"). Replaced without a newer one of this page, e.g. by another tab on the same
   // dataset, it is tried once more before that counts as an error.
+  const knownSize = useMemo(() => {
+    if (!dataset || dataset.status !== "ready") return null;
+    const miner = dataset.miners?.find((m) => m.name === options.miner) ?? null;
+    const skip = new Set(options.excluded);
+    const measures = dataset.measures.filter((m) => !skip.has(m) && !miner?.dropped.includes(m)).length;
+    return knownTooFew(miner ? miner.n_observations : dataset.n_observations, measures);
+  }, [dataset, options.miner, options.excluded]);
   useEffect(() => {
     if (!ready || !datasetId) return;
+    if (knownSize) {
+      // Known to fail: show the reason without asking the server for a 400.
+      const known = new HttpError("Too few observations", 400, "too_few_observations", knownSize);
+      setAnalysisError(errorTextRef.current(known, tRef.current("factor.analysis.failed")));
+      setAnalysisFailure({ code: "too_few_observations", params: knownSize });
+      setAnalyzing(false);
+      return;
+    }
     const ctrl = new AbortController();
     const run = () =>
       analyzeDataset(datasetId, options, ctrl.signal).catch(async (e) => {
@@ -561,7 +576,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       clearTimeout(timer);
       ctrl.abort();
     };
-  }, [ready, datasetId, options, datasetGone]);
+  }, [ready, datasetId, options, datasetGone, knownSize]);
 
   // The solution on screen, and the names of its factors.
   const analysisKey = analysis && analyzedOptions ? solutionKey(analysis.n_factors, analyzedOptions) : null;
@@ -816,7 +831,31 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       // No jump: the data step stays, with the summary and the way on.
       setLeadTo({ id: res.dataset_id, to: lead });
     } catch (e) {
-      setSubmitError(errorText(e, t("factor.data.submit_failed")));
+      setSubmitError(
+        e instanceof HttpError
+          ? plainFailure(tMaybe, { code: e.code, params: e.params, message: e.message }, t("factor.data.submit_failed"))
+          : { text: t("factor.data.submit_failed"), details: messageOf(e, "") || null },
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // A dataset the user stopped is computed again from the sample it was made from, if it was one:
+  // uploaded files are not kept once the job ends. The stopped one goes, so the list has one.
+  const stoppedInput = dataset?.status === "aborted" ? retryInput(dataset) : null;
+  const retryDataset = async () => {
+    if (!dataset || !stoppedInput) return;
+    setSubmitting(true);
+    try {
+      const res = await createDataset(stoppedInput);
+      focusSummary.current = true;
+      void deleteDataset(dataset.id).catch(() => undefined);
+      setDatasets((list) => list && list.filter((d) => d.id !== dataset.id));
+      openCreated(res.dataset_id, null);
+      setLeadTo({ id: res.dataset_id, to: "next" });
+    } catch (e) {
+      setDatasetError(errorText(e, t("factor.data.submit_failed")));
     } finally {
       setSubmitting(false);
     }
@@ -868,7 +907,6 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     if (!datasetId) return;
     setExporting(format);
     setExportError(null);
-    setExportNote(null);
     // What is on screen, with the names of its factors.
     const shown = { ...(analyzedOptions ?? options), factor_names: apiNames };
     try {
@@ -886,11 +924,11 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         const { text } = await fetchMethods(datasetId, shown, locale);
         try {
           await navigator.clipboard.writeText(text);
-          setExportNote(t("factor.toolbar.methods_copied"));
+          notify({ key: "methods-copied", message: t("factor.toolbar.methods_copied"), tone: "success" });
         } catch {
           // Without clipboard access (plain http on another host) the text goes into a file.
           downloadBlob(new Blob([text], { type: "application/x-latex" }), "methods.tex");
-          setExportNote(t("factor.toolbar.methods_saved"));
+          notify({ key: "methods-saved", message: t("factor.toolbar.methods_saved"), tone: "info" });
         }
       } else if (format === "bibtex") {
         const { blob, filename } = await exportBibtex(datasetId, shown, locale);
@@ -1045,7 +1083,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         ? "busy"
         : dataset.status === "failed"
           ? "warn"
-          : "done",
+          : dataset.status === "aborted"
+            ? "active"
+            : "done",
     dataset: ready ? "done" : dataset?.status === "computing" ? "busy" : "locked",
     suitability: resultState === "done" ? (suitable ? "done" : "warn") : resultState,
     // Only a real problem of the solution warns; a factor count of one's own or of a paper is a choice.
@@ -1112,6 +1152,14 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       ...solutionIssues,
     ].join(" · ");
   }
+  // The warning on the factors names its measures in the tooltip of the line.
+  const summaryMore: Partial<Record<StepId, string>> = {};
+  if (analysis && summaries.factors && solutionIssues.length > 0) {
+    summaryMore.factors = [
+      summaries.factors,
+      ...solutionProblems(analysis).map((n) => noticeText(n, tMaybe, measureName)),
+    ].join(" — ");
+  }
   if (interpretationUnavailable) summaries.interpretation = interpretationUnavailable;
   if (analysis && finished("loadings")) {
     const cross = analysis.cross_loadings?.length ?? 0;
@@ -1126,6 +1174,13 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       .filter(Boolean)
       .join(" · ");
   }
+  // More factors than dimensions: the others have no measure over the threshold.
+  if (analysis && summaries.loadings) {
+    const empty = analysis.n_factors - dimensionCount(analysis);
+    if (empty > 0) {
+      summaryMore.loadings = [summaries.loadings, countText(t, "factor.rail_summary.empty_factors", empty)].join(" — ");
+    }
+  }
 
   // Why the steps after the data cannot be opened yet; they all need a dataset that is ready.
   const lockReason: string | null = ready
@@ -1136,7 +1191,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         ? t("factor.nav.locked.computing")
         : dataset?.id === datasetId && dataset.status === "failed"
           ? t("factor.nav.locked.failed")
-          : t("factor.nav.locked.loading");
+          : dataset?.id === datasetId && dataset.status === "aborted"
+            ? t("factor.nav.locked.aborted")
+            : t("factor.nav.locked.loading");
   const locks: StepLocks = {
     data: null,
     dataset: lockReason,
@@ -1150,7 +1207,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // Open the step chosen for a dataset once it is ready; a dataset that failed stays on the data step.
   useEffect(() => {
     if (!advance) return;
-    if (dataset?.id === advance.id && dataset.status === "failed") {
+    if (dataset?.id === advance.id && datasetEnded(dataset)) {
       setAdvance(null);
       return;
     }
@@ -1237,7 +1294,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     </span>
   ) : null;
 
-  const loadingDataset = !!datasetId && !ready && dataset?.status !== "computing" && dataset?.status !== "failed";
+  const loadingDataset = !!datasetId && !ready && dataset?.status === "ready";
   const lockedHint = (
     <EmptyStep icon={loadingDataset ? <Loader2 className="h-5 w-5 animate-spin text-muted" /> : undefined}>
       <p>
@@ -1247,7 +1304,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             ? t("factor.empty.computing")
             : dataset?.id === datasetId && dataset.status === "failed"
               ? t("factor.nav.locked.failed")
-              : t("common.loading")}
+              : dataset?.id === datasetId && dataset.status === "aborted"
+                ? t("factor.nav.locked.aborted")
+                : t("common.loading")}
       </p>
       {!loadingDataset && (
         <Button variant="outline" size="sm" className="mt-3" onClick={() => go("data")}>
@@ -1377,6 +1436,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     : null;
   const shortCodes: ShortCodesSwitch = {
     on: codesShown,
+    // Log datasets of your own have no codes: a switch that changes nothing is not shown.
+    hidden: kind === "log" && ready && !codesAvailable,
     reason: !ready ? lockReason : codesAvailable ? null : t("factor.toolbar.codes_none"),
     onToggle: () => {
       const next = !codesShown;
@@ -1435,7 +1496,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       />
 
       <div className="lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-8 lg:items-start">
-        <StepRail {...navProps} summaries={summaries} />
+        <StepRail {...navProps} summaries={summaries} summaryMore={summaryMore} />
 
         <div ref={stepArea} className="min-w-0 flex flex-col gap-4">
           <StepBar {...navProps} />
@@ -1458,13 +1519,6 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               {exportError}
             </Notice>
           )}
-          <div role="status" className={exportNote ? undefined : "sr-only"}>
-            {exportNote && (
-              <Notice tone="success" size="sm">
-                {exportNote}
-              </Notice>
-            )}
-          </div>
           {/* At the top of every step once a dataset is ready, and in view while a step scrolls. */}
           {ready && dataset && (
             <SettingsRow
@@ -1563,6 +1617,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                 onChange={() => setChoosing(true)}
                 onCancelJob={cancelJob}
                 onDelete={() => removeDataset(dataset.id)}
+                onRetry={stoppedInput ? retryDataset : null}
+                retrying={submitting}
               />
             ) : datasetError ? (
               <Button variant="outline" size="sm" onClick={() => selectDataset(null)}>

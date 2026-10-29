@@ -160,6 +160,11 @@ MAX_FAILURES = 200
 class TooFewMeasures(ValueError):
     """Fewer measures gave values than a dataset needs."""
 
+    def __init__(self, have: int, need: int) -> None:
+        super().__init__(f"Only {have} measure(s) gave values for every kept input; at least {need} are needed.")
+        self.have = have
+        self.need = need
+
 
 def store_matrix(
     session_id: str,
@@ -168,12 +173,16 @@ def store_matrix(
     failures: list[tuple[str, str]] | None = None,
     *,
     min_measures: int = 0,
+    skipped: list[dict[str, Any]] | None = None,
+    renamed: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Clean ``raw`` (rows = observations), save it and mark the dataset ready.
 
     ``failures`` are (input, error) pairs of inputs that gave no or incomplete values; rows
     dropped for missing most values are added to them. The descriptive statistics of ``raw``
-    are kept with the dataset, since only the cleaned matrix is.
+    are kept with the dataset, since only the cleaned matrix is. ``skipped`` are the feature
+    groups left out because they failed for some log (``compute.ComputeResult.skipped``);
+    ``renamed`` maps the name a column was given to the name it had in the file.
     """
     cleaned = clean_matrix(raw)
     data = cleaned.data
@@ -182,14 +191,12 @@ def store_matrix(
         1 for d in cleaned.dropped if d["reason"] in ("constant", "duplicate")
     )
     if with_values < min_measures:
-        raise TooFewMeasures(
-            f"Only {with_values} measure(s) gave values for every kept input; at least {min_measures} are needed."
-        )
+        raise TooFewMeasures(with_values, min_measures)
     failures = list(failures or [])
     failures += [(row, "most measure values are missing; the row was dropped") for row in cleaned.empty_rows]
     directory = dataset_dir(session_id, dataset_id)
     # In a file of its own: meta.json is read for every listing of the session's datasets.
-    _write_json(directory / "descriptives.json", describe(raw, cleaned.dropped))
+    _write_json(directory / "descriptives.json", describe(raw, cleaned.dropped, renamed))
     tmp = directory / "data.csv.tmp"
     data.to_csv(tmp, index_label="observation")
     os.replace(tmp, directory / "data.csv")
@@ -203,6 +210,7 @@ def store_matrix(
         dropped=cleaned.dropped,
         dropped_rows=cleaned.dropped_rows,
         failures=[{"input": i, "error": e} for i, e in failures[:MAX_FAILURES]],
+        skipped=skipped or [],
     )
 
 

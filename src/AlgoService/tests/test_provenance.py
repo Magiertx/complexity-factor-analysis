@@ -249,3 +249,35 @@ def test_run_zip_names_the_tool(client):
         manifest = json.loads(archive.read("manifest.json"))
     assert manifest["tool"]["version"] == "v0.9"
     assert manifest["tool"]["commit"] == "0123456789abcdef0123456789abcdef01234567"
+
+
+def test_the_version_is_one_constant_for_the_backend_and_the_frontend():
+    import json
+    from pathlib import Path
+
+    from version import REPOSITORY_URL, VERSION
+
+    package = Path(__file__).resolve().parents[2] / "frontend" / "package.json"
+    assert json.loads(package.read_text(encoding="utf-8"))["version"] == VERSION == "1.0.0-dev"
+    assert REPOSITORY_URL == "https://github.com/Magiertx/complexity-factor-analysis"
+
+
+def test_without_the_environment_or_a_tag_the_version_is_the_constant_and_the_commit_unknown(monkeypatch):
+    from version import VERSION
+
+    monkeypatch.delenv("APP_VERSION")
+    monkeypatch.delenv("APP_COMMIT")
+    monkeypatch.setattr(provenance, "_git", lambda *args: None)
+    provenance.tool.cache_clear()
+    assert provenance.tool() == {"name": "Complexity Factor Analysis", "version": VERSION, "commit": "unknown"}
+    provenance.tool.cache_clear()
+
+
+def test_the_exports_cite_the_version_and_the_address(client):
+    from factor_analysis import methods
+    from version import REPOSITORY_URL
+
+    tool = {"name": "Complexity Factor Analysis", "version": "1.0.0-dev", "commit": "unknown"}
+    entry = methods._tool_reference(tool, 2026)
+    fields = dict(entry["fields"])
+    assert "Version 1.0.0-dev" in fields["note"] and fields["url"] == REPOSITORY_URL

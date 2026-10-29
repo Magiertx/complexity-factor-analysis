@@ -44,14 +44,16 @@ import {
   tooFewKind,
   OBSERVATIONS_PER_MEASURE,
   countText,
+  datasetEnded,
   datasetName,
+  plainFailure,
   progressPercent,
   publishedOptions,
 } from "@/lib/factor-analysis";
 import { formatDateTime, formatFileSize, formatNumber, formatPercent, formatRelative, splitSentence } from "@/lib/format";
 import { datasetNote, orderCollection, settingsSourceText } from "@/lib/paper-notes";
 import { cn } from "@/lib/utils";
-import { useLocale, useT } from "@/lib/i18n";
+import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { ChoiceCard } from "@/components/ui/choice-card";
@@ -95,7 +97,7 @@ interface Props {
   /** The dataset open on the tab, if any. */
   openId: string | null;
   submitting: boolean;
-  submitError: string | null;
+  submitError: { text: string; details: string | null } | null;
   /**
    * `preset` says which settings a bundled dataset with published settings opens with, `leadTo`
    * what the data step offers once it is loaded.
@@ -497,7 +499,12 @@ export function DataForm({
 
       {submitError && (
         <Notice tone="error" role="alert">
-          {submitError}
+          <span className="inline-flex items-start gap-1.5">
+            {submitError.text}
+            {submitError.details && (
+              <InfoTip size="xs" topic={t("factor.data.details")} text={submitError.details} />
+            )}
+          </span>
         </Notice>
       )}
 
@@ -981,7 +988,8 @@ function DatasetPicker({
             </Button>
           )}
           <Button onClick={() => chosen && onOpen(chosen)} disabled={!chosen}>
-            {t("factor.data.submit_open")}
+            {/* A stopped or failed dataset has no data to open. */}
+            {t(datasets.find((d) => d.id === chosen && datasetEnded(d)) ? "factor.data.submit_show" : "factor.data.submit_open")}
           </Button>
         </div>
       )}
@@ -1417,6 +1425,8 @@ export function DataSummary({
   onChange,
   onCancelJob,
   onDelete,
+  onRetry,
+  retrying,
 }: {
   dataset: FactorDataset;
   catalog: FactorCatalog;
@@ -1428,13 +1438,20 @@ export function DataSummary({
   onChange: () => void;
   onCancelJob: () => void;
   onDelete: () => Promise<boolean>;
+  /** Computes a stopped dataset again; null where what it was made from is gone. */
+  onRetry?: (() => void) | null;
+  retrying?: boolean;
 }) {
   const t = useT();
   const { locale } = useLocale();
+  const tMaybe = useTMaybe();
   const name = datasetName(dataset, t, catalog);
   const withRun = !!dataset.job_id;
   // Only a focus target for screen readers after a load: no ring around plain text.
   const title = "outline-none";
+  const rows = dataset.n_observations;
+  const cols = dataset.measures.length;
+  const tooFewLoaded = dataset.status === "ready" && cols > 0 && (rows < MIN_OBSERVATIONS || rows <= cols);
 
   if (dataset.status === "computing") {
     const pct = progressPercent(dataset.progress);
@@ -1448,7 +1465,7 @@ export function DataSummary({
             </div>
             <InputChips dataset={dataset} catalog={catalog} />
           </div>
-          {/* Deleting aborts the job as well; cancelling keeps the dataset, as failed. */}
+          {/* Deleting aborts the job as well; cancelling keeps the dataset, as aborted. */}
           <div className="flex items-center gap-2 flex-wrap">
             <DeleteDataset withRun={withRun} onDelete={onDelete} />
             <Button variant="outline" size="sm" onClick={onCancelJob}>
@@ -1479,7 +1496,43 @@ export function DataSummary({
     );
   }
 
+  if (dataset.status === "aborted") {
+    return (
+      <div className="space-y-3">
+        <Notice
+          tone="info"
+          role="status"
+          title={
+            <div ref={titleRef} tabIndex={-1} className={title}>
+              {t("factor.data.aborted_title")}
+            </div>
+          }
+        >
+          {t(onRetry ? "factor.data.aborted_hint" : "factor.data.aborted_hint_gone")}
+        </Notice>
+        {/* No data to open: compute again where what it was made from is still there. */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {onRetry && (
+            <Button size="sm" onClick={onRetry} disabled={retrying}>
+              {retrying && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+              {t("factor.data.retry")}
+            </Button>
+          )}
+          <DeleteDataset withRun={withRun} onDelete={onDelete} />
+          <Button variant="outline" size="sm" onClick={onChange}>
+            {t("factor.data.change")}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (dataset.status === "failed") {
+    const failure = plainFailure(
+      tMaybe,
+      { code: dataset.error_code, params: dataset.error_params, message: dataset.error },
+      t("errors.compute_failed"),
+    );
     return (
       <div className="space-y-3">
         <Notice
@@ -1491,7 +1544,10 @@ export function DataSummary({
             </div>
           }
         >
-          {dataset.error}
+          <span className="inline-flex items-start gap-1.5">
+            {failure.text}
+            {failure.details && <InfoTip size="xs" topic={t("factor.data.details")} text={failure.details} />}
+          </span>
         </Notice>
         {/* The same buttons, in the same order, as for a ready dataset. */}
         <div className="flex items-center gap-2 flex-wrap">
@@ -1516,8 +1572,19 @@ export function DataSummary({
             {settings && <span className="font-normal text-muted"> · {settings}</span>}
           </div>
           <InputChips dataset={dataset} catalog={catalog} />
+          <SkippedLine dataset={dataset} catalog={catalog} />
         </div>
       </div>
+      {/* The estimate of the form, kept: the analysis will not run with so few observations. */}
+      {tooFewLoaded && (
+        <Notice role="status" size="sm" tone="warn">
+          <div className="max-w-prose">
+            {tooFewKind(rows) === "any"
+              ? countText(t, "factor.data.loaded_too_few_any", rows, { needed: MIN_OBSERVATIONS })
+              : t("factor.data.loaded_too_few", { rows, cols, max: Math.max(0, rows - 1) })}
+          </div>
+        </Notice>
+      )}
       <div className="flex items-center gap-2 flex-wrap">
         <DeleteDataset withRun={withRun} onDelete={onDelete} />
         <Button variant="outline" size="sm" onClick={onChange}>
@@ -1530,6 +1597,33 @@ export function DataSummary({
 }
 
 /** The primary button of a loaded dataset: on to the result or to the next step. */
+/** The feature groups that feeed could not compute for some log, as one line; the groups are in its (i). */
+function SkippedLine({ dataset, catalog }: { dataset: FactorDataset; catalog: FactorCatalog }) {
+  const t = useT();
+  const tMaybe = useTMaybe();
+  const skipped = dataset.skipped ?? [];
+  if (skipped.length === 0) return null;
+  const reasonOf = (code: string) =>
+    tMaybe(`factor.data.skipped_reason.${code}`) ?? t("factor.data.skipped_reason.group_failed");
+  const n = skipped.reduce((sum, g) => sum + g.measures.length, 0);
+  const reasons = Array.from(new Set(skipped.map((g) => reasonOf(g.code)))).join(", ");
+  const groups = skipped
+    .map((g) =>
+      t("factor.data.skipped_group", {
+        name: catalog.groups?.find((x) => x.key === g.group)?.name ?? g.group,
+        reason: reasonOf(g.code),
+        inputs: g.inputs.join(", "),
+      }),
+    )
+    .join("; ");
+  return (
+    <p className="flex items-center gap-1 text-xs text-warn-ink">
+      {countText(t, "factor.data.skipped", n, { reason: reasons })}
+      <InfoTip size="xs" topic={t("factor.data.details")} text={t("factor.data.skipped_info", { groups })} />
+    </p>
+  );
+}
+
 function NextFromData({ next }: { next: DataNext }) {
   const tip = useTip<HTMLButtonElement>(next.reason ? { name: next.label, reason: next.reason } : null);
   return (

@@ -44,6 +44,8 @@ export interface ShortCodesSwitch {
   on: boolean;
   /** Why it changes nothing, e.g. no measure of the dataset has a code; null when it does. */
   reason: string | null;
+  /** Not shown at all, where it could never change anything. */
+  hidden?: boolean;
   onToggle: () => void;
 }
 
@@ -152,15 +154,17 @@ export function FactorToolbar({
 
   return (
     <div role="group" aria-label={t("factor.toolbar.aria")} className="flex items-center gap-0.5">
-      <IconButton
-        icon={Tag}
-        name={t("factor.toolbar.codes")}
-        more={t("factor.toolbar.codes_more")}
-        reason={shortCodes.reason}
-        aria-pressed={shortCodes.on}
-        onClick={shortCodes.onToggle}
-        className={shortCodes.on ? "bg-tile" : undefined}
-      />
+      {!shortCodes.hidden && (
+        <IconButton
+          icon={Tag}
+          name={t("factor.toolbar.codes")}
+          more={t("factor.toolbar.codes_more")}
+          reason={shortCodes.reason}
+          aria-pressed={shortCodes.on}
+          onClick={shortCodes.onToggle}
+          className={shortCodes.on ? "bg-tile" : undefined}
+        />
+      )}
       <CopyLink query={linkQuery} />
       {exportMenu}
       <ToolSeparator />

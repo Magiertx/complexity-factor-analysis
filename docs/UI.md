@@ -40,6 +40,20 @@ phone.
 - Icons name themselves through the tooltip (`useTip`, `IconButton`); that is not help text.
 - The guide (`/guide`) is long-form on purpose.
 
+## Error messages
+
+- The backend gives every failure of a dataset or an upload a stable `error_code` (the dataset)
+  or `code` (the upload) with `params`, next to the English text, which stays for compatibility.
+- The UI maps the code to a plain sentence that names the cause and the fix: `errors.<code>` in
+  both locales (`plainFailure` in `lib/factor-analysis.ts`). The technical text goes behind an (i)
+  "Details". Library wording (pandas, lxml, a Python exception) is never the main message; a code
+  without a sentence gets the generic one and the text as details.
+- A computation the user stopped is not a failure: the dataset is `aborted`, shown neutrally as
+  "Abgebrochen", with "Erneut berechnen" where its sample is still there, else "Löschen" and
+  "Andere Daten wählen". A dataset without data is never offered "Datensatz öffnen".
+- What is known to fail is not asked of the server: with no more observations than measures the
+  hint of Eignung is shown directly, so the console has no 400.
+
 ## Structure of a page
 
 - `PageHeader`: the title and at most one short subtitle line, or none; the page's toolbar sits

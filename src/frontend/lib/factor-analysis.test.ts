@@ -36,6 +36,10 @@ import {
   solutionKey,
   suggestedNames,
   withFactorName,
+  knownTooFew,
+  mostlyFiltered,
+  plainFailure,
+  retryInput,
 } from "./factor-analysis";
 import { formatNumber } from "./format";
 import de from "./i18n/locales/de.json";
@@ -423,6 +427,18 @@ describe("settingsSummary", () => {
     const chip = settingsSummary(standard, standard, paperResult, 4, t).find((c) => c.id === "factors");
     expect(chip).toEqual({ id: "factors", text: "2 factors (Kaiser)", differs: false });
   });
+
+  it("says that a count of one's own is the paper's a priori count", () => {
+    const paperResult = analysis({
+      n_factors: 4,
+      factor_count: { kaiser: 2, parallel_analysis: 2, eigenvalues_random: [], seed: 1, simulations: 100, percentile: 95 },
+    });
+    const factors = (own: number | null, paper: number | null) =>
+      settingsSummary({ ...standard, n_factors: own }, standard, paperResult, 4, t, paper).find((c) => c.id === "factors")?.text;
+    expect(factors(4, 4)).toBe("4 factors (paper; Kaiser 2)");
+    expect(factors(4, 3)).toBe("4 factors (Kaiser 2)");
+    expect(factors(null, 4)).toBe("2 factors (Kaiser)");
+  });
 });
 
 describe("the rows of one miner", () => {
@@ -507,5 +523,67 @@ describe("the names of the factors", () => {
       precomputed: false,
     };
     expect(suggestedNames(interpretation, 4)).toEqual(["Size and flow", null, "x".repeat(FACTOR_NAME_MAX)]);
+  });
+});
+
+describe("plainFailure", () => {
+  const known: Record<string, string> = { "errors.xes_invalid": "{file} is no XES file" };
+  const tMaybe = (key: string, params?: Record<string, string | number>) =>
+    known[key]?.replace("{file}", String(params?.file ?? ""));
+
+  it("says a known code in plain words and keeps the technical text as details", () => {
+    expect(plainFailure(tMaybe, { code: "xes_invalid", params: { file: "a.xes" }, message: "Security validation failed" }, "generic")).toEqual({
+      text: "a.xes is no XES file",
+      details: "Security validation failed",
+    });
+  });
+
+  it("never shows library text as the message", () => {
+    expect(plainFailure(tMaybe, { code: "nope", message: "IndexError: list index out of range" }, "generic")).toEqual({
+      text: "generic",
+      details: "IndexError: list index out of range",
+    });
+    expect(plainFailure(tMaybe, { message: null }, "generic")).toEqual({ text: "generic", details: null });
+  });
+});
+
+describe("knownTooFew", () => {
+  it("is known when there are no more observations than measures", () => {
+    expect(knownTooFew(6, 13)).toEqual({ n: 6, measures: 13, needed: 14 });
+    expect(knownTooFew(13, 13)).toEqual({ n: 13, measures: 13, needed: 14 });
+    expect(knownTooFew(14, 13)).toBeNull();
+  });
+
+  it("leaves too few measures to the server", () => {
+    expect(knownTooFew(2, 2)).toBeNull();
+  });
+});
+
+describe("retryInput", () => {
+  const base = { kind: "model" as const, source: "logs", name: "Four PDC training logs", name_auto: true };
+
+  it("recomputes a sample from the choices it was made with", () => {
+    expect(retryInput({ ...base, inputs: { sample_id: "pdc-sample-logs", miners: ["Inductive miner"], measures: ["a", "b"] } })).toEqual({
+      kind: "model",
+      source: "logs",
+      bundledId: "pdc-sample-logs",
+      measures: ["a", "b"],
+      miners: ["Inductive miner"],
+      groups: undefined,
+      name: undefined,
+    });
+  });
+
+  it("cannot recompute uploaded files, which are gone", () => {
+    expect(retryInput({ ...base, inputs: { files: 3 } } as never)).toBeNull();
+  });
+});
+
+describe("mostlyFiltered", () => {
+  it("is true when the MSA filter took out more than half of the measures", () => {
+    expect(mostlyFiltered(3, 10)).toBe(true);
+    expect(mostlyFiltered(6, 6)).toBe(false);
+    expect(mostlyFiltered(10, 3)).toBe(false);
+    expect(mostlyFiltered(5, 0)).toBe(false);
   });
 });

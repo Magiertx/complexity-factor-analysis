@@ -43,13 +43,16 @@ def histogram(values: pd.Series) -> dict[str, Any] | None:
     return {"min": low, "max": high, "counts": [int(c) for c in counts]}
 
 
-def describe(raw: pd.DataFrame, dropped: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+def describe(
+    raw: pd.DataFrame, dropped: list[dict[str, Any]] | None = None, renamed: dict[str, str] | None = None
+) -> dict[str, Any]:
     """The statistics of every measure of ``raw`` (rows = observations) with numeric values.
 
     A measure that cleaning drops for a non-numeric value is left out, like ComFy for log
     measures leaves it out of its analysis; one dropped for another reason is described, with
     the reason. ``dropped`` is what ``clean_matrix`` dropped of ``raw``, if known already.
-    ``basis`` says what the numbers describe: "input", the table before cleaning.
+    ``basis`` says what the numbers describe: "input", the table before cleaning. ``renamed``
+    maps a measure to the name it had in the file when reading gave it another one.
     """
     if dropped is None:
         dropped = clean_matrix(raw).dropped
@@ -65,6 +68,8 @@ def describe(raw: pd.DataFrame, dropped: list[dict[str, Any]] | None = None) -> 
         for statistic in STATISTICS:
             row[statistic] = _number(getattr(present, statistic)()) if len(present) else None
         row["dropped"] = reasons.get(name)
+        if renamed and name in renamed:
+            row["renamed_from"] = renamed[name]
         row["histogram"] = histogram(present)
         rows.append(row)
     return {"basis": "input", "n_rows": int(len(raw)), "measures": rows}

@@ -762,7 +762,25 @@
       "scope": {
         "paper": "in the paper",
         "report": "report only"
-      }
+      },
+      "details": "Details",
+      "aborted_title": "The computation was stopped",
+      "aborted_hint": "Nothing was saved. Start it again or choose other data.",
+      "aborted_hint_gone": "Nothing was saved, and the files are no longer there. Choose the data again.",
+      "retry": "Compute again",
+      "mine_aborted": "stopped",
+      "skipped": "1 measure skipped: {reason}",
+      "skipped_reason": {
+        "too_few_traces": "too few traces",
+        "group_failed": "the calculation failed"
+      },
+      "skipped_info": "feeed could not compute these feature groups for at least one log. So that every log keeps the same columns, their measures are missing for all logs: {groups}.",
+      "skipped_group": "{name} – {reason} ({inputs})",
+      "loaded_too_few": "{rows} observations and {cols} measures: a factor analysis needs more observations than measures, so at most {max} measures. Exclude measures or add data.",
+      "loaded_too_few_any": "With {n} observation no factor analysis runs; it needs at least {needed}. Add data.",
+      "loaded_too_few_any_plural": "With {n} observations no factor analysis runs; it needs at least {needed}. Add data.",
+      "skipped_plural": "{n} measures skipped: {reason}",
+      "submit_show": "Show"
     },
     "inputs": {
       "logs": "{n} log",
@@ -788,7 +806,8 @@
         "non_numeric": "not numeric",
         "constant": "constant",
         "missing": "missing values",
-        "duplicate": "duplicate"
+        "duplicate": "duplicate",
+        "non_finite": "not finite"
       },
       "failures_heading": "{n} input gave no or incomplete values",
       "failures_heading_plural": "{n} inputs gave no or incomplete values",
@@ -835,7 +854,8 @@
       "view_log": "View this log",
       "view_log_more": "Opens the page for a single log with this log and the miner of the row chosen. It works while the log is among the newest uploads of this session.",
       "view_log_gone": "The log is no longer among the newest uploads of this session.",
-      "failures_more": "and {n} more"
+      "failures_more": "and {n} more",
+      "renamed": "renamed: {from} → {to}"
     },
     "suitability": {
       "passed": "passed",
@@ -880,7 +900,8 @@
       "invert": "Invert selection",
       "invert_title": "Exclude the included measures and include the excluded ones",
       "removed_summary": "The filter removed {n} measure; the list below marks it.",
-      "removed_summary_plural": "The filter removed {n} measures; the list below marks them."
+      "removed_summary_plural": "The filter removed {n} measures; the list below marks them.",
+      "thin_result": "Only {left} of {total} measures left."
     },
     "factors": {
       "scree_title": "Scree plot",
@@ -1023,7 +1044,7 @@
     "help": {
       "cleaning": "Before the analysis, rows where most values are missing are dropped. Then columns that are not numeric, that have no variance, that have missing values, or that are perfect copies of an earlier column are removed, as in ComFy for log measures. Such columns would distort or break the correlation matrix.",
       "bartlett": "Bartlett's test checks the null hypothesis that the correlation matrix is an identity matrix, i.e. that the measures are uncorrelated. If p < α, there are correlations that common factors can explain. With many observations the test almost always passes, so read it together with KMO.",
-      "kmo": "The Kaiser–Meyer–Olkin criterion compares the correlations between the measures with their partial correlations. Values near 1 mean the measures share common variance; values near 0 mean the correlations are mostly pairwise. Kaiser's scale: from 0.9 marvelous, 0.8 meritorious, 0.7 middling, 0.6 mediocre, 0.5 miserable, below that unacceptable.",
+      "kmo": "The Kaiser–Meyer–Olkin criterion compares the correlations between the measures with their partial correlations. Values near 1 mean the measures share common variance; values near 0 mean the correlations are mostly pairwise. Kaiser's scale (Kaiser 1974): from 0.9 marvelous, 0.8 meritorious, 0.7 middling, 0.6 mediocre, 0.5 miserable, below that unacceptable.",
       "msa": "The measure of sampling adequacy (MSA) is the KMO value of a single measure. A measure with low MSA shares little with the others and fits no common factor well; removing it usually raises the overall KMO. Tick a measure to exclude it by hand.",
       "msa_filter": "As in ComFy, all measures below the threshold are removed and the MSA values are recomputed, until every remaining measure reaches the threshold.",
       "msa_threshold": "The filter removes measures whose MSA is below this value, and the overall KMO counts as adequate from this value on. ComFy and ComFy for log measures use 0.6.",
@@ -1031,7 +1052,7 @@
       "scree": "The scree plot shows the eigenvalues of the correlation matrix in descending order. Look for the elbow where the curve flattens; factors after it add little. The elbow, the eigenvalue-above-1 rule and the parallel analysis can disagree, so treat them as starting points. The thin line on the right axis adds up the eigenvalues: the share of the variance the first principal components explain. The factors of the analysis explain somewhat less, as step 5 shows.",
       "eigenvalue": "An eigenvalue is the variance a factor explains, in units of one standardized measure. The suggestion keeps every factor with an eigenvalue above 1 (Kaiser criterion), i.e. every factor that explains more than a single measure.",
       "rotation": "Rotation turns the factor solution so that each measure loads strongly on as few factors as possible, which makes the factors easier to name. It does not change how much variance the factors explain together. Varimax and quartimax keep the factors uncorrelated; promax and oblimin let them correlate, which is often more realistic for complexity measures.",
-      "threshold": "Loadings with an absolute value at or above this threshold count as substantial. Which factors a measure joins depends on the assignment rule above; with the largest loading, it joins the factor where its absolute loading is highest, if that loading reaches the threshold. Common choices lie between 0.3 and 0.5; ComFy uses 0.35, ComFy for log measures 0.5.",
+      "threshold": "Loadings with an absolute value at or above this threshold count as substantial. Which factors a measure joins depends on the assignment rule above; with the largest loading, it joins the factor where its absolute loading is highest, if that loading reaches the threshold. Common choices lie between 0.3 and 0.5; ComFy uses 0.35, ComFy for log measures 0.5. Whether a loading exactly on the threshold counts depends on the rule: ComFy's report (largest loading) includes it (≥), the rules of Important Factors (multiple membership, Hair) require more than the threshold (>), as the tables of the paper do.",
       "loading": "A loading says how strongly a measure goes along with a factor. For orthogonal rotations it is the correlation between measure and factor. For oblique rotations the pattern matrix holds regression weights and the structure matrix the correlations. The sign gives the direction: measures with opposite signs on the same factor move in opposite directions.",
       "communality": "The communality h² is the share of a measure's variance that all kept factors explain together. A low value (below about 0.4) means the factors do not capture the measure well.",
       "variance": "SS loadings is the sum of squared loadings of a factor. Divided by the number of measures it gives the proportion of the total variance the factor explains; the cumulative row adds these up.",
@@ -1080,7 +1101,7 @@
       "not_identified": "{factors} factors for {measures} measures exceed the Ledermann bound; the solution is not identified and the loadings are not unique. Use fewer factors.",
       "fit_not_converged": "The factor fit did not converge: {message}",
       "single_factor_no_rotation": "No rotation is applied to a single factor.",
-      "heywood": "Communality at the bound of the fit (uniqueness at most 0.005) for {measures}; possible Heywood case."
+      "heywood": "Possible Heywood case: communality close to 1 for {measures}."
     },
     "interpretation": {
       "intro": "Claude reads the loadings together with the definitions of the measures and proposes a name and a short interpretation for each factor. Sent to Anthropic are the measure (column) names, their catalog definitions and aggregated results such as loadings and test statistics; measure values, row labels and file names are not sent. Each request costs money, so it runs only when you ask for it.",
@@ -1147,7 +1168,9 @@
       "reset_done": "Standard settings restored.",
       "paper_done": "Paper settings applied.",
       "reset_none": "These are the standard settings already.",
-      "paper_none": "The paper settings are applied already."
+      "paper_none": "The paper settings are applied already.",
+      "factors_paper": "{n} factor (paper; Kaiser {kaiser})",
+      "factors_paper_plural": "{n} factors (paper; Kaiser {kaiser})"
     },
     "match": {
       "chip_match": "Numbers = ComFy report",
@@ -1266,7 +1289,9 @@
         "heywood": "possible Heywood case",
         "not_identified": "not identified",
         "fit_not_converged": "fit did not converge"
-      }
+      },
+      "empty_factors": "{n} factor without a measure above the threshold",
+      "empty_factors_plural": "{n} factors without a measure above the threshold"
     },
     "nav": {
       "aria": "Step navigation",
@@ -1282,7 +1307,8 @@
         "no_dataset": "Open a dataset in the data step first.",
         "loading": "The dataset is still loading.",
         "computing": "The measures are still being computed.",
-        "failed": "The dataset could not be built. Choose other data in the data step."
+        "failed": "The dataset could not be built. Choose other data in the data step.",
+        "aborted": "The computation was stopped, so there is no data yet."
       }
     },
     "toolbar": {
@@ -1297,7 +1323,7 @@
       "export_methods_hint": "A short paragraph with LaTeX citation keys, from the settings and results on screen",
       "export_bibtex": "Download BibTeX",
       "export_bibtex_hint": "The entries of the keys the methods text cites",
-      "methods_copied": "Methods text copied.",
+      "methods_copied": "Methods text copied",
       "methods_saved": "The browser did not allow copying; the methods text was saved as methods.tex.",
       "export_dataset": "Dataset (CSV)",
       "export_dataset_hint": "The cleaned matrix",
@@ -1469,6 +1495,9 @@
       "locked": "At least {n} measures must stay in.",
       "excluded_done": "{measure} is excluded.",
       "included_done": "{measure} is included."
+    },
+    "warnings_tip": {
+      "heywood": "These measures are explained almost completely by the factors (a uniqueness of at most 0.005, the bound of the fit). The grouping of the measures can still be read; read the loadings of these measures with care, since they are at the bound of the fit."
     }
   },
   "inspect": {
@@ -1517,7 +1546,25 @@
     "rate_limited": "Too many requests. Wait a moment and try again.",
     "job_quota": "You already have {active} runs queued or running, and this would add {requested}; at most {limit} are allowed. Wait for them to finish or abort some in the History.",
     "dataset_jobs_busy": "The server is already computing {active} datasets, the most it runs at once. Try again in a few minutes.",
-    "prom_unavailable": "ProM, which runs the miners, cannot be reached right now, so no Petri net could be discovered. Try again in a few minutes; if it stays like this, the prom4py service has to be started on the server."
+    "prom_unavailable": "ProM, which runs the miners, cannot be reached right now, so no Petri net could be discovered. Try again in a few minutes; if it stays like this, the prom4py service has to be started on the server.",
+    "empty_file": "The file is empty. Choose a file with content.",
+    "csv_unparseable": "The CSV file cannot be read. Check that it has a header row and uses a comma, semicolon or tab as separator.",
+    "csv_too_few_rows": "The CSV file has too few data rows ({rows} of at least {minimum}). Add rows or choose other data.",
+    "csv_too_large": "The CSV file is too large: at most {rows} rows and {columns} columns are allowed. Split the data.",
+    "xes_invalid": "“{file}” is not a valid XES file. Export the log as XES (or .xes.gz) again and upload it once more.",
+    "pnml_invalid": "“{file}” is not a valid PNML file. Export the Petri net as PNML again and upload it once more.",
+    "wrong_file_type": "“{file}” has the wrong file type. Allowed: {allowed}.",
+    "file_too_large": "“{file}” is too large; at most {limit_mb} MB are allowed.",
+    "files_too_large": "Together the files are larger than {limit_mb} MB. Split them over several datasets.",
+    "gzip_invalid": "“{file}” is not a valid gzip file. Unpack it or pack it again.",
+    "too_many_files": "You can upload at most {limit} files at once.",
+    "one_csv_file": "Upload exactly one CSV file.",
+    "no_observation": "No values could be computed from any input. Check that the files can be read and have enough traces; the details name the first error.",
+    "dataset_too_few_measures": "Only {have} measures gave values; at least {need} are needed. Choose more measures or feature groups.",
+    "compute_failed": "The dataset could not be computed. The details name the technical cause.",
+    "job_timeout": "The computation did not finish in time, probably because the server restarted. Start it again.",
+    "job_deleted": "The run that computed this dataset was deleted. Choose other data or compute it again.",
+    "aborted": "You stopped the computation."
   },
   "print": {
     "title": "Factor analysis of “{name}”",

@@ -6,7 +6,8 @@ that computed them, and how each input was turned into a row.
 
 The tool's version and commit come from ``APP_VERSION`` and ``APP_COMMIT``, which the Docker
 build sets from build arguments (docs/DEPLOYMENT.md). Without them, as in a checkout or in
-CI, they come from git; outside a checkout they are None.
+CI, they come from git; a version git does not name (no tag) is the one in ``version.py``,
+and a commit that is not passed and cannot be read is "unknown", never None.
 """
 
 from __future__ import annotations
@@ -22,6 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from config import APP_NAME
+from version import VERSION
 
 #: The ComFy code in vendored/comfy (vendored/comfy/PROVENANCE.md).
 COMFY = {
@@ -75,8 +77,8 @@ def _git(*args: str) -> str | None:
 @lru_cache(maxsize=1)
 def tool() -> dict[str, Any]:
     """Name, version and commit of this tool."""
-    commit = os.environ.get("APP_COMMIT", "").strip() or _git("rev-parse", "HEAD")
-    tag = os.environ.get("APP_VERSION", "").strip() or _git("describe", "--tags", "--always", "--dirty")
+    commit = os.environ.get("APP_COMMIT", "").strip() or _git("rev-parse", "HEAD") or "unknown"
+    tag = os.environ.get("APP_VERSION", "").strip() or _git("describe", "--tags", "--dirty") or VERSION
     return {"name": APP_NAME, "version": tag, "commit": commit}
 
 

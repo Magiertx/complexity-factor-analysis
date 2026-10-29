@@ -80,6 +80,8 @@ MAX_PNML_FILES = positive_int("MAX_PNML_FILES", 200)
 #: Budget over all files of one request, measured on the stored (decompressed) files.
 MAX_TOTAL_BYTES = 500 * 1024 * 1024
 MAX_CSV_ROWS = 100_000
+#: A factor analysis has no use for fewer observations than two; the UI says how many it needs.
+MIN_CSV_ROWS = 2
 MAX_CSV_COLUMNS = 1_000
 PREVIEW_ROWS = 2000
 
@@ -94,8 +96,12 @@ _DISCONNECT_POLL_S = 0.25
 MAX_ACTIVE_DATASET_JOBS = positive_int("MAX_ACTIVE_DATASET_JOBS", 4)
 
 
-def _bad(detail: str) -> HTTPException:
-    return HTTPException(status_code=400, detail=detail)
+def _bad(detail: str, code: str | None = None, **params: Any) -> HTTPException:
+    """A 400. With a ``code``, the body carries it and ``params`` next to ``detail``, so the UI
+    says the cause in its own language and keeps ``detail`` as the technical text."""
+    if code is None:
+        return HTTPException(status_code=400, detail=detail)
+    return CodedHTTPException(400, detail, code, **params)
 
 
 def _check_kind(kind: str | None) -> str:
@@ -160,7 +166,10 @@ async def _save_upload(upload: UploadFile, target: Path) -> int:
                 break
             copied += len(chunk)
             if copied > limit:
-                raise _bad(f"'{upload.filename}' exceeds the {limit // (1024 * 1024)} MB limit.")
+                raise _bad(
+                    f"'{upload.filename}' exceeds the {limit // (1024 * 1024)} MB limit.",
+                    "file_too_large", file=upload.filename or "", limit_mb=limit // (1024 * 1024),
+                )
             out.write(chunk)
     return copied
 
@@ -177,26 +186,34 @@ def _gunzip(source: Path, target: Path, limit: int) -> int:
                 if written > limit:
                     raise _bad(
                         f"'{source.name}' is too large once decompressed; at most "
-                        f"{limit // (1024 * 1024)} MB are left for it."
+                        f"{limit // (1024 * 1024)} MB are left for it.",
+                        "file_too_large", file=source.name, limit_mb=limit // (1024 * 1024),
                     )
                 out.write(chunk)
     except (OSError, EOFError) as e:
-        raise _bad(f"'{source.name}' is not a valid gzip file: {e}")
+        raise _bad(f"'{source.name}' is not a valid gzip file: {e}", "gzip_invalid", file=source.name, details=str(e))
     source.unlink()
     return written
 
 
-def _check_xml(path: Path, label: str) -> None:
-    """Same XXE/DOCTYPE rule as for the single-log upload."""
+def _check_xml(path: Path, label: str, source: str = "logs") -> None:
+    """Same XXE/DOCTYPE rule as for the single-log upload. An empty file, a file that is not
+    well-formed XML and one with a DOCTYPE are refused with the code of the file type."""
     from lxml import etree
 
+    code = "xes_invalid" if source == "logs" else "pnml_invalid"
+    if path.stat().st_size == 0:
+        raise _bad(f"'{label}' is empty.", "empty_file", file=label)
     parser = etree.XMLParser(resolve_entities=False, no_network=True, dtd_validation=False, collect_ids=False)
     try:
         tree = etree.parse(str(path), parser=parser)
     except Exception as e:
-        raise _bad(f"Security validation failed or invalid XML in '{label}': {e}")
+        raise _bad(f"Security validation failed or invalid XML in '{label}': {e}", code, file=label, details=str(e))
     if tree.docinfo.doctype:
-        raise _bad(f"'{label}': XML files containing DOCTYPE declarations are not allowed.")
+        raise _bad(
+            f"'{label}': XML files containing DOCTYPE declarations are not allowed.",
+            code, file=label, details="DOCTYPE declarations are not allowed",
+        )
 
 
 def _unique_labels(names: list[str]) -> list[str]:
@@ -212,14 +229,16 @@ async def _store_inputs(files: list[UploadFile], source: str, target_dir: Path) 
     """Save, decompress and check uploaded logs or nets; returns [{path, label}]."""
     limit_files = MAX_LOG_FILES if source == "logs" else MAX_PNML_FILES
     if len(files) > limit_files:
-        raise _bad(f"At most {limit_files} files per request for source '{source}'.")
+        raise _bad(
+            f"At most {limit_files} files per request for source '{source}'.", "too_many_files", limit=limit_files
+        )
     names = [_sanitize_filename(f.filename or "") for f in files]
     for name in names:
         lower = name.lower()
         ok = lower.endswith((".xes", ".xes.gz")) if source == "logs" else lower.endswith(".pnml")
         if not ok:
             allowed = ".xes, .xes.gz" if source == "logs" else ".pnml"
-            raise _bad(f"'{name}' has the wrong file type. Allowed: {allowed}.")
+            raise _bad(f"'{name}' has the wrong file type. Allowed: {allowed}.", "wrong_file_type", file=name, allowed=allowed)
 
     total = 0
     inputs = []
@@ -236,9 +255,10 @@ async def _store_inputs(files: list[UploadFile], source: str, target_dir: Path) 
         if total > MAX_TOTAL_BYTES:
             raise _bad(
                 f"The files exceed the total limit of {MAX_TOTAL_BYTES // (1024 * 1024)} MB. "
-                "Split them over several datasets."
+                "Split them over several datasets.",
+                "files_too_large", limit_mb=MAX_TOTAL_BYTES // (1024 * 1024),
             )
-        await run_in_threadpool(_check_xml, path, name)
+        await run_in_threadpool(_check_xml, path, name, source)
         inputs.append({"path": str(path), "label": label})
     return inputs
 
@@ -255,13 +275,17 @@ LABEL_COLUMNS = {"observation", "id", "name", "label"}
 
 
 def _too_large() -> HTTPException:
-    return _bad(f"The CSV file is too large; at most {MAX_CSV_ROWS} rows and {MAX_CSV_COLUMNS} columns.")
+    return _bad(
+        f"The CSV file is too large; at most {MAX_CSV_ROWS} rows and {MAX_CSV_COLUMNS} columns.",
+        "csv_too_large", rows=MAX_CSV_ROWS, columns=MAX_CSV_COLUMNS,
+    )
 
 
 def _read_csv_table(path: Path) -> pd.DataFrame:
     """Parse an uploaded CSV. The first column holds the row labels if it is unnamed, not
     numeric or named like a label column."""
     raw: pd.DataFrame | None = None
+    header: list[str] = []
     for encoding in ("utf-8-sig", "latin-1"):
         try:
             with open(path, encoding=encoding) as f:
@@ -276,12 +300,23 @@ def _read_csv_table(path: Path) -> pd.DataFrame:
             break
         except UnicodeDecodeError:
             continue
-        except (pd.errors.ParserError, pd.errors.EmptyDataError, ValueError, csv.Error) as e:
-            raise _bad(f"The CSV file could not be parsed: {e}")
-    if raw is None or raw.empty or raw.shape[1] == 0:
-        raise _bad("The CSV file could not be parsed or is empty.")
+        except pd.errors.EmptyDataError as e:
+            if not sample.strip():
+                raise _bad(f"The CSV file could not be parsed: {e}", "empty_file", details=str(e))
+            raise _bad(f"The CSV file could not be parsed: {e}", "csv_unparseable", details=str(e))
+        except (pd.errors.ParserError, ValueError, csv.Error) as e:
+            raise _bad(f"The CSV file could not be parsed: {e}", "csv_unparseable", details=str(e))
+    if raw is None or raw.shape[1] == 0:
+        raise _bad("The CSV file could not be parsed or is empty.", "csv_unparseable", details="no columns")
     if len(raw) > MAX_CSV_ROWS or raw.shape[1] > MAX_CSV_COLUMNS + 1:
         raise _too_large()
+    if len(raw) < MIN_CSV_ROWS:
+        raise _bad(
+            f"The CSV file has {len(raw)} data row(s); at least {MIN_CSV_ROWS} are needed.",
+            "csv_too_few_rows", rows=len(raw), minimum=MIN_CSV_ROWS,
+        )
+    # pandas names the second "a" of a header "a,a" a.1; say so rather than rename silently.
+    renamed = {str(c): h for h, c in zip(header, raw.columns) if h and str(c) != h}
 
     def numeric(col: pd.Series) -> pd.Series | None:
         values = col.str.strip()
@@ -309,7 +344,9 @@ def _read_csv_table(path: Path) -> pd.DataFrame:
     for column in raw.columns:
         parsed = numeric(raw[column])
         table[str(column)] = parsed if parsed is not None else raw[column]
-    return pd.DataFrame(table, index=raw.index)
+    out = pd.DataFrame(table, index=raw.index)
+    out.attrs["renamed"] = {new: old for new, old in renamed.items() if new in out.columns}
+    return out
 
 
 def _relabel(table: pd.DataFrame, style: str | None) -> pd.DataFrame:
@@ -367,16 +404,29 @@ async def run_dataset_task(job_id: str, session_id: str, dataset_id: str, spec: 
     loop = asyncio.get_running_loop()
     updates = _LoopCalls(loop)
 
-    def fail_dataset(error: str) -> None:
+    def fail_dataset(error: str, code: str | None = None, **params: Any) -> None:
+        """The dataset failed: ``error`` is the English text, ``code`` and ``params`` the cause."""
         try:
-            storage.update_meta(session_id, dataset_id, status="failed", error=error)
+            storage.update_meta(
+                session_id, dataset_id, status="failed", error=error, error_code=code, error_params=params
+            )
+        except (FileNotFoundError, ValueError):
+            pass
+
+    def abort_dataset() -> None:
+        """The user stopped the job: not a failure, so the dataset is aborted."""
+        try:
+            storage.update_meta(
+                session_id, dataset_id, status="aborted", error="Aborted by user", error_code="aborted",
+                error_params={},
+            )
         except (FileNotFoundError, ValueError):
             pass
 
     try:
         job_state = await jobs_db.read_job(job_id)
         if not job_state or job_state.get("status") == "aborted":
-            fail_dataset("Aborted by user")
+            abort_dataset()
             return
         await jobs_db.update_job_progress(job_id, 0.0, "Starting...", status="running")
         await broadcast_jobs_update()
@@ -396,19 +446,29 @@ async def run_dataset_task(job_id: str, session_id: str, dataset_id: str, spec: 
         finally:
             await updates.settle()
         if result.table.empty:
-            first = result.failures[0][1] if result.failures else "no input produced values"
-            raise RuntimeError(f"No observation could be computed. First error: {first}")
+            first = (
+                result.failures[0][1] if result.failures
+                else result.skipped[0]["error"] if result.skipped
+                else "no input produced values"
+            )
+            raise compute.DatasetError(
+                f"No observation could be computed. First error: {first}", "no_observation", first_error=first
+            )
 
         if result.measurement is not None:
             # Before the matrix: once the dataset is ready, its measurement is there too.
             await asyncio.to_thread(storage.write_measurement, session_id, dataset_id, result.measurement.to_dict())
         try:
             meta = await asyncio.to_thread(
-                storage.store_matrix, session_id, dataset_id, result.table, result.failures, min_measures=2
+                storage.store_matrix, session_id, dataset_id, result.table, result.failures, min_measures=2,
+                skipped=result.skipped,
             )
         except storage.TooFewMeasures as e:
-            first = f" First error: {result.failures[0][1]}" if result.failures else ""
-            raise RuntimeError(f"{e}{first}") from None
+            first = result.failures[0][1] if result.failures else ""
+            note = f" First error: {first}" if first else ""
+            raise compute.DatasetError(
+                f"{e}{note}", "dataset_too_few_measures", have=e.have, need=e.need, first_error=first
+            ) from None
 
         rows = [
             [label, *(None if pd.isna(v) else round(float(v), 6) for v in values)]
@@ -433,7 +493,7 @@ async def run_dataset_task(job_id: str, session_id: str, dataset_id: str, spec: 
 
         js = await jobs_db.read_job(job_id)
         if not js or js.get("status") == "aborted":
-            fail_dataset("Aborted by user")
+            abort_dataset()
             return
         await jobs_db.set_job_completed(job_id, {
             "artifacts": [a.to_dict() for a in artifacts],
@@ -444,15 +504,18 @@ async def run_dataset_task(job_id: str, session_id: str, dataset_id: str, spec: 
         js = await jobs_db.read_job(job_id)
         if js and ("Task aborted by user" in str(e) or js.get("status") == "aborted"):
             await jobs_db.update_job_progress(job_id, js.get("percentage", 0.0), "Aborted by user", status="aborted")
-            fail_dataset("Aborted by user")
+            abort_dataset()
+        elif isinstance(e, compute.DatasetError):
+            await jobs_db.set_job_failed(job_id, str(e), e.code)
+            fail_dataset(str(e), e.code, **e.params)
         else:
-            await jobs_db.set_job_failed(job_id, str(e))
-            fail_dataset(str(e))
+            await jobs_db.set_job_failed(job_id, str(e), "compute_failed")
+            fail_dataset(str(e), "compute_failed", details=str(e))
         await broadcast_jobs_update()
     except Exception as e:
         logger.exception(f"Dataset job {job_id} failed")
-        await jobs_db.set_job_failed(job_id, f"Dataset computation failed: {e}")
-        fail_dataset(f"Dataset computation failed: {e}")
+        await jobs_db.set_job_failed(job_id, f"Dataset computation failed: {e}", "compute_failed")
+        fail_dataset(f"Dataset computation failed: {e}", "compute_failed", details=str(e))
         await broadcast_jobs_update()
     finally:
         try:
@@ -566,12 +629,13 @@ async def _create_dataset(
             bundled_id = entry["id"]
             table = await run_in_threadpool(_bundled_table, entry)
             display = name or entry["name"]
+            renamed: dict[str, str] = {}
         else:
             if len(uploads) != 1:
-                raise _bad("Upload exactly one CSV file.")
+                raise _bad("Upload exactly one CSV file.", "one_csv_file")
             filename = _sanitize_filename(uploads[0].filename or "")
             if not filename.lower().endswith(".csv"):
-                raise _bad(f"'{filename}' has the wrong file type. Allowed: .csv.")
+                raise _bad(f"'{filename}' has the wrong file type. Allowed: .csv.", "wrong_file_type", file=filename, allowed=".csv")
             fd, tmp_name = tempfile.mkstemp(suffix=".csv")
             os.close(fd)
             try:
@@ -581,6 +645,7 @@ async def _create_dataset(
                 os.remove(tmp_name)
             display = name or filename
             bundled_id = None
+            renamed = table.attrs.get("renamed", {})
         table = _select_columns(table, measure_list)
         inputs: dict[str, Any] = {"files": 0 if source == "bundled" else 1}
         if measure_list:
@@ -595,7 +660,7 @@ async def _create_dataset(
             inputs=inputs, bundled_id=bundled_id, provenance=origin,
         )
         try:
-            meta = await run_in_threadpool(storage.store_matrix, session_id, meta["id"], table)
+            meta = await run_in_threadpool(storage.store_matrix, session_id, meta["id"], table, renamed=renamed)
         except Exception:
             shutil.rmtree(storage.dataset_dir(session_id, meta["id"]), ignore_errors=True)
             raise
@@ -783,7 +848,9 @@ async def _fail_stale_job(meta: dict[str, Any], session_id: str, job: dict[str, 
         return False
     error = "The job did not finish within the time limit; the worker may have restarted."
     await jobs_db.set_job_failed(meta["job_id"], error)
-    storage.update_meta(session_id, meta["id"], status="failed", error=error)
+    storage.update_meta(
+        session_id, meta["id"], status="failed", error=error, error_code="job_timeout", error_params={}
+    )
     storage.remove_inputs(session_id, meta["id"])
     return True
 
@@ -792,12 +859,28 @@ async def _job_state(meta: dict[str, Any], session_id: str) -> dict[str, Any]:
     """Status and error of a computing dataset as its job has it, or the job's progress."""
     job = await jobs_db.read_job(meta["job_id"], session_id)
     if job is None:
-        return {"status": "failed", "error": "The job computing this dataset was deleted."}
-    if job["status"] in ("failed", "aborted"):
-        return {"status": "failed", "error": job.get("error") or "Aborted by user"}
+        return {
+            "status": "failed", "error": "The job computing this dataset was deleted.",
+            "error_code": "job_deleted", "error_params": {},
+        }
+    if job["status"] == "aborted":
+        return {"status": "aborted", "error": "Aborted by user", "error_code": "aborted", "error_params": {}}
+    if job["status"] == "failed":
+        # The dataset records the cause as soon as it has failed; the job may be a moment ahead.
+        stored = storage.read_meta(session_id, meta["id"]) or {}
+        return {
+            "status": "failed",
+            "error": job.get("error") or "Dataset computation failed.",
+            "error_code": stored.get("error_code") or job.get("error_code") or "compute_failed",
+            "error_params": stored.get("error_params") or {},
+        }
     if await _fail_stale_job(meta, session_id, job):
         await broadcast_jobs_update()
-        return {"status": "failed", "error": storage.read_meta(session_id, meta["id"])["error"]}
+        stored = storage.read_meta(session_id, meta["id"])
+        return {
+            "status": "failed", "error": stored["error"],
+            "error_code": stored.get("error_code"), "error_params": stored.get("error_params") or {},
+        }
     return {"progress": job.get("percentage", 0.0)}
 
 
@@ -817,7 +900,7 @@ def _inputs(meta: dict[str, Any]) -> dict[str, Any]:
 
 def _summary(meta: dict[str, Any], status: str) -> dict[str, Any]:
     ready = status == "ready"
-    return {
+    summary = {
         "id": meta["id"],
         "kind": meta["kind"],
         "name": meta["name"],
@@ -836,6 +919,10 @@ def _summary(meta: dict[str, Any], status: str) -> dict[str, Any]:
         # The settings of its last analysis, as GET /datasets/{id} has them; null before one.
         "options": meta.get("options"),
     }
+    if status in ("failed", "aborted"):
+        # Why, for the UI to say it in its language; the text is in GET /datasets/{id}.
+        summary["error_code"] = meta.get("error_code")
+    return summary
 
 
 def _session_metas(session_id: str, kind: str | None) -> list[dict[str, Any]]:
@@ -892,6 +979,8 @@ async def get_dataset(
         "dropped": meta["dropped"],
         "dropped_rows": meta["dropped_rows"],
         "failures": meta.get("failures", []),
+        # Feature groups left out for every log because feeed failed on one of them.
+        "skipped": meta.get("skipped", []),
         "created_at": meta["created_at"],
         "inputs": _inputs(meta),
         "options": meta.get("options"),
@@ -901,6 +990,8 @@ async def get_dataset(
         out["job_id"] = meta["job_id"]
     if meta.get("error"):
         out["error"] = meta["error"]
+        out["error_code"] = meta.get("error_code")
+        out["error_params"] = meta.get("error_params") or {}
 
     if meta["status"] == "computing" and meta.get("job_id"):
         out.update(await _job_state(meta, session_id))

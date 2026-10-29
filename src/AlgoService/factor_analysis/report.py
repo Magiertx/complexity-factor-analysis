@@ -23,6 +23,7 @@ import re
 from typing import Any
 
 from config import APP_NAME
+from version import REPOSITORY_URL
 
 from . import catalog as cat
 from .core import CROSS_LOADING_GAP
@@ -62,6 +63,7 @@ _RAGGED = ">{\\raggedright\\arraybackslash}"
 _REASONS = {
     "non_numeric": "non-numeric values",
     "missing": "missing values",
+    "non_finite": "values that are not finite",
     "constant": "no variance",
     "duplicate": "perfectly correlated with another measure",
 }
@@ -649,10 +651,11 @@ def _settings_section(
         ))
     rows.append((
         "Software",
-        f"{tex(APP_NAME)} (version {tex(tool.get('version') or 'not recorded')}, "
-        f"commit {tex(str(tool.get('commit') or 'not recorded')[:12])}); "
+        f"{tex(APP_NAME)} (version {tex(tool.get('version') or 'unknown')}, "
+        f"commit {tex(str(tool.get('commit') or 'unknown')[:12])}); "
         + ", ".join(f"{tex(name)} {tex(v)}" for name, v in libraries.items() if v),
     ))
+    rows.append(("Source code", f"\\url{{{REPOSITORY_URL}}}"))
     citation = dataset.get("citation")
     if citation:
         rows.append(("Citation", tex(citation)))
@@ -701,6 +704,7 @@ def report_tex(
         "\\usepackage{tikz}",
         "\\usepackage{pgfplots}",
         "\\usepackage{paralist}",
+        "\\usepackage{url}",
         "\\pgfplotsset{compat=1.16}",
         "\\setlength{\\tabcolsep}{4pt}",
         "",

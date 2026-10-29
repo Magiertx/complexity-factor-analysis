@@ -66,7 +66,7 @@ def test_clean_drops_measures_with_gaps_like_comfy_for_log_measures():
     result = core.clean_matrix(raw)
     assert list(result.data.columns) == ["x"]
     assert {d["measure"]: d["reason"] for d in result.dropped} == {
-        "gap": "missing", "inf": "missing", "blank": "missing",
+        "gap": "missing", "inf": "non_finite", "blank": "missing",
     }
     assert next(d for d in result.dropped if d["measure"] == "gap")["detail"] == "1 of 4 values missing"
 

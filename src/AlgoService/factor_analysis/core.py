@@ -258,10 +258,12 @@ def clean_matrix(raw: pd.DataFrame, *, max_missing_share: float = MAX_MISSING_SH
     ``MAX_ROW_MISSING_SHARE`` missing values, drop measures with more than
     ``max_missing_share`` missing values, drop rows with a missing value in what is left, drop
     constant measures, drop measures perfectly correlated with an earlier one (the first one is
-    kept). Infinite values count as missing.
+    kept). Infinite values count as missing; a measure dropped for them mostly is dropped as
+    ``non_finite``.
     """
     dropped: list[dict[str, Any]] = []
     numeric: dict[str, np.ndarray] = {}
+    infinite: dict[str, np.ndarray] = {}
 
     for column in raw.columns:
         values = raw[column]
@@ -277,24 +279,39 @@ def clean_matrix(raw: pd.DataFrame, *, max_missing_share: float = MAX_MISSING_SH
                     "params": {"value": value},
                 })
                 continue
-        numeric[str(column)] = converted.astype(float).replace([np.inf, -np.inf], np.nan).to_numpy()
+        floats = converted.astype(float)
+        infinite[str(column)] = np.isinf(floats.to_numpy())
+        numeric[str(column)] = floats.replace([np.inf, -np.inf], np.nan).to_numpy()
 
     data = pd.DataFrame(numeric, index=[str(i) for i in raw.index], dtype=float)
+    infinite_rows = pd.DataFrame(infinite, index=data.index)
     before = len(data)
     empty_rows: list[str] = []
     if data.shape[1]:
         empty = (data.isna().mean(axis=1) > MAX_ROW_MISSING_SHARE).to_numpy()
         empty_rows = [str(i) for i in data.index[empty]]
         data = data[~empty]
+        infinite_rows = infinite_rows[~empty]
 
     for column in list(data.columns):
         n_missing = int(data[column].isna().sum())
         if len(data) and n_missing / len(data) > max_missing_share:
+            n_infinite = int(infinite_rows[column].sum())
+            # Mostly infinite values (inf, -inf) are not "missing": say what they are.
+            reason = "non_finite" if 2 * n_infinite > n_missing else "missing"
             dropped.append({
                 "measure": column,
-                "reason": "missing",
-                "detail": f"{n_missing} of {len(data)} values missing",
-                "params": {"missing": n_missing, "total": len(data)},
+                "reason": reason,
+                "detail": (
+                    f"{n_infinite} of {len(data)} values not finite"
+                    if reason == "non_finite"
+                    else f"{n_missing} of {len(data)} values missing"
+                ),
+                "params": (
+                    {"infinite": n_infinite, "total": len(data)}
+                    if reason == "non_finite"
+                    else {"missing": n_missing, "total": len(data)}
+                ),
             })
             data = data.drop(columns=column)
 

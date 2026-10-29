@@ -19,6 +19,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from version import REPOSITORY_URL
+
 from .report import tex
 
 LANGUAGES = ("en", "de")
@@ -151,12 +153,11 @@ def _tool_reference(tool: dict[str, Any], year: int) -> dict[str, Any]:
         "type": "misc",
         "comment": (
             "The tool as exported: its name, version and commit are those of the running service; the author is the "
-            "one of its git history and the year that of this export. Add co-authors and a URL once the tool has a "
-            "name and an address of its own."
+            "one of its git history and the year that of this export. Add co-authors once the tool has a DOI."
         ),
         "fields": [
             ("author", "Reichle, Jonas"), ("title", tool.get("name") or "Complexity Factor Analysis"),
-            ("year", str(year)), *([("note", note)] if note else []),
+            ("year", str(year)), *([("note", note)] if note else []), ("url", REPOSITORY_URL),
         ],
     }
 
@@ -204,18 +205,22 @@ def _tex(text: Any) -> str:
     return tex(text).replace("\\allowbreak{}", "")
 
 
-def _number(value: float, decimals: int, language: str) -> str:
+def _number(value: float, decimals: int, language: str, *, math: bool = False) -> str:
+    """The value with the decimal mark of the language. Inside ``$...$`` LaTeX takes a comma for a
+    punctuation mark and sets a space after it, so there it is braced: ``6822{,}4``."""
     text = f"{value:.{decimals}f}"
     if text.startswith("-") and float(text) == 0:
         text = text[1:]
-    return text.replace(".", ",") if language == "de" else text
+    if language != "de":
+        return text
+    return text.replace(".", "{,}" if math else ",")
 
 
-def _p_value(value: float, language: str) -> str:
+def _p_value(value: float, language: str, *, math: bool = False) -> str:
     """With its relation sign, as the suitability step writes the value: three decimals, "< 0.001" below."""
     if value < 0.001:
-        return "< " + _number(0.001, 3, language)
-    return "= " + _number(value, 3, language)
+        return "< " + _number(0.001, 3, language, math=math)
+    return "= " + _number(value, 3, language, math=math)
 
 
 def _percent(share: float, language: str) -> str:
@@ -430,8 +435,9 @@ def methods(
     threshold = _number(kmo.get("threshold", 0.6), 2, language)
     suitability = fill("bartlett_yes" if bartlett["passed"] else "bartlett_no", cite=cite("bartlett1950"))
     suitability += fill(
-        "bartlett_values", df=bartlett["df"], chi=_number(bartlett["chi_square"], 1, language),
-        p=_p_value(bartlett["p_value"], language), alpha=_number(bartlett.get("alpha", 0.05), 2, language),
+        "bartlett_values", df=bartlett["df"], chi=_number(bartlett["chi_square"], 1, language, math=True),
+        p=_p_value(bartlett["p_value"], language, math=True),
+        alpha=_number(bartlett.get("alpha", 0.05), 2, language, math=True),
     )
     suitability += fill("kmo", cite=cite("kaiser1974"), kmo=_number(kmo["overall"], 2, language))
     sentences.append(suitability)
