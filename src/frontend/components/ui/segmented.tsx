@@ -57,10 +57,27 @@ export function Segmented<T extends string>({
     return () => ro.disconnect();
   }, [idx, options]);
 
+  // A radiogroup with one tab stop (roving tabindex): the chosen option, or the first one that can
+  // be chosen when none is. Arrow keys move to the next option and choose it, like native radios.
+  const enabled = options.flatMap((o, i) => (o.disabled ? [] : [i]));
+  const stop = enabled.includes(idx) ? idx : (enabled[0] ?? -1);
+  const onKeyDown = (e: React.KeyboardEvent, from: number) => {
+    let to: number | undefined;
+    const at = enabled.indexOf(from);
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") to = enabled[(at + 1) % enabled.length];
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") to = enabled[(at - 1 + enabled.length) % enabled.length];
+    else if (e.key === "Home") to = enabled[0];
+    else if (e.key === "End") to = enabled[enabled.length - 1];
+    if (to === undefined || at < 0) return;
+    e.preventDefault();
+    onChange(options[to].value);
+    containerRef.current?.querySelectorAll<HTMLButtonElement>("button")[to]?.focus();
+  };
+
   return (
     <div
       ref={containerRef}
-      role="group"
+      role="radiogroup"
       aria-labelledby={labelledBy}
       aria-label={label}
       className={cn(
@@ -82,14 +99,17 @@ export function Segmented<T extends string>({
           style={{ width: pill.width, left: pill.left }}
         />
       )}
-      {options.map((o) => (
+      {options.map((o, i) => (
         <button
           key={String(o.value)}
           type="button"
+          role="radio"
           onClick={() => onChange(o.value)}
+          onKeyDown={(e) => onKeyDown(e, i)}
           disabled={o.disabled}
           title={o.title}
-          aria-pressed={value === o.value}
+          aria-checked={value === o.value}
+          tabIndex={i === stop ? 0 : -1}
           className={cn(
             "relative z-10 flex-1 font-medium transition-colors duration-200 whitespace-nowrap flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
             size === "sm" ? "text-xs px-2.5 rounded" : "text-[13px] px-3 rounded-md",
