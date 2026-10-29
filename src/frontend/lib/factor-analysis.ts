@@ -332,6 +332,7 @@ export function settingsSummary(
   analysis: FactorAnalysis | null,
   measureCount: number,
   t: Translate,
+  paperFactors: number | null = null,
 ): SettingChip[] {
   const changed = differingOptions(options, standard);
   const used = analysis?.used_measures.length ?? measureCount - options.excluded.length;
@@ -359,11 +360,13 @@ export function settingsSummary(
     chips.push({ id: "alpha", text: t("factor.settings.alpha", { value: options.bartlett_alpha }), differs: true });
   }
   if (n !== null) {
-    // "4 factors (Kaiser 2)" for a count of one's own, "2 factors (Kaiser)" when following it.
+    // "4 factors (Kaiser 2)" for a count of one's own, "4 factors (paper; Kaiser 2)" when it is the
+    // paper's a priori count, "2 factors (Kaiser)" when following Kaiser.
     const own = options.n_factors !== null && kaiser !== null;
+    const key = !own ? "factors_kaiser" : n === paperFactors ? "factors_paper" : "factors";
     chips.push({
       id: "factors",
-      text: countText(t, own ? "factor.settings.factors" : "factor.settings.factors_kaiser", n, own ? { kaiser } : {}),
+      text: countText(t, `factor.settings.${key}`, n, own ? { kaiser } : {}),
       differs: changed.has("n_factors"),
     });
   }

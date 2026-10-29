@@ -48,7 +48,9 @@ export function FactorsView({ analysis, options, onOptions, paperFactors, paperS
   const { locale } = useLocale();
   // A problem of the solution is a warning; a note that only says what happened is not.
   const solution = analysisNotices(analysis).filter(isSolutionNotice);
-  const notes = solution.filter((n) => !isInfoNotice(n)).map((n) => noticeText(n, tMaybe, measureName));
+  const notes = solution
+    .filter((n) => !isInfoNotice(n))
+    .map((n) => ({ text: noticeText(n, tMaybe, measureName), tip: tMaybe(`factor.warnings_tip.${n.code}`) }));
   const infos = solution.filter(isInfoNotice).map((n) => noticeText(n, tMaybe, measureName));
   const max = Math.max(1, analysis.used_measures.length - 1);
   const counts = analysis.factor_count;

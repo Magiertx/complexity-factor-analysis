@@ -1100,7 +1100,7 @@
       "not_identified": "{factors} factors for {measures} measures exceed the Ledermann bound; the solution is not identified and the loadings are not unique. Use fewer factors.",
       "fit_not_converged": "The factor fit did not converge: {message}",
       "single_factor_no_rotation": "No rotation is applied to a single factor.",
-      "heywood": "Communality at the bound of the fit (uniqueness at most 0.005) for {measures}; possible Heywood case."
+      "heywood": "Possible Heywood case: communality close to 1 for {measures}."
     },
     "interpretation": {
       "intro": "Claude reads the loadings together with the definitions of the measures and proposes a name and a short interpretation for each factor. Sent to Anthropic are the measure (column) names, their catalog definitions and aggregated results such as loadings and test statistics; measure values, row labels and file names are not sent. Each request costs money, so it runs only when you ask for it.",
@@ -1167,7 +1167,9 @@
       "reset_done": "Standard settings restored.",
       "paper_done": "Paper settings applied.",
       "reset_none": "These are the standard settings already.",
-      "paper_none": "The paper settings are applied already."
+      "paper_none": "The paper settings are applied already.",
+      "factors_paper": "{n} factor (paper; Kaiser {kaiser})",
+      "factors_paper_plural": "{n} factors (paper; Kaiser {kaiser})"
     },
     "match": {
       "chip_match": "Numbers = ComFy report",
@@ -1490,6 +1492,9 @@
       "locked": "At least {n} measures must stay in.",
       "excluded_done": "{measure} is excluded.",
       "included_done": "{measure} is included."
+    },
+    "warnings_tip": {
+      "heywood": "These measures are explained almost completely by the factors (a uniqueness of at most 0.005, the bound of the fit). The grouping of the measures can still be read; read the loadings of these measures with care, since they are at the bound of the fit."
     }
   },
   "inspect": {

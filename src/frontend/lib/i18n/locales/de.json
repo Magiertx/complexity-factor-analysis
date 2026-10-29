@@ -1100,7 +1100,7 @@
       "not_identified": "{factors} Faktoren für {measures} Maße überschreiten die Ledermann-Grenze; die Lösung ist nicht identifiziert und die Ladungen sind nicht eindeutig. Wähle weniger Faktoren.",
       "fit_not_converged": "Die Anpassung der Faktoren ist nicht konvergiert: {message}",
       "single_factor_no_rotation": "Ein einzelner Faktor wird nicht rotiert.",
-      "heywood": "Kommunalität an der Grenze der Anpassung (Einzelrestvarianz höchstens 0,005) für {measures}; möglicher Heywood-Fall."
+      "heywood": "Möglicher Heywood-Fall: Kommunalität nahe 1 bei {measures}."
     },
     "interpretation": {
       "intro": "Claude liest die Ladungen zusammen mit den Definitionen der Maße und schlägt für jeden Faktor einen Namen und eine kurze Interpretation vor. An Anthropic gehen die Namen der Maße (Spalten), ihre Katalogdefinitionen und aggregierte Ergebnisse wie Ladungen und Teststatistiken; Messwerte, Zeilenbezeichnungen und Dateinamen werden nicht gesendet. Jede Anfrage kostet Geld, daher läuft sie nur, wenn du sie anforderst.",
@@ -1167,7 +1167,9 @@
       "reset_done": "Standardeinstellungen wiederhergestellt.",
       "paper_done": "Paper-Einstellungen übernommen.",
       "reset_none": "Das sind bereits die Standardeinstellungen.",
-      "paper_none": "Die Paper-Einstellungen sind bereits übernommen."
+      "paper_none": "Die Paper-Einstellungen sind bereits übernommen.",
+      "factors_paper": "{n} Faktor (Paper; Kaiser {kaiser})",
+      "factors_paper_plural": "{n} Faktoren (Paper; Kaiser {kaiser})"
     },
     "match": {
       "chip_match": "Zahlen = ComFy-Report",
@@ -1490,6 +1492,9 @@
       "locked": "Mindestens {n} Maße müssen drin bleiben.",
       "excluded_done": "{measure} ist ausgeschlossen.",
       "included_done": "{measure} ist einbezogen."
+    },
+    "warnings_tip": {
+      "heywood": "Diese Maße werden fast vollständig von den Faktoren erklärt (Einzelrestvarianz höchstens 0,005, die Grenze der Anpassung). Die Gruppierung der Maße lässt sich trotzdem lesen; die Ladungen dieser Maße deutest du mit Vorsicht, denn sie liegen an der Grenze der Anpassung."
     }
   },
   "inspect": {

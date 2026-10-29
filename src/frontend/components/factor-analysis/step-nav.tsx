@@ -279,10 +279,13 @@ export function StepRail({
   unavailable,
   stateLabels,
   summaries,
+  summaryMore,
   onGo,
 }: NavProps & {
   /** What a finished step found, e.g. "KMO 0.75 · 2 removed"; else what the step is for. */
   summaries: Partial<Record<StepId, string>>;
+  /** More than the line says, for its tooltip, e.g. the measures a warning is about. */
+  summaryMore?: Partial<Record<StepId, string>>;
 }) {
   const t = useT();
   const shown = useFilling(states);
@@ -317,7 +320,7 @@ export function StepRail({
                 needsKey={needsKey}
                 stateLabel={stateLabels[id] ?? t(`factor.state.${states[id]}`)}
                 onGo={onGo}
-                more={summary.length > SUMMARY_FITS ? summary : undefined}
+                more={summaryMore?.[id] ?? (summary.length > SUMMARY_FITS ? summary : undefined)}
                 className={cn(
                   "group flex items-center gap-3 rounded-md px-2.5 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
                   lock ? "cursor-default" : "hover:bg-surface/70",

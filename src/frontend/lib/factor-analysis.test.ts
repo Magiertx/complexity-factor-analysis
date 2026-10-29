@@ -426,6 +426,18 @@ describe("settingsSummary", () => {
     const chip = settingsSummary(standard, standard, paperResult, 4, t).find((c) => c.id === "factors");
     expect(chip).toEqual({ id: "factors", text: "2 factors (Kaiser)", differs: false });
   });
+
+  it("says that a count of one's own is the paper's a priori count", () => {
+    const paperResult = analysis({
+      n_factors: 4,
+      factor_count: { kaiser: 2, parallel_analysis: 2, eigenvalues_random: [], seed: 1, simulations: 100, percentile: 95 },
+    });
+    const factors = (own: number | null, paper: number | null) =>
+      settingsSummary({ ...standard, n_factors: own }, standard, paperResult, 4, t, paper).find((c) => c.id === "factors")?.text;
+    expect(factors(4, 4)).toBe("4 factors (paper; Kaiser 2)");
+    expect(factors(4, 3)).toBe("4 factors (Kaiser 2)");
+    expect(factors(null, 4)).toBe("2 factors (Kaiser)");
+  });
 });
 
 describe("the rows of one miner", () => {

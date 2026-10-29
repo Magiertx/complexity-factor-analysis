@@ -49,6 +49,7 @@ import {
   initialOptions,
   knownTooFew,
   namesForApi,
+  noticeText,
   optionsFromSaved,
   plainFailure,
   publishedOptions,
@@ -1151,6 +1152,14 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       ...solutionIssues,
     ].join(" · ");
   }
+  // The warning on the factors names its measures in the tooltip of the line.
+  const summaryMore: Partial<Record<StepId, string>> = {};
+  if (analysis && summaries.factors && solutionIssues.length > 0) {
+    summaryMore.factors = [
+      summaries.factors,
+      ...solutionProblems(analysis).map((n) => noticeText(n, tMaybe, measureName)),
+    ].join(" — ");
+  }
   if (interpretationUnavailable) summaries.interpretation = interpretationUnavailable;
   if (analysis && finished("loadings")) {
     const cross = analysis.cross_loadings?.length ?? 0;
@@ -1478,7 +1487,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       />
 
       <div className="lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-8 lg:items-start">
-        <StepRail {...navProps} summaries={summaries} />
+        <StepRail {...navProps} summaries={summaries} summaryMore={summaryMore} />
 
         <div ref={stepArea} className="min-w-0 flex flex-col gap-4">
           <StepBar {...navProps} />

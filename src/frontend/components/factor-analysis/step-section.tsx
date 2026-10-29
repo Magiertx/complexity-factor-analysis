@@ -5,7 +5,7 @@ import { AlertTriangle, Check } from "lucide-react";
 import { stepAnchor, type StepId } from "@/lib/steps";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { InfoLabel } from "@/components/ui/info-tip";
+import { InfoLabel, InfoTip } from "@/components/ui/info-tip";
 import { Notice } from "@/components/ui/notice";
 import { useTip } from "@/components/ui/tip";
 import { formatInputNumber, parseInputNumber } from "@/lib/format";
@@ -255,14 +255,21 @@ export function FieldLabel({ id, children }: { id?: string; children: React.Reac
 }
 
 /** The notes of the analysis that concern a step, e.g. a failed test or too many factors. */
-export function NoticeList({ heading, notes }: { heading: string; notes: string[] }) {
+export function NoticeList({ heading, notes }: { heading: string; notes: (string | { text: string; tip?: string })[] }) {
   if (notes.length === 0) return null;
   return (
     <Notice tone="warn" title={heading}>
       <ul className="text-xs space-y-0.5 list-disc pl-4">
-        {notes.map((note) => (
-          <li key={note}>{note}</li>
-        ))}
+        {notes.map((note) => {
+          const { text, tip } = typeof note === "string" ? { text: note, tip: undefined } : note;
+          // One visible line; what it means is behind the (i).
+          return (
+            <li key={text}>
+              {text}
+              {tip && <InfoTip size="xs" topic={text} text={tip} className="ml-1 align-middle" />}
+            </li>
+          );
+        })}
       </ul>
     </Notice>
   );

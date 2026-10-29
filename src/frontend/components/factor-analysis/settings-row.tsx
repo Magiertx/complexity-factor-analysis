@@ -122,7 +122,7 @@ export function SettingsRow({
   const chipsRef = useRef<HTMLDivElement>(null);
   useStickyOffset(rowRef);
   useScrollFade(chipsRef);
-  const chips = settingsSummary(options, standard, analysis, measureCount, t);
+  const chips = settingsSummary(options, standard, analysis, measureCount, t, published?.n_factors ?? null);
   const source = settingsSourceText(publishedSource, publishedScope, t);
   const isStandard = sameOptions(options, standard);
   const isPublished = !!published && sameOptions(options, published);
