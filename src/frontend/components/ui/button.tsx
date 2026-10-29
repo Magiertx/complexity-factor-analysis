@@ -22,18 +22,18 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   size?: Size;
 }
 
+/** The look of a button, for a link that is one. */
+export const buttonClass = (variant: Variant = "primary", size: Size = "md", className?: string) =>
+  cn(
+    "inline-flex items-center justify-center gap-2 rounded-md font-medium transition disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+    variants[variant],
+    sizes[size],
+    className,
+  );
+
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", ...props }, ref) => (
-    <button
-      ref={ref}
-      className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-md font-medium transition disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-        variants[variant],
-        sizes[size],
-        className,
-      )}
-      {...props}
-    />
+    <button ref={ref} className={buttonClass(variant, size, className)} {...props} />
   ),
 );
 Button.displayName = "Button";
