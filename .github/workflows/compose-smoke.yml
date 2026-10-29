@@ -25,6 +25,8 @@ jobs:
           docker compose version
 
       - name: Build and start
+        env:
+          APP_COMMIT: ${{ github.sha }}
         run: |
           start=$(date +%s)
           docker compose up -d --build
@@ -55,6 +57,19 @@ jobs:
           jq '.kmo.overall' analysis.json
           # ComFy's report: KMO 0.7467
           jq -e '.kmo.overall > 0.7466 and .kmo.overall < 0.7468' analysis.json
+
+      - name: Version and commit in the export
+        run: |
+          J=$RUNNER_TEMP/cookies
+          API=http://localhost:3000/api
+          ds=$(curl -fsS -c $J -b $J -F kind=model -F source=bundled -F bundled_id=comfy-paper-inductive-miner \
+            $API/factor-analysis/datasets | jq -r .dataset_id)
+          curl -fsS -c $J -b $J -H 'Content-Type: application/json' -d '{"n_factors": 4}' \
+            -o export.zip $API/factor-analysis/datasets/$ds/export/zip
+          unzip -p export.zip manifest.json | jq '.tool'
+          # The version is part of the image; the commit is the one passed to the build.
+          unzip -p export.zip manifest.json | jq -e --arg sha "$GITHUB_SHA" \
+            '.tool.version != null and .tool.commit == $sha'
 
       - name: Dataset mined by ProM from the sample logs
         run: |

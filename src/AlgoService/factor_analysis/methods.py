@@ -19,6 +19,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from version import REPOSITORY_URL
+
 from .report import tex
 
 LANGUAGES = ("en", "de")
@@ -151,12 +153,11 @@ def _tool_reference(tool: dict[str, Any], year: int) -> dict[str, Any]:
         "type": "misc",
         "comment": (
             "The tool as exported: its name, version and commit are those of the running service; the author is the "
-            "one of its git history and the year that of this export. Add co-authors and a URL once the tool has a "
-            "name and an address of its own."
+            "one of its git history and the year that of this export. Add co-authors once the tool has a DOI."
         ),
         "fields": [
             ("author", "Reichle, Jonas"), ("title", tool.get("name") or "Complexity Factor Analysis"),
-            ("year", str(year)), *([("note", note)] if note else []),
+            ("year", str(year)), *([("note", note)] if note else []), ("url", REPOSITORY_URL),
         ],
     }
 
