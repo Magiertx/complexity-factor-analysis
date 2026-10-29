@@ -141,7 +141,7 @@ export function SettingsRow({
           ref={chipsRef}
           className="scroll-fade relative min-w-0 overflow-x-auto no-scrollbar lg:overflow-x-visible lg:[mask-image:none] lg:[-webkit-mask-image:none]"
         >
-          <ul className="flex items-center text-xs whitespace-nowrap lg:flex-wrap">
+          <ul className="flex flex-wrap items-center gap-y-0.5 text-xs">
             {chips.map((chip, i) => (
               <li key={chip.id} className="flex items-center">
                 {i > 0 && (
@@ -197,8 +197,10 @@ function SettingChipButton({ chip, onGo }: { chip: SettingChip; onGo: () => void
       type="button"
       onClick={onGo}
       className={cn(
-        "rounded px-1.5 py-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-        chip.differs ? "bg-tile text-fg font-medium hover:bg-accent/[0.08]" : "text-muted hover:text-fg hover:bg-tile",
+        "rounded px-1.5 py-1 whitespace-nowrap transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+        chip.differs
+          ? "bg-tile text-fg font-medium hover:bg-accent/[0.08] hover:ring-1 hover:ring-inset hover:ring-accent/40"
+          : "text-muted hover:text-fg hover:bg-tile hover:ring-1 hover:ring-inset hover:ring-border",
       )}
     >
       {chip.text}

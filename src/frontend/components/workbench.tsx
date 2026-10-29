@@ -22,7 +22,7 @@ import {
   LayoutGrid,
   List,
   Play,
-  Route,
+  Compass,
   X,
 } from "lucide-react";
 import {
@@ -624,7 +624,6 @@ export function Workbench() {
           <>
             {/* 1. The event log: where it comes from, and what is in it. */}
             <InspectSection
-              n={1}
               title={t("inspect.section_log")}
               hint={t(selectedJobDetail ? "inspect.section_log_run" : "inspect.section_log_hint")}
               tour="single-logsource"
@@ -951,7 +950,6 @@ export function Workbench() {
 
             {/* 2. The miners that discover the nets and the measures computed on them. */}
             <InspectSection
-              n={2}
               title={t("inspect.section_settings")}
               hint={t("inspect.section_settings_hint")}
               tour="single-params"
@@ -1077,7 +1075,6 @@ export function Workbench() {
 
             {/* 3. The run: its progress, and the button that starts or stops it. */}
             <InspectSection
-              n={3}
               title={t("inspect.section_run")}
               hint={t("inspect.section_run_hint")}
               tour="single-run"
@@ -1187,16 +1184,14 @@ export function Workbench() {
   );
 }
 
-/** One of the three sections of the page: a number, what it is for, and its content on a card. */
+/** One of the three sections of the page: a heading, what it is for, and its content on a card. */
 function InspectSection({
-  n,
   title,
   hint,
   tour,
   aside,
   children,
 }: {
-  n: number;
   title: string;
   hint: string;
   tour: string;
@@ -1208,12 +1203,6 @@ function InspectSection({
     <section aria-labelledby={id} data-tour={tour}>
       <Card>
         <div className="px-4 sm:px-5 pt-5 pb-4 flex items-start gap-3 flex-wrap">
-          <span
-            aria-hidden
-            className="h-7 w-7 rounded-full bg-tile text-muted grid place-items-center text-xs font-semibold tabular-nums shrink-0"
-          >
-            {n}
-          </span>
           <div className="flex-1 min-w-[12rem]">
             <h2 id={id} className="text-base font-semibold tracking-tight">
               {title}
@@ -1298,7 +1287,7 @@ function InspectToolbar({
     <div role="group" aria-label={t("factor.toolbar.aria")} className="flex items-center gap-0.5">
       <Menu icon={BookOpen} name={t("inspect.about_menu", { name: localizedAlgoName(algorithm, locale) })} items={items} width={320} />
       <ToolSeparator />
-      <IconButton icon={Route} name={t("inspect.tour")} more={t("inspect.tour_more")} onClick={onTour} />
+      <IconButton icon={Compass} name={t("inspect.tour")} more={t("inspect.tour_more")} onClick={onTour} />
     </div>
   );
 }

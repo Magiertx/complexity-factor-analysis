@@ -10,7 +10,7 @@ import {
   FileText,
   Printer,
   Quote,
-  Route,
+  Compass,
   Sheet,
   Tag,
 } from "lucide-react";
@@ -168,7 +168,7 @@ export function FactorToolbar({
       <CopyLink query={linkQuery} />
       {exportMenu}
       <ToolSeparator />
-      <IconButton icon={Route} name={t("factor.tour_button")} more={t("factor.tour_title")} onClick={onTour} />
+      <IconButton icon={Compass} name={t("factor.tour_button")} more={t("factor.tour_title")} onClick={onTour} />
     </div>
   );
 }

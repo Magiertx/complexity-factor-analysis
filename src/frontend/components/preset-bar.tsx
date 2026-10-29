@@ -198,7 +198,7 @@ export function PresetBar({ algorithmId, currentParams, onLoad, defaults, disabl
               <Button
                 type="button"
                 size="sm"
-                variant="ghost"
+                variant="outline"
                 disabled={disabled}
                 onClick={() => {
                   onLoad({ ...defaults });
@@ -216,7 +216,7 @@ export function PresetBar({ algorithmId, currentParams, onLoad, defaults, disabl
       </div>
 
       {toast && (
-        <span className="flex items-center gap-1 text-[11px] text-muted">
+        <span className="flex items-center gap-1 text-xs text-muted">
           <Check className="h-3 w-3 text-accent-ink" />
           {toast}
         </span>
