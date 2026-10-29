@@ -7,6 +7,7 @@ import { COMPARE_HREF } from "@/lib/compare";
 import { useT } from "@/lib/i18n";
 import { useBackToAnalysis } from "@/components/back-link";
 import { PageHeader } from "@/components/page-header";
+import { PAGE_COLUMN } from "@/components/ui/page-column";
 
 interface GuideSection {
   id: string;
@@ -89,7 +90,7 @@ export function GuideView() {
       </p>
     ));
   return (
-    <div className="space-y-8 max-w-3xl mx-auto">
+    <div className={`space-y-8 ${PAGE_COLUMN}`}>
       <PageHeader title={t("guide.title")} subtitle={t("guide.subtitle", { app: APP_NAME })} back={back} />
 
       <nav aria-label={t("guide.toc")} className="rounded-lg bg-tile/60 px-4 py-3">
