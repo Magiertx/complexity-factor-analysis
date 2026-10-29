@@ -62,6 +62,7 @@ _RAGGED = ">{\\raggedright\\arraybackslash}"
 _REASONS = {
     "non_numeric": "non-numeric values",
     "missing": "missing values",
+    "non_finite": "values that are not finite",
     "constant": "no variance",
     "duplicate": "perfectly correlated with another measure",
 }
