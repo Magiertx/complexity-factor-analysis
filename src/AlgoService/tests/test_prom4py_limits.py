@@ -514,7 +514,7 @@ def test_aborting_a_job_that_waits_for_its_turn_frees_the_worker(client, hanging
 
     assert client.get(f"/jobs/{job['id']}").json()["status"] == "aborted"
     d = client.get(f"/factor-analysis/datasets/{posted['response'].json()['dataset_id']}").json()
-    assert d["status"] == "failed" and d["error"] == "Aborted by user"
+    assert d["status"] == "aborted" and d["error"] == "Aborted by user"
 
 
 def test_a_timeout_is_a_failed_input_of_a_dataset_job(client, hanging_miner, monkeypatch):
