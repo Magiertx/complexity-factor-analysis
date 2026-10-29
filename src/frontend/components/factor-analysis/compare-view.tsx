@@ -368,6 +368,7 @@ export function CompareView() {
               <Segmented<Look>
                 size="sm"
                 aria-label={t("factor.loadings.look_label")}
+                className="w-full min-[400px]:w-auto"
                 value={look}
                 onChange={setLook}
                 options={[
@@ -375,7 +376,7 @@ export function CompareView() {
                     value: "matrix",
                     label: (
                       <>
-                        <Grid3x3 className="h-3.5 w-3.5" aria-hidden />
+                        <Grid3x3 className="hidden h-3.5 w-3.5 min-[400px]:block" aria-hidden />
                         {t("compare.look.matrix")}
                       </>
                     ),
@@ -384,7 +385,7 @@ export function CompareView() {
                     value: "dimensions",
                     label: (
                       <>
-                        <LayoutGrid className="h-3.5 w-3.5" aria-hidden />
+                        <LayoutGrid className="hidden h-3.5 w-3.5 min-[400px]:block" aria-hidden />
                         {t("compare.look.dimensions")}
                       </>
                     ),
@@ -393,7 +394,7 @@ export function CompareView() {
                     value: "pairs",
                     label: (
                       <>
-                        <Combine className="h-3.5 w-3.5" aria-hidden />
+                        <Combine className="hidden h-3.5 w-3.5 min-[400px]:block" aria-hidden />
                         {t("compare.look.pairs")}
                       </>
                     ),
@@ -791,7 +792,7 @@ function FactorNameList({ names, count }: { names: (string | null)[] | null | un
 function MatrixLegend() {
   const t = useT();
   return (
-    <div className="flex items-center gap-x-4 gap-y-1 text-[11px] text-muted flex-wrap" aria-hidden>
+    <div className="flex items-center gap-x-4 gap-y-1 text-xs text-muted flex-wrap" aria-hidden>
       <span className="flex items-center gap-1.5">
         <span className="h-3 w-3 rounded-sm bg-fg/[0.08]" />
         {t("compare.legend.in_row")}
@@ -850,7 +851,7 @@ function MatrixCell({
           })}
         </span>
         {cell.loadings.length === 1 && (
-          <span className="ml-1.5 font-mono text-[11px] text-muted tabular-nums">{formatNumber(cell.loadings[0], locale, 2)}</span>
+          <span className="ml-1.5 font-mono text-xs text-muted tabular-nums">{formatNumber(cell.loadings[0], locale, 2)}</span>
         )}
       </>
     );
@@ -1096,7 +1097,7 @@ function PairsMatrix({
   const starts = rows.map((row, i) => i > 0 && row.dimension !== rows[i - 1].dimension);
   return (
     <div className="space-y-2">
-      <p className="flex items-center gap-1 text-[11px] text-muted">
+      <p className="flex items-center gap-1 text-xs text-muted">
         {t("compare.pairs.legend_short")}
         <InfoTip size="xs" topic={t("compare.pairs.label")} text={t("compare.pairs.legend")} />
       </p>
@@ -1327,7 +1328,7 @@ function NotesIndicator({ column }: { column: ColumnNotes }) {
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          "inline-flex shrink-0 items-center gap-0.5 rounded px-1 text-[11px] font-medium tabular-nums transition hover:bg-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+          "inline-flex shrink-0 items-center gap-0.5 rounded px-1 text-xs font-medium tabular-nums transition hover:bg-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
           warn ? "text-warn-ink" : "text-muted",
         )}
       >
@@ -1385,7 +1386,7 @@ function NotesSection({ notes }: { notes: ColumnNotes[] }) {
           start += column.notes.length;
           return (
             <section key={column.title} className="space-y-1">
-              <h3 className="text-xs font-semibold">{column.title}</h3>
+              {column.title && <h3 className="text-xs font-semibold">{column.title}</h3>}
               <ol start={from} className="list-decimal space-y-1 pl-5 text-xs text-muted marker:tabular-nums marker:text-muted">
                 {column.notes.map((note, j) => (
                   <li key={j} className="pl-1">

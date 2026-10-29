@@ -70,7 +70,7 @@ export function FeatureChecklist({
     set(next);
   };
   const shown = groups.filter((g) => !q || (byGroup.get(g.key) ?? []).some(matches));
-  const linkClass = "text-[11px] text-muted hover:text-fg transition inline-flex items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+  const linkClass = "min-h-6 px-1.5 text-xs text-muted hover:text-fg hover:bg-tile transition inline-flex items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
   return (
     <fieldset className="space-y-2">

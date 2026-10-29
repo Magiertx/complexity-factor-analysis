@@ -57,7 +57,8 @@ export function InfoTip({
         }}
         className={cn(
           "inline-grid shrink-0 place-items-center rounded-full align-middle text-muted transition",
-          size === "xs" ? "h-4 w-4" : "h-5 w-5",
+          // A hit area of 24 px around the small glyph; the negative margin keeps the line as high as before.
+          size === "xs" ? "h-6 w-6 -m-1" : "h-6 w-6 -m-0.5",
           "hover:bg-tile hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
           "aria-expanded:bg-tile aria-expanded:text-accent-ink",
           className,

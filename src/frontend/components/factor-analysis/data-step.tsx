@@ -1281,7 +1281,7 @@ function Checklist({
     const next = chosen.has(key) ? selected.filter((k) => k !== key) : [...selected, key];
     onChange(items.map((i) => i.key).filter((k) => next.includes(k)));
   };
-  const linkClass = "text-[11px] text-muted hover:text-fg transition inline-flex items-center gap-1";
+  const linkClass = "min-h-6 px-1.5 text-xs text-muted hover:text-fg hover:bg-tile transition inline-flex items-center gap-1 rounded";
   return (
     <fieldset className="space-y-2">
       <div className="flex items-end justify-between gap-3 flex-wrap">
