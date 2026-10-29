@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import type { FactorAnalysis, FactorDataset } from "@/lib/api";
 import {
   MIN_MEASURES,
@@ -8,6 +9,7 @@ import {
   countText,
   isSolutionNotice,
   kmoGrade,
+  mostlyFiltered,
   noticeText,
   type AnalysisOptions,
 } from "@/lib/factor-analysis";
@@ -145,6 +147,16 @@ export function SuitabilityView(props: Props) {
             {removed === 0
               ? t("factor.suitability.removed_none")
               : countText(t, "factor.suitability.removed_summary", removed)}
+          </p>
+        )}
+        {/* More than half gone: what is left may say little, so it is said in amber. */}
+        {analysis && options.auto_msa_filter && mostlyFiltered(analysis.used_measures.length, removed) && (
+          <p className="pl-12 text-xs text-warn-ink flex items-center gap-1.5">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {t("factor.suitability.thin_result", {
+              left: analysis.used_measures.length,
+              total: analysis.used_measures.length + removed,
+            })}
           </p>
         )}
       </div>

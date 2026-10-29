@@ -37,6 +37,7 @@ import {
   suggestedNames,
   withFactorName,
   knownTooFew,
+  mostlyFiltered,
   plainFailure,
   retryInput,
 } from "./factor-analysis";
@@ -575,5 +576,14 @@ describe("retryInput", () => {
 
   it("cannot recompute uploaded files, which are gone", () => {
     expect(retryInput({ ...base, inputs: { files: 3 } } as never)).toBeNull();
+  });
+});
+
+describe("mostlyFiltered", () => {
+  it("is true when the MSA filter took out more than half of the measures", () => {
+    expect(mostlyFiltered(3, 10)).toBe(true);
+    expect(mostlyFiltered(6, 6)).toBe(false);
+    expect(mostlyFiltered(10, 3)).toBe(false);
+    expect(mostlyFiltered(5, 0)).toBe(false);
   });
 });

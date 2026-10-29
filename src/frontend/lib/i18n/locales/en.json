@@ -900,7 +900,8 @@
       "invert": "Invert selection",
       "invert_title": "Exclude the included measures and include the excluded ones",
       "removed_summary": "The filter removed {n} measure; the list below marks it.",
-      "removed_summary_plural": "The filter removed {n} measures; the list below marks them."
+      "removed_summary_plural": "The filter removed {n} measures; the list below marks them.",
+      "thin_result": "Only {left} of {total} measures left."
     },
     "factors": {
       "scree_title": "Scree plot",

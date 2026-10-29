@@ -900,7 +900,8 @@
       "invert": "Auswahl umkehren",
       "invert_title": "Die einbezogenen Maße ausschließen und die ausgeschlossenen einbeziehen",
       "removed_summary": "Der Filter hat {n} Maß entfernt; die Liste unten markiert es.",
-      "removed_summary_plural": "Der Filter hat {n} Maße entfernt; die Liste unten markiert sie."
+      "removed_summary_plural": "Der Filter hat {n} Maße entfernt; die Liste unten markiert sie.",
+      "thin_result": "Nur {left} von {total} Maßen übrig."
     },
     "factors": {
       "scree_title": "Screeplot",

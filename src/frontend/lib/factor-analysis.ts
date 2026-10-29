@@ -615,6 +615,11 @@ export function plainFailure(
   return { text: generic, details: message };
 }
 
+/** The MSA filter took out more than half of the measures it was given: a thin result is left. */
+export function mostlyFiltered(left: number, removed: number): boolean {
+  return removed * 2 > left + removed;
+}
+
 /** A dataset that was stopped or failed: there is no data to open. */
 export function datasetEnded(dataset: { status: string }): boolean {
   return dataset.status === "failed" || dataset.status === "aborted";
