@@ -11,6 +11,7 @@ import {
   type FactorAnalysis,
   type FactorCatalog,
   type FactorInterpretation,
+  type CreateDatasetInput,
   type FactorKind,
   type InputsSummary,
   type Job,
@@ -590,6 +591,61 @@ function datasetJobKind(job: Job): FactorKind | null {
 /** Why a job failed: in the UI language where the server names a known cause, else its message. */
 export function jobErrorText(job: Pick<Job, "error" | "error_code">, tMaybe: TranslateMaybe): string | undefined {
   return (job.error_code && tMaybe(`errors.${job.error_code}`)) || job.error || undefined;
+}
+
+/**
+ * A failure of the API for the UI: the sentence of its code in the UI language, with the
+ * technical text kept for an (i) "Details". A code without a sentence gets the generic text and
+ * the technical text as details, so library wording is never the main message.
+ */
+export function plainFailure(
+  tMaybe: TranslateMaybe,
+  failure: { code?: string | null; params?: Record<string, string | number> | null; message?: string | null },
+  generic: string,
+): { text: string; details: string | null } {
+  const params = failure.params ?? undefined;
+  const text = failure.code
+    ? (tMaybe(`factor.errors.${failure.code}`, params) ?? tMaybe(`errors.${failure.code}`, params))
+    : undefined;
+  const message = failure.message?.trim() || null;
+  if (text) return { text, details: message && message !== text ? message : null };
+  return { text: generic, details: message };
+}
+
+/** A dataset that was stopped or failed: there is no data to open. */
+export function datasetEnded(dataset: { status: string }): boolean {
+  return dataset.status === "failed" || dataset.status === "aborted";
+}
+
+/**
+ * What an analysis of this many observations and measures is known to run into before it is
+ * asked for: more measures than observations leave it nothing to estimate (core._check_size).
+ * null where it can run, or where the server has another reason to say no.
+ */
+export function knownTooFew(rows: number, measures: number): { n: number; measures: number; needed: number } | null {
+  if (measures < MIN_MEASURES) return null;
+  return rows < measures + 1 ? { n: rows, measures, needed: measures + 1 } : null;
+}
+
+/** The input to compute an aborted dataset again, if what it was made from is still there: a bundled sample. */
+export function retryInput(dataset: {
+  kind: FactorKind;
+  source: string;
+  name: string;
+  name_auto: boolean;
+  inputs?: { sample_id?: string; measures?: string[]; miners?: string[]; groups?: string[] };
+}): CreateDatasetInput | null {
+  const inputs = dataset.inputs;
+  if (!inputs?.sample_id || (dataset.source !== "logs" && dataset.source !== "pnml")) return null;
+  return {
+    kind: dataset.kind,
+    source: dataset.source,
+    bundledId: inputs.sample_id,
+    measures: inputs.measures,
+    miners: inputs.miners,
+    groups: inputs.groups,
+    name: dataset.name_auto ? undefined : dataset.name,
+  };
 }
 
 /** The name of a job's algorithm in the UI language; the backend names dataset jobs in English. */

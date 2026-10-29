@@ -40,15 +40,19 @@ import {
 import {
   PREVIEW_ROWS,
   countText,
+  datasetEnded,
   datasetName,
   defaultOptions,
   dimensionCount,
   downloadBlob,
   hasNames,
   initialOptions,
+  knownTooFew,
   namesForApi,
   optionsFromSaved,
+  plainFailure,
   publishedOptions,
+  retryInput,
   rowsChoice,
   sameOptions,
   solutionKey,
@@ -195,7 +199,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const [datasets, setDatasets] = useState<DatasetSummary[] | null>(null);
   const [choosing, setChoosing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<{ text: string; details: string | null } | null>(null);
   // Changes whenever jobs come or go, e.g. one deleted in the History.
   const jobCount = useJobs().jobs.length;
 
@@ -513,8 +517,23 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // it, and the server drops a request that a newer one of the session replaced (409
   // "superseded"). Replaced without a newer one of this page, e.g. by another tab on the same
   // dataset, it is tried once more before that counts as an error.
+  const knownSize = useMemo(() => {
+    if (!dataset || dataset.status !== "ready") return null;
+    const miner = dataset.miners?.find((m) => m.name === options.miner) ?? null;
+    const skip = new Set(options.excluded);
+    const measures = dataset.measures.filter((m) => !skip.has(m) && !miner?.dropped.includes(m)).length;
+    return knownTooFew(miner ? miner.n_observations : dataset.n_observations, measures);
+  }, [dataset, options.miner, options.excluded]);
   useEffect(() => {
     if (!ready || !datasetId) return;
+    if (knownSize) {
+      // Known to fail: show the reason without asking the server for a 400.
+      const known = new HttpError("Too few observations", 400, "too_few_observations", knownSize);
+      setAnalysisError(errorTextRef.current(known, tRef.current("factor.analysis.failed")));
+      setAnalysisFailure({ code: "too_few_observations", params: knownSize });
+      setAnalyzing(false);
+      return;
+    }
     const ctrl = new AbortController();
     const run = () =>
       analyzeDataset(datasetId, options, ctrl.signal).catch(async (e) => {
@@ -561,7 +580,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       clearTimeout(timer);
       ctrl.abort();
     };
-  }, [ready, datasetId, options, datasetGone]);
+  }, [ready, datasetId, options, datasetGone, knownSize]);
 
   // The solution on screen, and the names of its factors.
   const analysisKey = analysis && analyzedOptions ? solutionKey(analysis.n_factors, analyzedOptions) : null;
@@ -816,7 +835,31 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       // No jump: the data step stays, with the summary and the way on.
       setLeadTo({ id: res.dataset_id, to: lead });
     } catch (e) {
-      setSubmitError(errorText(e, t("factor.data.submit_failed")));
+      setSubmitError(
+        e instanceof HttpError
+          ? plainFailure(tMaybe, { code: e.code, params: e.params, message: e.message }, t("factor.data.submit_failed"))
+          : { text: t("factor.data.submit_failed"), details: messageOf(e, "") || null },
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // A dataset the user stopped is computed again from the sample it was made from, if it was one:
+  // uploaded files are not kept once the job ends. The stopped one goes, so the list has one.
+  const stoppedInput = dataset?.status === "aborted" ? retryInput(dataset) : null;
+  const retryDataset = async () => {
+    if (!dataset || !stoppedInput) return;
+    setSubmitting(true);
+    try {
+      const res = await createDataset(stoppedInput);
+      focusSummary.current = true;
+      void deleteDataset(dataset.id).catch(() => undefined);
+      setDatasets((list) => list && list.filter((d) => d.id !== dataset.id));
+      openCreated(res.dataset_id, null);
+      setLeadTo({ id: res.dataset_id, to: "next" });
+    } catch (e) {
+      setDatasetError(errorText(e, t("factor.data.submit_failed")));
     } finally {
       setSubmitting(false);
     }
@@ -1045,7 +1088,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         ? "busy"
         : dataset.status === "failed"
           ? "warn"
-          : "done",
+          : dataset.status === "aborted"
+            ? "active"
+            : "done",
     dataset: ready ? "done" : dataset?.status === "computing" ? "busy" : "locked",
     suitability: resultState === "done" ? (suitable ? "done" : "warn") : resultState,
     // Only a real problem of the solution warns; a factor count of one's own or of a paper is a choice.
@@ -1136,7 +1181,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         ? t("factor.nav.locked.computing")
         : dataset?.id === datasetId && dataset.status === "failed"
           ? t("factor.nav.locked.failed")
-          : t("factor.nav.locked.loading");
+          : dataset?.id === datasetId && dataset.status === "aborted"
+            ? t("factor.nav.locked.aborted")
+            : t("factor.nav.locked.loading");
   const locks: StepLocks = {
     data: null,
     dataset: lockReason,
@@ -1150,7 +1197,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // Open the step chosen for a dataset once it is ready; a dataset that failed stays on the data step.
   useEffect(() => {
     if (!advance) return;
-    if (dataset?.id === advance.id && dataset.status === "failed") {
+    if (dataset?.id === advance.id && datasetEnded(dataset)) {
       setAdvance(null);
       return;
     }
@@ -1237,7 +1284,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     </span>
   ) : null;
 
-  const loadingDataset = !!datasetId && !ready && dataset?.status !== "computing" && dataset?.status !== "failed";
+  const loadingDataset = !!datasetId && !ready && dataset?.status === "ready";
   const lockedHint = (
     <EmptyStep icon={loadingDataset ? <Loader2 className="h-5 w-5 animate-spin text-muted" /> : undefined}>
       <p>
@@ -1247,7 +1294,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
             ? t("factor.empty.computing")
             : dataset?.id === datasetId && dataset.status === "failed"
               ? t("factor.nav.locked.failed")
-              : t("common.loading")}
+              : dataset?.id === datasetId && dataset.status === "aborted"
+                ? t("factor.nav.locked.aborted")
+                : t("common.loading")}
       </p>
       {!loadingDataset && (
         <Button variant="outline" size="sm" className="mt-3" onClick={() => go("data")}>
@@ -1563,6 +1612,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                 onChange={() => setChoosing(true)}
                 onCancelJob={cancelJob}
                 onDelete={() => removeDataset(dataset.id)}
+                onRetry={stoppedInput ? retryDataset : null}
+                retrying={submitting}
               />
             ) : datasetError ? (
               <Button variant="outline" size="sm" onClick={() => selectDataset(null)}>

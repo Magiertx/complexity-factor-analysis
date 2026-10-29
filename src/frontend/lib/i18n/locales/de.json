@@ -762,7 +762,25 @@
       "scope": {
         "paper": "im Paper",
         "report": "nur im Report"
-      }
+      },
+      "details": "Details",
+      "aborted_title": "Die Berechnung wurde abgebrochen",
+      "aborted_hint": "Es wurde nichts gespeichert. Starte sie noch einmal oder wähle andere Daten.",
+      "aborted_hint_gone": "Es wurde nichts gespeichert, und die Dateien sind nicht mehr da. Wähle die Daten noch einmal.",
+      "retry": "Erneut berechnen",
+      "mine_aborted": "abgebrochen",
+      "skipped": "1 Maß übersprungen: {reason}",
+      "skipped_reason": {
+        "too_few_traces": "zu wenige Traces",
+        "group_failed": "Berechnung fehlgeschlagen"
+      },
+      "skipped_info": "feeed konnte diese Merkmalsgruppen für mindestens ein Log nicht berechnen. Damit alle Logs dieselben Spalten behalten, fehlen ihre Maße bei allen Logs: {groups}.",
+      "skipped_group": "{name} – {reason} ({inputs})",
+      "loaded_too_few": "{rows} Beobachtungen und {cols} Maße: Eine Faktorenanalyse braucht mehr Beobachtungen als Maße, also höchstens {max} Maße. Schließe Maße aus oder nimm mehr Daten dazu.",
+      "loaded_too_few_any": "Mit {n} Beobachtung läuft keine Faktorenanalyse; sie braucht mindestens {needed}. Nimm mehr Daten dazu.",
+      "loaded_too_few_any_plural": "Mit {n} Beobachtungen läuft keine Faktorenanalyse; sie braucht mindestens {needed}. Nimm mehr Daten dazu.",
+      "skipped_plural": "{n} Maße übersprungen: {reason}",
+      "submit_show": "Ansehen"
     },
     "inputs": {
       "logs": "{n} Log",
@@ -788,7 +806,8 @@
         "non_numeric": "nicht numerisch",
         "constant": "konstant",
         "missing": "fehlende Werte",
-        "duplicate": "Duplikat"
+        "duplicate": "Duplikat",
+        "non_finite": "nicht endlich"
       },
       "failures_heading": "{n} Eingabe lieferte keine oder unvollständige Werte",
       "failures_heading_plural": "{n} Eingaben lieferten keine oder unvollständige Werte",
@@ -835,7 +854,8 @@
       "view_log": "Dieses Log ansehen",
       "view_log_more": "Öffnet die Seite für ein einzelnes Log mit diesem Log und dem Miner der Zeile. Das geht, solange das Log zu den neuesten Uploads dieser Sitzung gehört.",
       "view_log_gone": "Das Log gehört nicht mehr zu den neuesten Uploads dieser Sitzung.",
-      "failures_more": "und {n} weitere"
+      "failures_more": "und {n} weitere",
+      "renamed": "umbenannt: {from} → {to}"
     },
     "suitability": {
       "passed": "bestanden",
@@ -1282,7 +1302,8 @@
         "no_dataset": "Öffne zuerst im Schritt Daten einen Datensatz.",
         "loading": "Der Datensatz lädt noch.",
         "computing": "Die Maße werden noch berechnet.",
-        "failed": "Der Datensatz ließ sich nicht erstellen. Wähle im Schritt Daten andere Daten."
+        "failed": "Der Datensatz ließ sich nicht erstellen. Wähle im Schritt Daten andere Daten.",
+        "aborted": "Die Berechnung wurde abgebrochen, daher gibt es noch keine Daten."
       }
     },
     "toolbar": {
@@ -1517,7 +1538,25 @@
     "rate_limited": "Zu viele Anfragen. Warte kurz und versuche es noch einmal.",
     "job_quota": "Du hast schon {active} wartende oder laufende Runs, und das käme mit {requested} dazu; erlaubt sind höchstens {limit}. Warte, bis sie fertig sind, oder brich einige im Verlauf ab.",
     "dataset_jobs_busy": "Der Server berechnet schon {active} Datensätze, mehr gleichzeitig nicht. Versuche es in ein paar Minuten noch einmal.",
-    "prom_unavailable": "ProM, das die Miner ausführt, ist gerade nicht erreichbar, daher konnte kein Petri-Netz entdeckt werden. Versuche es in ein paar Minuten noch einmal; bleibt es dabei, muss auf dem Server der Dienst prom4py gestartet werden."
+    "prom_unavailable": "ProM, das die Miner ausführt, ist gerade nicht erreichbar, daher konnte kein Petri-Netz entdeckt werden. Versuche es in ein paar Minuten noch einmal; bleibt es dabei, muss auf dem Server der Dienst prom4py gestartet werden.",
+    "empty_file": "Die Datei ist leer. Wähle eine Datei mit Inhalt.",
+    "csv_unparseable": "Die CSV-Datei lässt sich nicht lesen. Prüfe, ob sie eine Kopfzeile hat und Komma, Semikolon oder Tabulator als Trenner nutzt.",
+    "csv_too_few_rows": "Die CSV-Datei hat zu wenige Datenzeilen ({rows} von mindestens {minimum}). Füge Zeilen hinzu oder wähle andere Daten.",
+    "csv_too_large": "Die CSV-Datei ist zu groß: erlaubt sind höchstens {rows} Zeilen und {columns} Spalten. Teile die Daten auf.",
+    "xes_invalid": "„{file}“ ist keine gültige XES-Datei. Exportiere das Log noch einmal als XES (oder .xes.gz) und lade es erneut hoch.",
+    "pnml_invalid": "„{file}“ ist keine gültige PNML-Datei. Exportiere das Petri-Netz noch einmal als PNML und lade es erneut hoch.",
+    "wrong_file_type": "„{file}“ hat den falschen Dateityp. Erlaubt: {allowed}.",
+    "file_too_large": "„{file}“ ist zu groß; erlaubt sind höchstens {limit_mb} MB.",
+    "files_too_large": "Zusammen sind die Dateien größer als {limit_mb} MB. Verteile sie auf mehrere Datensätze.",
+    "gzip_invalid": "„{file}“ ist keine gültige gzip-Datei. Entpacke sie oder packe sie neu.",
+    "too_many_files": "Du kannst höchstens {limit} Dateien auf einmal hochladen.",
+    "one_csv_file": "Lade genau eine CSV-Datei hoch.",
+    "no_observation": "Aus keiner Eingabe ließen sich Werte berechnen. Prüfe, ob die Dateien lesbar sind und genug Traces haben; die Details nennen den ersten Fehler.",
+    "dataset_too_few_measures": "Nur {have} Maße lieferten Werte; nötig sind mindestens {need}. Wähle mehr Maße oder Merkmalsgruppen.",
+    "compute_failed": "Der Datensatz ließ sich nicht berechnen. Die Details nennen die technische Ursache.",
+    "job_timeout": "Die Berechnung wurde nicht rechtzeitig fertig, vermutlich weil der Server neu gestartet ist. Starte sie noch einmal.",
+    "job_deleted": "Der Run, der diesen Datensatz berechnet hat, wurde gelöscht. Wähle andere Daten oder berechne ihn noch einmal.",
+    "aborted": "Du hast die Berechnung abgebrochen."
   },
   "print": {
     "title": "Faktoranalyse von „{name}“",

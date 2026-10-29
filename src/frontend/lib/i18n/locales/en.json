@@ -762,7 +762,25 @@
       "scope": {
         "paper": "in the paper",
         "report": "report only"
-      }
+      },
+      "details": "Details",
+      "aborted_title": "The computation was stopped",
+      "aborted_hint": "Nothing was saved. Start it again or choose other data.",
+      "aborted_hint_gone": "Nothing was saved, and the files are no longer there. Choose the data again.",
+      "retry": "Compute again",
+      "mine_aborted": "stopped",
+      "skipped": "1 measure skipped: {reason}",
+      "skipped_reason": {
+        "too_few_traces": "too few traces",
+        "group_failed": "the calculation failed"
+      },
+      "skipped_info": "feeed could not compute these feature groups for at least one log. So that every log keeps the same columns, their measures are missing for all logs: {groups}.",
+      "skipped_group": "{name} – {reason} ({inputs})",
+      "loaded_too_few": "{rows} observations and {cols} measures: a factor analysis needs more observations than measures, so at most {max} measures. Exclude measures or add data.",
+      "loaded_too_few_any": "With {n} observation no factor analysis runs; it needs at least {needed}. Add data.",
+      "loaded_too_few_any_plural": "With {n} observations no factor analysis runs; it needs at least {needed}. Add data.",
+      "skipped_plural": "{n} measures skipped: {reason}",
+      "submit_show": "Show"
     },
     "inputs": {
       "logs": "{n} log",
@@ -788,7 +806,8 @@
         "non_numeric": "not numeric",
         "constant": "constant",
         "missing": "missing values",
-        "duplicate": "duplicate"
+        "duplicate": "duplicate",
+        "non_finite": "not finite"
       },
       "failures_heading": "{n} input gave no or incomplete values",
       "failures_heading_plural": "{n} inputs gave no or incomplete values",
@@ -835,7 +854,8 @@
       "view_log": "View this log",
       "view_log_more": "Opens the page for a single log with this log and the miner of the row chosen. It works while the log is among the newest uploads of this session.",
       "view_log_gone": "The log is no longer among the newest uploads of this session.",
-      "failures_more": "and {n} more"
+      "failures_more": "and {n} more",
+      "renamed": "renamed: {from} → {to}"
     },
     "suitability": {
       "passed": "passed",
@@ -1282,7 +1302,8 @@
         "no_dataset": "Open a dataset in the data step first.",
         "loading": "The dataset is still loading.",
         "computing": "The measures are still being computed.",
-        "failed": "The dataset could not be built. Choose other data in the data step."
+        "failed": "The dataset could not be built. Choose other data in the data step.",
+        "aborted": "The computation was stopped, so there is no data yet."
       }
     },
     "toolbar": {
@@ -1517,7 +1538,25 @@
     "rate_limited": "Too many requests. Wait a moment and try again.",
     "job_quota": "You already have {active} runs queued or running, and this would add {requested}; at most {limit} are allowed. Wait for them to finish or abort some in the History.",
     "dataset_jobs_busy": "The server is already computing {active} datasets, the most it runs at once. Try again in a few minutes.",
-    "prom_unavailable": "ProM, which runs the miners, cannot be reached right now, so no Petri net could be discovered. Try again in a few minutes; if it stays like this, the prom4py service has to be started on the server."
+    "prom_unavailable": "ProM, which runs the miners, cannot be reached right now, so no Petri net could be discovered. Try again in a few minutes; if it stays like this, the prom4py service has to be started on the server.",
+    "empty_file": "The file is empty. Choose a file with content.",
+    "csv_unparseable": "The CSV file cannot be read. Check that it has a header row and uses a comma, semicolon or tab as separator.",
+    "csv_too_few_rows": "The CSV file has too few data rows ({rows} of at least {minimum}). Add rows or choose other data.",
+    "csv_too_large": "The CSV file is too large: at most {rows} rows and {columns} columns are allowed. Split the data.",
+    "xes_invalid": "“{file}” is not a valid XES file. Export the log as XES (or .xes.gz) again and upload it once more.",
+    "pnml_invalid": "“{file}” is not a valid PNML file. Export the Petri net as PNML again and upload it once more.",
+    "wrong_file_type": "“{file}” has the wrong file type. Allowed: {allowed}.",
+    "file_too_large": "“{file}” is too large; at most {limit_mb} MB are allowed.",
+    "files_too_large": "Together the files are larger than {limit_mb} MB. Split them over several datasets.",
+    "gzip_invalid": "“{file}” is not a valid gzip file. Unpack it or pack it again.",
+    "too_many_files": "You can upload at most {limit} files at once.",
+    "one_csv_file": "Upload exactly one CSV file.",
+    "no_observation": "No values could be computed from any input. Check that the files can be read and have enough traces; the details name the first error.",
+    "dataset_too_few_measures": "Only {have} measures gave values; at least {need} are needed. Choose more measures or feature groups.",
+    "compute_failed": "The dataset could not be computed. The details name the technical cause.",
+    "job_timeout": "The computation did not finish in time, probably because the server restarted. Start it again.",
+    "job_deleted": "The run that computed this dataset was deleted. Choose other data or compute it again.",
+    "aborted": "You stopped the computation."
   },
   "print": {
     "title": "Factor analysis of “{name}”",

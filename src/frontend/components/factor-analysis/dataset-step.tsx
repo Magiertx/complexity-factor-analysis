@@ -417,7 +417,15 @@ function DescriptivesTable({
                       <td className="num">{statistic(row.std, locale)}</td>
                       <td className="num">{statistic(row.min, locale)}</td>
                       <td className="num">{statistic(row.max, locale)}</td>
-                      <td className="whitespace-nowrap">{row.dropped ? t(`factor.dataset.reason.${row.dropped}`) : ""}</td>
+                      <td className="whitespace-nowrap">
+                        {row.dropped ? t(`factor.dataset.reason.${row.dropped}`) : ""}
+                        {row.renamed_from && (
+                          <span className="text-muted">
+                            {row.dropped ? " · " : ""}
+                            {t("factor.dataset.renamed", { from: row.renamed_from, to: row.measure })}
+                          </span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

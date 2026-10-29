@@ -368,6 +368,8 @@ export interface DescriptiveRow {
   max: number | null;
   /** Why the cleaning left the measure out of the matrix, if it did. */
   dropped: DropReason | null;
+  /** The name the measure had in the file, when reading gave it another one. */
+  renamed_from?: string | null;
   /** The values counted in bins; null without values, absent from older servers. */
   histogram?: Histogram | null;
 }
@@ -499,7 +501,7 @@ export interface FactorCatalog {
   limits?: UploadLimits;
 }
 
-export type DropReason = "non_numeric" | "constant" | "missing" | "duplicate";
+export type DropReason = "non_numeric" | "constant" | "missing" | "non_finite" | "duplicate";
 
 export interface FactorDataset {
   id: string;
@@ -508,11 +510,15 @@ export interface FactorDataset {
   /** The server made the name up from the inputs, in English; see `datasetName`. */
   name_auto: boolean;
   source: string;
-  status: "computing" | "ready" | "failed";
+  /** "aborted": the user stopped the computation, which is not a failure. */
+  status: "computing" | "ready" | "failed" | "aborted";
   /** For a bundled dataset, its id in the catalog, which names it in the UI language. */
   bundled_id?: string | null;
   job_id?: string;
+  /** Of a failed or aborted dataset: the technical text, and the cause as a code for the UI. */
   error?: string;
+  error_code?: string | null;
+  error_params?: Record<string, string | number>;
   progress?: number;
   n_observations: number;
   measures: string[];
@@ -524,6 +530,8 @@ export interface FactorDataset {
   dropped_rows: number;
   /** Inputs that gave no or incomplete values, e.g. a miner that failed on a log. */
   failures?: { input: string; error: string }[];
+  /** Feature groups left out of every log because feeed failed on one of them. */
+  skipped?: SkippedGroup[];
   created_at: string;
   inputs?: InputsSummary;
   /** The options of the last analysis, saved with the dataset; null before the first one. */
@@ -537,6 +545,18 @@ export interface FactorDataset {
    * vary within them; null for other datasets, absent from older servers.
    */
   miners?: MinerSummary[] | null;
+}
+
+/** A feature group of a log dataset that feeed could not compute for some log. */
+export interface SkippedGroup {
+  group: string;
+  /** Its measures, which the dataset lacks for all logs. */
+  measures: string[];
+  code: "too_few_traces" | "group_failed" | string;
+  /** feeed's own text. */
+  error: string;
+  /** The logs it failed for. */
+  inputs: string[];
 }
 
 /** The rows of one miner of a model dataset discovered with several miners. */
@@ -567,6 +587,8 @@ export interface DatasetSummary {
   name_auto: boolean;
   source: DatasetSource;
   status: FactorDataset["status"];
+  /** Why a failed or aborted dataset is; absent otherwise. */
+  error_code?: string | null;
   created_at: string;
   /** null while the dataset is computed or after it failed. */
   n_observations: number | null;
