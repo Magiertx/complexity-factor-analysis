@@ -1,5 +1,6 @@
 {
   "common": {
+    "skip_to_content": "Skip to content",
     "back": "Back",
     "next": "Next",
     "next_with_progress": "Next ({current} of {total})",
@@ -46,6 +47,11 @@
     "drop_hint": "or click to choose one · .xes, .xes.gz, .xml, .json",
     "remove_aria": "Remove file"
   },
+  "not_found": {
+    "title": "Page not found",
+    "text": "This address does not exist. The link may be out of date or mistyped.",
+    "home": "Go to the start page"
+  },
   "mode_bar": {
     "aria_label": "Sections",
     "analyses_aria": "Analyses",
@@ -86,7 +92,7 @@
       "step1_p2": "Both tabs work the same way.",
       "step2_title": "One step at a time",
       "step2_p1": "Data, dataset, suitability, factors, loadings: the list of steps shows what each one found and opens it; Back and Next lead through them. Every change to a setting re-runs the analysis right away, and the analysis can be downloaded as CSV, LaTeX or ZIP. An optional sixth step lets Claude propose names for the factors.",
-      "step2_p2": "Hover a control or a dotted word for what it does; the Tour button walks you through the steps.",
+      "step2_p2": "Hover a control or an (i) for what it does; the Tour button walks you through the steps.",
       "step3_title": "More when you need it",
       "step3_api": "API: drive everything from Python or curl; see the API page in the header.",
       "step3_compare": "Compare: the factor structures of several analyses side by side, like Tab. 17 of Important Factors.",
@@ -95,7 +101,7 @@
       "step3_inspect": "Single log: run ComFy on one log and look at the discovered models."
     },
     "factor": {
-      "intro": "Five steps from raw measures to factors, and an optional interpretation, one at a time: the list of steps on the left (on a phone the row at the top) and Back and Next move between them. Hover a control or a dotted word for what it does. Esc or Skip ends the tour at any time.",
+      "intro": "Five steps from raw measures to factors, and an optional interpretation, one at a time: the list of steps on the left (on a phone the row at the top) and Back and Next move between them. Hover a control or an (i) for what it does. Esc or Skip ends the tour at any time.",
       "data": "Where the data come from: Get started and the bundled datasets, a CSV of your own, or measures computed from your files. Large computations run in the background.",
       "dataset": "Check the size of the matrix and what the cleaning removed. You can download the cleaned data as CSV.",
       "suitability": "Bartlett and KMO tell you whether a factor analysis makes sense at all. Exclude measures with low MSA here, by hand or with the filter.",
@@ -119,6 +125,7 @@
     },
     "page_title": "Settings",
     "page_subtitle": "Local preferences — stored in your browser, no account required.",
+    "analysis_pointer": "The settings of an analysis, such as rotation, number of factors and thresholds, are in its steps and in the row of settings above them.",
     "load_error": "Could not load algorithm list: {error}",
     "toast_theme_updated": "Theme updated",
     "toast_cleared_caches": "Forgot the parameters of {n} algorithm",
@@ -973,7 +980,7 @@
       "order_factor": "By factor",
       "order_original": "As in dataset",
       "export_failed": "The download failed.",
-      "table_heading": "Loadings",
+      "table_heading": "Loading matrix",
       "caption": "Factor loadings, {n} factor, rotation {rotation}",
       "caption_plural": "Factor loadings, {n} factors, rotation {rotation}",
       "col_measure": "Measure",
@@ -1004,6 +1011,7 @@
       "matrix_structure": "Structure",
       "correlations_heading": "Factor correlations",
       "assignment_label": "Assignment",
+      "rule_source": "Source: {source}.",
       "rule": {
         "largest": {
           "title": "Largest loading",
@@ -1567,6 +1575,7 @@
     "aborted": "You stopped the computation."
   },
   "print": {
+    "heading": "Print view",
     "title": "Factor analysis of “{name}”",
     "invalid": "This address names no analysis. Open the print view from the download menu of an analysis.",
     "failed": "The analysis could not be loaded: {error}",
