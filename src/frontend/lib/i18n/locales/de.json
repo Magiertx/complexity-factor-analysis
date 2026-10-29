@@ -869,10 +869,10 @@
       "kmo_explain": "Wie viel der Korrelation zwischen den Maßen allen gemeinsam ist. Ab {threshold} gilt der Wert als ausreichend.",
       "grade": {
         "marvelous": "ausgezeichnet",
-        "meritorious": "sehr gut",
-        "middling": "mittelmäßig",
+        "meritorious": "gut",
+        "middling": "mittel",
         "mediocre": "mäßig",
-        "miserable": "schlecht",
+        "miserable": "dürftig",
         "unacceptable": "inakzeptabel"
       },
       "auto_filter_label": "Maße mit niedrigem MSA automatisch entfernen",
@@ -1044,7 +1044,7 @@
     "help": {
       "cleaning": "Vor der Analyse werden Zeilen entfernt, in denen die meisten Werte fehlen. Danach werden Spalten entfernt, die nicht numerisch sind, keine Varianz haben, fehlende Werte enthalten oder exakte Kopien einer früheren Spalte sind, wie in ComFy für Log-Maße. Solche Spalten würden die Korrelationsmatrix verzerren oder unbrauchbar machen.",
       "bartlett": "Der Test nach Bartlett prüft die Nullhypothese, dass die Korrelationsmatrix eine Einheitsmatrix ist, die Maße also unkorreliert sind. Ist p < α, gibt es Korrelationen, die gemeinsame Faktoren erklären können. Bei vielen Beobachtungen besteht der Test fast immer, lies ihn daher zusammen mit KMO.",
-      "kmo": "Das Kaiser-Meyer-Olkin-Kriterium vergleicht die Korrelationen zwischen den Maßen mit ihren partiellen Korrelationen. Werte nahe 1 bedeuten, dass die Maße gemeinsame Varianz teilen; Werte nahe 0, dass die Korrelationen vor allem paarweise sind. Kaisers Skala: ab 0,9 ausgezeichnet, 0,8 sehr gut, 0,7 mittelmäßig, 0,6 mäßig, 0,5 schlecht, darunter inakzeptabel.",
+      "kmo": "Das Kaiser-Meyer-Olkin-Kriterium vergleicht die Korrelationen zwischen den Maßen mit ihren partiellen Korrelationen. Werte nahe 1 bedeuten, dass die Maße gemeinsame Varianz teilen; Werte nahe 0, dass die Korrelationen vor allem paarweise sind. Kaisers Skala (Kaiser 1974): ab 0,9 ausgezeichnet, ab 0,8 gut, ab 0,7 mittel, ab 0,6 mäßig, ab 0,5 dürftig, darunter inakzeptabel.",
       "msa": "Die Stichprobeneignung (MSA) ist der KMO-Wert eines einzelnen Maßes. Ein Maß mit niedrigem MSA hat wenig mit den anderen gemeinsam und passt zu keinem gemeinsamen Faktor; es zu entfernen hebt meist den KMO-Gesamtwert. Setze ein Häkchen, um ein Maß von Hand auszuschließen.",
       "msa_filter": "Wie in ComFy werden alle Maße unter der Schwelle entfernt und die MSA-Werte neu berechnet, bis jedes verbleibende Maß die Schwelle erreicht.",
       "msa_threshold": "Der Filter entfernt Maße, deren MSA unter diesem Wert liegt, und der KMO-Gesamtwert gilt ab diesem Wert als ausreichend. ComFy und ComFy für Log-Maße nutzen 0,6.",
@@ -1052,7 +1052,7 @@
       "scree": "Der Screeplot zeigt die Eigenwerte der Korrelationsmatrix in absteigender Reihenfolge. Suche den Knick, ab dem die Kurve flach wird; Faktoren danach tragen wenig bei. Knick, die Regel Eigenwert über 1 und die Parallelanalyse können sich widersprechen, nimm sie als Ausgangspunkte. Die dünne Linie an der rechten Achse summiert die Eigenwerte auf: den Anteil der Varianz, den die ersten Hauptkomponenten erklären. Die Faktoren der Analyse erklären etwas weniger, wie Schritt 5 zeigt.",
       "eigenvalue": "Ein Eigenwert ist die Varianz, die ein Faktor erklärt, gemessen in Einheiten eines standardisierten Maßes. Der Vorschlag behält jeden Faktor mit Eigenwert über 1 (Kaiser-Kriterium), also jeden Faktor, der mehr erklärt als ein einzelnes Maß.",
       "rotation": "Die Rotation dreht die Faktorlösung so, dass jedes Maß auf möglichst wenigen Faktoren hoch lädt; das macht die Faktoren leichter benennbar. Wie viel Varianz die Faktoren zusammen erklären, ändert sie nicht. Varimax und Quartimax halten die Faktoren unkorreliert; Promax und Oblimin erlauben Korrelationen, was für Komplexitätsmaße oft realistischer ist.",
-      "threshold": "Ladungen, deren Betrag diese Schwelle erreicht, gelten als substanziell. Zu welchen Faktoren ein Maß kommt, bestimmt die Zuordnungsregel oben; bei der größten Ladung kommt es zu dem Faktor mit dem größten Betrag, wenn dieser die Schwelle erreicht. Üblich sind Werte zwischen 0,3 und 0,5; ComFy nutzt 0,35, ComFy für Log-Maße 0,5.",
+      "threshold": "Ladungen, deren Betrag diese Schwelle erreicht, gelten als substanziell. Zu welchen Faktoren ein Maß kommt, bestimmt die Zuordnungsregel oben; bei der größten Ladung kommt es zu dem Faktor mit dem größten Betrag, wenn dieser die Schwelle erreicht. Üblich sind Werte zwischen 0,3 und 0,5; ComFy nutzt 0,35, ComFy für Log-Maße 0,5. Ob eine Ladung genau auf der Schwelle zählt, hängt von der Regel ab: ComFys Report (größte Ladung) nimmt sie mit (≥), die Regeln aus Important Factors (Mehrfachzugehörigkeit, Hair) verlangen mehr als die Schwelle (>), wie die Tabellen des Papers.",
       "loading": "Eine Ladung gibt an, wie stark ein Maß mit einem Faktor zusammenhängt. Bei orthogonaler Rotation ist sie die Korrelation zwischen Maß und Faktor. Bei obliquer Rotation enthält die Mustermatrix Regressionsgewichte und die Strukturmatrix die Korrelationen. Das Vorzeichen gibt die Richtung an: Maße mit entgegengesetzten Vorzeichen auf demselben Faktor bewegen sich gegenläufig.",
       "communality": "Die Kommunalität h² ist der Anteil der Varianz eines Maßes, den alle behaltenen Faktoren zusammen erklären. Ein niedriger Wert (unter etwa 0,4) heißt, dass die Faktoren das Maß schlecht abbilden.",
       "variance": "SS-Ladungen sind die Summe der quadrierten Ladungen eines Faktors. Geteilt durch die Zahl der Maße ergibt sich der Anteil an der Gesamtvarianz, den der Faktor erklärt; die kumulierte Zeile summiert diese Anteile.",
@@ -1289,7 +1289,9 @@
         "heywood": "möglicher Heywood-Fall",
         "not_identified": "nicht identifiziert",
         "fit_not_converged": "Anpassung nicht konvergiert"
-      }
+      },
+      "empty_factors": "{n} Faktor ohne Maß über der Schwelle",
+      "empty_factors_plural": "{n} Faktoren ohne Maß über der Schwelle"
     },
     "nav": {
       "aria": "Schrittnavigation",

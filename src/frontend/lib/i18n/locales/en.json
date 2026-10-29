@@ -1044,7 +1044,7 @@
     "help": {
       "cleaning": "Before the analysis, rows where most values are missing are dropped. Then columns that are not numeric, that have no variance, that have missing values, or that are perfect copies of an earlier column are removed, as in ComFy for log measures. Such columns would distort or break the correlation matrix.",
       "bartlett": "Bartlett's test checks the null hypothesis that the correlation matrix is an identity matrix, i.e. that the measures are uncorrelated. If p < α, there are correlations that common factors can explain. With many observations the test almost always passes, so read it together with KMO.",
-      "kmo": "The Kaiser–Meyer–Olkin criterion compares the correlations between the measures with their partial correlations. Values near 1 mean the measures share common variance; values near 0 mean the correlations are mostly pairwise. Kaiser's scale: from 0.9 marvelous, 0.8 meritorious, 0.7 middling, 0.6 mediocre, 0.5 miserable, below that unacceptable.",
+      "kmo": "The Kaiser–Meyer–Olkin criterion compares the correlations between the measures with their partial correlations. Values near 1 mean the measures share common variance; values near 0 mean the correlations are mostly pairwise. Kaiser's scale (Kaiser 1974): from 0.9 marvelous, 0.8 meritorious, 0.7 middling, 0.6 mediocre, 0.5 miserable, below that unacceptable.",
       "msa": "The measure of sampling adequacy (MSA) is the KMO value of a single measure. A measure with low MSA shares little with the others and fits no common factor well; removing it usually raises the overall KMO. Tick a measure to exclude it by hand.",
       "msa_filter": "As in ComFy, all measures below the threshold are removed and the MSA values are recomputed, until every remaining measure reaches the threshold.",
       "msa_threshold": "The filter removes measures whose MSA is below this value, and the overall KMO counts as adequate from this value on. ComFy and ComFy for log measures use 0.6.",
@@ -1052,7 +1052,7 @@
       "scree": "The scree plot shows the eigenvalues of the correlation matrix in descending order. Look for the elbow where the curve flattens; factors after it add little. The elbow, the eigenvalue-above-1 rule and the parallel analysis can disagree, so treat them as starting points. The thin line on the right axis adds up the eigenvalues: the share of the variance the first principal components explain. The factors of the analysis explain somewhat less, as step 5 shows.",
       "eigenvalue": "An eigenvalue is the variance a factor explains, in units of one standardized measure. The suggestion keeps every factor with an eigenvalue above 1 (Kaiser criterion), i.e. every factor that explains more than a single measure.",
       "rotation": "Rotation turns the factor solution so that each measure loads strongly on as few factors as possible, which makes the factors easier to name. It does not change how much variance the factors explain together. Varimax and quartimax keep the factors uncorrelated; promax and oblimin let them correlate, which is often more realistic for complexity measures.",
-      "threshold": "Loadings with an absolute value at or above this threshold count as substantial. Which factors a measure joins depends on the assignment rule above; with the largest loading, it joins the factor where its absolute loading is highest, if that loading reaches the threshold. Common choices lie between 0.3 and 0.5; ComFy uses 0.35, ComFy for log measures 0.5.",
+      "threshold": "Loadings with an absolute value at or above this threshold count as substantial. Which factors a measure joins depends on the assignment rule above; with the largest loading, it joins the factor where its absolute loading is highest, if that loading reaches the threshold. Common choices lie between 0.3 and 0.5; ComFy uses 0.35, ComFy for log measures 0.5. Whether a loading exactly on the threshold counts depends on the rule: ComFy's report (largest loading) includes it (≥), the rules of Important Factors (multiple membership, Hair) require more than the threshold (>), as the tables of the paper do.",
       "loading": "A loading says how strongly a measure goes along with a factor. For orthogonal rotations it is the correlation between measure and factor. For oblique rotations the pattern matrix holds regression weights and the structure matrix the correlations. The sign gives the direction: measures with opposite signs on the same factor move in opposite directions.",
       "communality": "The communality h² is the share of a measure's variance that all kept factors explain together. A low value (below about 0.4) means the factors do not capture the measure well.",
       "variance": "SS loadings is the sum of squared loadings of a factor. Divided by the number of measures it gives the proportion of the total variance the factor explains; the cumulative row adds these up.",
@@ -1289,7 +1289,9 @@
         "heywood": "possible Heywood case",
         "not_identified": "not identified",
         "fit_not_converged": "fit did not converge"
-      }
+      },
+      "empty_factors": "{n} factor without a measure above the threshold",
+      "empty_factors_plural": "{n} factors without a measure above the threshold"
     },
     "nav": {
       "aria": "Step navigation",

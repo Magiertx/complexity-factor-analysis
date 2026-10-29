@@ -1174,6 +1174,13 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       .filter(Boolean)
       .join(" · ");
   }
+  // More factors than dimensions: the others have no measure over the threshold.
+  if (analysis && summaries.loadings) {
+    const empty = analysis.n_factors - dimensionCount(analysis);
+    if (empty > 0) {
+      summaryMore.loadings = [summaries.loadings, countText(t, "factor.rail_summary.empty_factors", empty)].join(" — ");
+    }
+  }
 
   // Why the steps after the data cannot be opened yet; they all need a dataset that is ready.
   const lockReason: string | null = ready
@@ -1429,6 +1436,8 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     : null;
   const shortCodes: ShortCodesSwitch = {
     on: codesShown,
+    // Log datasets of your own have no codes: a switch that changes nothing is not shown.
+    hidden: kind === "log" && ready && !codesAvailable,
     reason: !ready ? lockReason : codesAvailable ? null : t("factor.toolbar.codes_none"),
     onToggle: () => {
       const next = !codesShown;
