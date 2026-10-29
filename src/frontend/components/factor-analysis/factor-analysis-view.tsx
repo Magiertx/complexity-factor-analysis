@@ -90,6 +90,7 @@ import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { MeasureScope, type MeasureOpener } from "@/components/ui/table";
 import { Notice } from "@/components/ui/notice";
+import { useToasts } from "@/components/ui/toasts";
 import { UndoToast, type UndoNotice } from "@/components/ui/undo-toast";
 import { useJobs } from "@/components/jobs-provider";
 import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
@@ -172,6 +173,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const tMaybe = useTMaybe();
   const { locale } = useLocale();
   const errorText = useErrorText();
+  const { notify } = useToasts();
   // Effects read texts through refs, so a language switch does not refetch anything.
   const tRef = useRef(t);
   const errorTextRef = useRef(errorText);
@@ -246,13 +248,6 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // The fact sheet of a measure: which one, the list its name stood in, and where it was opened from.
   const [sheet, setSheet] = useState<{ measure: string; list: readonly string[] | null; from: HTMLElement | null } | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
-  // What an export that downloads nothing did, e.g. that the methods text is on the clipboard.
-  const [exportNote, setExportNote] = useState<string | null>(null);
-  useEffect(() => {
-    if (!exportNote) return;
-    const timer = setTimeout(() => setExportNote(null), 6000);
-    return () => clearTimeout(timer);
-  }, [exportNote]);
   const [tourOpen, setTourOpen] = useState(false);
   const onboarding = useOnboarding();
   // One step on screen at a time, named in the address (?step=...).
@@ -911,7 +906,6 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     if (!datasetId) return;
     setExporting(format);
     setExportError(null);
-    setExportNote(null);
     // What is on screen, with the names of its factors.
     const shown = { ...(analyzedOptions ?? options), factor_names: apiNames };
     try {
@@ -929,11 +923,11 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         const { text } = await fetchMethods(datasetId, shown, locale);
         try {
           await navigator.clipboard.writeText(text);
-          setExportNote(t("factor.toolbar.methods_copied"));
+          notify({ key: "methods-copied", message: t("factor.toolbar.methods_copied"), tone: "success" });
         } catch {
           // Without clipboard access (plain http on another host) the text goes into a file.
           downloadBlob(new Blob([text], { type: "application/x-latex" }), "methods.tex");
-          setExportNote(t("factor.toolbar.methods_saved"));
+          notify({ key: "methods-saved", message: t("factor.toolbar.methods_saved"), tone: "info" });
         }
       } else if (format === "bibtex") {
         const { blob, filename } = await exportBibtex(datasetId, shown, locale);
@@ -1507,13 +1501,6 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
               {exportError}
             </Notice>
           )}
-          <div role="status" className={exportNote ? undefined : "sr-only"}>
-            {exportNote && (
-              <Notice tone="success" size="sm">
-                {exportNote}
-              </Notice>
-            )}
-          </div>
           {/* At the top of every step once a dataset is ready, and in view while a step scrolls. */}
           {ready && dataset && (
             <SettingsRow

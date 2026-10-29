@@ -1318,7 +1318,7 @@
       "export_methods_hint": "Ein kurzer Absatz mit LaTeX-Zitierschlüsseln, aus den Einstellungen und Ergebnissen auf dem Bildschirm",
       "export_bibtex": "BibTeX herunterladen",
       "export_bibtex_hint": "Die Einträge der Schlüssel, die der Methodentext zitiert",
-      "methods_copied": "Methodentext kopiert.",
+      "methods_copied": "Methodentext kopiert",
       "methods_saved": "Der Browser hat das Kopieren nicht erlaubt; der Methodentext wurde als methods.tex gespeichert.",
       "export_dataset": "Datensatz (CSV)",
       "export_dataset_hint": "Die bereinigte Matrix",

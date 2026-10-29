@@ -1318,7 +1318,7 @@
       "export_methods_hint": "A short paragraph with LaTeX citation keys, from the settings and results on screen",
       "export_bibtex": "Download BibTeX",
       "export_bibtex_hint": "The entries of the keys the methods text cites",
-      "methods_copied": "Methods text copied.",
+      "methods_copied": "Methods text copied",
       "methods_saved": "The browser did not allow copying; the methods text was saved as methods.tex.",
       "export_dataset": "Dataset (CSV)",
       "export_dataset_hint": "The cleaned matrix",
