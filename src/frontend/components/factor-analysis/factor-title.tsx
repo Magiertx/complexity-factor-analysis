@@ -122,7 +122,7 @@ export function FactorTitle({
       type="button"
       onClick={open}
       aria-label={label}
-      className="group inline-flex min-w-0 items-baseline gap-1.5 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+      className="group inline-flex min-w-0 max-w-full items-baseline gap-1.5 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
     >
       {name ? (
         <>
@@ -132,7 +132,7 @@ export function FactorTitle({
       ) : (
         <>
           <span className="shrink-0">{numbered}</span>
-          {provisional && <span className="min-w-0 break-words font-normal text-muted">· {provisional}</span>}
+          {provisional && <span className="min-w-0 truncate font-normal text-muted">· {provisional}</span>}
         </>
       )}
       <Pencil
