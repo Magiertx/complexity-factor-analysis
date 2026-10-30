@@ -34,6 +34,8 @@ from sklearn.utils import check_array as _sklearn_check_array
 
 from vendored.comfy_log import Constants as _C
 
+from .short_set import representatives
+
 MIN_MEASURES = 3
 #: More measures than this make a single analysis too heavy for a shared server: each round
 #: of the MSA filter inverts a p × p matrix, and minres optimises p uniquenesses with a
@@ -593,8 +595,14 @@ class _StoppableFactorAnalyzer(FactorAnalyzer):
 
 
 def _fit_factors(
-    data: pd.DataFrame, n_factors: int, rotation: str, should_stop: StopCheck | None = None
+    data: pd.DataFrame,
+    n_factors: int,
+    rotation: str,
+    should_stop: StopCheck | None = None,
+    analyzer: type[_StoppableFactorAnalyzer] | None = None,
 ) -> FactorFit:
+    """The fit of ``fit_factors``, uncached; ``analyzer`` replaces ``_StoppableFactorAnalyzer``,
+    e.g. by one with the gradient of the objective for the many fits of a bootstrap."""
     started = time.perf_counter()
     if rotation not in ROTATIONS:
         raise AnalysisError(f"Unknown rotation '{rotation}'.", "unknown_rotation", rotation=rotation)
@@ -604,7 +612,9 @@ def _fit_factors(
     # factor_analyzer skips the rotation for a single factor; say so in the result.
     used_rotation = "none" if rotation == "none" or n_factors == 1 else rotation
 
-    fa = _StoppableFactorAnalyzer(n_factors=n_factors, rotation=None if used_rotation == "none" else used_rotation)
+    fa = (analyzer or _StoppableFactorAnalyzer)(
+        n_factors=n_factors, rotation=None if used_rotation == "none" else used_rotation
+    )
     fa.should_stop = should_stop
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
@@ -1037,6 +1047,8 @@ def analyze(data: pd.DataFrame, params: AnalysisParams, should_stop: StopCheck |
         "unassigned": [u["measure"] for u in assignment.unassigned],
         "unassigned_details": assignment.unassigned,
         "cross_loadings": assignment.cross_loadings,
+        # One representative measure per factor with measures (short_set.py).
+        "short_set": representatives(by_measure(fit.loadings), assignment.factors),
         "warnings": [w["message"] for w in out.items],
         "warning_details": out.items,
         # Wall times in seconds. The fit and the random eigenvalues of parallel analysis are
