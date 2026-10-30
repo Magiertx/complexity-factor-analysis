@@ -252,8 +252,8 @@ for (const language of ["en", "de"] as const) {
       await expect(page.getByRole("status").filter({ hasText: text("factor.toolbar.methods_copied", {}, language) })).toBeVisible();
       const copied = await page.evaluate(() => (window as unknown as { __copied: string }).__copied);
       const kmo = language === "de" ? "0,75" : "0.75";
-      // The paragraph has no thousands separator, as the LaTeX of a paper has none.
-      const chi = language === "de" ? "6822,4" : "6822.4";
+      // The paragraph has no thousands separator, as the LaTeX of a paper has none; in math mode the German comma is braced.
+      const chi = language === "de" ? "6822{,}4" : "6822.4";
       // The decimal comma in German; the KMO and chi-square of the page are those of the text.
       expect(shown).toContain(kmo);
       expect(shown).toContain(language === "de" ? "6.822,4" : "6,822.4");

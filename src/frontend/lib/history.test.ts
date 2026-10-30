@@ -73,6 +73,15 @@ describe("the rows of the History", () => {
     expect(failed.status).toBe("failed");
   });
 
+  it("calls an aborted dataset aborted even when its job is gone", () => {
+    const [gone, unlinked] = historyRows(
+      [dataset("g", { status: "aborted", job_id: "pruned" }), dataset("u", { status: "aborted", job_id: null })],
+      [],
+    );
+    expect(gone.status).toBe("aborted");
+    expect(unlinked.status).toBe("aborted");
+  });
+
   it("keeps a dataset job whose dataset is not listed yet, and opens its dataset", () => {
     const rows = historyRows([], [job("j", { algorithm_id: "_dataset:log", status: "pending", params: { dataset_id: "d9" } })]);
     expect(rows).toHaveLength(1);

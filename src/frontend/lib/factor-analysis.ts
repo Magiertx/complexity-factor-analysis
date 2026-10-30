@@ -592,8 +592,12 @@ function datasetJobKind(job: Job): FactorKind | null {
 }
 
 /** Why a job failed: in the UI language where the server names a known cause, else its message. */
-export function jobErrorText(job: Pick<Job, "error" | "error_code">, tMaybe: TranslateMaybe): string | undefined {
-  return (job.error_code && tMaybe(`errors.${job.error_code}`)) || job.error || undefined;
+export function jobErrorText(
+  job: Pick<Job, "error" | "error_code">,
+  tMaybe: TranslateMaybe,
+  params?: Record<string, string | number> | null,
+): string | undefined {
+  return (job.error_code && tMaybe(`errors.${job.error_code}`, params ?? undefined)) || job.error || undefined;
 }
 
 /**

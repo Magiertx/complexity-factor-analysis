@@ -589,6 +589,7 @@ export interface DatasetSummary {
   status: FactorDataset["status"];
   /** Why a failed or aborted dataset is; absent otherwise. */
   error_code?: string | null;
+  error_params?: Record<string, string | number>;
   created_at: string;
   /** null while the dataset is computed or after it failed. */
   n_observations: number | null;

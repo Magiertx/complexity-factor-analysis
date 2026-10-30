@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 
+import pandas as pd
 import pytest
 
 from factor_analysis import catalog as cat
@@ -142,3 +143,19 @@ def test_a_stopped_job_aborts_the_dataset(client):
     listed = {x["id"]: x for x in client.get("/factor-analysis/datasets").json()["datasets"]}
     assert listed[body["dataset_id"]]["status"] == "aborted"
     assert client.post(f"/factor-analysis/datasets/{d['id']}/analyze", json={}).status_code == 409
+
+
+def test_a_dataset_whose_groups_all_fail_says_no_measure_is_left(client, monkeypatch):
+    def nothing_left(inputs, features, progress):
+        skipped = [{"group": "eventropies", "measures": ["m"], "inputs": ["a.xes"], "code": "too_few_traces", "error": "IndexError: x"}]
+        table = pd.DataFrame(index=["a.xes", "b.xes"], dtype=float)
+        return compute.ComputeResult(table, [], compute.Measurement("log", "logs"), skipped)
+
+    monkeypatch.setattr(compute, "log_from_logs", nothing_left)
+    files = [("files", (name, data, "application/xml")) for name, data in list(_small_logs(2).items())]
+    r = _post(client, kind="log", source="logs", groups=["eventropies"], files=files)
+    d = _wait_ready(client, r.json()["dataset_id"])
+    assert d["status"] == "failed" and d["error_code"] == "dataset_too_few_measures"
+    assert d["error_params"]["have"] == 0 and d["error_params"]["need"] == 2
+    listed = next(x for x in client.get("/factor-analysis/datasets").json()["datasets"] if x["id"] == d["id"])
+    assert listed["error_params"]["have"] == 0

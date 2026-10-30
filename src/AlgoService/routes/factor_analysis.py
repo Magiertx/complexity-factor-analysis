@@ -445,6 +445,13 @@ async def run_dataset_task(job_id: str, session_id: str, dataset_id: str, spec: 
             result = await asyncio.to_thread(_compute, spec, progress_cb)
         finally:
             await updates.settle()
+        if len(result.table) and not len(result.table.columns) and result.skipped:
+            # The logs were read; every feature group failed, so no measure is left.
+            first = result.skipped[0]["error"]
+            raise compute.DatasetError(
+                f"No measure is left. First error: {first}", "dataset_too_few_measures",
+                have=0, need=2, first_error=first,
+            )
         if result.table.empty:
             first = (
                 result.failures[0][1] if result.failures
@@ -922,6 +929,7 @@ def _summary(meta: dict[str, Any], status: str) -> dict[str, Any]:
     if status in ("failed", "aborted"):
         # Why, for the UI to say it in its language; the text is in GET /datasets/{id}.
         summary["error_code"] = meta.get("error_code")
+        summary["error_params"] = meta.get("error_params") or {}
     return summary
 
 

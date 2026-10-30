@@ -561,6 +561,7 @@
     },
     "steps": {
       "aria": "Analyseschritte",
+      "aria_compact": "Analyseschritte (kompakt)",
       "data": "Daten",
       "dataset": "Datensatz",
       "suitability": "Eignung",

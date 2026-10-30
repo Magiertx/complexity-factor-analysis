@@ -353,7 +353,11 @@ export function RunHistoryView() {
                           if (el) deleteButtons.current.set(row.key, el);
                           else deleteButtons.current.delete(row.key);
                         }}
-                        errorText={row.job ? jobErrorText(row.job, tMaybe) : undefined}
+                        errorText={row.job ? jobErrorText(
+                            { ...row.job, error_code: row.dataset?.error_code ?? row.job.error_code },
+                            tMaybe,
+                            row.dataset?.error_params,
+                          ) : undefined}
                       />
                     ))}
                   </ul>
