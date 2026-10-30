@@ -1527,6 +1527,7 @@
     "title": "User guide",
     "subtitle": "What {app} does, step by step: analyse a published dataset or your own data, read the results, and take them into a paper.",
     "toc": "Contents",
+    "note": "Good to know",
     "links": {
       "model": "Model complexity",
       "log": "Log complexity",
@@ -1549,6 +1550,11 @@
         "open": "Open Model complexity or Log complexity.",
         "choose": "In Data, choose a dataset of a paper, for example Important Factors: Inductive miner.",
         "settings": "Choose Paper settings to analyse it as the paper did, or Tool standard for the defaults of ComFy, then Load dataset. The data step stays on screen with what was loaded and the way on."
+      },
+      "terms": {
+        "open": "Open a tab",
+        "choose": "Choose a dataset",
+        "settings": "Choose settings, load"
       },
       "p1": "With the paper settings, a chip in the settings row says whether the numbers equal the published ComFy report and how the tables of the paper relate to it. Get started, the first cards of the bundled datasets in the data step, loads such an analysis in one click; View result then opens its loadings."
     },
@@ -1587,6 +1593,9 @@
         "print": "Print view: the whole analysis on A4 pages, to print or save as PDF.",
         "tables": "The loadings as CSV or LaTeX, and the cleaned dataset as CSV."
       },
+      "terms": {
+        "tables": "Tables"
+      },
       "p2": "The image icon at the scree plot, the loadings and the correlation map downloads the figure as SVG, whose text stays text, or as PNG with 300 dpi: always light, at the text width of a CEUR paper, with the labels in the language of the app.",
       "p3": "The tag icon in the toolbar names the measures by the short codes of the papers, such as CNC or C_mag; the full name stays in the tooltip, and the figures, the report and the ZIP follow it.",
       "p4": "The link icon copies a link to the analysis of a published dataset with its settings."
@@ -1602,6 +1611,9 @@
         "pairs": "Pairs: a square of the measures, each cell saying in how many of the datasets that analysed both the two share a dimension. It does not depend on how the dimensions are numbered.",
         "export": "The download menu has the matrix as CSV, the dimensions as a LaTeX table like Tab. 17, and both in a ZIP with a manifest.",
         "own": "Your own data: Compare the miners in the dataset step puts one column per miner, Compare in My datasets one column per dataset, and the pin icon in the loadings keeps the solution on screen (dataset, miner, factor count, rotation, rule), so that, say, the same dataset with 4 and with 6 factors sits side by side. Such a column starts from the settings saved with its dataset and lives in this session."
+      },
+      "terms": {
+        "export": "Download"
       },
       "p2": "The factors of every analysis are numbered by the analysis, so they are matched first: the first dataset keeps its numbers, and the factors of every further one go to the dimension with which they share the most measures; where two are equally good, the more alike loadings decide. Tab. 17 renumbered its dimensions by hand, so a number can differ from the paper's, and a match that rests on one shared measure is a guess: the tooltip of a cell in the dimension view names the measures it rests on. How the measures are grouped within a dataset does not depend on the numbers."
     }

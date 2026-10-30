@@ -1527,6 +1527,7 @@
     "title": "Anleitung",
     "subtitle": "Was {app} tut, Schritt für Schritt: einen veröffentlichten Datensatz oder eigene Daten analysieren, die Ergebnisse lesen und sie in ein Paper übernehmen.",
     "toc": "Inhalt",
+    "note": "Gut zu wissen",
     "links": {
       "model": "Modellkomplexität",
       "log": "Log-Komplexität",
@@ -1549,6 +1550,11 @@
         "open": "Öffne Modellkomplexität oder Log-Komplexität.",
         "choose": "Wähle unter Daten einen Datensatz eines Papers, etwa Important Factors: Inductive Miner.",
         "settings": "Wähle Paper-Einstellungen, um ihn wie im Paper zu analysieren, oder Standard des Tools für die Voreinstellungen von ComFy, dann Datensatz laden. Der Schritt Daten bleibt stehen und zeigt, was geladen ist, und den Weg weiter."
+      },
+      "terms": {
+        "open": "Reiter öffnen",
+        "choose": "Datensatz wählen",
+        "settings": "Einstellungen wählen, laden"
       },
       "p1": "Mit den Paper-Einstellungen sagt ein Chip in der Einstellungszeile, ob die Zahlen dem veröffentlichten ComFy-Report gleichen und wie sich die Tabellen des Papers dazu verhalten. „Zum Einstieg“, die ersten Karten der mitgelieferten Datensätze im Schritt Daten, lädt eine solche Analyse mit einem Klick; „Ergebnis ansehen“ öffnet dann ihre Ladungen."
     },
@@ -1587,6 +1593,9 @@
         "print": "Druckansicht: die ganze Analyse auf A4-Seiten, zum Drucken oder Speichern als PDF.",
         "tables": "Die Ladungen als CSV oder LaTeX und den bereinigten Datensatz als CSV."
       },
+      "terms": {
+        "tables": "Tabellen"
+      },
       "p2": "Das Bild-Symbol am Scree-Plot, an den Ladungen und an der Korrelationskarte lädt die Abbildung als SVG herunter, deren Text Text bleibt, oder als PNG mit 300 dpi: immer hell, in der Textbreite eines CEUR-Papers, mit den Beschriftungen in der Sprache der App.",
       "p3": "Das Etikett-Symbol in der Werkzeugleiste nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder C_mag; der volle Name steht im Tooltip, und Abbildungen, Report und ZIP folgen ihm.",
       "p4": "Das Link-Symbol kopiert einen Link auf die Analyse eines veröffentlichten Datensatzes mit ihren Einstellungen."
@@ -1602,6 +1611,9 @@
         "pairs": "Paare: ein Quadrat der Maße; jede Zelle sagt, in wie vielen der Datensätze, die beide analysiert haben, die beiden eine Dimension teilen. Es hängt nicht davon ab, wie die Dimensionen nummeriert sind.",
         "export": "Das Download-Menü hat die Matrix als CSV, die Dimensionen als LaTeX-Tabelle wie Tab. 17 und beides in einem ZIP mit Manifest.",
         "own": "Deine eigenen Daten: Miner vergleichen im Datensatz-Schritt stellt eine Spalte je Miner auf, Vergleichen unter Meine Datensätze eine Spalte je Datensatz, und das Pin-Symbol in den Ladungen heftet die Lösung auf dem Bildschirm an (Datensatz, Miner, Faktorzahl, Rotation, Regel), sodass etwa derselbe Datensatz mit 4 und mit 6 Faktoren nebeneinander steht. Eine solche Spalte geht von den Einstellungen aus, die mit ihrem Datensatz gespeichert sind, und gilt in dieser Sitzung."
+      },
+      "terms": {
+        "export": "Download"
       },
       "p2": "Die Faktoren jeder Analyse sind von der Analyse nummeriert, deshalb werden sie zuerst einander zugeordnet: Der erste Datensatz behält seine Nummern, die Faktoren jedes weiteren kommen in die Dimension, mit der sie die meisten Maße teilen; sind zwei gleich gut, entscheiden die ähnlicheren Ladungen. Tab. 17 hat seine Dimensionen von Hand umnummeriert, deshalb kann eine Nummer von der des Papers abweichen, und eine Zuordnung, die auf einem gemeinsamen Maß beruht, ist geraten: Der Tooltip einer Zelle der Dimensionsansicht nennt die Maße, auf denen sie beruht. Wie die Maße innerhalb eines Datensatzes gruppiert sind, hängt nicht von den Nummern ab."
     }
