@@ -32,7 +32,7 @@ from algorithms._log_io import MAX_DECOMPRESSED_BYTES
 from config import MAX_FILE_SIZE, CodedHTTPException, broadcast_jobs_update, get_session_id, limiter, logger
 from env_config import positive_int, rate_limit
 from factor_analysis import catalog as cat
-from factor_analysis import compare, compute, correlations, figures, miners, published, storage
+from factor_analysis import compare, compute, correlations, figures, miners, published, stability, storage
 from factor_analysis import methods as methods_text
 from factor_analysis import names as factor_names
 from factor_analysis.descriptives import describe, describe_cleaned, describe_miner, histogram
@@ -1260,6 +1260,7 @@ def _published_match(meta: dict[str, Any], params: AnalysisParams, result: dict[
 
 class _AnalysisFailed(Exception):
     def __init__(self, error: AnalysisError) -> None:
+        self.error = error
         self.response = JSONResponse(
             status_code=400,
             content={"detail": str(error), "code": error.code, "params": error.params},
@@ -1566,6 +1567,9 @@ class ArchiveRequest(AnalyzeRequest):
     figure_language: Literal["en", "de"] = "en"
     #: The order of the measures of the correlation map in the ZIP (correlations.ORDERS).
     correlation_order: Literal["dataset", "cluster", "factor"] = "factor"
+    #: The stability computed over this many samples (POST .../stability) goes into the export
+    #: if it is kept for exactly this analysis; null leaves it out.
+    stability_samples: Literal[100, 200, 500] | None = None
 
 
 class FigureRequest(AnalyzeRequest):
@@ -1769,6 +1773,7 @@ async def export_report(
     exported = await _exported(request, dataset_id, body, session_id)
     if isinstance(exported, Response):
         return exported
+    stored = await _stored_stability(exported, session_id, body.stability_samples)
 
     def build() -> str:
         return report_tex(
@@ -1782,6 +1787,7 @@ async def export_report(
             short=body.short_codes,
             factor_names=exported.names,
             published=exported.published(),
+            stability=stored,
         )
 
     content = await run_in_threadpool(build)
@@ -1791,9 +1797,16 @@ async def export_report(
 class MethodsRequest(AnalyzeRequest):
     #: The language of the paragraph.
     language: Literal["en", "de"] = "en"
+    #: The stability computed over this many samples (POST .../stability) goes into the export
+    #: if it is kept for exactly this analysis; null leaves it out.
+    stability_samples: Literal[100, 200, 500] | None = None
+    #: Add the sentence on the short set, one representative measure per factor.
+    short_set: bool = False
 
 
-def _methods(exported: _Exported, language: str) -> methods_text.Methods:
+def _methods(
+    exported: _Exported, language: str, stability: dict[str, Any] | None = None, short_set: bool = False
+) -> methods_text.Methods:
     """The methods paragraph of the analysis an export is made of."""
     meta = exported.meta
     return methods_text.methods(
@@ -1805,6 +1818,8 @@ def _methods(exported: _Exported, language: str) -> methods_text.Methods:
         tool=provenance.tool(),
         libraries=library_versions(),
         entry=cat.bundled_entry(meta["bundled_id"]) if meta.get("bundled_id") else None,
+        stability=stability,
+        short_set=short_set,
     )
 
 
@@ -1824,7 +1839,8 @@ async def export_methods(
     exported = await _exported(request, dataset_id, body, session_id)
     if isinstance(exported, Response):
         return exported
-    built = _methods(exported, body.language)
+    stored = await _stored_stability(exported, session_id, body.stability_samples)
+    built = _methods(exported, body.language, stored, body.short_set)
     return {"language": built.language, "text": built.text, "citation_keys": built.keys}
 
 
@@ -1844,7 +1860,8 @@ async def export_bibtex(
     exported = await _exported(request, dataset_id, body, session_id)
     if isinstance(exported, Response):
         return exported
-    built = _methods(exported, body.language)
+    stored = await _stored_stability(exported, session_id, body.stability_samples)
+    built = _methods(exported, body.language, stored, body.short_set)
     content = methods_text.bibtex(built.keys, provenance.tool(), library_versions(), datetime.now(timezone.utc).year)
     return _attachment(content, f"{_slug(exported.meta['name'])}-references.bib", "application/x-bibtex; charset=utf-8")
 
@@ -1870,6 +1887,7 @@ async def export_archive(
     if isinstance(exported, Response):
         return exported
     interpretation = await _interpretation(exported, session_id, body.language)
+    stored = await _stored_stability(exported, session_id, body.stability_samples)
     meta = exported.meta
 
     def build() -> bytes:
@@ -1893,10 +1911,235 @@ async def export_archive(
             figure_order=body.order,
             figure_language=body.figure_language,
             factor_names=exported.names,
+            stability=stored,
         )
 
     archive = await run_in_threadpool(build)
     return _attachment(archive, f"{_slug(meta['name'])}-factor-analysis.zip", "application/zip")
+
+
+# --- stability of the solution ------------------------------------------------------------
+
+
+class StabilityRequest(AnalyzeRequest):
+    #: The number of bootstrap samples (stability.SAMPLE_COUNTS).
+    samples: Literal[100, 200, 500] = stability.DEFAULT_SAMPLES
+
+
+#: Changes with the method, so that a stability computed before is computed again.
+STABILITY_VERSION = 1
+STABILITY_PREFIX = "_stability:"
+#: Stabilities computed at once on the server, of all sessions.
+MAX_ACTIVE_STABILITY_JOBS = positive_int("MAX_ACTIVE_STABILITY_JOBS", 2)
+
+
+def _stability_key(
+    meta: dict[str, Any], data: pd.DataFrame, params: AnalysisParams, n_factors: int, samples: int
+) -> str:
+    """The key of a stability: the rows of the analysis, its settings with the factor count it
+    used, the samples and the seed; a change of any of them is another stability."""
+    material = json.dumps(
+        {
+            "kind": meta["kind"],
+            "data": data_hash(data),
+            "params": effective_params(params, n_factors),
+            "samples": samples,
+            "seed": stability.SEED,
+            "version": STABILITY_VERSION,
+        },
+        sort_keys=True,
+    )
+    return hashlib.sha256(material.encode()).hexdigest()[:32]
+
+
+async def _stability_job(session_id: str, dataset_id: str, key: str) -> dict[str, Any] | None:
+    """The job of the session computing this stability, if one is queued or running."""
+    for job in await jobs_db.list_jobs(session_id):
+        params = job.get("params") or {}
+        if (
+            job["algorithm_id"].startswith(STABILITY_PREFIX)
+            and job.get("status") in ("pending", "running")
+            and params.get("dataset_id") == dataset_id
+            and params.get("key") == key
+        ):
+            return job
+    return None
+
+
+def _stability_summary(result: dict[str, Any]) -> str:
+    summary = result["summary"]
+    if not result["valid"]:
+        return f"No valid sample of {result['samples']}"
+    return (
+        f"{summary['stable']} of {summary['measures']} measures ≥ {round(summary['threshold'] * 100)} % "
+        f"over {result['valid']} samples"
+    )
+
+
+async def _stored_stability(
+    exported: _Exported, session_id: str, samples: int | None
+) -> dict[str, Any] | None:
+    """The stability computed for exactly the analysis of an export, if asked for and kept."""
+    if samples is None:
+        return None
+    key = await run_in_threadpool(
+        _stability_key, exported.meta, exported.data, exported.params, exported.result["n_factors"], samples
+    )
+    return await run_in_threadpool(storage.read_stability, session_id, exported.meta["id"], key)
+
+
+async def run_stability_task(job_id: str, session_id: str, dataset_id: str, request: dict[str, Any]) -> None:
+    """Background job bootstrapping the stability of one analysis of a dataset; the result is
+    kept with the dataset under its key."""
+    from algorithms.base import stat, table
+
+    loop = asyncio.get_running_loop()
+    updates = _LoopCalls(loop)
+    try:
+        job_state = await jobs_db.read_job(job_id)
+        if not job_state or job_state.get("status") == "aborted":
+            return
+        await jobs_db.update_job_progress(job_id, 0.0, "Starting...", status="running")
+        await broadcast_jobs_update()
+
+        check_aborted = _make_status_cache(job_id, loop)
+        throttle = _ProgressThrottle()
+
+        def progress_cb(pct: float, msg: str) -> None:
+            if throttle.should_persist(pct):
+                updates.submit(jobs_db.update_job_progress(job_id, pct, msg, status="running"))
+                updates.submit(broadcast_jobs_update())
+
+        body = StabilityRequest(**request)
+        try:
+            meta, data = await _ready_matrix(dataset_id, session_id)
+            params = body.params(meta["kind"])
+            data, params, _ = await run_in_threadpool(_select, meta, data, body.miner, params)
+            reference = await _analyze(data, params)
+            key = await run_in_threadpool(_stability_key, meta, data, params, reference["n_factors"], body.samples)
+            result = await asyncio.to_thread(
+                stability.bootstrap, data, params, reference, body.samples, stability.SEED, progress_cb, check_aborted
+            )
+        finally:
+            await updates.settle()
+        js = await jobs_db.read_job(job_id)
+        if not js or js.get("status") == "aborted":
+            return
+        await asyncio.to_thread(storage.write_stability, session_id, dataset_id, key, result)
+        rows = [[m["measure"], m["assignment"], m["primary"]] for m in result["measures"]]
+        artifacts = [
+            stat("Valid samples", f"{result['valid']} of {result['samples']}"),
+            stat("Seconds", result["seconds"]),
+            table("Stability per measure", ["measure", "same assignment", "same primary factor"], rows),
+        ]
+        await jobs_db.set_job_completed(job_id, {
+            "artifacts": [a.to_dict() for a in artifacts],
+            "summary": _stability_summary(result),
+        })
+        await broadcast_jobs_update()
+    except Superseded:
+        # The user stopped the job: not a failure.
+        js = await jobs_db.read_job(job_id)
+        if js:
+            await jobs_db.update_job_progress(job_id, js.get("percentage", 0.0), "Aborted by user", status="aborted")
+        await broadcast_jobs_update()
+    except AnalysisError as e:
+        await jobs_db.set_job_failed(job_id, str(e), e.code)
+        await broadcast_jobs_update()
+    except _AnalysisFailed as e:
+        await jobs_db.set_job_failed(job_id, str(e.error), e.error.code)
+        await broadcast_jobs_update()
+    except (HTTPException, FileNotFoundError):
+        # The dataset was deleted meanwhile, or is not ready.
+        await jobs_db.set_job_failed(job_id, "The dataset of the stability is gone.", "dataset_gone")
+        await broadcast_jobs_update()
+    except Exception as e:
+        logger.exception(f"Stability job {job_id} failed")
+        await jobs_db.set_job_failed(job_id, f"The stability could not be computed: {e}", "stability_failed")
+        await broadcast_jobs_update()
+    finally:
+        await cleanup_old_jobs()
+
+
+@router.post("/datasets/{dataset_id}/stability")
+@limiter.limit(rate_limit("fa_analyze", "120/minute"))
+async def dataset_stability(
+    request: Request,
+    dataset_id: str,
+    background_tasks: BackgroundTasks,
+    body: StabilityRequest | None = None,
+    start: bool = Query(True, description="Start a job if the stability was not computed; false only looks."),
+    session_id: str = Depends(get_session_id),
+) -> Any:
+    """The stability of the analysis these options describe over ``samples`` bootstrap samples
+    of its rows (factor_analysis/stability.py), computed once per dataset, settings and samples
+    and kept. ``status`` is "ready" with the ``stability``; "computing" with the ``job_id`` of
+    the job that computes it, which the History lists and /progress/{job_id}/abort stops; or
+    "none" if it was not computed and ``start`` is false. The exports include it when their
+    request names the same ``stability_samples``."""
+    body = body or StabilityRequest()
+    try:
+        meta, data = await _ready_matrix(dataset_id, session_id)
+        params = body.params(meta["kind"])
+        data, params, _ = await run_in_threadpool(_select, meta, data, body.miner, params)
+        reference = await _analyze(data, params, _Watch(request))
+    except AnalysisError as e:
+        return _AnalysisFailed(e).response
+    except _AnalysisFailed as e:
+        return e.response
+    except Superseded:
+        return _superseded()
+    key = await run_in_threadpool(_stability_key, meta, data, params, reference["n_factors"], body.samples)
+    stored = await run_in_threadpool(storage.read_stability, session_id, meta["id"], key)
+    if stored is not None:
+        return {"status": "ready", "key": key, "stability": stored}
+    running = await _stability_job(session_id, meta["id"], key)
+    if running is not None:
+        return {"status": "computing", "key": key, "job_id": running["id"], "percentage": running.get("percentage", 0.0)}
+    if not start:
+        return {"status": "none", "key": key}
+
+    await _enforce_job_quota(session_id)
+    active = await jobs_db.count_active_jobs_by_prefix(STABILITY_PREFIX)
+    if active >= MAX_ACTIVE_STABILITY_JOBS:
+        raise CodedHTTPException(
+            429,
+            f"The server is computing {active} stabilities already, the most it runs at once. "
+            "Try again in a few minutes.",
+            "stability_jobs_busy",
+            active=active,
+        )
+    job_id = str(uuid.uuid4())
+    await jobs_db.create_job(
+        job_id=job_id,
+        algorithm_id=f"{STABILITY_PREFIX}{meta['kind']}",
+        algorithm_name=f"Stability of a factor analysis ({meta['kind']} measures)",
+        filename=f"{body.samples} samples",
+        params={
+            "dataset_id": meta["id"],
+            "dataset_name": meta["name"],
+            "key": key,
+            "samples": body.samples,
+            "n_factors": reference["n_factors"],
+        },
+        session_id=session_id,
+    )
+    await broadcast_jobs_update()
+    values = body.model_dump()
+
+    from database import IS_TESTING
+
+    if os.environ.get("REDIS_URL") and not IS_TESTING:
+        try:
+            from celery_worker import celery_app
+
+            celery_app.send_task("celery_worker.compute_stability", args=[job_id, session_id, meta["id"], values])
+        except Exception:
+            logger.exception("Failed to enqueue stability job via Celery, falling back to local task")
+            background_tasks.add_task(run_stability_task, job_id, session_id, meta["id"], values)
+    else:
+        background_tasks.add_task(run_stability_task, job_id, session_id, meta["id"], values)
+    return {"status": "computing", "key": key, "job_id": job_id, "percentage": 0.0}
 
 
 # --- comparing analyses -------------------------------------------------------------------

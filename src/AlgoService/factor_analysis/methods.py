@@ -86,6 +86,38 @@ REFERENCES: dict[str, dict[str, Any]] = {
             "30", "2", "179--185", "1965", "10.1007/BF02289447",
         ),
     },
+    # The references of the stability, checked against Crossref (api.crossref.org/works/<doi>).
+    "efron1993": {
+        "type": "book",
+        "fields": [
+            ("author", "Efron, Bradley and Tibshirani, Robert J."), ("title", "An Introduction to the Bootstrap"),
+            ("publisher", "Springer US"), ("year", "1993"), ("doi", "10.1007/978-1-4899-4541-9"),
+        ],
+    },
+    "zhang2010bootstrap": {
+        "type": "article",
+        "fields": _article(
+            "Zhang, Guangjian and Preacher, Kristopher J. and Luo, Shanhong",
+            "Bootstrap Confidence Intervals for Ordinary Least Squares Factor Loadings and Correlations in "
+            "Exploratory Factor Analysis",
+            "Multivariate Behavioral Research", "45", "1", "104--134", "2010", "10.1080/00273170903504836",
+        ),
+    },
+    "kuhn1955": {
+        "type": "article",
+        "fields": _article(
+            "Kuhn, H. W.", "The Hungarian Method for the Assignment Problem", "Naval Research Logistics Quarterly",
+            "2", "1--2", "83--97", "1955", "10.1002/nav.3800020109",
+        ),
+    },
+    "lorenzoseva2006": {
+        "type": "article",
+        "fields": _article(
+            "Lorenzo-Seva, Urbano and ten Berge, Jos M. F.",
+            "Tucker's Congruence Coefficient as a Meaningful Index of Factor Similarity", "Methodology", "2", "2",
+            "57--64", "2006", "10.1027/1614-2241.2.2.57",
+        ),
+    },
     "hair_multivariate": {
         "type": "book",
         "comment": (
@@ -292,6 +324,23 @@ _TEXTS: dict[str, dict[str, str]] = {
         "unassigned_none": "; every measure was assigned.",
         "unassigned_one": "; 1 measure was assigned to no factor.",
         "unassigned_many": "; {n} measures were assigned to no factor.",
+        "stability": (
+            "The stability of the solution was assessed on {samples} bootstrap samples of the observations"
+            "{cite_bootstrap}, each fitted with the same measures, factor count and rotation; the factors of a "
+            "sample were matched to those of the solution by Tucker's congruence coefficient with the Hungarian "
+            "method{cite_kuhn}{left_out}. {stable} of {measures} measures kept their assignment in at least "
+            "{share} of the samples; the mean congruence per factor was between {phi_min} and {phi_max}"
+            "{cite_reading}."
+        ),
+        "stability_left_out": ", leaving out {n} samples whose fit failed",
+        "stability_none": (
+            "The stability of the solution was assessed on {samples} bootstrap samples of the observations"
+            "{cite_bootstrap}; the fit failed on every sample."
+        ),
+        "short_set": (
+            "As a short set, each dimension is represented by its assigned measure with the largest difference "
+            "between its absolute loading on the dimension and its largest absolute loading on any other: {members}."
+        ),
     },
     "de": {
         "kind_model": "Komplexitätsmaßen von Modellen",
@@ -352,6 +401,23 @@ _TEXTS: dict[str, dict[str, str]] = {
         "unassigned_none": "; jedes Maß wurde zugeordnet.",
         "unassigned_one": "; 1 Maß wurde keinem Faktor zugeordnet.",
         "unassigned_many": "; {n} Maße wurden keinem Faktor zugeordnet.",
+        "stability": (
+            "Die Stabilität der Lösung wurde an {samples} Bootstrap-Stichproben der Beobachtungen geprüft"
+            "{cite_bootstrap}, jede mit denselben Maßen, derselben Faktorzahl und Rotation angepasst; die Faktoren "
+            "einer Stichprobe wurden denen der Lösung über Tuckers Kongruenzkoeffizienten mit der Ungarischen "
+            "Methode zugeordnet{cite_kuhn}{left_out}. {stable} von {measures} Maßen behielten ihre Zuordnung in "
+            "mindestens {share} der Stichproben; die mittlere Kongruenz je Faktor lag zwischen {phi_min} und "
+            "{phi_max}{cite_reading}."
+        ),
+        "stability_left_out": ", ohne {n} Stichproben, deren Anpassung fehlschlug",
+        "stability_none": (
+            "Die Stabilität der Lösung wurde an {samples} Bootstrap-Stichproben der Beobachtungen geprüft"
+            "{cite_bootstrap}; die Anpassung schlug bei jeder Stichprobe fehl."
+        ),
+        "short_set": (
+            "Als Kurzset steht für jede Dimension das ihr zugeordnete Maß, dessen Betrag der Ladung auf der "
+            "Dimension den größten Betrag seiner Ladungen auf anderen Dimensionen am weitesten übersteigt: {members}."
+        ),
     },
 }
 
@@ -368,6 +434,8 @@ def methods(
     tool: dict[str, Any],
     libraries: dict[str, str | None],
     entry: dict[str, Any] | None = None,
+    stability: dict[str, Any] | None = None,
+    short_set: bool = False,
 ) -> Methods:
     """The methods paragraph of an analysis.
 
@@ -375,7 +443,9 @@ def methods(
     after cleaning and what cleaning ``dropped``), ``result`` the analysis (with ``miner`` for the
     rows of one miner), ``requested_factors`` the factor count asked for (None: the Kaiser
     criterion decides), ``excluded`` the measures left out by hand that the analysis knew,
-    ``entry`` the catalog entry of a bundled dataset.
+    ``entry`` the catalog entry of a bundled dataset. A computed ``stability``
+    (``stability.bootstrap``) and, with ``short_set``, the short set of the result add a sentence
+    each; without them the paragraph is as before.
     """
     if language not in LANGUAGES:
         raise ValueError(f"No methods paragraph in '{language}'.")
@@ -511,4 +581,29 @@ def methods(
     else:
         text += fill("unassigned_many", n=len(left_out))
     sentences.append(text)
+    if stability is not None:
+        sentences.append(_stability_sentence(stability, fill, cite, language))
+    if short_set and result.get("short_set"):
+        sentences.append(fill("short_set", members=", ".join(_tex(r["measure"]) for r in result["short_set"])))
     return Methods(language, " ".join(sentences), keys)
+
+
+def _stability_sentence(stability: dict[str, Any], fill: Any, cite: Any, language: str) -> str:
+    bootstrap = cite("efron1993", "zhang2010bootstrap")
+    if not stability["valid"]:
+        return fill("stability_none", samples=stability["samples"], cite_bootstrap=bootstrap)
+    failed = stability["samples"] - stability["valid"]
+    phis = [f["phi_mean"] for f in stability["factors"]]
+    return fill(
+        "stability",
+        samples=stability["samples"],
+        cite_bootstrap=bootstrap,
+        cite_kuhn=cite("kuhn1955"),
+        left_out=fill("stability_left_out", n=failed) if failed else "",
+        stable=stability["summary"]["stable"],
+        measures=stability["summary"]["measures"],
+        share=_number(stability["summary"]["threshold"] * 100, 0, language) + ("~\\%" if language == "de" else "\\%"),
+        phi_min=_number(min(phis), 2, language),
+        phi_max=_number(max(phis), 2, language),
+        cite_reading=cite("lorenzoseva2006"),
+    )

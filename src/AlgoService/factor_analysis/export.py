@@ -313,6 +313,51 @@ def assignment_csv(result: dict[str, Any]) -> str:
     return "".join(lines)
 
 
+def short_set_csv(result: dict[str, Any], names: Names = None) -> str:
+    """One row per factor with a representative (short_set.py): the factor, the measure, its
+    loading on the factor and its purity."""
+    labels = factor_labels(result, names)
+    lines = [_csv_line(["factor", "measure", "loading", "purity"])]
+    for entry in result.get("short_set") or []:
+        lines.append(_csv_line([labels[entry["index"]], entry["measure"], entry["loading"], entry["purity"]]))
+    return "".join(lines)
+
+
+def stability_csv(stability: dict[str, Any]) -> str:
+    """One row per measure: its factors in the solution (counted from 1), the share of the valid
+    samples with the same factors and with the same primary factor."""
+    lines = [_csv_line(["measure", "factors", "primary_factor", "same_factors", "same_primary_factor"])]
+    for m in stability["measures"]:
+        lines.append(_csv_line([
+            m["measure"], " ".join(str(i + 1) for i in m["factors"]), m["primary_factor"] + 1,
+            m["assignment"], m["primary"],
+        ]))
+    return "".join(lines)
+
+
+def stability_factors_csv(stability: dict[str, Any], result: dict[str, Any], names: Names = None) -> str:
+    """One row per factor: mean and 5th percentile of |phi| with its match in the samples, and
+    the reading after Lorenzo-Seva and ten Berge (2006)."""
+    labels = factor_labels(result, names)
+    lines = [_csv_line(["factor", "phi_mean", "phi_p5", "reading"])]
+    for f in stability["factors"]:
+        lines.append(_csv_line([labels[f["index"]], f["phi_mean"], f["phi_p5"], f["reading"]]))
+    return "".join(lines)
+
+
+def stability_pairs_csv(stability: dict[str, Any]) -> str:
+    """One row per pair of measures: the share of the valid samples in which they share a
+    factor, and whether they share one in the solution."""
+    pairs = stability["pairs"]
+    measures, shares, reference = pairs["measures"], pairs["shares"], pairs["reference"]
+    lines = [_csv_line(["measure_a", "measure_b", "share_together", "together_in_solution"])]
+    for i in range(len(measures)):
+        for j in range(i + 1, len(measures)):
+            share = shares[i][j] if shares is not None else None
+            lines.append(_csv_line([measures[i], measures[j], share, "yes" if reference[i][j] else "no"]))
+    return "".join(lines)
+
+
 def _provenance_lines(dataset: dict[str, Any], result: dict[str, Any], tool: dict[str, Any]) -> list[str]:
     """The provenance of manifest.json in a few lines."""
     origin = dataset.get("provenance") or {}
@@ -447,6 +492,7 @@ def analysis_zip(
     figure_order: str = "factor",
     figure_language: str = "en",
     factor_names: Names = None,
+    stability: dict[str, Any] | None = None,
 ) -> bytes:
     """Everything needed to report and reproduce one analysis.
 
@@ -462,7 +508,9 @@ def analysis_zip(
     the report by the codes of the papers, as the figures do; ``figure_order`` and
     ``figure_language`` say how the figures were drawn and go into the manifest.
     ``factor_names`` name the factors in the tables, the report and the manifest, as the
-    request gave them; the figures are drawn with them already.
+    request gave them; the figures are drawn with them already. A computed ``stability``
+    (``stability.bootstrap``) adds its tables, a block of analysis.json, its parameters in the
+    manifest and a section of the report; without one these are as before.
     """
     from .report import report_tex
 
@@ -475,8 +523,9 @@ def analysis_zip(
         if miner
         else "The cleaned matrix the analysis ran on, one row per observation."
     )
+    analysis = result if stability is None else {**result, "stability": stability}
     files: list[tuple[str, str | bytes, str]] = [
-        ("analysis.json", json.dumps(result, ensure_ascii=False, indent=2),
+        ("analysis.json", json.dumps(analysis, ensure_ascii=False, indent=2),
          "The full result, as POST /factor-analysis/datasets/{id}/analyze returns it."),
         ("dataset.csv", matrix, rows),
         ("loadings.csv", loadings_csv(result, factor_names),
@@ -486,6 +535,9 @@ def analysis_zip(
         ("assignment.csv", assignment_csv(result),
          f"The factors each measure is assigned to by the rule {result.get('assignment_rule', 'largest')}, "
          "or why it is on none, and its cross-loadings."),
+        ("short-set.csv", short_set_csv(result, factor_names),
+         "One representative measure per factor: the measure assigned to it with the largest absolute loading "
+         "minus its largest absolute loading on any other factor."),
     ]
     if result["structure_loadings"] is not None:
         files += [
@@ -501,9 +553,19 @@ def analysis_zip(
         ("report.tex", report_tex(
             dataset=dataset, params=params, result=result, descriptives=descriptives, tool=tool,
             libraries=libraries, created_at=created_at, short=short_codes, factor_names=factor_names,
-            published=published,
+            published=published, stability=stability,
         ), "The analysis as a LaTeX report built like ComFy's report; compile it with latexmk -pdf, or run pdflatex twice."),
     ]
+    if stability is not None:
+        files += [
+            ("stability.csv", stability_csv(stability),
+             f"Per measure, the share of {stability['valid']} valid bootstrap samples with the same factors and "
+             "with the same primary factor."),
+            ("stability-factors.csv", stability_factors_csv(stability, result, factor_names),
+             "Per factor, the mean and 5th percentile of Tucker's congruence with its match in the samples."),
+            ("stability-pairs.csv", stability_pairs_csv(stability),
+             "Per pair of measures, the share of the samples in which they share a factor."),
+        ]
     if descriptives is not None:
         files.append((
             "descriptives.csv", descriptives_csv(descriptives),
@@ -563,6 +625,11 @@ def analysis_zip(
         manifest["measurement"] = measurement
     if published is not None:
         manifest["published"] = published
+    if stability is not None:
+        manifest["stability"] = {
+            "samples": stability["samples"], "seed": stability["seed"], "valid": stability["valid"],
+            "failed": stability["failed"], "seconds": stability["seconds"],
+        }
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
