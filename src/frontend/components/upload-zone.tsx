@@ -47,7 +47,7 @@ export function UploadZone({ onFiles, accept = LOG_ACCEPT, multiple = false, lab
       }}
       className={cn(
         "w-full rounded-lg border-2 border-dashed transition px-4 py-4 flex flex-col items-center gap-1.5 text-center",
-        drag ? "border-accent bg-accent/5" : "border-border hover:border-muted bg-surface",
+        drag ? "border-accent bg-accent/5" : "border-strong hover:border-muted bg-surface",
       )}
     >
       <div className="h-7 w-7 rounded-full bg-bg grid place-items-center">
@@ -55,7 +55,7 @@ export function UploadZone({ onFiles, accept = LOG_ACCEPT, multiple = false, lab
       </div>
       <div>
         <div className="text-xs font-medium">{label ?? t("file_drop.drop_label")}</div>
-        <div className="text-[10px] text-muted mt-0.5">{hint ?? t("file_drop.drop_hint")}</div>
+        <div className="text-xs text-muted mt-0.5">{hint ?? t("file_drop.drop_hint")}</div>
       </div>
       <input
         ref={inputRef}

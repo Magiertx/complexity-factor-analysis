@@ -8,27 +8,27 @@ import type { Options, Styles } from "react-joyride";
 // If the tokens there ever change, update them here as well:
 //   --accent      → 225 29 72
 //   --accent-fg   → 255 255 255
-//   --surface     → light: 255 255 255  / dark: 17 17 20
-//   --border      → light: 203 213 225 / dark: 45 45 50
+//   --surface     → light: 255 255 255  / dark: 24 24 29
+//   --border      → light: 170 182 200 / dark: 72 72 82
 //   --fg          → light: 15 23 42    / dark: 244 244 245
-//   --muted       → light: 71 85 105   / dark: 113 113 122
+//   --muted       → light: 71 85 105   / dark: 150 150 160
 
 const ACCENT = "rgb(225 29 72)";
 const ACCENT_FG = "rgb(255 255 255)";
 
 const LIGHT = {
   surface: "rgb(255 255 255)",
-  border: "rgb(203 213 225)",
+  border: "rgb(170 182 200)",
   fg: "rgb(15 23 42)",
   muted: "rgb(71 85 105)",
   mutedSoft: "rgb(100 116 139)",
 };
 
 const DARK = {
-  surface: "rgb(17 17 20)",
-  border: "rgb(45 45 50)",
+  surface: "rgb(24 24 29)",
+  border: "rgb(72 72 82)",
   fg: "rgb(244 244 245)",
-  muted: "rgb(113 113 122)",
+  muted: "rgb(150 150 160)",
   mutedSoft: "rgb(161 161 170)",
 };
 

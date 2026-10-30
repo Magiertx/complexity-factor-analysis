@@ -168,14 +168,14 @@ export function ScreePlot({
         </desc>
 
         {/* retained factors */}
-        <rect x={M.l} y={M.t} width={(band / n) * w} height={h} className="fill-accent" fillOpacity={0.07} />
+        <rect x={M.l} y={M.t} width={(band / n) * w} height={h} className="fill-accent" fillOpacity={0.12} />
         <text x={M.l + 4} y={M.t - 10} fontSize={10} className="fill-muted">
           {t("factor.factors.retained", { n: selected })}
         </text>
 
         {ticks.map((v) => (
           <g key={v}>
-            <line x1={M.l} x2={M.l + w} y1={y(v)} y2={y(v)} className="stroke-border" strokeWidth={1} />
+            <line x1={M.l} x2={M.l + w} y1={y(v)} y2={y(v)} style={{ stroke: "rgb(var(--chart-grid) / 0.6)" }} strokeWidth={1} />
             <text x={M.l - 8} y={y(v)} dy="0.32em" textAnchor="end" fontSize={10} className="fill-muted">
               {formatNumber(v, locale, Number.isInteger(v) ? 0 : 2)}
             </text>
@@ -341,7 +341,7 @@ export function ScreePlot({
         )}
       </svg>
 
-      <div className="flex items-center justify-between gap-x-4 gap-y-2 flex-wrap text-[11px] text-muted">
+      <div className="flex items-center justify-between gap-x-4 gap-y-2 flex-wrap text-xs text-muted">
         <ul className="flex items-center gap-x-3 gap-y-1 flex-wrap" aria-hidden>
           <li className="flex items-center gap-1.5">
             <svg width="18" height="8">
