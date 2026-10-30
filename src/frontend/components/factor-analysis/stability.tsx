@@ -34,6 +34,8 @@ import { useTipZone } from "@/components/ui/tip";
 
 /** Below this share a measure's value carries the warning glyph. */
 export const LOW_STABILITY = 0.7;
+/** The number of samples last chosen, so that a kept stability reopens with it. */
+const SAMPLES_KEY = "app.stability-samples";
 
 export interface StabilityView {
   samples: StabilitySamples;
@@ -59,7 +61,23 @@ export interface StabilityView {
 export function useStability(id: string | null, options: AnalyzeOptions | null): StabilityView {
   const t = useT();
   const { jobs } = useJobs();
-  const [samples, setSamples] = useState<StabilitySamples>(DEFAULT_STABILITY_SAMPLES);
+  const [samples, setSamplesState] = useState<StabilitySamples>(DEFAULT_STABILITY_SAMPLES);
+  useEffect(() => {
+    try {
+      const kept = Number(localStorage.getItem(SAMPLES_KEY));
+      if ((STABILITY_SAMPLES as readonly number[]).includes(kept)) setSamplesState(kept as StabilitySamples);
+    } catch {
+      // Without storage the default stays.
+    }
+  }, []);
+  const setSamples = useCallback((n: StabilitySamples) => {
+    setSamplesState(n);
+    try {
+      localStorage.setItem(SAMPLES_KEY, String(n));
+    } catch {
+      // Remembered for this page only.
+    }
+  }, []);
   const [phase, setPhase] = useState<StabilityView["phase"]>("idle");
   const [result, setResult] = useState<Stability | null>(null);
   const [stale, setStale] = useState(false);
