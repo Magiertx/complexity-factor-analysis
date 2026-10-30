@@ -8,6 +8,8 @@
     --bg: 240 242 247;
     --surface: 255 255 255;
     --tile: 226 231 240;
+    /* The chosen option of a Segmented control: raised by its fill and a shadow, without a ring. */
+    --pill: 255 255 255;
     --border: 170 182 200;
     /* Interactive boundaries (drop zones): 3:1 on a surface (WCAG 1.4.11). */
     --border-strong: 120 132 152;
@@ -39,6 +41,7 @@
     --bg: 9 9 11;
     --surface: 24 24 29;
     --tile: 40 40 47;
+    --pill: 62 62 72;
     --border: 72 72 82;
     --border-strong: 110 110 122;
     --line: 58 58 68;

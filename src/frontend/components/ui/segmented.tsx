@@ -92,8 +92,8 @@ export function Segmented<T extends string>({
           aria-hidden
           className={cn(
             // The chosen option, the same in every Segmented control (docs/UI.md): a raised neutral
-            // pill, never an accent ring or fill.
-            "absolute bg-surface shadow-sm rounded ring-1 ring-inset ring-border transition-all duration-300 ease-out pointer-events-none motion-reduce:transition-none",
+            // pill without a ring, never an accent ring or fill.
+            "absolute bg-pill shadow-sm rounded transition-all duration-300 ease-out pointer-events-none motion-reduce:transition-none",
             size === "sm" ? "top-0.5 bottom-0.5" : "top-1 bottom-1",
           )}
           style={{ width: pill.width, left: pill.left }}

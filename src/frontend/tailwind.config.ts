@@ -9,6 +9,7 @@ const config: Config = {
         bg: "rgb(var(--bg) / <alpha-value>)",
         surface: "rgb(var(--surface) / <alpha-value>)",
         tile: "rgb(var(--tile) / <alpha-value>)",
+        pill: "rgb(var(--pill) / <alpha-value>)",
         border: "rgb(var(--border) / <alpha-value>)",
         strong: "rgb(var(--border-strong) / <alpha-value>)",
         muted: "rgb(var(--muted) / <alpha-value>)",

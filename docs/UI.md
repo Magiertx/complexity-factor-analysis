@@ -13,7 +13,8 @@ phone.
   in a list of links (the recent runs of a single log) has the same ring.
 - **Every Segmented control** (`components/ui/segmented.tsx`: view toggles, filters, the source
   of the data, language, theme, the toggles of the workbench) has one look: the chosen option is a
-  raised neutral pill (surface, small shadow, a ring in the border colour). There is no variant.
+  raised neutral pill (a lighter fill and a small shadow, no ring: rings belong to chosen tiles).
+  There is no variant.
   It is a `radiogroup` like the tiles: one tab stop on the chosen option (roving tabindex), the
   arrow keys move to the next option and choose it, Home and End jump to the first and the last.
 - No solid accent fills for a selection. The small check mark of a chosen tile is the only filled
