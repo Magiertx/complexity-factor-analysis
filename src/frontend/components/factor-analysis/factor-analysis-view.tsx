@@ -1487,7 +1487,11 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
         // step has its room, so a laptop shows the first rows of the loadings with the settings row.
         actions={
           <FactorToolbar
-            linkQuery={linkQuery && current !== "data" ? `${linkQuery}&step=${current}` : linkQuery}
+            linkQuery={
+              linkQuery && current !== "data"
+                ? `${linkQuery}&step=${current}${current === "loadings" && loadingsLook.look === "matrix" ? "&view=matrix" : ""}`
+                : linkQuery
+            }
             exports={exports}
             onTour={startTour}
             shortCodes={shortCodes}
@@ -1865,8 +1869,9 @@ function UrlReader({
     const query = new URLSearchParams(window.location.search);
     const target = parseStep(query.get("step"));
     // Without a state of its own, Next.js takes the new address over, so the same link opens
-    // the dataset again later.
-    window.history.replaceState(null, "", stepHref(window.location.pathname, "", target ?? "data"));
+    // the dataset again later. The view of the loadings stays: the hook of the look reads it.
+    const view = query.get("view") === "matrix" ? "view=matrix" : "";
+    window.history.replaceState(null, "", stepHref(window.location.pathname, view, target ?? "data"));
     if (linked) onDataset(linked, target);
     else onBundled(query, target);
   }, [linked, bundled, onDataset, onBundled]);
