@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { activeHeaderLink, activeTab, lastAnalysis, rememberAnalysis, TAB_HREFS, TABS } from "./nav";
 
 describe("the active entry of the navigation", () => {
-  const ROUTES = ["/", "/log", "/compare", "/inspect", "/runs", "/guide", "/api-access", "/settings"];
+  const ROUTES = ["/", "/log", "/compare", "/inspect", "/runs", "/guide", "/settings"];
 
   it("is exactly one per route: a tab or a link of the header", () => {
     for (const route of ROUTES) {
@@ -19,7 +19,6 @@ describe("the active entry of the navigation", () => {
   it("makes no tab active on the pages of the header", () => {
     expect(activeTab("/guide")).toBeNull();
     expect(activeHeaderLink("/guide")).toBe("guide");
-    expect(activeHeaderLink("/api-access")).toBe("api");
     expect(activeHeaderLink("/settings")).toBe("settings");
     expect(activeHeaderLink("/")).toBeNull();
   });

@@ -18,7 +18,7 @@ sums up every choice, marks those that differ from the tool standard and leads t
 Every change of a setting runs the analysis again.
 
 The tabs at the top are the same on every page: the analyses *Model complexity*, *Log complexity*
-and *Single log*, and set apart on the right the tools *Compare* and *History*. The guide, the API
+and *Single log*, and set apart on the right the tools *Compare* and *History*. The guide
 and the settings are in the header and lead back to the tab you came from.
 
 ## Analyse a bundled dataset
@@ -206,10 +206,3 @@ dens, and C with the code as index for log measures); the full name stays in the
 
 The **link icon** copies a link to the analysis of a bundled dataset with its settings and the
 step on screen.
-
-## Use the API
-
-The page *API access* (`/api-access`) lists the endpoints with examples in curl and Python;
-[API.md](API.md) describes every request and response, including the report
-(`POST /factor-analysis/datasets/{id}/export/report`) and the figures
-(`POST /factor-analysis/datasets/{id}/export/figure`).

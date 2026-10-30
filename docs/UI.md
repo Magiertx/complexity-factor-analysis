@@ -47,7 +47,10 @@ phone.
 - The explanations are the existing i18n texts; only what is visible is shortened. German texts
   address the reader with "du".
 - Icons name themselves through the tooltip (`useTip`, `IconButton`); that is not help text.
-- The guide (`/guide`) is long-form on purpose.
+- The guide (`/guide`) is long-form on purpose, laid out for scanning: one card per section with its
+  lead line, its items (steps, the results with the signs of the step rail, or tiles) and a quiet note
+  on the rest. The contents are a sticky column from `lg` on, with a thin accent bar at the section
+  being read, and a row of chips above the cards below it.
 
 ## Error messages
 
@@ -93,7 +96,7 @@ phone.
   secondary, outline or ghost.
 - Empty states use `EmptyState` (`components/ui/empty-state.tsx`); the 404 page is one, with
   a button to the start page.
-- The info pages (settings, guide, API) share one column (`PAGE_COLUMN` in
+- The info pages (settings, guide) share one column (`PAGE_COLUMN` in
   `components/ui/page-column.tsx`), centred in the content area that the header, the tabs and the
   other pages share (`max-w-[1600px]`).
 - A section of a page has a plain heading, no numbered badge: a number in a circle means a step

@@ -150,11 +150,6 @@ test("the number of files per dataset is the one the server reports", async ({ p
 
   await chooseSource(page, "pnml");
   await expect(data).toContainText(text("factor.data.pnml_drop_hint", { max: 5 }));
-
-  // The API page names the same numbers, in the sentence about uploads.
-  await page.goto("/api-access");
-  await expect(page.getByRole("main")).toContainText("up to 3 event logs");
-  await expect(page.getByRole("main")).toContainText("up to 5 Petri nets");
 });
 
 test("a deleted dataset is gone from My datasets", async ({ page }) => {

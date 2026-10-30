@@ -135,8 +135,8 @@ app = FastAPI(
     version="0.1.0",
     description=(
         "Complexity measures of process models and event logs, computed with ComFy and "
-        "feeed, and factor analyses over them. See /api-access in the UI for quick-start "
-        "examples."
+        "feeed, and factor analyses over them. Examples are in docs/API.md of the "
+        "repository."
     ),
     root_path=_fastapi_root_path,
     lifespan=lifespan,

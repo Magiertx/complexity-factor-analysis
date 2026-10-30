@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Code2, Settings as SettingsIcon } from "lucide-react";
+import { BookOpen, Settings as SettingsIcon } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { HEADER_HREFS, activeHeaderLink, type HeaderLinkId } from "@/lib/nav";
 import { cn } from "@/lib/utils";
@@ -13,12 +13,11 @@ import { ThemeToggle } from "./theme-toggle";
 
 const ICONS: Record<HeaderLinkId, React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>> = {
   guide: BookOpen,
-  api: Code2,
   settings: SettingsIcon,
 };
 
 /**
- * A page of the header: the guide and the API with their names from a small screen on, the
+ * A page of the header: the guide with its name from a small screen on, the
  * settings as an icon. The page on screen is marked (aria-current) like the tab of a page.
  */
 function HeaderLink({ id, active, textFrom }: { id: HeaderLinkId; active: boolean; textFrom?: "sm" }) {
@@ -83,7 +82,6 @@ export function SiteHeader() {
             <span aria-hidden className="mx-1.5 h-5 w-px bg-border" />
           </span>
           <HeaderLink id="guide" active={active === "guide"} textFrom="sm" />
-          <HeaderLink id="api" active={active === "api"} textFrom="sm" />
           <HeaderLink id="settings" active={active === "settings"} />
         </nav>
       </div>

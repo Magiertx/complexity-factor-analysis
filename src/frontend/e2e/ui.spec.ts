@@ -58,7 +58,7 @@ test("the theme switch toggles dark mode and keeps it", async ({ page }) => {
   await expect(html).not.toHaveClass(/\bdark\b/);
 });
 
-const ROUTES = ["/", "/log", "/inspect", "/compare", "/runs", "/settings", "/api-access", "/guide"];
+const ROUTES = ["/", "/log", "/inspect", "/compare", "/runs", "/settings", "/guide"];
 
 for (const scheme of ["light", "dark"] as const) {
   for (const route of ROUTES) {

@@ -19,12 +19,11 @@ export const TAB_HREFS: Record<TabId, string> = {
 };
 
 /** The pages of the header, which belong to no tab. */
-export const HEADER_LINKS = ["guide", "api", "settings"] as const;
+export const HEADER_LINKS = ["guide", "settings"] as const;
 export type HeaderLinkId = (typeof HEADER_LINKS)[number];
 
 export const HEADER_HREFS: Record<HeaderLinkId, string> = {
   guide: "/guide",
-  api: "/api-access",
   settings: "/settings",
 };
 

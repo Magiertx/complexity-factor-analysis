@@ -19,7 +19,7 @@ Schalk do it, but interactively in the browser.
   own address (`?step=loadings`), a step list that shows what each step found, and Back and Next;
   the toolbar of the analysis holds the short codes, the link, the downloads and the tour. The
   tabs are the same on every page (the two analyses, Compare, Single log and History), and the
-  guide, the API and the settings are in the header.
+  guide and the settings are in the header.
 - **Data from anywhere.** Bundled datasets (the scores of the ComFy paper for seven miners,
   and the measures of 2112 Process Discovery Contest logs), an own CSV, up to 50 event logs
   (`.xes`, `.xes.gz`; `MAX_LOG_FILES`) that are mined with any of ComFy's nine ProM miners, or
@@ -104,8 +104,8 @@ Schalk do it, but interactively in the browser.
   three sections) runs the chosen miners on one log and shows the measures next to the rendered
   nets. A row of a dataset computed from logs links to it with the log and the miner of the row
   chosen, while the log is among the newest uploads of the session.
-- **Scriptable.** Everything the UI does goes through a documented HTTP API
-  ([`docs/API.md`](docs/API.md#factor-analysis)); English and German UI.
+- **Scriptable.** Everything the UI does goes through an HTTP API; for scripting it is documented in
+  [`docs/API.md`](docs/API.md#factor-analysis) and interactively at `/api/docs`. English and German UI.
 
 Discovery runs through [ProM4Py](https://doi.org/10.5281/zenodo.13853660), a bridge to the
 ProM plugins.
@@ -289,7 +289,7 @@ All of this is set in `docker-compose.yml`; reverse proxy, TLS, volumes and back
 - **Limits.** 100 MB per uploaded file; per factor-analysis dataset 50 logs or 200 PNML
   files and 500 MB in total; a per-session cap on queued jobs. Request rate limits, the job
   cap and the number of files per dataset (`MAX_LOG_FILES`, `MAX_PNML_FILES`, default 50 and
-  200) are tunable in `.env` (see `.env.example`). The data step and `/api-access` show the
+  200) are tunable in `.env` (see `.env.example`). The data step shows the
   values in force, and `GET /api/factor-analysis/limits` reports them.
 - **Analysis cost.** A factor fit over about a hundred measures takes a few seconds of CPU
   in the API process. At most two run at once per process; recent fits are cached, and after the

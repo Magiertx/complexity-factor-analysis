@@ -486,7 +486,7 @@ The single-log ComFy workbench lives at `/inspect` ("Inspect a single log" on th
 7. Optional: ZIP download via `/jobs/{job_id}/download`.
 
 `/runs` lists the session's history, `/settings` holds local preferences and presets,
-`/api-access` shows scripting examples. `/print` shows the analysis of its address on A4 pages
+`/print` shows the analysis of its address on A4 pages
 to print or save as PDF (the download menu opens it in a new tab), `/guide` the user guide of
 `docs/GUIDE.md` in the language of the UI (the help icon of the toolbar opens it).
 `/compare` puts the factor structures of 2 to 8 bundled datasets side by side
@@ -592,7 +592,7 @@ A malformed value in any of these stops the service at startup instead of fallin
     │   ├── Dockerfile
     │   └── requirements.txt
     └── frontend/
-        ├── app/                 # Next.js App Router: /, /log, /inspect, /runs, /settings, /api-access, /print, /guide
+        ├── app/                 # Next.js App Router: /, /log, /inspect, /runs, /settings, /print, /guide
         ├── components/          # factor-analysis/, workbench, jobs drawer, artifact viewers, ui/
         ├── lib/
         │   ├── api.ts           # typed AlgoService client
