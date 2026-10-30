@@ -66,7 +66,7 @@ export function historyRows(datasets: readonly DatasetSummary[], jobs: readonly 
           ? job && jobStatus(job) !== "active" && job.status !== "completed"
             ? jobStatus(job)
             : "active"
-          : job?.status === "aborted"
+          : d.status === "aborted" || job?.status === "aborted"
             ? "aborted"
             : "failed";
     rows.push({
