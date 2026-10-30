@@ -4,7 +4,7 @@
 #
 #   docker compose -f docker-compose.release.yml up -d
 #
-# CFA_TAG picks the images (default latest, the newest release; e.g. CFA_TAG=1.0.0 or edge).
+# CFA_TAG picks the images (default latest, the newest release; e.g. CFA_TAG=v1.0.0 or edge).
 # The Celery worker runs the algoservice image with another command.
 services:
   prom4py:
