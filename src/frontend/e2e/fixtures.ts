@@ -125,6 +125,13 @@ export function stepSection(page: Page, step: string): Locator {
   return page.locator(`#fa-step-${step}`);
 }
 
+/** The loadings open on the dimensions; a test that reads the matrix asks for it. */
+export async function showMatrix(page: Page, locale: "en" | "de" = "en") {
+  const matrix = stepSection(page, "loadings").getByRole("radio", { name: text("factor.loadings.look_matrix", {}, locale) });
+  await matrix.click();
+  await expect(matrix).toBeChecked();
+}
+
 /**
  * Loads a bundled dataset of the data step by its label, e.g. "Inductive miner". The data step stays
  * on screen with what was loaded; its button leads on to the dataset step.
@@ -155,8 +162,8 @@ export async function openBundled(page: Page, label: string, locale: "en" | "de"
 /** Chooses the settings a bundled dataset with published settings opens with, in the data step. */
 export async function chooseOpenWith(page: Page, preset: "standard" | "published", locale: "en" | "de" = "en") {
   await stepSection(page, "data")
-    .getByRole("group", { name: text("factor.data.preset_label", {}, locale) })
-    .getByRole("button", { name: text(`factor.data.preset.${preset}`, {}, locale) })
+    .getByRole("radiogroup", { name: text("factor.data.preset_label", {}, locale) })
+    .getByRole("radio", { name: text(`factor.data.preset.${preset}`, {}, locale) })
     .click();
 }
 
@@ -169,8 +176,8 @@ export async function chooseDownload(page: Page, key: string, locale: "en" | "de
 /** Chooses a source of the data step, e.g. "csv". */
 export async function chooseSource(page: Page, source: string) {
   await stepSection(page, "data")
-    .getByRole("group", { name: text("factor.data.source_aria") })
-    .getByRole("button", { name: text(`factor.data.source.${source}`) })
+    .getByRole("radiogroup", { name: text("factor.data.source_aria") })
+    .getByRole("radio", { name: text(`factor.data.source.${source}`) })
     .click();
 }
 

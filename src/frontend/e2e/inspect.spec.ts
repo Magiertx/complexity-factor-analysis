@@ -14,8 +14,8 @@ test.afterEach(async ({ page }) => {
 
 async function chooseExample(page: Page) {
   await page
-    .getByRole("group", { name: text("workbench.log_source.aria") })
-    .getByRole("button", { name: text("workbench.log_source.use_sample") })
+    .getByRole("radiogroup", { name: text("workbench.log_source.aria") })
+    .getByRole("radio", { name: text("workbench.log_source.use_sample") })
     .click();
   await page.getByRole("radiogroup", { name: text("workbench.samples.label") }).getByRole("radio").first().check({ force: true });
 }

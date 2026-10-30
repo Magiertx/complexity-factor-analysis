@@ -74,11 +74,11 @@ test("a bundled dataset opened on a tab is in the History, and opens from there"
   // The settings of its last analysis: the tool standard.
   await expect(row).toContainText(text("factor.data.preset.standard"));
   // A filter by type keeps it; another type does not.
-  const types = page.getByRole("group", { name: text("run_history.filter_type_aria") });
-  await types.getByRole("button", { name: text("run_history.type.single") }).click();
+  const types = page.getByRole("radiogroup", { name: text("run_history.filter_type_aria") });
+  await types.getByRole("radio", { name: text("run_history.type.single") }).click();
   await expect(page).toHaveURL(/\/runs\?type=single$/);
   await expect(row).toHaveCount(0);
-  await types.getByRole("button", { name: text("run_history.type.model") }).click();
+  await types.getByRole("radio", { name: text("run_history.type.model") }).click();
   await expect(row).toHaveCount(1);
   await row.getByRole("link", { name: pattern(text("run_history.open_button")) }).click();
   await expect(page).toHaveURL(/\/\?step=dataset$/);

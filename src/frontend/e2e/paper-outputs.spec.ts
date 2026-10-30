@@ -148,7 +148,7 @@ test.describe("in the German UI", () => {
 
     // The ZIP takes the order chosen at the loadings, and keeps its figures English.
     await goToStep(page, "loadings", "de");
-    await stepSection(page, "loadings").getByRole("button", { name: text("factor.loadings.order_original", {}, "de") }).click();
+    await stepSection(page, "loadings").getByRole("radio", { name: text("factor.loadings.order_original", {}, "de") }).click();
     download = page.waitForEvent("download");
     await page.getByRole("button", { name: text("factor.toolbar.export", {}, "de"), exact: true }).click();
     await page.getByRole("menuitem", { name: pattern(text("factor.toolbar.export_zip", {}, "de")) }).click();

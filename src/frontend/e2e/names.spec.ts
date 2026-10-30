@@ -26,7 +26,7 @@ async function openPaper(page: Page) {
   await page.goto("/?bundled=comfy-paper-inductive-miner&preset=published&step=loadings");
   await expectStep(page, "loadings", "done", "en", FIT_TIMEOUT);
   await goToStep(page, "loadings");
-  await stepSection(page, "loadings").getByRole("button", { name: text("factor.loadings.look_matrix") }).click();
+  await stepSection(page, "loadings").getByRole("radio", { name: text("factor.loadings.look_matrix") }).click();
 }
 
 function head(page: Page, i: number) {
@@ -62,7 +62,7 @@ test("a factor is named in place and the name goes into the rail, the cards and 
   await field.press("Escape");
 
   await expect(stepLink(page, "loadings")).toContainText("Größe");
-  await stepSection(page, "loadings").getByRole("button", { name: text("factor.loadings.look_dimensions") }).click();
+  await stepSection(page, "loadings").getByRole("radio", { name: text("factor.loadings.look_dimensions") }).click();
   await expect(stepSection(page, "loadings").locator("h4").first()).toContainText("Größe");
 
   // The LaTeX of the loadings heads the column with the name.

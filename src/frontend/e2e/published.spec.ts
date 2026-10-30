@@ -10,6 +10,7 @@ import {
   stepSection,
   test,
   text,
+  showMatrix,
 } from "./fixtures";
 
 // The analyses as Important Factors published them: the paper settings with the check against
@@ -60,6 +61,7 @@ test("the paper settings reproduce the report, and a reset to the standard can b
   const match = row.getByRole("button", { name: text("factor.match.chip_match") });
   await expect(match).toBeVisible();
   await expectRule(page, "multi");
+  await showMatrix(page);
   await expect(stepSection(page, "loadings").locator('[data-tip="Size · Factor 1: 0.971"]')).toBeVisible();
 
   // The chip says what was compared and that the groups are not.
@@ -183,7 +185,7 @@ test("the assignment rule decides what happens to cross-loaded measures", async 
   const loadings = stepSection(page, "loadings");
   const rule = (name: string) => loadings.getByRole("radio", { name: text(`factor.loadings.rule.${name}.title`), exact: true });
   // The groups are the dimensions view of the loadings; the matrix is the other one.
-  await loadings.getByRole("button", { name: text("factor.loadings.look_dimensions") }).click();
+  await loadings.getByRole("radio", { name: text("factor.loadings.look_dimensions") }).click();
 
   // Multiple membership (Tab. 12): average connector degree and density stand in F1 and F3,
   // with a note on each card that names the other factor.
@@ -277,6 +279,7 @@ for (const lang of ["en", "de"] as const) {
       // The result: the loadings, with the chip of the published numbers at the top and the
       // steps before them done.
       await expect(page).toHaveURL(/\/\?step=loadings$/);
+      await showMatrix(page, lang);
       await expect(stepSection(page, "loadings").locator("table.data-table").first()).toBeVisible();
       const chip = settingsRow(page, lang).getByRole("button", { name: text("factor.match.chip_match", {}, lang) });
       await expect(chip).toBeVisible();
