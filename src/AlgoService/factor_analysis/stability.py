@@ -11,16 +11,14 @@ Per measure, the share of samples that give it the same set of factors as the re
 share that give it the same primary factor (its largest absolute loading). Per factor, the mean
 and the 5th percentile of |phi|, read after Lorenzo-Seva and ten Berge (2006). Per pair of
 measures, the share of samples in which they share a factor. A sample whose fit fails (a measure
-without variance in it, a singular matrix, no convergence, a Heywood case) is counted by its
-cause and left out of the shares. A Heywood case counts only at a measure that is none in the
-reference: where the reference has one, as the published analyses of Important Factors do, every
-sample would fail at it, and the reference is analysed with it too.
+without variance in it, a singular matrix, no convergence) is counted by its cause and left out
+of the shares. A sample in which a further measure reaches the Heywood bound is kept, since the
+reference is a bounded solution as well, and is counted apart.
 """
 
 from __future__ import annotations
 
 import time
-import warnings
 from collections import Counter
 from typing import Any, Callable
 
@@ -56,7 +54,7 @@ CONGRUENCE_FAIR = 0.85
 STABLE_SHARE = 0.9
 
 #: Why a sample is left out, in the order of the report.
-FAILURES = ("constant", "singular", "fit_failed", "not_converged", "heywood")
+FAILURES = ("constant", "singular", "fit_failed", "not_converged")
 
 ProgressFn = Callable[[float, str], None]
 
@@ -85,8 +83,9 @@ class _GradientFactorAnalyzer(_StoppableFactorAnalyzer):
             return float(np.sum(rest ** 2)), -2 * (rest_vectors ** 2) @ rest
 
         result = minimize(objective, start, method="L-BFGS-B", jac=True, bounds=bounds, options={"maxiter": 1000})
-        if not result.success:
-            warnings.warn(f"Failed to converge: {result.message}")
+        # Kept on the analyzer, not sent through the process-wide warnings, which the fits of
+        # other threads share while the bootstrap runs.
+        self.converged = bool(result.success)
         return self._normalize_uls(result.x, corr_mtx, k)
 
 
@@ -174,6 +173,7 @@ def bootstrap(
     together = np.zeros((p, p))
     phis: list[np.ndarray] = []
     failed: Counter[str] = Counter()
+    heywood = 0
     for b in range(samples):
         _check_stop(should_stop)
         sample = x[rng.integers(0, n, size=n)]
@@ -189,10 +189,12 @@ def bootstrap(
             except AnalysisError as e:
                 cause = _failure(e)
             else:
-                if fit.notes:
+                if not fit.converged:
                     cause = "not_converged"
                 elif any(c >= HEYWOOD_COMMUNALITY and m not in bounded for m, c in fit.communalities.items()):
-                    cause = "heywood"
+                    # A flag, not a failure: the reference is a bounded solution as well, so a
+                    # sample that reaches the bound is as valid as the reference is.
+                    heywood += 1
         if cause is None:
             aligned, phi = align(fit.loadings.to_numpy(dtype=float), loadings)
             assignment = assign(
@@ -225,6 +227,9 @@ def bootstrap(
         "seed": int(seed),
         "valid": valid,
         "failed": {cause: failed[cause] for cause in FAILURES if failed[cause]},
+        # Valid samples in which a measure reaches the Heywood bound that is not at it in the
+        # reference.
+        "heywood": heywood,
         "measures": [
             {
                 "measure": m,

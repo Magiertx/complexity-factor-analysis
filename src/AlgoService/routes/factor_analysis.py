@@ -1927,7 +1927,7 @@ class StabilityRequest(AnalyzeRequest):
 
 
 #: Changes with the method, so that a stability computed before is computed again.
-STABILITY_VERSION = 1
+STABILITY_VERSION = 2
 STABILITY_PREFIX = "_stability:"
 #: Stabilities computed at once on the server, of all sessions.
 MAX_ACTIVE_STABILITY_JOBS = positive_int("MAX_ACTIVE_STABILITY_JOBS", 2)

@@ -528,6 +528,8 @@ class FactorFit:
     factor_correlations: list[list[float]] | None = None
     #: Warnings of the fit, e.g. that the optimizer did not converge.
     notes: list[str] = field(default_factory=list)
+    #: False when an analyzer that reports it (the bootstrap's) stopped without converging.
+    converged: bool = True
     #: How long the fit took when it was computed; a fit from the cache keeps this time.
     seconds: float = 0.0
 
@@ -658,6 +660,7 @@ def _fit_factors(
         structure=None if structure is None else pd.DataFrame(structure, index=list(data.columns), columns=columns),
         factor_correlations=correlations,
         notes=notes,
+        converged=bool(getattr(fa, "converged", True)),
         seconds=time.perf_counter() - started,
     )
 

@@ -106,6 +106,16 @@ def test_failed_samples_are_counted_and_left_out():
     assert set(result["failed"]) <= set(stability.FAILURES)
 
 
+def test_a_sample_at_the_heywood_bound_is_kept_and_counted(monkeypatch):
+    data = _two_factors(n=60)
+    # A bound low enough that some measures sit at it in some samples and not in the reference.
+    monkeypatch.setattr(stability, "HEYWOOD_COMMUNALITY", 0.92)
+    reference, result = _run(data, samples=30, n_factors=2, auto_msa_filter=False)
+    assert result["heywood"] > 0
+    assert result["valid"] == 30 - sum(result["failed"].values())
+    assert "heywood" not in result["failed"]
+
+
 def test_readings_after_lorenzo_seva_and_ten_berge():
     assert [stability.reading(v) for v in (0.97, 0.95, 0.9, 0.85, 0.5, None)] == [
         "equal", "equal", "fair", "fair", "different", None,
