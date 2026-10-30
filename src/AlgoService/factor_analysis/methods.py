@@ -328,11 +328,13 @@ _TEXTS: dict[str, dict[str, str]] = {
             "The stability of the solution was assessed on {samples} bootstrap samples of the observations"
             "{cite_bootstrap}, each fitted with the same measures, factor count and rotation; the factors of a "
             "sample were matched to those of the solution by Tucker's congruence coefficient with the Hungarian "
-            "method{cite_kuhn}{left_out}. {stable} of {measures} measures kept their assignment in at least "
+            "method{cite_kuhn}{left_out}{heywood}. {stable} of {measures} measures kept their assignment in at "
+            "least "
             "{share} of the samples; the mean congruence per factor was between {phi_min} and {phi_max}"
             "{cite_reading}."
         ),
         "stability_left_out": ", leaving out {n} samples whose fit failed",
+        "stability_heywood": "; in {n} samples a further measure reached the Heywood bound, and they were kept",
         "stability_none": (
             "The stability of the solution was assessed on {samples} bootstrap samples of the observations"
             "{cite_bootstrap}; the fit failed on every sample."
@@ -405,11 +407,12 @@ _TEXTS: dict[str, dict[str, str]] = {
             "Die Stabilität der Lösung wurde an {samples} Bootstrap-Stichproben der Beobachtungen geprüft"
             "{cite_bootstrap}, jede mit denselben Maßen, derselben Faktorzahl und Rotation angepasst; die Faktoren "
             "einer Stichprobe wurden denen der Lösung über Tuckers Kongruenzkoeffizienten mit der Ungarischen "
-            "Methode zugeordnet{cite_kuhn}{left_out}. {stable} von {measures} Maßen behielten ihre Zuordnung in "
+            "Methode zugeordnet{cite_kuhn}{left_out}{heywood}. {stable} von {measures} Maßen behielten ihre Zuordnung in "
             "mindestens {share} der Stichproben; die mittlere Kongruenz je Faktor lag zwischen {phi_min} und "
             "{phi_max}{cite_reading}."
         ),
         "stability_left_out": ", ohne {n} Stichproben, deren Anpassung fehlschlug",
+        "stability_heywood": "; in {n} Stichproben erreichte ein weiteres Maß die Heywood-Grenze, sie blieben erhalten",
         "stability_none": (
             "Die Stabilität der Lösung wurde an {samples} Bootstrap-Stichproben der Beobachtungen geprüft"
             "{cite_bootstrap}; die Anpassung schlug bei jeder Stichprobe fehl."
@@ -600,6 +603,7 @@ def _stability_sentence(stability: dict[str, Any], fill: Any, cite: Any, languag
         cite_bootstrap=bootstrap,
         cite_kuhn=cite("kuhn1955"),
         left_out=fill("stability_left_out", n=failed) if failed else "",
+        heywood=fill("stability_heywood", n=stability["heywood"]) if stability.get("heywood") else "",
         stable=stability["summary"]["stable"],
         measures=stability["summary"]["measures"],
         share=_number(stability["summary"]["threshold"] * 100, 0, language) + ("~\\%" if language == "de" else "\\%"),
