@@ -32,6 +32,8 @@ export interface HistoryRow {
 }
 
 const DATASET_PREFIX = "_dataset:";
+/** A job computing the stability of an analysis of a dataset: a row of its own, on the tab of its dataset. */
+const STABILITY_PREFIX = "_stability:";
 
 function jobStatus(job: Job): HistoryStatus {
   if (job.status === "pending" || job.status === "running") return "active";
@@ -39,8 +41,9 @@ function jobStatus(job: Job): HistoryStatus {
 }
 
 function jobKind(job: Job): FactorKind | null {
-  if (!job.algorithm_id.startsWith(DATASET_PREFIX)) return null;
-  return job.algorithm_id.slice(DATASET_PREFIX.length) === "log" ? "log" : "model";
+  const prefix = [DATASET_PREFIX, STABILITY_PREFIX].find((p) => job.algorithm_id.startsWith(p));
+  if (!prefix) return null;
+  return job.algorithm_id.slice(prefix.length) === "log" ? "log" : "model";
 }
 
 function runningPercent(job: Job | null): number | null {
@@ -85,7 +88,8 @@ export function historyRows(datasets: readonly DatasetSummary[], jobs: readonly 
     const kind = jobKind(job);
     const datasetId = job.params?.dataset_id;
     // The dataset job of a dataset already listed under another job id is that dataset's.
-    if (kind && typeof datasetId === "string" && datasetIds.has(datasetId)) continue;
+    const datasetJob = job.algorithm_id.startsWith(DATASET_PREFIX);
+    if (kind && datasetJob && typeof datasetId === "string" && datasetIds.has(datasetId)) continue;
     rows.push({
       key: `job:${job.id}`,
       type: kind ?? "single",

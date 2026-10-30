@@ -41,6 +41,16 @@ import { FigureMenu, type FigureDownload } from "./figure-menu";
 import { FoldButton, SectionRow, type Fold } from "./measure-fold";
 import { MeasureSearch, NotableSwitch } from "./measure-search";
 import { HelpLabel, ThresholdField } from "./step-section";
+import {
+  FactorCongruence,
+  MeasureStability,
+  RepresentativeBadge,
+  ShortSetCard,
+  StabilityBar,
+  StabilityPairs,
+  stabilityByMeasure,
+  type StabilityView,
+} from "./stability";
 
 /** The names of the factors of the solution on screen, and how they change. */
 export interface FactorNaming {
@@ -112,6 +122,8 @@ interface Props {
   naming: FactorNaming;
   /** Pinning the solution for a comparison; absent where there is nothing to compare it with. */
   pin?: PinState | null;
+  /** The stability of the solution over bootstrap samples, checked on request. */
+  stability?: StabilityView;
 }
 
 /** What makes a loading bold: the rule's assignment, or the threshold reached or exceeded. */
@@ -186,6 +198,7 @@ export function LoadingsView({
   figure,
   naming,
   pin,
+  stability,
 }: Props) {
   const t = useT();
   const { locale } = useLocale();
@@ -345,6 +358,7 @@ export function LoadingsView({
             list={list}
             figure={figure}
             naming={naming}
+            stability={stability}
           />
         )}
         {/* Of an oblique rotation, in either view: the table belongs to the result, not to the matrix. */}
@@ -801,6 +815,7 @@ function LoadingsMatrix({
     list,
     figure,
     naming,
+    stability,
   }: {
     analysis: FactorAnalysis;
     measureName: (key: string) => string;
@@ -808,10 +823,21 @@ function LoadingsMatrix({
     list: LoadingsList;
     figure?: FigureDownload;
     naming: FactorNaming;
+    stability?: StabilityView;
   }) {
     const t = useT();
     const { locale } = useLocale();
     const zone = useTipZone<HTMLDivElement>();
+    const [pairsOpen, setPairsOpen] = useState(false);
+    const stable = stability?.result ?? null;
+    const byStability = stabilityByMeasure(stable);
+    const representatives = new Map((analysis.short_set ?? []).map((r) => [r.index, r]));
+    // As the cards name a dimension: its own name, else "Factor 1 · Size".
+    const dimensionName = (i: number) => {
+      const f = analysis.factors.find((g) => g.index === i);
+      const top = f ? topName(f.measures, measureName) : null;
+      return factorName(naming.names, i) ?? [t("factor.loadings.factor_n", { i: i + 1 }), top].filter(Boolean).join(" · ");
+    };
     const cross = crossLoadingsByMeasure(analysis);
     const unassigned = unassignedMeasures(analysis);
     // A search or the notable filter leaves some measures out; a card without any is left out too.
@@ -851,6 +877,7 @@ function LoadingsMatrix({
             </>
           }
         />
+        {stability && <StabilityBar view={stability} />}
         <MeasureListScope measures={onScreen}>
         <div ref={zone} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {visible.map(({ factor: f, byKey, sections, count }) => {
@@ -868,11 +895,14 @@ function LoadingsMatrix({
                       hint={topName(byKey.values(), measureName)}
                     />
                   </h4>
-                  {share !== undefined && (
-                    <span className="text-xs text-muted shrink-0">
-                      {t("factor.loadings.factor_variance", { pct: formatPercent(share, locale) })}
-                    </span>
-                  )}
+                  <span className="flex items-baseline gap-2 shrink-0">
+                    <FactorCongruence factor={stable?.factors[f.index]} />
+                    {share !== undefined && (
+                      <span className="text-xs text-muted shrink-0">
+                        {t("factor.loadings.factor_variance", { pct: formatPercent(share, locale) })}
+                      </span>
+                    )}
+                  </span>
                 </div>
                 {f.measures.length === 0 ? (
                   <p className="text-xs text-muted">{t("factor.loadings.factor_empty")}</p>
@@ -900,11 +930,22 @@ function LoadingsMatrix({
                             return (
                               <li key={m.measure} className="text-xs">
                                 <div className="flex items-start justify-between gap-2">
-                                  <span className="min-w-0 break-words" data-tip-more={measureDescription(m.measure)}>
-                                    <MeasureName name={measureName(m.measure)} measure={m.measure} />
+                                  <span className="min-w-0 break-words">
+                                    <span data-tip-more={measureDescription(m.measure)}>
+                                      <MeasureName name={measureName(m.measure)} measure={m.measure} />
+                                    </span>
+                                    {representatives.get(f.index)?.measure === m.measure && (
+                                      <>
+                                        {" "}
+                                        <RepresentativeBadge entry={representatives.get(f.index)!} />
+                                      </>
+                                    )}
                                   </span>
-                                  <span className="font-mono tabular-nums shrink-0" style={m.loading < 0 ? { color: signInk(m.loading) } : undefined}>
-                                    {formatNumber(m.loading, locale, 2)}
+                                  <span className="flex items-baseline gap-2 shrink-0">
+                                    <MeasureStability entry={byStability.get(m.measure)} />
+                                    <span className="font-mono tabular-nums" style={m.loading < 0 ? { color: signInk(m.loading) } : undefined}>
+                                      {formatNumber(m.loading, locale, 2)}
+                                    </span>
                                   </span>
                                 </div>
                                 <div className="mt-1 h-1 rounded-full bg-bg/80 overflow-hidden" aria-hidden>
@@ -958,7 +999,10 @@ function LoadingsMatrix({
                     <span className="min-w-0 break-words" data-tip-more={measureDescription(u.measure)}>
                       <MeasureName name={measureName(u.measure)} measure={u.measure} />
                     </span>
-                    {u.reason && <span className="text-xs text-muted">{reasonText(u, analysis, t, locale)}</span>}
+                    <span className="flex items-baseline gap-2">
+                      {u.reason && <span className="text-xs text-muted">{reasonText(u, analysis, t, locale)}</span>}
+                      <MeasureStability entry={byStability.get(u.measure)} />
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -968,6 +1012,28 @@ function LoadingsMatrix({
         </MeasureListScope>
         {narrowed && visible.length === 0 && unassignedShown.length === 0 && (
           <p className="text-xs text-muted">{t("factor.measures.none_match")}</p>
+        )}
+        <ShortSetCard analysis={analysis} measureName={measureName} dimensionName={dimensionName} stability={stable} />
+        {stable && stable.valid > 0 && (
+          <div className="space-y-2">
+            <button
+              type="button"
+              className="min-h-6 text-xs text-muted hover:text-fg hover:underline underline-offset-2"
+              aria-expanded={pairsOpen}
+              onClick={() => setPairsOpen((open) => !open)}
+            >
+              {t(pairsOpen ? "factor.stability.pairs_hide" : "factor.stability.pairs_show")}
+            </button>
+            {pairsOpen && (
+              <StabilityPairs
+                result={stable}
+                order={[
+                  ...new Set([...analysis.factors.flatMap((f) => f.measures.map((m) => m.measure)), ...unassigned.map((u) => u.measure)]),
+                ]}
+                measureName={measureName}
+              />
+            )}
+          </div>
         )}
       </div>
     );

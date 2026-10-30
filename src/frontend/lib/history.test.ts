@@ -89,6 +89,15 @@ describe("the rows of the History", () => {
     expect(historyHref(rows[0])).toBe("/log?dataset=d9");
   });
 
+  it("lists the stability of a listed dataset as a row of its own, which opens the dataset", () => {
+    const stability = job("s", { algorithm_id: "_stability:model", status: "running", percentage: 40, params: { dataset_id: "d1" } });
+    const rows = historyRows([dataset("d1")], [stability]);
+    expect(rows).toHaveLength(2);
+    const row = rows.find((r) => r.job?.id === "s")!;
+    expect(row).toMatchObject({ type: "model", status: "active", percent: 40, dataset: null });
+    expect(historyHref(row)).toBe("/?dataset=d1");
+  });
+
   it("opens a dataset on its tab and a single run on the page of a single log", () => {
     const [single, model] = historyRows([dataset("d 1")], [job("s1", { created_at: Date.parse("2026-10-21T00:00:00Z") / 1000 })]);
     expect(historyHref(single)).toBe("/inspect?job=s1");

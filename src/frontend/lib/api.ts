@@ -765,6 +765,8 @@ export interface FactorAnalysis {
     cross_loaded: "largest" | "all" | "none";
   };
   cross_loadings?: CrossLoading[];
+  /** One representative measure per factor with measures; absent from a server before it was computed. */
+  short_set?: ShortSetEntry[];
   factor_count?: FactorCount;
   /** Only when the dataset has published numbers and the analysis used the published settings. */
   published_match?: PublishedMatch | null;
@@ -936,6 +938,79 @@ export async function analyzeDataset(
   return r.json();
 }
 
+/** The representative of a factor: its assigned measure with the largest purity, |loading| minus the largest other |loading|. */
+export interface ShortSetEntry {
+  /** The factor, counting from 0. */
+  index: number;
+  measure: string;
+  loading: number;
+  purity: number;
+}
+
+/** The numbers of bootstrap samples one can choose for the stability. */
+export const STABILITY_SAMPLES = [100, 200, 500] as const;
+export type StabilitySamples = (typeof STABILITY_SAMPLES)[number];
+export const DEFAULT_STABILITY_SAMPLES: StabilitySamples = 200;
+/** Why a sample was left out. */
+export type StabilityFailure = "constant" | "singular" | "fit_failed" | "not_converged" | "heywood";
+/** Lorenzo-Seva and ten Berge's reading of a congruence. */
+export type CongruenceReading = "equal" | "fair" | "different";
+
+/** The stability of a solution over bootstrap samples of its rows; shares are null without a valid sample. */
+export interface Stability {
+  samples: number;
+  seed: number;
+  valid: number;
+  failed: Partial<Record<StabilityFailure, number>>;
+  measures: {
+    measure: string;
+    /** Its factors in the solution, counting from 0. */
+    factors: number[];
+    primary_factor: number;
+    /** The share of the valid samples with the same factors. */
+    assignment: number | null;
+    /** The share with the same primary factor (largest |loading|). */
+    primary: number | null;
+  }[];
+  factors: { index: number; phi_mean: number | null; phi_p5: number | null; reading: CongruenceReading | null }[];
+  /** The share of the samples in which two measures share a factor, in the order of `measures`. */
+  pairs: { measures: string[]; shares: number[][] | null; reference: boolean[][] };
+  summary: { stable: number; measures: number; threshold: number };
+  seconds: number;
+}
+
+export type StabilityState =
+  | { status: "ready"; key: string; stability: Stability }
+  | { status: "computing"; key: string; job_id: string; percentage: number }
+  | { status: "none"; key: string };
+
+/**
+ * The stability of the analysis these options describe over `samples` bootstrap samples, kept on
+ * the server once computed. With `start` a job computes it if it was not; without, it only looks.
+ */
+export async function fetchStability(
+  id: string,
+  options: AnalyzeOptions,
+  samples: StabilitySamples,
+  start: boolean,
+  signal?: AbortSignal,
+): Promise<StabilityState> {
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/stability?start=${start}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...options, samples }),
+    signal,
+  });
+  if (!r.ok) throw await httpError(r, "The stability could not be computed");
+  return r.json();
+}
+
+/** What an export adds when asked: the stability computed over these samples, the sentence on the short set. */
+export interface ExportExtras {
+  stability_samples?: StabilitySamples | null;
+  short_set?: boolean;
+}
+
 /** One pair of measures whose correlation reaches the limit of the map. */
 export interface CorrelationPair {
   a: string;
@@ -1019,12 +1094,25 @@ export async function downloadAnalysisZip(
     shortCodes = false,
     order = "factor",
     correlationOrder = "factor",
-  }: { shortCodes?: boolean; order?: FigureOrder; correlationOrder?: CorrelationOrder } = {},
+    stabilitySamples = null,
+  }: {
+    shortCodes?: boolean;
+    order?: FigureOrder;
+    correlationOrder?: CorrelationOrder;
+    stabilitySamples?: StabilitySamples | null;
+  } = {},
 ): Promise<void> {
   const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/export/zip`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...options, language, short_codes: shortCodes, order, correlation_order: correlationOrder }),
+    body: JSON.stringify({
+      ...options,
+      language,
+      short_codes: shortCodes,
+      order,
+      correlation_order: correlationOrder,
+      stability_samples: stabilitySamples,
+    }),
   });
   if (!r.ok) throw await httpError(r, "Export failed");
   const { blob, filename } = await attachment(r, "factor-analysis.zip");
@@ -1040,11 +1128,12 @@ export async function exportReport(
   options: AnalyzeOptions,
   language: InterpretationLanguage,
   shortCodes = false,
+  stabilitySamples: StabilitySamples | null = null,
 ): Promise<{ blob: Blob; filename: string }> {
   const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/export/report`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...options, language, short_codes: shortCodes }),
+    body: JSON.stringify({ ...options, language, short_codes: shortCodes, stability_samples: stabilitySamples }),
   });
   if (!r.ok) throw await httpError(r, "Export failed");
   return attachment(r, "report.tex");
@@ -1058,11 +1147,16 @@ export interface MethodsText {
 }
 
 /** The methods paragraph of the analysis these options describe, in `language`. */
-export async function fetchMethods(id: string, options: AnalyzeOptions, language: InterpretationLanguage): Promise<MethodsText> {
+export async function fetchMethods(
+  id: string,
+  options: AnalyzeOptions,
+  language: InterpretationLanguage,
+  extras: ExportExtras = {},
+): Promise<MethodsText> {
   const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/export/methods`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...options, language }),
+    body: JSON.stringify({ ...options, ...extras, language }),
   });
   if (!r.ok) throw await httpError(r, "The methods text could not be built");
   return r.json();
@@ -1073,11 +1167,12 @@ export async function exportBibtex(
   id: string,
   options: AnalyzeOptions,
   language: InterpretationLanguage,
+  extras: ExportExtras = {},
 ): Promise<{ blob: Blob; filename: string }> {
   const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/export/bibtex`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...options, language }),
+    body: JSON.stringify({ ...options, ...extras, language }),
   });
   if (!r.ok) throw await httpError(r, "Export failed");
   return attachment(r, "references.bib");

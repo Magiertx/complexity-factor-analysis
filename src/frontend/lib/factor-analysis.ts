@@ -591,6 +591,12 @@ function datasetJobKind(job: Job): FactorKind | null {
   return job.algorithm_id.slice("_dataset:".length) === "log" ? "log" : "model";
 }
 
+/** The kind of the dataset whose stability a job computes; null for other jobs. */
+export function stabilityJobKind(job: Job): FactorKind | null {
+  if (!job.algorithm_id.startsWith("_stability:")) return null;
+  return job.algorithm_id.slice("_stability:".length) === "log" ? "log" : "model";
+}
+
 /** Why a job failed: in the UI language where the server names a known cause, else its message. */
 export function jobErrorText(
   job: Pick<Job, "error" | "error_code">,
@@ -663,6 +669,7 @@ export function retryInput(dataset: {
 /** The name of a job's algorithm in the UI language; the backend names dataset jobs in English. */
 export function jobDisplayName(job: Job, t: Translate): string {
   const kind = datasetJobKind(job);
+  if (stabilityJobKind(job)) return t("jobs.stability_name");
   return kind ? t(`jobs.dataset_name.${kind}`) : job.algorithm_name;
 }
 
@@ -673,6 +680,8 @@ export function jobDisplayName(job: Job, t: Translate): string {
 export function jobTitle(job: Job, t: Translate): string {
   const kind = datasetJobKind(job);
   const name = job.params?.dataset_name;
+  // The stability of a dataset is named after it.
+  if (stabilityJobKind(job)) return t("jobs.stability_title", { name: typeof name === "string" ? name : "" });
   if (!kind) return jobDisplayName(job, t);
   // A name the person gave wins over the sample's; one stored before the sample was named apart
   // carries its English name.
@@ -731,6 +740,13 @@ export function datasetName(
 
 /** What a dataset job computes, e.g. "Model complexity · 4 logs × 2 miners"; null for other jobs. */
 export function datasetJobSubtitle(job: Job, t: Translate): string | null {
+  const stability = stabilityJobKind(job);
+  if (stability) {
+    const samples = Number(job.params?.samples);
+    return [t(`mode_bar.${stability}_label`), Number.isFinite(samples) ? t("jobs.stability_samples", { n: samples }) : null]
+      .filter(Boolean)
+      .join(" · ");
+  }
   const kind = datasetJobKind(job);
   if (!kind) return null;
   const params = job.params ?? {};
@@ -752,7 +768,7 @@ export function datasetJobSubtitle(job: Job, t: Translate): string | null {
 
 /** The tab that shows the dataset of a dataset job, with a link to it; null for other jobs. */
 export function datasetJobHref(job: Job): string | null {
-  const kind = datasetJobKind(job);
+  const kind = datasetJobKind(job) ?? stabilityJobKind(job);
   if (!kind) return null;
   const tab = kind === "log" ? "/log" : "/";
   const id = job.params?.dataset_id;
