@@ -993,9 +993,9 @@
         "constant": "{n} with a measure without variance",
         "singular": "{n} singular",
         "fit_failed": "{n} failed fit",
-        "not_converged": "{n} not converged",
-        "heywood": "{n} with a new Heywood case"
+        "not_converged": "{n} not converged"
       },
+      "heywood": "In {n} samples a further measure reached the Heywood bound; they are kept.",
       "none_valid": "None of the {samples} samples could be fitted.",
       "stale": "The stability shown before belongs to other settings.",
       "failed": "The stability could not be computed.",

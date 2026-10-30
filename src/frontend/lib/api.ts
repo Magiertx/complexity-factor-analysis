@@ -952,7 +952,7 @@ export const STABILITY_SAMPLES = [100, 200, 500] as const;
 export type StabilitySamples = (typeof STABILITY_SAMPLES)[number];
 export const DEFAULT_STABILITY_SAMPLES: StabilitySamples = 200;
 /** Why a sample was left out. */
-export type StabilityFailure = "constant" | "singular" | "fit_failed" | "not_converged" | "heywood";
+export type StabilityFailure = "constant" | "singular" | "fit_failed" | "not_converged";
 /** Lorenzo-Seva and ten Berge's reading of a congruence. */
 export type CongruenceReading = "equal" | "fair" | "different";
 
@@ -962,6 +962,8 @@ export interface Stability {
   seed: number;
   valid: number;
   failed: Partial<Record<StabilityFailure, number>>;
+  /** Valid samples in which a further measure reached the Heywood bound. */
+  heywood?: number;
   measures: {
     measure: string;
     /** Its factors in the solution, counting from 0. */

@@ -993,9 +993,9 @@
         "constant": "{n} mit einem Maß ohne Varianz",
         "singular": "{n} singulär",
         "fit_failed": "{n} Anpassung fehlgeschlagen",
-        "not_converged": "{n} nicht konvergiert",
-        "heywood": "{n} mit neuem Heywood-Fall"
+        "not_converged": "{n} nicht konvergiert"
       },
+      "heywood": "In {n} Stichproben erreichte ein weiteres Maß die Heywood-Grenze; sie bleiben drin.",
       "none_valid": "Keine der {samples} Stichproben ließ sich anpassen.",
       "stale": "Die zuvor gezeigte Stabilität gehört zu anderen Einstellungen.",
       "failed": "Die Stabilität konnte nicht berechnet werden.",

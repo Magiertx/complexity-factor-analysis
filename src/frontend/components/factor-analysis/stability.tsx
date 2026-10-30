@@ -258,6 +258,12 @@ function StabilitySummary({ result }: { result: Stability }) {
           })}
         </>
       )}
+      {(result.heywood ?? 0) > 0 && (
+        <>
+          {(result.valid > 0 || dropped > 0) && " · "}
+          {t("factor.stability.heywood", { n: result.heywood ?? 0 })}
+        </>
+      )}
     </>
   );
 }
@@ -406,8 +412,15 @@ export function ShortSetCard({
         {entries.map((e) => (
           <li key={e.index} className="flex items-baseline justify-between gap-2 text-xs min-w-0">
             <span className="min-w-0 break-words">
-              <span className="text-muted">{dimensionName(e.index)}: </span>
-              {measureName(e.measure)}
+              {dimensionName(e.index).endsWith(` · ${measureName(e.measure)}`) ? (
+                // The automatic name of the dimension already ends in its representative.
+                dimensionName(e.index)
+              ) : (
+                <>
+                  <span className="text-muted">{dimensionName(e.index)}: </span>
+                  {measureName(e.measure)}
+                </>
+              )}
             </span>
             <span className="flex items-baseline gap-2 shrink-0">
               <MeasureStability entry={byMeasure.get(e.measure)} />
