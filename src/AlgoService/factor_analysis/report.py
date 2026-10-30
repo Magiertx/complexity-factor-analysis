@@ -673,7 +673,6 @@ _FAILURES = {
     "singular": "with a singular correlation matrix",
     "fit_failed": "whose fit failed",
     "not_converged": "whose fit did not converge",
-    "heywood": "with a Heywood case the solution does not have",
 }
 _READINGS = {"equal": "equal", "fair": "fairly similar", "different": "not similar"}
 
@@ -694,7 +693,12 @@ def _stability_section(stability: dict[str, Any], label: _Labels, factor_names: 
         "were fitted with the same measures, factor count and rotation. Their factors were matched to these by "
         "Tucker's congruence $\\varphi$ with the Hungarian algorithm, mirrored where $\\varphi$ was negative, and "
         "the assignment rule was applied again."
-        + (f" Left out: {failed}." if failed else ""),
+        + (f" Left out: {failed}." if failed else "")
+        + (
+            f" In {stability['heywood']} samples a further measure reached the Heywood bound; they were kept."
+            if stability.get("heywood")
+            else ""
+        ),
         "",
     ]
     if not stability["valid"]:
