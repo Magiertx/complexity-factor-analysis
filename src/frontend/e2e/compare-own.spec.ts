@@ -113,7 +113,7 @@ async function seriousProblems(page: Page): Promise<string[]> {
 /** Names the first factor in the loadings and waits until the dataset has the name. */
 async function nameFirstFactor(page: Page, name: string) {
   const loadings = stepSection(page, "loadings");
-  await loadings.getByRole("button", { name: text("factor.loadings.look_matrix") }).click();
+  await loadings.getByRole("radio", { name: text("factor.loadings.look_matrix") }).click();
   const head = loadings
     .locator("thead")
     .first()
@@ -160,7 +160,7 @@ test("pinned solutions are headed with the names given to their factors", async 
   await expect(names.last()).toContainText("Wide size");
   // The matrix names the factor beside its dimension; the other look has it over the measures.
   await expect(matrix(page).getByText("Spread of size", { exact: true }).first()).toBeAttached();
-  await page.getByRole("button", { name: text("compare.look.dimensions") }).click();
+  await page.getByRole("radio", { name: text("compare.look.dimensions") }).click();
   const dimensions = page.locator("table.data-table").first();
   await expect(dimensions.getByText("Spread of size", { exact: true })).toBeVisible();
   await expect(dimensions.getByText("Wide size", { exact: true })).toBeVisible();
@@ -172,7 +172,7 @@ for (const scheme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: scheme });
     await compareNamedPins(page, "Spread of size", "Wide size");
     for (const look of ["matrix", "dimensions", "pairs"]) {
-      await page.getByRole("button", { name: text(`compare.look.${look}`) }).click();
+      await page.getByRole("radio", { name: text(`compare.look.${look}`) }).click();
       await expect(page.locator("table.data-table").first()).toBeVisible();
       expect(await seriousProblems(page), look).toEqual([]);
     }

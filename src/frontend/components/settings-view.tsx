@@ -49,6 +49,7 @@ import { formatDateTime } from "@/lib/format";
 import { LocaleSegmented } from "./locale-toggle";
 import { useBackToAnalysis } from "./back-link";
 import { PageHeader } from "./page-header";
+import { PAGE_COLUMN } from "./ui/page-column";
 
 const ALGO_PARAMS_PREFIX = "app.params-";
 
@@ -240,8 +241,8 @@ export function SettingsView() {
     : "system";
 
   return (
-    // The reading width of the guide: rows of a label and a control read badly across the whole width.
-    <div className="space-y-6 max-w-3xl mx-auto">
+    // The reading width of the info pages: rows of a label and a control read badly across the whole width.
+    <div className={`space-y-6 ${PAGE_COLUMN}`}>
       <PageHeader
         title={t("settings.page_title")}
         subtitle={t("settings.page_subtitle")}
@@ -258,6 +259,8 @@ export function SettingsView() {
           </div>
         }
       />
+
+      <p className="text-sm text-muted">{t("settings.analysis_pointer")}</p>
 
       {loadError && (
         <Notice tone="error" role="alert">

@@ -83,7 +83,7 @@ for (const scheme of ["light", "dark"] as const) {
     await expect(page.locator("table.data-table").first()).toBeVisible({ timeout: FIT_TIMEOUT });
     await expect(page.getByRole("status").filter({ hasText: text("compare.computing") })).toHaveCount(0, { timeout: FIT_TIMEOUT });
     for (const look of ["matrix", "dimensions", "pairs"]) {
-      await page.getByRole("button", { name: text(`compare.look.${look}`) }).click();
+      await page.getByRole("radio", { name: text(`compare.look.${look}`) }).click();
       await expect(page.locator("table.data-table").first()).toBeVisible();
       expect(await seriousProblems(page), look).toEqual([]);
     }
@@ -102,7 +102,7 @@ for (const scheme of ["light", "dark"] as const) {
     }
     // The other look of the loadings, and the download menu open.
     await goToStep(page, "loadings");
-    await stepSection(page, "loadings").getByRole("button", { name: text("factor.loadings.look_dimensions") }).click();
+    await stepSection(page, "loadings").getByRole("radio", { name: text("factor.loadings.look_dimensions") }).click();
     await page.getByRole("button", { name: text("factor.toolbar.export"), exact: true }).click();
     expect(await seriousProblems(page), "dimensions and menu").toEqual([]);
     await page.keyboard.press("Escape");
@@ -137,8 +137,8 @@ test("a single run without ProM fails with the coded error", { tag: "@no-prom" }
   test.slow();
   await page.goto("/inspect");
   await page
-    .getByRole("group", { name: text("workbench.log_source.aria") })
-    .getByRole("button", { name: text("workbench.log_source.use_sample") })
+    .getByRole("radiogroup", { name: text("workbench.log_source.aria") })
+    .getByRole("radio", { name: text("workbench.log_source.use_sample") })
     .click();
   await page.getByRole("radiogroup", { name: text("workbench.samples.label") }).getByRole("radio").first().check({ force: true });
   const run = page.getByRole("button", { name: text("common.run_analysis") });

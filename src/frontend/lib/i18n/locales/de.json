@@ -1,5 +1,6 @@
 {
   "common": {
+    "skip_to_content": "Zum Inhalt springen",
     "back": "Zurück",
     "next": "Weiter",
     "next_with_progress": "Weiter ({current} von {total})",
@@ -46,6 +47,11 @@
     "drop_hint": "oder klicken zum Auswählen · .xes, .xes.gz, .xml, .json",
     "remove_aria": "Datei entfernen"
   },
+  "not_found": {
+    "title": "Seite nicht gefunden",
+    "text": "Diese Adresse gibt es nicht. Vielleicht ist der Link veraltet oder falsch geschrieben.",
+    "home": "Zur Startseite"
+  },
   "mode_bar": {
     "aria_label": "Bereiche",
     "analyses_aria": "Analysen",
@@ -86,7 +92,7 @@
       "step1_p2": "Beide Reiter funktionieren gleich.",
       "step2_title": "Ein Schritt nach dem anderen",
       "step2_p1": "Daten, Datensatz, Eignung, Faktoren, Ladungen: Die Liste der Schritte zeigt, was jeder ergeben hat, und öffnet ihn; Zurück und Weiter führen hindurch. Jede Änderung einer Einstellung startet die Analyse sofort neu, und die Analyse lässt sich als CSV, LaTeX oder ZIP herunterladen. In einem optionalen sechsten Schritt schlägt Claude Namen für die Faktoren vor.",
-      "step2_p2": "Halte den Zeiger über ein Bedienelement oder ein gepunktet unterstrichenes Wort, um zu sehen, was es tut; der Tour-Knopf führt durch die Schritte.",
+      "step2_p2": "Halte den Zeiger über ein Bedienelement oder ein (i), um zu sehen, was es tut; der Tour-Knopf führt durch die Schritte.",
       "step3_title": "Mehr, wenn du es brauchst",
       "step3_api": "API: alles per Python oder curl steuern; siehe die API-Seite im Header.",
       "step3_compare": "Vergleich: die Faktorstrukturen mehrerer Analysen nebeneinander, wie Tab. 17 von Important Factors.",
@@ -95,7 +101,7 @@
       "step3_inspect": "Einzelnes Log: ComFy auf einem Log ausführen und die gefundenen Modelle ansehen."
     },
     "factor": {
-      "intro": "Fünf Schritte von den Rohmaßen zu den Faktoren und eine optionale Interpretation, einer nach dem anderen: Die Liste der Schritte links (am Telefon die Zeile oben) und Zurück und Weiter wechseln zwischen ihnen. Halte den Zeiger über ein Bedienelement oder ein gepunktet unterstrichenes Wort, um zu sehen, was es tut. Esc oder Überspringen beendet die Tour jederzeit.",
+      "intro": "Fünf Schritte von den Rohmaßen zu den Faktoren und eine optionale Interpretation, einer nach dem anderen: Die Liste der Schritte links (am Telefon die Zeile oben) und Zurück und Weiter wechseln zwischen ihnen. Halte den Zeiger über ein Bedienelement oder ein (i), um zu sehen, was es tut. Esc oder Überspringen beendet die Tour jederzeit.",
       "data": "Woher die Daten kommen: Zum Einstieg und die mitgelieferten Datensätze, eine eigene CSV-Datei oder Maße aus deinen Dateien. Große Berechnungen laufen im Hintergrund.",
       "dataset": "Prüfe die Größe der Matrix und was die Bereinigung entfernt hat. Die bereinigten Daten kannst du als CSV herunterladen.",
       "suitability": "Bartlett und KMO zeigen, ob eine Faktorenanalyse überhaupt sinnvoll ist. Schließe hier Maße mit niedrigem MSA aus, von Hand oder per Filter.",
@@ -119,6 +125,7 @@
     },
     "page_title": "Einstellungen",
     "page_subtitle": "Lokale Einstellungen — im Browser gespeichert, kein Konto erforderlich.",
+    "analysis_pointer": "Die Einstellungen einer Analyse, etwa Rotation, Faktorenzahl und Schwellen, findest du in ihren Schritten und in der Einstellungszeile darüber.",
     "load_error": "Algorithmus-Liste konnte nicht geladen werden: {error}",
     "toast_theme_updated": "Farbschema geändert",
     "toast_cleared_caches": "Parameter von {n} Algorithmus vergessen",
@@ -973,7 +980,7 @@
       "order_factor": "Nach Faktor",
       "order_original": "Wie im Datensatz",
       "export_failed": "Der Download ist fehlgeschlagen.",
-      "table_heading": "Ladungen",
+      "table_heading": "Ladungsmatrix",
       "caption": "Faktorladungen, {n} Faktor, Rotation {rotation}",
       "caption_plural": "Faktorladungen, {n} Faktoren, Rotation {rotation}",
       "col_measure": "Maß",
@@ -1004,6 +1011,7 @@
       "matrix_structure": "Struktur",
       "correlations_heading": "Faktorkorrelationen",
       "assignment_label": "Zuordnung",
+      "rule_source": "Quelle: {source}.",
       "rule": {
         "largest": {
           "title": "Größte Ladung",
@@ -1567,6 +1575,7 @@
     "aborted": "Du hast die Berechnung abgebrochen."
   },
   "print": {
+    "heading": "Druckansicht",
     "title": "Faktoranalyse von „{name}“",
     "invalid": "Diese Adresse nennt keine Analyse. Öffne die Druckansicht aus dem Download-Menü einer Analyse.",
     "failed": "Die Analyse konnte nicht geladen werden: {error}",

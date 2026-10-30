@@ -117,8 +117,17 @@ interface Props {
 /** What makes a loading bold: the rule's assignment, or the threshold reached or exceeded. */
 type BoldBy = "assigned" | "exceeds" | "reaches";
 
+/** The measure with the highest loading, by its display name: the provisional label of a factor nobody has named. */
+function topName(rows: Iterable<{ measure: string; loading: number }>, name: (key: string) => string): string | null {
+  let best: { measure: string; loading: number } | null = null;
+  for (const r of rows) if (!best || Math.abs(r.loading) > Math.abs(best.loading)) best = r;
+  return best ? name(best.measure) : null;
+}
+
 /** The loadings as one table or as one card per factor; one or the other, never both. */
 type LoadingsLook = "matrix" | "dimensions";
+/** The address names the matrix (?view=matrix); the dimensions, the default, need no parameter. */
+const VIEW_PARAM = "view";
 type MeasureOrder = "factor" | "original";
 
 /** How the loadings are shown: as a matrix or as cards, and in which order. */
@@ -131,27 +140,35 @@ const LOOK_KEY = "app.factor-loadings-look";
 
 /** The look and order chosen last, remembered in the browser. */
 export function useLoadingsLook(): [LoadingsLookState, (patch: Partial<LoadingsLookState>) => void] {
-  const [state, setState] = useState<LoadingsLookState>({ look: "matrix", order: "factor" });
+  const [state, setState] = useState<LoadingsLookState>({ look: "dimensions", order: "factor" });
   useEffect(() => {
+    let order: MeasureOrder = "factor";
     try {
-      const saved = JSON.parse(localStorage.getItem(LOOK_KEY) ?? "null");
-      if (saved && (saved.look === "matrix" || saved.look === "dimensions")) {
-        setState({ look: saved.look, order: saved.order === "original" ? "original" : "factor" });
-      }
+      order = JSON.parse(localStorage.getItem(LOOK_KEY) ?? "null")?.order === "original" ? "original" : "factor";
     } catch {
       /* storage blocked or unreadable */
     }
+    const look = new URLSearchParams(window.location.search).get(VIEW_PARAM) === "matrix" ? "matrix" : "dimensions";
+    setState({ look, order });
   }, []);
-  const update = (patch: Partial<LoadingsLookState>) =>
+  const update = (patch: Partial<LoadingsLookState>) => {
+    // The view goes into the address, so a shared link opens it; the default needs no parameter.
+    if (patch.look) {
+      const url = new URL(window.location.href);
+      if (patch.look === "matrix") url.searchParams.set(VIEW_PARAM, "matrix");
+      else url.searchParams.delete(VIEW_PARAM);
+      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    }
     setState((s) => {
       const next = { ...s, ...patch };
       try {
-        localStorage.setItem(LOOK_KEY, JSON.stringify(next));
+        localStorage.setItem(LOOK_KEY, JSON.stringify({ order: next.order }));
       } catch {
         /* storage blocked */
       }
       return next;
     });
+  };
   return [state, update];
 }
 
@@ -696,7 +713,9 @@ function LoadingsMatrix({
   }) {
     const t = useT();
     const title = t(`factor.loadings.rule.${rule}.title`);
-    const tip = useTip<HTMLLabelElement>({ name: title, more: text });
+    // Where the rule comes from (a table of the paper, the report) is for whoever asks: the tip.
+    const source = t("factor.loadings.rule_source", { source: t(`factor.loadings.rule.${rule}.source`) });
+    const tip = useTip<HTMLLabelElement>({ name: title, more: `${text} ${source}` });
     return (
       <label
         ref={tip}
@@ -711,16 +730,13 @@ function LoadingsMatrix({
           checked={chosen}
           onChange={onChange}
           aria-label={title}
-          aria-describedby={`${name}-${rule}-source ${name}-${rule}`}
+          aria-describedby={`${name}-${rule}`}
         />
         <ChoiceMark type="radio" checked={chosen} className="mt-px" />
         <span className="min-w-0 leading-tight">
           <span className={cn("block text-[13px]", chosen ? "font-semibold" : "font-medium")}>{title}</span>
-          <span id={`${name}-${rule}-source`} className="block text-[10px] text-muted">
-            {t(`factor.loadings.rule.${rule}.source`)}
-          </span>
           <span id={`${name}-${rule}`} className="sr-only">
-            {text}
+            {text} {source}
           </span>
         </span>
       </label>
@@ -845,6 +861,7 @@ function LoadingsMatrix({
                       name={factorName(naming.names, f.index)}
                       onName={(text) => naming.onName(f.index, text)}
                       look="card"
+                      hint={topName(byKey.values(), measureName)}
                     />
                   </h4>
                   {share !== undefined && (

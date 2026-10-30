@@ -55,16 +55,26 @@ function interpolate(template: string, locale: Locale, params?: TParams): string
   });
 }
 
+/**
+ * The language of the UI: the one stored when the person chose it, else German for a German
+ * browser (de, de-AT, ...) and English otherwise. Read after hydration, never while rendering, so
+ * the server's page and the first render of the client agree.
+ */
+export function detectLocale(): Locale {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved === "en" || saved === "de") return saved;
+  } catch {
+    /* ignore */
+  }
+  return typeof navigator !== "undefined" && /^de(-|$)/i.test(navigator.language) ? "de" : DEFAULT_LOCALE;
+}
+
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved === "en" || saved === "de") setLocaleState(saved);
-    } catch {
-      /* ignore */
-    }
+    setLocaleState(detectLocale());
   }, []);
 
   const setLocale = useCallback((l: Locale) => {

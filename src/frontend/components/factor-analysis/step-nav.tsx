@@ -264,7 +264,7 @@ function StepMarker({
 }
 
 /** A summary longer than this is cut off in the rail; its tooltip has all of it. */
-const SUMMARY_FITS = 26;
+const SUMMARY_FITS = 24;
 
 /**
  * The steps as a vertical stepper on a wide screen: a numbered marker per step, a line to the next,
@@ -338,7 +338,7 @@ export function StepRail({
                   </span>
                   <span
                     className={cn(
-                      "block truncate text-[11px] leading-snug",
+                      "block truncate text-xs leading-snug",
                       summaries[id] && !needsKey ? "text-fg/75" : "text-muted",
                     )}
                   >

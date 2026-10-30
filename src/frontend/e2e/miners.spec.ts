@@ -191,7 +191,7 @@ test("another miner clears the names of the factors, and Undo brings back both",
   await expectStep(page, "loadings", "done", "en", FIT_TIMEOUT);
   await goToStep(page, "loadings");
   const loadings = stepSection(page, "loadings");
-  await loadings.getByRole("button", { name: text("factor.loadings.look_matrix") }).click();
+  await loadings.getByRole("radio", { name: text("factor.loadings.look_matrix") }).click();
   await loadings
     .locator("thead")
     .first()
@@ -254,7 +254,7 @@ for (const scheme of ["light", "dark"] as const) {
     await expect(page.locator("table.data-table").first()).toBeVisible({ timeout: FIT_TIMEOUT });
     await expect(page.getByRole("status").filter({ hasText: text("compare.computing") })).toHaveCount(0, { timeout: FIT_TIMEOUT });
     for (const look of ["matrix", "dimensions", "pairs"]) {
-      await page.getByRole("button", { name: text(`compare.look.${look}`) }).click();
+      await page.getByRole("radio", { name: text(`compare.look.${look}`) }).click();
       await expect(page.locator("table.data-table").first()).toBeVisible();
       expect(await seriousProblems(page), look).toEqual([]);
     }

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { useBackToAnalysis } from "./back-link";
 import { PageHeader } from "./page-header";
+import { PAGE_COLUMN } from "./ui/page-column";
 import { DEFAULT_UPLOAD_LIMITS, fetchUploadLimits, type UploadLimits } from "@/lib/api";
 
 const linkButtonClass =
@@ -282,8 +283,8 @@ export function ApiAccessView() {
     total_mb: limits.max_total_bytes / (1024 * 1024),
   };
   return (
-    // Code and endpoint rows read badly across the whole width.
-    <div className="space-y-6 max-w-5xl mx-auto">
+    // The width of the other info pages: code and endpoint rows read badly across the whole width.
+    <div className={`space-y-6 ${PAGE_COLUMN}`}>
       <PageHeader
         title={t("api_access.heading")}
         subtitle={t("api_access.subtitle_short")}
@@ -416,20 +417,25 @@ function CodeBlock({ label, icon, code }: { label: string; icon: React.ReactNode
   return (
     <div className="rounded-md bg-tile/40 overflow-hidden">
       <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border bg-tile/40">
-        <div className="text-[11px] font-medium text-muted flex items-center gap-1.5">
+        <div className="text-xs font-medium text-muted flex items-center gap-1.5">
           {icon}
           {label}
         </div>
         <button
           type="button"
           onClick={handleCopy}
-          className="h-7 px-2.5 rounded bg-tile hover:bg-accent/[0.08] text-fg text-[11px] transition flex items-center gap-1.5"
+          className="h-7 px-2.5 rounded bg-tile hover:bg-accent/[0.08] text-fg text-xs transition flex items-center gap-1.5"
         >
           {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
           {copied ? t("api_access.copied") : t("api_access.copy")}
         </button>
       </div>
-      <pre className="p-3 text-[11px] leading-relaxed overflow-x-auto bg-bg/60 font-mono text-fg whitespace-pre">
+      <pre
+        tabIndex={0}
+        role="region"
+        aria-label={label}
+        className="p-3 text-xs leading-relaxed overflow-x-auto bg-bg/60 font-mono text-fg whitespace-pre focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+      >
         {code}
       </pre>
     </div>

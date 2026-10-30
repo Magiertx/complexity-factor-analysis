@@ -14,6 +14,8 @@ phone.
 - **Every Segmented control** (`components/ui/segmented.tsx`: view toggles, filters, the source
   of the data, language, theme, the toggles of the workbench) has one look: the chosen option is a
   raised neutral pill (surface, small shadow, a ring in the border colour). There is no variant.
+  It is a `radiogroup` like the tiles: one tab stop on the chosen option (roving tabindex), the
+  arrow keys move to the next option and choose it, Home and End jump to the first and the last.
 - No solid accent fills for a selection. The small check mark of a chosen tile is the only filled
   accent shape, and a switch that is on.
 
@@ -54,6 +56,20 @@ phone.
 - What is known to fail is not asked of the server: with no more observations than measures the
   hint of Eignung is shown directly, so the console has no 400.
 
+## Text and targets
+
+- **Orientation text is never smaller than 12 px** (`text-xs`, 0.75rem): the summaries of the step
+  list, the cells and notes of the comparison, the activity line of the History. A new view does
+  not use `text-[10px]` or `text-[11px]` for anything a reader needs.
+- **Every control has a hit area of at least 24 px** (WCAG 2.5.8): the small text buttons
+  (Alle, Keine, Standard), the back links and the (i) of `InfoTip`, whose glyph stays small and
+  whose button is 24 px with a negative margin, so the line keeps its height.
+- A text that is cut off with an ellipsis (a summary in the step list) shows all of it in the
+  two-stage tooltip. The row of settings chips wraps instead of scrolling.
+- Headings are never empty, a dialog has a name (`aria-labelledby`), a region that scrolls sideways
+  (a code block) takes the focus (`tabIndex=0`, `role="region"`, `aria-label`), and every page
+  has an `h1`. The first stop of the keyboard on every page is the "Zum Inhalt springen" link.
+
 ## Structure of a page
 
 - `PageHeader`: the title and at most one short subtitle line, or none; the page's toolbar sits
@@ -62,15 +78,31 @@ phone.
   (`rounded-lg`) everywhere.
 - At most **one primary button** per view (`Button` with the default variant). Everything else is
   secondary, outline or ghost.
-- Empty states use `EmptyState` (`components/ui/empty-state.tsx`).
+- Empty states use `EmptyState` (`components/ui/empty-state.tsx`); the 404 page is one, with
+  a button to the start page.
+- The info pages (settings, guide, API) share one column (`PAGE_COLUMN` in
+  `components/ui/page-column.tsx`), centred in the content area that the header, the tabs and the
+  other pages share (`max-w-[1600px]`).
+- A section of a page has a plain heading, no numbered badge: a number in a circle means a step
+  of the stepper and nothing else. A title appears once: the matrix under the step "Ladungen"
+  is the "Ladungsmatrix".
+- Where a reference to the paper (a table number, the report) is not needed to read a choice, it
+  is in the tip of the choice, not in its visible text.
 - Notices (info, warning, error, confirmation) use `Notice` (`components/ui/notice.tsx`): an icon,
   a tinted box, aligned with the content around it, never bare text at the left edge.
 
 ## Navigation
 
 - The mode bar has two groups: the analyses (model complexity, log complexity, single log) with
-  icon, label and a description line from `sm` on, and, set apart on the right, the tools of the
-  app (comparison, history), smaller and without a description line.
+  icon and label, and, set apart on the right, the tools of the app (comparison, history),
+  smaller. **There is no description line under a tab:** what a tab is for is its tooltip.
+- Below `lg` the tools are icons, with the label as tooltip and as `aria-label`; the divider
+  between the groups stays. From 380 px all five entries are visible without scrolling (the tabs
+  of the analyses put the icon above the label on a phone). Below 380 px the bar keeps the width
+  of its entries and scrolls sideways, fading at the edge where more entries lie beyond it.
+- The loadings open on **Dimensionen**; the matrix is one click away, and `?view=matrix` in the
+  address opens it (the default has no parameter). A factor without a name of its own is labelled
+  with the measure that loads highest on it ("Faktor 1 · Size").
 - Exactly one entry is marked per route; on the pages of the header the header link is.
 - The steps of an analysis are a stepper: a round numbered marker per step, a line between them,
   the title and one short summary line. Done steps show a check, a step with a warning its glyph,

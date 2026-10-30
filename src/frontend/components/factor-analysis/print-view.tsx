@@ -115,18 +115,32 @@ export function PrintView() {
     document.title = `${t("print.title", { name })} · ${APP_NAME}`;
   }, [loaded, t, locale]);
 
+  const heading = <h1 className="sr-only">{t("print.heading")}</h1>;
   if (!link) {
-    return <Notice tone="error">{t("print.invalid")}</Notice>;
+    return (
+      <>
+        {heading}
+        <Notice tone="error">{t("print.invalid")}</Notice>
+      </>
+    );
   }
   if (error) {
-    return <Notice tone="error">{t("print.failed", { error })}</Notice>;
+    return (
+      <>
+        {heading}
+        <Notice tone="error">{t("print.failed", { error })}</Notice>
+      </>
+    );
   }
   if (!loaded) {
     return (
-      <Notice tone="busy">
-        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-        {t("print.loading")}
-      </Notice>
+      <>
+        {heading}
+        <Notice tone="busy">
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          {t("print.loading")}
+        </Notice>
+      </>
     );
   }
 

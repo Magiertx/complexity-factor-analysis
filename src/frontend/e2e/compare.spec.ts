@@ -173,7 +173,7 @@ test("the rule and the datasets change the comparison and its link", async ({ pa
 
 test("the dimensions look like Tab. 17, with the names or the short codes", async ({ page }) => {
   await openCompare(page);
-  await page.getByRole("button", { name: text("compare.look.dimensions") }).click();
+  await page.getByRole("radio", { name: text("compare.look.dimensions") }).click();
   const table = page.getByRole("table", { name: pattern(text("compare.dimensions_caption", { rule: "Hair et al." })) });
   const inductive = table.getByRole("row", { name: /^Inductive miner/ }).getByRole("cell");
   await expect(inductive).toHaveText(["Size, Token split, Number of duplicate tasks", "Connector Heterogeneity", "Separability", "Maximum connector degree, Coefficient of network connectivity", /Connector Mismatch/]);
@@ -189,7 +189,7 @@ test("the dimensions look like Tab. 17, with the names or the short codes", asyn
 
 test("a match of dimensions says which measures it rests on, and the first dataset keeps its numbers", async ({ page }) => {
   await openCompare(page);
-  await page.getByRole("button", { name: text("compare.look.dimensions") }).click();
+  await page.getByRole("radio", { name: text("compare.look.dimensions") }).click();
   const table = page.getByRole("table", { name: pattern(text("compare.dimensions_caption", { rule: "Hair et al." })) });
   const row = (name: string) => table.getByRole("row", { name: new RegExp("^" + pattern(name).source) }).getByRole("cell");
   await expect(row("Alpha miner").nth(0)).toHaveAttribute("data-tip-more", text("compare.tip.kept"));
@@ -201,7 +201,7 @@ test("a match of dimensions says which measures it rests on, and the first datas
 
 test("the pairs of measures count the datasets in which two share a dimension, whatever the numbers", async ({ page }) => {
   await openCompare(page);
-  await page.getByRole("button", { name: text("compare.look.pairs") }).click();
+  await page.getByRole("radio", { name: text("compare.look.pairs") }).click();
   const table = page.getByRole("table", { name: pattern(text("compare.pairs.caption", { rule: "", columns: "" }).split(":")[0]) });
   await expect(table).toBeVisible();
   const codes = (await table.locator("thead th").allTextContents()).slice(1);

@@ -10,6 +10,7 @@ import {
   stepSection,
   test,
   text,
+  showMatrix,
 } from "./fixtures";
 
 // The fact sheet of a measure: a click or Enter on its name, wherever the name stands, opens a panel
@@ -162,10 +163,11 @@ test("every place that names a measure opens its sheet", async ({ page }) => {
   await openModel(page, "loadings");
   // The matrix of the loadings and the cards of the dimensions, and the unassigned measures.
   const loadings = stepSection(page, "loadings");
+  await showMatrix(page);
   await nameIn(loadings.locator("table.data-table"), "Coefficient of network connectivity").click();
   await expect(sheet(page, "Coefficient of network connectivity")).toBeVisible();
   await page.keyboard.press("Escape");
-  await loadings.getByRole("button", { name: text("factor.loadings.look_dimensions") }).click();
+  await loadings.getByRole("radio", { name: text("factor.loadings.look_dimensions") }).click();
   await nameIn(loadings, "Coefficient of network connectivity").first().click();
   await expect(sheet(page, "Coefficient of network connectivity")).toBeVisible();
   await page.keyboard.press("Escape");

@@ -1,5 +1,5 @@
 import type { Page, Request } from "@playwright/test";
-import { deleteSessionDatasets, expect, expectStep, FIT_TIMEOUT, goToStep, pattern, stepSection, test, text } from "./fixtures";
+import { deleteSessionDatasets, expect, expectStep, FIT_TIMEOUT, goToStep, pattern, stepSection, test, text, showMatrix } from "./fixtures";
 
 // The long lists of the log tab (over a hundred measures): the notable ones first and the rest
 // folded, searched, sorted and grouped. None of that is part of the analysis.
@@ -72,6 +72,7 @@ test("the loadings of a long list start with the measures worth a look and fold 
   await page.goto(LOG);
   await expectStep(page, "loadings", "done", "en", FIT_TIMEOUT);
   await goToStep(page, "loadings");
+  await showMatrix(page);
   const loadings = stepSection(page, "loadings");
   const matrix = loadings.locator("table.data-table").first().locator("tbody tr:not(.table-group)");
   const others = loadings.getByRole("button", { name: pattern(text("factor.measures.section_other")) });
@@ -98,15 +99,15 @@ test("the loadings of a long list start with the measures worth a look and fold 
   await expect(others).toHaveAttribute("aria-expanded", "false");
 
   // So does the order of the dataset: it is not the order of the factors the folded list starts with.
-  await loadings.getByRole("button", { name: text("factor.loadings.order_original") }).click();
+  await loadings.getByRole("radio", { name: text("factor.loadings.order_original") }).click();
   await expect(others).toHaveCount(0);
   expect(await matrix.count()).toBeGreaterThan(100);
-  await loadings.getByRole("button", { name: text("factor.loadings.order_factor") }).click();
+  await loadings.getByRole("radio", { name: text("factor.loadings.order_factor") }).click();
   await expect(others).toHaveAttribute("aria-expanded", "false");
   await expect(matrix).toHaveCount(folded);
 
   // The dimensions start the same way, and one fold opens them all, the matrix's too.
-  await loadings.getByRole("button", { name: text("factor.loadings.look_dimensions") }).click();
+  await loadings.getByRole("radio", { name: text("factor.loadings.look_dimensions") }).click();
   const members = loadings.locator("ul > li.text-xs");
   await expect(others.first()).toHaveAttribute("aria-expanded", "false");
   const cards = await others.count();
@@ -127,6 +128,7 @@ test("a short list of loadings is shown in full, without a fold", async ({ page 
   await page.goto("/?bundled=comfy-paper-inductive-miner&preset=published");
   await expectStep(page, "loadings", "done");
   await goToStep(page, "loadings");
+  await showMatrix(page);
   const loadings = stepSection(page, "loadings");
   await expect(loadings.getByRole("button", { name: pattern(text("factor.measures.section_other")) })).toHaveCount(0);
   await expect(loadings.getByRole("searchbox", { name: text("factor.measures.search") })).toHaveCount(0);

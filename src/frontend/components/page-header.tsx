@@ -51,7 +51,7 @@ export function PageHeader({
         {back && (
           <Link
             href={back.href}
-            className="mb-1.5 inline-flex items-center gap-1 rounded text-xs text-muted hover:text-fg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="mb-1 inline-flex min-h-6 items-center gap-1 rounded text-xs text-muted hover:text-fg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
             {back.label}

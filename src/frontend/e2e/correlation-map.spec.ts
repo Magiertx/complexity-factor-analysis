@@ -108,19 +108,19 @@ test("the cells follow the sign, outline the pairs near 1 and group the measures
   await expect(cells.locator('rect[fill="none"]')).toHaveCount(8);
 
   // By factor: the dimensions named at the right of the cells.
-  const factor = map(page).getByRole("button", { name: text("factor.correlations.order_factor") });
-  await expect(factor).toHaveAttribute("aria-pressed", "true");
+  const factor = map(page).getByRole("radio", { name: text("factor.correlations.order_factor") });
+  await expect(factor).toHaveAttribute("aria-checked", "true");
   for (const label of ["F1", "F2", "F3", "F4", text("factor.correlations.block_none")]) {
     await expect(plot(page, 12).getByText(label, { exact: true })).toBeVisible();
   }
   // The same cells, clustered: no dimensions, and the choice is kept for the next visit.
-  await map(page).getByRole("button", { name: text("factor.correlations.order_cluster") }).click();
+  await map(page).getByRole("radio", { name: text("factor.correlations.order_cluster") }).click();
   await expect(plot(page, 12).getByText("F1", { exact: true })).toHaveCount(0);
   await page.reload();
   await expectStep(page, "loadings", "done");
   await foldOf(page, text("factor.correlations.heading")).click();
-  await expect(map(page).getByRole("button", { name: text("factor.correlations.order_cluster") })).toHaveAttribute("aria-pressed", "true");
-  await map(page).getByRole("button", { name: text("factor.correlations.order_factor") }).click();
+  await expect(map(page).getByRole("radio", { name: text("factor.correlations.order_cluster") })).toHaveAttribute("aria-checked", "true");
+  await map(page).getByRole("radio", { name: text("factor.correlations.order_factor") }).click();
 });
 
 test("a measure excluded by hand leaves the map", async ({ page }) => {
@@ -161,14 +161,14 @@ test("the figure of the map downloads like the others, with the order on screen"
   expect(svg).toContain("Coefficient of network connectivity");
   expect(svg).toContain("Pearson correlations r; outlined: |r| ≥ 0.95; measures grouped by dimension");
 
-  await map(page).getByRole("button", { name: text("factor.correlations.order_cluster") }).click();
+  await map(page).getByRole("radio", { name: text("factor.correlations.order_cluster") }).click();
   await map(page).getByRole("button", { name: text("factor.figure.download", { figure: text("factor.figure.correlations") }) }).click();
   const [clustered] = await Promise.all([
     page.waitForEvent("download"),
     page.getByRole("menuitem", { name: pattern(text("factor.figure.svg")) }).click(),
   ]);
   expect(readFileSync(await downloaded(clustered), "utf8")).toContain("measures clustered (average linkage on 1 − |r|)");
-  await map(page).getByRole("button", { name: text("factor.correlations.order_factor") }).click();
+  await map(page).getByRole("radio", { name: text("factor.correlations.order_factor") }).click();
 });
 
 test("the map of over a hundred measures (128 with those the filter removed) is drawn on a canvas within a second", async ({ page }) => {
