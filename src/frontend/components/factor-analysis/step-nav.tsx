@@ -364,7 +364,7 @@ export function StepBar({ current, states, locks, unavailable, stateLabels, onGo
   const { next } = neighbours(current);
   const at = STEP_IDS.indexOf(current) + 1;
   return (
-    <nav aria-label={t("factor.steps.aria")} className="lg:hidden">
+    <nav aria-label={t("factor.steps.aria_compact")} className="lg:hidden">
       <ol className="flex items-center">
         {STEP_IDS.map((id, i) => {
           const here = id === current;

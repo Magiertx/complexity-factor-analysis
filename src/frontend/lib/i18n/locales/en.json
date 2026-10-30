@@ -561,6 +561,7 @@
     },
     "steps": {
       "aria": "Analysis steps",
+      "aria_compact": "Analysis steps (compact)",
       "data": "Data",
       "dataset": "Dataset",
       "suitability": "Suitability",
