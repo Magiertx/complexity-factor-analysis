@@ -66,9 +66,11 @@ Results:
 | per pair of measures | the share of samples in which the two share at least one factor |
 
 A sample is left out and counted by its cause when a measure has no variance in it, its
-correlation matrix is singular, the fit fails or does not converge, or a measure reaches the
-Heywood bound that does not in the reference. Where the reference has a Heywood case itself (the
-published Inductive solution has two), every sample would fail at it, so only new ones count.
+correlation matrix is singular, or the fit fails or does not converge. A sample in which a
+measure reaches the Heywood bound although it does not reach it in the reference is kept, since
+the reference is a bounded solution as well, and is counted apart (`heywood` in the result). The
+reference itself may have Heywood cases (the default Inductive solution has two, the published
+four-factor one has one).
 
 The samples are fitted with the objective, bounds, start values and normalisation of
 factor_analyzer's minres, but with the analytic gradient of the objective, −2 Σ λᵢ vⱼᵢ² over the
