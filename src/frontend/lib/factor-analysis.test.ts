@@ -242,6 +242,10 @@ describe("jobs", () => {
     expect(jobErrorText(failed, translator("de").tMaybe)).toBe(de.errors.prom_unavailable);
     expect(jobErrorText({ ...failed, error_code: "not_a_known_code" }, tMaybe)).toBe("ProM4Py could not be reached ...");
     expect(jobErrorText({ error: null, error_code: null }, tMaybe)).toBeUndefined();
+    const few = { error: "Only 1 measure", error_code: "dataset_too_few_measures" };
+    expect(jobErrorText(few, tMaybe, { have: 1, need: 2 })).toBe(
+      en.errors.dataset_too_few_measures.replace("{have}", "1").replace("{need}", "2"),
+    );
   });
 });
 
