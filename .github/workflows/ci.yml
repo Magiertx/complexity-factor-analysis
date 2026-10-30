@@ -243,3 +243,15 @@ jobs:
 
       - name: Check that the wrapper finds its libraries
         run: docker run --rm lpsolve-wrapper sh -c 'ldd liblpsolve55j.so && ! ldd liblpsolve55j.so | grep -q "not found"'
+
+  # docker-compose.release.yml is a copy of docker-compose.yml with image: for build:.
+  release-compose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Compare the compose files
+        run: |
+          pip install pyyaml
+          python scripts/check_release_compose.py
