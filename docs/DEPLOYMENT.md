@@ -264,6 +264,41 @@ docker compose ps
 docker compose logs -f algoservice
 ```
 
+### Prebuilt images
+
+Instead of building, the stack can run from images on ghcr.io. `docker-compose.release.yml` has the
+same services, environment, volumes and healthchecks as `docker-compose.yml`, with `image:` in
+place of `build:`; `scripts/check_release_compose.py` compares the two and runs in CI, so change
+both together. `CFA_TAG` picks the images (default `latest`):
+
+```bash
+docker compose -f docker-compose.release.yml up -d
+CFA_TAG=v1.0.0 docker compose -f docker-compose.release.yml up -d
+```
+
+The workflow `images.yml` builds and pushes `complexity-factor-analysis-prom4py`, `-algoservice`
+and `-frontend` (the Celery worker runs the algoservice image):
+
+- A `v*` tag pushes the tag and `latest`, and drafts a GitHub release with
+  `docker-compose.release.yml` and `env.example` (GitHub drops a leading dot in asset names; save
+  it as `.env`). Publish the draft after checking it.
+- Started by hand, the workflow takes a `tag` (default `edge`) and `platforms`. Without a tag the
+  version in the exports reads `1.0.0-dev`; otherwise it is the tag without the `v`. The commit
+  is `github.sha`.
+- The images are `linux/amd64`. The build files would also work on arm64 (the lp_solve wrapper
+  is compiled from source, the base images are multi-arch), but on the hosted amd64 runners
+  that means emulation, with the ProM bundle unpacked and its jars rewritten under it, which is
+  too slow to run on every tag, and the ProM bundle itself is not checked on arm64. On Apple
+  silicon, Docker runs the amd64 images under emulation; building from the sources
+  (`docker compose up --build`) gives native images. Pass `platforms` as `linux/amd64,linux/arm64`
+  to try it.
+- New packages on ghcr.io are private. Make each of the three public once: GitHub, Packages, the
+  package, Package settings, Change visibility. The API cannot do it. Until then,
+  `docker login ghcr.io` with a token that may read packages is needed.
+
+The workflow `compose-smoke.yml` has a `mode` input: `images` runs the same checks against the
+release compose file and the given tag instead of a build.
+
 ### Pinned dependency versions
 
 `requirements.txt` names version ranges; `src/AlgoService/constraints.txt` pins every package, direct and
