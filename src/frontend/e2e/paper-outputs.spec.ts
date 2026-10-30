@@ -11,6 +11,7 @@ import {
   goToStep,
   openBundled,
   pattern,
+  showMatrix,
   stepSection,
   test,
   text,
@@ -45,6 +46,7 @@ test("short codes name the measures as the papers do, with the full name in the 
   await openBundled(page, "Inductive miner");
   await expectStep(page, "loadings", "done");
   await goToStep(page, "loadings");
+  await showMatrix(page);
   const loadings = stepSection(page, "loadings");
   const row = loadings.getByRole("rowheader", { name: "Coefficient of network connectivity" });
   await expect(row).toBeVisible();
@@ -148,6 +150,7 @@ test.describe("in the German UI", () => {
 
     // The ZIP takes the order chosen at the loadings, and keeps its figures English.
     await goToStep(page, "loadings", "de");
+    await showMatrix(page, "de");
     await stepSection(page, "loadings").getByRole("radio", { name: text("factor.loadings.order_original", {}, "de") }).click();
     download = page.waitForEvent("download");
     await page.getByRole("button", { name: text("factor.toolbar.export", {}, "de"), exact: true }).click();
