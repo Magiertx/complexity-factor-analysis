@@ -105,7 +105,7 @@ export function PassBadge({ passed }: { passed: boolean }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 text-[11px] font-medium",
+        "inline-flex items-center gap-1 text-xs font-medium",
         passed ? "text-success-ink" : "text-warn-ink",
       )}
     >
@@ -119,7 +119,7 @@ export function StatTile({ label, value, hint }: { label: string; value: React.R
   const tip = useTip<HTMLDivElement>(hint ? { more: hint } : null);
   return (
     <div ref={tip} className="rounded-lg bg-tile px-3.5 py-3 min-w-0">
-      <div className="text-[11px] text-muted truncate">{label}</div>
+      <div className="text-xs text-muted truncate">{label}</div>
       <div className="mt-1 text-xl font-semibold font-mono tabular-nums">{value}</div>
     </div>
   );
@@ -234,7 +234,7 @@ export function ThresholdField({
       <HelpLabel htmlFor={id} label={label} help={help} />
       <NumberField id={id} {...field} describedBy={note ? `${id}-note` : undefined} />
       {note && (
-        <p id={`${id}-note`} className="max-w-[11rem] text-[11px] text-muted">
+        <p id={`${id}-note`} className="max-w-[11rem] text-xs text-muted">
           {note}
         </p>
       )}

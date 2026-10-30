@@ -129,7 +129,7 @@ function Field({
   const hintId = help || spec.recommended ? `${id}-hint` : undefined;
 
   const hint = help || spec.recommended ? (
-    <span id={hintId} className="block text-[11px] text-muted mt-1.5">
+    <span id={hintId} className="block text-xs text-muted mt-1.5">
       {help}
       {spec.recommended && (
         <span className="block text-muted italic mt-0.5">
@@ -175,7 +175,7 @@ function Field({
         </div>
         {hint}
         {error && (
-          <span className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-danger-ink">
+          <span className="mt-1.5 flex items-center gap-1 text-xs font-medium text-danger-ink">
             <AlertCircle className="h-3 w-3 shrink-0" aria-hidden />
             {error}
           </span>
@@ -198,7 +198,7 @@ function Field({
     const query = search.trim().toLowerCase();
     const matches = (opt: string) => !query || opt.toLowerCase().includes(query);
     const linkClass =
-      "text-[11px] text-muted hover:text-fg transition inline-flex items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
+      "text-xs text-muted hover:text-fg transition inline-flex items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
     return (
       <fieldset className={cn("sm:col-span-2 space-y-2", disabled && "opacity-60")} aria-describedby={help ? hintId : undefined}>
@@ -268,7 +268,7 @@ function Field({
                   <span className="font-medium">{o}</span>
                   {info?.slow && (
                     <span
-                      className="inline-flex items-center gap-0.5 rounded bg-surface/70 text-muted px-1 text-[10px] font-medium"
+                      className="inline-flex items-center gap-0.5 rounded bg-surface/70 text-muted px-1 text-xs font-medium"
                       title={t("parameter_form.slow_title")}
                     >
                       <Hourglass className="h-2.5 w-2.5" aria-hidden />
@@ -281,12 +281,12 @@ function Field({
           })}
         </div>
         {spec.recommended && (
-          <p className="text-[11px] text-muted italic">
+          <p className="text-xs text-muted italic">
             {t("parameter_form.recommended", { value: spec.recommended })}
           </p>
         )}
         {error && (
-          <span className="flex items-center gap-1 text-[11px] font-medium text-danger-ink">
+          <span className="flex items-center gap-1 text-xs font-medium text-danger-ink">
             <AlertCircle className="h-3 w-3 shrink-0" aria-hidden />
             {error}
           </span>
@@ -312,7 +312,7 @@ function Field({
         </div>
         {hint}
         {error && (
-          <span className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-danger-ink">
+          <span className="mt-1.5 flex items-center gap-1 text-xs font-medium text-danger-ink">
             <AlertCircle className="h-3 w-3 shrink-0" aria-hidden />
             {error}
           </span>
@@ -341,7 +341,7 @@ function Field({
       </div>
       {hint}
       {error && (
-          <span className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-danger-ink">
+          <span className="mt-1.5 flex items-center gap-1 text-xs font-medium text-danger-ink">
             <AlertCircle className="h-3 w-3 shrink-0" aria-hidden />
             {error}
           </span>

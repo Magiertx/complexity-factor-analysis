@@ -135,7 +135,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
       {TONE_ICON[toast.tone ?? "info"]}
       <span className="min-w-0 break-words">{toast.message}</span>
       {toast.count > 1 && (
-        <span className="shrink-0 rounded bg-tile px-1.5 text-[11px] font-medium tabular-nums text-muted">
+        <span className="shrink-0 rounded bg-tile px-1.5 text-xs font-medium tabular-nums text-muted">
           {t("toasts.count", { n: toast.count })}
         </span>
       )}

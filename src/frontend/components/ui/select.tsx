@@ -199,7 +199,7 @@ export function Select({
                   {heading && (
                     <div
                       role="presentation"
-                      className="px-2.5 pt-2 pb-1 text-[11px] font-medium text-muted"
+                      className="px-2.5 pt-2 pb-1 text-xs font-medium text-muted"
                     >
                       {heading}
                     </div>

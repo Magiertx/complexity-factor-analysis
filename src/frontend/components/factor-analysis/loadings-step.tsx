@@ -541,7 +541,7 @@ function LoadingsMatrix({
         </MeasureListScope>
         {shownCount === 0 && <p className="text-xs text-muted">{t("factor.measures.none_match")}</p>}
         {/* What the numbers mean, behind one (i). */}
-        <p className="flex items-center gap-1 text-[11px] text-muted">
+        <p className="flex items-center gap-1 text-xs text-muted">
           {t("factor.loadings.numbers_label")}
           <InfoTip size="xs" topic={t("factor.loadings.numbers_label")} text={t("factor.help.loading")} width={380}>
             <p>
@@ -762,7 +762,7 @@ function LoadingsMatrix({
     const { locale } = useLocale();
     const value = formatNumber(threshold, locale, 2);
     return (
-      <div className="flex items-start gap-x-4 gap-y-1 text-[11px] leading-snug text-muted flex-wrap" aria-hidden>
+      <div className="flex items-start gap-x-4 gap-y-1 text-xs leading-snug text-muted flex-wrap" aria-hidden>
         {/* One chip per item: a line break falls between items, not inside one. */}
         <span className="flex items-start gap-1.5">
           <span className="mt-px h-3 w-3 shrink-0 rounded-sm" style={loadingStyle(-0.9)} />
@@ -869,7 +869,7 @@ function LoadingsMatrix({
                     />
                   </h4>
                   {share !== undefined && (
-                    <span className="text-[11px] text-muted shrink-0">
+                    <span className="text-xs text-muted shrink-0">
                       {t("factor.loadings.factor_variance", { pct: formatPercent(share, locale) })}
                     </span>
                   )}
@@ -882,7 +882,7 @@ function LoadingsMatrix({
                       sections.map((section) => (
                         <Fragment key={section.id}>
                           {section.id === "other" && section.rows.length > 0 && (
-                            <li className="text-[11px] font-medium text-muted pt-1">
+                            <li className="text-xs font-medium text-muted pt-1">
                               {list.fold ? (
                                 <FoldButton label={otherLabel(t, locale, section.rows.length)} fold={list.fold} />
                               ) : (
@@ -918,7 +918,7 @@ function LoadingsMatrix({
                                   />
                                 </div>
                                 {others.length > 0 && (
-                                  <span className="mt-1 block text-[11px] text-muted">
+                                  <span className="mt-1 block text-xs text-muted">
                                     {others.map((o, j) => (
                                       <span
                                         key={o.i}
@@ -950,7 +950,7 @@ function LoadingsMatrix({
             <div className="rounded-lg bg-tile/50 p-3.5 space-y-2 min-w-0">
               <div>
                 <h4 className="text-sm font-semibold">{t("factor.loadings.unassigned_heading")}</h4>
-                <p className="text-[11px] text-muted">{t("factor.loadings.unassigned_hint")}</p>
+                <p className="text-xs text-muted">{t("factor.loadings.unassigned_hint")}</p>
               </div>
               <ul className="space-y-1">
                 {unassignedShown.map((u) => (
@@ -958,7 +958,7 @@ function LoadingsMatrix({
                     <span className="min-w-0 break-words" data-tip-more={measureDescription(u.measure)}>
                       <MeasureName name={measureName(u.measure)} measure={u.measure} />
                     </span>
-                    {u.reason && <span className="text-[11px] text-muted">{reasonText(u, analysis, t, locale)}</span>}
+                    {u.reason && <span className="text-xs text-muted">{reasonText(u, analysis, t, locale)}</span>}
                   </li>
                 ))}
               </ul>

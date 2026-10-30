@@ -28,6 +28,12 @@ phone.
 - Warning and danger colours always come with a glyph (`AlertTriangle`, `AlertCircle`), never as
   colour alone.
 - Done is a quiet success tone with a check.
+- Edges and surfaces come from the tokens, never from a fixed grey: `--border` (about 2:1 on a
+  surface) is the edge of a card and a section, `--line` the fainter separator between table rows,
+  `--border-strong` (3:1) the boundary of anything that is a control on its own (the dashed drop
+  zone), `--chart-grid` the grid of a chart. A tour or a chart takes the same tokens.
+- A disabled button is a tile with muted text, not the accent colour at half strength, and shows
+  `not-allowed`. A notice has a 3 px edge in its tone (warning, error, success) besides the tint.
 
 ## Help
 
@@ -64,6 +70,12 @@ phone.
 - **Every control has a hit area of at least 24 px** (WCAG 2.5.8): the small text buttons
   (Alle, Keine, Standard), the back links and the (i) of `InfoTip`, whose glyph stays small and
   whose button is 24 px with a negative margin, so the line keeps its height.
+- On a touch screen (`pointer: coarse`) buttons, stand-alone links and checkbox labels in `main`
+  get a minimum height of 24 px from `globals.css`; switches keep their size. Strips that scroll
+  sideways (source tabs, filters, code blocks) fade at the edge where more lies beyond. An (i)
+  popover never leaves the window: it moves up as far as needed and scrolls inside itself.
+  Where the result of a view can change height (the comparison), it keeps the height it had, so
+  nothing below it shifts. Header and toolbar icons are 8 px apart.
 - A text that is cut off with an ellipsis (a summary in the step list) shows all of it in the
   two-stage tooltip. The row of settings chips wraps instead of scrolling.
 - Headings are never empty, a dialog has a name (`aria-labelledby`), a region that scrolls sideways

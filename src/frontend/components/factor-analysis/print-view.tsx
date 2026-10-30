@@ -394,7 +394,7 @@ export function PrintView() {
                 </li>
               ))}
             </ul>
-            <p className="mt-2 text-[11px] text-muted">{t("print.interpretation_note", { model: interpretation.model })}</p>
+            <p className="mt-2 text-xs text-muted">{t("print.interpretation_note", { model: interpretation.model })}</p>
           </Section>
         )}
 
@@ -411,7 +411,7 @@ export function PrintView() {
           </Section>
         )}
 
-        <footer className="print-footer mt-6 border-t border-border pt-2 text-[11px] text-muted">
+        <footer className="print-footer mt-6 border-t border-border pt-2 text-xs text-muted">
           {analysis.published_match
             ? t(analysis.published_match.status === "match" ? "print.match" : "print.differs", {
                 source: analysis.published_match.source,
@@ -451,7 +451,7 @@ function LoadingsKey({ analysis, options }: { analysis: FactorAnalysis; options:
   const strict = ruleStrict(options.assignment_rule);
   const value = formatNumber(options.loading_threshold, locale, 2);
   return (
-    <p className="flex items-center gap-x-4 gap-y-1 text-[11px] text-muted flex-wrap">
+    <p className="flex items-center gap-x-4 gap-y-1 text-xs text-muted flex-wrap">
       <span className="flex items-center gap-1.5">
         <span className="h-3 w-3 rounded-sm" style={loadingStyle(-0.9)} />
         {t("factor.loadings.legend_negative")}
@@ -505,7 +505,7 @@ function LoadingsTable({
               {Array.from({ length: k }, (_, i) => (
                 <th key={i} scope="col" className="num">
                   F{i + 1}
-                  {factorName(names, i) && <span className="block text-[10px] font-normal">{factorName(names, i)}</span>}
+                  {factorName(names, i) && <span className="block text-xs font-normal">{factorName(names, i)}</span>}
                 </th>
               ))}
               <th scope="col" className="num border-l border-border">h²</th>

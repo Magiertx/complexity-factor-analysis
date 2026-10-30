@@ -204,7 +204,7 @@ function SheetBody({
       <div className="flex items-start gap-1.5 px-4 pt-4 pb-3 border-b border-border shrink-0">
         <div className="min-w-0 flex-1">
           {position && (
-            <p className="flex items-center gap-1 text-[11px] text-muted tabular-nums">
+            <p className="flex items-center gap-1 text-xs text-muted tabular-nums">
               {t("factor.sheet.position", position)}
               <InfoTip size="xs" topic={t("factor.sheet.position", position)} text={t("factor.sheet.paging_more")} />
             </p>
@@ -217,7 +217,7 @@ function SheetBody({
           >
             {fullName}
           </h2>
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px]">
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
             {entry?.short && (
               <span className="rounded bg-tile px-1.5 py-0.5 font-mono" aria-label={measureName(measure)}>
                 {entry.short}
@@ -288,7 +288,7 @@ function SheetBody({
               <Stat label={t("factor.dataset.col_min")} value={statistic(row.min, locale)} />
               <Stat label={t("factor.dataset.col_max")} value={statistic(row.max, locale)} />
             </dl>
-            <p className="text-[11px] text-muted">
+            <p className="text-xs text-muted">
               {descriptives?.basis === "input"
                 ? t("factor.sheet.values_input", { n: formatNumber(descriptives.n_rows, locale) })
                 : descriptives?.basis === "miner"
@@ -348,7 +348,7 @@ function statistic(value: number | null, locale: string): string {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md bg-tile/60 px-2.5 py-1.5 min-w-0">
-      <dt className="text-[10px] text-muted">{label}</dt>
+      <dt className="text-xs text-muted">{label}</dt>
       <dd className="font-mono tabular-nums text-sm [overflow-wrap:anywhere]">{value}</dd>
     </div>
   );
@@ -378,7 +378,7 @@ function Definition({
       {!logMeasure && (
         <>
           <p className="text-sm">{entry?.description || t("factor.sheet.no_description")}</p>
-          {entry?.description && <p className="text-[11px] text-muted">{t("factor.sheet.description_note")}</p>}
+          {entry?.description && <p className="text-xs text-muted">{t("factor.sheet.description_note")}</p>}
         </>
       )}
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
@@ -460,7 +460,7 @@ function InAnalysis({
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-2">
         <div className="rounded-md bg-tile/60 px-2.5 py-1.5 min-w-0">
-          <div className="flex items-center gap-0.5 text-[10px] text-muted">
+          <div className="flex items-center gap-0.5 text-xs text-muted">
             {t("factor.sheet.msa")}
             <InfoTip size="xs" topic={t("factor.sheet.msa")} text={t("factor.sheet.msa_more", { threshold: formatNumber(threshold, locale) })} />
           </div>
@@ -473,7 +473,7 @@ function InAnalysis({
             {msa === null ? NO_VALUE : formatNumber(msa, locale, 2)}
           </div>
           {info?.status === "removed" && msa !== null && (
-            <div className="text-[10px] text-muted leading-tight mt-0.5">{t("factor.sheet.msa_removed", { msa: formatNumber(msa, locale, 2) })}</div>
+            <div className="text-xs text-muted leading-tight mt-0.5">{t("factor.sheet.msa_removed", { msa: formatNumber(msa, locale, 2) })}</div>
           )}
         </div>
         <ShareTile label={t("factor.sheet.communality")} value={h2} />
@@ -511,7 +511,7 @@ function InAnalysis({
               );
             })}
           </ul>
-          <p className="text-[11px] text-muted">{t("factor.sheet.loadings_note")}</p>
+          <p className="text-xs text-muted">{t("factor.sheet.loadings_note")}</p>
         </div>
       )}
     </div>
@@ -523,7 +523,7 @@ function ShareTile({ label, value, more }: { label: string; value: number | unde
   const { locale } = useLocale();
   return (
     <div className="rounded-md bg-tile/60 px-2.5 py-1.5 min-w-0">
-      <div className="flex items-center gap-0.5 text-[10px] text-muted">
+      <div className="flex items-center gap-0.5 text-xs text-muted">
         {label}
         {more && <InfoTip size="xs" topic={label} text={more} />}
       </div>

@@ -440,7 +440,7 @@ function HistoryItem({
           </span>
           <StatusMark row={row} />
         </div>
-        <div className="text-[11px] text-muted flex items-center gap-x-1.5 gap-y-0.5 flex-wrap">
+        <div className="text-xs text-muted flex items-center gap-x-1.5 gap-y-0.5 flex-wrap">
           {facts.map((fact, i) => (
             <span key={i} className="inline-flex items-center gap-1.5 min-w-0">
               {i > 0 && <span aria-hidden>·</span>}
@@ -455,7 +455,7 @@ function HistoryItem({
           </span>
         </div>
         {settings && (
-          <div className="text-[11px] text-muted flex items-start gap-1.5">
+          <div className="text-xs text-muted flex items-start gap-1.5">
             <SlidersHorizontal className="h-3 w-3 mt-px shrink-0" aria-hidden />
             <span>
               <span className="sr-only">{t("run_history.settings_label")}: </span>
@@ -464,7 +464,7 @@ function HistoryItem({
           </div>
         )}
         {(row.status === "failed" || row.status === "aborted") && errorText && (
-          <p className="flex items-start gap-1 text-[11px] text-danger-ink break-words">
+          <p className="flex items-start gap-1 text-xs text-danger-ink break-words">
             <AlertCircle className="h-3 w-3 mt-px shrink-0" aria-hidden />
             {errorText}
           </p>
@@ -532,7 +532,7 @@ function HistoryItem({
 /** The status of a row as a sign and a word; a finished one is quiet, a failed one red. */
 function StatusMark({ row }: { row: HistoryRow }) {
   const { t, locale } = useLocale();
-  const base = "inline-flex items-center gap-1 text-[11px] font-medium shrink-0";
+  const base = "inline-flex items-center gap-1 text-xs font-medium shrink-0";
   if (row.status === "active") {
     const label =
       row.percent === null

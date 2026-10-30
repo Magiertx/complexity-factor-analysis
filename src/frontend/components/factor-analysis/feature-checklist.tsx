@@ -187,9 +187,9 @@ function GroupTile({
                   <span className="sr-only">{t("factor.data.slow_badge")}</span>
                 </span>
               )}
-              <span className="text-[10px] text-muted tabular-nums">{t("factor.data.selected_count", { n: count, total })}</span>
+              <span className="text-xs text-muted tabular-nums">{t("factor.data.selected_count", { n: count, total })}</span>
             </span>
-            {group.description && <span className="block text-[11px] text-muted mt-0.5 leading-snug">{group.description}</span>}
+            {group.description && <span className="block text-xs text-muted mt-0.5 leading-snug">{group.description}</span>}
           </span>
         </label>
         <button
@@ -218,7 +218,7 @@ function MeasureCheck({ measure, on, onToggle }: { measure: FeatureMeasure; on: 
       <label ref={tip} className="flex items-start gap-2 rounded px-1.5 py-1 cursor-pointer hover:bg-tile has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent">
         <input type="checkbox" checked={on} onChange={onToggle} className="sr-only" />
         <ChoiceMark checked={on} className="mt-px h-3.5 w-3.5" />
-        <span className="min-w-0 break-words font-mono text-[11px]">{measure.name}</span>
+        <span className="min-w-0 break-words font-mono text-xs">{measure.name}</span>
       </label>
     </li>
   );

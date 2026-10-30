@@ -167,7 +167,7 @@ export function ImageView({ artifact, runId, fixedHeight = false }: { artifact: 
           <figcaption className="px-3 py-2 text-xs text-muted border-t border-border bg-surface relative z-20 flex items-center justify-between gap-3 flex-wrap">
             <span>{caption || t("artifacts.image.process_model_fallback")}</span>
             {runId && (
-              <span className="text-[10px] font-mono bg-tile text-muted px-2 py-0.5 rounded-full shrink-0">
+              <span className="text-xs font-mono bg-tile text-muted px-2 py-0.5 rounded-full shrink-0">
                 {t("artifacts.image.run_label", { id: runId.slice(0, 8) })}
               </span>
             )}
@@ -273,7 +273,7 @@ export function ImageView({ artifact, runId, fixedHeight = false }: { artifact: 
             {caption && <span className="text-zinc-500">·</span>}
             {caption && <span className="text-zinc-400">{caption}</span>}
             <span className="text-zinc-500">·</span>
-            <span className="text-zinc-200 text-[11px] bg-white/10 px-2 py-0.5 rounded-full">{bgLabel}</span>
+            <span className="text-zinc-200 text-xs bg-white/10 px-2 py-0.5 rounded-full">{bgLabel}</span>
           </div>
         </div>
       )}

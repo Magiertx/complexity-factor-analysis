@@ -109,7 +109,7 @@ export function JobNotesField({ jobId, initialNotes, variant = "panel", onSaved 
               </Button>
             </div>
             {error && (
-              <div className="flex items-center gap-1 text-[10px] text-danger-ink">
+              <div className="flex items-center gap-1 text-xs text-danger-ink">
                 <AlertCircle className="h-3 w-3 shrink-0" aria-hidden />
                 {error}
               </div>
@@ -159,7 +159,7 @@ export function JobNotesField({ jobId, initialNotes, variant = "panel", onSaved 
             rows={4}
             className="w-full text-sm px-3 py-2 rounded-md bg-tile focus:outline-none focus:ring-2 focus:ring-accent/50 transition resize-y"
           />
-          <div className="flex items-center justify-between gap-2 text-[10px] text-muted">
+          <div className="flex items-center justify-between gap-2 text-xs text-muted">
             <span>{t("job_notes.char_count", { n: notes.length, max: MAX_NOTES })}</span>
             <div className="flex items-center gap-1.5">
               <Button size="sm" variant="ghost" onClick={handleCancel} disabled={saving}>
