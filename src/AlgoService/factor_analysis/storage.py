@@ -256,6 +256,22 @@ def read_measurement(session_id: str, dataset_id: str) -> dict[str, Any] | None:
     return _read_extra(session_id, dataset_id, "measurement.json")
 
 
+def read_stability(session_id: str, dataset_id: str, key: str) -> dict[str, Any] | None:
+    """The stability computed for one analysis of a dataset (``stability.bootstrap``), by the key
+    of its data, settings and samples; None if it was not computed."""
+    return _read_extra(session_id, dataset_id, f"stability/{key}.json")
+
+
+def write_stability(session_id: str, dataset_id: str, key: str, result: dict[str, Any]) -> None:
+    """Keep a computed stability. Raises FileNotFoundError for a dataset deleted meanwhile: the
+    result arrives long after the job started, and must not bring the dataset back."""
+    directory = dataset_dir(session_id, dataset_id)
+    if not directory.is_dir():
+        raise FileNotFoundError(directory)
+    (directory / "stability").mkdir(exist_ok=True)
+    _write_json(directory / "stability" / f"{key}.json", result)
+
+
 def _read_matrix(source: Any) -> pd.DataFrame:
     return pd.read_csv(source, index_col=0, keep_default_na=False).astype(float)
 

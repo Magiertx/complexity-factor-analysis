@@ -94,6 +94,7 @@ import { Notice } from "@/components/ui/notice";
 import { useToasts } from "@/components/ui/toasts";
 import { UndoToast, type UndoNotice } from "@/components/ui/undo-toast";
 import { useJobs } from "@/components/jobs-provider";
+import { useStability } from "./stability";
 import { OnboardingTour, useOnboarding } from "@/components/onboarding-tour";
 import { PageHeader } from "@/components/page-header";
 import { DataForm, DataSummary, type DataNext, type LeadTo, type OpenPreset } from "./data-step";
@@ -903,6 +904,11 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     return true;
   };
 
+  // The stability of the analysis on screen; its exports include it once it is computed.
+  const stabilityOptions = useMemo(() => (analyzedOptions ? { ...analyzedOptions } : null), [analyzedOptions]);
+  const stability = useStability(ready ? datasetId : null, stabilityOptions);
+  const stabilitySamples = stability.result ? stability.samples : null;
+
   const runExport = async (format: ExportFormat) => {
     if (!datasetId) return;
     setExporting(format);
@@ -916,12 +922,13 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           shortCodes: codesShown,
           order: figureOrder,
           correlationOrder: mapOrder,
+          stabilitySamples,
         });
       } else if (format === "report") {
-        const { blob, filename } = await exportReport(datasetId, shown, locale, codesShown);
+        const { blob, filename } = await exportReport(datasetId, shown, locale, codesShown, stabilitySamples);
         downloadBlob(blob, filename);
       } else if (format === "methods") {
-        const { text } = await fetchMethods(datasetId, shown, locale);
+        const { text } = await fetchMethods(datasetId, shown, locale, { stability_samples: stabilitySamples });
         try {
           await navigator.clipboard.writeText(text);
           notify({ key: "methods-copied", message: t("factor.toolbar.methods_copied"), tone: "success" });
@@ -931,7 +938,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           notify({ key: "methods-saved", message: t("factor.toolbar.methods_saved"), tone: "info" });
         }
       } else if (format === "bibtex") {
-        const { blob, filename } = await exportBibtex(datasetId, shown, locale);
+        const { blob, filename } = await exportBibtex(datasetId, shown, locale, { stability_samples: stabilitySamples });
         downloadBlob(blob, filename);
       } else {
         const { blob, filename } = await exportLoadings(datasetId, shown, format);
@@ -1767,6 +1774,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                     figure={figure("loadings")}
                     naming={factorNaming}
                     pin={pin}
+                    stability={stability}
                   />
                 </div>
               ) : (

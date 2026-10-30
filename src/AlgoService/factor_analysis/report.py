@@ -668,6 +668,62 @@ def _settings_section(
     ]
 
 
+_FAILURES = {
+    "constant": "with a measure without variance",
+    "singular": "with a singular correlation matrix",
+    "fit_failed": "whose fit failed",
+    "not_converged": "whose fit did not converge",
+    "heywood": "with a Heywood case the solution does not have",
+}
+_READINGS = {"equal": "equal", "fair": "fairly similar", "different": "not similar"}
+
+
+def _share(value: float) -> str:
+    return f"${round(value * 100)}\\,\\%$"
+
+
+def _stability_section(stability: dict[str, Any], label: _Labels, factor_names: dict[int, str] | None) -> list[str]:
+    """The bootstrap of the solution (``stability.bootstrap``); only in a report of an analysis
+    whose stability was computed."""
+    failed = "; ".join(f"{n} {_FAILURES[cause]}" for cause, n in stability["failed"].items())
+    out = [
+        _KEEP,
+        "\\section*{Stability}",
+        "\\noindent",
+        f"{stability['valid']} of {stability['samples']} bootstrap samples of the rows (seed {stability['seed']}) "
+        "were fitted with the same measures, factor count and rotation. Their factors were matched to these by "
+        "Tucker's congruence $\\varphi$ with the Hungarian algorithm, mirrored where $\\varphi$ was negative, and "
+        "the assignment rule was applied again."
+        + (f" Left out: {failed}." if failed else ""),
+        "",
+    ]
+    if not stability["valid"]:
+        return out
+    factors = []
+    for f in stability["factors"]:
+        name = f"Factor {f['index'] + 1}"
+        if factor_names and factor_names.get(f["index"]):
+            name += f": {tex(factor_names[f['index']])}"
+        factors.append(
+            f"{name} & ${number(f['phi_mean'], 2)}$ & ${number(f['phi_p5'], 2)}$ & {_READINGS[f['reading']]} \\\\"
+        )
+    measures = [
+        f"{label(m['measure'])} & {_share(m['assignment'])} & {_share(m['primary'])} \\\\"
+        for m in stability["measures"]
+    ]
+    return [
+        *out,
+        "\\noindent",
+        "Congruence of each factor with its match, read after Lorenzo-Seva and ten Berge (2006):",
+        "",
+        *_table("@{}lrrl@{}", "Factor & mean $|\\varphi|$ & 5th percentile & reading \\\\", factors),
+        "\\noindent",
+        "Share of the samples in which a measure has the same factors as here, and the same primary factor:",
+        "",
+        *_table("@{}lrr@{}", "Measure & same factors & same primary factor \\\\", measures),
+    ]
+
+
 def report_tex(
     *,
     dataset: dict[str, Any],
@@ -680,13 +736,16 @@ def report_tex(
     short: bool = False,
     factor_names: dict[int, str] | None = None,
     published: dict[str, Any] | None = None,
+    stability: dict[str, Any] | None = None,
 ) -> str:
     """The report of one analysis. ``dataset`` is the dataset as the manifest of the ZIP
     describes it, ``params`` the parameters the analysis ran with, ``result`` the analysis,
     ``descriptives`` the statistics kept with the dataset. ``short`` names the measures by the
     short codes of the papers; ``factor_names`` are names of the factors by their index from 0,
     as the request gave them; ``published`` the comparison with the published numbers. An
-    analysis of the rows of one miner (``result["miner"]``) says so where the miners are named."""
+    analysis of the rows of one miner (``result["miner"]``) says so where the miners are named.
+    A computed ``stability`` adds its section after the dimensions; without one the report is as
+    before."""
     label = _Labels(dataset["kind"], short)
     names = _measures(dataset, descriptives)
     lines = [
@@ -722,6 +781,7 @@ def report_tex(
         *_communalities_section(result, label),
         *_correlations_section(result, factor_names),
         *_dimensions_section(result, label, factor_names),
+        *(_stability_section(stability, label, factor_names) if stability is not None else []),
         *_settings_section(dataset, params, result, tool, libraries, published, short),
         "\\end{document}",
         "",

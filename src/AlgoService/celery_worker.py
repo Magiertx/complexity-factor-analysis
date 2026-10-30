@@ -95,3 +95,23 @@ def build_dataset(job_id: str, session_id: str, dataset_id: str, spec: dict):
     except Exception as e:
         logger.exception(f"Celery task build_dataset for job {job_id} failed: {e}")
         raise
+
+
+@celery_app.task(name="celery_worker.compute_stability")
+def compute_stability(job_id: str, session_id: str, dataset_id: str, request: dict):
+    """Wrapper task bootstrapping the stability of a factor analysis."""
+    global _loop
+    from routes.factor_analysis import run_stability_task
+    logger.info(f"Starting Celery task compute_stability for job {job_id} ({request.get('samples')} samples)")
+    try:
+        if _loop is None:
+            try:
+                _loop = asyncio.get_event_loop()
+            except RuntimeError:
+                _loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(_loop)
+        _loop.run_until_complete(run_stability_task(job_id, session_id, dataset_id, request))
+        logger.info(f"Celery task compute_stability for job {job_id} completed successfully")
+    except Exception as e:
+        logger.exception(f"Celery task compute_stability for job {job_id} failed: {e}")
+        raise

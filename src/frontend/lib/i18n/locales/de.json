@@ -354,7 +354,10 @@
     },
     "ready": "{name} ist fertig",
     "ready_several": "{n} Datensätze sind fertig",
-    "ready_open": "Öffnen"
+    "ready_open": "Öffnen",
+    "stability_name": "Stabilität einer Faktorenanalyse",
+    "stability_title": "Stabilität: {name}",
+    "stability_samples": "{n} Stichproben"
   },
   "run_history": {
     "heading": "Verlauf",
@@ -976,6 +979,63 @@
       "legend_faded_strict": "blass: |Ladung| ≤ {threshold}",
       "numbers_label": "Was die Zahlen bedeuten",
       "rule_note_short": "Hinweis zu den Tabellen des Papers"
+    },
+    "stability": {
+      "action": "Stabilität prüfen",
+      "again": "Neu prüfen",
+      "help": "Zieht {n} Bootstrap-Stichproben der Zeilen, mit Zurücklegen und festem Seed, und passt jede mit denselben Maßen, derselben Faktorzahl und Rotation an. Tuckers Kongruenz φ mit dem ungarischen Algorithmus ordnet die Faktoren einer Stichprobe diesen zu, gespiegelt, wo φ negativ ist; dann gilt dieselbe Zuordnungsregel. Der Wert eines Maßes ist der Anteil der Stichproben, in denen es seine Faktoren behält.",
+      "samples_label": "Bootstrap-Stichproben",
+      "computing": "Stabilität wird geprüft … {pct} %",
+      "cancel": "Abbrechen",
+      "summary": "Stabil über {n} Stichproben: {stable} von {measures} Maßen ≥ {threshold} %",
+      "dropped": "{n} von {samples} Stichproben verworfen: {causes}",
+      "failure": {
+        "constant": "{n} mit einem Maß ohne Varianz",
+        "singular": "{n} singulär",
+        "fit_failed": "{n} Anpassung fehlgeschlagen",
+        "not_converged": "{n} nicht konvergiert",
+        "heywood": "{n} mit neuem Heywood-Fall"
+      },
+      "none_valid": "Keine der {samples} Stichproben ließ sich anpassen.",
+      "stale": "Die zuvor gezeigte Stabilität gehört zu anderen Einstellungen.",
+      "failed": "Die Stabilität konnte nicht berechnet werden.",
+      "aborted": "Stabilitätsprüfung abgebrochen.",
+      "value_tip": "Gleiche Faktoren in {pct} der Stichproben",
+      "primary_tip": "Hauptfaktor gleich in {pct}",
+      "low": "Unsicher: unter {threshold} %",
+      "phi": "φ {value}",
+      "phi_tip": "Mittlere Kongruenz mit dem passenden Faktor der Stichproben; 5. Perzentil {p5}.",
+      "reading": {
+        "equal": "Lorenzo-Seva & ten Berge (2006): gleich (≥ 0,95)",
+        "fair": "Lorenzo-Seva & ten Berge (2006): ziemlich ähnlich (0,85–0,95)",
+        "different": "Lorenzo-Seva & ten Berge (2006): nicht ähnlich (< 0,85)"
+      },
+      "pairs_show": "Paare zeigen",
+      "pairs_hide": "Paare ausblenden",
+      "pairs_label": "Paare von Maßen über die Stichproben",
+      "pairs_legend_short": "Anteil der Stichproben, in denen zwei Maße einen Faktor teilen",
+      "pairs_legend": "Jede Zelle ist der Anteil der gültigen Stichproben, in denen die beiden Maße mindestens einen Faktor teilen; je dunkler, desto öfter. Ein Ring markiert die Paare, die auch in der Lösung selbst einen Faktor teilen.",
+      "pairs_cell": "{a} und {b}",
+      "pairs_cell_more": "Teilen einen Faktor in {pct} der Stichproben",
+      "pairs_cell_together": "Teilen einen Faktor in {pct} der Stichproben; in der Lösung zusammen"
+    },
+    "short_set": {
+      "badge": "Stellvertreter",
+      "badge_tip": "Steht im Kurzset für diese Dimension: Reinheit {purity}",
+      "heading": "Kurzset ({n} Maß)",
+      "heading_plural": "Kurzset ({n} Maße)",
+      "help": "Ein Maß je Dimension: das ihr zugeordnete mit der größten Reinheit, also dem Betrag seiner Ladung auf der Dimension minus dem größten Betrag seiner Ladungen auf einer anderen. So berichtest du wenige Maße, die sich nicht wiederholen, wie im Paper Important Factors motiviert. Bei Gleichstand entscheidet die höhere Ladung. Einen Stellvertreter mit niedriger Stabilität liest du mit Vorsicht.",
+      "copy_label": "Kurzset kopieren",
+      "copy_list": "als Liste",
+      "copy_latex": "als LaTeX-Tabelle",
+      "copy_csv": "als CSV",
+      "copied": "Kurzset kopiert",
+      "copy_failed": "Kopieren ist hier nicht erlaubt.",
+      "col_dimension": "Dimension",
+      "col_measure": "Maß",
+      "col_loading": "Ladung",
+      "col_purity": "Reinheit",
+      "col_stability": "Stabilität"
     },
     "help": {
       "cleaning": "Vor der Analyse werden Zeilen entfernt, in denen die meisten Werte fehlen. Danach werden Spalten entfernt, die nicht numerisch sind, keine Varianz haben, fehlende Werte enthalten oder exakte Kopien einer früheren Spalte sind, wie in ComFy für Log-Maße. Solche Spalten würden die Korrelationsmatrix verzerren oder unbrauchbar machen.",

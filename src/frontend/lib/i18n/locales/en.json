@@ -354,7 +354,10 @@
     },
     "ready": "{name} is ready",
     "ready_several": "{n} datasets are ready",
-    "ready_open": "Open"
+    "ready_open": "Open",
+    "stability_name": "Stability of a factor analysis",
+    "stability_title": "Stability: {name}",
+    "stability_samples": "{n} samples"
   },
   "run_history": {
     "heading": "History",
@@ -976,6 +979,63 @@
       "legend_faded_strict": "faded: |loading| ≤ {threshold}",
       "numbers_label": "What the numbers mean",
       "rule_note_short": "Note on the paper's tables"
+    },
+    "stability": {
+      "action": "Check stability",
+      "again": "Check again",
+      "help": "Draws {n} bootstrap samples of the rows, with replacement and a fixed seed, and fits each with the same measures, factor count and rotation. Tucker's congruence φ with the Hungarian algorithm matches the factors of a sample to these, mirrored where φ is negative; then the same assignment rule applies. The value of a measure is the share of samples in which it keeps its factors.",
+      "samples_label": "Bootstrap samples",
+      "computing": "Checking stability … {pct} %",
+      "cancel": "Cancel",
+      "summary": "Stable over {n} samples: {stable} of {measures} measures ≥ {threshold} %",
+      "dropped": "{n} of {samples} samples dropped: {causes}",
+      "failure": {
+        "constant": "{n} with a measure without variance",
+        "singular": "{n} singular",
+        "fit_failed": "{n} failed fit",
+        "not_converged": "{n} not converged",
+        "heywood": "{n} with a new Heywood case"
+      },
+      "none_valid": "None of the {samples} samples could be fitted.",
+      "stale": "The stability shown before belongs to other settings.",
+      "failed": "The stability could not be computed.",
+      "aborted": "Stability check cancelled.",
+      "value_tip": "Same factors in {pct} of the samples",
+      "primary_tip": "Primary factor the same in {pct}",
+      "low": "Uncertain: below {threshold} %",
+      "phi": "φ {value}",
+      "phi_tip": "Mean congruence with the matching factor of the samples; 5th percentile {p5}.",
+      "reading": {
+        "equal": "Lorenzo-Seva & ten Berge (2006): equal (≥ 0.95)",
+        "fair": "Lorenzo-Seva & ten Berge (2006): fairly similar (0.85–0.95)",
+        "different": "Lorenzo-Seva & ten Berge (2006): not similar (< 0.85)"
+      },
+      "pairs_show": "Show pairs",
+      "pairs_hide": "Hide pairs",
+      "pairs_label": "Pairs of measures over the samples",
+      "pairs_legend_short": "Share of the samples in which two measures share a factor",
+      "pairs_legend": "Each cell is the share of the valid samples in which the two measures share at least one factor; the darker, the more often. A ring marks the pairs that share a factor in the solution itself.",
+      "pairs_cell": "{a} and {b}",
+      "pairs_cell_more": "Share a factor in {pct} of the samples",
+      "pairs_cell_together": "Share a factor in {pct} of the samples; together in the solution"
+    },
+    "short_set": {
+      "badge": "Representative",
+      "badge_tip": "Represents this dimension in the short set: purity {purity}",
+      "heading": "Short set ({n} measure)",
+      "heading_plural": "Short set ({n} measures)",
+      "help": "One measure per dimension: the one assigned to it with the highest purity, its absolute loading on the dimension minus its largest absolute loading on any other. It lets you report a few measures that do not repeat each other, as the Important Factors paper motivates. Ties go to the higher loading. A representative with a low stability should be read with care.",
+      "copy_label": "Copy the short set",
+      "copy_list": "as list",
+      "copy_latex": "as LaTeX table",
+      "copy_csv": "as CSV",
+      "copied": "Short set copied",
+      "copy_failed": "Copying is not allowed here.",
+      "col_dimension": "Dimension",
+      "col_measure": "Measure",
+      "col_loading": "Loading",
+      "col_purity": "Purity",
+      "col_stability": "Stability"
     },
     "help": {
       "cleaning": "Before the analysis, rows where most values are missing are dropped. Then columns that are not numeric, that have no variance, that have missing values, or that are perfect copies of an earlier column are removed, as in ComFy for log measures. Such columns would distort or break the correlation matrix.",
