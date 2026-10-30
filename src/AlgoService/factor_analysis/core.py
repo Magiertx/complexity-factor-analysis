@@ -112,7 +112,8 @@ def _check_array_compat(x, force_all_finite=None, **kwargs):
 _fa_module.check_array = _check_array_compat
 
 # minres bounds every uniqueness below by 0.005, so a Heywood case ends at a communality of
-# about 0.995 rather than 1.
+# about 0.995 rather than 1. The cut stays at 0.9949 (decided for the demo): a lower one would
+# flag solutions that are merely well explained, a higher one would miss the bounded case.
 HEYWOOD_COMMUNALITY = 1 - FactorAnalyzer().bounds[0] - 1e-4
 
 
