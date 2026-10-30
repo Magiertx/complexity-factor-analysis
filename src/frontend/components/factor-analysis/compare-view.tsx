@@ -347,7 +347,7 @@ export function CompareView() {
             ownTitle={ownTitle}
             tableReset={kind === "model"}
           />
-          <RuleChoice id="cmp-rule" vertical value={state.rule} onChange={(rule) => setState({ ...state, rule })} note={false} />
+          <RuleChoice id="cmp-rule" vertical value={state.rule} onChange={(rule) => setState({ ...state, rule })} />
         </section>
 
         <Card className="min-w-0">
