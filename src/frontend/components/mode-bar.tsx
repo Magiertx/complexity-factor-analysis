@@ -155,7 +155,7 @@ export function ModeBar() {
           {/* The tools of the app, set apart at the right end by a line before them. */}
           <ul
             aria-label={t("mode_bar.tools_aria")}
-            className="relative sm:ml-auto flex items-stretch gap-0.5 shrink-0 pl-3 sm:pl-4 before:absolute before:left-1 sm:before:left-1.5 before:top-1/2 before:h-6 before:w-px before:-translate-y-1/2 before:bg-border"
+            className="relative sm:ml-auto flex items-stretch gap-1.5 shrink-0 pl-3 sm:pl-4 before:absolute before:left-1 sm:before:left-1.5 before:top-1/2 before:h-6 before:w-px before:-translate-y-1/2 before:bg-border"
           >
             <NavEntry id="compare" tool active={active === "compare"} />
             <NavEntry

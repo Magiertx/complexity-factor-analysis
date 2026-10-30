@@ -60,7 +60,7 @@ export function FileDrop({ file, onChange, accept = LOG_ACCEPT }: Props) {
       onDrop={onDrop}
       className={cn(
         "w-full rounded-lg border-2 border-dashed transition px-4 py-6 flex flex-col items-center gap-2 text-center",
-        drag ? "border-accent bg-accent/5" : "border-border hover:border-muted bg-surface",
+        drag ? "border-accent bg-accent/5" : "border-strong hover:border-muted bg-surface",
       )}
     >
       <div className="h-8 w-8 rounded-full bg-bg grid place-items-center">
@@ -68,7 +68,7 @@ export function FileDrop({ file, onChange, accept = LOG_ACCEPT }: Props) {
       </div>
       <div>
         <div className="text-xs font-medium">{t("file_drop.drop_label")}</div>
-        <div className="text-[10px] text-muted mt-0.5">{t("file_drop.drop_hint")}</div>
+        <div className="text-xs text-muted mt-0.5">{t("file_drop.drop_hint")}</div>
       </div>
       <input
         ref={inputRef}

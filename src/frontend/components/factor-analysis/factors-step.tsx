@@ -190,7 +190,7 @@ export function FactorsView({ analysis, options, onOptions, paperFactors, paperS
                       <ChoiceMark type="radio" checked={on} />
                       <span className="min-w-0 flex-1">
                         <span className="block text-sm font-medium">{t(`factor.factors.criterion.${c.id}`)}</span>
-                        <span id={`fa-criterion-${c.id}`} className="block text-[11px] text-muted leading-snug">
+                        <span id={`fa-criterion-${c.id}`} className="block text-xs text-muted leading-snug">
                           {t(`factor.factors.criterion_detail.${c.id}`, helpParams)}
                         </span>
                       </span>

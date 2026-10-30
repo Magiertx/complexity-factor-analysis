@@ -66,7 +66,7 @@ function RunItem({ job, active }: { job: Job; active: boolean }) {
       >
         <span className="min-w-0 flex-1">
           <span className="block font-medium truncate">{job.filename}</span>
-          <span className="block text-[11px] text-muted truncate">
+          <span className="block text-xs text-muted truncate">
             {miners.length > 0 && `${miners.join(", ")} · `}
             <time ref={timeTip} dateTime={new Date(time).toISOString()}>
               {formatRelative(time, locale)}
@@ -91,7 +91,7 @@ function RunStatus({ job, label }: { job: Job; label: string }) {
     ) : job.status === "aborted" ? (
       <CircleSlash className="h-3.5 w-3.5 text-muted" aria-hidden />
     ) : (
-      <span className="inline-flex items-center gap-1 text-[11px] text-accent-ink tabular-nums">
+      <span className="inline-flex items-center gap-1 text-xs text-accent-ink tabular-nums">
         <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
         {job.status === "running" && formatPercent(job.percentage / 100, locale, 0)}
       </span>

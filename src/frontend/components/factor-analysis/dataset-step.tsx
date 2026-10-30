@@ -210,7 +210,7 @@ export function DatasetView({
             </tbody>
           </table>
         </TableFrame>
-        <p className="text-[11px] text-muted">
+        <p className="text-xs text-muted">
           {t("factor.dataset.preview_note", {
             n: Math.min(PREVIEW_ROWS, dataset.n_observations),
             total: dataset.n_observations,
@@ -328,11 +328,11 @@ function MinerTile({
       <ChoiceMark type="radio" checked={chosen} className="mt-0.5" />
       <span className="min-w-0">
         <span className="block text-sm font-medium break-words">{title}</span>
-        <span id={sizeId} className="block text-[11px] text-muted tabular-nums">
+        <span id={sizeId} className="block text-xs text-muted tabular-nums">
           {size}
         </span>
         {state && (
-          <span id={stateId} className="mt-0.5 flex items-start gap-1 text-[11px] text-warn-ink leading-snug">
+          <span id={stateId} className="mt-0.5 flex items-start gap-1 text-xs text-warn-ink leading-snug">
             {choice.blocked ? (
               <Ban className="h-3 w-3 mt-px shrink-0" aria-hidden />
             ) : (
@@ -440,7 +440,7 @@ function DescriptivesTable({
             </TableFrame>
           </MeasureListScope>
           <Brief
-            className="text-[11px]"
+            className="text-xs"
             topic={t("factor.dataset.descriptives_heading")}
             text={
               descriptives.basis === "input"
@@ -556,7 +556,7 @@ function MeasurementTable({
                         </span>
                         {logLink?.(row.observation)}
                       </span>
-                      {row.error && <span className="block text-[11px] text-warn-ink break-words">{row.error}</span>}
+                      {row.error && <span className="block text-xs text-warn-ink break-words">{row.error}</span>}
                     </th>
                     {logs && (
                       <>
@@ -593,7 +593,7 @@ function MeasurementTable({
               </tfoot>
             </table>
           </TableFrame>
-          <p className="flex items-center gap-1 text-[11px] text-muted">
+          <p className="flex items-center gap-1 text-xs text-muted">
             {t("factor.dataset.measurement_note")}
             <InfoTip size="xs" topic={t("factor.dataset.measurement_note")} text={t("factor.dataset.measurement_more")} />
           </p>

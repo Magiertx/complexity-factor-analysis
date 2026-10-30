@@ -252,7 +252,7 @@ function Scale({ value, threshold }: { value: number | null; threshold: number }
 function Value({ label, value, more }: { label: string; value: string; more?: string }) {
   return (
     <div className="rounded-md bg-bg/60 px-2.5 py-1.5 min-w-0">
-      <dt className="flex items-center gap-0.5 text-[10px] text-muted">
+      <dt className="flex items-center gap-0.5 text-xs text-muted">
         {label}
         {more && <InfoTip size="xs" topic={label} text={more} />}
       </dt>

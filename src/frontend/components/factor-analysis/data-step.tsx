@@ -64,6 +64,7 @@ import { Notice } from "@/components/ui/notice";
 import { Tip, mergeRefs, useTip, useTipZone } from "@/components/ui/tip";
 import { Input } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
+import { ScrollFade } from "@/components/ui/scroll-fade";
 import { UploadZone } from "@/components/upload-zone";
 import { FeatureChecklist } from "./feature-checklist";
 import { EXAMPLE_CSV, startEntries, startEntryHref, type OpenPreset, type StartEntry } from "./start-here";
@@ -303,7 +304,7 @@ export function DataForm({
   );
   const tabs = (
     <div className="flex items-center gap-1.5">
-      <div className="min-w-0 overflow-x-auto no-scrollbar">
+      <ScrollFade className="min-w-0">
         <Segmented<DatasetSource | "mine">
           aria-label={t("factor.data.source_aria")}
           className="min-w-max"
@@ -341,7 +342,7 @@ export function DataForm({
             }),
           ]}
         />
-      </div>
+      </ScrollFade>
       <InfoTip topic={t(mine ? "factor.data.source.mine" : `factor.data.source.${source}`)} text={hint} />
     </div>
   );
@@ -509,7 +510,7 @@ export function DataForm({
       )}
 
       {/* The one action of the step, at its end and in view while the cards scroll above it. */}
-      <div className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom))] [@media(max-height:500px)]:bottom-0 lg:bottom-0 z-10 -mx-4 sm:-mx-5 -mb-5 px-4 sm:px-5 py-3 rounded-b-lg bg-surface/95 backdrop-blur border-t border-border flex items-center justify-end gap-3 flex-wrap">
+      <div className="sticky max-lg:[@media(max-height:600px)]:static bottom-[calc(3.5rem+env(safe-area-inset-bottom))] [@media(max-height:500px)]:bottom-0 lg:bottom-0 z-10 -mx-4 sm:-mx-5 -mb-5 px-4 sm:px-5 py-3 rounded-b-lg bg-surface/95 backdrop-blur border-t border-border flex items-center justify-end gap-3 flex-wrap">
         {blocker ? (
           <span className="text-xs text-muted mr-auto">{blocker}</span>
         ) : (
@@ -604,7 +605,7 @@ function BundledList({
   );
 }
 
-const BADGE = "inline-flex items-center gap-1 rounded-full bg-tile px-2 py-0.5 text-[10px] font-medium text-muted";
+const BADGE = "inline-flex items-center gap-1 rounded-full bg-tile px-2 py-0.5 text-xs font-medium text-muted";
 
 /** A way in of Get started: its name, one short line, and a badge of what it opens. */
 function StartTile({
@@ -640,7 +641,7 @@ function StartTile({
       info={<InfoTip size="xs" topic={title} text={t(`factor.start.scenario.${entry.id}.text`)} align="end" />}
     >
       <span className="block text-sm font-medium">{title}</span>
-      <span id={shortId} className="block text-[11px] text-muted leading-snug">
+      <span id={shortId} className="block text-xs text-muted leading-snug">
         {t(`factor.start.scenario.${entry.id}.short`)}
       </span>
       <span className={cn(BADGE, "mt-1.5")}>
@@ -844,7 +845,7 @@ function BundledTile({
       }
     >
       <span className="block text-sm font-medium truncate">{label}</span>
-      <span id={shortId} className="block text-[11px] text-muted">
+      <span id={shortId} className="block text-xs text-muted">
         {short}
         {note && <span className="sr-only">. {note}</span>}
       </span>
@@ -1062,7 +1063,7 @@ function DatasetTile({
               {title}
             </span>
             {/* What it is, how big and how old, as one line of text; the open one says so. */}
-            <span className="mt-0.5 flex items-center gap-x-1.5 gap-y-0.5 flex-wrap text-[11px] text-muted">
+            <span className="mt-0.5 flex items-center gap-x-1.5 gap-y-0.5 flex-wrap text-xs text-muted">
               <Icon className="h-3 w-3 shrink-0" />
               <span>{t(`factor.data.source.${dataset.source}`)}</span>
               {/* Each separator wraps with the item after it, so none ends a line. */}
@@ -1187,7 +1188,7 @@ function SampleTile({ sample, chosen, onToggle }: { sample: SampleInput; chosen:
               {t("factor.data.sample_demo")}
             </span>
           </span>
-          <span className="block text-[11px] text-muted truncate">
+          <span className="block text-xs text-muted truncate">
             {files}
             {sample.description && ` · ${sample.description}`}
           </span>
@@ -1238,7 +1239,7 @@ function FileList({
             <span className="truncate flex-1" data-tip={f.name}>
               {f.name}
             </span>
-            <span className="text-[10px] text-muted shrink-0">{formatFileSize(f.size, locale)}</span>
+            <span className="text-xs text-muted shrink-0">{formatFileSize(f.size, locale)}</span>
             <IconButton
               size="sm"
               icon={X}
@@ -1345,10 +1346,10 @@ function ChecklistTile({
         <span className="flex items-center gap-1.5 flex-wrap">
           <span className="font-medium">{item.name}</span>
           {item.slow && <SlowMark />}
-          {item.detail && <span className="text-[10px] text-muted">{item.detail}</span>}
+          {item.detail && <span className="text-xs text-muted">{item.detail}</span>}
         </span>
         {wide && item.description && (
-          <span className="block text-[11px] text-muted mt-0.5 leading-snug">{item.description}</span>
+          <span className="block text-xs text-muted mt-0.5 leading-snug">{item.description}</span>
         )}
       </span>
     </label>

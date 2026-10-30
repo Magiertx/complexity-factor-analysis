@@ -9,9 +9,9 @@ export type NoticeTone = "info" | "warn" | "error" | "success";
 
 const TONE: Record<NoticeTone, { box: string; icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>; ink: string }> = {
   info: { box: "bg-tile/70", icon: Info, ink: "text-muted" },
-  warn: { box: "bg-warn/10", icon: AlertTriangle, ink: "text-warn-ink" },
-  error: { box: "bg-danger/10", icon: AlertCircle, ink: "text-danger-ink" },
-  success: { box: "bg-success/10", icon: Check, ink: "text-success-ink" },
+  warn: { box: "bg-warn/10 border-l-[3px] border-warn", icon: AlertTriangle, ink: "text-warn-ink" },
+  error: { box: "bg-danger/10 border-l-[3px] border-danger", icon: AlertCircle, ink: "text-danger-ink" },
+  success: { box: "bg-success/10 border-l-[3px] border-success", icon: Check, ink: "text-success-ink" },
 };
 
 /**

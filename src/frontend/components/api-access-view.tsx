@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useScrollFade } from "@/lib/use-scroll-fade";
 import { Copy, Check, ExternalLink, Code2, FileJson, Terminal } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { cn } from "@/lib/utils";
@@ -250,7 +251,7 @@ function WithCode({ text }: { text: string }) {
     <>
       {text.split("`").map((part, i) =>
         i % 2 ? (
-          <code key={i} className="font-mono text-[11px] text-fg">
+          <code key={i} className="font-mono text-xs text-fg">
             {part}
           </code>
         ) : (
@@ -391,7 +392,7 @@ function MethodBadge({ method }: { method: Method }) {
   return (
     <span
       className={cn(
-        "shrink-0 w-14 text-center font-mono text-[10px] font-semibold rounded px-1 py-0.5",
+        "shrink-0 w-14 text-center font-mono text-xs font-semibold rounded px-1 py-0.5",
         styles,
       )}
     >
@@ -403,6 +404,8 @@ function MethodBadge({ method }: { method: Method }) {
 function CodeBlock({ label, icon, code }: { label: string; icon: React.ReactNode; code: string }) {
   const [copied, setCopied] = useState(false);
   const t = useT();
+  const preRef = useRef<HTMLPreElement>(null);
+  useScrollFade(preRef);
 
   const handleCopy = async () => {
     try {
@@ -431,10 +434,11 @@ function CodeBlock({ label, icon, code }: { label: string; icon: React.ReactNode
         </button>
       </div>
       <pre
+        ref={preRef}
         tabIndex={0}
         role="region"
         aria-label={label}
-        className="p-3 text-xs leading-relaxed overflow-x-auto bg-bg/60 font-mono text-fg whitespace-pre focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+        className="scroll-fade p-3 text-xs leading-relaxed overflow-x-auto bg-bg/60 font-mono text-fg whitespace-pre focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
       >
         {code}
       </pre>

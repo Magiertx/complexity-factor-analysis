@@ -837,7 +837,7 @@ export function Workbench() {
                                       </span>
                                       <span
                                         className={cn(
-                                          "flex items-center justify-between gap-3 text-[11px] text-muted",
+                                          "flex items-center justify-between gap-3 text-xs text-muted",
                                           recentLayout === "grid" ? "mt-0.5" : "shrink-0",
                                         )}
                                       >
@@ -924,13 +924,13 @@ export function Workbench() {
                                 <span className="block text-sm font-medium truncate">{log.name}</span>
                                 <span
                                   className={cn(
-                                    "block text-[11px] text-muted mt-0.5 leading-normal",
+                                    "block text-xs text-muted mt-0.5 leading-normal",
                                     sampleLayout === "grid" ? "line-clamp-2" : "line-clamp-1",
                                   )}
                                 >
                                   {log.description}
                                 </span>
-                                <span className="mt-1 flex items-center justify-between gap-3 text-[11px] text-muted">
+                                <span className="mt-1 flex items-center justify-between gap-3 text-xs text-muted">
                                   <span className="font-mono truncate">{log.filename}</span>
                                   <span className="shrink-0">{formatFileSize(log.size_bytes, locale)}</span>
                                 </span>
@@ -973,13 +973,13 @@ export function Workbench() {
               )}
               {selectedJobDetail && selected.parameters_schema.length > 0 && (
                 <div className="flex items-center justify-end gap-2">
-                  <span className="text-[11px] text-muted">
+                  <span className="text-xs text-muted">
                     {paramsDiffOnly ? t("workbench.params.showing_modified") : t("workbench.params.showing_all")}
                   </span>
                   <button
                     type="button"
                     onClick={() => setParamsDiffOnly((v) => !v)}
-                    className="text-[11px] font-medium text-accent-ink hover:underline focus:outline-none focus-visible:ring-1 focus-visible:ring-accent/40 rounded px-1"
+                    className="text-xs font-medium text-accent-ink hover:underline focus:outline-none focus-visible:ring-1 focus-visible:ring-accent/40 rounded px-1"
                   >
                     {paramsDiffOnly ? t("workbench.params.show_all") : t("workbench.params.show_only_modified")}
                   </button>
@@ -998,7 +998,7 @@ export function Workbench() {
                           )}
                         </div>
                         {chosen ? (
-                          <div className="bg-tile rounded-md px-2.5 py-2 flex items-center gap-2 text-[11px]">
+                          <div className="bg-tile rounded-md px-2.5 py-2 flex items-center gap-2 text-xs">
                             <FileCheck2 className="h-3.5 w-3.5 text-muted shrink-0" />
                             <span className="truncate flex-1">{chosen.name}</span>
                             <button
@@ -1021,7 +1021,7 @@ export function Workbench() {
                         ) : (
                           <label
                             className={cn(
-                              "flex items-center gap-2 rounded-md border border-dashed border-border px-2.5 py-2 text-[11px] text-muted transition",
+                              "flex items-center gap-2 rounded-md border border-dashed border-border px-2.5 py-2 text-xs text-muted transition",
                               selectedJobId
                                 ? "opacity-50 cursor-not-allowed"
                                 : "cursor-pointer hover:border-accent/50 hover:text-fg",
@@ -1044,7 +1044,7 @@ export function Workbench() {
                             />
                           </label>
                         )}
-                        {sf.help && <p className="text-[11px] text-muted leading-snug">{sf.help}</p>}
+                        {sf.help && <p className="text-xs text-muted leading-snug">{sf.help}</p>}
                       </div>
                     );
                   })}
@@ -1082,7 +1082,7 @@ export function Workbench() {
                 selectedJobDetail && (
                   <span
                     className={cn(
-                      "text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0",
+                      "text-xs font-medium px-2 py-0.5 rounded-full shrink-0",
                       selectedJobDetail.status === "completed" && "bg-success/15 text-success-ink",
                       selectedJobDetail.status === "failed" && "bg-danger/15 text-danger-ink",
                       selectedJobDetail.status === "aborted" && "bg-muted/15 text-muted",

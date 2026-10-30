@@ -48,7 +48,7 @@ export function Popover({
 }) {
   const t = useT();
   const panelRef = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ left: number; top: number; width: number } | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; width: number; maxHeight: number } | null>(null);
   const closeRef = useRef(onClose);
   useEffect(() => {
     closeRef.current = onClose;
@@ -60,10 +60,17 @@ export function Popover({
     const w = Math.min(width, window.innerWidth - 16);
     const left = align === "start" ? r.left - 8 : r.right - w;
     // Below the trigger, or above it where the panel would leave the window at its bottom.
-    const height = panelRef.current?.offsetHeight ?? 0;
+    // The full height of the content, also where the panel is already cut off by its own maximum.
+    const height = panelRef.current?.scrollHeight ?? 0;
+    const maxHeight = window.innerHeight - 16;
     const below = r.bottom + 6;
-    const top = height && below + height > window.innerHeight - 8 && r.top - 6 - height >= 8 ? r.top - 6 - height : below;
-    setPos({ left: Math.max(8, Math.min(left, window.innerWidth - w - 8)), top, width: w });
+    const fits = Math.min(height, maxHeight);
+    let top = below;
+    if (height && below + fits > window.innerHeight - 8) {
+      // Above the trigger where it fits there; otherwise as far up as the window allows.
+      top = r.top - 6 - fits >= 8 ? r.top - 6 - fits : Math.max(8, window.innerHeight - 8 - fits);
+    }
+    setPos({ left: Math.max(8, Math.min(left, window.innerWidth - w - 8)), top, width: w, maxHeight });
   }, [anchor, width, align]);
 
   useLayoutEffect(() => {
@@ -132,8 +139,8 @@ export function Popover({
         // Null when the window loses the focus; the panel then stays as it was.
         if (to && !panelRef.current?.contains(to) && !anchor.current?.contains(to)) onClose(false);
       }}
-      style={{ position: "fixed", left: pos.left, top: pos.top, width: pos.width }}
-      className="z-50 rounded-lg bg-surface p-3.5 text-xs shadow-xl ring-1 ring-border/70 space-y-2.5 focus:outline-none"
+      style={{ position: "fixed", left: pos.left, top: pos.top, width: pos.width, maxHeight: pos.maxHeight }}
+      className="z-50 overflow-y-auto overscroll-contain rounded-lg bg-surface p-3.5 text-xs shadow-xl ring-1 ring-border/70 space-y-2.5 focus:outline-none"
     >
       <div className="flex items-start justify-between gap-2">
         <h3 id={titleId} className="text-sm font-semibold">

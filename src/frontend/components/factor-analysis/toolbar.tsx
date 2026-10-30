@@ -153,7 +153,7 @@ export function FactorToolbar({
   );
 
   return (
-    <div role="group" aria-label={t("factor.toolbar.aria")} className="flex items-center gap-0.5">
+    <div role="group" aria-label={t("factor.toolbar.aria")} className="flex items-center gap-1.5">
       {!shortCodes.hidden && (
         <IconButton
           icon={Tag}
@@ -221,7 +221,7 @@ export function CompareToolbar({
     },
   ];
   return (
-    <div role="group" aria-label={t("factor.toolbar.aria")} className="flex items-center gap-0.5">
+    <div role="group" aria-label={t("factor.toolbar.aria")} className="flex items-center gap-1.5">
       <IconButton
         icon={Tag}
         name={t("factor.toolbar.codes")}

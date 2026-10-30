@@ -8,8 +8,12 @@
     --bg: 240 242 247;
     --surface: 255 255 255;
     --tile: 226 231 240;
-    --border: 203 213 225;
-    --border-strong: 193 205 220;
+    --border: 170 182 200;
+    /* Interactive boundaries (drop zones): 3:1 on a surface (WCAG 1.4.11). */
+    --border-strong: 120 132 152;
+    /* Separators between table rows and chart grids: fainter than a card edge. */
+    --line: 190 199 213;
+    --chart-grid: 148 163 184;
     --muted: 71 85 105;
     --fg: 15 23 42;
     /* Rose 600: white text on filled buttons and badges reaches 4.7:1 (rose 500 only 3.7:1). */
@@ -33,10 +37,12 @@
   }
   .dark {
     --bg: 9 9 11;
-    --surface: 17 17 20;
-    --tile: 36 36 42;
-    --border: 45 45 50;
-    --border-strong: 58 58 64;
+    --surface: 24 24 29;
+    --tile: 40 40 47;
+    --border: 72 72 82;
+    --border-strong: 110 110 122;
+    --line: 58 58 68;
+    --chart-grid: 100 100 112;
     --muted: 150 150 160;
     --fg: 244 244 245;
     --accent: 225 29 72;
@@ -292,7 +298,7 @@
   .data-table :where(tbody > tr > *, tfoot > tr > *) {
     height: 32px;
     padding: 6px 12px;
-    border-bottom: 1px solid rgb(var(--border) / 0.6);
+    border-bottom: 1px solid rgb(var(--line));
     text-align: left;
     font-weight: 400;
   }
@@ -412,6 +418,14 @@
     display: none;
   }
   /* Hide scrollbar for IE, Edge and Firefox */
+  /* A finger needs 24 px at least (WCAG 2.5.8): small inline buttons and checkbox labels grow in height on
+     touch screens, the text stays as it is. Switches keep their drawn size; their row is the target. */
+  @media (pointer: coarse) {
+    :where(main button:not([role="switch"]), main a[href]:not(p a, li a, td a), main label:has(input[type="checkbox"])) {
+      min-height: 24px;
+    }
+  }
+
   .no-scrollbar {
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */

@@ -355,7 +355,7 @@ export function SettingsView() {
                   <div key={group.algorithmId}>
                     <div className="flex items-center justify-between mb-2">
                       <div className="text-sm font-medium">{algo ? localizedAlgoName(algo, locale) : group.algorithmId}</div>
-                      <span className="text-[11px] text-muted">
+                      <span className="text-xs text-muted">
                         {group.presets.length === 1
                           ? t("settings.presets.preset_count", { n: group.presets.length })
                           : t("settings.presets.preset_count_plural", { n: group.presets.length })}
@@ -576,11 +576,11 @@ function SettingRow({
       <div className="min-w-0 max-w-md">
         <div className="text-sm font-medium">{label}</div>
         {hint && short ? (
-          <p className="mt-1 text-[11px] text-muted">
+          <p className="mt-1 text-xs text-muted">
             {short} <InfoTip size="xs" topic={label} text={hint} className="-mt-0.5" />
           </p>
         ) : (
-          hint && <Brief text={hint} topic={label} className="mt-1 text-[11px]" />
+          hint && <Brief text={hint} topic={label} className="mt-1 text-xs" />
         )}
       </div>
       <div className="shrink-0">{children}</div>

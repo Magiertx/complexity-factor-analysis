@@ -205,7 +205,7 @@ function MapBody({
         byFactor={byFactor}
       />
 
-      <div className="flex items-center gap-x-5 gap-y-2 flex-wrap text-[11px] text-muted">
+      <div className="flex items-center gap-x-5 gap-y-2 flex-wrap text-xs text-muted">
         <span className="flex items-center gap-2">
           <span aria-hidden>−1</span>
           <span
@@ -226,7 +226,7 @@ function MapBody({
             : t(high === 1 ? "factor.correlations.legend_high" : "factor.correlations.legend_high_plural", { n: high, limit })}
         </span>
       </div>
-      <Brief className="text-[11px]" text={t("factor.correlations.hint")} topic={t("factor.correlations.heading")} />
+      <Brief className="text-xs" text={t("factor.correlations.hint")} topic={t("factor.correlations.heading")} />
 
       <MapTable data={data} layout={layout} measureName={measureName} />
     </div>
@@ -507,7 +507,7 @@ function MapPlot({
                   key={`l${m}`}
                   data-tip-more={info.get(m)?.status === "removed" ? t("factor.correlations.removed") : undefined}
                   className={cn(
-                    "absolute right-auto truncate text-right text-[11px] pr-1.5",
+                    "absolute right-auto truncate text-right text-xs pr-1.5",
                     info.get(m)?.status === "removed" ? "text-muted" : "text-fg",
                     point?.i === i && "font-semibold",
                   )}
@@ -521,7 +521,7 @@ function MapPlot({
                   key={`t${m}`}
                   data-tip-more={info.get(m)?.status === "removed" ? t("factor.correlations.removed") : undefined}
                   className={cn(
-                    "absolute flex items-end justify-center overflow-hidden text-[11px] pb-1",
+                    "absolute flex items-end justify-center overflow-hidden text-xs pb-1",
                     info.get(m)?.status === "removed" ? "text-muted" : "text-fg",
                     point?.j === j && "font-semibold",
                   )}
@@ -571,7 +571,7 @@ function MapPlot({
               return (
                 <div
                   key={`b${b.from}`}
-                  className="absolute flex items-center border-l border-border pl-2 text-[11px] leading-tight"
+                  className="absolute flex items-center border-l border-border pl-2 text-xs leading-tight"
                   style={{ left: leftW + side + 4, width: rightW - 6, top: topH + b.from * cell, height: (b.to - b.from) * cell }}
                 >
                   <span className={cn("line-clamp-2 break-words", b.factor === null && "text-muted")}>{label}</span>

@@ -122,11 +122,11 @@ export function LogOverviewCard({ stats, filename }: Props) {
           {stats.top_activities.slice(0, 5).map(([name, n]) => (
             <span
               key={name}
-              className="inline-flex items-baseline gap-1.5 rounded-md bg-tile/60 px-2 py-0.5 text-[11px] whitespace-nowrap min-w-0"
+              className="inline-flex items-baseline gap-1.5 rounded-md bg-tile/60 px-2 py-0.5 text-xs whitespace-nowrap min-w-0"
               title={name}
             >
               <span className="text-fg font-medium truncate max-w-[180px]">{name}</span>
-              <span className="text-muted font-mono text-[10px]">{count(n)}</span>
+              <span className="text-muted font-mono text-xs">{count(n)}</span>
             </span>
           ))}
         </div>
