@@ -291,3 +291,13 @@ for (const lang of ["en", "de"] as const) {
     });
   });
 }
+
+test("an oblique rotation shows the correlation of the factors on the loadings, in either view", async ({ page }) => {
+  await page.goto("/");
+  await openWith(page, "Inductive miner", "published");
+  await goToStep(page, "factors");
+  await page.locator("#fa-rotation").click();
+  await page.getByRole("option", { name: text("factor.factors.rotation.promax") }).click();
+  await goToStep(page, "loadings");
+  await expect(page.getByText(text("factor.loadings.correlations_heading"), { exact: true }).first()).toBeVisible();
+});

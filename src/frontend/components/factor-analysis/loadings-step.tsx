@@ -223,7 +223,7 @@ export function LoadingsView({
           the explanation of each rule in its tooltip, and the two thresholds. */}
       <div className="space-y-2">
         <div className="flex items-end gap-x-6 gap-y-3 flex-wrap">
-          <RuleChoice value={options.assignment_rule} onChange={(rule) => onOptions({ assignment_rule: rule })} note={!!assignmentNote} />
+          <RuleChoice value={options.assignment_rule} onChange={(rule) => onOptions({ assignment_rule: rule })} note={assignmentNote} />
           <ThresholdField
             id="fa-loading-threshold"
             label={t("factor.loadings.threshold_label")}
@@ -252,15 +252,6 @@ export function LoadingsView({
             }
           />
         </div>
-        {assignmentNote && (
-          <p className="flex items-center gap-1 text-xs text-muted">
-            <span id="fa-assignment-note">
-              {t("factor.loadings.rule_note_short")}
-              <span className="sr-only">: {assignmentNote}</span>
-            </span>
-            <InfoTip size="xs" topic={t("factor.loadings.rule_note_short")} text={assignmentNote} />
-          </p>
-        )}
       </div>
 
       <div className="space-y-3">
@@ -355,6 +346,10 @@ export function LoadingsView({
             figure={figure}
             naming={naming}
           />
+        )}
+        {/* Of an oblique rotation, in either view: the table belongs to the result, not to the matrix. */}
+        {oblique && analysis.factor_correlations && (
+          <FactorCorrelations values={analysis.factor_correlations} names={naming.names} />
         )}
       </div>
     </div>
@@ -570,7 +565,6 @@ function LoadingsMatrix({
           </InfoTip>
         </p>
 
-        {analysis.factor_correlations && <FactorCorrelations values={analysis.factor_correlations} names={naming.names} />}
       </div>
     );
   }
@@ -658,8 +652,8 @@ function LoadingsMatrix({
   }: {
     value: AssignmentRule;
     onChange: (rule: AssignmentRule) => void;
-    /** A note on the paper's tables follows the row, read with the options. */
-    note: boolean;
+    /** A note on the paper's tables, behind an (i) next to the heading. */
+    note?: string | null;
     /** The id of the block, and the name of its radios. */
     id?: string;
     /** One option under the other, for a narrow column. */
@@ -676,12 +670,22 @@ function LoadingsMatrix({
     return (
       // Its id is where the rule chip of the settings row leads.
       <div id={id} className="space-y-1.5 min-w-0 max-w-full scroll-mt-24">
-        <HelpLabel as="span" label={label} help={t("factor.help.assignment", limits)} />
+        <HelpLabel
+          as="span"
+          label={label}
+          help={t("factor.help.assignment", limits)}
+          extra={note ? <InfoTip size="xs" topic={t("factor.loadings.rule_note_short")} text={note} /> : undefined}
+        />
+        {note && (
+          <span id={`${id}-note`} className="sr-only">
+            {note}
+          </span>
+        )}
         <div
           role="radiogroup"
           aria-label={label}
           aria-describedby={note ? `${id}-note` : undefined}
-          className={cn("flex gap-2 max-w-full", vertical ? "flex-col" : "flex-wrap w-fit")}
+                    className={cn("flex gap-2 max-w-full", vertical ? "flex-col" : "flex-wrap w-fit")}
         >
           {ASSIGNMENT_RULES.map((rule) => (
             <RuleOption
