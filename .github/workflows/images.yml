@@ -2,7 +2,7 @@ name: Images
 
 # Builds the three images of the stack (prom4py, algoservice, frontend) and pushes them to
 # ghcr.io, so the tool starts without a local build (docker-compose.release.yml). A v* tag
-# also tags the images latest and drafts a GitHub release with the compose file. Started by
+# without a suffix also tags the images latest and drafts a GitHub release with the compose file. Started by
 # hand with a tag such as edge to try it without a release.
 on:
   push:
@@ -50,7 +50,11 @@ jobs:
           image="ghcr.io/magiertx/complexity-factor-analysis-${SERVICE}"
           if [ "$GITHUB_REF_TYPE" = tag ]; then
             tag="$GITHUB_REF_NAME"
-            tags="${image}:${tag},${image}:latest"
+            # A suffix such as -rc1 marks a pre-release; only plain tags move latest.
+            case "$tag" in
+              *-*) tags="${image}:${tag}" ;;
+              *) tags="${image}:${tag},${image}:latest" ;;
+            esac
             version="${tag#v}"
           else
             tag="${INPUT_TAG:-edge}"
@@ -105,9 +109,11 @@ jobs:
         run: |
           # GitHub renames a leading dot in an asset name, so the example goes up as env.example.
           cp .env.example env.example
+          pre=""
+          case "$GITHUB_REF_NAME" in *-*) pre="--prerelease" ;; esac
           if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" docker-compose.release.yml env.example --clobber
           else
             gh release create "$GITHUB_REF_NAME" docker-compose.release.yml env.example \
-              --draft --title "$GITHUB_REF_NAME" --generate-notes
+              --draft $pre --title "$GITHUB_REF_NAME" --generate-notes
           fi
