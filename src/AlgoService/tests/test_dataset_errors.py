@@ -157,3 +157,5 @@ def test_a_dataset_whose_groups_all_fail_says_no_measure_is_left(client, monkeyp
     d = _wait_ready(client, r.json()["dataset_id"])
     assert d["status"] == "failed" and d["error_code"] == "dataset_too_few_measures"
     assert d["error_params"]["have"] == 0 and d["error_params"]["need"] == 2
+    listed = next(x for x in client.get("/factor-analysis/datasets").json()["datasets"] if x["id"] == d["id"])
+    assert listed["error_params"]["have"] == 0
