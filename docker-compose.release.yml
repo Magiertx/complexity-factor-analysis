@@ -1,0 +1,167 @@
+# The stack from prebuilt images, nothing is built on your machine. Same services, environment,
+# volumes and healthchecks as docker-compose.yml, with image: instead of build:. Keep the two in
+# sync: scripts/check_release_compose.py compares them and runs in CI.
+#
+#   docker compose -f docker-compose.release.yml up -d
+#
+# CFA_TAG picks the images (default latest, the newest release; e.g. CFA_TAG=v1.0.0 or edge).
+# The Celery worker runs the algoservice image with another command.
+services:
+  prom4py:
+    image: ghcr.io/magiertx/complexity-factor-analysis-prom4py:${CFA_TAG:-latest}
+    # Never publish this port: the /executor endpoint runs arbitrary Java expressions
+    # (see src/prom4py/README.md). algoservice reaches it over the compose network.
+    expose:
+      - "4040"
+    environment:
+      - PROM4PY_PORT=4040
+      - JAVA_HEAP=2G
+      # Its watchdog restarts ProM after 30 s more than this without an answer (see .env.example).
+      - PROM4PY_CALL_TIMEOUT=${PROM4PY_CALL_TIMEOUT:-}
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-complexity}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  algoservice:
+    image: ghcr.io/magiertx/complexity-factor-analysis-algoservice:${CFA_TAG:-latest}
+    # Not published: the browser reaches the API through the frontend's /api/* rewrite.
+    # For local API work, add a port mapping in a docker-compose.override.yml.
+    expose:
+      - "8000"
+    environment:
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - PROM4PY_URL=http://prom4py:4040
+      - PROM4PY_CALL_TIMEOUT=${PROM4PY_CALL_TIMEOUT:-}
+      - PROM4PY_START_WAIT=${PROM4PY_START_WAIT:-}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-complexity}
+      - REDIS_URL=redis://redis:6379/0
+      - PYTHONPATH=/app
+      - SESSION_SECRET_KEY=${SESSION_SECRET_KEY:?generate one, see docs/DEPLOYMENT.md}
+      - SESSION_COOKIE_SECURE=${SESSION_COOKIE_SECURE:-}
+      - MAX_ACTIVE_JOBS_PER_SESSION=${MAX_ACTIVE_JOBS_PER_SESSION:-}
+      - MAX_ACTIVE_DATASET_JOBS=${MAX_ACTIVE_DATASET_JOBS:-}
+      - MAX_LOG_FILES=${MAX_LOG_FILES:-}
+      - MAX_PNML_FILES=${MAX_PNML_FILES:-}
+      # Computes the analyses of the bundled datasets after the start; 0 turns it off.
+      - PRECOMPUTE_BUNDLED=${PRECOMPUTE_BUNDLED:-1}
+      - RATE_LIMIT_DEFAULT=${RATE_LIMIT_DEFAULT:-}
+      - RATE_LIMIT_LOG_STATS=${RATE_LIMIT_LOG_STATS:-}
+      - RATE_LIMIT_ANALYZE=${RATE_LIMIT_ANALYZE:-}
+      - RATE_LIMIT_DATASETS=${RATE_LIMIT_DATASETS:-}
+      - RATE_LIMIT_FA_ANALYZE=${RATE_LIMIT_FA_ANALYZE:-}
+      - RATE_LIMIT_DATASET_STATUS=${RATE_LIMIT_DATASET_STATUS:-}
+      - RATE_LIMIT_DISABLED=${RATE_LIMIT_DISABLED:-}
+      # Interpretation of the factors by Claude; off without a key, see .env.example.
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - INTERPRETATION_MODEL=${INTERPRETATION_MODEL:-}
+      - INTERPRETATION_EFFORT=${INTERPRETATION_EFFORT:-}
+      - INTERPRETATION_RATE_LIMIT=${INTERPRETATION_RATE_LIMIT:-}
+      - INTERPRETATION_DAILY_CAP=${INTERPRETATION_DAILY_CAP:-}
+      # Swagger UI and ReDoc are served behind the frontend's /api/* rewrite.
+      - FASTAPI_ROOT_PATH=/api
+      # Requests come from the frontend container, so uvicorn has to trust X-Forwarded-For
+      # from the compose network for per-client rate limits.
+      - FORWARDED_ALLOW_IPS=${COMPOSE_SUBNET:-172.28.0.0/16}
+    depends_on:
+      # Started, not healthy: a stuck or restarting ProM must not keep the stack from coming
+      # up. The ProM client waits for ProM per discovery and fails only that input.
+      prom4py:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - uploaded_logs:/app/uploaded_logs
+      - artifacts_data:/app/artifacts
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  celery_worker:
+    image: ghcr.io/magiertx/complexity-factor-analysis-algoservice:${CFA_TAG:-latest}
+    command: celery -A celery_worker.celery_app worker --loglevel=info --concurrency=4
+    environment:
+      - PROM4PY_URL=http://prom4py:4040
+      - PROM4PY_CALL_TIMEOUT=${PROM4PY_CALL_TIMEOUT:-}
+      - PROM4PY_START_WAIT=${PROM4PY_START_WAIT:-}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-complexity}
+      - REDIS_URL=redis://redis:6379/0
+      - PYTHONPATH=/app
+      - SESSION_SECRET_KEY=${SESSION_SECRET_KEY:?generate one, see docs/DEPLOYMENT.md}
+    depends_on:
+      # See algoservice.
+      prom4py:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - uploaded_logs:/app/uploaded_logs
+      - artifacts_data:/app/artifacts
+
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A celery_worker.celery_app inspect ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/magiertx/complexity-factor-analysis-frontend:${CFA_TAG:-latest}
+    ports:
+      - "3000:3000"
+    environment:
+      - INTERNAL_API_URL=http://algoservice:8000
+    depends_on:
+      algoservice:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+networks:
+  # Fixed subnet so FORWARDED_ALLOW_IPS can refer to it. Set COMPOSE_SUBNET in .env if it
+  # collides with a network on the host.
+  default:
+    ipam:
+      config:
+        - subnet: ${COMPOSE_SUBNET:-172.28.0.0/16}
+
+volumes:
+  postgres_data:
+  uploaded_logs:
+  artifacts_data:
+
+

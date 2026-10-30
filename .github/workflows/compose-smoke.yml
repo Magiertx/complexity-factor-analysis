@@ -3,13 +3,32 @@ name: Compose smoke test
 # Does what someone setting the tool up on Linux does by hand: a .env from the example with
 # generated secrets, docker compose up --build, then the paper analysis and one dataset mined
 # by ProM from the sample logs. Started by hand, since the first build takes a while.
+# Mode images does the same with docker-compose.release.yml and the images that images.yml
+# pushed under the given tag, so it needs no build and checks what a user downloads.
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: build the stack from the sources, or start the pushed images
+        type: choice
+        options: [build, images]
+        default: build
+      tag:
+        description: Image tag for mode images
+        default: edge
+
+permissions:
+  contents: read
+  packages: read
 
 jobs:
   compose:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    env:
+      # Every docker compose call below, up to the logs, uses the file of the mode.
+      COMPOSE_FILE: ${{ inputs.mode == 'images' && 'docker-compose.release.yml' || 'docker-compose.yml' }}
+      CFA_TAG: ${{ inputs.tag }}
     steps:
       - uses: actions/checkout@v4
 
@@ -24,13 +43,25 @@ jobs:
           docker --version
           docker compose version
 
+      - name: Log in to ghcr.io
+        if: inputs.mode == 'images'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
       - name: Build and start
+        if: inputs.mode != 'images'
         env:
           APP_COMMIT: ${{ github.sha }}
         run: |
           start=$(date +%s)
           docker compose up -d --build
           echo "build and start took $(( $(date +%s) - start )) s"
+
+      - name: Pull and start the images
+        if: inputs.mode == 'images'
+        run: |
+          start=$(date +%s)
+          docker compose up -d
+          echo "pull and start took $(( $(date +%s) - start )) s"
 
       - name: Wait for the frontend and the API
         run: |
@@ -67,9 +98,14 @@ jobs:
           curl -fsS -c $J -b $J -H 'Content-Type: application/json' -d '{"n_factors": 4}' \
             -o export.zip $API/factor-analysis/datasets/$ds/export/zip
           unzip -p export.zip manifest.json | jq '.tool'
-          # The version is part of the image; the commit is the one passed to the build.
-          unzip -p export.zip manifest.json | jq -e --arg sha "$GITHUB_SHA" \
-            '.tool.version != null and .tool.commit == $sha'
+          # The version is part of the image; the commit is the one passed to the build. Images
+          # were built from their own tag or commit, so there only its presence can be checked.
+          if [ "${{ inputs.mode }}" = images ]; then
+            check='.tool.version != null and (.tool.commit // "") != ""'
+          else
+            check='.tool.version != null and .tool.commit == $sha'
+          fi
+          unzip -p export.zip manifest.json | jq -e --arg sha "$GITHUB_SHA" "$check"
 
       - name: Dataset mined by ProM from the sample logs
         run: |
