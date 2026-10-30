@@ -664,6 +664,8 @@
       "pnml_drop_hint": "oder klicken zum Auswählen · .pnml · bis zu {max} Dateien",
       "files_selected": "{n} Datei",
       "files_selected_plural": "{n} Dateien",
+      "sample_demo": "zeigt den Ablauf",
+      "sample_demo_why": "Vier Logs ergeben mit einem Miner nur vier Beobachtungen, zu wenige für eine Faktorenanalyse. Mit mehr Miner-Läufen reicht die Zahl, doch die Maße hängen dann so schwach zusammen, dass der MSA-Filter fast alle entfernt. Das Beispiel zeigt den Ablauf; für ein Ergebnis nimm die Datensätze des Papers.",
       "sample_own": "Stattdessen eigene Dateien hochladen",
       "clear_files": "Alle entfernen",
       "remove_file_aria": "{name} entfernen",
@@ -827,6 +829,7 @@
       "preview_note": "Die ersten {n} von {total} Beobachtungen.",
       "detail": {
         "non_numeric": "enthält den Wert „{value}“",
+        "non_finite": "{infinite} von {total} Werten sind nicht endlich",
         "missing": "{missing} von {total} Werten fehlen",
         "duplicate": "perfekt korreliert mit {kept}"
       },
@@ -863,6 +866,7 @@
       "view_log_more": "Öffnet die Seite für ein einzelnes Log mit diesem Log und dem Miner der Zeile. Das geht, solange das Log zu den neuesten Uploads dieser Sitzung gehört.",
       "view_log_gone": "Das Log gehört nicht mehr zu den neuesten Uploads dieser Sitzung.",
       "failures_more": "und {n} weitere",
+      "renamed_columns": "Doppelte Spaltennamen umbenannt: {names}",
       "renamed": "umbenannt: {from} → {to}"
     },
     "suitability": {

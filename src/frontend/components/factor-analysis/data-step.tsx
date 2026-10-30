@@ -1183,6 +1183,9 @@ function SampleTile({ sample, chosen, onToggle }: { sample: SampleInput; chosen:
         <span className="min-w-0">
           <span className="block text-sm font-medium truncate">
             {t("factor.data.sample_label")}: {sample.name}
+            <span className="ml-2 align-middle rounded-full border border-border px-1.5 py-0.5 text-xs font-normal text-muted">
+              {t("factor.data.sample_demo")}
+            </span>
           </span>
           <span className="block text-[11px] text-muted truncate">
             {files}
@@ -1190,6 +1193,7 @@ function SampleTile({ sample, chosen, onToggle }: { sample: SampleInput; chosen:
           </span>
         </span>
       </label>
+      <InfoTip size="xs" topic={t("factor.data.sample_demo")} text={t("factor.data.sample_demo_why")} align="end" />
       {chosen && (
         <Button variant="ghost" size="sm" onClick={onToggle} className="shrink-0">
           {t("factor.data.sample_own")}

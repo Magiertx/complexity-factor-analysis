@@ -664,6 +664,8 @@
       "pnml_drop_hint": "or click to browse · .pnml · up to {max} files",
       "files_selected": "{n} file",
       "files_selected_plural": "{n} files",
+      "sample_demo": "shows the workflow",
+      "sample_demo_why": "Four logs give only four observations with one miner, too few for a factor analysis. More miner runs make the count sufficient, but the measures then correlate so weakly that the MSA filter removes almost all of them. The sample shows the workflow; for a result use the datasets of the paper.",
       "sample_own": "Upload own files instead",
       "clear_files": "Remove all",
       "remove_file_aria": "Remove {name}",
@@ -827,6 +829,7 @@
       "preview_note": "First {n} of {total} observations.",
       "detail": {
         "non_numeric": "contains the value “{value}”",
+        "non_finite": "{infinite} of {total} values are not finite",
         "missing": "{missing} of {total} values missing",
         "duplicate": "perfectly correlated with {kept}"
       },
@@ -863,6 +866,7 @@
       "view_log_more": "Opens the page for a single log with this log and the miner of the row chosen. It works while the log is among the newest uploads of this session.",
       "view_log_gone": "The log is no longer among the newest uploads of this session.",
       "failures_more": "and {n} more",
+      "renamed_columns": "Duplicate column names renamed: {names}",
       "renamed": "renamed: {from} → {to}"
     },
     "suitability": {

@@ -65,6 +65,8 @@ export function DatasetView({
   const detailOf = (d: FactorDataset["dropped"][number]) =>
     (d.params && tMaybe(`factor.dataset.detail.${d.reason}`, d.params)) || d.detail;
   const failures = dataset.failures ?? [];
+  // Columns the reader renamed to make the names unique, which the table of the cleaning would hide.
+  const renamedColumns = (dataset.descriptives?.measures ?? []).filter((m) => m.renamed_from);
   // The same error of many inputs is one line with the inputs it hit.
   const failureGroups: { error: string; inputs: string[] }[] = [];
   for (const f of failures) {
@@ -94,6 +96,11 @@ export function DatasetView({
 
       <div className="space-y-2">
         <HelpLabel label={t("factor.dataset.cleaning_heading")} help={t("factor.help.cleaning")} />
+        {renamedColumns.length > 0 && (
+          <p className="text-xs text-muted">
+            {t("factor.dataset.renamed_columns", { names: renamedColumns.map((r) => `${r.renamed_from} → ${r.measure}`).join(", ") })}
+          </p>
+        )}
         {dataset.dropped.length === 0 ? (
           <p className="text-xs text-muted">{t("factor.dataset.dropped_none")}</p>
         ) : (
