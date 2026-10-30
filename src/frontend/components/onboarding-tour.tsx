@@ -7,7 +7,6 @@ import {
   Network,
   Layers,
   History,
-  Code2,
   Columns3,
   Microscope,
   ChevronLeft,
@@ -107,10 +106,6 @@ export function OnboardingTour({
             <li className="flex items-start gap-2">
               <History className="h-3.5 w-3.5 text-muted mt-1 shrink-0" />
               <span>{t("tours.onboarding.step3_history")}</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <Code2 className="h-3.5 w-3.5 text-muted mt-1 shrink-0" />
-              <span>{t("tours.onboarding.step3_api")}</span>
             </li>
           </ul>
         ),

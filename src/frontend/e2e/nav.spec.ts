@@ -2,7 +2,7 @@ import type { Page } from "@playwright/test";
 import { deleteSessionDatasets, expect, expectStep, openBundled, pattern, stepSection, test, text } from "./fixtures";
 
 // The navigation is the same on every page: the four tabs of the analyses and History in the mode
-// bar, the guide, the API and the settings in the header. Exactly one entry is marked as the page.
+// bar, the guide and the settings in the header. Exactly one entry is marked as the page.
 
 /** Each route with the label of its entry: a tab or a link of the header. */
 const ROUTES: [string, string][] = [
@@ -12,7 +12,6 @@ const ROUTES: [string, string][] = [
   ["/inspect", "mode_bar.inspect_label"],
   ["/runs", "mode_bar.history_label"],
   ["/guide", "header.guide_label"],
-  ["/api-access", "header.api_label"],
   ["/settings", "header.settings_label"],
 ];
 
@@ -48,8 +47,8 @@ test("the pages of the header lead back to the page of the tab visited last", as
   await page.goto("/settings");
   await expect(page.getByRole("link", { name: text("nav.back_to", { page: text("mode_bar.model_label") }) })).toHaveAttribute("href", "/");
   await page.goto("/compare");
-  await page.getByRole("navigation", { name: text("header.nav_aria") }).getByRole("link", { name: text("header.api_label") }).click();
-  await expect(page).toHaveURL(/\/api-access$/);
+  await page.getByRole("navigation", { name: text("header.nav_aria") }).getByRole("link", { name: text("header.guide_label") }).click();
+  await expect(page).toHaveURL(/\/guide$/);
   const back = page.getByRole("link", { name: text("nav.back_to", { page: text("mode_bar.compare_label") }) });
   await expect(back).toHaveAttribute("href", /^\/compare/);
   await back.click();

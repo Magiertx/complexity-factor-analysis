@@ -93,7 +93,7 @@ phone.
   secondary, outline or ghost.
 - Empty states use `EmptyState` (`components/ui/empty-state.tsx`); the 404 page is one, with
   a button to the start page.
-- The info pages (settings, guide, API) share one column (`PAGE_COLUMN` in
+- The info pages (settings, guide) share one column (`PAGE_COLUMN` in
   `components/ui/page-column.tsx`), centred in the content area that the header, the tabs and the
   other pages share (`max-w-[1600px]`).
 - A section of a page has a plain heading, no numbered badge: a number in a circle means a step

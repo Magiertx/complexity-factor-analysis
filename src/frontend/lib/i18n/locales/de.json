@@ -12,7 +12,6 @@
     "done": "Fertig",
     "get_started": "Los geht's",
     "run_analysis": "Analyse starten",
-    "api": "API",
     "error_title": "Etwas ist schiefgelaufen",
     "error_description": "Auf dieser Seite ist ein unerwarteter Fehler aufgetreten.",
     "error_unknown": "Unbekannter Fehler",
@@ -28,10 +27,8 @@
     "nav_aria": "Seiten",
     "guide_label": "Anleitung",
     "guide_title": "Was {app} tut und wie",
-    "api_label": "API",
     "settings_label": "Einstellungen",
     "settings_title": "Sprache, Darstellung und was dieser Browser speichert",
-    "api_title": "{app} programmatisch nutzen",
     "locale_label": "Sprache",
     "switch_to_german": "Auf Deutsch umschalten",
     "switch_to_english": "Auf Englisch umschalten",
@@ -94,7 +91,6 @@
       "step2_p1": "Daten, Datensatz, Eignung, Faktoren, Ladungen: Die Liste der Schritte zeigt, was jeder ergeben hat, und öffnet ihn; Zurück und Weiter führen hindurch. Jede Änderung einer Einstellung startet die Analyse sofort neu, und die Analyse lässt sich als CSV, LaTeX oder ZIP herunterladen. In einem optionalen sechsten Schritt schlägt Claude Namen für die Faktoren vor.",
       "step2_p2": "Halte den Zeiger über ein Bedienelement oder ein (i), um zu sehen, was es tut; der Tour-Knopf führt durch die Schritte.",
       "step3_title": "Mehr, wenn du es brauchst",
-      "step3_api": "API: alles per Python oder curl steuern; siehe die API-Seite im Header.",
       "step3_compare": "Vergleich: die Faktorstrukturen mehrerer Analysen nebeneinander, wie Tab. 17 von Important Factors.",
       "progress_aria": "Fortschritt",
       "step3_history": "Verlauf: alle Datensätze und Runs deiner Sitzung.",
@@ -211,80 +207,7 @@
       "title": "Info",
       "description": "Produkt und Links.",
       "product_label": "Produkt",
-      "source_label": "Quellcode",
-      "documentation_label": "Dokumentation",
-      "api_link": "API-Zugang und Beispiele"
-    }
-  },
-  "api_access": {
-    "heading": "API-Zugang",
-    "subtitle": "Runs starten und Ergebnisse abrufen ohne die Weboberfläche. Die Endpoints brauchen keine Anmeldung; ein Cookie beschränkt sie auf deine Browsersitzung.",
-    "subtitle_short": "Runs starten und Ergebnisse abrufen, ohne die Weboberfläche.",
-    "interactive_ref_title": "Interaktive Referenz",
-    "interactive_ref_desc": "Vollständige OpenAPI-3-Spezifikation — Endpoints direkt im Browser ausprobieren.",
-    "quick_start_title": "Schnellstart",
-    "quick_start_desc": "Ein Log untersuchen oder eine Faktorenanalyse ausführen, aus einem Python-Skript oder der Shell.",
-    "example_single_log": "Einzelnes Log untersuchen (Python)",
-    "example_factor_analysis": "Faktorenanalyse (Python)",
-    "endpoint_summary_title": "Endpoint-Übersicht",
-    "endpoint_summary_desc": "Alle Pfade sind relativ zu {base} beim Zugriff über die Weboberfläche, oder ab dem Wurzelpfad beim direkten Aufruf des Backends.",
-    "notes_title": "Hinweise",
-    "copied": "Kopiert",
-    "copy": "Kopieren",
-    "groups": {
-      "catalog": "Katalog",
-      "single_log": "Einzelnes Log",
-      "factor_analysis": "Faktorenanalyse",
-      "runs": "Runs",
-      "diagnostics": "Diagnose"
-    },
-    "endpoints": {
-      "algorithms": "Alle registrierten Algorithmen mit ihrem Parameterschema.",
-      "sample_logs": "Mitgelieferte Beispiel-Logs, die sich ohne Upload analysieren lassen.",
-      "recent_logs": "Logs, die deine Sitzung zuletzt hochgeladen hat.",
-      "analyze": "Einen Algorithmus auf einem Log ausführen; liefert eine job_id.",
-      "log_stats": "Schnelle beschreibende Statistiken eines Logs: Traces, Events, Varianten, Zeitraum.",
-      "fa_catalog": "Maße mit den Kurzzeichen der Papers (`short`), Miner oder Feature-Gruppen, mitgelieferte Datensätze mit den Einstellungen ihres Papers (`published_options`), Beispieleingaben, die erlaubten Quellen und die Upload-Grenzen (`limits`).",
-      "fa_limits": "Wie viele Logs und Petri-Netze und wie viele Bytes eine Datensatz-Anfrage auf diesem Server umfassen darf (`max_log_files`, `max_pnml_files`, `max_file_bytes`, `max_total_bytes`).",
-      "fa_create": "Einen Datensatz aus einem mitgelieferten oder einer CSV anlegen (sofort bereit) oder aus Event-Logs oder PNML-Dateien (als Run berechnet). Hat die Sitzung den mitgelieferten Datensatz schon, kommt er unverändert zurück, mit `reused`.",
-      "fa_list": "Die Datensätze deiner Sitzung, neueste zuerst; kind ist optional.",
-      "fa_get": "Status, Fortschritt, gespeicherte Einstellungen und die bereinigte Maßmatrix (erste 2.000 Zeilen); sobald bereit, die deskriptive Statistik jedes Maßes (`descriptives`) und für einen berechneten Datensatz die Laufzeiten und Eingabegrößen (`measurement`). Für einen Modell-Datensatz mehrerer Miner `miners`: die Zeilen und Maße jedes Miners.",
-      "fa_descriptives": "Die Kennzahlen und Histogramme der Maße: über alle Zeilen oder mit `miner` über die Zeilen eines Miners, wie der Steckbrief eines Maßes sie zeigt.",
-      "fa_options": "Die Einstellungen einer Analyse beim Datensatz speichern. Mit dem `miner` und den `factor_names`, sofern es sie gibt; `names_k` (die Faktorenzahl auf dem Bildschirm) hält die Namen für diese Lösung fest.",
-      "fa_delete": "Einen Datensatz mit seinem Run und seinen gespeicherten Interpretationen löschen.",
-      "fa_delete_all": "Alle Datensätze deiner Sitzung löschen oder alle einer Art.",
-      "fa_download": "Die bereinigte Matrix als CSV.",
-      "fa_analyze": "Bartlett, KMO mit MSA-Filter, Eigenwerte mit Kaiser und Parallelanalyse, rotierte Ladungen und die Faktorgruppen nach `assignment_rule` (`largest`, `multi`, `hair`) mit Querladungen sowie die Laufzeiten ihrer Teile (`timings`); mit den veröffentlichten Einstellungen der Abgleich mit dem Report (JSON). `miner` analysiert die Zeilen eines Miners eines Datensatzes, der mit mehreren entdeckt wurde; `factor_names` benennt die Faktoren für die Downloads und ändert nichts an der Analyse.",
-      "fa_export": "Die Ladungstabelle als CSV oder LaTeX; der Body von analyze plus format.",
-      "fa_export_zip": "Die ganze Analyse als ZIP: Ergebnis, Matrix, Tabellen, report.tex, Abbildungen, deskriptive Statistik, Laufzeiten, Parameter, Bibliotheksversionen und Herkunft (Toolversion und Commit, Upstream-Commits, feeed, pm4py und ProM, Miner mit ihren Parametern); der Body von analyze plus `language`, `short_codes` und für die Abbildungen `order` und `figure_language`, die das Manifest festhält.",
-      "fa_interpretation_status": "Ob Claude Faktoren interpretieren kann, und mit welchem Modell.",
-      "fa_interpret": "Namen und kurze Interpretationen der Faktoren durch Claude; der Body von analyze plus language. Optional, braucht einen API-Schlüssel auf dem Server.",
-      "jobs": "Alle Runs deiner Sitzung.",
-      "job": "Status, Fortschritt und, sobald er fertig ist, das ganze Ergebnis eines Runs.",
-      "job_download": "ZIP-Archiv mit allem, was ein Run erzeugt hat.",
-      "job_events": "Server-Sent-Events-Stream, der sich bei jeder Änderung eines Runs meldet.",
-      "progress": "SSE-Stream einer einzelnen Aufgabe, eine Ebene tiefer.",
-      "abort": "Eine laufende Aufgabe bitten, anzuhalten.",
-      "job_notes": "Die Notiz eines Runs setzen oder löschen.",
-      "job_delete": "Einen Run und seine Ergebnisse löschen; ein Datensatz-Run nimmt seinen Datensatz mit.",
-      "jobs_delete": "Alle Runs deiner Sitzung löschen, mit den Datensätzen, die sie berechnet haben.",
-      "health": "Bereitschaftsprüfung: 200, wenn die Datenbank erreichbar ist.",
-      "session_start": "Startet die Sitzung (das Cookie `session_id`), wenn die Anfrage keines hat oder eines, das der Server nicht lesen kann. Die Seite erledigt das selbst; ein Skript, das mehrere Anfragen gleichzeitig sendet, ruft es zuerst auf.",
-      "fa_export_report": "Die Analyse als LaTeX-Report, aufgebaut wie der von ComFy (report.tex); der Body von analyze plus `short_codes` und `language`.",
-      "fa_export_methods": "Ein kurzer, neutraler Methodenabsatz der Analyse in LaTeX mit `\\cite`-Schlüsseln, auf Englisch oder Deutsch (`language`), streng aus ihren Einstellungen und Ergebnissen gelesen; der Body von analyze plus `language`. Antwortet mit `text` und den `citation_keys`.",
-      "fa_export_bibtex": "Die BibTeX-Einträge genau der Schlüssel des Methodenabsatzes als `references.bib`; was eine Quelle nicht angibt, steht als Kommentar über dem Eintrag. Der Body von `export/methods`.",
-      "fa_export_figure": "Der Scree-Plot, die Ladungs-Heatmap oder die Korrelationskarte als SVG oder PNG (300 dpi) im Druckstil; der Body von analyze plus `figure`, `format`, `short_codes`, `order`, `correlation_order` und `language` (`en` oder `de`).",
-      "fa_compare": "Die Faktorstrukturen von 2 bis 8 Analysen nebeneinander, wie Tab. 17 von Important Factors: je Spalte n, die Maße nach dem MSA-Filter, KMO, Faktoren, Rotation und erklärte Varianz, jedes Maß mit seiner Dimension je Spalte unter einer `assignment_rule`, die Dimensionen je Spalte und für jedes Paar von Maßen, in wie vielen Spalten es eine Dimension teilt (`co_assignment`). Eine Spalte ist ein mitgelieferter Datensatz (`bundled_id`, mit den Einstellungen seines Papers) oder ein Datensatz der Sitzung (`dataset_id`, mit seinen gespeicherten Einstellungen und optional einem `miner`) und kann ihre Einstellungen ändern (`options`). Mitgelieferte Spalten brauchen keinen Datensatz der Sitzung.",
-      "fa_compare_export": "Der Vergleich als CSV, als LaTeX-Tabelle wie Tab. 17 oder als ZIP mit beidem, den Paaren von Maßen, dem vollständigen Ergebnis und einem Manifest; der Body von compare plus `format` und `short_codes`.",
-      "fa_correlations": "Die Korrelationen der Maße, die Karte des Eignungs-Schritts: die Matrix in der Reihenfolge des Datensatzes, einer Gruppierung (`cluster`) oder der Dimensionen einer Analyse (`factor`), die Paare mit |r| ab 0,95 und die fünf engsten Partner jedes Maßes; der Body von analyze plus `order`."
-    },
-    "notes": {
-      "rate_limits": "Ratenlimits pro IP: `60/hour` für `POST /algorithms/{id}/analyze` und für neue Datensätze aus `POST /factor-analysis/datasets`, `600/minute` für das Lesen, Auflisten und Löschen von Datensätzen und das Speichern ihrer Optionen, `300/hour` für `POST /log-stats` und `120/minute` überall sonst. Interpretationen durch Claude: `10/hour` pro Sitzung und `200/day` für den Server. Über einem Limit lautet die Antwort 429 mit einem `code`.",
-      "quota": "Runs: höchstens 12 wartende oder laufende pro Sitzung und höchstens 4 Datensatz-Runs gleichzeitig über alle Sitzungen; weitere werden mit 429 beantwortet.",
-      "uploads": "Uploads: höchstens {file_mb} MB pro Datei. `POST /algorithms/{id}/analyze` und `POST /log-stats` nehmen ein Event-Log (`.xes`, `.xes.gz`, `.xml`, `.json`). `POST /factor-analysis/datasets` nimmt eine `.csv`, bis zu {logs} Event-Logs (`.xes`, `.xes.gz`) oder bis zu {pnml} Petri-Netze (`.pnml`), zusammen höchstens {total_mb} MB. Die Zahl der Dateien legt der Betreiber fest; `GET /factor-analysis/limits` nennt, was dieser Server erlaubt.",
-      "session": "Sitzung: Ein signiertes Cookie grenzt jeden Endpoint ein. Verwende es für alle Anfragen (in Python mit `requests.Session()`), damit deine Runs und Datensätze sichtbar bleiben. Ohne Cookie beginnt jede von mehreren gleichzeitigen Anfragen eine eigene Sitzung; rufe zuerst `GET /session` auf.",
-      "schemas": "Die Parameterschemas liefert `GET /algorithms`: Lies vor dem Absenden das `parameters_schema` eines Algorithmus.",
-      "analysis": "Analysen: höchstens `400` Maße pro Analyse, mehr ergeben 400 mit dem Code `too_many_measures_for_analysis`. Eine neuere Analyse desselben Datensatzes in einer Sitzung ersetzt eine ältere, die noch wartet; die ältere erhält 409 `superseded`. Skripte, die einen Datensatz parallel mit mehreren Einstellungen analysieren, übergeben `?latest_wins=false`."
+      "source_label": "Quellcode"
     }
   },
   "parameter_form": {
@@ -1612,14 +1535,13 @@
       "history": "Zum Verlauf",
       "results": "Zum Schritt Datensatz",
       "loadings": "Zu den Ladungen",
-      "api": "API-Zugang",
       "compare": "Die vier Miner aus Tab. 17 vergleichen"
     },
     "steps": {
       "title": "Die sechs Schritte",
       "p1": "Modellkomplexität analysiert die Maße von ComFy auf Petri-Netzen, Log-Komplexität die Maße von feeed auf Event-Logs. Beide führen durch dieselben Schritte: Daten, Datensatz, Eignung, Faktoren, Ladungen und eine optionale Interpretation. Es ist immer ein Schritt zu sehen; die Liste der Schritte zeigt, was jeder Schritt ergeben hat.",
       "p2": "Die Einstellungszeile über den Schritten fasst jede Entscheidung zusammen, markiert die, die vom Standard des Tools abweichen, und führt zu jedem Regler. Jede Änderung einer Einstellung rechnet die Analyse neu.",
-      "p3": "Die Reiter oben sind auf jeder Seite dieselben: die Analysen (die beiden der Komplexität und Einzelnes Log) und rechts abgesetzt die Werkzeuge Vergleich und Verlauf. Anleitung, API und Einstellungen stehen im Header und führen zurück zu dem Reiter, von dem du kamst."
+      "p3": "Die Reiter oben sind auf jeder Seite dieselben: die Analysen (die beiden der Komplexität und Einzelnes Log) und rechts abgesetzt die Werkzeuge Vergleich und Verlauf. Anleitung und Einstellungen stehen im Header und führen zurück zu dem Reiter, von dem du kamst."
     },
     "bundled": {
       "title": "Einen veröffentlichten Datensatz analysieren",
@@ -1668,10 +1590,6 @@
       "p2": "Das Bild-Symbol am Scree-Plot, an den Ladungen und an der Korrelationskarte lädt die Abbildung als SVG herunter, deren Text Text bleibt, oder als PNG mit 300 dpi: immer hell, in der Textbreite eines CEUR-Papers, mit den Beschriftungen in der Sprache der App.",
       "p3": "Das Etikett-Symbol in der Werkzeugleiste nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder C_mag; der volle Name steht im Tooltip, und Abbildungen, Report und ZIP folgen ihm.",
       "p4": "Das Link-Symbol kopiert einen Link auf die Analyse eines veröffentlichten Datensatzes mit ihren Einstellungen."
-    },
-    "api": {
-      "title": "Die API nutzen",
-      "p1": "Alles, was die App kann, geht auch über die REST-API, auch der Report und die Abbildungen. Die Seite API-Zugang nennt die Endpunkte mit Beispielen."
     },
     "compare": {
       "title": "Miner vergleichen",

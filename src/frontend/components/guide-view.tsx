@@ -69,11 +69,6 @@ const SECTIONS: GuideSection[] = [
     after: 3,
     links: [{ href: "/?step=loadings", key: "loadings" }],
   },
-  {
-    id: "api",
-    before: 1,
-    links: [{ href: "/api-access", key: "api" }],
-  },
 ];
 
 /**

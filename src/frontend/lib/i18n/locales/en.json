@@ -12,7 +12,6 @@
     "done": "Done",
     "get_started": "Get started",
     "run_analysis": "Run analysis",
-    "api": "API",
     "error_title": "Something went wrong",
     "error_description": "This page ran into an unexpected error.",
     "error_unknown": "Unknown error",
@@ -28,10 +27,8 @@
     "nav_aria": "Pages",
     "guide_label": "Guide",
     "guide_title": "What {app} does and how",
-    "api_label": "API",
     "settings_label": "Settings",
     "settings_title": "Language, theme and what this browser keeps",
-    "api_title": "Use {app} programmatically",
     "locale_label": "Language",
     "switch_to_german": "Switch to German",
     "switch_to_english": "Switch to English",
@@ -94,7 +91,6 @@
       "step2_p1": "Data, dataset, suitability, factors, loadings: the list of steps shows what each one found and opens it; Back and Next lead through them. Every change to a setting re-runs the analysis right away, and the analysis can be downloaded as CSV, LaTeX or ZIP. An optional sixth step lets Claude propose names for the factors.",
       "step2_p2": "Hover a control or an (i) for what it does; the Tour button walks you through the steps.",
       "step3_title": "More when you need it",
-      "step3_api": "API: drive everything from Python or curl; see the API page in the header.",
       "step3_compare": "Compare: the factor structures of several analyses side by side, like Tab. 17 of Important Factors.",
       "progress_aria": "Progress",
       "step3_history": "History: every dataset and run of your session.",
@@ -211,80 +207,7 @@
       "title": "About",
       "description": "Product and links.",
       "product_label": "Product",
-      "source_label": "Source",
-      "documentation_label": "Documentation",
-      "api_link": "API access and examples"
-    }
-  },
-  "api_access": {
-    "heading": "API access",
-    "subtitle": "Start runs and read results without the web UI. The endpoints need no login; a cookie scopes them to your browser session.",
-    "subtitle_short": "Start runs and fetch results without the web interface.",
-    "interactive_ref_title": "Interactive reference",
-    "interactive_ref_desc": "Full OpenAPI 3 spec — try endpoints directly from the browser.",
-    "quick_start_title": "Quick start",
-    "quick_start_desc": "Inspect a log or run a factor analysis from a Python script or your shell.",
-    "example_single_log": "Inspect a single log (Python)",
-    "example_factor_analysis": "Factor analysis (Python)",
-    "endpoint_summary_title": "Endpoint summary",
-    "endpoint_summary_desc": "All paths are relative to {base} when accessed through the web UI, or the bare root when hitting the backend directly.",
-    "notes_title": "Notes",
-    "copied": "Copied",
-    "copy": "Copy",
-    "groups": {
-      "catalog": "Catalog",
-      "single_log": "Single log",
-      "factor_analysis": "Factor analysis",
-      "runs": "Runs",
-      "diagnostics": "Diagnostics"
-    },
-    "endpoints": {
-      "algorithms": "Every registered algorithm with its parameter schema.",
-      "sample_logs": "Bundled example logs you can analyze without uploading.",
-      "recent_logs": "Logs your session uploaded recently.",
-      "analyze": "Run one algorithm on one log; returns a job_id.",
-      "log_stats": "Quick descriptive statistics of a log: traces, events, variants, time range.",
-      "fa_catalog": "Measures with the `short` codes of the papers, miners or feature groups, bundled datasets with the settings their paper published (`published_options`), example inputs, the accepted sources and the upload `limits`.",
-      "fa_limits": "How many logs and Petri nets, and how many bytes, one dataset request may carry on this server (`max_log_files`, `max_pnml_files`, `max_file_bytes`, `max_total_bytes`).",
-      "fa_create": "Create a dataset from a bundled one or a CSV (ready at once), or from event logs or PNML files (computed as a run). If the session already has the bundled dataset, it comes back unchanged, with `reused`.",
-      "fa_list": "The datasets of your session, newest first; kind is optional.",
-      "fa_get": "Status, progress, saved settings and the cleaned measure matrix (first 2,000 rows); once ready, the `descriptives` of every measure and, for a computed dataset, the run times and input sizes (`measurement`). For a model dataset of several miners, `miners`: the rows and the measures of each.",
-      "fa_descriptives": "The statistics and histograms of the measures: over every row, or with `miner` over the rows of one miner, as the fact sheet of a measure shows them.",
-      "fa_options": "Keep the settings of an analysis with the dataset. With the `miner` and the `factor_names`, if there are; `names_k` (the factor count on screen) keeps the names for that solution.",
-      "fa_delete": "Delete a dataset with its run and its cached interpretations.",
-      "fa_delete_all": "Delete every dataset of your session, or every one of a kind.",
-      "fa_download": "The cleaned matrix as CSV.",
-      "fa_analyze": "Bartlett, KMO with the MSA filter, eigenvalues with Kaiser and parallel analysis, rotated loadings and the factor groups by `assignment_rule` (`largest`, `multi`, `hair`) with cross-loadings, and the `timings` of its parts; with the published settings, the comparison with the report (JSON). `miner` analyses the rows of one miner of a dataset discovered with several; `factor_names` names the factors for the downloads and changes nothing of the analysis.",
-      "fa_export": "The loadings table as CSV or LaTeX; the body of analyze plus format.",
-      "fa_export_zip": "The whole analysis as a ZIP: result, matrix, tables, report.tex, figures, descriptive statistics, run times, parameters, library versions and provenance (tool version and commit, upstream commits, feeed, pm4py and ProM, miners with their parameters); the body of analyze plus `language`, `short_codes`, and for the figures `order` and `figure_language`, which the manifest records.",
-      "fa_interpretation_status": "Whether Claude can interpret factors, and with which model.",
-      "fa_interpret": "Names and short interpretations of the factors by Claude; the body of analyze plus language. Optional, needs an API key on the server.",
-      "jobs": "All runs of your session.",
-      "job": "Status, progress and, once it is finished, the full result of a run.",
-      "job_download": "ZIP archive of everything a run produced.",
-      "job_events": "Server-Sent Events stream that pings whenever a run changes.",
-      "progress": "Lower-level SSE stream of a single task.",
-      "abort": "Ask a running task to stop.",
-      "job_notes": "Set or clear the note of a run.",
-      "job_delete": "Delete a run and its results; a dataset run takes its dataset with it.",
-      "jobs_delete": "Delete every run of your session, with the datasets they computed.",
-      "health": "Readiness probe: 200 when the database is reachable.",
-      "session_start": "Starts the session (the `session_id` cookie) if the request has none, or one the server cannot read. The page does it by itself; a script that sends several requests at once calls it first.",
-      "fa_export_report": "The analysis as a LaTeX report built like ComFy's (report.tex); the body of analyze plus `short_codes` and `language`.",
-      "fa_export_methods": "A short, neutral methods paragraph of the analysis in LaTeX with `\\cite` keys, in English or German (`language`), read strictly from its settings and results; the body of analyze plus `language`. Answers `text` and the `citation_keys`.",
-      "fa_export_bibtex": "The BibTeX entries of exactly the keys of the methods paragraph, as `references.bib`; what a source does not record is said in a comment above the entry. The body of `export/methods`.",
-      "fa_export_figure": "The scree plot, the loadings heatmap or the correlation map as SVG or PNG (300 dpi) in print style; the body of analyze plus `figure`, `format`, `short_codes`, `order`, `correlation_order` and `language` (`en` or `de`).",
-      "fa_compare": "The factor structures of 2 to 8 analyses side by side, like Tab. 17 of Important Factors: per column n, the measures after the MSA filter, KMO, factors, rotation and variance explained, every measure with its dimension per column under one `assignment_rule`, the dimensions per column, and for every pair of measures in how many columns they share a dimension (`co_assignment`). A column is a bundled dataset (`bundled_id`, with the settings of its paper) or a dataset of the session (`dataset_id`, with its saved settings and optionally a `miner`), and may change its settings (`options`). Bundled columns need no dataset of the session.",
-      "fa_compare_export": "The comparison as CSV, as a LaTeX table like Tab. 17, or as a ZIP with both, the pairs of measures, the full result and a manifest; the body of compare plus `format` and `short_codes`.",
-      "fa_correlations": "The correlations of the measures, the map of the suitability step: the matrix in the order of the dataset, of a clustering (`cluster`) or of the dimensions of an analysis (`factor`), the pairs with |r| of 0.95 or more and the five closest partners of each measure; the body of analyze plus `order`."
-    },
-    "notes": {
-      "rate_limits": "Rate limits per IP: `60/hour` on `POST /algorithms/{id}/analyze` and on new datasets from `POST /factor-analysis/datasets`, `600/minute` on reading, listing and deleting datasets and on saving their options, `300/hour` on `POST /log-stats` and `120/minute` everywhere else. Interpretations by Claude: `10/hour` per session and `200/day` for the server. Over a limit the answer is a 429 with a `code`.",
-      "quota": "Runs: at most 12 queued or running per session, and at most 4 dataset runs at once over all sessions; more are answered with a 429.",
-      "uploads": "Uploads: at most {file_mb} MB per file. `POST /algorithms/{id}/analyze` and `POST /log-stats` take one event log (`.xes`, `.xes.gz`, `.xml`, `.json`). `POST /factor-analysis/datasets` takes one `.csv`, up to {logs} event logs (`.xes`, `.xes.gz`) or up to {pnml} Petri nets (`.pnml`), at most {total_mb} MB together. The operator sets the numbers of files; `GET /factor-analysis/limits` reports what this server allows.",
-      "session": "Session: a signed cookie scopes every endpoint. Reuse it across requests (in Python with `requests.Session()`) to keep your runs and datasets visible. Without a cookie, requests sent at once each start a session of their own; call `GET /session` first.",
-      "schemas": "Parameter schemas come from `GET /algorithms`: read the `parameters_schema` of an algorithm before submitting.",
-      "analysis": "Analyses: at most `400` measures per analysis, more give a 400 with the code `too_many_measures_for_analysis`. A newer analysis of the same dataset in a session replaces an older one that still waits; the older one gets a 409 `superseded`. Scripts that analyse one dataset with several settings in parallel pass `?latest_wins=false`."
+      "source_label": "Source"
     }
   },
   "parameter_form": {
@@ -1612,14 +1535,13 @@
       "history": "To the History",
       "results": "To the dataset step",
       "loadings": "To the loadings",
-      "api": "API access",
       "compare": "Compare the four miners of Tab. 17"
     },
     "steps": {
       "title": "The six steps",
       "p1": "Model complexity analyses the measures of ComFy on Petri nets, Log complexity the measures of feeed on event logs. Both walk through the same steps: Data, Dataset, Suitability, Factors, Loadings and an optional Interpretation. One step is on screen at a time; the list of steps shows what each step found.",
       "p2": "The settings row above the steps sums up every choice, marks those that differ from the tool standard and leads to each control. Every change of a setting runs the analysis again.",
-      "p3": "The tabs at the top are the same on every page: the analyses (the two of complexity and Single log), and set apart on the right the tools Compare and History. The guide, the API and the settings are in the header and lead back to the tab you came from."
+      "p3": "The tabs at the top are the same on every page: the analyses (the two of complexity and Single log), and set apart on the right the tools Compare and History. The guide and the settings are in the header and lead back to the tab you came from."
     },
     "bundled": {
       "title": "Analyse a published dataset",
@@ -1668,10 +1590,6 @@
       "p2": "The image icon at the scree plot, the loadings and the correlation map downloads the figure as SVG, whose text stays text, or as PNG with 300 dpi: always light, at the text width of a CEUR paper, with the labels in the language of the app.",
       "p3": "The tag icon in the toolbar names the measures by the short codes of the papers, such as CNC or C_mag; the full name stays in the tooltip, and the figures, the report and the ZIP follow it.",
       "p4": "The link icon copies a link to the analysis of a published dataset with its settings."
-    },
-    "api": {
-      "title": "Use the API",
-      "p1": "Everything the app does is also available through the REST API, including the report and the figures. The page API access lists the endpoints with examples."
     },
     "compare": {
       "title": "Compare miners",

@@ -111,7 +111,7 @@ minute, but creating datasets is limited to 60 per hour, and choosing a bundled 
 counts too. For a demo with many visitors on one machine, raise it in `.env`, e.g.
 `RATE_LIMIT_DATASETS=600/hour`.
 
-A dataset takes up to 50 event logs or 200 PNML nets (the data step and `/api-access` show
+A dataset takes up to 50 event logs or 200 PNML nets (the data step shows
 the numbers of the running server). On a small demo laptop a smaller number keeps one upload
 from occupying the miners for long; set `MAX_LOG_FILES` and `MAX_PNML_FILES` in `.env` and run
 `docker compose up -d` again. The bundled sample logs and nets stay available at any limit.
