@@ -262,6 +262,19 @@ export function CompareView() {
   const codesShown = codesOn && codesAvailable;
   const labels = useMemo(() => measureLabels(names, descriptions, codes, codesShown), [names, descriptions, codes, codesShown]);
   const everyLabel = useMemo(() => measureLabels(names, descriptions, codes, false), [names, descriptions, codes]);
+  // The result keeps the height it has had for these columns, so switching the view (or a result that
+  // arrives late) does not push the page below it up and down.
+  const resultBox = useRef<HTMLDivElement>(null);
+  const [reserved, setReserved] = useState(0);
+  const columnsKey = JSON.stringify(state);
+  useEffect(() => {
+    const el = resultBox.current;
+    setReserved(0);
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => setReserved((r) => Math.max(r, Math.ceil(el.offsetHeight))));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [columnsKey]);
 
   const [look, setLook] = useLook();
   const [exporting, setExporting] = useState<CompareExportFormat | null>(null);
@@ -403,7 +416,7 @@ export function CompareView() {
               />
             </div>
 
-            <div className="px-4 sm:px-5 py-5 space-y-4">
+            <div ref={resultBox} style={{ minHeight: reserved }} className="px-4 sm:px-5 py-5 space-y-4">
               {error && (
                 <Notice
                   tone="error"

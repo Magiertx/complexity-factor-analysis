@@ -76,8 +76,8 @@ export function SiteHeader() {
           </Link>
           <span className="hidden xl:inline text-xs text-muted truncate">{t("header.tagline")}</span>
         </div>
-        <nav aria-label={t("header.nav_aria")} className="flex items-center gap-1 shrink-0">
-          <span className="hidden sm:flex items-center gap-1">
+        <nav aria-label={t("header.nav_aria")} className="flex items-center gap-2 shrink-0">
+          <span className="hidden sm:flex items-center gap-2">
             <LocaleToggle />
             <ThemeToggle />
             <span aria-hidden className="mx-1.5 h-5 w-px bg-border" />

@@ -156,7 +156,7 @@ export function SettingsRow({
         </div>
         <span className="flex items-center gap-2 shrink-0 lg:ml-auto">
           {match && <MatchChip match={match} settingsSource={source} bundledId={bundledId} />}
-          <span className="flex items-center gap-0.5">
+          <span className="flex items-center gap-1.5">
             <IconButton
               size="sm"
               icon={RotateCcw}
@@ -342,7 +342,7 @@ function MatchChip({
         )}
         <p className="text-muted">{t("factor.match.numbers_only")}</p>
         {tables && <p>{tables}</p>}
-        <dl className="space-y-0.5 text-[11px] text-muted">
+        <dl className="space-y-0.5 text-xs text-muted">
           <div>
             <dt className="inline">{t("factor.match.source")}: </dt>
             <dd className="inline break-all font-mono">{source}</dd>
