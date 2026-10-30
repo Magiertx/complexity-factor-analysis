@@ -108,7 +108,7 @@ test("the loadings of a long list start with the measures worth a look and fold 
 
   // The dimensions start the same way, and one fold opens them all, the matrix's too.
   await loadings.getByRole("radio", { name: text("factor.loadings.look_dimensions") }).click();
-  const members = loadings.locator("ul > li.text-xs");
+  const members = loadings.locator("ul > li.text-xs:not(.font-medium)");
   await expect(others.first()).toHaveAttribute("aria-expanded", "false");
   const cards = await others.count();
   expect(cards).toBeGreaterThan(1);
