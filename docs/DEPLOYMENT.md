@@ -281,7 +281,8 @@ and `-frontend` (the Celery worker runs the algoservice image):
 
 - A `v*` tag pushes the tag and `latest`, and drafts a GitHub release with
   `docker-compose.release.yml` and `env.example` (GitHub drops a leading dot in asset names; save
-  it as `.env`). Publish the draft after checking it.
+  it as `.env`). Publish the draft after checking it. A tag with a suffix such as `v1.0.0-rc1`
+  is a pre-release: it does not move `latest`, and the draft is marked as one.
 - Started by hand, the workflow takes a `tag` (default `edge`) and `platforms`. Without a tag the
   version in the exports reads `1.0.0-dev`; otherwise it is the tag without the `v`. The commit
   is `github.sha`.

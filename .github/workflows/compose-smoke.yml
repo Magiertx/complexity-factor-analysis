@@ -98,9 +98,14 @@ jobs:
           curl -fsS -c $J -b $J -H 'Content-Type: application/json' -d '{"n_factors": 4}' \
             -o export.zip $API/factor-analysis/datasets/$ds/export/zip
           unzip -p export.zip manifest.json | jq '.tool'
-          # The version is part of the image; the commit is the one passed to the build.
-          unzip -p export.zip manifest.json | jq -e --arg sha "$GITHUB_SHA" \
-            '.tool.version != null and .tool.commit == $sha'
+          # The version is part of the image; the commit is the one passed to the build. Images
+          # were built from their own tag or commit, so there only its presence can be checked.
+          if [ "${{ inputs.mode }}" = images ]; then
+            check='.tool.version != null and (.tool.commit // "") != ""'
+          else
+            check='.tool.version != null and .tool.commit == $sha'
+          fi
+          unzip -p export.zip manifest.json | jq -e --arg sha "$GITHUB_SHA" "$check"
 
       - name: Dataset mined by ProM from the sample logs
         run: |
