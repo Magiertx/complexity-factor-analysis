@@ -29,6 +29,8 @@
     "guide_title": "Was {app} tut und wie",
     "settings_label": "Einstellungen",
     "settings_title": "Sprache, Darstellung und was dieser Browser speichert",
+    "feedback_label": "Rückmeldung",
+    "feedback_title": "Einen Fehler melden, etwas vorschlagen oder etwas anderes sagen",
     "locale_label": "Sprache",
     "switch_to_german": "Auf Deutsch umschalten",
     "switch_to_english": "Auf Englisch umschalten",
@@ -1540,6 +1542,11 @@
   },
   "errors": {
     "rate_limited": "Zu viele Anfragen. Warte kurz und versuche es noch einmal.",
+    "feedback_kind": "Wähle aus, worum es in deiner Nachricht geht.",
+    "feedback_empty": "Schreib zuerst etwas in die Nachricht.",
+    "feedback_too_long": "Die Nachricht ist zu lang; erlaubt sind höchstens {max} Zeichen.",
+    "feedback_contact_too_long": "Der Kontakt ist zu lang; erlaubt sind höchstens {max} Zeichen.",
+    "feedback_rate_limited": "Du hast gerade mehrere Nachrichten geschickt. Versuche es in einer Stunde noch einmal.",
     "job_quota": "Du hast schon {active} wartende oder laufende Runs, und das käme mit {requested} dazu; erlaubt sind höchstens {limit}. Warte, bis sie fertig sind, oder brich einige im Verlauf ab.",
     "dataset_jobs_busy": "Der Server berechnet schon {active} Datensätze, mehr gleichzeitig nicht. Versuche es in ein paar Minuten noch einmal.",
     "prom_unavailable": "ProM, das die Miner ausführt, ist gerade nicht erreichbar, daher konnte kein Petri-Netz entdeckt werden. Versuche es in ein paar Minuten noch einmal; bleibt es dabei, muss auf dem Server der Dienst prom4py gestartet werden.",
@@ -1820,5 +1827,42 @@
     "more": "+{n} weitere",
     "dismiss_more": "Ausblenden",
     "count": "×{n}"
+  },
+  "feedback": {
+    "title": "Rückmeldung",
+    "kind_label": "Art der Rückmeldung",
+    "kind": {
+      "bug": "Fehler",
+      "idea": "Vorschlag",
+      "other": "Sonstiges"
+    },
+    "message_label": "Nachricht",
+    "message_placeholder": {
+      "bug": "Was ist passiert, und was hast du erwartet?",
+      "idea": "Was würde dir helfen?",
+      "other": "Was möchtest du loswerden?"
+    },
+    "counter": "{n} / {max}",
+    "contact_label": "Kontakt (optional, falls du eine Antwort möchtest)",
+    "contact_placeholder": "E-Mail oder Name",
+    "technical": "Technische Angaben mitsenden",
+    "technical_topic": "Technische Angaben",
+    "technical_info": "Nur diese gehen mit: Version und Commit des Tools, Seite und Schritt, Sprache, dein Browser und der Code des letzten Fehlers. Nichts aus deinen Datensätzen.",
+    "technical_version": "Version und Commit",
+    "technical_version_value": "ergänzt der Server",
+    "technical_page": "Seite",
+    "technical_step": "Schritt",
+    "technical_language": "Sprache",
+    "technical_browser": "Browser",
+    "technical_error": "Letzter Fehler",
+    "technical_none": "keiner",
+    "anonymous": "Anonym: Es wird keine IP-Adresse gespeichert.",
+    "send": "Senden",
+    "sending": "Wird gesendet…",
+    "thanks": "Danke, ist angekommen.",
+    "failed": "Das hat nicht geklappt. Prüfe deine Verbindung und versuche es noch einmal.",
+    "details": "Details",
+    "report": "Problem melden",
+    "report_title": "Diesen Fehler an die Person schicken, die das Tool betreibt"
   }
 }

@@ -63,6 +63,9 @@ phone.
 - A computation the user stopped is not a failure: the dataset is `aborted`, shown neutrally as
   "Abgebrochen", with "Erneut berechnen" where its sample is still there, else "Löschen" and
   "Andere Daten wählen". A dataset without data is never offered "Datensatz öffnen".
+- A notice of a failure offers "Problem melden" (`ReportProblem` in `components/feedback/`): it opens the
+  feedback dialog as a bug, with the code of that error among the technical details. The dialog has
+  one primary action, "Senden", and says what goes along behind an (i); nothing else is sent.
 - What is known to fail is not asked of the server: with no more observations than measures the
   hint of Eignung is shown directly, so the console has no 400.
 
@@ -120,6 +123,8 @@ phone.
   address opens it (the default has no parameter). A factor without a name of its own is labelled
   with the measure that loads highest on it ("Faktor 1 · Size").
 - Exactly one entry is marked per route; on the pages of the header the header link is.
+- The feedback entry in the header is a button, not a page: it has no marked state, shows the icon
+  below `lg` and the name from `lg` on, and opens the feedback dialog (a `Sheet`).
 - The steps of an analysis are a stepper: a round numbered marker per step, a line between them,
   the title and one short summary line. Done steps show a check, a step with a warning its glyph,
   the current step an accent ring; upcoming steps are muted, without a lock.

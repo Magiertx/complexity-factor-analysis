@@ -31,9 +31,10 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 
+import feedback_mail
 import jobs_db
 from config import APP_NAME, CodedHTTPException, JSONFormatter, limiter
-from routes import health, algorithms, jobs, factor_analysis, interpretation, session
+from routes import health, algorithms, jobs, factor_analysis, interpretation, session, feedback
 
 from starlette.middleware.sessions import SessionMiddleware
 from slowapi import _rate_limit_exceeded_handler
@@ -86,6 +87,13 @@ async def lifespan(app: FastAPI):
     from factor_analysis import precompute
 
     precompute_on = precompute.enabled()
+
+    # Whether feedback goes out by mail. Read now so a malformed port stops the start, not the
+    # first message; the host and the recipient are not named in the log.
+    config.logger.info(
+        "Feedback mail: %s.",
+        "on" if feedback_mail.settings() else "off (messages are kept, see scripts/feedback.py)",
+    )
 
     # Report the tunables an operator actually changed. They are read at import time, before
     # logging is configured, so they are collected there and reported here. Silence would mean
@@ -228,3 +236,4 @@ app.include_router(jobs.router)
 app.include_router(factor_analysis.router)
 app.include_router(interpretation.router)
 app.include_router(session.router)
+app.include_router(feedback.router)

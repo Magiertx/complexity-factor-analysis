@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from database import Base
-from sqlalchemy import String, DateTime, Float, ForeignKey, JSON, Integer
+from sqlalchemy import Boolean, String, DateTime, Float, ForeignKey, JSON, Integer, false
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -112,3 +112,21 @@ class Preset(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow_naive)
 
     user = relationship("User", back_populates="presets")
+
+
+class Feedback(Base):
+    """A message from the feedback form. Anonymous: no session, no user, no address.
+
+    ``context`` holds what the sender agreed to send along (version, commit, page, step,
+    language, browser, last error code); ``delivered`` says whether the mail to the owner went out.
+    """
+
+    __tablename__ = "feedback"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow_naive, nullable=False)
+    kind: Mapped[str] = mapped_column(String(10), nullable=False)  # bug, idea, other
+    message: Mapped[str] = mapped_column(String(4000), nullable=False)
+    contact: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    context: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    delivered: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false(), nullable=False)

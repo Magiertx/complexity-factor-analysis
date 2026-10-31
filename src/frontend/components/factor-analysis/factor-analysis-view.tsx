@@ -203,7 +203,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const [datasets, setDatasets] = useState<DatasetSummary[] | null>(null);
   const [choosing, setChoosing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<{ text: string; details: string | null } | null>(null);
+  const [submitError, setSubmitError] = useState<{ text: string; details: string | null; code?: string | null } | null>(null);
   // Changes whenever jobs come or go, e.g. one deleted in the History.
   const jobCount = useJobs().jobs.length;
 
@@ -834,7 +834,10 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     } catch (e) {
       setSubmitError(
         e instanceof HttpError
-          ? plainFailure(tMaybe, { code: e.code, params: e.params, message: e.message }, t("factor.data.submit_failed"))
+          ? {
+              ...plainFailure(tMaybe, { code: e.code, params: e.params, message: e.message }, t("factor.data.submit_failed")),
+              code: e.code,
+            }
           : { text: t("factor.data.submit_failed"), details: messageOf(e, "") || null },
       );
     } finally {

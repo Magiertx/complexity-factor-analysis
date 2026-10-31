@@ -59,6 +59,7 @@ import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { ChoiceCard } from "@/components/ui/choice-card";
 import { IconButton } from "@/components/ui/icon-button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ReportProblem } from "@/components/feedback/report-problem";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Notice } from "@/components/ui/notice";
 import { Tip, mergeRefs, useTip, useTipZone } from "@/components/ui/tip";
@@ -98,7 +99,7 @@ interface Props {
   /** The dataset open on the tab, if any. */
   openId: string | null;
   submitting: boolean;
-  submitError: { text: string; details: string | null } | null;
+  submitError: { text: string; details: string | null; code?: string | null } | null;
   /**
    * `preset` says which settings a bundled dataset with published settings opens with, `leadTo`
    * what the data step offers once it is loaded.
@@ -499,7 +500,7 @@ export function DataForm({
       {estimate && estimate.rows > 0 && estimate.cols > 0 && <Estimate {...estimate} />}
 
       {submitError && (
-        <Notice tone="error" role="alert">
+        <Notice tone="error" role="alert" action={<ReportProblem code={submitError.code} />}>
           <span className="inline-flex items-start gap-1.5">
             {submitError.text}
             {submitError.details && (
@@ -1543,6 +1544,7 @@ export function DataSummary({
         <Notice
           tone="error"
           role="alert"
+          action={<ReportProblem code={dataset.error_code} />}
           title={
             <div ref={titleRef} tabIndex={-1} className={title}>
               {t("factor.data.failed_title")}

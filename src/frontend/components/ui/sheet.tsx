@@ -69,7 +69,7 @@ export function Sheet({
       }
       if (e.key !== "Tab") return;
       const elements = Array.from(el.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-        (x) => x.getClientRects().length > 0,
+        (x) => x.tabIndex >= 0 && x.getClientRects().length > 0,
       );
       if (elements.length === 0) {
         e.preventDefault();

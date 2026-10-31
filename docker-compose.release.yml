@@ -63,6 +63,7 @@ services:
       - RATE_LIMIT_DATASETS=${RATE_LIMIT_DATASETS:-}
       - RATE_LIMIT_FA_ANALYZE=${RATE_LIMIT_FA_ANALYZE:-}
       - RATE_LIMIT_DATASET_STATUS=${RATE_LIMIT_DATASET_STATUS:-}
+      - RATE_LIMIT_FEEDBACK=${RATE_LIMIT_FEEDBACK:-}
       - RATE_LIMIT_DISABLED=${RATE_LIMIT_DISABLED:-}
       # Interpretation of the factors by Claude; off without a key, see .env.example.
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
@@ -70,6 +71,14 @@ services:
       - INTERPRETATION_EFFORT=${INTERPRETATION_EFFORT:-}
       - INTERPRETATION_RATE_LIMIT=${INTERPRETATION_RATE_LIMIT:-}
       - INTERPRETATION_DAILY_CAP=${INTERPRETATION_DAILY_CAP:-}
+      # Mail for the feedback form; without a host and a recipient the messages are only kept, see .env.example.
+      - FEEDBACK_SMTP_HOST=${FEEDBACK_SMTP_HOST:-}
+      - FEEDBACK_SMTP_PORT=${FEEDBACK_SMTP_PORT:-}
+      - FEEDBACK_SMTP_USER=${FEEDBACK_SMTP_USER:-}
+      - FEEDBACK_SMTP_PASSWORD=${FEEDBACK_SMTP_PASSWORD:-}
+      - FEEDBACK_SMTP_FROM=${FEEDBACK_SMTP_FROM:-}
+      - FEEDBACK_TO=${FEEDBACK_TO:-}
+      - FEEDBACK_SMTP_TLS=${FEEDBACK_SMTP_TLS:-}
       # Swagger UI and ReDoc are served behind the frontend's /api/* rewrite.
       - FASTAPI_ROOT_PATH=/api
       # Requests come from the frontend container, so uvicorn has to trust X-Forwarded-For

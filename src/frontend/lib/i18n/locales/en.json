@@ -29,6 +29,8 @@
     "guide_title": "What {app} does and how",
     "settings_label": "Settings",
     "settings_title": "Language, theme and what this browser keeps",
+    "feedback_label": "Feedback",
+    "feedback_title": "Report a bug, suggest something or say anything else",
     "locale_label": "Language",
     "switch_to_german": "Switch to German",
     "switch_to_english": "Switch to English",
@@ -1540,6 +1542,11 @@
   },
   "errors": {
     "rate_limited": "Too many requests. Wait a moment and try again.",
+    "feedback_kind": "Choose what your message is about.",
+    "feedback_empty": "Write something in the message first.",
+    "feedback_too_long": "The message is too long; at most {max} characters are allowed.",
+    "feedback_contact_too_long": "The contact is too long; at most {max} characters are allowed.",
+    "feedback_rate_limited": "You have just sent several messages. Try again in an hour.",
     "job_quota": "You already have {active} runs queued or running, and this would add {requested}; at most {limit} are allowed. Wait for them to finish or abort some in the History.",
     "dataset_jobs_busy": "The server is already computing {active} datasets, the most it runs at once. Try again in a few minutes.",
     "prom_unavailable": "ProM, which runs the miners, cannot be reached right now, so no Petri net could be discovered. Try again in a few minutes; if it stays like this, the prom4py service has to be started on the server.",
@@ -1820,5 +1827,42 @@
     "more": "+{n} more",
     "dismiss_more": "Hide",
     "count": "×{n}"
+  },
+  "feedback": {
+    "title": "Feedback",
+    "kind_label": "Kind of feedback",
+    "kind": {
+      "bug": "Bug",
+      "idea": "Suggestion",
+      "other": "Other"
+    },
+    "message_label": "Message",
+    "message_placeholder": {
+      "bug": "What happened, and what did you expect?",
+      "idea": "What would help you?",
+      "other": "What would you like to say?"
+    },
+    "counter": "{n} / {max}",
+    "contact_label": "Contact (optional, if you want a reply)",
+    "contact_placeholder": "E-mail or name",
+    "technical": "Send technical details",
+    "technical_topic": "Technical details",
+    "technical_info": "Only these go along: the version and commit of the tool, the page and step, the language, your browser and the code of the last error. Nothing from your datasets.",
+    "technical_version": "Version and commit",
+    "technical_version_value": "added by the server",
+    "technical_page": "Page",
+    "technical_step": "Step",
+    "technical_language": "Language",
+    "technical_browser": "Browser",
+    "technical_error": "Last error",
+    "technical_none": "none",
+    "anonymous": "Anonymous: no IP address is stored.",
+    "send": "Send",
+    "sending": "Sending…",
+    "thanks": "Thanks, it arrived.",
+    "failed": "That did not work. Check your connection and try again.",
+    "details": "Details",
+    "report": "Report problem",
+    "report_title": "Send this error to the person who runs the tool"
   }
 }
