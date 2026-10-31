@@ -33,7 +33,7 @@ vendored/comfy  prom4py        postgres          redis ──▶ celery_worker
 | `algoservice`    | FastAPI app. Tool registry, factor analysis, job orchestration, SSE, ZIP export, input validation.    |
 | `celery_worker`  | Same image as `algoservice`; runs single-log analyses and dataset jobs in a separate process.         |
 | `prom4py`        | Java 8 HTTP server (`launch.sh`) wrapping a frozen ProM bundle from Zenodo. Runs all ComFy miners; restarts itself when a call is stuck. |
-| `postgres`       | Persistent state: `Run`, `Artifact`, `Session`, `User`, `Preset` (see `models.py`).                    |
+| `postgres`       | Persistent state: `Run`, `Artifact`, `Session`, `User`, `Preset`, `Feedback` (see `models.py`).        |
 | `redis`          | Celery broker + result backend, and pub/sub channel `jobs_updates` that drives the SSE stream.        |
 
 Shared volumes:
@@ -550,10 +550,12 @@ A malformed value in any of these stops the service at startup instead of fallin
     │   ├── config.py            # APP_NAME, logger, SSE manager, Redis pub/sub helpers, Limiter
     │   ├── env_config.py        # operator-tunable limits from the environment
     │   ├── database.py          # SQLAlchemy async engine, AsyncSessionLocal, Base
-    │   ├── models.py            # User, Session, Run, Artifact, Preset
+    │   ├── models.py            # User, Session, Run, Artifact, Preset, Feedback
     │   ├── jobs_db.py           # repository: CRUD on Runs / Artifacts
     │   ├── celery_worker.py     # Celery app + run_analysis / build_dataset task wrappers
     │   ├── zip_export.py        # /jobs/{id}/download
+    │   ├── feedback_store.py    # the feedback form: stores a message, mails it, lists them
+    │   ├── feedback_mail.py     # FEEDBACK_* settings, the message, smtplib
     │   ├── provenance.py        # tool version and commit, upstream code, miners and parameters
     │   ├── log_stats.py         # descriptive stats behind /log-stats
     │   ├── alembic.ini, alembic/  # schema migrations
@@ -562,6 +564,7 @@ A malformed value in any of these stops the service at startup instead of fallin
     │   │   ├── algorithms.py    # /algorithms, /sample-logs, /recent-logs, /log-stats, /analyze
     │   │   ├── factor_analysis.py # /factor-analysis: catalog, datasets, analyze, export
     │   │   ├── interpretation.py  # /factor-analysis/.../interpret and interpretation/status
+    │   │   ├── feedback.py      # POST /feedback, anonymous
     │   │   └── jobs.py          # /jobs, /jobs/events (SSE), /progress, /download, /notes
     │   ├── algorithms/
     │   │   ├── base.py          # AlgorithmBase, ParameterSpec, Artifact, AnalysisResult, RunContext
