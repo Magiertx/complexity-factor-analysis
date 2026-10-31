@@ -2,6 +2,7 @@
 // Mirrors src/AlgoService/algorithms/base.py.
 
 import { downloadBlob } from "./factor-analysis";
+import { noteError } from "./last-error";
 
 export type ParameterType = "int" | "float" | "bool" | "enum" | "multi_enum" | "string";
 // Open string; the backend's `/algorithms` response carries the authoritative
@@ -225,6 +226,7 @@ export async function analyze(
     } catch (e) {
       if (e instanceof ValidationError) throw e;
     }
+    noteError(r.status, code);
     throw new HttpError(msg, r.status, code, params);
   }
   return r.json();
@@ -815,7 +817,14 @@ export function isSuperseded(e: unknown): boolean {
   return e instanceof HttpError && e.status === 409 && (e.code === "superseded" || /superseded/i.test(e.message));
 }
 
-async function httpError(r: Response, fallback: string): Promise<HttpError> {
+/** `remember: false` keeps the failure out of the last error code that the feedback form sends. */
+async function httpError(r: Response, fallback: string, remember = true): Promise<HttpError> {
+  const error = await readHttpError(r, fallback);
+  if (remember) noteError(error.status, error.code);
+  return error;
+}
+
+async function readHttpError(r: Response, fallback: string): Promise<HttpError> {
   try {
     const j = await r.json();
     const code = typeof j.code === "string" ? j.code : undefined;
@@ -1461,4 +1470,25 @@ export async function interpretDataset(
   if (r.status === 204) return null;
   if (!r.ok) throw await httpError(r, "Interpretation failed");
   return r.json();
+}
+
+export type FeedbackKind = "bug" | "idea" | "other";
+
+export interface FeedbackInput {
+  kind: FeedbackKind;
+  message: string;
+  contact: string;
+  /** What the sender agreed to send along; null when they declined. */
+  context: Record<string, string> | null;
+  /** The hidden field of the form. Empty for a person. */
+  website: string;
+}
+
+export async function sendFeedback(input: FeedbackInput): Promise<void> {
+  const r = await fetch(`${BASE}/feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!r.ok) throw await httpError(r, "Could not send the feedback", false);
 }
