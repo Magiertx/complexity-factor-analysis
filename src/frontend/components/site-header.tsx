@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Settings as SettingsIcon } from "lucide-react";
+import { BookOpen, MessageSquare, Settings as SettingsIcon } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { HEADER_HREFS, activeHeaderLink, type HeaderLinkId } from "@/lib/nav";
 import { cn } from "@/lib/utils";
+import { useFeedback } from "./feedback/feedback-provider";
 import { useTip } from "./ui/tip";
 import { APP_INITIALS, APP_NAME } from "@/lib/app-config";
 import { LocaleToggle } from "./locale-toggle";
@@ -49,6 +50,32 @@ function HeaderLink({ id, active, textFrom }: { id: HeaderLinkId; active: boolea
 }
 
 /**
+ * The feedback form, opened from the header: an icon below `lg`, with its name from there on.
+ * A button, not a page, so it has no active state.
+ */
+function FeedbackButton() {
+  const t = useT();
+  const { open } = useFeedback();
+  const name = t("header.feedback_label");
+  const tip = useTip<HTMLButtonElement>({ name, more: t("header.feedback_title") });
+  return (
+    <button
+      ref={tip}
+      type="button"
+      aria-label={name}
+      aria-haspopup="dialog"
+      onClick={() => open()}
+      className="h-9 min-w-9 px-2.5 lg:px-3 inline-flex items-center justify-center gap-1.5 rounded-md text-sm font-medium whitespace-nowrap text-muted hover:text-fg hover:bg-tile transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+    >
+      <MessageSquare className="h-4 w-4 shrink-0" aria-hidden />
+      <span className="hidden lg:inline" aria-hidden>
+        {name}
+      </span>
+    </button>
+  );
+}
+
+/**
  * The top of every page: the app, and on the right the pages that belong to no tab (the guide, the
  * API, the settings). Language and theme sit beside them from a small screen on; on a phone they
  * are in the settings, so the name of the app keeps its line. Below 400 px only the logo stays.
@@ -82,6 +109,7 @@ export function SiteHeader() {
             <span aria-hidden className="mx-1.5 h-5 w-px bg-border" />
           </span>
           <HeaderLink id="guide" active={active === "guide"} textFrom="sm" />
+          <FeedbackButton />
           <HeaderLink id="settings" active={active === "settings"} />
         </nav>
       </div>

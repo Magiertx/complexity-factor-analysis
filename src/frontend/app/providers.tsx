@@ -1,6 +1,7 @@
 "use client";
 
 import { ThemeProvider } from "next-themes";
+import { FeedbackProvider } from "@/components/feedback/feedback-provider";
 import { JobsProvider } from "@/components/jobs-provider";
 import { TipLayer } from "@/components/ui/tip";
 import { ToastProvider } from "@/components/ui/toasts";
@@ -11,7 +12,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <LocaleProvider>
         <ToastProvider>
-          <JobsProvider>{children}</JobsProvider>
+          <FeedbackProvider>
+            <JobsProvider>{children}</JobsProvider>
+          </FeedbackProvider>
         </ToastProvider>
         <TipLayer />
       </LocaleProvider>
