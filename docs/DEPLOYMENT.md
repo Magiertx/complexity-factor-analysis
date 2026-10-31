@@ -176,6 +176,13 @@ MAX_ACTIVE_JOBS_PER_SESSION=3
 # INTERPRETATION_RATE_LIMIT=10/hour
 # INTERPRETATION_DAILY_CAP=200
 
+# --- Feedback form (optional), see "Feedback form" below ---
+# FEEDBACK_SMTP_HOST=smtp.example.org
+# FEEDBACK_SMTP_USER=
+# FEEDBACK_SMTP_PASSWORD=
+# FEEDBACK_TO=owner@example.org
+# RATE_LIMIT_FEEDBACK=5/hour
+
 # --- Docker network ---
 # Only needed if 172.28.0.0/16 collides with something on the host. Used as the compose
 # network subnet and as the range algoservice trusts for X-Forwarded-For.
@@ -219,6 +226,47 @@ bundled datasets.
   from `src/AlgoService` and rebuild. Rerun it with `--force` after changing the prompt
   (`interpretation/prompt.py`), the output schema or the payload; files made for another
   prompt are no longer served, and the log says so.
+
+### Feedback form
+
+The feedback entry in the header sends a short message (a bug, an idea or something else) to
+the owner of the deployment. It is anonymous: the table `feedback` holds the date, the kind,
+the message, the optional contact the sender typed, and the technical details the sender agreed
+to send (tool version and commit, page, step, language, browser, last error code). It holds
+neither the IP address nor the session. The rate limiter keeps the address as a counter key in
+memory or Redis until its window ends (`RATE_LIMIT_FEEDBACK`, default `5/hour` per visitor), and
+nowhere else.
+
+A message is stored first. If mail is set up it is then sent in the background and marked
+delivered; a mail that fails is logged as a warning and the message stays in the table.
+
+| Variable | Meaning |
+| --- | --- |
+| `FEEDBACK_SMTP_HOST` | Mail server. With `FEEDBACK_TO` it turns mail on; both empty means messages are only kept. |
+| `FEEDBACK_TO` | Where the messages go. |
+| `FEEDBACK_SMTP_PORT` | Default `587`. |
+| `FEEDBACK_SMTP_USER`, `FEEDBACK_SMTP_PASSWORD` | Login; leave both empty for a server that needs none. |
+| `FEEDBACK_SMTP_FROM` | Sender address; defaults to the user, then to `FEEDBACK_TO`. |
+| `FEEDBACK_SMTP_TLS` | `starttls` (default, port 587) or `ssl` (port 465). |
+
+Compose passes them to `algoservice` only. The service logs at startup whether mail is on, not
+the host or the recipient, and a malformed port or mode stops the start. The subject reads
+`[CFA feedback] <kind>: <first 60 characters>`; line breaks in anything that goes into a header
+are removed.
+
+Read the messages on the server, inside the container (from `src/AlgoService` without Docker):
+
+```bash
+docker compose exec algoservice python -m scripts.feedback list                       # all, oldest first
+docker compose exec algoservice python -m scripts.feedback list --since 7d --undelivered
+docker compose exec algoservice python -m scripts.feedback list --brief               # one line each
+docker compose exec algoservice python -m scripts.feedback resend                     # mail the undelivered again
+docker compose exec algoservice python -m scripts.feedback resend --id 12
+```
+
+`--since` takes a date (`2026-10-31`), a date and time (`2026-10-31T14:30`) or an age (`36h`,
+`7d`), in UTC. The table is created by the migration that runs at the start of the container
+and is part of the database backup (section 6).
 
 ---
 
