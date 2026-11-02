@@ -344,8 +344,19 @@ def cleanup_idle_sessions(max_idle_s: float = SESSION_MAX_IDLE_S) -> list[str]:
     for session_root in base.iterdir():
         if not session_root.is_dir():
             continue
-        metas = list(session_root.rglob("meta.json"))
-        newest = max((p.stat().st_mtime for p in metas), default=session_root.stat().st_mtime)
+        # Another request can delete a session (or one of its datasets) while this one looks at
+        # it: what has vanished is not idle, it is gone, and the scan goes on without it.
+        metas, times = [], []
+        try:
+            for p in session_root.rglob("meta.json"):
+                try:
+                    times.append(p.stat().st_mtime)
+                    metas.append(p)
+                except FileNotFoundError:
+                    continue
+            newest = max(times, default=session_root.stat().st_mtime)
+        except FileNotFoundError:
+            continue
         if newest < cutoff:
             jobs += [job for p in metas if (job := _meta_file(p).get("job_id"))]
             shutil.rmtree(session_root, ignore_errors=True)
