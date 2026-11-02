@@ -43,6 +43,12 @@ def test_app_title_comes_from_config(client):
     assert r.json()["info"]["title"] == config.APP_NAME
 
 
+def test_openapi_version_is_the_tool_version(client):
+    from version import VERSION
+
+    assert client.get("/openapi.json").json()["info"]["version"] == VERSION
+
+
 def test_unknown_algorithm_returns_404(client):
     r = client.post(
         "/algorithms/nonexistent/analyze",
