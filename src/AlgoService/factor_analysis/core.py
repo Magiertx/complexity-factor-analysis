@@ -80,7 +80,7 @@ class AssignmentRule:
 CROSS_LOADING_GAP = 0.15
 
 ASSIGNMENT_RULES = {
-    # ComFy's report: the largest absolute loading, if it reaches the threshold.
+    # The tool's default: the largest absolute loading, if it reaches the threshold (ComFy's report only greys loadings below it).
     "largest": AssignmentRule(min_communality=0.0, strict=False, cross_loaded="largest"),
     # Important Factors, Tab. 6-16, after Lieben et al.: |loading| > 0.35 and communality
     # >= 0.3, a cross-loaded measure belongs to every factor of its cross-loading.

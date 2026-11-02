@@ -33,7 +33,7 @@ Schalk do it, but interactively in the browser.
   (Kaiser, parallel analysis, and the paper's count chosen a priori, or the ComFy report's for
   the datasets the paper does not analyse); rotation (varimax, promax, oblimin, quartimax, none);
   a loading heatmap with communalities and explained variance; factor groups by one of three
-  assignment rules: the largest loading as in ComFy's report (default), multiple membership as in
+  assignment rules: the largest loading (default; ComFy's report only greys the loadings below its threshold), multiple membership as in
   Important Factors (Tab. 6-16) or Hair et al. (Tab. 17), with cross-loadings reported under
   each and a note where a table of the paper differs from the rule it states. The loadings show as
   a matrix or as one card per dimension. A long list (from 20 measures) can be searched and
