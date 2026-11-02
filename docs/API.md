@@ -487,7 +487,7 @@ The steps match ComFy:
 4. `FactorAnalyzer` (minres) with `n_factors` (default: the Kaiser suggestion) and the rotation
    (`varimax`, `promax`, `oblimin`, `quartimax`, `none`).
 5. Measures go to factors by `assignment_rule`:
-   - `largest` (default, ComFy's report): the factor of the largest absolute loading, if that
+   - `largest` (default, the tool's own rule; ComFy's report assigns nothing, it only greys loadings below its threshold): the factor of the largest absolute loading, if that
      reaches `loading_threshold` and the communality reaches `communality_threshold`.
    - `multi` (Important Factors, Tab. 6–16, after Lieben et al.): a loading counts if its
      absolute value exceeds `loading_threshold`; the measure goes to every factor whose
@@ -612,7 +612,7 @@ and kept on another; the bundled log measures show this for `trace_len_hist6`.
 with its loadings (the pattern matrix for oblique rotations) and communality; in LaTeX a
 booktabs `tabular` and a comment naming the rule. In bold are, for `largest`, the loadings at
 or above the threshold of measures whose communality reaches the communality threshold, as
-ComFy's report leaves them black; for `multi` and `hair`, the loadings by which the rule put a
+ComFy's report leaves loadings at or above its threshold black; for `multi` and `hair`, the loadings by which the rule put a
 measure on a factor, as the dimension tables of Important Factors list them, with a comment
 naming the measures in no factor and why. The CSV keeps its columns; the assignment of each
 measure is in `assignment.csv` of the ZIP. A factor with a name in `factor_names` is headed by

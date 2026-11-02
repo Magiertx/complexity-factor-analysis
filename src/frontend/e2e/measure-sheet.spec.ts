@@ -133,7 +133,9 @@ test("the sheet excludes and includes the measure, and the list agrees", async (
   await dialog.getByRole("button", { name: text("factor.sheet.exclude") }).click();
   await expect(dialog).toContainText(text("factor.sheet.status.excluded"));
   await expect(dialog).toContainText(text("factor.sheet.excluded_note"));
-  await expect(dialog.getByRole("status")).toHaveText(text("factor.sheet.excluded_done", { measure: "Density" }));
+  // The announcement for screen readers, not the status of the correlations that reload beside it.
+  const done = text("factor.sheet.excluded_done", { measure: "Density" });
+  await expect(dialog.getByRole("status").filter({ hasText: done })).toHaveText(done);
   await expect(dialog.getByRole("button", { name: text("factor.sheet.include") })).toBeVisible();
   await page.keyboard.press("Escape");
   const box = suitability.getByRole("checkbox", { name: text("factor.suitability.exclude_aria", { measure: "Density" }) });

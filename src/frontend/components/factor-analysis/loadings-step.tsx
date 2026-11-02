@@ -423,8 +423,8 @@ function LoadingsMatrix({
   const secondary = structure ? new Set<string>() : secondaryCells(analysis);
   const crossLabel = t("factor.loadings.cross_cell");
   // Under "multi" and "hair" the cells the rule assigned are bold, as the paper's dimension
-  // tables mark them and the LaTeX export does; under "largest" every loading that counts, as in
-  // ComFy's report. The structure matrix, which no rule reads, keeps the threshold.
+  // tables mark them and the LaTeX export does; under "largest" every loading that counts, which
+  // ComFy's report leaves black too. The structure matrix, which no rule reads, keeps the threshold.
   const assigned = !structure && (analysis.assignment_rule ?? "largest") !== "largest" ? assignedCells(analysis) : null;
   const strict = ruleStrict(options.assignment_rule);
   const boldBy: BoldBy = assigned ? "assigned" : strict ? "exceeds" : "reaches";

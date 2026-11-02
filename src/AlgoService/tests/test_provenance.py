@@ -123,7 +123,7 @@ def test_paper_dataset(client):
     }
     assert "Complexity Factor Analysis v0.9, commit 0123456789abcdef0123456789abcdef01234567." in readme
     assert "the bundled dataset comfy-paper-inductive-miner, copied from https://github.com/Pati-nets/ComFy" in readme
-    assert "assignment rule largest: each measure on the factor of its largest absolute loading (ComFy)." in readme
+    assert "assignment rule largest: each measure on the factor of its largest absolute loading." in readme
     assert (
         "Factors: 4 used; the Kaiser criterion suggests 2, parallel analysis 2 (pca-based, 100 simulations, "
         "95th percentile, seed 20261012)."

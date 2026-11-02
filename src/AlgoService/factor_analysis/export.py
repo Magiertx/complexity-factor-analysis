@@ -72,7 +72,7 @@ def matrix_csv(data: pd.DataFrame) -> str:
 
 #: How each rule of core.ASSIGNMENT_RULES assigns measures, for the notes of the exports.
 ASSIGNMENT_RULE_TEXTS = {
-    "largest": "each measure on the factor of its largest absolute loading (ComFy)",
+    "largest": "each measure on the factor of its largest absolute loading",
     "multi": (
         f"each measure on every factor whose absolute loading exceeds the threshold and lies at most "
         f"{CROSS_LOADING_GAP} below its largest (Important Factors, after Lieben et al.)"

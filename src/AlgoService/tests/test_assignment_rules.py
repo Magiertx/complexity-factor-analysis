@@ -57,7 +57,7 @@ LOADINGS = _frame({
 COMMUNALITIES = {"single": 0.7, "cross": 0.6, "far": 0.65, "weak": 0.4, "lonely": 0.45}
 
 
-def test_largest_is_the_rule_of_comfy_and_reports_cross_loadings_only():
+def test_largest_is_the_default_rule_and_reports_cross_loadings_only():
     result = core.assign(LOADINGS, 0.35, COMMUNALITIES, 0.0, "largest")
     assert _groups(result) == {1: {"single", "cross", "far"}, 2: set(), 3: {"lonely"}}
     assert result.unassigned == [{"measure": "weak", "reason": "low_loading"}]

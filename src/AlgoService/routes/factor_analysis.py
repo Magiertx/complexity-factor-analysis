@@ -1146,7 +1146,7 @@ class AnalyzeRequest(BaseModel):
     #: Defaults depend on the kind: 0.35 and 0 for model, 0.5 and 0.5 for log measures.
     loading_threshold: float | None = Field(None, ge=0.0, le=1.0)
     communality_threshold: float | None = Field(None, ge=0.0, le=1.0)
-    #: core.ASSIGNMENT_RULES: "largest" as ComFy's report, "multi" and "hair" as Important Factors.
+    #: core.ASSIGNMENT_RULES: "largest" as the default of the tool, "multi" and "hair" as Important Factors.
     assignment_rule: Literal["largest", "multi", "hair"] = "largest"
     #: The rows of one miner of a model dataset discovered with several miners, whose rows are
     #: "<log> / <miner>" (factor_analysis/miners.py); null analyses every row.

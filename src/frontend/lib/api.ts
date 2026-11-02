@@ -298,7 +298,7 @@ export type Rotation = "varimax" | "promax" | "oblimin" | "quartimax" | "none";
 export const ROTATIONS: Rotation[] = ["varimax", "promax", "oblimin", "quartimax", "none"];
 
 /**
- * How measures join factors: "largest" each to the factor it loads on most (ComFy's report),
+ * How measures join factors: "largest" each to the factor it loads on most (the default of the tool),
  * "multi" also to every factor within a small gap of the largest loading (Important Factors,
  * Tab. 6-16), "hair" without the measures that load on more than one factor (Tab. 17).
  */
