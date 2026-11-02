@@ -24,6 +24,7 @@ import {
   Pin,
   Printer,
   ScrollText,
+  Shuffle,
   Upload,
 } from "lucide-react";
 import { APP_NAME } from "@/lib/app-config";
@@ -111,6 +112,8 @@ const SECTIONS: GuideSection[] = [
       { id: "sheet", icon: ClipboardList },
       { id: "factors", step: true, icon: STEP_ICONS.factors },
       { id: "loadings", step: true, icon: STEP_ICONS.loadings },
+      { id: "stability", icon: Shuffle },
+      { id: "short_set", icon: ListChecks },
       { id: "names", icon: Pencil },
       { id: "interpretation", step: true, icon: STEP_ICONS.interpretation },
     ],
