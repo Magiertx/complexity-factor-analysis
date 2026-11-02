@@ -118,9 +118,20 @@ log is among the ten newest uploads of the session; the page says when it is not
   report, ZIP). They belong to the factor count, rotation and rule they were given for: changing
   one of them clears them, and the toast brings settings and names back. With an interpretation,
   **Use the suggested names** takes its names over; nothing is named without a click.
-- **Interpretation**: names and summaries for the factors, suggested by a language model only on
-  request. It decides nothing; the analysis does not depend on it. Without an API key on the
-  server, and without an interpretation stored for the settings, the list of steps says that it
+- **Stability**: how robust is the assignment? "Check stability" draws bootstrap samples of the
+  rows (100, 200 or 500), refits each with the same measures, factor count and rotation, matches
+  its factors to those on screen and shows for every measure the share of samples in which it
+  keeps its factors. The seed is fixed, so a run can be repeated. It belongs to the settings it
+  was computed for.
+- **Short set**: one measure per dimension, the one assigned to it with the highest purity (its
+  absolute loading on the dimension minus its largest absolute loading on any other), for
+  reporting a few measures that do not repeat each other. "Copy the short set" puts them on the
+  clipboard. A representative with a low stability should be read with care.
+- **Interpretation**: optional. Names and summaries for the factors, suggested by a language
+  model only on request. It decides nothing; the analysis does not depend on it. It needs an API
+  key on the server. Precomputed answers for the bundled datasets exist only once
+  `scripts/precompute_interpretations.py` has been run; the repository does not hold them. Without
+  a key and without an interpretation stored for the settings, the list of steps says that it
   is not available here and the loadings are the last step.
 
 ## Compare miners

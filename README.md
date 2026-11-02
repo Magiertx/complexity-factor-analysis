@@ -68,6 +68,14 @@ Schalk do it, but interactively in the browser.
   of ComFy or feeed behind it, with a link to its source), a histogram of its values, its MSA and
   the round of the filter that removed it, communality, uniqueness and loadings, the five measures
   it correlates with most, and the choice to exclude or include it.
+- **Stability and a short set.** In the loadings step, "Check stability" draws bootstrap samples
+  of the rows (100, 200 or 500), refits each with the same measures, factor count and rotation
+  and shows for every measure the share of samples in which it keeps its factors. The short set
+  names one representative measure per dimension, the one assigned to it with the highest
+  purity, ready to copy; a representative with a low stability should be read with care.
+  A computed stability goes into the ZIP.
+- **Feedback.** A form in the header reports a bug, suggests something or says anything else,
+  without an account.
 - **Come back to a dataset.** The datasets of a session are listed on the data step, reopen
   with the parameters of their last analysis and can be deleted one by one or all at once.
   "History" lists every dataset and every run of a single log of the session, newest first, with
@@ -97,8 +105,10 @@ Schalk do it, but interactively in the browser.
   confidence and caveats such as cross-loadings or a failed Bartlett or KMO test. Only the
   measure (column) names, their definitions and aggregated results are sent, never measure
   values, row labels or file names. It needs `ANTHROPIC_API_KEY` on the server, is limited per session and per
-  day, and caches every answer; precomputed interpretations of the bundled datasets work
-  without a key and offline. Details in [`docs/API.md`](docs/API.md#interpretation-by-claude)
+  day, and caches every answer. Without a key the step is marked as unavailable, unless an
+  interpretation was precomputed for the settings: the repository holds none, they exist only
+  once `scripts/precompute_interpretations.py` has been run (with a key) for the bundled
+  datasets. Details in [`docs/API.md`](docs/API.md#interpretation-by-claude)
   and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#interpretation-by-claude).
 - **Single-log inspection.** "Inspect a single log" (a log, the miners and measures, the run, in
   three sections) runs the chosen miners on one log and shows the measures next to the rendered
