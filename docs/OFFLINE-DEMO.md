@@ -103,6 +103,9 @@ the override that puts the backend on an internal network:
 docker compose -f docker-compose.yml -f docker-compose.offline.yml up -d --no-build --pull never
 ```
 
+If the stack is already running, run `docker compose down` first: `up` keeps an existing network
+as it is, without a message, and the backend would stay online.
+
 Only the frontend is attached to a second network, so that its port can be published.
 
 Rate limits count per IP address, and on a demo laptop every browser tab is the same
