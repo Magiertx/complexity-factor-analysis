@@ -389,7 +389,7 @@ _TEXTS: dict[str, dict[str, str]] = {
         ),
         "rule_multi": (
             "Jedes Maß wurde jedem Faktor zugeordnet, auf dem der Betrag seiner Ladung {reach} und von seiner "
-            "größten Ladung höchstens {gap} entfernt ist{comm_if} (Mehrfachzugehörigkeit, nach Lieben et al.)"
+            "größten Ladung höchstens {gap} entfernt ist{comm_if} (Mehrfachzuordnung, nach Lieben et al.)"
         ),
         "rule_hair": (
             "Jedes Maß wurde dem Faktor zugeordnet, auf dem der Betrag seiner Ladung am größten ist, wenn "
