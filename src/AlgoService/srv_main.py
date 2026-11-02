@@ -35,6 +35,7 @@ import feedback_mail
 import jobs_db
 from config import APP_NAME, CodedHTTPException, JSONFormatter, limiter
 from routes import health, algorithms, jobs, factor_analysis, interpretation, session, feedback
+from version import VERSION
 
 from starlette.middleware.sessions import SessionMiddleware
 from slowapi import _rate_limit_exceeded_handler
@@ -140,7 +141,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=APP_NAME,
-    version="0.1.0",
+    version=VERSION,
     description=(
         "Complexity measures of process models and event logs, computed with ComFy and "
         "feeed, and factor analyses over them. Examples are in docs/API.md of the "
