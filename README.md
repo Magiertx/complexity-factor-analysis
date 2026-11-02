@@ -14,8 +14,8 @@ Schalk do it, but interactively in the browser.
 - **Two tabs, one workflow.** *Model complexity* works on ComFy's Petri-net measures (size,
   density, control-flow complexity, separability, ...); *Log complexity* on the event-log
   measures of [feeed](https://github.com/andreamalhera/feeed), grouped as in ComFy for log
-  measures. Both walk through the same five steps: data, dataset, suitability, factors,
-  loadings, followed by an optional interpretation. One step is on screen at a time, with its
+  measures. Both walk through the same six steps: data, dataset, suitability, factors,
+  loadings and an optional interpretation. One step is on screen at a time, with its
   own address (`?step=loadings`), a step list that shows what each step found, and Back and Next;
   the toolbar of the analysis holds the short codes, the link, the downloads and the tour. The
   tabs are the same on every page (the two analyses, Compare, Single log and History), and the

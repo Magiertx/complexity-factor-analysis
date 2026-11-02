@@ -402,7 +402,7 @@ under `/jobs` and `/progress`.
 ## Frontend flow
 
 The two main tabs, **Model complexity** (`/`) and **Log complexity** (`/log`), are the same
-five-step view (`components/factor-analysis/`) for the two kinds. One step is on screen at a
+six-step view (`components/factor-analysis/`) for the two kinds. One step is on screen at a
 time (`step-nav.tsx`): its address is `?step=<id>` (none for the data step), written with
 `history.pushState`, so the browser's back and forward move between steps and an old anchor
 `#fa-step-<id>` opens its step. The step rail of a wide screen and the row of steps on a phone
