@@ -54,9 +54,9 @@ test("a name opens the sheet, the arrow keys page, Escape closes it and the focu
   await page.keyboard.press("ArrowRight");
   await expect(sheet(page, "Connector Mismatch")).toBeVisible();
   await expect(sheet(page, "Connector Mismatch")).toContainText(text("factor.sheet.position", { i: 4, n: 12 }));
-  await expect(sheet(page, "Connector Mismatch").getByRole("status")).toHaveText(
-    text("factor.sheet.announce", { measure: "Connector Mismatch", i: 4, n: 12 }),
-  );
+  // The announcement for screen readers, not the status of the correlations that may still load beside it.
+  const announced = text("factor.sheet.announce", { measure: "Connector Mismatch", i: 4, n: 12 });
+  await expect(sheet(page, "Connector Mismatch").getByRole("status").filter({ hasText: announced })).toHaveText(announced);
   await page.keyboard.press("ArrowLeft");
   await page.keyboard.press("ArrowLeft");
   await expect(sheet(page, "Sequentiality")).toBeVisible();
