@@ -666,10 +666,10 @@ DOIs, checked against Crossref. The data of the bundled datasets, ComFy, ComFy f
 the log paper come from `datasets/manifest.json` of this repository, and the author and address of
 `factor_analyzer` from its package metadata. The tool's own entry has its name, version and commit
 from the running service, the author from its git history, and the year of the export. What a
-source does not record (the authors of a paper beyond the one the catalog names, the edition of the
-textbook by Hair et al., the version of ComFy) is not filled in: a comment above the entry says
-what to complete. Lieben et al. are named in the text of the rule `multi` but not cited, because
-nothing in this repository says which publication is meant.
+source does not record (the authors of a paper beyond the one the catalog names, the pages of the
+paper "Important Factors", the version of ComFy) is not filled in: a comment above the entry says
+what to complete. Harman and Jones (1966) are cited for minres, Kaiser (1958) for the varimax rotation
+(and for no other rotation) and Lieben et al. (2018) for the rule `multi`.
 
 `POST /factor-analysis/datasets/{id}/export/figure` takes the same body plus `"figure":
 "scree" | "loadings" | "correlations"`, `"format": "svg" | "png"`, `"short_codes"`, `"order": "factor" |

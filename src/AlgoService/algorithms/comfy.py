@@ -119,15 +119,15 @@ class ComFyAlgorithm(AlgorithmBase):
     author = "Patrizia Schalk"
     tool_type = "complexity"
     citation = (
-        "@misc{schalk2024comfy,\n"
-        "  title={{ComFy: Complexity and Factor Analysis of Discovered Process Models}},\n"
+        "@misc{schalk_comfy,\n"
+        "  title={{ComFy: A tool to perform factor analyses on complexity measures}},\n"
         "  author={Schalk, Patrizia},\n"
-        "  year={2024},\n"
+        "  year={2026},\n"
         "  howpublished={\\url{https://github.com/Pati-nets/ComFy}}\n"
         "}"
     )
     formatted_citation = (
-        "Patrizia Schalk. (2024). \"ComFy: Complexity and Factor Analysis of Discovered Process Models.\" "
+        "Patrizia Schalk. (2026). \"ComFy: A tool to perform factor analyses on complexity measures.\" "
         "GitHub Repository, https://github.com/Pati-nets/ComFy"
     )
 

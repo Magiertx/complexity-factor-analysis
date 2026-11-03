@@ -48,7 +48,7 @@ measure helpers. The numerics of the vendored `FactorAnalysis.py` are reimplemen
 - **Endpoint**: `POST /factor-analysis/datasets/{id}/stability`, a job `_stability:<kind>`
 
 How robust is the assignment on screen? The reference is the current analysis: its measures
-after the MSA filter, its factor count, the minres fit and rotation, and the assignment rule with
+after the MSA filter, its factor count, the minres fit (Harman & Jones, 1966) and rotation, and the assignment rule with
 its thresholds. B bootstrap samples (100, 200 or 500; 200 by default) draw the rows with
 replacement from the seed of parallel analysis (20261012, kept in the manifest), so a run is
 reproducible. Each sample is fitted with the same measures (no new MSA filter), the same factor
@@ -73,7 +73,7 @@ reference itself may have Heywood cases (the default Inductive solution has two,
 four-factor one has one).
 
 The samples are fitted with the objective, bounds, start values and normalisation of
-factor_analyzer's minres, but with the analytic gradient of the objective, −2 Σ λᵢ vⱼᵢ² over the
+factor_analyzer's minres (Harman & Jones, 1966), but with the analytic gradient of the objective, −2 Σ λᵢ vⱼᵢ² over the
 eigenvalues beyond the first k; factor_analyzer differentiates numerically, at p + 1
 eigendecompositions per step. On the full data both give the same loadings to 3 · 10⁻⁷. B = 200
 takes about half a second on Important Factors: Inductive (10 measures, 2 factors) and about

@@ -72,7 +72,7 @@ def test_the_published_settings_of_a_bundled_dataset():
         "published with \\cite{schalk2026important}, whose measures were computed with \\cite{schalk_comfy}. "
         "1 measure was dropped in cleaning because it has no variance or repeats another measure. "
         "The factor analysis was run with Complexity Factor Analysis v0.12-3-gabcdef0 (commit 01234567)~\\cite{cfa_tool}, "
-        "which extracts the factors with the minimum residual (minres) method of the Python package "
+        "which extracts the factors with the minimum residual (minres)\\cite{harman1966} method of the Python package "
         "factor\\_analyzer 0.5.1~\\cite{factor_analyzer}. "
         "Bartlett's test of sphericity~\\cite{bartlett1950} was significant ($\\chi^2(66) = 6822.4$, $p < 0.001$, "
         "$\\alpha = 0.05$), and the overall Kaiser-Meyer-Olkin measure of sampling adequacy~\\cite{kaiser1974} was 0.75. "
@@ -80,17 +80,17 @@ def test_the_published_settings_of_a_bundled_dataset():
         "(3 removed by the MSA filter, which drops measures below an MSA of 0.60, in 2 rounds). "
         "The number of factors was set to 4; the Kaiser criterion~\\cite{kaiser1960} suggests 2, parallel analysis~\\cite{horn1965} 3 "
         "(100 simulations, 95th percentile, seed 20261012). "
-        "Variance explained by the factors: 85.1\\%. The factors were rotated with the varimax rotation. "
+        "Variance explained by the factors: 85.1\\%. The factors were rotated with the varimax rotation~\\cite{kaiser1958}. "
         "Each measure was assigned to every factor on which its absolute loading exceeds 0.35 and lies at most 0.15 "
-        "below its largest absolute loading, if its communality is at least 0.30 (multiple membership, after Lieben et al.); "
+        "below its largest absolute loading, if its communality is at least 0.30 (multiple membership, after Lieben et al.~\\cite{lieben2018improved}); "
         "1 measure was assigned to no factor."
     )
     assert built.keys == [
-        "schalk2026important", "schalk_comfy", "cfa_tool", "factor_analyzer", "bartlett1950", "kaiser1974",
-        "kaiser1960", "horn1965",
+        "schalk2026important", "schalk_comfy", "cfa_tool", "harman1966", "factor_analyzer", "bartlett1950",
+        "kaiser1974", "kaiser1960", "horn1965", "kaiser1958", "lieben2018improved",
     ]
     assert sorted(_cited(built.text)) == sorted(built.keys)
-    assert "Lieben" in built.text and not any("lieben" in key for key in built.keys)
+    assert "lieben2018improved" in built.keys
 
 
 def test_the_kaiser_criterion_in_german_with_an_oblique_rotation_and_the_filter_off():
@@ -218,8 +218,49 @@ def test_the_entries_are_those_of_the_keys_cited():
     assert "version 0.5.1" in bib
     # What is not recorded is said, not filled in.
     assert re.search(r"^% .*complete the entry from the paper", bib, flags=re.M)
+    # Every source the paragraph names has its entry, with the data checked against the sources.
+    assert "@article{kaiser1958," in bib and "doi = {10.1007/BF02289233}" in bib
+    assert "@article{harman1966," in bib and "doi = {10.1007/BF02289468}" in bib
+    assert "@inproceedings{lieben2018improved," in bib and "pages = {49--62}" in bib
+    assert "title = {{ComFy: A tool to perform factor analyses on complexity measures}}" in bib
     with pytest.raises(KeyError):
         methods.bibtex(["lieben2018"], TOOL, LIBRARIES, 2026)
+
+
+def test_the_download_has_an_entry_for_every_key_cited():
+    for language in methods.LANGUAGES:
+        for rule in ("largest", "multi", "hair"):
+            for rotation in ("varimax", "promax", "oblimin", "quartimax", "none"):
+                result = _result(
+                    rotation=rotation,
+                    assignment={"rule": rule, "loading_threshold": 0.35, "loading_strict": True, "communality_threshold": 0.3, "cross_loading_gap": 0.15},
+                )
+                built = methods.methods(
+                    language=language, dataset=_dataset(), result=result, requested_factors=None, excluded=[], tool=TOOL,
+                    libraries=LIBRARIES, entry=IMPORTANT_FACTORS,
+                )
+                bib = methods.bibtex(built.keys, TOOL, LIBRARIES, 2026)
+                assert sorted(re.findall(r"^@\w+\{([^,]+),", bib, flags=re.M)) == sorted(built.keys)
+                assert sorted(set(_cited(built.text))) == sorted(built.keys)
+
+
+@pytest.mark.parametrize("rotation, cited", [("varimax", True), ("promax", False), ("oblimin", False), ("quartimax", False)])
+def test_only_varimax_cites_kaiser_1958(rotation, cited):
+    built = methods.methods(
+        language="en", dataset=_dataset(), result=_result(rotation=rotation), requested_factors=None, excluded=[],
+        tool=TOOL, libraries=LIBRARIES, entry=IMPORTANT_FACTORS,
+    )
+    assert ("kaiser1958" in built.keys) is cited
+    assert ("\\cite{kaiser1958}" in built.text) is cited
+
+
+@pytest.mark.parametrize("language", methods.LANGUAGES)
+def test_minres_cites_harman_and_jones_directly_after_its_name(language):
+    built = methods.methods(
+        language=language, dataset=_dataset(), result=_result(), requested_factors=None, excluded=[], tool=TOOL,
+        libraries=LIBRARIES, entry=IMPORTANT_FACTORS,
+    )
+    assert "(minres)\\cite{harman1966}" in built.text and "harman1966" in built.keys
 
 
 # --- the routes ----------------------------------------------------------------------------

@@ -204,9 +204,9 @@ All downloads are in the **Download** menu of the page header:
   and how it was chosen, minres extraction, the rotation, and the assignment rule with its
   thresholds. **Download BibTeX** gives the entries of exactly the keys the paragraph cites. A
   comment above an entry says what its source does not record (e.g. the authors beyond the one the
-  catalog names, or the edition of a textbook), and these you complete from the paper. Lieben et
-  al. are named for the rule of multiple membership but not cited, as the repository does not say
-  which publication is meant.
+  catalog names, or the pages of a paper), and these you complete from the paper. Harman and Jones
+  (1966) are cited for minres, Kaiser (1958) for the varimax rotation (no other rotation is cited),
+  and Lieben et al. (2018) for the rule of multiple membership.
 
 The **image icon** at the scree plot, the loadings and the correlation map downloads the figure as SVG (the text
 stays text) or as PNG (300 dpi), always light, sized for the text width of a CEUR paper, with its

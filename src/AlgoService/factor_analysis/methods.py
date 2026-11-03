@@ -9,9 +9,9 @@ The references are of two kinds. Those with a source in this repository (the too
 published datasets of the catalog) or well-known bibliographic data (Kaiser, Bartlett, Horn, the
 package ``factor_analyzer``) are given as they are known. Where a field is not recorded here (the
 edition of a textbook, the authors of a paper beyond the one the catalog names) the entry says so in
-a comment above it and leaves the field out, rather than filling it in. Lieben et al., after whom
-the multiple-membership rule is named, are not cited: nothing in this repository says which
-publication is meant, so the paragraph names them without a key.
+a comment above it and leaves the field out, rather than filling it in. The sources of the
+extraction (Harman and Jones), of the varimax rotation (Kaiser) and of the multiple-membership rule
+(Lieben et al.) are cited where the paragraph names them; the other rotations are named without a key.
 """
 
 from __future__ import annotations
@@ -118,28 +118,51 @@ REFERENCES: dict[str, dict[str, Any]] = {
             "57--64", "2006", "10.1027/1614-2241.2.2.57",
         ),
     },
+    "kaiser1958": {
+        "type": "article",
+        "fields": _article(
+            "Kaiser, Henry F.", "The Varimax Criterion for Analytic Rotation in Factor Analysis", "Psychometrika",
+            "23", "3", "187--200", "1958", "10.1007/BF02289233",
+        ),
+    },
+    "harman1966": {
+        "type": "article",
+        "fields": _article(
+            "Harman, Harry H. and Jones, Wayne H.", "Factor Analysis by Minimizing Residuals (Minres)",
+            "Psychometrika", "31", "3", "351--368", "1966", "10.1007/BF02289468",
+        ),
+    },
+    "lieben2018improved": {
+        "type": "inproceedings",
+        "fields": [
+            ("author", "Lieben, Jonas and Jouck, Toon and Depaire, Beno{\\^\\i}t and Jans, Mieke"),
+            ("title", "An Improved Way for Measuring Simplicity During Process Discovery"),
+            ("booktitle", "EOMAS 2018"), ("series", "LNBIP"), ("pages", "49--62"), ("year", "2018"),
+            ("doi", "10.1007/978-3-030-00787-4_4"),
+        ],
+    },
     "hair_multivariate": {
         "type": "book",
         "comment": (
-            "Hair et al., after whom the rule of Tab. 17 of Important Factors is named. This repository does not "
-            "record which edition that paper cites: add its edition and year."
+            "Hair et al., after whom the rule of Tab. 17 of Important Factors is named. Edition, title, publisher and "
+            "ISBN as in the references of Important Factors and Google Books, which name three authors; check the "
+            "authors against the title page."
         ),
         "fields": [
             ("author", "Hair, Joseph F. and Black, William C. and Babin, Barry J. and Anderson, Rolph E."),
-            ("title", "Multivariate Data Analysis"), ("publisher", "Pearson"),
+            ("title", "Multivariate Data Analysis: A Global Perspective"), ("edition", "7"),
+            ("publisher", "Pearson Education"), ("year", "2010"), ("isbn", "9780135153093"),
         ],
     },
     "schalk2026important": {
         "type": "inproceedings",
-        "comment": (
-            "Title, venue and year are those of datasets/manifest.json of this tool; Patrizia Schalk is the person "
-            "it names. The complete list of authors, the pages and the DOI are not recorded there: complete the "
-            "entry from the paper."
-        ),
+        "comment": "As in the CEUR proceedings, Vol. 4236; the pages are not recorded: complete the entry from the paper.",
         "fields": [
             ("author", "Schalk, Patrizia"),
             ("title", "Important Factors: Complexity Dimensions for Petri Nets"),
-            ("booktitle", "ATAED 2026"), ("year", "2026"),
+            ("booktitle", "PETRI NETS 2026 Workshop Proceedings (ATAED'26)"),
+            ("series", "CEUR Workshop Proceedings"), ("volume", "4236"), ("year", "2026"),
+            ("url", "https://ceur-ws.org/Vol-4236/paper14.pdf"),
         ],
     },
     "measure_mess": {
@@ -152,17 +175,18 @@ REFERENCES: dict[str, dict[str, Any]] = {
     },
     "schalk_comfy": {
         "type": "misc",
-        "comment": "Name, author and address as in datasets/manifest.json of this tool; the version is not recorded there.",
+        "comment": "Name, author and address as in datasets/manifest.json of this tool, the year that of the first commit of the repository; the version is not recorded there.",
         "fields": [
-            ("author", "Schalk, Patrizia"), ("title", "ComFy"),
+            ("author", "Schalk, Patrizia"),
+            ("title", "{ComFy: A tool to perform factor analyses on complexity measures}"), ("year", "2026"),
             ("howpublished", "\\url{https://github.com/Pati-nets/ComFy}"), ("note", "Software"),
         ],
     },
     "schalk_comfy_log": {
         "type": "misc",
-        "comment": "Name, author and address as in datasets/manifest.json of this tool; the version is not recorded there.",
+        "comment": "Name, author and address as in datasets/manifest.json of this tool, the year that of the first commit of the repository; the version is not recorded there.",
         "fields": [
-            ("author", "Schalk, Patrizia"), ("title", "ComFy for Log Measures"),
+            ("author", "Schalk, Patrizia"), ("title", "ComFy for Log Measures"), ("year", "2026"),
             ("howpublished", "\\url{https://github.com/Pati-nets/ComFy-for-Log-Measures}"), ("note", "Software"),
         ],
     },
@@ -281,7 +305,7 @@ _TEXTS: dict[str, dict[str, str]] = {
         "dropped_many": "{n} measures were dropped in cleaning because they have no variance or repeat another measure.",
         "tool": (
             "The factor analysis was run with {tool}{cite_tool}, which extracts the factors with the minimum "
-            "residual (minres) method of the Python package factor\\_analyzer {library}{cite_library}."
+            "residual (minres){cite_minres} method of the Python package factor\\_analyzer {library}{cite_library}."
         ),
         "bartlett_yes": "Bartlett's test of sphericity{cite} was significant",
         "bartlett_no": "Bartlett's test of sphericity{cite} was not significant",
@@ -303,14 +327,14 @@ _TEXTS: dict[str, dict[str, str]] = {
         "count_pa_details": " ({simulations} simulations, {percentile}th percentile, seed {seed})",
         "variance": "Variance explained by the factors: {share}.",
         "rotation_none": "The factors were not rotated.",
-        "rotation": "The factors were rotated with the {rotation} rotation.",
+        "rotation": "The factors were rotated with the {rotation} rotation{cite}.",
         "rule_largest": (
             "Each measure was assigned to the factor on which its absolute loading is largest, if that loading "
             "{reach}{comm_and}"
         ),
         "rule_multi": (
             "Each measure was assigned to every factor on which its absolute loading {reach} and lies at most {gap} "
-            "below its largest absolute loading{comm_if} (multiple membership, after Lieben et al.)"
+            "below its largest absolute loading{comm_if} (multiple membership, after Lieben et al.{cite})"
         ),
         "rule_hair": (
             "Each measure was assigned to the factor on which its absolute loading is largest, if that loading "
@@ -360,7 +384,7 @@ _TEXTS: dict[str, dict[str, str]] = {
         ),
         "tool": (
             "Die Faktorenanalyse wurde mit {tool}{cite_tool} durchgeführt, das die Faktoren mit dem Minimum-"
-            "Residual-Verfahren (minres) des Python-Pakets factor\\_analyzer {library}{cite_library} extrahiert."
+            "Residual-Verfahren (minres){cite_minres} des Python-Pakets factor\\_analyzer {library}{cite_library} extrahiert."
         ),
         "bartlett_yes": "Bartletts Test auf Sphärizität{cite} war signifikant",
         "bartlett_no": "Bartletts Test auf Sphärizität{cite} war nicht signifikant",
@@ -382,14 +406,14 @@ _TEXTS: dict[str, dict[str, str]] = {
         "count_pa_details": " ({simulations} Simulationen, {percentile}. Perzentil, Seed {seed})",
         "variance": "Durch die Faktoren erklärte Varianz: {share}.",
         "rotation_none": "Die Faktoren wurden nicht rotiert.",
-        "rotation": "Die Faktoren wurden mit der Rotation {rotation} rotiert.",
+        "rotation": "Die Faktoren wurden mit der Rotation {rotation}{cite} rotiert.",
         "rule_largest": (
             "Jedes Maß wurde dem Faktor zugeordnet, auf dem der Betrag seiner Ladung am größten ist, wenn "
             "dieser {reach}{comm_and}"
         ),
         "rule_multi": (
             "Jedes Maß wurde jedem Faktor zugeordnet, auf dem der Betrag seiner Ladung {reach} und von seiner "
-            "größten Ladung höchstens {gap} entfernt ist{comm_if} (Mehrfachzuordnung, nach Lieben et al.)"
+            "größten Ladung höchstens {gap} entfernt ist{comm_if} (Mehrfachzuordnung, nach Lieben et al.{cite})"
         ),
         "rule_hair": (
             "Jedes Maß wurde dem Faktor zugeordnet, auf dem der Betrag seiner Ladung am größten ist, wenn "
@@ -423,6 +447,9 @@ _TEXTS: dict[str, dict[str, str]] = {
         ),
     },
 }
+
+#: The source each assignment rule is named after, where the paragraph cites one.
+_RULE_SOURCES = {"hair": ("hair_multivariate",), "multi": ("lieben2018improved",)}
 
 _ROTATIONS = {"en": {}, "de": {"promax": "Promax", "varimax": "Varimax", "oblimin": "Oblimin", "quartimax": "Quartimax"}}
 
@@ -497,8 +524,8 @@ def methods(
     described += f" ({'Commit' if language == 'de' else 'commit'} {_tex(commit)})" if commit else ""
     sentences.append(
         fill(
-            "tool", tool=described, cite_tool=cite("cfa_tool"), library=_tex(libraries.get("factor_analyzer") or ""),
-            cite_library=cite("factor_analyzer"),
+            "tool", tool=described, cite_tool=cite("cfa_tool"), cite_minres=cite("harman1966", tie=False),
+            library=_tex(libraries.get("factor_analyzer") or ""), cite_library=cite("factor_analyzer"),
         )
     )
 
@@ -556,7 +583,10 @@ def methods(
     if rotation == "none":
         sentences.append(fill("rotation_none"))
     else:
-        sentences.append(fill("rotation", rotation=_ROTATIONS[language].get(rotation, rotation)))
+        sentences.append(fill(
+                "rotation", rotation=_ROTATIONS[language].get(rotation, rotation),
+                cite=cite("kaiser1958") if rotation == "varimax" else "",
+            ))
 
     # The rule, with the thresholds it applied.
     assignment = result.get("assignment") or {}
@@ -575,7 +605,7 @@ def methods(
         comm_and=fill("comm_and", communality=communality_text) if communality else "",
         comm_if=fill("comm_if", communality=communality_text) if communality else "",
         gap=_number(assignment.get("cross_loading_gap", 0.15), 2, language),
-        cite=cite("hair_multivariate") if rule == "hair" else "",
+        cite=cite(*_RULE_SOURCES[rule]) if rule in _RULE_SOURCES else "",
     )
     if not left_out:
         text += fill("unassigned_none")

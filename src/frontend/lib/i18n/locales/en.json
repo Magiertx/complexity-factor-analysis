@@ -87,7 +87,7 @@
       "step0_p1": "Find out which complexity measures of process models and event logs capture the same thing. Load or compute a table of measures, check whether it suits a factor analysis, and read off groups of related measures.",
       "step0_p2": "This quick tour shows the four things you'll use most.",
       "step1_title": "Two analyses: models and logs",
-      "step1_p1": "Model complexity analyzes measures of Petri nets discovered from event logs, computed with ComFy. Log complexity analyzes measures of the event logs themselves, computed with feeed.",
+      "step1_p1": "Model complexity analyses measures of Petri nets discovered from event logs, computed with ComFy. Log complexity analyses measures of the event logs themselves, computed with feeed.",
       "step1_p2": "Both tabs work the same way.",
       "step2_title": "One step at a time",
       "step2_p1": "Data, dataset, suitability, factors, loadings: the list of steps shows what each one found and opens it; Back and Next lead through them. Every change to a setting re-runs the analysis right away, and the analysis can be downloaded as CSV, LaTeX or ZIP. An optional sixth step lets Claude propose names for the factors.",
@@ -413,7 +413,7 @@
       "copy_bibtex": "Copy BibTeX",
       "download_bib_title": "Download as .bib file",
       "download_bib": "Download .bib",
-      "analyzed_log": "Analyzed event log"
+      "analyzed_log": "Analysed event log"
     },
     "log_source": {
       "upload_file": "Upload file",
@@ -456,7 +456,7 @@
       "title": "The server cannot be reached"
     },
     "errors": {
-      "no_sample": "Choose an example log to analyze.",
+      "no_sample": "Choose an example log to analyse.",
       "no_upload": "Upload an event log or choose a recent one from the list below.",
       "must_be_number": "Must be a valid number.",
       "must_be_at_least": "Must be at least {min}.",
@@ -469,7 +469,7 @@
       "analysis_failed": "Analysis failed",
       "unknown_submission": "Unknown submission error",
       "file_too_large": "File size exceeds the 100 MB limit.",
-      "wrong_type": "This file type cannot be analyzed; use {formats}.",
+      "wrong_type": "This file type cannot be analysed; use {formats}.",
       "aborted_by_user": "Aborted by the user"
     }
   },
