@@ -5,6 +5,7 @@ import {
   expect,
   expectStep,
   goToStep,
+  interpretationOpens,
   openBundled,
   pattern,
   stepLink,
@@ -33,7 +34,7 @@ test("IF Inductive goes through all six steps and exports the analysis as ZIP", 
   // yet" once the analysis is there. The test never starts an interpretation, which would cost money.
   const step6 = stepLink(page, "interpretation");
   await expect(step6).not.toHaveAccessibleName(pattern(`(${text("factor.state.locked")})`));
-  if ((await step6.getAttribute("aria-disabled")) === "true") {
+  if (!(await interpretationOpens(page))) {
     await expect(step6).toHaveAccessibleName(pattern(`(${text("factor.state.unavailable")})`));
     await expect(step6).toContainText(/API key/);
   } else {

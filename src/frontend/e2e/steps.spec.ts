@@ -4,6 +4,7 @@ import {
   expect,
   expectStep,
   goToStep,
+  interpretationOpens,
   loadBundled,
   nextFromData,
   openBundled,
@@ -74,12 +75,12 @@ test("each step is a view of its own, with an address, Back and Next, and the br
 
   // The last step to be had has Back but no Next: the interpretation, or the loadings where the
   // server can give none.
-  if ((await stepLink(page, "interpretation").getAttribute("aria-disabled")) === "true") {
-    await goToStep(page, "loadings");
-    await expect(back("factors")).toBeVisible();
-  } else {
+  if (await interpretationOpens(page)) {
     await goToStep(page, "interpretation");
     await expect(back("loadings")).toBeVisible();
+  } else {
+    await goToStep(page, "loadings");
+    await expect(back("factors")).toBeVisible();
   }
   await expect(page.getByRole("button", { name: /^Next:/ })).toHaveCount(0);
 });

@@ -92,6 +92,25 @@ export async function expectStep(
 }
 
 /**
+ * Whether the step of the interpretation can be opened. Asks the server, since the rail only knows
+ * once its own request is back; with stored interpretations only, the answer depends on the settings.
+ */
+export async function interpretationOpens(page: Page): Promise<boolean> {
+  const status = await (await page.request.get("/api/factor-analysis/interpretation/status")).json();
+  const link = stepLink(page, "interpretation");
+  if (status.available) {
+    await expect(link).not.toHaveAttribute("aria-disabled", "true");
+    return true;
+  }
+  if (!status.precomputed_only) {
+    await expect(link).toHaveAttribute("aria-disabled", "true");
+    return false;
+  }
+  await page.waitForLoadState("networkidle");
+  return (await link.getAttribute("aria-disabled")) !== "true";
+}
+
+/**
  * Opens a step from the step rail and waits until it is on screen: one step is shown at a time,
  * so a spec opens the step whose content it reads.
  */
