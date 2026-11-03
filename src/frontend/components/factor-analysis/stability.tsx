@@ -19,7 +19,7 @@ import {
   type StabilitySamples,
 } from "@/lib/api";
 import { formatNumber, formatPercent } from "@/lib/format";
-import { countText } from "@/lib/factor-analysis";
+import { countText, stableWithoutFactor } from "@/lib/factor-analysis";
 import { pairTint } from "@/lib/compare";
 import { cn } from "@/lib/utils";
 import { useLocale, useT } from "@/lib/i18n";
@@ -239,6 +239,7 @@ function StabilitySummary({ result }: { result: Stability }) {
   const { locale } = useLocale();
   const failed = Object.entries(result.failed) as [StabilityFailure, number][];
   const dropped = result.samples - result.valid;
+  const unassigned = stableWithoutFactor(result);
   return (
     <>
       {result.valid > 0 &&
@@ -247,7 +248,8 @@ function StabilitySummary({ result }: { result: Stability }) {
           stable: result.summary.stable,
           measures: result.summary.measures,
           threshold: Math.round(result.summary.threshold * 100),
-        })}
+        }) +
+          (unassigned > 0 ? t("factor.stability.summary_unassigned", { n: unassigned }) : "")}
       {dropped > 0 && (
         <>
           {result.valid > 0 && " · "}

@@ -17,6 +17,7 @@ import {
   type Job,
   type MinerSummary,
   type Rotation,
+  type Stability,
   type UnassignedReason,
 } from "./api";
 
@@ -692,6 +693,14 @@ export function jobTitle(job: Job, t: Translate): string {
   // The backend names the input of a dataset job "<n> log(s)" or "<n> net(s)".
   const n = parseInt(job.filename, 10);
   return Number.isFinite(n) ? inputsName(t, job.params?.source === "pnml", n) : jobDisplayName(job, t);
+}
+
+/**
+ * How many of the measures counted stable in the summary of a stability have no factor in the solution:
+ * for them "stable" means that they again got none.
+ */
+export function stableWithoutFactor(stability: Stability): number {
+  return stability.measures.filter((m) => m.factors.length === 0 && (m.assignment ?? 0) >= stability.summary.threshold).length;
 }
 
 /** "1 log" or "4 logs": the text of `key`, or of `<key>_plural` for any other count. */

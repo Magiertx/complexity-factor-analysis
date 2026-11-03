@@ -4,15 +4,11 @@ import Link from "next/link";
 import { ArrowRight, Check, CircleSlash, Loader2, XCircle } from "lucide-react";
 import type { Job } from "@/lib/api";
 import { formatDateTime, formatPercent, formatRelative } from "@/lib/format";
+import { isSingleRun } from "@/lib/history";
 import { useLocale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useJobs } from "./jobs-provider";
 import { useTip } from "./ui/tip";
-
-/** Runs of a single log, not the jobs that compute a dataset. */
-export function isSingleRun(job: Job) {
-  return !job.algorithm_id.startsWith("_dataset:");
-}
 
 const SHOWN = 5;
 

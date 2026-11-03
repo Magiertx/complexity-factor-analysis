@@ -806,7 +806,7 @@
       "bartlett_before_filter": "Wie in ComFy läuft der Test auf allen {n} Maßen vor dem MSA-Filter; KMO und die weiteren Schritte nutzen die {left} Maße, die danach übrig sind.",
       "df": "df",
       "kmo_title": "Kaiser-Meyer-Olkin (KMO)",
-      "kmo_explain": "Wie viel der Korrelation zwischen den Maßen allen gemeinsam ist. Ab {threshold} gilt der Wert als ausreichend.",
+      "kmo_explain": "Wie stark die Zusammenhänge zwischen den Maßen auf etwas Gemeinsames zurückgehen, statt nur zwischen einzelnen Paaren zu bestehen. Ab {threshold} gilt der Wert als ausreichend.",
       "grade": {
         "marvelous": "ausgezeichnet",
         "meritorious": "gut",
@@ -990,6 +990,7 @@
       "computing": "Stabilität wird geprüft … {pct} %",
       "cancel": "Abbrechen",
       "summary": "Stabil über {n} Stichproben: {stable} von {measures} Maßen ≥ {threshold} %",
+      "summary_unassigned": ", davon {n} ohne Faktor",
       "dropped": "{n} von {samples} Stichproben verworfen: {causes}",
       "failure": {
         "constant": "{n} mit einem Maß ohne Varianz",
@@ -1048,14 +1049,14 @@
       "msa_threshold": "Der Filter entfernt Maße, deren MSA unter diesem Wert liegt, und der KMO-Gesamtwert gilt ab diesem Wert als ausreichend. ComFy und ComFy für Log-Maße nutzen 0,6.",
       "bartlett_alpha": "Das Signifikanzniveau des Tests nach Bartlett: Er ist bestanden, wenn p unter α liegt. ComFy und ComFy für Log-Maße nutzen 0,05.",
       "scree": "Der Screeplot zeigt die Eigenwerte der Korrelationsmatrix in absteigender Reihenfolge. Suche den Knick, ab dem die Kurve flach wird; Faktoren danach tragen wenig bei. Knick, die Regel Eigenwert über 1 und die Parallelanalyse können sich widersprechen, nimm sie als Ausgangspunkte. Die dünne Linie an der rechten Achse summiert die Eigenwerte auf: den Anteil der Varianz, den die ersten Hauptkomponenten erklären. Die Faktoren der Analyse erklären etwas weniger, wie Schritt 5 zeigt.",
-      "eigenvalue": "Ein Eigenwert ist die Varianz, die ein Faktor erklärt, gemessen in Einheiten eines standardisierten Maßes. Der Vorschlag behält jeden Faktor mit Eigenwert über 1 (Kaiser-Kriterium), also jeden Faktor, der mehr erklärt als ein einzelnes Maß.",
-      "rotation": "Die Rotation dreht die Faktorlösung so, dass jedes Maß auf möglichst wenigen Faktoren hoch lädt; das macht die Faktoren leichter benennbar. Wie viel Varianz die Faktoren zusammen erklären, ändert sie nicht. Varimax und Quartimax halten die Faktoren unkorreliert; Promax und Oblimin erlauben Korrelationen, was für Komplexitätsmaße oft realistischer ist.",
-      "threshold": "Ladungen, deren Betrag diese Schwelle erreicht, gelten als substanziell. Zu welchen Faktoren ein Maß kommt, bestimmt die Zuordnungsregel oben; bei der größten Ladung kommt es zu dem Faktor mit dem größten Betrag, wenn dieser die Schwelle erreicht. Üblich sind Werte zwischen 0,3 und 0,5; ComFy nutzt 0,35, ComFy für Log-Maße 0,5. Ob eine Ladung genau auf der Schwelle zählt, hängt von der Regel ab: bei der größten Ladung zählt sie mit (≥); ComFys Report, der nur Ladungen unter seiner Schwelle grau färbt, lässt sie ebenfalls schwarz. Die Regeln aus Important Factors (Mehrfachzugehörigkeit, Hair) verlangen mehr als die Schwelle (>), wie die Tabellen des Papers.",
+      "eigenvalue": "Ein Eigenwert gehört zu einer Hauptkomponente der Korrelationsmatrix: die Varianz, die sie erklärt, gemessen in Einheiten eines standardisierten Maßes. Der Vorschlag behält so viele Faktoren, wie Eigenwerte über 1 liegen (Kaiser-Kriterium), also so viele, wie Komponenten mehr erklären als ein einzelnes Maß.",
+      "rotation": "Die Rotation dreht die Faktorlösung so, dass jedes Maß auf möglichst wenigen Faktoren hoch lädt; das macht die Faktoren leichter benennbar. Wie viel Varianz die Faktoren zusammen erklären, ändert sie nicht. Varimax und Quartimax halten die Faktoren unkorreliert; Promax und Oblimin erlauben Korrelationen.",
+      "threshold": "Ladungen, deren Betrag diese Schwelle erreicht, gelten als substanziell. Zu welchen Faktoren ein Maß kommt, bestimmt die Zuordnungsregel oben; bei der größten Ladung kommt es zu dem Faktor mit dem größten Betrag, wenn dieser die Schwelle erreicht. Üblich sind Werte zwischen 0,3 und 0,5; ComFy nutzt 0,35, ComFy für Log-Maße 0,5. Ob eine Ladung genau auf der Schwelle zählt, hängt von der Regel ab: bei der größten Ladung zählt sie mit (≥); ComFys Report, der nur Ladungen unter seiner Schwelle grau färbt, lässt sie ebenfalls schwarz. Die Regeln aus Important Factors (Mehrfachzuordnung, Hair) verlangen mehr als die Schwelle (>), wie die Tabellen des Papers.",
       "loading": "Eine Ladung gibt an, wie stark ein Maß mit einem Faktor zusammenhängt. Bei orthogonaler Rotation ist sie die Korrelation zwischen Maß und Faktor. Bei obliquer Rotation enthält die Mustermatrix Regressionsgewichte und die Strukturmatrix die Korrelationen. Das Vorzeichen gibt die Richtung an: Maße mit entgegengesetzten Vorzeichen auf demselben Faktor bewegen sich gegenläufig.",
       "communality": "Die Kommunalität h² ist der Anteil der Varianz eines Maßes, den alle behaltenen Faktoren zusammen erklären. Ein niedriger Wert (unter etwa 0,4) heißt, dass die Faktoren das Maß schlecht abbilden.",
       "variance": "SS-Ladungen sind die Summe der quadrierten Ladungen eines Faktors. Geteilt durch die Zahl der Maße ergibt sich der Anteil an der Gesamtvarianz, den der Faktor erklärt; die kumulierte Zeile summiert diese Anteile.",
       "groups": "Jeder Faktor mit den ihm zugeordneten Maßen, stärkste Ladung zuerst. Maße einer Gruppe erfassen einen ähnlichen Aspekt der Komplexität; wie der Faktor heißt, ist Sache der Interpretation. Bei Mehrfachzuordnung kann ein Maß in mehreren Gruppen stehen; ein Chip nennt seine anderen Faktoren.",
-      "communality_threshold": "Maße mit einer Kommunalität unter diesem Wert bleiben unzugeordnet, weil die Faktoren zu wenig von ihnen erklären. ComFy für Log-Maße nutzt 0,5; 0 behält jedes Maß.",
+      "communality_threshold": "Maße mit einer Kommunalität unter diesem Wert bleiben unzugeordnet, weil die Faktoren zu wenig von ihnen erklären. ComFy für Log-Maße nutzt 0,5; 0 behält jedes Maß, außer bei Mehrfachzuordnung (mindestens 0,3) und Hair (mindestens 0,5).",
       "factor_correlations": "Bei obliquer Rotation dürfen die Faktoren korrelieren. Werte nahe 0 heißen, dass die Faktoren fast unabhängig sind; große Werte heißen, dass sie verwandte Aspekte messen.",
       "assignment": "Wie aus den Ladungen Faktorgruppen werden. Die größte Ladung ist der Standard dieses Tools: Jedes Maß kommt zu dem Faktor, auf dem es am stärksten lädt. ComFys Report ordnet nichts zu; er färbt nur Ladungen mit |λ| unter seiner Schwelle grau. Important Factors nennt zwei weitere Regeln: Für Tab. 6–16 kommt ein Maß auch zu jedem Faktor, dessen Ladung höchstens {gap} unter seiner größten liegt (Mehrfachzuordnung), bei h² ≥ {h2_multi}; für Tab. 17 folgt es Hair et al. mit h² ≥ {h2_hair} und lässt Maße mit Querladung weg. Das Tool wendet die Regeln so an, wie sie dort stehen; wo eine Tabelle des Papers davon abweicht, sagt das bei den mitgelieferten Datensätzen ein Hinweis unter den Regeln. Die Faktorlösung ist bei jeder Regel dieselbe; nur die Gruppen ändern sich.",
       "criteria": "Kaiser behält jeden Faktor mit einem Eigenwert über 1. Die Parallelanalyse (Horn) behält die Faktoren, deren Eigenwert über dem {percentile}. Perzentil der Eigenwerte von {simulations} zufälligen normalverteilten Datensätzen gleicher Größe liegt, berechnet auf Hauptkomponenten mit dem festen Seed {seed}; bei vielen Beobachtungen liegt sie nahe bei Kaiser. Ein Paper kann die Zahl auch vor der Analyse festlegen. Die Wahl eines Kriteriums setzt die Anzahl der Faktoren."
@@ -1174,15 +1175,15 @@
       "chip_match": "Zahlen = ComFy-Report",
       "chip_differs": "Weicht vom ComFy-Report ab",
       "title": "Abgleich mit dem veröffentlichten Report",
-      "summary_match": "Jede verglichene Zahl stimmt bis auf {tolerance} mit dem Report überein.",
-      "summary_differs": "Zahlen, die um mehr als {tolerance} vom Report abweichen: {n}.",
+      "summary_match": "Jede verglichene Zahl stimmt bis auf {tolerance} mit dem Report überein, über 1 relativ zur Zahl.",
+      "summary_differs": "Zahlen, die um mehr als {tolerance} (über 1 relativ zur Zahl) vom Report abweichen: {n}.",
       "compared": "Verglichen",
       "what": {
         "bartlett": "Bartlett-Test",
         "kmo": "KMO",
-        "msa": "MSA je Maß",
+        "msa": "MSA je Maß, entfernte Maße",
         "msa_filter": "Entfernte Maße",
-        "loadings": "Ladungen",
+        "loadings": "Ladungen, Kommunalitäten",
         "communalities": "Kommunalitäten"
       },
       "differences": "Abweichungen",
@@ -1264,7 +1265,7 @@
         },
         "if_k4_k6": {
           "title": "Important Factors: 4 gegen 6 Faktoren",
-          "text": "Der Inductive miner mit den 4 Faktoren des Papers neben 6, bei Mehrfachzuordnung wie in Abschnitt 6: MM (Ladung 0,50) bildet eine fünfte Dimension, die sechste bleibt leer.",
+          "text": "Der Inductive miner mit den 4 Faktoren des Papers neben 6, bei Mehrfachzuordnung. Hier bildet MM (Ladung 0,50, Kommunalität 0,33) eine fünfte Dimension; Abschnitt 6 des Papers lässt MM wegen dieser Kommunalität außen vor und Dimension 5 und 6 leer.",
           "short": "Der Inductive miner mit 4 und mit 6 Faktoren, wie in Abschnitt 6."
         }
       },
@@ -1312,7 +1313,7 @@
     "toolbar": {
       "aria": "Werkzeuge",
       "export": "Herunterladen",
-      "export_more": "Die Analyse als ZIP, ihren LaTeX-Bericht oder die Druckansicht, die Ladungen als CSV oder LaTeX, den Methodentext mit seinen BibTeX-Einträgen oder den bereinigten Datensatz als CSV.",
+      "export_more": "Die Analyse als ZIP, ihren LaTeX-Report oder die Druckansicht, die Ladungen als CSV oder LaTeX, den Methodentext mit seinen BibTeX-Einträgen oder den bereinigten Datensatz als CSV.",
       "export_zip": "Analyse (ZIP)",
       "export_zip_hint": "Datensatz, Ergebnisse, Report, Abbildungen und ein Manifest, um die Analyse nachzuvollziehen",
       "export_loadings_csv": "Ladungen (CSV)",
@@ -1495,7 +1496,7 @@
       "included_done": "{measure} ist einbezogen."
     },
     "warnings_tip": {
-      "heywood": "Diese Maße werden fast vollständig von den Faktoren erklärt (Einzelrestvarianz höchstens 0,005, die Grenze der Anpassung). Die Gruppierung der Maße lässt sich trotzdem lesen; die Ladungen dieser Maße deutest du mit Vorsicht, denn sie liegen an der Grenze der Anpassung."
+      "heywood": "Diese Maße werden fast vollständig von den Faktoren erklärt (Einzigartigkeit höchstens 0,005, die Grenze der Anpassung). Das kann auf eine unpassende Faktorzahl oder fast gleiche Maße hinweisen; lies die Gruppierung deshalb mit Vorsicht, und die Ladungen dieser Maße deutest du mit Vorsicht, denn sie liegen an der Grenze der Anpassung."
     }
   },
   "inspect": {

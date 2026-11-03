@@ -35,6 +35,11 @@ const DATASET_PREFIX = "_dataset:";
 /** A job computing the stability of an analysis of a dataset: a row of its own, on the tab of its dataset. */
 const STABILITY_PREFIX = "_stability:";
 
+/** A run of a single log: neither a job computing a dataset nor the stability check of one. */
+export function isSingleRun(job: Job): boolean {
+  return !job.algorithm_id.startsWith(DATASET_PREFIX) && !job.algorithm_id.startsWith(STABILITY_PREFIX);
+}
+
 function jobStatus(job: Job): HistoryStatus {
   if (job.status === "pending" || job.status === "running") return "active";
   return job.status;

@@ -806,7 +806,7 @@
       "bartlett_before_filter": "As in ComFy, the test runs on all {n} measures before the MSA filter; KMO and the later steps use the {left} measures left after it.",
       "df": "df",
       "kmo_title": "Kaiser–Meyer–Olkin (KMO)",
-      "kmo_explain": "How much of the correlation between measures is shared by all of them. A value of at least {threshold} is adequate.",
+      "kmo_explain": "How strongly the relationships between the measures trace back to something shared, rather than existing only between single pairs. A value of at least {threshold} is adequate.",
       "grade": {
         "marvelous": "marvelous",
         "meritorious": "meritorious",
@@ -990,6 +990,7 @@
       "computing": "Checking stability … {pct} %",
       "cancel": "Cancel",
       "summary": "Stable over {n} samples: {stable} of {measures} measures ≥ {threshold} %",
+      "summary_unassigned": ", {n} of them without a factor",
       "dropped": "{n} of {samples} samples dropped: {causes}",
       "failure": {
         "constant": "{n} with a measure without variance",
@@ -1048,14 +1049,14 @@
       "msa_threshold": "The filter removes measures whose MSA is below this value, and the overall KMO counts as adequate from this value on. ComFy and ComFy for log measures use 0.6.",
       "bartlett_alpha": "The significance level of Bartlett's test: the test passes when p is below α. ComFy and ComFy for log measures use 0.05.",
       "scree": "The scree plot shows the eigenvalues of the correlation matrix in descending order. Look for the elbow where the curve flattens; factors after it add little. The elbow, the eigenvalue-above-1 rule and the parallel analysis can disagree, so treat them as starting points. The thin line on the right axis adds up the eigenvalues: the share of the variance the first principal components explain. The factors of the analysis explain somewhat less, as step 5 shows.",
-      "eigenvalue": "An eigenvalue is the variance a factor explains, in units of one standardized measure. The suggestion keeps every factor with an eigenvalue above 1 (Kaiser criterion), i.e. every factor that explains more than a single measure.",
-      "rotation": "Rotation turns the factor solution so that each measure loads strongly on as few factors as possible, which makes the factors easier to name. It does not change how much variance the factors explain together. Varimax and quartimax keep the factors uncorrelated; promax and oblimin let them correlate, which is often more realistic for complexity measures.",
+      "eigenvalue": "An eigenvalue belongs to a principal component of the correlation matrix: the variance it explains, in units of one standardized measure. The suggestion keeps as many factors as there are eigenvalues above 1 (Kaiser criterion), i.e. as many as there are components that explain more than a single measure.",
+      "rotation": "Rotation turns the factor solution so that each measure loads strongly on as few factors as possible, which makes the factors easier to name. It does not change how much variance the factors explain together. Varimax and quartimax keep the factors uncorrelated; promax and oblimin let them correlate.",
       "threshold": "Loadings with an absolute value at or above this threshold count as substantial. Which factors a measure joins depends on the assignment rule above; with the largest loading, it joins the factor where its absolute loading is highest, if that loading reaches the threshold. Common choices lie between 0.3 and 0.5; ComFy uses 0.35, ComFy for log measures 0.5. Whether a loading exactly on the threshold counts depends on the rule: with the largest loading it counts (≥); ComFy's report, which only greys loadings below its threshold, leaves it black as well. The rules of Important Factors (multiple membership, Hair) require more than the threshold (>), as the tables of the paper do.",
       "loading": "A loading says how strongly a measure goes along with a factor. For orthogonal rotations it is the correlation between measure and factor. For oblique rotations the pattern matrix holds regression weights and the structure matrix the correlations. The sign gives the direction: measures with opposite signs on the same factor move in opposite directions.",
       "communality": "The communality h² is the share of a measure's variance that all kept factors explain together. A low value (below about 0.4) means the factors do not capture the measure well.",
       "variance": "SS loadings is the sum of squared loadings of a factor. Divided by the number of measures it gives the proportion of the total variance the factor explains; the cumulative row adds these up.",
       "groups": "Each factor with the measures assigned to it, strongest loading first. Measures in one group capture a similar aspect of complexity; the name of the factor is up to your interpretation. Under multiple membership a measure can be in several groups; a chip names its other factors.",
-      "communality_threshold": "Measures whose communality is below this value are left unassigned, because the factors explain too little of them. ComFy for log measures uses 0.5; 0 keeps every measure.",
+      "communality_threshold": "Measures whose communality is below this value are left unassigned, because the factors explain too little of them. ComFy for log measures uses 0.5; 0 keeps every measure, except under multiple membership (at least 0.3) and Hair (at least 0.5).",
       "factor_correlations": "With an oblique rotation the factors may correlate. Values near 0 mean the factors are nearly independent; large values mean they measure related aspects.",
       "assignment": "How the loadings turn into factor groups. The largest loading is the default of this tool: each measure joins the factor it loads on most. ComFy's report assigns nothing; it only greys loadings with |λ| below its threshold. Important Factors states two further rules: for Tab. 6–16, a measure also joins every factor whose loading is at most {gap} below its largest (multiple membership), with h² ≥ {h2_multi}; for Tab. 17, it follows Hair et al. with h² ≥ {h2_hair} and leaves cross-loaded measures out. The tool applies the rules as stated; where a table of the paper differs from them, a note below the rules says so for the bundled datasets. The factor solution is the same under every rule; only the groups change.",
       "criteria": "Kaiser keeps every factor with an eigenvalue above 1. Parallel analysis (Horn) keeps the factors whose eigenvalue is above the {percentile}th percentile of the eigenvalues of {simulations} random normal datasets of the same size, computed on principal components with the fixed seed {seed}; with many observations it comes close to Kaiser. A paper may also fix the number before the analysis. Choosing a criterion sets the number of factors."
@@ -1174,15 +1175,15 @@
       "chip_match": "Numbers = ComFy report",
       "chip_differs": "Differs from ComFy report",
       "title": "Comparison with the published report",
-      "summary_match": "Every compared number equals the report to {tolerance}.",
-      "summary_differs": "Numbers that differ from the report by more than {tolerance}: {n}.",
+      "summary_match": "Every compared number equals the report to {tolerance}, above 1 relative to the number.",
+      "summary_differs": "Numbers that differ from the report by more than {tolerance} (above 1 relative to the number): {n}.",
       "compared": "Compared",
       "what": {
         "bartlett": "Bartlett's test",
         "kmo": "KMO",
-        "msa": "MSA per measure",
+        "msa": "MSA per measure, removed measures",
         "msa_filter": "Removed measures",
-        "loadings": "Loadings",
+        "loadings": "Loadings, communalities",
         "communalities": "Communalities"
       },
       "differences": "Differences",
@@ -1264,7 +1265,7 @@
         },
         "if_k4_k6": {
           "title": "Important Factors: 4 against 6 factors",
-          "text": "The Inductive miner with the 4 factors of the paper beside 6, under multiple membership, as in section 6: MM (loading 0.50) forms a fifth dimension, the sixth stays empty.",
+          "text": "The Inductive miner with the 4 factors of the paper beside 6, under multiple membership. Here MM (loading 0.50, communality 0.33) forms a fifth dimension; section 6 of the paper leaves MM out because of this communality and leaves dimensions 5 and 6 empty.",
           "short": "The Inductive miner with 4 and with 6 factors, as in section 6."
         }
       },
@@ -1495,7 +1496,7 @@
       "included_done": "{measure} is included."
     },
     "warnings_tip": {
-      "heywood": "These measures are explained almost completely by the factors (a uniqueness of at most 0.005, the bound of the fit). The grouping of the measures can still be read; read the loadings of these measures with care, since they are at the bound of the fit."
+      "heywood": "These measures are explained almost completely by the factors (a uniqueness of at most 0.005, the bound of the fit). This can point to an unsuitable number of factors or to nearly identical measures, so read the grouping with care, and the loadings of these measures too, since they are at the bound of the fit."
     }
   },
   "inspect": {

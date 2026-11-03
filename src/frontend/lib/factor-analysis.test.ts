@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { FactorAnalysis, Job } from "./api";
+import type { FactorAnalysis, Job, Stability } from "./api";
 import {
   PRINT_HEATMAP_MAX_MEASURES,
   PRINT_PAGE_HEIGHT_IN,
@@ -21,6 +21,7 @@ import {
   optionsFromSaved,
   orderMeasures,
   progressPercent,
+  stableWithoutFactor,
   publishedOptions,
   differingOptions,
   secondaryCells,
@@ -589,5 +590,27 @@ describe("mostlyFiltered", () => {
     expect(mostlyFiltered(6, 6)).toBe(false);
     expect(mostlyFiltered(10, 3)).toBe(false);
     expect(mostlyFiltered(5, 0)).toBe(false);
+  });
+});
+
+describe("stableWithoutFactor", () => {
+  const entry = (measure: string, factors: number[], assignment: number | null) => ({
+    measure,
+    factors,
+    primary_factor: 0,
+    assignment,
+    primary: null,
+  });
+  const stability = (measures: Stability["measures"]) =>
+    ({ measures, summary: { stable: 0, measures: measures.length, threshold: 0.9 } }) as unknown as Stability;
+
+  it("counts the measures that are stable only in having no factor", () => {
+    const result = stability([entry("A", [0], 0.95), entry("B", [], 0.93), entry("C", [], 0.4), entry("D", [1], 0.5)]);
+    expect(stableWithoutFactor(result)).toBe(1);
+  });
+
+  it("is 0 when every stable measure has a factor, or nothing was computed", () => {
+    expect(stableWithoutFactor(stability([entry("A", [0], 0.95)]))).toBe(0);
+    expect(stableWithoutFactor(stability([entry("A", [], null)]))).toBe(0);
   });
 });

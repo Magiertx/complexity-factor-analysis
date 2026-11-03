@@ -20,8 +20,11 @@ interface CatalogContent {
   collections: Record<string, { description: string; note?: string; license?: string }>;
 }
 
-const PAPER_MINER = (miner: string) =>
-  `ComFy-Modellmaße der Netze, die der ${miner} aus den 288 Trainingslogs des Process Discovery Contest 2025 gefunden hat, wie im Paper verwendet.`;
+const PAPER_MINER = (miner: string, inPaper = true) =>
+  `ComFy-Modellmaße der Netze, die der ${miner} aus den 288 Trainingslogs des Process Discovery Contest 2025 gefunden hat, ` +
+  (inPaper
+    ? "wie im Paper verwendet."
+    : "aus den Reports des ComFy-Repositorys; das Paper wertet diesen Miner nicht aus.");
 
 const DE: CatalogContent = {
   groups: {
@@ -77,8 +80,8 @@ const DE: CatalogContent = {
   datasets: {
     "comfy-paper-inductive-miner": PAPER_MINER("Inductive miner"),
     "comfy-paper-alpha-miner": PAPER_MINER("Alpha miner"),
-    "comfy-paper-alpha-plus-miner": PAPER_MINER("Alpha Plus miner"),
-    "comfy-paper-alpha-dollar-miner": PAPER_MINER("Alpha Dollar miner"),
+    "comfy-paper-alpha-plus-miner": PAPER_MINER("Alpha Plus miner", false),
+    "comfy-paper-alpha-dollar-miner": PAPER_MINER("Alpha Dollar miner", false),
     "comfy-paper-heuristics-miner": PAPER_MINER("Heuristics miner"),
     "comfy-paper-hybrid-ilp-miner": PAPER_MINER("Hybrid ILP miner"),
     "comfy-paper-directly-follows-miner": PAPER_MINER("Directly Follows miner"),

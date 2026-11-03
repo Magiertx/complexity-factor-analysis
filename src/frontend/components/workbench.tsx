@@ -47,6 +47,7 @@ import {
   FactorCatalog,
 } from "@/lib/api";
 import { downloadBlob, jobErrorText } from "@/lib/factor-analysis";
+import { isSingleRun } from "@/lib/history";
 import { FileDrop, LOG_EXTENSIONS } from "./file-drop";
 import { ParameterForm, choiceList, type OptionInfo } from "./parameter-form";
 import { SingleRunTour } from "./single-run-tour";
@@ -62,7 +63,7 @@ import { Menu, type MenuItem } from "./ui/menu";
 import { useTip } from "./ui/tip";
 import { PageHeader } from "./page-header";
 import { useJobs } from "./jobs-provider";
-import { RecentSingleRuns, isSingleRun } from "./recent-single-runs";
+import { RecentSingleRuns } from "./recent-single-runs";
 import { Segmented } from "./ui/segmented";
 import { Notice } from "./ui/notice";
 import { ChoiceMark, choiceTile } from "./ui/choice";

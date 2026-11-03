@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DatasetSummary, Job } from "./api";
-import { dayKey, historyHref, historyRows, parseTypeFilter, savedSettingsText } from "./history";
+import { dayKey, historyHref, isSingleRun, historyRows, parseTypeFilter, savedSettingsText } from "./history";
 import { defaultOptions } from "./factor-analysis";
 
 const t = (key: string, params: Record<string, string | number> = {}) =>
@@ -96,6 +96,12 @@ describe("the rows of the History", () => {
     const row = rows.find((r) => r.job?.id === "s")!;
     expect(row).toMatchObject({ type: "model", status: "active", percent: 40, dataset: null });
     expect(historyHref(row)).toBe("/?dataset=d1");
+  });
+
+  it("keeps dataset jobs and stability checks out of the runs of single logs", () => {
+    expect(isSingleRun(job("a"))).toBe(true);
+    expect(isSingleRun(job("b", { algorithm_id: "_dataset:model" }))).toBe(false);
+    expect(isSingleRun(job("c", { algorithm_id: "_stability:model", filename: "200 samples" }))).toBe(false);
   });
 
   it("opens a dataset on its tab and a single run on the page of a single log", () => {
