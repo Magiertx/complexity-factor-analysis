@@ -1496,7 +1496,7 @@
       "included_done": "{measure} ist einbezogen."
     },
     "warnings_tip": {
-      "heywood": "Diese Maße werden fast vollständig von den Faktoren erklärt (Einzigartigkeit höchstens 0,005, die Grenze der Anpassung). Das kann auf eine unpassende Faktorzahl oder fast gleiche Maße hinweisen; lies die Gruppierung deshalb mit Vorsicht, und die Ladungen dieser Maße deutest du mit Vorsicht, denn sie liegen an der Grenze der Anpassung."
+      "heywood": "Diese Maße werden fast vollständig von den Faktoren erklärt (Einzigartigkeit höchstens 0,005, die Grenze der Anpassung). Das kann auf eine unpassende Faktorzahl oder fast gleiche Maße hinweisen; lies die Gruppierung und vor allem die Ladungen dieser Maße deshalb mit Vorsicht, denn sie liegen an der Grenze der Anpassung."
     }
   },
   "inspect": {
