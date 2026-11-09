@@ -68,7 +68,7 @@ import { Segmented } from "@/components/ui/segmented";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { UploadZone } from "@/components/upload-zone";
 import { FeatureChecklist } from "./feature-checklist";
-import { EXAMPLE_CSV, startEntries, startEntryHref, type OpenPreset, type StartEntry } from "./start-here";
+import { EXAMPLE_CSV, IMPORTANT_FACTORS_URL, startEntries, startEntryHref, type OpenPreset, type StartEntry } from "./start-here";
 
 const SOURCE_ICON: Record<DatasetSource, React.ComponentType<{ className?: string }>> = {
   bundled: Database,
@@ -582,6 +582,13 @@ function BundledList({
                 name={name}
                 kind={kind}
                 entry={e}
+                sourceUrl={
+                  e.source === "paper"
+                    ? IMPORTANT_FACTORS_URL
+                    : e.source === "repo"
+                      ? (collections.find((c) => c.id === catalog.bundled.find((b) => b.id === e.bundledId)?.collection)?.source_url ?? null)
+                      : null
+                }
                 chosen={selected === START + e.id}
                 onSelect={() => onSelect(START + e.id)}
               />
@@ -613,12 +620,15 @@ function StartTile({
   name,
   kind,
   entry,
+  sourceUrl,
   chosen,
   onSelect,
 }: {
   name: string;
   kind: FactorKind;
   entry: StartEntry;
+  /** Where the data of the way in come from: the paper or the repository; null for none. */
+  sourceUrl: string | null;
   chosen: boolean;
   onSelect: () => void;
 }) {
@@ -640,6 +650,20 @@ function StartTile({
       onChange={onSelect}
       describedBy={shortId}
       info={<InfoTip size="xs" topic={title} text={t(`factor.start.scenario.${entry.id}.text`)} align="end" />}
+      footer={
+        sourceUrl && entry.source ? (
+          <a
+            href={sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={t(`factor.start.link_${entry.source}_label`)}
+            className="inline-flex min-h-6 items-center gap-1 rounded text-muted underline-offset-2 hover:text-fg hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            {t(`factor.start.link_${entry.source}`)}
+            <ExternalLink className="h-3 w-3" aria-hidden />
+          </a>
+        ) : undefined
+      }
     >
       <span className="block text-sm font-medium">{title}</span>
       <span id={shortId} className="block text-xs text-muted leading-snug">

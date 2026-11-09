@@ -5,9 +5,8 @@
   17 measures of ComFy; the codes of the other four follow the same style and are the tool's
   own (``TOOL_MODEL_CODES``).
 - Log measures: the macros of ComFy for log measures (``LatexExporter.py``, commit 70837ce,
-  https://github.com/Pati-nets/ComFy-for-Log-Measures), which the paper "Cleaning Up the Measure
-  Mess" prints as C with the code as index, e.g. C_mag. The codes are kept as written there,
-  including FREQ-A-IRQ for the interquartile range of the activity frequencies.
+  https://github.com/Pati-nets/ComFy-for-Log-Measures), which print each code as C with the code
+  as index, e.g. C_mag. The codes are kept as written there, including FREQ-A-IRQ for the interquartile range of the activity frequencies.
 
 A code is shorter than the name and only names the measure within its kind; the full name stays
 in the tooltip of the UI and next to the code in the exports.

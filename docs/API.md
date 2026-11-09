@@ -493,7 +493,7 @@ The steps match ComFy:
      absolute value exceeds `loading_threshold`; the measure goes to every factor whose
      loading counts and lies at most 0.15 below its largest, if its communality is at least
      0.3.
-   - `hair` (Important Factors, Tab. 17, after Hair et al.): the factor of the largest
+   - `hair` (Important Factors, Tab. 17; shown as "Without cross-loadings", its two criteria are justified in the paper with Hair et al.): the factor of the largest
      loading, if it exceeds `loading_threshold` and the communality is at least 0.5; a
      measure with another loading that counts and lies at most 0.15 below is left out.
 
@@ -662,8 +662,8 @@ the running tool.
 `POST /factor-analysis/datasets/{id}/export/bibtex` takes the same body and returns
 `<dataset>-references.bib` with the entries of the `citation_keys` of `export/methods`, in their
 order, and no others. Kaiser (1960, 1974), Bartlett (1950) and Horn (1965) are given with their
-DOIs, checked against Crossref. The data of the bundled datasets, ComFy, ComFy for log measures and
-the log paper come from `datasets/manifest.json` of this repository, and the author and address of
+DOIs, checked against Crossref. The data of the bundled datasets, ComFy and ComFy for log measures
+come from `datasets/manifest.json` of this repository, and the author and address of
 `factor_analyzer` from its package metadata. The tool's own entry has its name, version and commit
 from the running service, the author from its git history, and the year of the export. What a
 source does not record (the authors of a paper beyond the one the catalog names, the pages of the
@@ -680,11 +680,11 @@ the caption, with the decimal comma in German) and returns `<dataset name>-<figu
 `.png`. With `short_codes`, a log measure is written as the paper writes it, C with its code as
 index. Both are drawn by matplotlib
 in a print style, whatever the theme of the UI: white background, 8 pt text at the text width
-of a CEUR page (15.9 cm), blue for positive and orange for negative loadings, the loadings that
+of a CEUR page (15.9 cm), the loadings shaded in one blue by their absolute value (the sign stands in the number), the loadings that
 do not count left white, the assigned ones bold. With `factor_names` the heatmap heads a named
 factor by its name, set at a slant, instead of `F1`. The correlation map has a cell for each pair of
 the measures left in (those `excluded` are gone, those the MSA filter removes are there), blue for a
-positive and orange for a negative r, the pairs with |r| of 0.95 or more outlined, and under the order
+positive and slate for a negative r, the pairs with |r| of 0.95 or more outlined, and under the order
 `factor` a line between the dimensions, each named at the right of the map; up to 17 measures have their
 r written in the cells, more are read from the colour and the labels, which shrink to keep every
 measure named. The SVG keeps its text as text and is the
@@ -1002,7 +1002,7 @@ paper = s.post(f"{BASE}/factor-analysis/datasets/{ds['dataset_id']}/analyze",
                json=entry["published_options"]).json()
 print(paper["published_match"]["status"], paper["factor_count"])
 
-# Tab. 17: the four miners side by side under Hair et al.; no dataset of the session needed
+# Tab. 17: the four miners side by side without cross-loadings; no dataset of the session needed
 miners = ["alpha", "directly-follows", "inductive", "hybrid-ilp"]
 compared = s.post(f"{BASE}/factor-analysis/compare",
                   json={"columns": [{"bundled_id": f"comfy-paper-{m}-miner"} for m in miners],

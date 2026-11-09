@@ -453,8 +453,8 @@ function LoadingsKey({ analysis, options }: { analysis: FactorAnalysis; options:
   return (
     <p className="flex items-center gap-x-4 gap-y-1 text-xs text-muted flex-wrap">
       <span className="flex items-center gap-1.5">
-        <span className="h-3 w-3 rounded-sm" style={loadingStyle(-0.9)} />
-        {t("factor.loadings.legend_negative")}
+        <span className="h-3 w-3 rounded-sm" style={loadingStyle(0.9)} />
+        {t("factor.loadings.legend_shade")}
       </span>
       <span>{t(strict ? "factor.loadings.legend_faded_strict" : "factor.loadings.legend_faded", { threshold: value })}</span>
       <span>
@@ -468,8 +468,7 @@ function LoadingsKey({ analysis, options }: { analysis: FactorAnalysis; options:
 
 /**
  * The loadings as a table, for the datasets that have more measures than the heatmap holds on a
- * page: colour as in the loadings step (orange for a negative sign, a shade of the text colour for
- * a positive one, the loadings that do not count faded, the assigned ones bold), the header on
+ * page: colour as in the loadings step (a shade of the accent by |loading|, the loadings that do not count faded, the assigned ones bold), the header on
  * every page.
  */
 function LoadingsTable({

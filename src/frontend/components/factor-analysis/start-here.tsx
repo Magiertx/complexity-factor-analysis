@@ -18,17 +18,22 @@ export interface StartEntry {
   preset?: OpenPreset;
   /** The address of a comparison. */
   href?: string;
+  /** Where its data come from, as a small link on its card: the paper, or the repository of the log measures. */
+  source?: "paper" | "repo";
 }
+
+/** Important Factors: Complexity Dimensions for Petri Nets (ATAED 2026), the paper of the model datasets. */
+export const IMPORTANT_FACTORS_URL = "https://ceur-ws.org/Vol-4236/paper14.pdf";
 
 /**
  * Entries that need features still to come stay in the list, unavailable, so they are switched on
  * in one place.
  */
 const ENTRIES: (StartEntry & { available: boolean })[] = [
-  { id: "if_inductive", to: "model", bundledId: "comfy-paper-inductive-miner", preset: "published", available: true },
-  { id: "log_standard", to: "log", bundledId: "comfy-log-pdc-training-logs", preset: "standard", available: true },
-  { id: "if_four_miners", to: "compare", href: COMPARE_HREF, available: true },
-  { id: "if_k4_k6", to: "compare", href: COMPARE_K4_K6_HREF, available: true },
+  { id: "if_inductive", to: "model", bundledId: "comfy-paper-inductive-miner", preset: "published", source: "paper", available: true },
+  { id: "log_standard", to: "log", bundledId: "comfy-log-pdc-training-logs", preset: "standard", source: "repo", available: true },
+  { id: "if_four_miners", to: "compare", href: COMPARE_HREF, source: "paper", available: true },
+  { id: "if_k4_k6", to: "compare", href: COMPARE_K4_K6_HREF, source: "paper", available: true },
   { id: "log_paper", to: "log", available: false },
 ];
 

@@ -29,7 +29,6 @@ LANGUAGES = ("en", "de")
 #: citation of an entry (``datasets/manifest.json``): the key of that reference.
 _COLLECTION_KEYS = (
     ("Important Factors", "schalk2026important"),
-    ("Cleaning Up the Measure Mess", "measure_mess"),
 )
 
 
@@ -144,7 +143,7 @@ REFERENCES: dict[str, dict[str, Any]] = {
     "hair_multivariate": {
         "type": "book",
         "comment": (
-            "Hair et al., after whom the rule of Tab. 17 of Important Factors is named. Edition, title, publisher and "
+            "Hair et al., whom Important Factors cites for the two criteria of its Tab. 17. Edition, title, publisher and "
             "ISBN as in the references of Important Factors and Google Books, which name three authors; check the "
             "authors against the title page."
         ),
@@ -164,14 +163,6 @@ REFERENCES: dict[str, dict[str, Any]] = {
             ("series", "CEUR Workshop Proceedings"), ("volume", "4236"), ("year", "2026"),
             ("url", "https://ceur-ws.org/Vol-4236/paper14.pdf"),
         ],
-    },
-    "measure_mess": {
-        "type": "misc",
-        "comment": (
-            "Title as in datasets/manifest.json of this tool. Its authors, venue and year are not recorded there: "
-            "complete the entry from the paper."
-        ),
-        "fields": [("title", "Cleaning Up the Measure Mess: A Factor Analysis on Event Log Measures")],
     },
     "schalk_comfy": {
         "type": "misc",
@@ -339,7 +330,7 @@ _TEXTS: dict[str, dict[str, str]] = {
         "rule_hair": (
             "Each measure was assigned to the factor on which its absolute loading is largest, if that loading "
             "{reach}{comm_and}; a measure with another loading that also {reach} and lies at most {gap} "
-            "below its largest was left out (after Hair et al.{cite})"
+            "below its largest was left out (as in Table 17 of Important Factors, with the thresholds of Hair et al.{cite})"
         ),
         "comm_and": " and its communality is at least {communality}",
         "comm_if": ", if its communality is at least {communality}",
@@ -418,7 +409,7 @@ _TEXTS: dict[str, dict[str, str]] = {
         "rule_hair": (
             "Jedes Maß wurde dem Faktor zugeordnet, auf dem der Betrag seiner Ladung am größten ist, wenn "
             "dieser {reach}{comm_and}; ein Maß mit einer weiteren Ladung, die ebenfalls {reach} und "
-            "höchstens {gap} darunter liegt, blieb unzugeordnet (nach Hair et al.{cite})"
+            "höchstens {gap} darunter liegt, blieb unzugeordnet (wie in Tabelle 17 von Important Factors, mit den Schwellen von Hair et al.{cite})"
         ),
         "comm_and": " und seine Kommunalität mindestens {communality} beträgt",
         "comm_if": ", wenn seine Kommunalität mindestens {communality} beträgt",

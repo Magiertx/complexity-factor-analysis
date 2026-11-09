@@ -17,6 +17,7 @@ export function ChoiceCard({
   checked,
   onChange,
   info,
+  footer,
   describedBy,
   reason,
   size = "md",
@@ -31,6 +32,8 @@ export function ChoiceCard({
   onChange: () => void;
   /** The (i) of the card, or another small control. */
   info?: React.ReactNode;
+  /** A line under the card's text with a link or a control of its own; outside the label, so it does not choose the card. */
+  footer?: React.ReactNode;
   /** The id of the short line under the name, read as the description of the choice. */
   describedBy?: string;
   reason?: string | null;
@@ -67,6 +70,7 @@ export function ChoiceCard({
         <span className="min-w-0 flex-1">{children}</span>
       </label>
       {info && <span className={cn("absolute right-2", size === "sm" ? "top-1.5" : "top-2")}>{info}</span>}
+      {footer && <div className="-mt-1 pb-2 pl-[2.625rem] pr-3 text-xs">{footer}</div>}
     </div>
   );
 }

@@ -500,26 +500,29 @@ export function kmoGrade(value: number): KmoGrade {
   return "unacceptable";
 }
 
-// Colour carries one meaning in the loadings: orange for a negative sign (the token in
-// globals.css). A positive loading is neutral, a shade of the text colour; the surface itself is
-// the midpoint, and the shade grows with the magnitude.
+// A loading has no colour for its sign: the sign of a factor is arbitrary (all its loadings can
+// be flipped without changing anything), so the sign stands in the number. The shade of a cell
+// grows with |loading|, in the accent, whatever the sign. A correlation does have a sign worth
+// seeing: slate (--negative in globals.css) below zero, the accent above.
 
-/** Background of a loading cell: orange for a negative loading, neutral for a positive one. */
+/** Background of a loading cell: the accent, stronger the larger |loading|. */
 export function loadingStyle(value: number): CSSProperties {
   const m = Math.min(Math.abs(value), 1);
-  return {
-    backgroundColor: value >= 0 ? `rgb(var(--fg) / ${(m * 0.16).toFixed(3)})` : `rgb(var(--negative) / ${(m * 0.45).toFixed(3)})`,
-  };
+  return { backgroundColor: `rgb(var(--accent) / ${(m * 0.35).toFixed(3)})` };
 }
 
-/** The colour of a bar for a value: orange when negative, else neutral. */
+/** Background of a cell that holds a correlation (of the factors): slate below zero, the accent above. */
+export function correlationStyle(value: number): CSSProperties {
+  const m = Math.min(Math.abs(value), 1);
+  return { backgroundColor: `rgb(var(${value < 0 ? "--negative" : "--accent"}) / ${(m * 0.35).toFixed(3)})` };
+}
+
+/** The colour of the bar of a loading; it stands left or right of the midline by its sign, not by its colour. */
+export const LOADING_BAR_COLOR = "rgb(var(--muted))";
+
+/** The colour of the bar of a correlation: slate when negative, else neutral. */
 export function signColor(value: number): string {
   return value >= 0 ? "rgb(var(--muted))" : "rgb(var(--negative))";
-}
-
-/** Text in the colour of a value's sign, dark enough for small text on a tile. */
-export function signInk(value: number): string {
-  return value >= 0 ? "rgb(var(--fg))" : "rgb(var(--negative-ink))";
 }
 
 /** The height in inches of the loadings heatmap of the server for this many measures (figures.py: 0.17 per row, 0.75 around them). */

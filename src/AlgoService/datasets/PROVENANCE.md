@@ -22,8 +22,7 @@ unless noted.
   https://github.com/Pati-nets/ComFy-for-Log-Measures, commit
   `70837cec7f3aff9580f52e78162b433e9e21f473`.
 - **Content:** 146 feeed measures of 2112 training logs of the Process Discovery Contests
-  2020 to 2025, analysed in the paper *Cleaning Up the Measure Mess: A Factor Analysis on
-  Event Log Measures*.
+  2020 to 2025, as shipped in that repository.
 - **feeed version:** the file predates feeed commit `b28fb49`, which removed a dummy `[0]`
   appended to the distinct-activity statistics. Five features therefore differ from what the
   service computes with the feeed it ships: `simple_trace_diversity`,

@@ -137,22 +137,22 @@ def test_the_rule_of_hair_and_the_rows_of_a_miner_in_a_log_dataset():
         msa_filter={"enabled": True, "removed": []},
         unassigned_details=[{"measure": "m1", "reason": "cross_loading"}, {"measure": "m2", "reason": "low_communality"}],
     )
-    entry = {"citation": 'Data of the paper "Cleaning Up the Measure Mess: A Factor Analysis on Event Log Measures", computed with ComFy for log measures'}
+    entry = {"citation": "Data of ComFy for Log Measures by Patrizia Schalk"}
     built = methods.methods(
         language="en", dataset=_dataset(name="logs_1", kind="log"), result=result, requested_factors=3, excluded=[], tool=TOOL,
         libraries=LIBRARIES, entry=entry,
     )
     for part in (
         'The dataset "logs\\_1" has 50 observations of 12 event log complexity measures after cleaning (the rows of the Alpha miner), '
-        "published with \\cite{measure_mess}, whose measures were computed with \\cite{schalk_comfy_log}.",
+        "whose measures were computed with \\cite{schalk_comfy_log}.",
         "1 measure was dropped in cleaning",
         "(no measure fell below an MSA of 0.60)",
         "The factors were not rotated.",
-        "(after Hair et al.~\\cite{hair_multivariate}); 2 measures were assigned to no factor.",
+        "(as in Table 17 of Important Factors, with the thresholds of Hair et al.~\\cite{hair_multivariate}); 2 measures were assigned to no factor.",
         "if that loading exceeds 0.35 and its communality is at least 0.50",
     ):
         assert part in built.text, part
-    assert built.keys[-1] == "hair_multivariate" and "measure_mess" in built.keys
+    assert built.keys[-1] == "hair_multivariate" and "schalk_comfy_log" in built.keys
 
 
 def test_the_hair_rule_names_the_second_loading_condition_in_full():

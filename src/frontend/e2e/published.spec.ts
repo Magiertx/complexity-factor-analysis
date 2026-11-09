@@ -195,7 +195,7 @@ test("the assignment rule decides what happens to cross-loaded measures", async 
   // The rule also puts average connector degree in F2, which Tab. 12 does not; a note says so.
   await expect(loadings).toContainText(text("factor.paper_notes.rules.inductive_multi"));
 
-  // Hair et al. (Tab. 17) leaves both out as cross-loaded.
+  // The rule without cross-loadings (Tab. 17) leaves both out as cross-loaded.
   await rule("hair").check({ force: true });
   await expect(loadings).not.toContainText(text("factor.paper_notes.rules.inductive_multi"));
   await expect(loadings).toContainText(text("factor.loadings.reason.cross_loading", { factors: "F1, F3" }));

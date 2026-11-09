@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Ban, ChevronLeft, ChevronRight, ExternalLink, Loader2, Plus, X } from "lucide-react";
 import { fetchDescriptives, type Descriptives, type FactorAnalysis, type FactorDataset, type FactorMeasure } from "@/lib/api";
-import { assignedCells, factorName, signColor, type AnalysisOptions, type FactorNames } from "@/lib/factor-analysis";
+import { LOADING_BAR_COLOR, assignedCells, factorName, signColor, type AnalysisOptions, type FactorNames } from "@/lib/factor-analysis";
 import { MIN_MEASURES } from "@/lib/factor-analysis";
 import { NO_VALUE, formatNumber, formatStatistic } from "@/lib/format";
 import type { MeasureInfo } from "@/lib/measure-list";
@@ -496,7 +496,7 @@ function InAnalysis({
                     <span
                       className="absolute inset-y-0 rounded-full"
                       style={{
-                        background: signColor(value),
+                        background: LOADING_BAR_COLOR,
                         opacity: bold ? 1 : 0.6,
                         width: `${Math.min(1, Math.abs(value)) * 50}%`,
                         left: value >= 0 ? "50%" : `${50 - Math.min(1, Math.abs(value)) * 50}%`,

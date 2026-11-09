@@ -472,7 +472,7 @@ a dataset, there included, is confirmed first.
 The settings delete all datasets of the session (`DELETE /datasets`) together with their
 `localStorage` entries.
 
-The single-log ComFy workbench lives at `/inspect` ("Inspect a single log" on the model tab):
+The single-log workbench (miners and complexity measures of one log) lives at `/inspect` ("Inspect a single log" on the model tab):
 
 1. On load: `GET /algorithms` (the page runs the one registered algorithm, ComFy, whose paper and citation are in the
    header menu), `GET /sample-logs`, `GET /recent-logs` for the log-source picker. An address `?log=<name>&miner=<miner>`
@@ -491,7 +491,7 @@ to print or save as PDF (the download menu opens it in a new tab), `/guide` the 
 `docs/GUIDE.md` in the language of the UI (the help icon of the toolbar opens it).
 `/compare` puts the factor structures of 2 to 8 bundled datasets side by side
 (`compare-view.tsx`, `lib/compare.ts`; the column icon of the model tab's toolbar and Start
-here open it with the four miners of Tab. 17 under Hair et al.). The datasets and the rule are
+here open it with the four miners of Tab. 17 under the rule "without cross-loadings"). The datasets and the rule are
 its address (`?cols=<ids>&rule=<rule>`, an id with `~k6` after it asks for 6 factors, so the
 same dataset can stand twice), every change asks `POST /factor-analysis/compare` again, and its
 toolbar has the short codes, the link and the downloads of `POST /factor-analysis/compare/export`.

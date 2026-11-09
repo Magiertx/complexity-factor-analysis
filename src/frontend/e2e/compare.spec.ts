@@ -3,7 +3,7 @@ import type { Page } from "@playwright/test";
 import { FIT_TIMEOUT, chooseDownload, downloaded, expect, pattern, stepSection, test, text, unzip } from "./fixtures";
 
 // The comparison of factor structures (/compare), like Tab. 17 of Important Factors: the four
-// miners under Hair et al., the rule and the datasets as choices, the two looks, the downloads,
+// miners without cross-loadings, the rule and the datasets as choices, the two looks, the downloads,
 // and the ways in from Start here and from the toolbar. It needs no dataset of the session.
 
 const TABLE_17 = [
@@ -55,7 +55,7 @@ async function openFromStart(page: Page, scenario: string) {
   await data.getByRole("button", { name: text("factor.data.submit_compare") }).click();
 }
 
-test("Get started opens the four miners of Tab. 17 under Hair et al., without a dataset of the session", async ({ page }) => {
+test("Get started opens the four miners of Tab. 17 without cross-loadings, without a dataset of the session", async ({ page }) => {
   await openFromStart(page, "if_four_miners");
   await expect(page).toHaveURL(new RegExp(`/compare\\?cols=${TABLE_17.join(",")}&rule=hair$`));
   await expect(matrix(page)).toBeVisible({ timeout: FIT_TIMEOUT });
@@ -67,7 +67,7 @@ test("Get started opens the four miners of Tab. 17 under Hair et al., without a 
   await expect(cells(page, text("compare.header.n"))).toHaveText(["288", "288", "288", "288"]);
   await expect(cells(page, text("compare.header.factors"))).toHaveText(["4", "4", "4", "4"]);
   // sep lines up in one dimension for every miner; the cross-loaded CH of the Alpha miner is in
-  // none under Hair et al. and names the dimensions of its cross-loading.
+  // none without cross-loadings and names the dimensions of its cross-loading.
   await expect(cells(page, "Separability")).toHaveText([/^D3/, /^D3/, /^D3/, /^D3/]);
   await expect(cells(page, "Connector Heterogeneity").first()).toHaveText(/D4 · D2/);
   await expect(cells(page, "Connector Heterogeneity").first()).toContainText(text("factor.loadings.cross_cell"));
@@ -174,7 +174,7 @@ test("the rule and the datasets change the comparison and its link", async ({ pa
 test("the dimensions look like Tab. 17, with the names or the short codes", async ({ page }) => {
   await openCompare(page);
   await page.getByRole("radio", { name: text("compare.look.dimensions") }).click();
-  const table = page.getByRole("table", { name: pattern(text("compare.dimensions_caption", { rule: "Hair et al." })) });
+  const table = page.getByRole("table", { name: pattern(text("compare.dimensions_caption", { rule: text("factor.loadings.rule.hair.title") })) });
   const inductive = table.getByRole("row", { name: /^Inductive miner/ }).getByRole("cell");
   await expect(inductive).toHaveText(["Size, Token split, Number of duplicate tasks", "Connector Heterogeneity", "Separability", "Maximum connector degree, Coefficient of network connectivity", /Connector Mismatch/]);
 
@@ -190,7 +190,7 @@ test("the dimensions look like Tab. 17, with the names or the short codes", asyn
 test("a match of dimensions says which measures it rests on, and the first dataset keeps its numbers", async ({ page }) => {
   await openCompare(page);
   await page.getByRole("radio", { name: text("compare.look.dimensions") }).click();
-  const table = page.getByRole("table", { name: pattern(text("compare.dimensions_caption", { rule: "Hair et al." })) });
+  const table = page.getByRole("table", { name: pattern(text("compare.dimensions_caption", { rule: text("factor.loadings.rule.hair.title") })) });
   const row = (name: string) => table.getByRole("row", { name: new RegExp("^" + pattern(name).source) }).getByRole("cell");
   await expect(row("Alpha miner").nth(0)).toHaveAttribute("data-tip-more", text("compare.tip.kept"));
   // The factor of seq of the Hybrid ILP miner shares one measure with the dimension before it, CH.

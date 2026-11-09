@@ -62,7 +62,7 @@
     "compare_label": "Vergleich",
     "compare_desc": "Faktorstrukturen nebeneinander",
     "inspect_label": "Einzelnes Log",
-    "inspect_desc": "ComFy auf einem Event-Log",
+    "inspect_desc": "Modelle zu einem Event-Log finden und vermessen",
     "history_label": "Verlauf",
     "history_desc": "Datensätze und Runs dieser Sitzung",
     "jobs_running": "{n} läuft · {pct}",
@@ -74,7 +74,7 @@
   "tours": {
     "single_run": {
       "intro_title": "Einzelnes Log untersuchen",
-      "intro_content": "Hier lässt du ComFy auf einem Event-Log laufen: Es entdeckt Petri-Netze mit den gewählten Minern und berechnet ihre Komplexitätsmaße. Die Seite hat drei Abschnitte: das Log, die Miner und Maße und den Run. Esc oder Überspringen beendet die Tour jederzeit.",
+      "intro_content": "Hier findest du mit den gewählten Minern Petri-Netze zu einem Event-Log und siehst dir ihre Komplexitätsmaße an. Die Seite hat drei Abschnitte: das Log, die Miner und Maße und den Run. Esc oder Überspringen beendet die Tour jederzeit.",
       "logsource_title": "1 · Das Event-Log",
       "logsource_content": "Zwei Quellen: „Datei hochladen“ für eine eigene XES- oder JSON-Datei (letzte Uploads und die Logs deiner Datensätze stehen darunter) oder „Beispiel nutzen“ für das mitgelieferte Beispiel-Log. Die Übersicht zeigt, was im Log steckt.",
       "params_title": "2 · Miner und Maße",
@@ -96,7 +96,7 @@
       "step3_compare": "Vergleich: die Faktorstrukturen mehrerer Analysen nebeneinander, wie Tab. 17 von Important Factors.",
       "progress_aria": "Fortschritt",
       "step3_history": "Verlauf: alle Datensätze und Runs deiner Sitzung.",
-      "step3_inspect": "Einzelnes Log: ComFy auf einem Log ausführen und die gefundenen Modelle ansehen."
+      "step3_inspect": "Einzelnes Log: Mit Minern Modelle zu einem Log finden und ihre Komplexität messen."
     },
     "factor": {
       "intro": "Fünf Schritte von den Rohmaßen zu den Faktoren und eine optionale Interpretation, einer nach dem anderen: Die Liste der Schritte links (am Telefon die Zeile oben) und Zurück und Weiter wechseln zwischen ihnen. Halte den Zeiger über ein Bedienelement oder ein (i), um zu sehen, was es tut. Esc oder Überspringen beendet die Tour jederzeit.",
@@ -928,7 +928,7 @@
       "footer_row_pattern": "Die Fußzeile zeigt die Summe der quadrierten Ladungen je Faktor, aus der Mustermatrix.",
       "structure_note": "Die Strukturmatrix enthält die Korrelationen zwischen Maßen und Faktoren; die Summen der quadrierten Ladungen gibt es für die Mustermatrix.",
       "oblique_note": "Bei obliquer Rotation korrelieren die Faktoren, ihre Anteile lassen sich daher nicht addieren; zusammen erklären sie {pct} der Varianz.",
-      "legend_negative": "negativ",
+      "legend_shade": "dunkler: größerer Betrag |λ|; das Vorzeichen steht in der Zahl",
       "legend_bold": "fett: |Ladung| ≥ {threshold}",
       "legend_bold_strict": "fett: |Ladung| > {threshold}",
       "legend_bold_assigned": "fett: die Ladungen, über die die Regel ein Maß zuordnet",
@@ -957,8 +957,8 @@
           "text": "|λ| über der Schwelle und h² ≥ {h2_multi}; eine Ladung höchstens {gap} unter der größten zählt mit."
         },
         "hair": {
-          "title": "Hair et al.",
-          "source": "Important Factors, Tab. 17",
+          "title": "Ohne Querladungen",
+          "source": "Important Factors, Tab. 17; das Paper begründet beide Kriterien mit Hair et al. (S. 119)",
           "text": "h² ≥ {h2_hair}; ein Maß mit einer zweiten Ladung höchstens {gap} unter seiner größten fällt heraus."
         }
       },
@@ -1051,14 +1051,14 @@
       "scree": "Der Screeplot zeigt die Eigenwerte der Korrelationsmatrix in absteigender Reihenfolge. Suche den Knick, ab dem die Kurve flach wird; Faktoren danach tragen wenig bei. Knick, die Regel Eigenwert über 1 und die Parallelanalyse können sich widersprechen, nimm sie als Ausgangspunkte. Die dünne Linie an der rechten Achse summiert die Eigenwerte auf: den Anteil der Varianz, den die ersten Hauptkomponenten erklären. Die Faktoren der Analyse erklären etwas weniger, wie Schritt 5 zeigt.",
       "eigenvalue": "Ein Eigenwert gehört zu einer Hauptkomponente der Korrelationsmatrix: die Varianz, die sie erklärt, gemessen in Einheiten eines standardisierten Maßes. Der Vorschlag behält so viele Faktoren, wie Eigenwerte über 1 liegen (Kaiser-Kriterium), also so viele, wie Komponenten mehr erklären als ein einzelnes Maß.",
       "rotation": "Die Rotation dreht die Faktorlösung so, dass jedes Maß auf möglichst wenigen Faktoren hoch lädt; das macht die Faktoren leichter benennbar. Wie viel Varianz die Faktoren zusammen erklären, ändert sie nicht. Varimax und Quartimax halten die Faktoren unkorreliert; Promax und Oblimin erlauben Korrelationen.",
-      "threshold": "Ladungen, deren Betrag diese Schwelle erreicht, gelten als substanziell. Zu welchen Faktoren ein Maß kommt, bestimmt die Zuordnungsregel oben; bei der größten Ladung kommt es zu dem Faktor mit dem größten Betrag, wenn dieser die Schwelle erreicht. Üblich sind Werte zwischen 0,3 und 0,5; ComFy nutzt 0,35, ComFy für Log-Maße 0,5. Ob eine Ladung genau auf der Schwelle zählt, hängt von der Regel ab: bei der größten Ladung zählt sie mit (≥); ComFys Report, der nur Ladungen unter seiner Schwelle grau färbt, lässt sie ebenfalls schwarz. Die Regeln aus Important Factors (Mehrfachzuordnung, Hair) verlangen mehr als die Schwelle (>), wie die Tabellen des Papers.",
-      "loading": "Eine Ladung gibt an, wie stark ein Maß mit einem Faktor zusammenhängt. Bei orthogonaler Rotation ist sie die Korrelation zwischen Maß und Faktor. Bei obliquer Rotation enthält die Mustermatrix Regressionsgewichte und die Strukturmatrix die Korrelationen. Das Vorzeichen gibt die Richtung an: Maße mit entgegengesetzten Vorzeichen auf demselben Faktor bewegen sich gegenläufig.",
+      "threshold": "Ladungen, deren Betrag diese Schwelle erreicht, gelten als substanziell. Zu welchen Faktoren ein Maß kommt, bestimmt die Zuordnungsregel oben; bei der größten Ladung kommt es zu dem Faktor mit dem größten Betrag, wenn dieser die Schwelle erreicht. Üblich sind Werte zwischen 0,3 und 0,5; ComFy nutzt 0,35, ComFy für Log-Maße 0,5. Ob eine Ladung genau auf der Schwelle zählt, hängt von der Regel ab: bei der größten Ladung zählt sie mit (≥); ComFys Report, der nur Ladungen unter seiner Schwelle grau färbt, lässt sie ebenfalls schwarz. Die Regeln aus Important Factors (Mehrfachzuordnung, ohne Querladungen) verlangen mehr als die Schwelle (>), wie die Tabellen des Papers.",
+      "loading": "Eine Ladung gibt an, wie stark ein Maß mit einem Faktor zusammenhängt. Bei orthogonaler Rotation ist sie die Korrelation zwischen Maß und Faktor. Bei obliquer Rotation enthält die Mustermatrix Regressionsgewichte und die Strukturmatrix die Korrelationen. Das Vorzeichen gibt die Richtung an: Maße mit entgegengesetzten Vorzeichen auf demselben Faktor bewegen sich gegenläufig. Das Vorzeichen eines ganzen Faktors ist beliebig (kehrst du alle Vorzeichen eines Faktors um, ändert sich nichts); die Matrix färbt deshalb nur nach dem Betrag.",
       "communality": "Die Kommunalität h² ist der Anteil der Varianz eines Maßes, den alle behaltenen Faktoren zusammen erklären. Ein niedriger Wert (unter etwa 0,4) heißt, dass die Faktoren das Maß schlecht abbilden.",
       "variance": "SS-Ladungen sind die Summe der quadrierten Ladungen eines Faktors. Geteilt durch die Zahl der Maße ergibt sich der Anteil an der Gesamtvarianz, den der Faktor erklärt; die kumulierte Zeile summiert diese Anteile.",
       "groups": "Jeder Faktor mit den ihm zugeordneten Maßen, stärkste Ladung zuerst. Maße einer Gruppe erfassen einen ähnlichen Aspekt der Komplexität; wie der Faktor heißt, ist Sache der Interpretation. Bei Mehrfachzuordnung kann ein Maß in mehreren Gruppen stehen; ein Chip nennt seine anderen Faktoren.",
-      "communality_threshold": "Maße mit einer Kommunalität unter diesem Wert bleiben unzugeordnet, weil die Faktoren zu wenig von ihnen erklären. ComFy für Log-Maße nutzt 0,5; 0 behält jedes Maß, außer bei Mehrfachzuordnung (mindestens 0,3) und Hair (mindestens 0,5).",
+      "communality_threshold": "Maße mit einer Kommunalität unter diesem Wert bleiben unzugeordnet, weil die Faktoren zu wenig von ihnen erklären. ComFy für Log-Maße nutzt 0,5; 0 behält jedes Maß, außer bei Mehrfachzuordnung (mindestens 0,3) und ohne Querladungen (mindestens 0,5).",
       "factor_correlations": "Bei obliquer Rotation dürfen die Faktoren korrelieren. Werte nahe 0 heißen, dass die Faktoren fast unabhängig sind; große Werte heißen, dass sie verwandte Aspekte messen.",
-      "assignment": "Wie aus den Ladungen Faktorgruppen werden. Die größte Ladung ist der Standard dieses Tools: Jedes Maß kommt zu dem Faktor, auf dem es am stärksten lädt. ComFys Report ordnet nichts zu; er färbt nur Ladungen mit |λ| unter seiner Schwelle grau. Important Factors nennt zwei weitere Regeln: Für Tab. 6–16 kommt ein Maß auch zu jedem Faktor, dessen Ladung höchstens {gap} unter seiner größten liegt (Mehrfachzuordnung), bei h² ≥ {h2_multi}; für Tab. 17 folgt es Hair et al. mit h² ≥ {h2_hair} und lässt Maße mit Querladung weg. Das Tool wendet die Regeln so an, wie sie dort stehen; wo eine Tabelle des Papers davon abweicht, sagt das bei den mitgelieferten Datensätzen ein Hinweis unter den Regeln. Die Faktorlösung ist bei jeder Regel dieselbe; nur die Gruppen ändern sich.",
+      "assignment": "Wie aus den Ladungen Faktorgruppen werden. Die größte Ladung ist der Standard dieses Tools: Jedes Maß kommt zu dem Faktor, auf dem es am stärksten lädt. ComFys Report ordnet nichts zu; er färbt nur Ladungen mit |λ| unter seiner Schwelle grau. Important Factors nennt zwei weitere Regeln: Für Tab. 6–16 kommt ein Maß auch zu jedem Faktor, dessen Ladung höchstens {gap} unter seiner größten liegt (Mehrfachzuordnung), bei h² ≥ {h2_multi}; für Tab. 17 (ohne Querladungen, im Paper mit Hair et al. begründet) gilt h² ≥ {h2_hair}, und Maße mit Querladung bleiben außen vor. Das Tool wendet die Regeln so an, wie sie dort stehen; wo eine Tabelle des Papers davon abweicht, sagt das bei den mitgelieferten Datensätzen ein Hinweis unter den Regeln. Die Faktorlösung ist bei jeder Regel dieselbe; nur die Gruppen ändern sich.",
       "criteria": "Kaiser behält jeden Faktor mit einem Eigenwert über 1. Die Parallelanalyse (Horn) behält die Faktoren, deren Eigenwert über dem {percentile}. Perzentil der Eigenwerte von {simulations} zufälligen normalverteilten Datensätzen gleicher Größe liegt, berechnet auf Hauptkomponenten mit dem festen Seed {seed}; bei vielen Beobachtungen liegt sie nahe bei Kaiser. Ein Paper kann die Zahl auch vor der Analyse festlegen. Die Wahl eines Kriteriums setzt die Anzahl der Faktoren."
     },
     "errors": {
@@ -1154,7 +1154,7 @@
       "rule": {
         "largest": "größte Ladung",
         "multi": "Mehrfachzuordnung",
-        "hair": "Hair"
+        "hair": "ohne Querladungen"
       },
       "aria": "Einstellungen der Analyse",
       "chip_title": "Zu dieser Einstellung",
@@ -1246,6 +1246,10 @@
     },
     "start": {
       "title": "Zum Einstieg",
+      "link_paper": "Paper",
+      "link_paper_label": "Paper „Important Factors“ (öffnet in neuem Tab)",
+      "link_repo": "ComFy for Log Measures",
+      "link_repo_label": "ComFy for Log Measures, Repository (öffnet in neuem Tab)",
       "opens": "Öffnet {page}",
       "scenario": {
         "if_inductive": {
@@ -1255,13 +1259,13 @@
         },
         "log_standard": {
           "title": "Log-Maße von 2.112 PDC-Logs",
-          "text": "Die Daten des Log-Papers mit dem Standard des Tools: feeed-Maße, Faktorzahl nach Kaiser, varimax.",
+          "text": "Die Daten von ComFy for Log Measures mit dem Standard des Tools: feeed-Maße, Faktorzahl nach Kaiser, varimax.",
           "short": "feeed-Maße von 2.112 Logs, Faktorzahl nach Kaiser."
         },
         "if_four_miners": {
           "title": "Important Factors: vier Miner im Vergleich",
-          "text": "Die Dimensionen von Alpha, Directly Follows, Inductive und Hybrid ILP miner nebeneinander nach Hair et al., wie in Tab. 17.",
-          "short": "Alpha, Directly Follows, Inductive und Hybrid ILP nach Hair et al."
+          "text": "Die Dimensionen von Alpha, Directly Follows, Inductive und Hybrid ILP miner nebeneinander ohne Querladungen, wie in Tab. 17.",
+          "short": "Alpha, Directly Follows, Inductive und Hybrid ILP ohne Querladungen"
         },
         "if_k4_k6": {
           "title": "Important Factors: 4 gegen 6 Faktoren",
@@ -1415,7 +1419,7 @@
     },
     "correlations": {
       "heading": "Korrelationskarte",
-      "help": "Die Korrelation jedes Maßpaares, vor dem MSA-Filter. Orange Zellen sind negative Korrelationen, die anderen farbigen Zellen positive; je kräftiger die Farbe, desto größer |r|. Umrandete Paare haben |r| ≥ {limit}: Solche Maße sagen fast dasselbe und machen die Korrelationsmatrix beinahe singulär. Von dir ausgeschlossene Maße fehlen.",
+      "help": "Die Korrelation jedes Maßpaares, vor dem MSA-Filter. Schiefergraue Zellen sind negative Korrelationen, die anderen farbigen Zellen positive; je kräftiger die Farbe, desto größer |r|. Umrandete Paare haben |r| ≥ {limit}: Solche Maße sagen fast dasselbe und machen die Korrelationsmatrix beinahe singulär. Von dir ausgeschlossene Maße fehlen.",
       "order_label": "Reihenfolge",
       "order_factor": "Nach Faktor",
       "order_cluster": "Gruppiert",
@@ -1424,7 +1428,7 @@
       "region": "Korrelationskarte von {n} Maßen. Mit den Pfeiltasten wechselst du zwischen den Paaren; Esc verlässt das Paar.",
       "pair": "{a} × {b}: r = {r}",
       "hint": "Zeige auf eine Zelle oder gehe mit den Pfeiltasten durch die Karte, um ein Paar zu lesen. Die Tabelle darunter hat alle Werte.",
-      "legend_aria": "Farbskala von −1 in Orange über 0 bis +1 in der Akzentfarbe",
+      "legend_aria": "Farbskala von −1 in Schiefergrau über 0 bis +1 in der Akzentfarbe",
       "legend_high": "{n} Paar hat |r| ≥ {limit}",
       "legend_high_plural": "{n} Paare haben |r| ≥ {limit}",
       "legend_none": "Kein Paar hat |r| ≥ {limit}",
@@ -1496,21 +1500,21 @@
       "included_done": "{measure} ist einbezogen."
     },
     "warnings_tip": {
-      "heywood": "Diese Maße werden fast vollständig von den Faktoren erklärt (Einzigartigkeit höchstens 0,005, die Grenze der Anpassung). Das kann auf eine unpassende Faktorzahl oder fast gleiche Maße hinweisen; lies die Gruppierung und vor allem die Ladungen dieser Maße deshalb mit Vorsicht, denn sie liegen an der Grenze der Anpassung."
+      "heywood": "Diese Maße werden fast vollständig durch die Faktoren erklärt (Einzigartigkeit höchstens 0,005). Das ist der kleinste Wert, den die Berechnung zulässt, und oft ein Zeichen, dass die Faktorzahl nicht passt oder zwei Maße fast dasselbe messen. Die Gruppierung und vor allem die Ladungen dieser Maße sind deshalb unsicher."
     }
   },
   "inspect": {
     "title": "Einzelnes Log untersuchen",
-    "subtitle": "Führe ComFy auf einem Event-Log aus und sieh dir die gefundenen Modelle und ihre Komplexitätsmaße an.",
+    "subtitle": "Finde mit Minern Modelle zu einem Event-Log und sieh dir ihre Komplexitätsmaße an.",
     "section_log": "Event-Log",
     "section_log_hint": "Lade ein Log hoch oder nimm ein Beispiel; die Übersicht zeigt, was darin steckt.",
     "section_log_run": "Das Log, das dieser Run analysiert hat.",
     "section_settings": "Miner und Maße",
-    "section_settings_hint": "Welche Miner die Netze entdecken und welche Maße ComFy darauf berechnet.",
+    "section_settings_hint": "Welche Miner die Netze entdecken und welche Maße darauf berechnet werden.",
     "section_run": "Run",
     "section_run_hint": "Startet im Hintergrund; das Ergebnis erscheint darunter, und der Run steht im Verlauf.",
-    "about": "Was ComFy macht",
-    "about_hint": "Wie es arbeitet und wann es hilft",
+    "about": "Woher die Maße kommen",
+    "about_hint": "Quelle und Zitat",
     "about_menu": "Über {name}",
     "tour": "Tour",
     "tour_more": "Wie das Ansehen eines einzelnen Logs funktioniert",
@@ -1645,12 +1649,12 @@
         "dataset": "Datensatz: was die Bereinigung weggelassen hat und warum, die deskriptive Statistik jedes Maßes, wie der ComFy-Report sie ausgibt, und für einen aus Logs oder Netzen berechneten Datensatz die Laufzeiten und Eingabegrößen. Beide Tabellen sind eingeklappt, bis man sie öffnet.",
         "suitability": "Eignung: der Bartlett-Test, der KMO insgesamt und der MSA jedes Maßes. Der MSA-Filter entfernt Maße in Runden, wie ComFy; jedes Maß lässt sich von Hand ausschließen, alle auf einmal oder die, die eine Suche findet. Wo die Analyse mangels Beobachtungen nicht läuft, sagt ihre Meldung, was eine Beobachtung ist, und führt zu den Maßen oder zurück zu den Daten.",
         "factors": "Faktoren: der Scree-Plot mit Kaiser-Linie und Parallelanalyse, die Zahl, die jedes Kriterium vorschlägt, und die Rotation.",
-        "loadings": "Ladungen: die Regel, die Maße Faktoren zuordnet, und die beiden Schwellen in einer Zeile über dem Ergebnis, jede Regel in ihrem Tooltip erklärt; darunter eine Matrix (orange für negative Ladungen, blass, wo eine Ladung nicht zählt) oder eine Karte je Dimension. Querladungen sind umrandet.",
+        "loadings": "Ladungen: die Regel, die Maße Faktoren zuordnet, und die beiden Schwellen in einer Zeile über dem Ergebnis, jede Regel in ihrem Tooltip erklärt; darunter eine Matrix (nach Betrag eingefärbt, blass, wo eine Ladung nicht zählt) oder eine Karte je Dimension. Querladungen sind umrandet.",
         "stability": "Stabilität: Stabilität prüfen unter den Ladungen zieht Bootstrap-Stichproben der Zeilen (100, 200 oder 500), passt jede mit denselben Maßen, derselben Faktorenzahl und Rotation neu an und zeigt für jedes Maß den Anteil der Stichproben, in denen es bei seinen Faktoren bleibt. Der Seed ist fest, ein Lauf lässt sich also wiederholen.",
         "short_set": "Kurzset: ein Maß je Dimension, das ihr mit der höchsten Reinheit zugeordnete, um wenige Maße zu berichten, die einander nicht wiederholen. Kurzset kopieren legt sie in die Zwischenablage; ein Vertreter mit geringer Stabilität ist mit Vorsicht zu lesen.",
         "interpretation": "Interpretation: optional, Namen für die Faktoren, von einem Sprachmodell nur auf Anfrage vorgeschlagen. Es entscheidet nichts. Es braucht einen API-Schlüssel auf dem Server; vorberechnete Antworten gibt es erst, wenn scripts/precompute_interpretations.py gelaufen ist. Ohne Schlüssel und ohne eine für die Einstellungen gespeicherte sagt die Liste der Schritte, dass sie hier nicht verfügbar ist.",
         "names": "Namen: Drücke auf den Titel eines Faktors, auf seiner Karte oder im Kopf seiner Spalte, um ihn zu benennen; Enter behält den Namen, Esc lässt ihn. Die Namen erscheinen in den Ladungen, den Faktorkorrelationen, der Schrittliste und jedem Download. Sie gehören zu Faktorzahl, Rotation und Regel: Ändert sich eines davon, verschwinden sie, und der Hinweis holt sie zurück. Mit einer Interpretation übernimmt Vorgeschlagene Namen übernehmen deren Namen.",
-        "correlations": "Korrelationskarte: in Eignung, eingeklappt, bis man sie öffnet. Eine Zelle je Maßpaar, orange für eine negative Korrelation und in der Akzentfarbe für eine positive, ein Paar mit |r| ≥ 0,95 umrandet, nach Faktor oder gruppiert geordnet. Zeige auf eine Zelle oder nimm die Pfeiltasten, um das Paar und sein r zu lesen; eine Tabelle unter der Karte hat jeden Wert. Das Bild-Symbol lädt sie wie die anderen Abbildungen herunter.",
+        "correlations": "Korrelationskarte: in Eignung, eingeklappt, bis man sie öffnet. Eine Zelle je Maßpaar, schiefergrau für eine negative Korrelation und in der Akzentfarbe für eine positive, ein Paar mit |r| ≥ 0,95 umrandet, nach Faktor oder gruppiert geordnet. Zeige auf eine Zelle oder nimm die Pfeiltasten, um das Paar und sein r zu lesen; eine Tabelle unter der Karte hat jeden Wert. Das Bild-Symbol lädt sie wie die anderen Abbildungen herunter.",
         "sheet": "Steckbrief: Drücke auf den Namen eines Maßes (oder Enter darauf), wo er auch steht, um ein Fenster neben der Seite zu öffnen. Es zeigt, was das Maß ist (die Beschreibung des Tools und die Funktion in ComFy oder feeed dahinter, mit Link zur Quelle), ein Histogramm seiner Werte, seinen MSA und die Runde des Filters, die es entfernt hat, Kommunalität und Einzigartigkeit, seine Ladungen, die fünf am stärksten korrelierten Maße und eine Schaltfläche zum Ausschließen oder Einbeziehen. Die Pfeiltasten links und rechts blättern durch die Liste, aus der du kommst, Esc schließt das Fenster, und der Fokus kehrt zum Namen zurück."
       }
     },
@@ -1675,7 +1679,7 @@
       "p1": "Miner vergleichen stellt die Faktorstrukturen mehrerer veröffentlichter Datensätze nebeneinander, wie Tab. 17 von Important Factors: welche Maße für welchen Miner welche Dimension bilden. Es ist das Werkzeug „Vergleich“ rechts neben den Reitern, und zwei Karten von „Zum Einstieg“ öffnen es. Links stehen die Datensätze und die Regel, rechts das Ergebnis; die Hinweise zu einer Spalte sind eine Zahl in ihrem Kopf und eine eingeklappte Liste unter der Tabelle.",
       "items": {
         "columns": "Datensätze: Wähle 2 bis 8 der Miner aus Important Factors; jeder wird mit den Einstellungen seines Papers analysiert. Die ersten vier sind die aus Tab. 17. Ein Link kann auch einen Datensatz mit eigener Faktorzahl verlangen, etwa 4 gegen 6 Faktoren (Zum Einstieg).",
-        "rule": "Zuordnungsregel: eine Regel für jeden Datensatz, zu Beginn Hair et al. wie in Tab. 17.",
+        "rule": "Zuordnungsregel: eine Regel für jeden Datensatz, zu Beginn „Ohne Querladungen“ wie in Tab. 17.",
         "matrix": "Nach Maß: eine Zeile je Maß, nach Dimension gruppiert, und darüber je Datensatz n, die Maße nach dem MSA-Filter, der KMO, die Faktoren, die Rotation und die erklärte Varianz. Eine getönte Zelle liegt in der Dimension ihrer Zeile; ein Ring markiert eine Querladung, eine gestrichelte Kontur ein Maß, das der MSA-Filter entfernt hat.",
         "dimensions": "Nach Dimension: eine Zeile je Datensatz mit den Maßen jeder Dimension, aufgebaut wie Tab. 17.",
         "pairs": "Paare: ein Quadrat der Maße; jede Zelle sagt, in wie vielen der Datensätze, die beide analysiert haben, die beiden eine Dimension teilen. Es hängt nicht davon ab, wie die Dimensionen nummeriert sind.",

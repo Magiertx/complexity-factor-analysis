@@ -90,7 +90,7 @@ log is among the ten newest uploads of the session; the page says when it is not
   the analysis cannot run for too few observations, its message says what an observation is
   here and leads to the list of measures or back to the data.
 - **Correlation map** (in Suitability, folded until it is opened): one cell for each pair of
-  measures, orange for a negative and the accent colour for a positive correlation, a pair with
+  measures, slate for a negative and the accent colour for a positive correlation, a pair with
   |r| ≥ 0.95 outlined, ordered by factor or clustered. Point at a cell or move with the arrow
   keys to read the pair and its r; a table under the map has every value. The image icon
   downloads the map like the other figures, and the ZIP holds it as a figure and as
@@ -108,9 +108,9 @@ log is among the ten newest uploads of the session; the page says when it is not
   samples of random data with a fixed seed), the factor count each criterion suggests, and the
   rotation.
 - **Loadings**: the result first. Above it, one row holds the assignment rule (the largest loading
-  as in ComFy's report, multiple membership as in Important Factors (Tab. 6–16), or Hair et al.
-  (Tab. 17), each explained in its tooltip) and the loading and communality thresholds; below,
-  the loadings as a matrix (orange for negative loadings, faded where a loading does not count)
+  as in ComFy's report, multiple membership as in Important Factors (Tab. 6–16), or without cross-loadings
+  (Tab. 17, with the criteria of Hair et al.), each explained in its tooltip) and the loading and communality thresholds; below,
+  the loadings as a matrix (shaded in the accent by |loading|, the sign in the number, faded where a loading does not count)
   or as one card per dimension. Cross-loadings are ringed.
 - **Names**: press the title of a factor, on its card or at the head of its column, to name it;
   Enter keeps the name (at most 40 characters), Esc leaves it. The names appear in the matrix,
@@ -139,12 +139,12 @@ log is among the ten newest uploads of the session; the page says when it is not
 **Compare miners** puts the factor structures of several published datasets side by side, like
 Tab. 17 of Important Factors: which measures form which dimension for which miner. It is the tool
 *Compare*, at the right of the tabs, and Get started opens it, with the four miners of Tab. 17
-(Alpha, Directly Follows, Inductive, Hybrid ILP) under Hair et al. The datasets and the rule are on
+(Alpha, Directly Follows, Inductive, Hybrid ILP) without cross-loadings. The datasets and the rule are on
 the left, the result on the right; the notes on a column are a count in its header and one folded
 list below the table.
 
 - **Datasets**: choose 2 to 8 of the miners of Important Factors; each is analysed with the
-  settings of its paper. "As in Tab. 17" goes back to the four miners and Hair et al. A link can
+  settings of its paper. "As in Tab. 17" goes back to the four miners and the rule without cross-loadings. A link can
   also ask for a dataset with a factor count of its own, such as the Inductive miner with 4 and
   with 6 factors (a Get started card opens it); that column has a tile of its own.
 - **Your own data**: **Compare the miners** in the dataset step puts one column per miner,

@@ -79,7 +79,7 @@ ASSIGNMENT_RULE_TEXTS = {
     ),
     "hair": (
         f"each measure on the factor of its largest absolute loading; measures with another loading "
-        f"at most {CROSS_LOADING_GAP} below it are left out (Important Factors, Tab. 17, after Hair et al.)"
+        f"at most {CROSS_LOADING_GAP} below it are left out (Important Factors, Tab. 17, with the criteria of Hair et al.)"
     ),
 }
 

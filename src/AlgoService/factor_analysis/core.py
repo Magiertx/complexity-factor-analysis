@@ -85,7 +85,7 @@ ASSIGNMENT_RULES = {
     # Important Factors, Tab. 6-16, after Lieben et al.: |loading| > 0.35 and communality
     # >= 0.3, a cross-loaded measure belongs to every factor of its cross-loading.
     "multi": AssignmentRule(min_communality=0.3, strict=True, cross_loaded="all"),
-    # Important Factors, Tab. 17, after Hair et al.: communality >= 0.5, cross-loaded measures
+    # Important Factors, Tab. 17 (justified there with Hair et al.): communality >= 0.5, cross-loaded measures
     # are left out.
     "hair": AssignmentRule(min_communality=0.5, strict=True, cross_loaded="none"),
 }

@@ -120,7 +120,7 @@ describe("the cells", () => {
     expect(isHigh(1, 2, 2)).toBe(false);
   });
 
-  it("colours negative values orange and positive ones with the accent, stronger the larger |r|", () => {
+  it("colours negative values slate and positive ones with the accent, stronger the larger |r|", () => {
     expect(cellColor(-0.5)).toBe("rgb(var(--negative) / 0.450)");
     expect(cellColor(0.5)).toBe("rgb(var(--accent) / 0.450)");
     expect(cellAlpha(0)).toBe(0);
@@ -131,7 +131,7 @@ describe("the cells", () => {
   });
 
   it("reads the tokens of the theme as numbers for the canvas", () => {
-    expect(parseToken(" 234 88 12 ")).toEqual([234, 88, 12]);
+    expect(parseToken(" 71 85 105 ")).toEqual([71, 85, 105]);
     expect(parseToken("")).toEqual([0, 0, 0]);
     expect(cellRgba(-1, [234, 88, 12], [225, 29, 72])).toBe("rgba(234, 88, 12, 0.900)");
     expect(cellRgba(0, [234, 88, 12], [225, 29, 72])).toBe("rgba(225, 29, 72, 0.000)");

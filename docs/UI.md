@@ -25,6 +25,9 @@ phone.
 - The accent (pink) marks the one primary action of a view, links, focus rings, the underline of
   the active tab, the ring of a chosen tile and the marker of the current step. A run in progress
   (the activity line of the History, a progress bar) is the one other use.
+- The loadings matrix shades by |loading| in the accent, whatever the sign (the sign of a factor is
+  arbitrary). Where the sign means something (the correlation map, the correlations of the factors)
+  negative is slate (`--negative`), positive the accent.
 - Decorative icons sit on a neutral tile in the muted colour, never on an accent tint.
 - Warning and danger colours always come with a glyph (`AlertTriangle`, `AlertCircle`), never as
   colour alone.

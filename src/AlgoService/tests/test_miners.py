@@ -503,4 +503,4 @@ def test_the_methods_paragraph_of_a_miner_names_its_rows_and_counts(client, thre
     ).json()["text"]
     assert "(die Zeilen des Miners Inductive miner)" in text
     assert f"hat {alone['n_observations']} Beobachtungen von {alone['miner']['n_measures']} " in text
-    assert "(nach Hair et al.~\\cite{hair_multivariate})" in text
+    assert "(wie in Tabelle 17 von Important Factors, mit den Schwellen von Hair et al.~\\cite{hair_multivariate})" in text

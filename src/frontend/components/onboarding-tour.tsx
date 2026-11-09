@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
+import { LocaleSegmented } from "./locale-toggle";
 import { useT } from "@/lib/i18n";
 import { APP_NAME } from "@/lib/app-config";
 
@@ -162,7 +163,11 @@ export function OnboardingTour({
           <X className="h-4 w-4" />
         </button>
 
-        <div className="p-6 pt-7 space-y-4">
+        <div className="p-6 pt-3 space-y-4">
+          {/* The same setting as the language of the page (the header, the settings). */}
+          <div className="flex justify-end pr-9">
+            <LocaleSegmented className="w-[104px]" />
+          </div>
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-md bg-tile text-muted grid place-items-center">
               {current.icon}

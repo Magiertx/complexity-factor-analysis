@@ -12,14 +12,14 @@ import {
   effectiveCommunality,
   factorName,
   loadingCounts,
+  LOADING_BAR_COLOR,
+  correlationStyle,
   loadingStyle,
   notableLoadingMeasures,
   orderMeasures,
   primaryFactor,
   ruleStrict,
   secondaryCells,
-  signColor,
-  signInk,
   unassignedMeasures,
   type AnalysisOptions,
   type FactorNames,
@@ -639,7 +639,7 @@ function LoadingsMatrix({
                     {factorName(names, i) && <span className="ml-1.5 font-medium text-fg">{factorName(names, i)}</span>}
                   </th>
                   {row.map((v, j) => (
-                    <td key={j} style={i === j ? undefined : loadingStyle(v)} className={cn("num", i === j && "text-muted")}>
+                    <td key={j} style={i === j ? undefined : correlationStyle(v)} className={cn("num", i === j && "text-muted")}>
                       {formatNumber(v, locale, 2)}
                     </td>
                   ))}
@@ -779,8 +779,8 @@ function LoadingsMatrix({
       <div className="flex items-start gap-x-4 gap-y-1 text-xs leading-snug text-muted flex-wrap" aria-hidden>
         {/* One chip per item: a line break falls between items, not inside one. */}
         <span className="flex items-start gap-1.5">
-          <span className="mt-px h-3 w-3 shrink-0 rounded-sm" style={loadingStyle(-0.9)} />
-          <span>{t("factor.loadings.legend_negative")}</span>
+          <span className="mt-px h-3 w-3 shrink-0 rounded-sm" style={loadingStyle(0.9)} />
+          <span>{t("factor.loadings.legend_shade")}</span>
         </span>
         <span className="flex items-start gap-1.5">
           <span className="font-mono text-muted">{formatNumber(0.1, locale, 2)}</span>
@@ -943,7 +943,7 @@ function LoadingsMatrix({
                                   </span>
                                   <span className="flex items-baseline gap-2 shrink-0">
                                     <MeasureStability entry={byStability.get(m.measure)} />
-                                    <span className="font-mono tabular-nums" style={m.loading < 0 ? { color: signInk(m.loading) } : undefined}>
+                                    <span className="font-mono tabular-nums">
                                       {formatNumber(m.loading, locale, 2)}
                                     </span>
                                   </span>
@@ -953,7 +953,7 @@ function LoadingsMatrix({
                                     className="h-full rounded-full"
                                     style={{
                                       width: `${Math.min(1, Math.abs(m.loading)) * 100}%`,
-                                      backgroundColor: signColor(m.loading),
+                                      backgroundColor: LOADING_BAR_COLOR,
                                       opacity: 0.7,
                                     }}
                                   />
@@ -970,7 +970,7 @@ function LoadingsMatrix({
                                       >
                                         {j > 0 && " · "}
                                         {t("factor.loadings.also", { i: o.i + 1 })}{" "}
-                                        <span className="font-mono tabular-nums" style={{ color: signInk(o.loading) }}>
+                                        <span className="font-mono tabular-nums">
                                           {formatNumber(o.loading, locale, 2)}
                                         </span>
                                       </span>

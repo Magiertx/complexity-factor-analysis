@@ -105,12 +105,12 @@ export function cellAlpha(r: number): number {
   return Math.min(1, Math.abs(r)) * 0.9;
 }
 
-/** A colour of the tokens of the theme: orange where r is negative, the accent where it is positive; `strength` fades it, e.g. for a table. */
+/** A colour of the tokens of the theme: slate where r is negative, the accent where it is positive; `strength` fades it, e.g. for a table. */
 export function cellColor(r: number, strength = 1): string {
   return `rgb(var(${r < 0 ? "--negative" : "--accent"}) / ${(cellAlpha(r) * strength).toFixed(3)})`;
 }
 
-/** The two tokens of a theme as numbers, for a canvas, which cannot use `var()`: "234 88 12" as [234, 88, 12]. */
+/** The two tokens of a theme as numbers, for a canvas, which cannot use `var()`: "71 85 105" as [71, 85, 105]. */
 export function parseToken(value: string): [number, number, number] {
   const parts = value.trim().split(/[\s,]+/).map(Number);
   return [parts[0] || 0, parts[1] || 0, parts[2] || 0];

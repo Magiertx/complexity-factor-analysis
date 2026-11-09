@@ -1,7 +1,8 @@
 """The scree plot, the loadings heatmap and the correlation map as figures for a paper, as SVG or PNG.
 
-Drawn in a print style whatever the theme of the UI: white background, dark text, blue for
-positive and orange for negative loadings (safe for colour-blind readers), 8 pt text at the
+Drawn in a print style whatever the theme of the UI: white background, dark text, the loadings
+shaded in one blue by their absolute value (the sign of a factor is arbitrary, so it stands in the
+number only) and the correlations in blue and slate, 8 pt text at the
 text width of a CEUR paper (15.9 cm), so a figure set at that width keeps its type size. The SVG
 keeps its text as text; the PNG has 300 dpi. Both are drawn by matplotlib, which ComFy uses for
 its plots as well, without pyplot, so that a figure of one request never meets another's.
@@ -40,7 +41,7 @@ INK = "#1f2328"
 MUTED = "#6b7280"
 GRID = "#e5e7eb"
 BLUE = "#2563a8"
-ORANGE = "#d4691b"
+SLATE = "#475569"
 #: The scree plot shows this many eigenvalues at least, as the UI does, or twice the factors.
 MIN_SHOWN = 20
 
@@ -198,9 +199,17 @@ def scree(result: dict[str, Any], fmt: str, language: str = "en") -> bytes:
 
 
 def _cmap() -> Any:
+    """Slate for a negative r, white at 0, blue for a positive r."""
     from matplotlib.colors import LinearSegmentedColormap
 
-    return LinearSegmentedColormap.from_list("loadings", [ORANGE, "white", BLUE])
+    return LinearSegmentedColormap.from_list("correlations", [SLATE, "white", BLUE])
+
+
+def _shade() -> Any:
+    """One blue, from white at |loading| 0 to full at 1: the sign of a loading is not coloured."""
+    from matplotlib.colors import LinearSegmentedColormap
+
+    return LinearSegmentedColormap.from_list("loadings", ["white", BLUE])
 
 
 def _factor_label(j: int, names: dict[int, str] | None) -> str:
@@ -219,9 +228,9 @@ def loadings(
     language: str = "en",
     names: dict[int, str] | None = None,
 ) -> bytes:
-    """The loadings as a heatmap with their values, one row per measure: blue positive, orange
-    negative, white for loadings that do not count under the threshold, the assigned ones in
-    bold, as in the loadings table; the communality in a column of its own. Factors with
+    """The loadings as a heatmap with their values, one row per measure: shaded in one blue by
+    the absolute value (the sign is in the number), white for loadings that do not count under
+    the threshold, the assigned ones in bold, as in the loadings table; the communality in a column of its own. Factors with
     ``names`` are headed by them, set at a slant so that they keep the width of a cell."""
     from matplotlib import rc_context
     from matplotlib.colors import Normalize
@@ -241,8 +250,8 @@ def loadings(
 
     cell_w, cell_h = 0.42, 0.17
     height = 0.75 + cell_h * len(measures)
-    norm = Normalize(-1, 1)
-    cmap = _cmap()
+    norm = Normalize(0, 1)
+    cmap = _shade()
     with _LOCK, rc_context(_STYLE):
         fig = Figure(figsize=(WIDTH_IN, height))
         width_used = cell_w * (k + 1.4)
@@ -252,7 +261,7 @@ def loadings(
             row = matrix[measure]
             for j, value in enumerate(row):
                 shown = counts(value)
-                ax.add_patch(_rect(j, i, cmap(norm(value)) if shown else "white"))
+                ax.add_patch(_rect(j, i, cmap(norm(abs(value))) if shown else "white"))
                 strong = shown and abs(value) > 0.62
                 ax.text(
                     j + 0.5, i + 0.5, _decimal(f"{value:.2f}".replace("-", "−"), language), ha="center", va="center",
@@ -304,7 +313,7 @@ def correlation_map(
     names: dict[int, str] | None = None,
 ) -> bytes:
     """The correlation map of ``correlations.build``: one cell per pair of measures, blue for a
-    positive and orange for a negative r, the pairs with |r| of ``correlations.HIGH`` or more
+    positive and slate for a negative r, the pairs with |r| of ``correlations.HIGH`` or more
     outlined. Under the order "factor" a line separates the dimensions, each named at the right
     (its name, else F1, F2, ...). The cells are as many as the measures: up to 17 measures have
     their r written in them, more are read from the colour and the labels, which are as small as
