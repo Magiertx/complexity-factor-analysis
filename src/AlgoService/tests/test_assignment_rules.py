@@ -115,12 +115,6 @@ def test_a_gap_of_exactly_the_limit_still_cross_loads():
     assert core.assign(exact, 0.35, rule="multi").cross_loadings[0]["factors"] == [0, 1]
 
 
-def test_assign_factors_keeps_its_old_shape():
-    factors, unassigned = core.assign_factors(LOADINGS, 0.35, COMMUNALITIES, 0.5)
-    assert unassigned == ["weak", "lonely"]
-    assert _groups({"factors": factors}) == {1: {"single", "cross", "far"}, 2: set(), 3: set()}
-
-
 def test_unknown_rule():
     with pytest.raises(core.AnalysisError) as e:
         core.assign(LOADINGS, 0.35, rule="nearest")

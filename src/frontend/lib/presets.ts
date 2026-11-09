@@ -56,10 +56,6 @@ export function listPresets(algorithmId: string): Preset[] {
   return read(algorithmId).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-export function getPreset(algorithmId: string, name: string): Preset | undefined {
-  return read(algorithmId).find((p) => p.name === name);
-}
-
 export function savePreset(algorithmId: string, name: string, params: Record<string, unknown>): Preset {
   const trimmed = name.trim();
   if (!trimmed) {

@@ -216,23 +216,6 @@ def test_fit_factors_rejects_impossible_factor_counts(n_factors):
     assert e.value.code == "n_factors_range" and e.value.params["max"] == 5
 
 
-def test_assign_factors_by_largest_absolute_loading():
-    loadings = pd.DataFrame(
-        [[0.9, 0.1], [-0.8, 0.2], [0.3, 0.6], [0.2, 0.3]],
-        index=["a", "b", "c", "d"], columns=["Factor 1", "Factor 2"],
-    )
-    factors, unassigned = core.assign_factors(loadings, 0.35)
-    assert factors == [
-        {"index": 0, "measures": [{"measure": "a", "loading": 0.9}, {"measure": "b", "loading": -0.8}]},
-        {"index": 1, "measures": [{"measure": "c", "loading": 0.6}]},
-    ]
-    assert unassigned == ["d"]
-
-    factors, unassigned = core.assign_factors(loadings, 0.35, {"a": 0.9, "b": 0.4, "c": 0.5, "d": 0.2}, 0.5)
-    assert [m["measure"] for f in factors for m in f["measures"]] == ["a", "c"]
-    assert unassigned == ["b", "d"]
-
-
 # --- the whole analysis -------------------------------------------------------------------
 
 

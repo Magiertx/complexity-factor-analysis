@@ -234,6 +234,9 @@ def _fly(
 
 @dataclass
 class CleanResult:
+    """What ``clean_matrix`` leaves: the numeric matrix, the measures it dropped with the reason
+    for each, and how many rows it dropped."""
+
     data: pd.DataFrame
     dropped: list[dict[str, Any]] = field(default_factory=list)
     dropped_rows: int = 0
@@ -352,6 +355,7 @@ def clean_matrix(raw: pd.DataFrame, *, max_missing_share: float = MAX_MISSING_SH
 
 
 def correlation_matrix(data: pd.DataFrame) -> np.ndarray:
+    """The correlation matrix of the measures (the columns of ``data``) as an array."""
     return _corr(np.asarray(data, dtype=float))
 
 
@@ -409,6 +413,9 @@ def kmo(data: pd.DataFrame) -> tuple[dict[str, float], float]:
 
 @dataclass
 class MsaFilterResult:
+    """What ``msa_filter`` leaves: the data without the removed measures, the MSA of each
+    remaining measure, the overall MSA, and the removed measures."""
+
     data: pd.DataFrame
     per_measure: dict[str, float]
     overall: float
@@ -512,6 +519,9 @@ def parallel_analysis(values: list[float], random: list[float]) -> int:
 
 @dataclass
 class FactorFit:
+    """A fitted factor model: loadings, communalities and uniquenesses, the variance the
+    factors explain, and for oblique rotations the structure matrix and factor correlations."""
+
     #: Orthogonal rotations: the loadings. Oblique rotations: the pattern matrix.
     loadings: pd.DataFrame
     communalities: dict[str, float]
@@ -678,6 +688,9 @@ def _factor_count_error(n_factors: int, p: int) -> AnalysisError:
 
 @dataclass
 class Assignment:
+    """The result of ``assign``: the measures of each factor, the unassigned measures with
+    their reason, and the cross-loadings."""
+
     #: Per factor, ``index`` counting from 0 and its ``measures`` with their loadings, largest
     #: absolute loading first; a measure can be in several factors under "multi".
     factors: list[dict[str, Any]]
@@ -765,25 +778,15 @@ def assign(
     )
 
 
-def assign_factors(
-    loadings: pd.DataFrame,
-    threshold: float,
-    communalities: dict[str, float] | None = None,
-    communality_threshold: float = 0.0,
-) -> tuple[list[dict[str, Any]], list[str]]:
-    """Put each measure on the factor with its largest absolute loading, if that reaches the
-    threshold and its communality reaches ``communality_threshold`` (the rule "largest").
-    Within a factor, measures are sorted by absolute loading, largest first. ``index`` counts
-    the factors from 0."""
-    result = assign(loadings, threshold, communalities, communality_threshold, "largest")
-    return result.factors, [u["measure"] for u in result.unassigned]
-
-
 # --- the whole analysis -------------------------------------------------------------------
 
 
 @dataclass
 class AnalysisParams:
+    """The settings of one analysis: measures to exclude, the MSA filter, Bartlett's alpha, the
+    factor count (None for the criterion's choice), the rotation, and the assignment thresholds
+    and rule."""
+
     excluded: list[str] = field(default_factory=list)
     auto_msa_filter: bool = True
     msa_threshold: float = _C.msa_threshold

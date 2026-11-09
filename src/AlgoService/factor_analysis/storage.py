@@ -287,10 +287,6 @@ def as_stored(data: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def matrix_path(session_id: str, dataset_id: str) -> Path:
-    return dataset_dir(session_id, dataset_id) / "data.csv"
-
-
 def inputs_dir(session_id: str, dataset_id: str) -> Path:
     path = dataset_dir(session_id, dataset_id) / "inputs"
     path.mkdir(parents=True, exist_ok=True)

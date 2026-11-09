@@ -848,12 +848,6 @@ export async function fetchFactorCatalog(kind: FactorKind, signal?: AbortSignal)
   return r.json();
 }
 
-export async function fetchUploadLimits(signal?: AbortSignal): Promise<UploadLimits> {
-  const r = await fetch(`${BASE}/factor-analysis/limits`, { cache: "no-store", signal });
-  if (!r.ok) throw await httpError(r, "Failed to load the upload limits");
-  return r.json();
-}
-
 export async function createDataset(input: CreateDatasetInput): Promise<CreateDatasetResponse> {
   const form = new FormData();
   form.append("kind", input.kind);

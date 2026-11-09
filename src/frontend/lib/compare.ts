@@ -255,11 +255,6 @@ export function dimensionLabel(index: number): string {
   return `D${index + 1}`;
 }
 
-/** The dimensions of a cell, largest loading first, or none. */
-export function cellDimensions(cell: CompareCell): number[] {
-  return cell.status === "assigned" ? cell.dimensions : [];
-}
-
 /** Whether a column puts the measure of a row into the row's dimension, first. */
 export function cellInRow(cell: CompareCell, rowDimension: number | null): boolean {
   return cell.status === "assigned" && rowDimension !== null && cell.dimensions[0] === rowDimension;
