@@ -163,6 +163,8 @@ MAX_ACTIVE_JOBS_PER_SESSION=3
 # Event logs and PNML nets per factor analysis dataset (defaults 50 and 200)
 # MAX_LOG_FILES=50
 # MAX_PNML_FILES=200
+# Stability computations (bootstrap) queued or running over all sessions (default 2); more get a 429 "stability_jobs_busy"
+# MAX_ACTIVE_STABILITY_JOBS=2
 # Analyses of the bundled datasets, computed after the start (default 1; 0 turns it off)
 # PRECOMPUTE_BUNDLED=1
 # RATE_LIMIT_ANALYZE=60/hour

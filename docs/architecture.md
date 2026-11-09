@@ -462,10 +462,8 @@ per tab in `localStorage`. "My datasets", the first source of the data step, reo
 the same way as a `?dataset=<id>` link or deletes it (`DELETE /datasets/{id}`); a remembered or
 linked dataset that answers 404 is reported in the data step instead of being dropped
 silently. A dataset without a name of its own (`name_auto`) and its job are called after the
-inputs in the UI language. The jobs drawer slides over the two tabs as a modal dialog that
-keeps the focus and holds the page still (on `/inspect` it is a column on wide screens), and
-dataset jobs there and in the run history link to their tab with `?dataset=<id>`, which also
-works while the tab is open. The same list gives the tab "Recent runs" what it shows (`lib/job-status.ts`): the runs that run
+inputs in the UI language. Dataset jobs in the run history (`/runs`) link to their tab with
+`?dataset=<id>`, which also works while the tab is open. The same job list gives the tab "Recent runs" what it shows (`lib/job-status.ts`): the runs that run
 and their mean progress, a red dot for a failed run not looked at yet (opening the list is looking; the ids seen are kept in
 `localStorage`), and a notice "… is ready · Open" for a dataset job that finished while the page was open. Every delete of
 a dataset, there included, is confirmed first.
@@ -533,6 +531,8 @@ Every limit is overridable from the environment (`RATE_LIMIT_DEFAULT`, `_LOG_STA
 
 A malformed value in any of these stops the service at startup instead of falling back to the default, so a limit an operator believes they lowered cannot silently stay unapplied. Overrides in force are logged once at startup.
 
+Stability computations are bounded separately: `MAX_ACTIVE_STABILITY_JOBS` (default 2) caps the stability jobs queued or running over all sessions, because each one refits the factor analysis on many bootstrap samples (100, 200 or 500). A request over the limit is answered 429 with the code `stability_jobs_busy`.
+
 **Behind the reverse proxy, forwarding the client IP is only half of it.** nginx sets `X-Forwarded-For` and Next.js passes it through, but uvicorn's `ProxyHeadersMiddleware` only honours the header from peers listed in `forwarded_allow_ips`, whose default is `127.0.0.1`. Requests arrive from the frontend container, so without configuration every user would share one counter. `docker-compose.yml` sets `FORWARDED_ALLOW_IPS` to the compose subnet (both come from `COMPOSE_SUBNET`). Because a wrong value fails as silently as a missing one, `rate_limit_key` also detects the situation by its effect (an `X-Forwarded-For` present but not reflected in the resolved address) and logs one warning per process.
 
 ## Folder layout
@@ -564,6 +564,7 @@ A malformed value in any of these stops the service at startup instead of fallin
     │   │   ├── algorithms.py    # /algorithms, /sample-logs, /recent-logs, /log-stats, /analyze
     │   │   ├── factor_analysis.py # /factor-analysis: catalog, datasets, analyze, export
     │   │   ├── interpretation.py  # /factor-analysis/.../interpret and interpretation/status
+    │   │   ├── session.py       # starts the session before the first real request
     │   │   ├── feedback.py      # POST /feedback, anonymous
     │   │   └── jobs.py          # /jobs, /jobs/events (SSE), /progress, /download, /notes
     │   ├── algorithms/
@@ -578,6 +579,13 @@ A malformed value in any of these stops the service at startup instead of fallin
     │   │   ├── compute.py       # measure values from logs (ProM4Py miners, feeed) or PNML, timed
     │   │   ├── catalog.py       # measures, miners, feature groups, bundled data, samples
     │   │   ├── short_codes.py   # the short codes of the measures, as the papers print them
+    │   │   ├── compare.py       # factor structures of 2 to 8 bundled datasets side by side, factors matched across columns
+    │   │   ├── stability.py     # bootstrap stability of a solution, run as a job
+    │   │   ├── short_set.py     # the short set: one representative measure per dimension
+    │   │   ├── methods.py       # the methods paragraph and its BibTeX entries
+    │   │   ├── miners.py        # the rows of one miner in a model dataset discovered with several miners
+    │   │   ├── names.py         # the names of the factors, kept per solution
+    │   │   ├── precompute.py    # analyses of the bundled datasets, computed after the start
     │   │   ├── descriptives.py  # descriptive statistics of a dataset, as ComFy prints them, with the histogram of each measure
     │   │   ├── correlations.py  # correlations of the measures in the order of the dataset, a clustering or the dimensions
     │   │   ├── storage.py       # session-scoped datasets on disk
@@ -595,8 +603,8 @@ A malformed value in any of these stops the service at startup instead of fallin
     │   ├── Dockerfile
     │   └── requirements.txt
     └── frontend/
-        ├── app/                 # Next.js App Router: /, /log, /inspect, /runs, /settings, /print, /guide
-        ├── components/          # factor-analysis/, workbench, jobs drawer, artifact viewers, ui/
+        ├── app/                 # Next.js App Router: /, /log, /inspect, /compare, /runs, /settings, /print, /guide
+        ├── components/          # factor-analysis/, workbench, run history, artifact viewers, ui/
         ├── lib/
         │   ├── api.ts           # typed AlgoService client
         │   ├── factor-analysis.ts # formatting and defaults of the factor analysis view
