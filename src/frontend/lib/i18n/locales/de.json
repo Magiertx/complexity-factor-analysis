@@ -326,30 +326,6 @@
     }
   },
   "jobs": {
-    "archive_aria": "Letzte Runs",
-    "heading": "Runs",
-    "clear_button": "Alle Runs löschen",
-    "clear_all_title": "Alle Runs dieser Sitzung löschen",
-    "close_drawer_aria": "Letzte Runs schließen",
-    "loading": "Lädt…",
-    "no_runs_yet": "Noch keine Runs. Ein Run entsteht, sobald du einen Datensatz aus Logs oder Netzen berechnest oder ein einzelnes Log untersuchst.",
-    "view_all": "Alle Runs anzeigen",
-    "delete_job_aria": "Run löschen",
-    "delete_dataset_job_aria": "Run und seinen Datensatz löschen",
-    "delete_dataset_job_confirm": "Run und Datensatz löschen",
-    "abort_job_aria": "Run abbrechen",
-    "run_mode_title": "Art des Runs: {mode}",
-    "status_completed": "Abgeschlossen",
-    "status_failed": "Fehlgeschlagen",
-    "status_aborted": "Abgebrochen",
-    "status_running": "Läuft {pct}",
-    "status_pending": "Ausstehend…",
-    "clear_all_confirm": "Alle Runs dieser Sitzung löschen? Datensätze, die aus Logs oder Netzen berechnet wurden, werden mit ihren Runs gelöscht.",
-    "mode": {
-      "single": "Einzelnes Log",
-      "batch": "Batch",
-      "dataset": "Datensatz"
-    },
     "dataset_name": {
       "model": "Datensatz der Faktorenanalyse (Modellmaße)",
       "log": "Datensatz der Faktorenanalyse (Log-Maße)"
@@ -474,7 +450,6 @@
     }
   },
   "factor": {
-    "help_aria": "Erklärung: {topic}",
     "tour_button": "Tour",
     "tour_title": "Rundgang durch die Schritte",
     "model": {
@@ -581,7 +556,6 @@
       "source_link": "Quelle",
       "source_aria": "Datenquelle",
       "sample_label": "Mitgeliefertes Beispiel",
-      "own_files": "Eigene Dateien",
       "csv_drop_label": "CSV-Datei hier ablegen",
       "csv_drop_hint": "oder klicken zum Auswählen · .csv",
       "csv_format_short": "Eine Zeile je Beobachtung, eine Spalte je Maß.",
@@ -611,7 +585,6 @@
       "measure_search_placeholder": "Maße durchsuchen…",
       "group_unfold": "Einzelne Maße von {group} wählen",
       "group_fold": "{group} zuklappen",
-      "group_measures": "{n} Maße",
       "selected_count": "{n} von {total}",
       "select_all": "Alle",
       "select_none": "Keine",
@@ -665,7 +638,6 @@
       "delete_confirm_run": "Datensatz und Run löschen",
       "delete_failed": "Der Datensatz konnte nicht gelöscht werden.",
       "gone": "Der Datensatz, den du geöffnet hattest, ist nicht mehr verfügbar. Er wurde gelöscht, durch neuere ersetzt oder nach 7 Tagen ohne Nutzung entfernt.",
-      "dismiss_aria": "Hinweis ausblenden",
       "inputs_aria": "Woraus der Datensatz besteht",
       "preset_label": "Öffnen mit",
       "preset": {
@@ -1037,7 +1009,6 @@
       "col_dimension": "Dimension",
       "col_measure": "Maß",
       "col_loading": "Ladung",
-      "col_purity": "Reinheit",
       "col_stability": "Stabilität"
     },
     "help": {
@@ -1340,8 +1311,6 @@
       "guide_hint": "Was das Tool tut und wie",
       "codes": "Kurzzeichen",
       "codes_more": "Nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder C_mag, in den Listen, den Ladungen, den Abbildungen und dem Report. Der volle Name steht im Tooltip.",
-      "codes_on": "Kurzzeichen zeigen",
-      "codes_off": "Volle Namen zeigen",
       "codes_none": "Kein Maß dieses Datensatzes hat ein Kurzzeichen."
     },
     "measures": {

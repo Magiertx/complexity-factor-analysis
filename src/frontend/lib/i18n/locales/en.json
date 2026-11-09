@@ -326,30 +326,6 @@
     }
   },
   "jobs": {
-    "archive_aria": "Recent runs",
-    "heading": "Runs",
-    "clear_button": "Delete all runs",
-    "clear_all_title": "Delete all runs of this session",
-    "close_drawer_aria": "Close the recent runs",
-    "loading": "Loading…",
-    "no_runs_yet": "No runs yet. A run starts when you compute a dataset from logs or nets or inspect a single log.",
-    "view_all": "View all runs",
-    "delete_job_aria": "Delete run",
-    "delete_dataset_job_aria": "Delete run and its dataset",
-    "delete_dataset_job_confirm": "Delete run and dataset",
-    "abort_job_aria": "Abort run",
-    "run_mode_title": "Kind of run: {mode}",
-    "status_completed": "Completed",
-    "status_failed": "Failed",
-    "status_aborted": "Aborted",
-    "status_running": "Running {pct}",
-    "status_pending": "Pending…",
-    "clear_all_confirm": "Delete all runs of this session? Datasets computed from logs or nets are deleted with their runs.",
-    "mode": {
-      "single": "Single log",
-      "batch": "Batch",
-      "dataset": "Dataset"
-    },
     "dataset_name": {
       "model": "Factor analysis dataset (model measures)",
       "log": "Factor analysis dataset (log measures)"
@@ -474,7 +450,6 @@
     }
   },
   "factor": {
-    "help_aria": "Explain: {topic}",
     "tour_button": "Tour",
     "tour_title": "Walkthrough of the steps",
     "model": {
@@ -581,7 +556,6 @@
       "source_link": "Source",
       "source_aria": "Data source",
       "sample_label": "Bundled example",
-      "own_files": "Own files",
       "csv_drop_label": "Drop a CSV file here",
       "csv_drop_hint": "or click to browse · .csv",
       "csv_format_short": "One row per observation, one column per measure.",
@@ -611,7 +585,6 @@
       "measure_search_placeholder": "Search measures…",
       "group_unfold": "Choose single measures of {group}",
       "group_fold": "Fold {group}",
-      "group_measures": "{n} measures",
       "selected_count": "{n} of {total}",
       "select_all": "All",
       "select_none": "None",
@@ -665,7 +638,6 @@
       "delete_confirm_run": "Delete dataset and run",
       "delete_failed": "The dataset could not be deleted.",
       "gone": "The dataset you had open is no longer available. It was deleted, replaced by newer datasets, or removed after 7 days without use.",
-      "dismiss_aria": "Dismiss",
       "inputs_aria": "What the dataset was built from",
       "preset_label": "Open with",
       "preset": {
@@ -1037,7 +1009,6 @@
       "col_dimension": "Dimension",
       "col_measure": "Measure",
       "col_loading": "Loading",
-      "col_purity": "Purity",
       "col_stability": "Stability"
     },
     "help": {
@@ -1340,8 +1311,6 @@
       "guide_hint": "What the tool does and how",
       "codes": "Short codes",
       "codes_more": "Names the measures by the codes of the papers, such as CNC or C_mag, in the lists, the loadings, the figures and the report. The full name stays in the tooltip.",
-      "codes_on": "Show short codes",
-      "codes_off": "Show full names",
       "codes_none": "No measure of this dataset has a short code."
     },
     "measures": {
