@@ -9,6 +9,19 @@ whether a factor analysis is meaningful, and groups the measures into a few fact
 [ComFy for log measures](https://github.com/Pati-nets/ComFy-for-Log-Measures) by Patrizia
 Schalk do it, but interactively in the browser.
 
+> **For reviewers**
+>
+> - **Needs:** Docker with Compose and about 8 GB of RAM for Docker. On Linux, `sudo` or membership in the `docker` group. No ProM install: the bundled datasets need none.
+> - **Start** (the first build takes a few minutes; details in the [Quick start](#quick-start)):
+>   1. `git clone https://github.com/Magiertx/complexity-factor-analysis.git && cd complexity-factor-analysis`
+>   2. `cp .env.example .env`, then fill in `POSTGRES_PASSWORD` and `SESSION_SECRET_KEY`
+>   3. `docker compose up -d --build`, then open <http://localhost:3000>
+> - **Five-minute tour:**
+>   1. On the start page, **Get started**, then **Important Factors: Inductive miner** (opens with the paper settings). Walk through the six steps: Data, Dataset, Suitability, Factors, Loadings, Interpretation.
+>   2. In Loadings, note the chip **Numbers = ComFy report** and try **Check stability**.
+>   3. Open **Compare** with the four miners of Tab. 17 (the card **Important Factors: four miners compared**).
+>   4. Open the **Download** menu: **Analysis (ZIP)** and **LaTeX report**.
+
 ## Features
 
 - **Two tabs, one workflow.** *Model complexity* works on ComFy's Petri-net measures (size,
