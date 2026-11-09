@@ -315,10 +315,17 @@ docker compose logs -f algoservice
 
 ### Prebuilt images
 
+> **Not available yet.** This needs a release without a suffix (1.0.0) with public images. A tag
+> such as `-rc1` does not set `latest`, and the packages are still private, so a pull ends with
+> `unauthorized` today; build from the sources until then (`docker compose up -d --build` builds
+> and starts, a `build` or `pull` beforehand is not needed). On Linux, Docker needs root rights or
+> the group `docker` ([post-install steps](https://docs.docker.com/engine/install/linux-postinstall/)).
+
 Instead of building, the stack can run from images on ghcr.io. `docker-compose.release.yml` has the
 same services, environment, volumes and healthchecks as `docker-compose.yml`, with `image:` in
 place of `build:`; `scripts/check_release_compose.py` compares the two and runs in CI, so change
-both together. `CFA_TAG` picks the images (default `latest`):
+both together. `CFA_TAG` picks the images (default `latest`); the tag keeps the `v` of the git tag
+(`v1.0.0`):
 
 ```bash
 docker compose -f docker-compose.release.yml up -d
@@ -329,8 +336,8 @@ The workflow `images.yml` builds and pushes `complexity-factor-analysis-prom4py`
 and `-frontend` (the Celery worker runs the algoservice image):
 
 - A `v*` tag pushes the tag and `latest`, and drafts a GitHub release with
-  `docker-compose.release.yml` and `env.example` (GitHub drops a leading dot in asset names; save
-  it as `.env`). Publish the draft after checking it. A tag with a suffix such as `v1.0.0-rc1`
+  `docker-compose.release.yml` and `env.example` (GitHub drops a leading dot in asset names, so
+  `.env.example` goes up as `env.example`, `images.yml` line 110; save it as `.env`). Publish the draft after checking it. A tag with a suffix such as `v1.0.0-rc1`
   is a pre-release: it does not move `latest`, and the draft is marked as one.
 - Started by hand, the workflow takes a `tag` (default `edge`) and `platforms`. Without a tag the
   version in the exports reads `1.0.0-dev`; otherwise it is the tag without the `v`. The commit

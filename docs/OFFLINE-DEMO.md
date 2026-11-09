@@ -40,6 +40,12 @@ docker compose build
 docker compose pull postgres redis
 ```
 
+`docker compose up -d --build` does both in one go (it builds what is missing and pulls the base
+images), so the two commands above are not a precondition of it. On Linux, Docker needs root rights
+or the group `docker` ([post-install steps](https://docs.docker.com/engine/install/linux-postinstall/)).
+The prebuilt images of `docker-compose.release.yml` are not an option for this yet: they need a
+release without a suffix and public packages (see [`docs/DEPLOYMENT.md`](DEPLOYMENT.md#prebuilt-images)).
+
 Start the stack once and open <http://localhost:3000> to check it, then `docker compose down`.
 The images stay in the local Docker cache and are all that is needed later.
 

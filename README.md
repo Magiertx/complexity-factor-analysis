@@ -34,7 +34,7 @@ Schalk do it, but interactively in the browser.
   the datasets the paper does not analyse); rotation (varimax, promax, oblimin, quartimax, none);
   a loading heatmap with communalities and explained variance; factor groups by one of three
   assignment rules: the largest loading (default; ComFy's report only greys the loadings below its threshold), multiple membership as in
-  Important Factors (Tab. 6-16) or Hair et al. (Tab. 17), with cross-loadings reported under
+  Important Factors (Tab. 6-16) or without cross-loadings (Tab. 17), with cross-loadings reported under
   each and a note where a table of the paper differs from the rule it states. The loadings show as
   a matrix or as one card per dimension. A long list (from 20 measures) can be searched and
   narrowed to the cross-loaded and unassigned measures; from 30 measures on both looks start
@@ -154,8 +154,13 @@ Without them `docker compose` stops with `required variable ... is missing a val
 purpose. Then:
 
 ```bash
-APP_COMMIT=$(git rev-parse HEAD) docker compose up --build
+APP_COMMIT=$(git rev-parse HEAD) docker compose up -d --build
 ```
+
+This one command builds and starts the stack; a `docker compose build` or `docker compose pull`
+beforehand is not needed. On Linux, Docker needs root rights or your user in the `docker` group
+([post-install steps](https://docs.docker.com/engine/install/linux-postinstall/)); otherwise the
+commands fail with a permission error.
 
 `APP_COMMIT` is optional: it puts the commit into the manifest of every export, which says
 "unknown" without it. The version (`1.0.0-dev` until the freeze) is part of the image.
@@ -175,11 +180,17 @@ on the model tab. For a demo without network, see [`docs/OFFLINE-DEMO.md`](docs/
 
 ### Quick start without building
 
+> **Not available yet.** This way works only once a release without a suffix (1.0.0) has been
+> published and its images are public. A tag such as `v1.0.0-rc1` does not set `latest`, and the
+> packages on ghcr.io are still private, so a pull ends with `unauthorized` today. Until then,
+> use the Quick start above, which builds the images.
+
 No checkout and no build: two files and the prebuilt images from ghcr.io.
 
 1. Download `docker-compose.release.yml` and `env.example` from the
-   [latest release](https://github.com/Magiertx/complexity-factor-analysis/releases/latest), and
-   save the second as `.env`.
+   [latest release](https://github.com/Magiertx/complexity-factor-analysis/releases/latest).
+   Save `env.example` as `.env` (it is the `.env.example` of the repository: GitHub removes the
+   leading dot of an asset name, so the release file has none).
 2. Fill in `POSTGRES_PASSWORD` and `SESSION_SECRET_KEY` in `.env`, as above.
 3. Start it:
 
@@ -187,13 +198,22 @@ No checkout and no build: two files and the prebuilt images from ghcr.io.
 docker compose -f docker-compose.release.yml up -d
 ```
 
-Open <http://localhost:3000>. `CFA_TAG=v1.0.0` pins a release instead of `latest`. The images
+Open <http://localhost:3000>. `CFA_TAG=v1.0.0` pins a release instead of `latest`; the image tags
+keep the `v` of the git tag (`v1.0.0`, not `1.0.0`). The images
 are `linux/amd64`; on Apple silicon they run under emulation (build from the sources for native
 ones). See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#prebuilt-images).
 
 The images have to be public for this to work without a login. GitHub makes new packages
 private, and the API cannot change that, so the owner sets it once per package (`-prom4py`,
 `-algoservice`, `-frontend`) under Packages, Package settings, Change visibility.
+
+### Troubleshooting
+
+- `unauthorized` when pulling: the images are still private, or the tag does not exist (see the
+  note above). Build from the sources instead (Quick start).
+- A permission error on Linux: Docker needs root rights or the group `docker`, see the
+  [post-install steps](https://docs.docker.com/engine/install/linux-postinstall/).
+- `docker compose up -d --build` is enough; a `build` or `pull` beforehand is not needed.
 
 ## Local development
 
