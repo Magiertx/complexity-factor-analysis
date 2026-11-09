@@ -100,9 +100,9 @@ test("the map is loaded when it is opened, and a pair reads like the table says"
 test("the cells follow the sign, outline the pairs near 1 and group the measures by dimension or by cluster", async ({ page }) => {
   await openModelMap(page);
   const cells = plot(page, 12).locator("svg");
-  // Slate for negative values, the accent for positive ones.
+  // Slate for negative values, the data colour for positive ones.
   expect(await cells.locator('rect[style*="--negative"]').count()).toBeGreaterThan(0);
-  expect(await cells.locator('rect[style*="--accent"]').count()).toBeGreaterThan(0);
+  expect(await cells.locator('rect[style*="--data"]').count()).toBeGreaterThan(0);
   // Four pairs reach 0.95, each outlined at both of its cells.
   await expect(map(page)).toContainText(text("factor.correlations.legend_high_plural", { n: 4, limit: "0.95" }));
   await expect(cells.locator('rect[fill="none"]')).toHaveCount(8);

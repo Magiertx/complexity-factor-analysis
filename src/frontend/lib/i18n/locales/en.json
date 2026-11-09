@@ -1428,7 +1428,7 @@
       "region": "Correlation map of {n} measures. Move between the pairs with the arrow keys; Escape leaves the pair.",
       "pair": "{a} × {b}: r = {r}",
       "hint": "Point at a cell or move through the map with the arrow keys to read a pair. The table below has every value.",
-      "legend_aria": "Colour scale from −1 in slate over 0 to +1 in the accent colour",
+      "legend_aria": "Colour scale from −1 in slate over 0 to +1 in blue",
       "legend_high": "{n} pair has |r| ≥ {limit}",
       "legend_high_plural": "{n} pairs have |r| ≥ {limit}",
       "legend_none": "No pair has |r| ≥ {limit}",
@@ -1654,7 +1654,7 @@
         "short_set": "Short set: one measure per dimension, the one assigned to it with the highest purity, for reporting a few measures that do not repeat each other. Copy the short set puts them on the clipboard; a representative with a low stability should be read with care.",
         "interpretation": "Interpretation: optional, names for the factors, suggested by a language model only on request. It decides nothing. It needs an API key on the server; precomputed answers exist only once scripts/precompute_interpretations.py has been run. Without a key and without one stored for the settings, the list of steps says that it is not available here.",
         "names": "Names: press the title of a factor, on its card or at the head of its column, to name it; Enter keeps the name, Esc leaves it. The names appear in the loadings, the factor correlations, the list of steps and every download. They belong to the factor count, the rotation and the rule: changing one of them clears them, and the toast brings them back. With an interpretation, Use the suggested names takes its names over.",
-        "correlations": "Correlation map: in Suitability, folded until opened. One cell for each pair of measures, slate for a negative correlation and the accent colour for a positive one, a pair with |r| ≥ 0.95 outlined, ordered by factor or clustered. Point at a cell or use the arrow keys to read the pair and its r; a table under the map has every value. The image icon downloads it like the other figures.",
+        "correlations": "Correlation map: in Suitability, folded until opened. One cell for each pair of measures, slate for a negative correlation and blue for a positive one, a pair with |r| ≥ 0.95 outlined, ordered by factor or clustered. Point at a cell or use the arrow keys to read the pair and its r; a table under the map has every value. The image icon downloads it like the other figures.",
         "sheet": "Fact sheet: press, or Enter on, the name of a measure wherever it stands to open a panel beside the page. It shows what the measure is (the description of the tool and the function of ComFy or feeed behind it, with a link to its source), a histogram of its values, its MSA and the round of the filter that removed it, its communality and uniqueness, its loadings, the five measures it correlates with most, and a button to exclude or include it. The left and right arrow keys page through the list you came from, Esc closes the panel and the focus goes back to the name."
       }
     },

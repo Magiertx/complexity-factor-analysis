@@ -120,9 +120,9 @@ describe("the cells", () => {
     expect(isHigh(1, 2, 2)).toBe(false);
   });
 
-  it("colours negative values slate and positive ones with the accent, stronger the larger |r|", () => {
+  it("colours negative values slate and positive ones with the data colour, stronger the larger |r|", () => {
     expect(cellColor(-0.5)).toBe("rgb(var(--negative) / 0.450)");
-    expect(cellColor(0.5)).toBe("rgb(var(--accent) / 0.450)");
+    expect(cellColor(0.5)).toBe("rgb(var(--data) / 0.450)");
     expect(cellAlpha(0)).toBe(0);
     expect(cellAlpha(-1)).toBeCloseTo(0.9);
     expect(cellAlpha(1.2)).toBeCloseTo(0.9);

@@ -1428,7 +1428,7 @@
       "region": "Korrelationskarte von {n} Maßen. Mit den Pfeiltasten wechselst du zwischen den Paaren; Esc verlässt das Paar.",
       "pair": "{a} × {b}: r = {r}",
       "hint": "Zeige auf eine Zelle oder gehe mit den Pfeiltasten durch die Karte, um ein Paar zu lesen. Die Tabelle darunter hat alle Werte.",
-      "legend_aria": "Farbskala von −1 in Schiefergrau über 0 bis +1 in der Akzentfarbe",
+      "legend_aria": "Farbskala von −1 in Schiefergrau über 0 bis +1 in Blau",
       "legend_high": "{n} Paar hat |r| ≥ {limit}",
       "legend_high_plural": "{n} Paare haben |r| ≥ {limit}",
       "legend_none": "Kein Paar hat |r| ≥ {limit}",
@@ -1654,7 +1654,7 @@
         "short_set": "Kurzset: ein Maß je Dimension, das ihr mit der höchsten Reinheit zugeordnete, um wenige Maße zu berichten, die einander nicht wiederholen. Kurzset kopieren legt sie in die Zwischenablage; ein Vertreter mit geringer Stabilität ist mit Vorsicht zu lesen.",
         "interpretation": "Interpretation: optional, Namen für die Faktoren, von einem Sprachmodell nur auf Anfrage vorgeschlagen. Es entscheidet nichts. Es braucht einen API-Schlüssel auf dem Server; vorberechnete Antworten gibt es erst, wenn scripts/precompute_interpretations.py gelaufen ist. Ohne Schlüssel und ohne eine für die Einstellungen gespeicherte sagt die Liste der Schritte, dass sie hier nicht verfügbar ist.",
         "names": "Namen: Drücke auf den Titel eines Faktors, auf seiner Karte oder im Kopf seiner Spalte, um ihn zu benennen; Enter behält den Namen, Esc lässt ihn. Die Namen erscheinen in den Ladungen, den Faktorkorrelationen, der Schrittliste und jedem Download. Sie gehören zu Faktorzahl, Rotation und Regel: Ändert sich eines davon, verschwinden sie, und der Hinweis holt sie zurück. Mit einer Interpretation übernimmt Vorgeschlagene Namen übernehmen deren Namen.",
-        "correlations": "Korrelationskarte: in Eignung, eingeklappt, bis man sie öffnet. Eine Zelle je Maßpaar, schiefergrau für eine negative Korrelation und in der Akzentfarbe für eine positive, ein Paar mit |r| ≥ 0,95 umrandet, nach Faktor oder gruppiert geordnet. Zeige auf eine Zelle oder nimm die Pfeiltasten, um das Paar und sein r zu lesen; eine Tabelle unter der Karte hat jeden Wert. Das Bild-Symbol lädt sie wie die anderen Abbildungen herunter.",
+        "correlations": "Korrelationskarte: in Eignung, eingeklappt, bis man sie öffnet. Eine Zelle je Maßpaar, schiefergrau für eine negative Korrelation und blau für eine positive, ein Paar mit |r| ≥ 0,95 umrandet, nach Faktor oder gruppiert geordnet. Zeige auf eine Zelle oder nimm die Pfeiltasten, um das Paar und sein r zu lesen; eine Tabelle unter der Karte hat jeden Wert. Das Bild-Symbol lädt sie wie die anderen Abbildungen herunter.",
         "sheet": "Steckbrief: Drücke auf den Namen eines Maßes (oder Enter darauf), wo er auch steht, um ein Fenster neben der Seite zu öffnen. Es zeigt, was das Maß ist (die Beschreibung des Tools und die Funktion in ComFy oder feeed dahinter, mit Link zur Quelle), ein Histogramm seiner Werte, seinen MSA und die Runde des Filters, die es entfernt hat, Kommunalität und Einzigartigkeit, seine Ladungen, die fünf am stärksten korrelierten Maße und eine Schaltfläche zum Ausschließen oder Einbeziehen. Die Pfeiltasten links und rechts blättern durch die Liste, aus der du kommst, Esc schließt das Fenster, und der Fokus kehrt zum Namen zurück."
       }
     },

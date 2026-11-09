@@ -214,7 +214,7 @@ function MapBody({
             className="h-2.5 w-28 rounded-sm ring-1 ring-inset ring-border"
             style={{
               background:
-                "linear-gradient(90deg, rgb(var(--negative) / 0.9), rgb(var(--negative) / 0) 50%, rgb(var(--accent) / 0) 50%, rgb(var(--accent) / 0.9))",
+                "linear-gradient(90deg, rgb(var(--negative) / 0.9), rgb(var(--negative) / 0) 50%, rgb(var(--data) / 0) 50%, rgb(var(--data) / 0.9))",
             }}
           />
           <span aria-hidden>+1</span>
@@ -238,7 +238,7 @@ function readTokens(el: Element) {
   const style = getComputedStyle(el);
   return {
     negative: parseToken(style.getPropertyValue("--negative")),
-    positive: parseToken(style.getPropertyValue("--accent")),
+    positive: parseToken(style.getPropertyValue("--data")),
     ink: parseToken(style.getPropertyValue("--fg")),
   };
 }

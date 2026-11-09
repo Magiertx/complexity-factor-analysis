@@ -30,9 +30,13 @@
     --warn-ink: 146 64 14;
     --danger-ink: 185 28 28;
     /* The negative side of a correlation (the map, the correlations of the factors): slate, a
-       second hue next to the accent that reads as neither good nor bad. The sign of a loading has
-       no colour: the sign of a factor is arbitrary, so the matrix shades by |loading| in the accent. */
+       second hue next to the data colour that reads as neither good nor bad. The sign of a loading has
+       no colour: the sign of a factor is arbitrary, so the matrix shades by |loading| in --data. */
     --negative: 71 85 105;
+    /* The colour of data: the shade of a loading, the positive side of a correlation, the line of a
+       chart. Blue, so that it does not read as a warning like red or orange; the accent stays for
+       controls, focus and the chosen. */
+    --data: 37 99 168;
     --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
     --font-mono: ui-monospace, "SFMono-Regular", "Menlo", "Consolas", monospace;
   }
@@ -57,6 +61,7 @@
     --warn-ink: 234 179 8;
     --danger-ink: 248 113 113;
     --negative: 148 163 184;
+    --data: 96 165 250;
   }
   .light-sheet { color-scheme: light; }
   html, body { @apply bg-bg text-fg; }

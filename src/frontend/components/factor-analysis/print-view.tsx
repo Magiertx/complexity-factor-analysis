@@ -468,7 +468,7 @@ function LoadingsKey({ analysis, options }: { analysis: FactorAnalysis; options:
 
 /**
  * The loadings as a table, for the datasets that have more measures than the heatmap holds on a
- * page: colour as in the loadings step (a shade of the accent by |loading|, the loadings that do not count faded, the assigned ones bold), the header on
+ * page: colour as in the loadings step (a shade of the data colour by |loading|, the loadings that do not count faded, the assigned ones bold), the header on
  * every page.
  */
 function LoadingsTable({

@@ -168,7 +168,7 @@ export function ScreePlot({
         </desc>
 
         {/* retained factors */}
-        <rect x={M.l} y={M.t} width={(band / n) * w} height={h} className="fill-accent" fillOpacity={0.12} />
+        <rect x={M.l} y={M.t} width={(band / n) * w} height={h} className="fill-data" fillOpacity={0.12} />
         <text x={M.l + 4} y={M.t - 10} fontSize={10} className="fill-muted">
           {t("factor.factors.retained", { n: selected })}
         </text>
@@ -234,7 +234,7 @@ export function ScreePlot({
         <polyline
           points={line(eigenvalues, y)}
           fill="none"
-          className="stroke-accent"
+          className="stroke-data"
           strokeWidth={2}
           strokeLinejoin="round"
         />
@@ -275,7 +275,7 @@ export function ScreePlot({
               cx={x(k)}
               cy={y(v)}
               r={hover === k ? 6 : n > 60 ? 3 : 4.5}
-              className={kept ? "fill-accent stroke-surface" : "fill-surface stroke-accent"}
+              className={kept ? "fill-data stroke-surface" : "fill-surface stroke-data"}
               strokeWidth={n > 60 ? 1.5 : 2}
             />
           );
@@ -345,8 +345,8 @@ export function ScreePlot({
         <ul className="flex items-center gap-x-3 gap-y-1 flex-wrap" aria-hidden>
           <li className="flex items-center gap-1.5">
             <svg width="18" height="8">
-              <line x1="0" x2="18" y1="4" y2="4" className="stroke-accent" strokeWidth={2} />
-              <circle cx="9" cy="4" r="3" className="fill-accent" />
+              <line x1="0" x2="18" y1="4" y2="4" className="stroke-data" strokeWidth={2} />
+              <circle cx="9" cy="4" r="3" className="fill-data" />
             </svg>
             {t("factor.factors.legend_eigenvalues")}
           </li>

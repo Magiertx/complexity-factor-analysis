@@ -90,7 +90,7 @@ log is among the ten newest uploads of the session; the page says when it is not
   the analysis cannot run for too few observations, its message says what an observation is
   here and leads to the list of measures or back to the data.
 - **Correlation map** (in Suitability, folded until it is opened): one cell for each pair of
-  measures, slate for a negative and the accent colour for a positive correlation, a pair with
+  measures, slate for a negative and blue for a positive correlation, a pair with
   |r| ≥ 0.95 outlined, ordered by factor or clustered. Point at a cell or move with the arrow
   keys to read the pair and its r; a table under the map has every value. The image icon
   downloads the map like the other figures, and the ZIP holds it as a figure and as
@@ -110,7 +110,7 @@ log is among the ten newest uploads of the session; the page says when it is not
 - **Loadings**: the result first. Above it, one row holds the assignment rule (the largest loading
   as in ComFy's report, multiple membership as in Important Factors (Tab. 6–16), or without cross-loadings
   (Tab. 17, with the criteria of Hair et al.), each explained in its tooltip) and the loading and communality thresholds; below,
-  the loadings as a matrix (shaded in the accent by |loading|, the sign in the number, faded where a loading does not count)
+  the loadings as a matrix (shaded in blue by |loading|, the sign in the number, faded where a loading does not count)
   or as one card per dimension. Cross-loadings are ringed.
 - **Names**: press the title of a factor, on its card or at the head of its column, to name it;
   Enter keeps the name (at most 40 characters), Esc leaves it. The names appear in the matrix,

@@ -15,6 +15,7 @@ const config: Config = {
         muted: "rgb(var(--muted) / <alpha-value>)",
         fg: "rgb(var(--fg) / <alpha-value>)",
         accent: "rgb(var(--accent) / <alpha-value>)",
+        data: "rgb(var(--data) / <alpha-value>)",
         "accent-fg": "rgb(var(--accent-fg) / <alpha-value>)",
         success: "rgb(var(--success) / <alpha-value>)",
         warn: "rgb(var(--warn) / <alpha-value>)",
