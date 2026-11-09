@@ -68,7 +68,7 @@ import { Segmented } from "@/components/ui/segmented";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { UploadZone } from "@/components/upload-zone";
 import { FeatureChecklist } from "./feature-checklist";
-import { EXAMPLE_CSV, IMPORTANT_FACTORS_URL, startEntries, startEntryHref, type OpenPreset, type StartEntry } from "./start-here";
+import { EXAMPLE_CSV, COMFY_LOG_URL, IMPORTANT_FACTORS_URL, startEntries, startEntryHref, type OpenPreset, type StartEntry } from "./start-here";
 
 const SOURCE_ICON: Record<DatasetSource, React.ComponentType<{ className?: string }>> = {
   bundled: Database,
@@ -586,7 +586,7 @@ function BundledList({
                   e.source === "paper"
                     ? IMPORTANT_FACTORS_URL
                     : e.source === "repo"
-                      ? (collections.find((c) => c.id === catalog.bundled.find((b) => b.id === e.bundledId)?.collection)?.source_url ?? null)
+                      ? (collections.find((c) => c.id === catalog.bundled.find((b) => b.id === e.bundledId)?.collection)?.source_url ?? COMFY_LOG_URL)
                       : null
                 }
                 chosen={selected === START + e.id}

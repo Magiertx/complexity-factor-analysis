@@ -25,6 +25,9 @@ export interface StartEntry {
 /** Important Factors: Complexity Dimensions for Petri Nets (ATAED 2026), the paper of the model datasets. */
 export const IMPORTANT_FACTORS_URL = "https://ceur-ws.org/Vol-4236/paper14.pdf";
 
+/** The repository of the log measures, as in datasets/manifest.json; the card of the other tab has no catalog to read it from. */
+export const COMFY_LOG_URL = "https://github.com/Pati-nets/ComFy-for-Log-Measures";
+
 /**
  * Entries that need features still to come stay in the list, unavailable, so they are switched on
  * in one place.
