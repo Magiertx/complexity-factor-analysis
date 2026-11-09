@@ -80,7 +80,7 @@
       "params_title": "2 · Miner und Maße",
       "params_content": "Wähle die Miner, die laufen sollen, und die Maße, die berechnet werden. Über die Preset-Leiste darüber speicherst du eine Auswahl für später.",
       "run_title": "3 · Den Run starten",
-      "run_content": "Starte mit dem Knopf oder Strg+Enter (Cmd+Enter auf dem Mac). Das Ergebnis erscheint darunter mit den Maßen, den gefundenen Netzen und Downloads; der Run steht im Verlauf."
+      "run_content": "Starte mit dem Knopf oder Strg+Enter (Cmd+Enter auf dem Mac). Das Ergebnis erscheint darunter mit den Maßen, den gefundenen Netzen und Downloads. Der Run steht im Verlauf."
     },
     "onboarding": {
       "step0_title": "Willkommen bei {app}",
@@ -90,8 +90,8 @@
       "step1_p1": "Modellkomplexität analysiert Maße von Petri-Netzen, die aus Event-Logs gefunden und mit ComFy vermessen werden. Log-Komplexität analysiert Maße der Event-Logs selbst, berechnet mit feeed.",
       "step1_p2": "Beide Reiter funktionieren gleich.",
       "step2_title": "Ein Schritt nach dem anderen",
-      "step2_p1": "Daten, Datensatz, Eignung, Faktoren, Ladungen: Die Liste der Schritte zeigt, was jeder ergeben hat, und öffnet ihn; Zurück und Weiter führen hindurch. Jede Änderung einer Einstellung startet die Analyse sofort neu, und die Analyse lässt sich als CSV, LaTeX oder ZIP herunterladen. In einem optionalen sechsten Schritt schlägt Claude Namen für die Faktoren vor.",
-      "step2_p2": "Halte den Zeiger über ein Bedienelement oder ein (i), um zu sehen, was es tut; der Tour-Knopf führt durch die Schritte.",
+      "step2_p1": "Daten, Datensatz, Eignung, Faktoren, Ladungen: Die Liste der Schritte zeigt, was jeder ergeben hat, und öffnet ihn. Mit Zurück und Weiter gehst du durch die Schritte. Jede Änderung einer Einstellung startet die Analyse sofort neu. Die Analyse lässt sich als CSV, LaTeX oder ZIP herunterladen. In einem optionalen sechsten Schritt schlägt Claude Namen für die Faktoren vor.",
+      "step2_p2": "Halte den Zeiger über ein Bedienelement oder ein (i), um zu sehen, was es tut. Der Tour-Knopf führt durch die Schritte.",
       "step3_title": "Mehr, wenn du es brauchst",
       "step3_compare": "Vergleich: die Faktorstrukturen mehrerer Analysen nebeneinander, wie Tab. 17 von Important Factors.",
       "progress_aria": "Fortschritt",
@@ -99,7 +99,7 @@
       "step3_inspect": "Einzelnes Log: Mit Minern Modelle zu einem Log finden und ihre Komplexität messen."
     },
     "factor": {
-      "intro": "Fünf Schritte von den Rohmaßen zu den Faktoren und eine optionale Interpretation, einer nach dem anderen: Die Liste der Schritte links (am Telefon die Zeile oben) und Zurück und Weiter wechseln zwischen ihnen. Halte den Zeiger über ein Bedienelement oder ein (i), um zu sehen, was es tut. Esc oder Überspringen beendet die Tour jederzeit.",
+      "intro": "Fünf Schritte führen von den Rohmaßen zu den Faktoren, dazu kommt eine optionale Interpretation. Es ist immer nur ein Schritt zu sehen. Wechseln kannst du über die Liste der Schritte links (am Telefon die Zeile oben) oder mit Zurück und Weiter. Halte den Zeiger über ein Bedienelement oder ein (i), um zu sehen, was es tut. Esc oder Überspringen beendet die Tour jederzeit.",
       "data": "Woher die Daten kommen: Zum Einstieg und die mitgelieferten Datensätze, eine eigene CSV-Datei oder Maße aus deinen Dateien. Große Berechnungen laufen im Hintergrund.",
       "dataset": "Prüfe die Größe der Matrix und was die Bereinigung entfernt hat. Die bereinigten Daten kannst du als CSV herunterladen.",
       "suitability": "Bartlett und KMO zeigen, ob eine Faktorenanalyse überhaupt sinnvoll ist. Schließe hier Maße mit niedrigem MSA aus, von Hand oder per Filter.",
@@ -123,7 +123,7 @@
     },
     "page_title": "Einstellungen",
     "page_subtitle": "Lokale Einstellungen — im Browser gespeichert, kein Konto erforderlich.",
-    "analysis_pointer": "Die Einstellungen einer Analyse, etwa Rotation, Faktorenzahl und Schwellen, findest du in ihren Schritten und in der Einstellungszeile darüber.",
+    "analysis_pointer": "Die Einstellungen einer Analyse, etwa Rotation, Faktorzahl und Schwellen, findest du in ihren Schritten und in der Einstellungszeile darüber.",
     "load_error": "Algorithmus-Liste konnte nicht geladen werden: {error}",
     "toast_theme_updated": "Farbschema geändert",
     "toast_cleared_caches": "Parameter von {n} Algorithmus vergessen",
@@ -147,7 +147,7 @@
       "delete_preset_title": "Preset löschen",
       "clear_all_label": "Alle Presets löschen",
       "clear_all_hint": "Entfernt das gespeicherte Preset.",
-      "clear_all_hint_plural": "Entfernt alle {n} gespeicherten Presets bei jedem Algorithmus.",
+      "clear_all_hint_plural": "Entfernt alle {n} gespeicherten Presets für alle Algorithmen.",
       "clear_all_empty": "Keine Presets gespeichert.",
       "confirm_clear": "Löschen bestätigen",
       "clear_button": "Presets löschen",
@@ -169,7 +169,7 @@
       "errors": {
         "empty_name": "Gib dem Preset einen Namen.",
         "not_an_object": "Diese Datei enthält keine Presets: Sie ist kein JSON-Objekt.",
-        "no_groups": "Diese Datei enthält keine Presets: Ihre Liste der Gruppen fehlt.",
+        "no_groups": "Diese Datei enthält keine Presets: Die Liste der Gruppen fehlt.",
         "no_presets": "In der Datei wurden keine gültigen Presets gefunden."
       }
     },
@@ -194,12 +194,12 @@
       "confirm_delete": "Löschen bestätigen",
       "delete_all_jobs": "Alle Runs löschen",
       "clear_datasets_label": "Datensätze der Faktorenanalyse löschen",
-      "clear_datasets_hint": "{n} Datensatz der Tabs Modell- und Log-Komplexität liegt auf dem Server, mit den Einstellungen seiner letzten Analyse. Wurde er aus Logs oder Netzen berechnet, wird der Run, der ihn berechnet hat, mitgelöscht.",
-      "clear_datasets_hint_plural": "{n} Datensätze der Tabs Modell- und Log-Komplexität liegen auf dem Server, jeder mit den Einstellungen seiner letzten Analyse. Aus Logs oder Netzen berechnete werden mit den Runs gelöscht, die sie berechnet haben.",
+      "clear_datasets_hint": "{n} Datensatz aus den Reitern Modellkomplexität und Log-Komplexität liegt auf dem Server, mit den Einstellungen seiner letzten Analyse. Wurde er aus Logs oder Netzen berechnet, wird auch der Run gelöscht, der ihn berechnet hat.",
+      "clear_datasets_hint_plural": "{n} Datensätze aus den Reitern Modellkomplexität und Log-Komplexität liegen auf dem Server, jeder mit den Einstellungen seiner letzten Analyse. Aus Logs oder Netzen berechnete werden mit den Runs gelöscht, die sie berechnet haben.",
       "clear_datasets_short": "{n} Datensatz liegt auf dem Server.",
       "clear_datasets_short_plural": "{n} Datensätze liegen auf dem Server.",
-      "clear_datasets_empty": "Für diese Sitzung liegen keine Datensätze der Tabs Modell- und Log-Komplexität auf dem Server.",
-      "clear_datasets_unknown": "Datensätze der Tabs Modell- und Log-Komplexität, jeder mit den Einstellungen seiner letzten Analyse. Aus Logs oder Netzen berechnete werden mit den Runs gelöscht, die sie berechnet haben.",
+      "clear_datasets_empty": "Für diese Sitzung liegen keine Datensätze aus den Reitern Modellkomplexität und Log-Komplexität auf dem Server.",
+      "clear_datasets_unknown": "Datensätze aus den Reitern Modellkomplexität und Log-Komplexität, jeder mit den Einstellungen seiner letzten Analyse. Aus Logs oder Netzen berechnete werden mit den Runs gelöscht, die sie berechnet haben.",
       "delete_all_datasets": "Datensätze löschen",
       "toast_datasets_deleted": "{n} Datensatz gelöscht",
       "toast_datasets_deleted_plural": "{n} Datensätze gelöscht",
@@ -213,7 +213,7 @@
     }
   },
   "parameter_form": {
-    "all_at_defaults": "Alle Parameter wurden auf ihren Standardwerten belassen.",
+    "all_at_defaults": "Alle Parameter stehen auf ihren Standardwerten.",
     "search_placeholder": "Suchen…",
     "search_options_aria": "Optionen für {label} suchen",
     "recommended": "Empfohlen: {value}",
@@ -283,7 +283,7 @@
     "edit_button": "Bearbeiten",
     "inline_placeholder": "Notiz zu diesem Run hinzufügen…",
     "panel_placeholder": "Wofür war dieser Run? Was hast du verändert?",
-    "panel_empty_text": "Noch keine Notiz. Halte hier fest, was du versucht hast — Parameterwahl, Kontext, alles was dir hilft, diesen Run später wiederzulesen.",
+    "panel_empty_text": "Noch keine Notiz. Halte hier fest, was du versucht hast: Parameterwahl, Kontext, alles, was dir später beim Nachvollziehen des Runs hilft.",
     "char_count": "{n} / {max}",
     "saving": "Wird gespeichert…",
     "save_failed": "Speichern fehlgeschlagen"
@@ -363,7 +363,7 @@
   },
   "run_history": {
     "heading": "Verlauf",
-    "subtitle": "Alles aus dieser Sitzung, das Neueste zuerst: die Datensätze beider Tabs, jeweils mit den Einstellungen ihrer letzten Analyse, und die Runs einzelner Logs.",
+    "subtitle": "Alles aus dieser Sitzung, das Neueste zuerst: die Datensätze beider Reiter mit den Einstellungen ihrer letzten Analyse und die Runs einzelner Logs.",
     "subtitle_short": "Alles aus dieser Sitzung, das Neueste zuerst.",
     "search_placeholder": "Name, Datei oder ID suchen…",
     "search_aria": "Verlauf durchsuchen",
@@ -395,11 +395,11 @@
     "today": "Heute",
     "yesterday": "Gestern",
     "empty": "Noch nichts – geöffnete Datensätze und Runs erscheinen hier.",
-    "empty_more": "Hier landet jeder Datensatz, den du auf einem der Tabs öffnest oder berechnest, und jeder Run eines einzelnen Logs.",
+    "empty_more": "Hier landet jeder Datensatz, den du auf einem der Reiter öffnest oder berechnest, und jeder Run eines einzelnen Logs.",
     "none_match": "Nichts passt zu den Filtern.",
     "settings_label": "Einstellungen der letzten Analyse",
     "abort": "Abbrechen",
-    "abort_more": "Hält den Run an; ein Datensatz, den er berechnet, bleibt, als fehlgeschlagen markiert.",
+    "abort_more": "Bricht den Run ab. Ein Datensatz, den er gerade berechnet, bleibt erhalten und wird als fehlgeschlagen markiert.",
     "delete_dataset_aria": "{name} löschen",
     "delete_with_dataset": "Löscht auch den Datensatz, den er berechnet.",
     "toast_dataset_deleted": "Datensatz gelöscht"
@@ -462,14 +462,14 @@
       "must_be_at_least": "Muss mindestens {min} sein.",
       "must_be_at_most": "Darf höchstens {max} sein.",
       "choose_one": "Wähle mindestens einen Eintrag.",
-      "fix_validation": "Bitte behebe die Parameter-Validierungsfehler vor dem Ausführen.",
+      "fix_validation": "Bitte behebe vor dem Start die Fehler in den Parametern.",
       "submitting": "Run wird gestartet…",
       "load_job_details": "Die Details des Runs konnten nicht geladen werden.",
       "aborted": "Die Analyse wurde abgebrochen.",
       "analysis_failed": "Analyse fehlgeschlagen",
       "unknown_submission": "Unbekannter Übermittlungsfehler",
       "file_too_large": "Datei überschreitet das 100-MB-Limit.",
-      "wrong_type": "Dieser Dateityp lässt sich nicht analysieren; verwende {formats}.",
+      "wrong_type": "Dieser Dateityp lässt sich nicht analysieren. Verwende {formats}.",
       "aborted_by_user": "Vom Nutzer abgebrochen"
     }
   },
@@ -523,7 +523,7 @@
       "unavailable": "hier nicht verfügbar"
     },
     "empty": {
-      "no_dataset": "Wähle zuerst im Schritt Daten Daten aus.",
+      "no_dataset": "Wähle zuerst im Schritt Daten deine Daten aus.",
       "computing": "Die Maße werden noch berechnet. Dieser Schritt füllt sich, sobald der Datensatz fertig ist.",
       "analyzing": "Analyse läuft…",
       "after_error": "Noch kein Ergebnis. Behebe das Problem im Schritt Eignung."
@@ -541,18 +541,18 @@
       "all_miners": "Alle Miner gemeinsam analysieren",
       "choose_measures": "Maße auswählen",
       "observation": {
-        "log": "Eine Beobachtung ist hier ein Log, und es gibt {n}.",
-        "log_plural": "Eine Beobachtung ist hier ein Log, und es gibt {n}.",
-        "log_miner": "Eine Beobachtung ist hier ein Log mit einem Miner, und es gibt {n}.",
-        "log_miner_plural": "Eine Beobachtung ist hier ein Log mit einem Miner, und es gibt {n}.",
-        "net": "Eine Beobachtung ist hier ein Petri-Netz, und es gibt {n}.",
-        "net_plural": "Eine Beobachtung ist hier ein Petri-Netz, und es gibt {n}.",
-        "row": "Eine Beobachtung ist hier eine Zeile der Tabelle, und es gibt {n}.",
-        "row_plural": "Eine Beobachtung ist hier eine Zeile der Tabelle, und es gibt {n}."
+        "log": "Hier ist jedes Log eine Beobachtung. Es gibt {n}.",
+        "log_plural": "Hier ist jedes Log eine Beobachtung. Es gibt {n}.",
+        "log_miner": "Hier ist jede Kombination aus Log und Miner eine Beobachtung. Es gibt {n}.",
+        "log_miner_plural": "Hier ist jede Kombination aus Log und Miner eine Beobachtung. Es gibt {n}.",
+        "net": "Hier ist jedes Petri-Netz eine Beobachtung. Es gibt {n}.",
+        "net_plural": "Hier ist jedes Petri-Netz eine Beobachtung. Es gibt {n}.",
+        "row": "Hier ist jede Zeile der Tabelle eine Beobachtung. Es gibt {n}.",
+        "row_plural": "Hier ist jede Zeile der Tabelle eine Beobachtung. Es gibt {n}."
       },
-      "too_few_observations_way": "Eine Faktorenanalyse braucht mehr Beobachtungen als Maße: mit {n} höchstens {max} Maße, und sinnvoll sind etwa 5 je Maß. Behalte nur wenige Maße, oder wähle andere Daten mit mehr Beobachtungen.",
-      "too_few_observations_any": "Mit {n} Beobachtung läuft keine Faktorenanalyse; sie braucht mindestens {needed}. Wähle andere Daten mit mehr Beobachtungen.",
-      "too_few_observations_any_plural": "Mit {n} Beobachtungen läuft keine Faktorenanalyse; sie braucht mindestens {needed}. Wähle andere Daten mit mehr Beobachtungen."
+      "too_few_observations_way": "Eine Faktorenanalyse braucht mehr Beobachtungen als Maße. Bei {n} Beobachtungen sind höchstens {max} Maße möglich, sinnvoll sind etwa 5 je Maß. Behalte nur wenige Maße oder wähle andere Daten mit mehr Beobachtungen.",
+      "too_few_observations_any": "Mit {n} Beobachtung läuft keine Faktorenanalyse. Sie braucht mindestens {needed}. Wähle andere Daten mit mehr Beobachtungen.",
+      "too_few_observations_any_plural": "Mit {n} Beobachtungen läuft keine Faktorenanalyse. Sie braucht mindestens {needed}. Wähle andere Daten mit mehr Beobachtungen."
     },
     "data": {
       "source": {
@@ -593,17 +593,17 @@
       "files_selected": "{n} Datei",
       "files_selected_plural": "{n} Dateien",
       "sample_demo": "zeigt den Ablauf",
-      "sample_demo_why": "Vier Logs ergeben mit einem Miner nur vier Beobachtungen, zu wenige für eine Faktorenanalyse. Mit mehr Miner-Läufen reicht die Zahl, doch die Maße hängen dann so schwach zusammen, dass der MSA-Filter fast alle entfernt. Das Beispiel zeigt den Ablauf; für ein Ergebnis nimm die Datensätze des Papers.",
+      "sample_demo_why": "Vier Logs ergeben mit einem Miner nur vier Beobachtungen, zu wenige für eine Faktorenanalyse. Mit mehr Miner-Läufen reicht die Zahl, doch die Maße korrelieren dann so schwach, dass der MSA-Filter fast alle entfernt. Das Beispiel zeigt den Ablauf. Für ein Ergebnis nimm die Datensätze aus dem Paper.",
       "sample_own": "Stattdessen eigene Dateien hochladen",
       "clear_files": "Alle entfernen",
       "remove_file_aria": "{name} entfernen",
       "wrong_type": "{name} ist keine {ext}-Datei und wurde übersprungen.",
       "too_large": "{name} ist größer als {mb} MB und wurde übersprungen.",
-      "too_many_files": "Höchstens {max} Dateien; {n} wurden nicht hinzugefügt.",
+      "too_many_files": "Höchstens {max} Dateien. {n} wurden nicht hinzugefügt.",
       "miners_heading": "Miner",
       "miners_hint": "Discovery-Algorithmen aus ComFy. Mehr Miner ergeben mehr Beobachtungen pro Log.",
       "measures_heading": "Maße",
-      "measures_hint": "Komplexitätsmaße, die auf jedem Petri-Netz berechnet werden. Fahre über ein Maß, um seine Definition zu sehen.",
+      "measures_hint": "Komplexitätsmaße, die auf jedem Petri-Netz berechnet werden. Zeige auf ein Maß, um seine Definition zu sehen.",
       "groups_heading": "Feature-Gruppen und Maße",
       "groups_hint": "Gruppen von feeed-Maßen, wie in ComFy for log measures definiert. Klappe eine Gruppe auf, um einzelne Maße zu wählen.",
       "measures_selected": "{n} von {total} Maßen",
@@ -628,7 +628,7 @@
       },
       "estimate": "Das ergibt bis zu {rows} Beobachtungen von {cols} Maßen.",
       "estimate_thin": "Wenige Beobachtungen pro Maß. Mit etwa fünf pro Maß ({target}) werden die Ergebnisse stabiler.",
-      "estimate_wont_run": "Mit dieser Auswahl läuft die Analyse nicht; die Werte lassen sich trotzdem berechnen und ansehen.",
+      "estimate_wont_run": "Mit dieser Auswahl läuft die Analyse nicht. Die Werte lassen sich trotzdem berechnen und ansehen.",
       "need_bundled": "Wähle einen Datensatz.",
       "need_mine": "Wähle einen Datensatz.",
       "need_csv": "Füge eine CSV-Datei hinzu.",
@@ -643,7 +643,7 @@
       "submitting": "Wird gesendet…",
       "submit_failed": "Der Datensatz konnte nicht angelegt werden.",
       "computing_title": "{name} wird berechnet",
-      "computing_hint": "Das läuft im Hintergrund. Du kannst die Seite verlassen; der Datensatz bleibt für deine Sitzung erhalten.",
+      "computing_hint": "Das läuft im Hintergrund. Du kannst die Seite verlassen. Der Datensatz bleibt für deine Sitzung erhalten.",
       "cancel": "Berechnung abbrechen",
       "failed_title": "Der Datensatz konnte nicht erstellt werden",
       "change": "Andere Daten wählen",
@@ -654,7 +654,7 @@
       "catalog_error": "Die verfügbaren Datensätze und Maße konnten nicht geladen werden: {error}",
       "load_failed": "Der Datensatz konnte nicht geladen werden. Neuer Versuch…",
       "cancel_failed": "Der Run ließ sich nicht abbrechen. Versuche es noch einmal oder brich ihn im Verlauf ab.",
-      "too_large_total": "Einige Dateien wurden übersprungen: Alle Dateien eines Datensatzes dürfen zusammen höchstens {mb} MB groß sein.",
+      "too_large_total": "Einige Dateien wurden übersprungen. Die Dateien eines Datensatzes dürfen zusammen höchstens {mb} MB groß sein.",
       "mine_open": "geöffnet",
       "mine_computing": "wird berechnet",
       "mine_failed": "fehlgeschlagen",
@@ -678,24 +678,24 @@
       "compare_start": "Vergleichen",
       "compare_pick_aria": "Zu vergleichende Datensätze",
       "compare_not_ready": "Nur ein fertiger Datensatz lässt sich vergleichen.",
-      "compare_hint": "{n} gewählt; ein Vergleich nimmt {min} bis {max} Datensätze, jeden mit den Einstellungen, die mit ihm gespeichert sind.",
+      "compare_hint": "{n} gewählt. Ein Vergleich umfasst {min} bis {max} Datensätze, jeweils mit ihren gespeicherten Einstellungen.",
       "compare_go": "{n} vergleichen",
       "sample_name": {
         "pdc_sample_logs": "Vier PDC-Trainingslogs",
         "pdc_sample_models": "Petri-Netze der vier PDC-Logs"
       },
       "estimate_too_few": {
-        "logs": "{rows} Logs und {cols} Maße: Eine Faktorenanalyse braucht mehr Logs als Maße, mit {rows} Logs also höchstens {max} Maße, und sinnvoll sind etwa 5 Logs je Maß. Wähle weniger Maße oder lade mehr Logs hoch (bis zu {limit}).",
-        "log_miners": "{logs} Logs × {miners} Miner = {rows} Beobachtungen und {cols} Maße: Eine Faktorenanalyse braucht mehr Beobachtungen als Maße, also höchstens {max} Maße, und sinnvoll sind etwa 5 Beobachtungen je Maß. Wähle weniger Maße oder mehr Miner, oder lade mehr Logs hoch (bis zu {limit}).",
-        "nets": "{rows} Netze und {cols} Maße: Eine Faktorenanalyse braucht mehr Netze als Maße, mit {rows} Netzen also höchstens {max} Maße, und sinnvoll sind etwa 5 Netze je Maß. Wähle weniger Maße oder lade mehr Netze hoch (bis zu {limit})."
+        "logs": "{rows} Logs und {cols} Maße. Eine Faktorenanalyse braucht mehr Logs als Maße, bei {rows} Logs also höchstens {max} Maße. Sinnvoll sind etwa 5 Logs je Maß. Wähle weniger Maße oder lade mehr Logs hoch (bis zu {limit}).",
+        "log_miners": "{logs} Logs × {miners} Miner = {rows} Beobachtungen und {cols} Maße. Eine Faktorenanalyse braucht mehr Beobachtungen als Maße, also höchstens {max} Maße. Sinnvoll sind etwa 5 Beobachtungen je Maß. Wähle weniger Maße oder mehr Miner, oder lade mehr Logs hoch (bis zu {limit}).",
+        "nets": "{rows} Netze und {cols} Maße. Eine Faktorenanalyse braucht mehr Netze als Maße, bei {rows} Netzen also höchstens {max} Maße. Sinnvoll sind etwa 5 Netze je Maß. Wähle weniger Maße oder lade mehr Netze hoch (bis zu {limit})."
       },
       "estimate_too_few_any": {
-        "logs": "Mit {n} Log läuft keine Faktorenanalyse; sie braucht mindestens {needed} Logs. Lade mehr Logs hoch (bis zu {limit}).",
-        "logs_plural": "Mit {n} Logs läuft keine Faktorenanalyse; sie braucht mindestens {needed} Logs. Lade mehr Logs hoch (bis zu {limit}).",
-        "log_miners": "{logs} Logs × {miners} Miner ergeben {n} Beobachtung; eine Faktorenanalyse braucht mindestens {needed}. Nimm mehr Miner dazu oder lade mehr Logs hoch (bis zu {limit}).",
-        "log_miners_plural": "{logs} Logs × {miners} Miner ergeben {n} Beobachtungen; eine Faktorenanalyse braucht mindestens {needed}. Nimm mehr Miner dazu oder lade mehr Logs hoch (bis zu {limit}).",
-        "nets": "Mit {n} Netz läuft keine Faktorenanalyse; sie braucht mindestens {needed} Netze. Lade mehr Netze hoch (bis zu {limit}).",
-        "nets_plural": "Mit {n} Netzen läuft keine Faktorenanalyse; sie braucht mindestens {needed} Netze. Lade mehr Netze hoch (bis zu {limit})."
+        "logs": "Mit {n} Log läuft keine Faktorenanalyse. Sie braucht mindestens {needed} Logs. Lade mehr Logs hoch (bis zu {limit}).",
+        "logs_plural": "Mit {n} Logs läuft keine Faktorenanalyse. Sie braucht mindestens {needed} Logs. Lade mehr Logs hoch (bis zu {limit}).",
+        "log_miners": "{logs} Logs × {miners} Miner ergeben {n} Beobachtung. Eine Faktorenanalyse braucht mindestens {needed}. Nimm mehr Miner dazu oder lade mehr Logs hoch (bis zu {limit}).",
+        "log_miners_plural": "{logs} Logs × {miners} Miner ergeben {n} Beobachtungen. Eine Faktorenanalyse braucht mindestens {needed}. Nimm mehr Miner dazu oder lade mehr Logs hoch (bis zu {limit}).",
+        "nets": "Mit {n} Netz läuft keine Faktorenanalyse. Sie braucht mindestens {needed} Netze. Lade mehr Netze hoch (bis zu {limit}).",
+        "nets_plural": "Mit {n} Netzen läuft keine Faktorenanalyse. Sie braucht mindestens {needed} Netze. Lade mehr Netze hoch (bis zu {limit})."
       },
       "scope": {
         "paper": "im Paper",
@@ -712,11 +712,11 @@
         "too_few_traces": "zu wenige Traces",
         "group_failed": "Berechnung fehlgeschlagen"
       },
-      "skipped_info": "feeed konnte diese Merkmalsgruppen für mindestens ein Log nicht berechnen. Damit alle Logs dieselben Spalten behalten, fehlen ihre Maße bei allen Logs: {groups}.",
+      "skipped_info": "feeed konnte diese Feature-Gruppen für mindestens ein Log nicht berechnen: {groups}. Ihre Maße fehlen deshalb bei allen Logs, damit jedes Log dieselben Spalten hat.",
       "skipped_group": "{name} – {reason} ({inputs})",
       "loaded_too_few": "{rows} Beobachtungen und {cols} Maße: Eine Faktorenanalyse braucht mehr Beobachtungen als Maße, also höchstens {max} Maße. Schließe Maße aus oder nimm mehr Daten dazu.",
-      "loaded_too_few_any": "Mit {n} Beobachtung läuft keine Faktorenanalyse; sie braucht mindestens {needed}. Nimm mehr Daten dazu.",
-      "loaded_too_few_any_plural": "Mit {n} Beobachtungen läuft keine Faktorenanalyse; sie braucht mindestens {needed}. Nimm mehr Daten dazu.",
+      "loaded_too_few_any": "Mit {n} Beobachtung läuft keine Faktorenanalyse. Sie braucht mindestens {needed}. Nimm mehr Daten dazu.",
+      "loaded_too_few_any_plural": "Mit {n} Beobachtungen läuft keine Faktorenanalyse. Sie braucht mindestens {needed}. Nimm mehr Daten dazu.",
       "skipped_plural": "{n} Maße übersprungen: {reason}",
       "submit_show": "Ansehen"
     },
@@ -764,7 +764,7 @@
       "col_reason": "Grund",
       "col_detail": "Detail",
       "descriptives_heading": "Deskriptive Statistik",
-      "col_n_more": "Die Werte, auf denen die Kennzahlen beruhen; fehlende zählen nicht.",
+      "col_n_more": "Anzahl der Werte, auf denen die Kennzahlen beruhen. Fehlende Werte zählen nicht.",
       "col_mean": "Mittel",
       "col_median": "Median",
       "col_sd": "SD",
@@ -772,8 +772,8 @@
       "col_min": "Min",
       "col_max": "Max",
       "col_cleaning": "Bereinigung",
-      "descriptives_note": "So, wie der ComFy-Report sie ausgibt: über alle {n} Beobachtungen der erhobenen Daten vor der Bereinigung, also auch für die Maße, die die Bereinigung weggelassen hat.",
-      "descriptives_note_cleaned": "Über die bereinigte Matrix: Die Daten vor der Bereinigung wurden für diesen Datensatz nicht aufbewahrt.",
+      "descriptives_note": "Wie im ComFy-Report: über alle {n} Beobachtungen vor der Bereinigung. Auch Maße, die die Bereinigung entfernt hat, werden beschrieben.",
+      "descriptives_note_cleaned": "Berechnet über die bereinigte Matrix. Die Daten vor der Bereinigung wurden für diesen Datensatz nicht aufbewahrt.",
       "measurement_heading": "Laufzeiten und Eingabegrößen",
       "measurement_total": "{s} s insgesamt",
       "col_traces": "Traces",
@@ -784,7 +784,7 @@
       "col_net_more": "Stellen, Transitionen und Kanten des Petri-Netzes.",
       "col_read_s": "Lesen (s)",
       "col_discovery_s": "Discovery (s)",
-      "col_discovery_more": "Laufzeit der Discovery einschließlich der Wartezeit auf ProM, solange andere Jobs es nutzten.",
+      "col_discovery_more": "Laufzeit der Discovery einschließlich der Wartezeit auf ProM, solange andere Runs es nutzten.",
       "col_measures_s": "Maße (s)",
       "col_features_s": "Features (s)",
       "measurement_sum": "Summe",
@@ -803,7 +803,7 @@
       "warnings_heading": "Hinweise aus der Analyse",
       "bartlett_title": "Sphärizitätstest nach Bartlett",
       "bartlett_explain": "Prüft, ob die Maße überhaupt korreliert sind. Bestanden, wenn p unter α = {alpha} liegt.",
-      "bartlett_before_filter": "Wie in ComFy läuft der Test auf allen {n} Maßen vor dem MSA-Filter; KMO und die weiteren Schritte nutzen die {left} Maße, die danach übrig sind.",
+      "bartlett_before_filter": "Wie in ComFy läuft der Test auf allen {n} Maßen vor dem MSA-Filter. KMO und die weiteren Schritte nutzen die {left} Maße, die danach übrig sind.",
       "df": "df",
       "kmo_title": "Kaiser-Meyer-Olkin (KMO)",
       "kmo_explain": "Wie stark die Zusammenhänge zwischen den Maßen auf etwas Gemeinsames zurückgehen, statt nur zwischen einzelnen Paaren zu bestehen. Ab {threshold} gilt der Wert als ausreichend.",
@@ -835,18 +835,18 @@
       "keep_found": "Nur Treffer behalten ({n})",
       "include_all": "Alle einschließen",
       "regularised": "regularisiert",
-      "regularised_title": "Einige Eigenwerte der Korrelationsmatrix sind praktisch null und wurden nach unten begrenzt, daher spiegelt χ² eher diese Grenze als die Daten. Lies den Test zusammen mit KMO.",
+      "regularised_title": "Einige Eigenwerte der Korrelationsmatrix sind praktisch null und wurden auf einen Mindestwert gesetzt. χ² spiegelt daher eher diesen Mindestwert als die Daten. Lies den Test zusammen mit KMO.",
       "exclude_aria": "{measure} ausschließen",
       "invert": "Auswahl umkehren",
       "invert_title": "Die einbezogenen Maße ausschließen und die ausgeschlossenen einbeziehen",
-      "removed_summary": "Der Filter hat {n} Maß entfernt; die Liste unten markiert es.",
-      "removed_summary_plural": "Der Filter hat {n} Maße entfernt; die Liste unten markiert sie.",
+      "removed_summary": "Der Filter hat {n} Maß entfernt. Die Liste unten markiert es.",
+      "removed_summary_plural": "Der Filter hat {n} Maße entfernt. Die Liste unten markiert sie.",
       "thin_result": "Nur {left} von {total} Maßen übrig."
     },
     "factors": {
       "scree_title": "Screeplot",
       "notes_heading": "Hinweise zur Faktorlösung",
-      "scree_desc": "Eigenwerte in absteigender Reihenfolge; {n} liegen über 1.",
+      "scree_desc": "Eigenwerte, absteigend sortiert. {n} liegen über 1.",
       "scree_hint": "Klicke auf einen Punkt, um so viele Faktoren zu behalten. Die gestrichelte Linie markiert den Eigenwert 1, die gepunktete die Parallelanalyse.",
       "axis_factor": "Faktor",
       "axis_eigenvalue": "Eigenwert",
@@ -864,15 +864,15 @@
       "rotation_label": "Rotation",
       "rotation": {
         "varimax": "Varimax (orthogonal)",
-        "promax": "Promax (oblique)",
-        "oblimin": "Oblimin (oblique)",
+        "promax": "Promax (schiefwinklig)",
+        "oblimin": "Oblimin (schiefwinklig)",
         "quartimax": "Quartimax (orthogonal)",
         "none": "Keine"
       },
       "rotation_hint": {
         "orthogonal": "Hält die Faktoren unkorreliert. Ladungen sind Korrelationen zwischen Maß und Faktor.",
         "oblique": "Erlaubt korrelierte Faktoren. Schritt 5 zeigt die Ladungen als Regressionsgewichte (Mustermatrix) oder als Korrelationen (Strukturmatrix).",
-        "none": "Unrotierte Lösung. Der erste Faktor nimmt meist den Großteil der Varianz auf, was die Faktoren schwer deutbar macht."
+        "none": "Unrotierte Lösung. Der erste Faktor erklärt meist den Großteil der Varianz. Das macht die Faktoren schwer zu deuten."
       },
       "criteria_label": "Kriterien",
       "criterion": {
@@ -885,14 +885,14 @@
         "kaiser": "Eigenwerte über 1",
         "parallel": "über dem {percentile}. Perzentil zufälliger Daten",
         "paper": "a priori gewählt",
-        "report": "wie im ComFy-Report, höchstens eins weniger als die Maße"
+        "report": "wie im ComFy-Report, höchstens die Anzahl der Maße minus 1"
       },
       "criterion_count": "{n} Faktor",
       "criterion_count_plural": "{n} Faktoren",
       "criterion_capped": "{k} Faktoren sind mehr als die {max}, die diese Maße erlauben.",
       "criteria_differ": "Die Kriterien legen unterschiedlich viele Faktoren nahe. Screeplot und Ladungen helfen bei der Entscheidung.",
-      "criteria_differ_paper": "Die Kriterien legen unterschiedlich viele Faktoren nahe. Kaiser und Parallelanalyse folgen aus den Daten; das Paper hat seine Zahl vor der Analyse gewählt.",
-      "criteria_differ_report": "Die Kriterien legen unterschiedlich viele Faktoren nahe. Kaiser und Parallelanalyse folgen aus den Daten; der ComFy-Report legt seine Zahl vor der Analyse fest.",
+      "criteria_differ_paper": "Die Kriterien legen unterschiedlich viele Faktoren nahe. Kaiser und Parallelanalyse richten sich nach den Daten. Das Paper hat seine Zahl vorher festgelegt.",
+      "criteria_differ_report": "Die Kriterien legen unterschiedlich viele Faktoren nahe. Kaiser und Parallelanalyse richten sich nach den Daten. Der ComFy-Report legt seine Zahl vorab fest.",
       "random_point": "Parallelanalyse: {value}",
       "cumulative_point": "kumulierter Anteil der Eigenwerte: {pct}",
       "scree_desc_table": "Eine Tabelle mit allen Reihen folgt dem Diagramm.",
@@ -925,9 +925,9 @@
       "cumulative": "Kumuliert",
       "h2_note": "h² ist der Anteil der Varianz eines Maßes, den die behaltenen Faktoren erklären.",
       "footer_rows": "Die Fußzeilen zeigen die Varianz je Faktor.",
-      "footer_row_pattern": "Die Fußzeile zeigt die Summe der quadrierten Ladungen je Faktor, aus der Mustermatrix.",
-      "structure_note": "Die Strukturmatrix enthält die Korrelationen zwischen Maßen und Faktoren; die Summen der quadrierten Ladungen gibt es für die Mustermatrix.",
-      "oblique_note": "Bei obliquer Rotation korrelieren die Faktoren, ihre Anteile lassen sich daher nicht addieren; zusammen erklären sie {pct} der Varianz.",
+      "footer_row_pattern": "Die Fußzeile zeigt je Faktor die Summe der quadrierten Ladungen der Mustermatrix.",
+      "structure_note": "Die Strukturmatrix enthält die Korrelationen zwischen Maßen und Faktoren. Die Summen der quadrierten Ladungen gibt es für die Mustermatrix.",
+      "oblique_note": "Bei schiefwinkliger Rotation korrelieren die Faktoren, daher lassen sich ihre Anteile nicht addieren. Zusammen erklären sie {pct} der Varianz.",
       "legend_shade": "dunkler: größerer Betrag |λ|; das Vorzeichen steht in der Zahl",
       "legend_bold": "fett: |Ladung| ≥ {threshold}",
       "legend_bold_strict": "fett: |Ladung| > {threshold}",
@@ -936,7 +936,7 @@
       "factor_variance": "{pct} der Varianz",
       "factor_empty": "Kein Maß erreicht auf diesem Faktor die Schwelle.",
       "unassigned_heading": "Nicht zugeordnet",
-      "unassigned_hint": "Diese Maße kommen nach der gewählten Regel zu keinem Faktor; der Grund steht jeweils daneben.",
+      "unassigned_hint": "Diese Maße kommen nach der gewählten Regel zu keinem Faktor. Der Grund steht jeweils daneben.",
       "communality_threshold_label": "Kommunalitätsschwelle",
       "communality_raised": "Die Regel verlangt mindestens {value}.",
       "matrix_label": "Matrix",
@@ -954,12 +954,12 @@
         "multi": {
           "title": "Mehrfachzuordnung",
           "source": "Important Factors, Tab. 6–16",
-          "text": "|λ| über der Schwelle und h² ≥ {h2_multi}; eine Ladung höchstens {gap} unter der größten zählt mit."
+          "text": "|λ| über der Schwelle und h² ≥ {h2_multi}. Auch eine Ladung, die höchstens {gap} unter der größten liegt, zählt."
         },
         "hair": {
           "title": "Ohne Querladungen",
           "source": "Important Factors, Tab. 17; das Paper begründet beide Kriterien mit Hair et al. (S. 119)",
-          "text": "h² ≥ {h2_hair}; ein Maß mit einer zweiten Ladung höchstens {gap} unter seiner größten fällt heraus."
+          "text": "h² ≥ {h2_hair}. Hat ein Maß eine zweite Ladung, die höchstens {gap} unter seiner größten liegt, fällt es heraus."
         }
       },
       "cross_cell": "Querladung",
@@ -985,7 +985,7 @@
     "stability": {
       "action": "Stabilität prüfen",
       "again": "Neu prüfen",
-      "help": "Zieht {n} Bootstrap-Stichproben der Zeilen, mit Zurücklegen und festem Seed, und passt jede mit denselben Maßen, derselben Faktorzahl und Rotation an. Tuckers Kongruenz φ mit dem ungarischen Algorithmus ordnet die Faktoren einer Stichprobe diesen zu, gespiegelt, wo φ negativ ist; dann gilt dieselbe Zuordnungsregel. Der Wert eines Maßes ist der Anteil der Stichproben, in denen es seine Faktoren behält.",
+      "help": "Zieht {n} Bootstrap-Stichproben der Zeilen, mit Zurücklegen und festem Seed, und passt jede mit denselben Maßen, derselben Faktorzahl und Rotation an. Mit Tuckers Kongruenz φ und dem ungarischen Algorithmus werden die Faktoren jeder Stichprobe den Faktoren dieser Lösung zugeordnet; wo φ negativ ist, wird der Faktor gespiegelt. Danach gilt dieselbe Zuordnungsregel. Der Wert eines Maßes ist der Anteil der Stichproben, in denen es seine Faktoren behält.",
       "samples_label": "Bootstrap-Stichproben",
       "computing": "Stabilität wird geprüft … {pct} %",
       "cancel": "Abbrechen",
@@ -998,7 +998,7 @@
         "fit_failed": "{n} Anpassung fehlgeschlagen",
         "not_converged": "{n} nicht konvergiert"
       },
-      "heywood": "In {n} Stichproben erreichte ein weiteres Maß die Heywood-Grenze; sie bleiben drin.",
+      "heywood": "In {n} Stichproben erreichte ein Maß die Heywood-Grenze, das in dieser Lösung nicht an ihr liegt. Diese Stichproben zählen mit.",
       "none_valid": "Keine der {samples} Stichproben ließ sich anpassen.",
       "stale": "Die zuvor gezeigte Stabilität gehört zu anderen Einstellungen.",
       "failed": "Die Stabilität konnte nicht berechnet werden.",
@@ -1020,14 +1020,14 @@
       "pairs_legend": "Jede Zelle ist der Anteil der gültigen Stichproben, in denen die beiden Maße mindestens einen Faktor teilen; je dunkler, desto öfter. Ein Ring markiert die Paare, die auch in der Lösung selbst einen Faktor teilen.",
       "pairs_cell": "{a} und {b}",
       "pairs_cell_more": "Teilen einen Faktor in {pct} der Stichproben",
-      "pairs_cell_together": "Teilen einen Faktor in {pct} der Stichproben; in der Lösung zusammen"
+      "pairs_cell_together": "Teilen einen Faktor in {pct} der Stichproben und in der Lösung selbst"
     },
     "short_set": {
       "badge": "Stellvertreter",
       "badge_tip": "Steht im Kurzset für diese Dimension: Reinheit {purity}",
       "heading": "Kurzset ({n} Maß)",
       "heading_plural": "Kurzset ({n} Maße)",
-      "help": "Ein Maß je Dimension: das ihr zugeordnete mit der größten Reinheit, also dem Betrag seiner Ladung auf der Dimension minus dem größten Betrag seiner Ladungen auf einer anderen. So berichtest du wenige Maße, die sich nicht wiederholen, wie im Paper Important Factors motiviert. Bei Gleichstand entscheidet die höhere Ladung. Einen Stellvertreter mit niedriger Stabilität liest du mit Vorsicht.",
+      "help": "Ein Maß je Dimension: das zugeordnete mit der größten Reinheit. Die Reinheit ist der Betrag seiner Ladung auf der Dimension minus der größte Betrag seiner Ladungen auf einer anderen. So berichtest du wenige Maße, die sich nicht wiederholen. Das Paper Important Factors begründet dieses Vorgehen. Bei Gleichstand entscheidet die höhere Ladung. Einen Stellvertreter mit niedriger Stabilität liest du mit Vorsicht.",
       "copy_label": "Kurzset kopieren",
       "copy_list": "als Liste",
       "copy_latex": "als LaTeX-Tabelle",
@@ -1042,41 +1042,41 @@
     },
     "help": {
       "cleaning": "Vor der Analyse werden Zeilen entfernt, in denen die meisten Werte fehlen. Danach werden Spalten entfernt, die nicht numerisch sind, keine Varianz haben, fehlende Werte enthalten oder exakte Kopien einer früheren Spalte sind, wie in ComFy für Log-Maße. Solche Spalten würden die Korrelationsmatrix verzerren oder unbrauchbar machen.",
-      "bartlett": "Der Test nach Bartlett prüft die Nullhypothese, dass die Korrelationsmatrix eine Einheitsmatrix ist, die Maße also unkorreliert sind. Ist p < α, gibt es Korrelationen, die gemeinsame Faktoren erklären können. Bei vielen Beobachtungen besteht der Test fast immer, lies ihn daher zusammen mit KMO.",
-      "kmo": "Das Kaiser-Meyer-Olkin-Kriterium vergleicht die Korrelationen zwischen den Maßen mit ihren partiellen Korrelationen. Werte nahe 1 bedeuten, dass die Maße gemeinsame Varianz teilen; Werte nahe 0, dass die Korrelationen vor allem paarweise sind. Kaisers Skala (Kaiser 1974): ab 0,9 ausgezeichnet, ab 0,8 gut, ab 0,7 mittel, ab 0,6 mäßig, ab 0,5 dürftig, darunter inakzeptabel.",
-      "msa": "Die Stichprobeneignung (MSA) ist der KMO-Wert eines einzelnen Maßes. Ein Maß mit niedrigem MSA hat wenig mit den anderen gemeinsam und passt zu keinem gemeinsamen Faktor; es zu entfernen hebt meist den KMO-Gesamtwert. Setze ein Häkchen, um ein Maß von Hand auszuschließen.",
-      "msa_filter": "Wie in ComFy werden alle Maße unter der Schwelle entfernt und die MSA-Werte neu berechnet, bis jedes verbleibende Maß die Schwelle erreicht. Liegt der KMO insgesamt danach unter der Schwelle, beendet ComFy seinen Lauf; das Tool warnt nur.",
+      "bartlett": "Der Test nach Bartlett prüft die Nullhypothese, dass die Korrelationsmatrix eine Einheitsmatrix ist, die Maße also unkorreliert sind. Ist p < α, gibt es Korrelationen, die gemeinsame Faktoren erklären können. Bei vielen Beobachtungen wird der Test fast immer signifikant. Lies ihn daher zusammen mit dem KMO.",
+      "kmo": "Das Kaiser-Meyer-Olkin-Kriterium vergleicht die Korrelationen zwischen den Maßen mit ihren partiellen Korrelationen. Werte nahe 1 bedeuten, dass die Maße gemeinsame Varianz teilen. Bei Werten nahe 0 sind die Korrelationen vor allem paarweise. Kaisers Skala (Kaiser 1974): ab 0,9 ausgezeichnet, ab 0,8 gut, ab 0,7 mittel, ab 0,6 mäßig, ab 0,5 dürftig, darunter inakzeptabel.",
+      "msa": "Die Stichprobeneignung (MSA) ist der KMO-Wert eines einzelnen Maßes. Ein Maß mit niedrigem MSA hat wenig mit den anderen gemeinsam und passt zu keinem gemeinsamen Faktor. Entfernst du es, steigt meist der KMO-Gesamtwert. Setze ein Häkchen, um ein Maß von Hand auszuschließen.",
+      "msa_filter": "Wie in ComFy werden alle Maße unter der Schwelle entfernt und die MSA-Werte neu berechnet, bis jedes verbleibende Maß die Schwelle erreicht. Liegt der KMO insgesamt danach unter der Schwelle, beendet ComFy seinen Lauf. Das Tool warnt nur.",
       "msa_threshold": "Der Filter entfernt Maße, deren MSA unter diesem Wert liegt, und der KMO-Gesamtwert gilt ab diesem Wert als ausreichend. ComFy und ComFy für Log-Maße nutzen 0,6.",
       "bartlett_alpha": "Das Signifikanzniveau des Tests nach Bartlett: Er ist bestanden, wenn p unter α liegt. ComFy und ComFy für Log-Maße nutzen 0,05.",
-      "scree": "Der Screeplot zeigt die Eigenwerte der Korrelationsmatrix in absteigender Reihenfolge. Suche den Knick, ab dem die Kurve flach wird; Faktoren danach tragen wenig bei. Knick, die Regel Eigenwert über 1 und die Parallelanalyse können sich widersprechen, nimm sie als Ausgangspunkte. Die dünne Linie an der rechten Achse summiert die Eigenwerte auf: den Anteil der Varianz, den die ersten Hauptkomponenten erklären. Die Faktoren der Analyse erklären etwas weniger, wie Schritt 5 zeigt.",
-      "eigenvalue": "Ein Eigenwert gehört zu einer Hauptkomponente der Korrelationsmatrix: die Varianz, die sie erklärt, gemessen in Einheiten eines standardisierten Maßes. Der Vorschlag behält so viele Faktoren, wie Eigenwerte über 1 liegen (Kaiser-Kriterium), also so viele, wie Komponenten mehr erklären als ein einzelnes Maß.",
-      "rotation": "Die Rotation dreht die Faktorlösung so, dass jedes Maß auf möglichst wenigen Faktoren hoch lädt; das macht die Faktoren leichter benennbar. Wie viel Varianz die Faktoren zusammen erklären, ändert sie nicht. Varimax und Quartimax halten die Faktoren unkorreliert; Promax und Oblimin erlauben Korrelationen.",
-      "threshold": "Ladungen, deren Betrag diese Schwelle erreicht, gelten als substanziell. Zu welchen Faktoren ein Maß kommt, bestimmt die Zuordnungsregel oben; bei der größten Ladung kommt es zu dem Faktor mit dem größten Betrag, wenn dieser die Schwelle erreicht. Üblich sind Werte zwischen 0,3 und 0,5; ComFy nutzt 0,35, ComFy für Log-Maße 0,5. Ob eine Ladung genau auf der Schwelle zählt, hängt von der Regel ab: bei der größten Ladung zählt sie mit (≥); ComFys Report, der nur Ladungen unter seiner Schwelle grau färbt, lässt sie ebenfalls schwarz. Die Regeln aus Important Factors (Mehrfachzuordnung, ohne Querladungen) verlangen mehr als die Schwelle (>), wie die Tabellen des Papers.",
-      "loading": "Eine Ladung gibt an, wie stark ein Maß mit einem Faktor zusammenhängt. Bei orthogonaler Rotation ist sie die Korrelation zwischen Maß und Faktor. Bei obliquer Rotation enthält die Mustermatrix Regressionsgewichte und die Strukturmatrix die Korrelationen. Das Vorzeichen gibt die Richtung an: Maße mit entgegengesetzten Vorzeichen auf demselben Faktor bewegen sich gegenläufig. Das Vorzeichen eines ganzen Faktors ist beliebig (kehrst du alle Vorzeichen eines Faktors um, ändert sich nichts); die Matrix färbt deshalb nur nach dem Betrag.",
+      "scree": "Der Screeplot zeigt die Eigenwerte der Korrelationsmatrix in absteigender Reihenfolge. Suche den Knick, ab dem die Kurve flach wird. Faktoren danach tragen wenig bei. Knick, die Regel Eigenwert über 1 und die Parallelanalyse können sich widersprechen. Nimm sie als Ausgangspunkte. Die dünne Linie an der rechten Achse zeigt den kumulierten Anteil der Varianz, den die ersten Hauptkomponenten erklären. Die Faktoren der Analyse erklären etwas weniger, wie Schritt 5 zeigt.",
+      "eigenvalue": "Ein Eigenwert gehört zu einer Hauptkomponente der Korrelationsmatrix. Er ist die Varianz, die sie erklärt, in Einheiten eines standardisierten Maßes. Der Vorschlag behält so viele Faktoren, wie Eigenwerte über 1 liegen (Kaiser-Kriterium), also so viele, wie Komponenten mehr erklären als ein einzelnes Maß.",
+      "rotation": "Die Rotation dreht die Faktorlösung so, dass jedes Maß auf möglichst wenigen Faktoren hoch lädt. Das macht die Faktoren leichter zu benennen. Wie viel Varianz die Faktoren zusammen erklären, ändert sie nicht. Varimax und Quartimax halten die Faktoren unkorreliert, Promax und Oblimin erlauben Korrelationen.",
+      "threshold": "Ladungen, deren Betrag diese Schwelle erreicht, gelten als substanziell. Zu welchen Faktoren ein Maß kommt, bestimmt die Zuordnungsregel oben. Bei der größten Ladung kommt ein Maß zu dem Faktor mit dem größten Betrag, wenn dieser die Schwelle erreicht. Üblich sind Werte zwischen 0,3 und 0,5. ComFy nutzt 0,35, ComFy für Log-Maße 0,5. Ob eine Ladung genau auf der Schwelle zählt, hängt von der Regel ab. Bei der größten Ladung zählt sie mit (≥), und auch ComFys Report, der nur Ladungen unter seiner Schwelle grau färbt, lässt sie schwarz. Die Regeln aus Important Factors (Mehrfachzuordnung, ohne Querladungen) verlangen mehr als die Schwelle (>), wie die Tabellen des Papers.",
+      "loading": "Eine Ladung gibt an, wie stark ein Maß mit einem Faktor zusammenhängt. Bei orthogonaler Rotation ist sie die Korrelation zwischen Maß und Faktor. Bei schiefwinkliger Rotation enthält die Mustermatrix Regressionsgewichte und die Strukturmatrix die Korrelationen. Das Vorzeichen gibt die Richtung an: Maße mit entgegengesetzten Vorzeichen auf demselben Faktor bewegen sich gegenläufig. Das Vorzeichen eines ganzen Faktors ist beliebig: Kehrst du alle seine Vorzeichen um, ändert sich nichts. Die Matrix färbt deshalb nur nach dem Betrag.",
       "communality": "Die Kommunalität h² ist der Anteil der Varianz eines Maßes, den alle behaltenen Faktoren zusammen erklären. Ein niedriger Wert (unter etwa 0,4) heißt, dass die Faktoren das Maß schlecht abbilden.",
       "variance": "SS-Ladungen sind die Summe der quadrierten Ladungen eines Faktors. Geteilt durch die Zahl der Maße ergibt sich der Anteil an der Gesamtvarianz, den der Faktor erklärt; die kumulierte Zeile summiert diese Anteile.",
       "groups": "Jeder Faktor mit den ihm zugeordneten Maßen, stärkste Ladung zuerst. Maße einer Gruppe erfassen einen ähnlichen Aspekt der Komplexität; wie der Faktor heißt, ist Sache der Interpretation. Bei Mehrfachzuordnung kann ein Maß in mehreren Gruppen stehen; ein Chip nennt seine anderen Faktoren.",
-      "communality_threshold": "Maße mit einer Kommunalität unter diesem Wert bleiben unzugeordnet, weil die Faktoren zu wenig von ihnen erklären. ComFy für Log-Maße nutzt 0,5; 0 behält jedes Maß, außer bei Mehrfachzuordnung (mindestens 0,3) und ohne Querladungen (mindestens 0,5).",
-      "factor_correlations": "Bei obliquer Rotation dürfen die Faktoren korrelieren. Werte nahe 0 heißen, dass die Faktoren fast unabhängig sind; große Werte heißen, dass sie verwandte Aspekte messen.",
-      "assignment": "Wie aus den Ladungen Faktorgruppen werden. Die größte Ladung ist der Standard dieses Tools: Jedes Maß kommt zu dem Faktor, auf dem es am stärksten lädt. ComFys Report ordnet nichts zu; er färbt nur Ladungen mit |λ| unter seiner Schwelle grau. Important Factors nennt zwei weitere Regeln: Für Tab. 6–16 kommt ein Maß auch zu jedem Faktor, dessen Ladung höchstens {gap} unter seiner größten liegt (Mehrfachzuordnung), bei h² ≥ {h2_multi}; für Tab. 17 (ohne Querladungen, im Paper mit Hair et al. begründet) gilt h² ≥ {h2_hair}, und Maße mit Querladung bleiben außen vor. Das Tool wendet die Regeln so an, wie sie dort stehen; wo eine Tabelle des Papers davon abweicht, sagt das bei den mitgelieferten Datensätzen ein Hinweis unter den Regeln. Die Faktorlösung ist bei jeder Regel dieselbe; nur die Gruppen ändern sich.",
-      "criteria": "Kaiser behält jeden Faktor mit einem Eigenwert über 1. Die Parallelanalyse (Horn) behält die Faktoren, deren Eigenwert über dem {percentile}. Perzentil der Eigenwerte von {simulations} zufälligen normalverteilten Datensätzen gleicher Größe liegt, berechnet auf Hauptkomponenten mit dem festen Seed {seed}; bei vielen Beobachtungen liegt sie nahe bei Kaiser. Ein Paper kann die Zahl auch vor der Analyse festlegen. Die Wahl eines Kriteriums setzt die Anzahl der Faktoren."
+      "communality_threshold": "Maße mit einer Kommunalität unter diesem Wert bleiben unzugeordnet, weil die Faktoren zu wenig von ihnen erklären. ComFy für Log-Maße nutzt 0,5. Der Wert 0 behält jedes Maß, außer bei Mehrfachzuordnung (mindestens 0,3) und ohne Querladungen (mindestens 0,5).",
+      "factor_correlations": "Bei schiefwinkliger Rotation dürfen die Faktoren korrelieren. Werte nahe 0 heißen, dass die Faktoren fast unabhängig sind. Große Werte heißen, dass sie verwandte Aspekte messen.",
+      "assignment": "Wie aus den Ladungen Faktorgruppen werden. Die größte Ladung ist der Standard dieses Tools: Jedes Maß kommt zu dem Faktor, auf dem es am stärksten lädt. ComFys Report ordnet nichts zu. Er färbt nur Ladungen mit |λ| unter seiner Schwelle grau. Important Factors nennt zwei weitere Regeln. Für Tab. 6–16 kommt ein Maß auch zu jedem Faktor, dessen Ladung höchstens {gap} unter seiner größten liegt (Mehrfachzuordnung), bei h² ≥ {h2_multi}. Für Tab. 17 (ohne Querladungen, im Paper mit Hair et al. begründet) gilt h² ≥ {h2_hair}, und Maße mit Querladung bleiben außen vor. Das Tool wendet die Regeln so an, wie das Paper sie beschreibt. Weicht eine Tabelle des Papers davon ab, steht bei den mitgelieferten Datensätzen ein Hinweis unter den Regeln. Die Faktorlösung ist bei jeder Regel dieselbe, nur die Gruppen ändern sich.",
+      "criteria": "Kaiser behält jeden Faktor mit einem Eigenwert über 1. Die Parallelanalyse (Horn) behält die Faktoren, deren Eigenwert über dem {percentile}. Perzentil der Eigenwerte von {simulations} zufälligen normalverteilten Datensätzen gleicher Größe liegt. Sie rechnet auf Hauptkomponenten mit dem festen Seed {seed}. Bei vielen Beobachtungen kommt sie Kaiser nahe. Ein Paper kann die Zahl auch vor der Analyse festlegen. Wählst du ein Kriterium, setzt es die Faktorzahl."
     },
     "errors": {
       "unknown_rotation": "Unbekannte Rotation „{rotation}“.",
-      "n_factors_range": "{requested} Faktoren gewünscht, aber bei {measures} Maßen sind höchstens {max} möglich; ein weiterer Faktor bliebe leer.",
+      "n_factors_range": "{requested} Faktoren gewünscht, aber bei {measures} Maßen sind höchstens {max} möglich. Ein weiterer Faktor bliebe leer.",
       "fit_failed": "Die Faktorenanalyse ist fehlgeschlagen: {error}",
-      "not_converged": "Die Faktorenanalyse ist nicht konvergiert; die Korrelationsmatrix ist singulär. Schließe Maße aus, die Linearkombinationen anderer sind.",
-      "msa_singular": "Der MSA ließ sich nicht berechnen; die Korrelationsmatrix ist singulär.",
+      "not_converged": "Die Faktorenanalyse hat nicht konvergiert. Die Korrelationsmatrix ist singulär. Schließe Maße aus, die Linearkombinationen anderer Maße sind.",
+      "msa_singular": "Der MSA ließ sich nicht berechnen. Die Korrelationsmatrix ist singulär.",
       "unknown_excluded": "Unbekannte auszuschließende Maße: {measures}.",
       "too_few_measures": "Für eine Faktorenanalyse sind mindestens {min} Maße nötig; übrig sind {left}.",
-      "too_few_observations": "{n} Beobachtungen sind zu wenige für {measures} Maße; nötig sind mindestens {needed}. Schließe Maße aus oder füge Beobachtungen hinzu.",
-      "msa_filter_left": "Nach dem MSA-Filter sind {left} Maße übrig; nötig sind mindestens {min}. Schalte den Filter aus oder senke die MSA-Schwelle.",
+      "too_few_observations": "{n} Beobachtungen sind zu wenige für {measures} Maße. Nötig sind mindestens {needed}. Schließe Maße aus oder füge Beobachtungen hinzu.",
+      "msa_filter_left": "Nach dem MSA-Filter sind {left} Maße übrig. Nötig sind mindestens {min}. Schalte den Filter aus oder senke die MSA-Schwelle.",
       "interpretation_unavailable": "Für die Interpretation braucht der Server einen Anthropic-API-Schlüssel, und es ist keiner eingerichtet.",
       "interpretation_refused": "Das Modell hat die Interpretation dieser Analyse abgelehnt. Die Faktorenanalyse selbst ist davon nicht betroffen.",
       "interpretation_auth": "Die Anthropic-API hat den API-Schlüssel des Servers abgelehnt. Der Betreiber muss ihn prüfen.",
       "interpretation_upstream_limited": "Die Anthropic-API drosselt diesen Server. Versuche es später noch einmal.",
       "interpretation_upstream_unavailable": "Die Anthropic-API ist nicht erreichbar oder überlastet. Versuche es später noch einmal.",
-      "interpretation_unreachable": "Der Server hat die Anthropic-API nicht erreicht; vielleicht fehlt ihm die Internetverbindung.",
+      "interpretation_unreachable": "Der Server hat die Anthropic-API nicht erreicht. Vielleicht fehlt ihm die Internetverbindung.",
       "interpretation_timeout": "Die Anthropic-API hat nicht rechtzeitig geantwortet. Versuche es später noch einmal.",
       "interpretation_incomplete": "Die Antwort des Modells wurde abgeschnitten. Versuche es noch einmal oder mit weniger Maßen.",
       "interpretation_failed": "Das Modell hat keine brauchbare Antwort geliefert. Versuche es später noch einmal.",
@@ -1084,26 +1084,26 @@
       "interpretation_fallback_unavailable": "Das Modell hat abgelehnt, und das Ersatzmodell konnte gerade nicht laufen. Versuche es später noch einmal.",
       "interpretation_rate_limited": "Diese Sitzung hat ihr Limit an Interpretationen erreicht ({limit}). Versuche es später noch einmal.",
       "interpretation_limits_unavailable": "Der Server kann Interpretationen gerade nicht zählen. Versuche es später noch einmal.",
-      "interpretation_too_large": "Diese Analyse ist zu groß für eine Interpretation: gesendet werden höchstens {measures} Maße, {factors} Faktoren und Maßnamen mit {name_length} Zeichen. Schließe Maße aus oder wähle weniger Faktoren.",
-      "too_many_measures_for_analysis": "{n} Maße sind mehr als die {max}, die der Server auf einmal analysiert. Schließe in der Tabelle von Schritt 3 Maße aus.",
+      "interpretation_too_large": "Diese Analyse ist zu groß für eine Interpretation. Gesendet werden höchstens {measures} Maße, {factors} Faktoren und Maßnamen mit {name_length} Zeichen. Schließe Maße aus oder wähle weniger Faktoren.",
+      "too_many_measures_for_analysis": "{n} Maße sind zu viele für eine Analyse, der Server nimmt höchstens {max}. Schließe in der Tabelle von Schritt 3 Maße aus.",
       "superseded": "Eine neuere Analyse dieses Datensatzes, etwa in einem anderen Tab, hat diese ersetzt. Ändere eine Einstellung, um sie erneut zu starten.",
-      "unknown_miner": "Der Datensatz hat keine Zeilen des Miners {miner}.",
+      "unknown_miner": "Der Datensatz hat keine Zeilen für den Miner {miner}.",
       "factor_names_too_many": "{names} Faktornamen für {factors} Faktoren.",
       "dataset_not_ready": "Der Datensatz ist nicht bereit ({status}).",
-      "too_few_measures_for_map": "Für eine Korrelationskarte braucht es mindestens {min} Maße; es sind {left} übrig."
+      "too_few_measures_for_map": "Für eine Korrelationskarte sind mindestens {min} Maße nötig; übrig sind {left}."
     },
     "warnings": {
       "bartlett_not_significant": "Der Test nach Bartlett ist nicht signifikant (p = {p} ≥ {alpha}); die Maße sind womöglich unkorreliert.",
-      "singular": "Die Korrelationsmatrix ist singulär; diese Maße sind linear abhängig: {groups}. Die Ergebnisse beruhen auf begrenzten Eigenwerten und Pseudoinversen; schließe am besten aus jeder Gruppe ein Maß aus.",
+      "singular": "Die Korrelationsmatrix ist singulär. Diese Maße sind linear abhängig: {groups}. Die Ergebnisse beruhen auf nach unten begrenzten Eigenwerten und Pseudoinversen. Schließe am besten aus jeder Gruppe ein Maß aus.",
       "kmo_low": "Der KMO-Gesamtwert {overall} liegt unter {threshold}; eine Faktorenanalyse ist nicht zu empfehlen.",
       "small_sample": "{n} Beobachtungen für {measures} Maße; empfohlen sind mindestens 5 je Maß ({recommended}).",
-      "not_identified": "{factors} Faktoren für {measures} Maße überschreiten die Ledermann-Grenze; die Lösung ist nicht identifiziert und die Ladungen sind nicht eindeutig. Wähle weniger Faktoren.",
-      "fit_not_converged": "Die Anpassung der Faktoren ist nicht konvergiert: {message}",
+      "not_identified": "{factors} Faktoren für {measures} Maße überschreiten die Ledermann-Grenze. Die Lösung ist nicht identifiziert und die Ladungen sind nicht eindeutig. Wähle weniger Faktoren.",
+      "fit_not_converged": "Die Anpassung des Faktormodells hat nicht konvergiert: {message}",
       "single_factor_no_rotation": "Ein einzelner Faktor wird nicht rotiert.",
       "heywood": "Möglicher Heywood-Fall: Kommunalität nahe 1 bei {measures}."
     },
     "interpretation": {
-      "intro": "Claude liest die Ladungen zusammen mit den Definitionen der Maße und schlägt für jeden Faktor einen Namen und eine kurze Interpretation vor. An Anthropic gehen die Namen der Maße (Spalten), ihre Katalogdefinitionen und aggregierte Ergebnisse wie Ladungen und Teststatistiken; Messwerte, Zeilenbezeichnungen und Dateinamen werden nicht gesendet. Jede Anfrage kostet Geld, daher läuft sie nur, wenn du sie anforderst.",
+      "intro": "Claude liest die Ladungen zusammen mit den Definitionen der Maße und schlägt für jeden Faktor einen Namen und eine kurze Interpretation vor. An Anthropic gehen die Namen der Maße (Spalten), ihre Katalogdefinitionen und aggregierte Ergebnisse wie Ladungen und Teststatistiken. Messwerte, Zeilenbezeichnungen und Dateinamen werden nicht gesendet. Jede Anfrage kostet Geld, daher läuft sie nur, wenn du sie anforderst.",
       "sent_label": "Was dabei an Anthropic geht",
       "button": "Faktoren interpretieren",
       "again": "Neu interpretieren",
@@ -1124,7 +1124,7 @@
       "overall": "Gesamtbild",
       "caveats": "Einschränkungen",
       "footer": "Automatisch erzeugt von {model} (Anthropic). Bitte mit den Ladungen abgleichen.",
-      "stale": "Seit dieser Interpretation haben sich die Einstellungen oder die Sprache geändert; sie passt womöglich nicht mehr zu den Ergebnissen oben.",
+      "stale": "Einstellungen oder Sprache haben sich seit dieser Interpretation geändert. Sie passt womöglich nicht mehr zu den Ergebnissen oben.",
       "failed": "Die Interpretation ist fehlgeschlagen.",
       "stale_again": "Interpretiere neu, um sie zu aktualisieren.",
       "ready": "Die Interpretation von {n} Faktor ist fertig.",
@@ -1158,7 +1158,7 @@
       },
       "aria": "Einstellungen der Analyse",
       "chip_title": "Zu dieser Einstellung",
-      "chip_changed_title": "Weicht vom Standard des Tools ab; zu dieser Einstellung",
+      "chip_changed_title": "Weicht vom Standard des Tools ab. Zur Einstellung springen.",
       "changed": "weicht vom Standard ab",
       "reset": "Auf Standard zurücksetzen",
       "reset_title": "Zurück zu den Standardeinstellungen des Tools",
@@ -1175,8 +1175,8 @@
       "chip_match": "Zahlen = ComFy-Report",
       "chip_differs": "Weicht vom ComFy-Report ab",
       "title": "Abgleich mit dem veröffentlichten Report",
-      "summary_match": "Jede verglichene Zahl stimmt bis auf {tolerance} mit dem Report überein, über 1 relativ zur Zahl.",
-      "summary_differs": "Zahlen, die um mehr als {tolerance} (über 1 relativ zur Zahl) vom Report abweichen: {n}.",
+      "summary_match": "Jede verglichene Zahl stimmt bis auf {tolerance} mit dem Report überein, bei Werten mit Betrag über 1 bis auf das {tolerance}-Fache des Werts.",
+      "summary_differs": "Zahlen, die um mehr als {tolerance} vom Report abweichen (bei Werten mit Betrag über 1 um mehr als das {tolerance}-Fache des Werts): {n}.",
       "compared": "Verglichen",
       "what": {
         "bartlett": "Bartlett-Test",
@@ -1209,23 +1209,23 @@
     },
     "paper_notes": {
       "tables": {
-        "matches": "Das Paper druckt diese Zahlen gerundet in {tables}.",
-        "msa_only": "{tables} des Papers druckt nur die MSA-Werte, sein Text den p-Wert des Bartlett-Tests und den Gesamt-MSA; die Faktoranalyse beschreibt das Paper nicht und verweist auf den Report im ComFy-Repository.",
-        "extra_dup": "{tables} des Papers nutzen zusätzlich dup ohne τ, das dieser Datensatz nicht hat. Daher weichen das Chi-Quadrat des Bartlett-Tests ({chi_paper} in Tab. 7, hier {chi_report}), der KMO ({kmo_paper} und {kmo_report}), der MSA jedes Maßes und die Ladungen (um bis zu {loading_gap}) ab; die Gruppen aus Tab. 9 bleiben gleich.",
+        "matches": "Gerundet stehen diese Zahlen im Paper in {tables}.",
+        "msa_only": "In {tables} des Papers stehen nur die MSA-Werte, im Text der p-Wert des Bartlett-Tests und der Gesamt-MSA. Die Faktorenanalyse beschreibt das Paper nicht und verweist auf den Report im ComFy-Repository.",
+        "extra_dup": "{tables} des Papers nutzen zusätzlich dup ohne τ, das dieser Datensatz nicht hat. Deshalb weichen ab: das Chi-Quadrat des Bartlett-Tests ({chi_paper} in Tab. 7, hier {chi_report}), der KMO ({kmo_paper} und {kmo_report}), der MSA jedes Maßes und die Ladungen (um bis zu {loading_gap}). Die Gruppen aus Tab. 9 bleiben gleich.",
         "other_data": "Tab. 14–16 des Papers beruhen auf anderen Daten als dieser Datensatz.",
-        "not_in_paper": "Das Paper wertet diesen Miner nicht aus; die Zahlen sind die des Reports im Repository."
+        "not_in_paper": "Das Paper wertet diesen Miner nicht aus. Die Zahlen stammen aus dem Report im Repository."
       },
-      "rounding": "Ein Wert ist ein Hundertstel niedriger gedruckt, als die Rundung ergibt: der MSA von {measure}, {printed} im Paper und {report} im Report.",
-      "source_report": "{source}, wie der Report im ComFy-Repository sie anwendet; eine Faktoranalyse dieses Datensatzes beschreibt das Paper nicht",
+      "rounding": "Ein Wert ist im Paper ein Hundertstel niedriger angegeben, als die Rundung ergibt: der MSA von {measure} ({printed} im Paper, {report} im Report).",
+      "source_report": "{source}, wie der Report im ComFy-Repository sie anwendet; eine Faktorenanalyse dieses Datensatzes beschreibt das Paper nicht",
       "rules": {
-        "alpha_multi": "Mit den Paper-Einstellungen ordnet diese Regel Connector Heterogeneity (CH) auch Faktor 2 zu; Tab. 6 des Papers führt es nur in Dimension 4.",
-        "inductive_multi": "Mit den Paper-Einstellungen ordnet diese Regel Average connector degree (acd) auch Faktor 2 zu; Tab. 12 des Papers führt es nur in den Dimensionen 1 und 3.",
-        "alpha_hair": "Mit den Paper-Einstellungen lässt diese Regel Connector Mismatch (MM, h² unter {h2_hair}) und Connector Heterogeneity (CH) wegen seiner Querladung weg, sodass Faktor 4 leer bleibt; die Alpha-Zeile von Tab. 17 des Papers enthält beide."
+        "alpha_multi": "Mit den Paper-Einstellungen ordnet diese Regel Connector Heterogeneity (CH) auch Faktor 2 zu. Tab. 6 des Papers führt es nur in Dimension 4.",
+        "inductive_multi": "Mit den Paper-Einstellungen ordnet diese Regel Average connector degree (acd) auch Faktor 2 zu. Tab. 12 des Papers führt es nur in den Dimensionen 1 und 3.",
+        "alpha_hair": "Mit den Paper-Einstellungen lässt diese Regel Connector Mismatch (MM, h² unter {h2_hair}) und Connector Heterogeneity (CH) wegen seiner Querladung weg, sodass Faktor 4 leer bleibt. Die Alpha-Zeile von Tab. 17 des Papers enthält beide."
       },
       "datasets": {
         "directly_follows": "Tab. 7–8 des Papers nutzen zusätzlich dup ohne τ.",
-        "hybrid_ilp": "Nicht deterministisch; die Daten weichen von Tab. 14–16 ab.",
-        "heuristics": "Tab. 13 des Papers druckt nur die MSA-Werte: Nach dem Filter bleiben 4 Maße. Der Report im ComFy-Repository setzt für sie 4 Faktoren an, das Tool höchstens 3.",
+        "hybrid_ilp": "Nicht deterministisch. Die Daten weichen von Tab. 14–16 ab.",
+        "heuristics": "In Tab. 13 des Papers stehen nur die MSA-Werte: Nach dem Filter bleiben 4 Maße. Der Report im ComFy-Repository extrahiert für sie 4 Faktoren, das Tool höchstens 3.",
         "alpha_plus": "Nur im Repository, nicht im Paper.",
         "alpha_dollar": "Werte identisch mit dem Alpha miner."
       }
@@ -1236,11 +1236,11 @@
       "copied": "Link kopiert",
       "own_data": "Links gibt es nur für mitgelieferte Datensätze; eigene Daten bleiben in deiner Sitzung.",
       "fallback_title": "Link zu dieser Analyse",
-      "fallback_hint": "Der Browser hat das Kopieren nicht erlaubt; kopiere den Link aus dem Feld.",
+      "fallback_hint": "Der Browser hat das Kopieren nicht erlaubt. Kopiere den Link aus dem Feld.",
       "field_label": "Link",
       "opening": "Die verlinkte Analyse wird geöffnet…",
       "opened": "Verlinkte Analyse geöffnet.",
-      "invalid": "Der Link enthielt Einstellungen, die das Tool nicht lesen kann; der Datensatz wurde daher mit den Standardeinstellungen geöffnet.",
+      "invalid": "Der Link enthielt Einstellungen, die das Tool nicht lesen kann. Der Datensatz wurde daher mit den Standardeinstellungen geöffnet.",
       "unknown": "Der Link nennt einen Datensatz, der auf diesem Reiter nicht mitgeliefert wird.",
       "failed": "Der verlinkte Datensatz ließ sich nicht öffnen."
     },
@@ -1254,7 +1254,7 @@
       "scenario": {
         "if_inductive": {
           "title": "Important Factors: Inductive miner",
-          "text": "Mit den Paper-Einstellungen: 4 Faktoren und Mehrfachzuordnung, abgeglichen mit dem ComFy-Report. Die Zahlen sind die aus Tab. 10–11, die Gruppen die aus Tab. 12 mit einer Zuordnung mehr (Average connector degree auch in Faktor 2).",
+          "text": "Mit den Paper-Einstellungen: 4 Faktoren und Mehrfachzuordnung, abgeglichen mit dem ComFy-Report. Die Zahlen entsprechen Tab. 10–11, die Gruppen Tab. 12 mit einer Zuordnung mehr (Average connector degree auch in Faktor 2).",
           "short": "4 Faktoren und Mehrfachzuordnung, abgeglichen mit dem ComFy-Report."
         },
         "log_standard": {
@@ -1269,12 +1269,12 @@
         },
         "if_k4_k6": {
           "title": "Important Factors: 4 gegen 6 Faktoren",
-          "text": "Der Inductive miner mit den 4 Faktoren des Papers neben 6, bei Mehrfachzuordnung. Hier bildet MM (Ladung 0,50, Kommunalität 0,33) eine fünfte Dimension; Abschnitt 6 des Papers lässt MM wegen dieser Kommunalität außen vor und Dimension 5 und 6 leer.",
+          "text": "Der Inductive miner mit den 4 Faktoren des Papers neben 6, bei Mehrfachzuordnung. Hier bildet MM (Ladung 0,50, Kommunalität 0,33) eine fünfte Dimension. Abschnitt 6 des Papers lässt MM wegen dieser Kommunalität weg und die Dimensionen 5 und 6 leer.",
           "short": "Der Inductive miner mit 4 und mit 6 Faktoren, wie in Abschnitt 6."
         }
       },
       "example_csv": "Beispiel-CSV",
-      "example_csv_hint": "120 synthetische Beobachtungen von 8 Maßen, im Format eines eigenen Uploads."
+      "example_csv_hint": "120 synthetische Beobachtungen von 8 Maßen, im selben Format wie ein eigener Upload."
     },
     "rail_summary": {
       "removed": "{n} entfernt",
@@ -1319,15 +1319,15 @@
       "export": "Herunterladen",
       "export_more": "Die Analyse als ZIP, ihren LaTeX-Report oder die Druckansicht, die Ladungen als CSV oder LaTeX, den Methodentext mit seinen BibTeX-Einträgen oder den bereinigten Datensatz als CSV.",
       "export_zip": "Analyse (ZIP)",
-      "export_zip_hint": "Datensatz, Ergebnisse, Report, Abbildungen und ein Manifest, um die Analyse nachzuvollziehen",
+      "export_zip_hint": "Datensatz, Ergebnisse, Report, Abbildungen und ein Manifest, mit denen sich die Analyse reproduzieren lässt",
       "export_loadings_csv": "Ladungen (CSV)",
       "export_loadings_latex": "Ladungen (LaTeX)",
       "export_methods": "Methodentext kopieren",
-      "export_methods_hint": "Ein kurzer Absatz mit LaTeX-Zitierschlüsseln, aus den Einstellungen und Ergebnissen auf dem Bildschirm",
+      "export_methods_hint": "Ein kurzer Absatz mit LaTeX-Zitierschlüsseln, erzeugt aus den Einstellungen und Ergebnissen auf dem Bildschirm",
       "export_bibtex": "BibTeX herunterladen",
-      "export_bibtex_hint": "Die Einträge der Schlüssel, die der Methodentext zitiert",
+      "export_bibtex_hint": "Die BibTeX-Einträge zu den Schlüsseln im Methodentext",
       "methods_copied": "Methodentext kopiert",
-      "methods_saved": "Der Browser hat das Kopieren nicht erlaubt; der Methodentext wurde als methods.tex gespeichert.",
+      "methods_saved": "Der Browser hat das Kopieren nicht erlaubt. Der Methodentext wurde als methods.tex gespeichert.",
       "export_dataset": "Datensatz (CSV)",
       "export_dataset_hint": "Die bereinigte Matrix",
       "wait_analysis": "Die Analyse läuft noch.",
@@ -1366,7 +1366,7 @@
       "status_dependent_short": "abhängig",
       "show_other": "Anzeigen",
       "hide_other": "Ausblenden",
-      "dependent_with": "Linear abhängig mit {measures}. Ein Maß der Gruppe auszuschließen löst das.",
+      "dependent_with": "Linear abhängig von {measures}. Schließt du ein Maß der Gruppe aus, ist das behoben.",
       "status_below": "unter {threshold}",
       "none_match": "Kein Maß passt zur Suche.",
       "status_miner": "keine Varianz bei diesem Miner",
@@ -1386,7 +1386,7 @@
     },
     "miners": {
       "label": "Miner",
-      "help": "Der Datensatz hat ein Netz je Log und Miner. Analysiere alle zusammen oder die Netze eines Miners, wie Important Factors es tut. Ein Miner braucht mehr Beobachtungen als Maße; unter {per} je Maß warnt die Analyse. Ein Maß ohne Varianz innerhalb eines Miners fällt nur für diesen Miner heraus.",
+      "help": "Der Datensatz hat ein Netz je Log und Miner. Analysiere alle Netze zusammen oder nur die eines Miners, wie es Important Factors macht. Ein Miner braucht mehr Beobachtungen als Maße. Unter {per} je Maß warnt die Analyse. Ein Maß ohne Varianz innerhalb eines Miners fällt nur für diesen Miner heraus.",
       "together": "Alle Miner gemeinsam",
       "size": "n = {n} · {p} Maße",
       "blocked": "Nicht mehr Beobachtungen als Maße",
@@ -1395,15 +1395,15 @@
       "hint_together": "Alle {miners} Miner gemeinsam: Die Unterschiede zwischen den Minern mischen sich in die Dimensionen, und jedes Log zählt einmal je Miner.",
       "hint_one": "Nur die Netze des {miner}: die Dimensionen dieses Miners allein, aus {n} Beobachtungen.",
       "compare": "Miner vergleichen",
-      "compare_more": "Öffnet die Faktorstrukturen nebeneinander, eine Spalte je Miner, der sich analysieren lässt, mit den Einstellungen, die mit dem Datensatz gespeichert sind.",
+      "compare_more": "Öffnet die Faktorstrukturen nebeneinander, eine Spalte je analysierbarem Miner. Es gelten die Einstellungen, die mit dem Datensatz gespeichert sind.",
       "compare_none": "Weniger als zwei Miner haben mehr Beobachtungen als Maße."
     },
     "names": {
-      "edit_more": "Drücke, um den Faktor zu benennen: Enter behält den Namen, Esc lässt ihn, wie er war, höchstens {max} Zeichen. Ein leerer Name gibt dem Faktor seine Nummer zurück.",
+      "edit_more": "Klicke, um den Faktor zu benennen. Enter übernimmt den Namen, Esc verwirft die Änderung. Höchstens {max} Zeichen. Ein leerer Name gibt dem Faktor seine Nummer zurück.",
       "field": "Name von Faktor {i}",
-      "cleared": "Faktornamen entfernt: Sie benannten die Faktoren einer anderen Faktorzahl, Rotation oder Regel.",
+      "cleared": "Faktornamen entfernt. Sie gehörten zu einer anderen Faktorzahl, Rotation oder Regel.",
       "suggested": "Vorgeschlagene Namen übernehmen",
-      "suggested_more": "Übernimmt die Namen, die die Interpretation für diese Lösung vorschlägt; jeden kannst du danach ändern.",
+      "suggested_more": "Übernimmt die Namen, die die Interpretation für diese Lösung vorschlägt. Jeden kannst du danach ändern.",
       "suggested_done": "Vorgeschlagene Namen übernommen."
     },
     "pin": {
@@ -1419,13 +1419,13 @@
     },
     "correlations": {
       "heading": "Korrelationskarte",
-      "help": "Die Korrelation jedes Maßpaares, vor dem MSA-Filter. Schiefergraue Zellen sind negative Korrelationen, die anderen farbigen Zellen positive; je kräftiger die Farbe, desto größer |r|. Umrandete Paare haben |r| ≥ {limit}: Solche Maße sagen fast dasselbe und machen die Korrelationsmatrix beinahe singulär. Von dir ausgeschlossene Maße fehlen.",
+      "help": "Die Korrelation jedes Maßpaars, vor dem MSA-Filter. Schiefergraue Zellen sind negativ, die übrigen farbigen positiv. Je kräftiger die Farbe, desto größer |r|. Umrandete Paare haben |r| ≥ {limit}. Solche Maße sagen fast dasselbe aus und machen die Korrelationsmatrix beinahe singulär. Von dir ausgeschlossene Maße fehlen.",
       "order_label": "Reihenfolge",
       "order_factor": "Nach Faktor",
       "order_cluster": "Gruppiert",
-      "order_factor_reason": "Die Faktoranalyse ist noch nicht fertig.",
-      "order_more": "Nach Faktor stellt die Maße jeder Dimension der Analyse auf dem Bildschirm zusammen, die stärkste Ladung zuerst, und die Maße ohne Dimension zuletzt. Gruppiert ordnet sie danach, wie eng sie korrelieren (Average Linkage auf 1 − |r|), unabhängig davon, was die Analyse aus ihnen macht.",
-      "region": "Korrelationskarte von {n} Maßen. Mit den Pfeiltasten wechselst du zwischen den Paaren; Esc verlässt das Paar.",
+      "order_factor_reason": "Die Faktorenanalyse ist noch nicht fertig.",
+      "order_more": "Nach Faktor stellt die Maße jeder Dimension zusammen, die stärkste Ladung zuerst, die Maße ohne Dimension zuletzt. Gruppiert ordnet sie danach, wie eng sie korrelieren (Average Linkage auf 1 − |r|), unabhängig von der Analyse.",
+      "region": "Korrelationskarte von {n} Maßen. Mit den Pfeiltasten wechselst du zwischen Paaren. Esc verlässt das Paar.",
       "pair": "{a} × {b}: r = {r}",
       "hint": "Zeige auf eine Zelle oder gehe mit den Pfeiltasten durch die Karte, um ein Paar zu lesen. Die Tabelle darunter hat alle Werte.",
       "legend_aria": "Farbskala von −1 in Schiefergrau über 0 bis +1 in Blau",
@@ -1456,15 +1456,15 @@
       "source_label": "Quelle",
       "source_commit": "{tool}, Commit {commit}",
       "source_open": "Quelle öffnen",
-      "source_open_more": "Die Datei mit dieser Funktion auf GitHub, beim Commit dieses Tools, in einem neuen Tab.",
+      "source_open_more": "Öffnet die Datei mit dieser Funktion auf GitHub in einem neuen Tab, im Stand des Commits, den dieses Tool nutzt.",
       "source_new_tab": "öffnet in einem neuen Tab",
-      "description_note": "In den Worten dieses Tools; die Definition ist die Funktion in ComFy.",
+      "description_note": "Beschrieben in den Worten dieses Tools. Die Definition ist die Funktion in ComFy.",
       "values": "Verteilung",
       "hist_aria": "Histogramm von {measure}: {bins} Klassen von {min} bis {max}; die meisten Werte, {top}, liegen zwischen {from} und {to}",
       "hist_none": "Keine Werte zum Zeichnen.",
       "values_input": "Über alle {n} Beobachtungen, vor der Bereinigung.",
       "values_cleaned": "Über die bereinigte Matrix.",
-      "values_miner": "Über die {n} Beobachtungen von {miner}, aus der bereinigten Matrix, wie die Analyse darunter.",
+      "values_miner": "Berechnet über die {n} Beobachtungen von {miner} aus der bereinigten Matrix, wie die Analyse darunter.",
       "analysis": "In dieser Analyse",
       "status": {
         "used": "In der Analyse",
@@ -1500,7 +1500,7 @@
       "included_done": "{measure} ist einbezogen."
     },
     "warnings_tip": {
-      "heywood": "Diese Maße werden fast vollständig durch die Faktoren erklärt (Einzigartigkeit höchstens 0,005). Das ist der kleinste Wert, den die Berechnung zulässt, und oft ein Zeichen, dass die Faktorzahl nicht passt oder zwei Maße fast dasselbe messen. Die Gruppierung und vor allem die Ladungen dieser Maße sind deshalb unsicher."
+      "heywood": "Die Faktoren erklären diese Maße fast vollständig (Einzigartigkeit höchstens 0,005). Das ist der kleinste Wert, den die Berechnung zulässt. Oft passt dann die Faktorzahl nicht, oder zwei Maße messen fast dasselbe. Deshalb sind die Gruppierung und vor allem die Ladungen dieser Maße unsicher."
     }
   },
   "inspect": {
@@ -1510,9 +1510,9 @@
     "section_log_hint": "Lade ein Log hoch oder nimm ein Beispiel; die Übersicht zeigt, was darin steckt.",
     "section_log_run": "Das Log, das dieser Run analysiert hat.",
     "section_settings": "Miner und Maße",
-    "section_settings_hint": "Welche Miner die Netze entdecken und welche Maße darauf berechnet werden.",
+    "section_settings_hint": "Welche Miner die Netze finden und welche Maße darauf berechnet werden.",
     "section_run": "Run",
-    "section_run_hint": "Startet im Hintergrund; das Ergebnis erscheint darunter, und der Run steht im Verlauf.",
+    "section_run_hint": "Startet im Hintergrund. Das Ergebnis erscheint darunter, und der Run steht im Verlauf.",
     "about": "Woher die Maße kommen",
     "about_hint": "Quelle und Zitat",
     "about_menu": "Über {name}",
@@ -1549,12 +1549,12 @@
     "rate_limited": "Zu viele Anfragen. Warte kurz und versuche es noch einmal.",
     "feedback_kind": "Wähle aus, worum es in deiner Nachricht geht.",
     "feedback_empty": "Schreib zuerst etwas in die Nachricht.",
-    "feedback_too_long": "Die Nachricht ist zu lang; erlaubt sind höchstens {max} Zeichen.",
-    "feedback_contact_too_long": "Der Kontakt ist zu lang; erlaubt sind höchstens {max} Zeichen.",
+    "feedback_too_long": "Die Nachricht ist zu lang. Erlaubt sind höchstens {max} Zeichen.",
+    "feedback_contact_too_long": "Der Kontakt ist zu lang. Erlaubt sind höchstens {max} Zeichen.",
     "feedback_rate_limited": "Du hast gerade mehrere Nachrichten geschickt. Versuche es in einer Stunde noch einmal.",
-    "job_quota": "Du hast schon {active} wartende oder laufende Runs, und das käme mit {requested} dazu; erlaubt sind höchstens {limit}. Warte, bis sie fertig sind, oder brich einige im Verlauf ab.",
-    "dataset_jobs_busy": "Der Server berechnet schon {active} Datensätze, mehr gleichzeitig nicht. Versuche es in ein paar Minuten noch einmal.",
-    "prom_unavailable": "ProM, das die Miner ausführt, ist gerade nicht erreichbar, daher konnte kein Petri-Netz entdeckt werden. Versuche es in ein paar Minuten noch einmal; bleibt es dabei, muss auf dem Server der Dienst prom4py gestartet werden.",
+    "job_quota": "Du hast schon {active} wartende oder laufende Runs, dazu kämen {requested}. Erlaubt sind höchstens {limit}. Warte, bis sie fertig sind, oder brich einige im Verlauf ab.",
+    "dataset_jobs_busy": "Der Server berechnet schon {active} Datensätze gleichzeitig, mehr geht nicht. Versuche es in ein paar Minuten noch einmal.",
+    "prom_unavailable": "ProM, das die Miner ausführt, ist gerade nicht erreichbar, daher konnte kein Petri-Netz gefunden werden. Versuche es in ein paar Minuten noch einmal. Hilft das nicht, muss der Dienst prom4py auf dem Server gestartet werden.",
     "empty_file": "Die Datei ist leer. Wähle eine Datei mit Inhalt.",
     "csv_unparseable": "Die CSV-Datei lässt sich nicht lesen. Prüfe, ob sie eine Kopfzeile hat und Komma, Semikolon oder Tabulator als Trenner nutzt.",
     "csv_too_few_rows": "Die CSV-Datei hat zu wenige Datenzeilen ({rows} von mindestens {minimum}). Füge Zeilen hinzu oder wähle andere Daten.",
@@ -1567,8 +1567,8 @@
     "gzip_invalid": "„{file}“ ist keine gültige gzip-Datei. Entpacke sie oder packe sie neu.",
     "too_many_files": "Du kannst höchstens {limit} Dateien auf einmal hochladen.",
     "one_csv_file": "Lade genau eine CSV-Datei hoch.",
-    "no_observation": "Aus keiner Eingabe ließen sich Werte berechnen. Prüfe, ob die Dateien lesbar sind und genug Traces haben; die Details nennen den ersten Fehler.",
-    "dataset_too_few_measures": "Nur {have} Maße lieferten Werte; nötig sind mindestens {need}. Wähle mehr Maße oder Merkmalsgruppen.",
+    "no_observation": "Aus keiner Eingabe ließen sich Werte berechnen. Prüfe, ob die Dateien lesbar sind und genug Traces haben. Die Details nennen den ersten Fehler.",
+    "dataset_too_few_measures": "Nur {have} Maße lieferten Werte, nötig sind mindestens {need}. Wähle mehr Maße oder Feature-Gruppen.",
     "compute_failed": "Der Datensatz ließ sich nicht berechnen. Die Details nennen die technische Ursache.",
     "job_timeout": "Die Berechnung wurde nicht rechtzeitig fertig, vermutlich weil der Server neu gestartet ist. Starte sie noch einmal.",
     "job_deleted": "Der Run, der diesen Datensatz berechnet hat, wurde gelöscht. Wähle andere Daten oder berechne ihn noch einmal.",
@@ -1576,20 +1576,20 @@
   },
   "print": {
     "heading": "Druckansicht",
-    "title": "Faktoranalyse von „{name}“",
-    "invalid": "Diese Adresse nennt keine Analyse. Öffne die Druckansicht aus dem Download-Menü einer Analyse.",
+    "title": "Faktorenanalyse von „{name}“",
+    "invalid": "Unter dieser Adresse gibt es keine Analyse. Öffne die Druckansicht aus dem Download-Menü einer Analyse.",
     "failed": "Die Analyse konnte nicht geladen werden: {error}",
     "loading": "Die Analyse wird geladen …",
     "hint": "Drucke die Seite oder speichere sie mit dem Druckdialog des Browsers als PDF.",
     "print": "Drucken",
     "dataset_size": "{n} Beobachtungen und {p} Maße nach der Bereinigung.",
-    "dropped": "Von der Bereinigung weggelassen: {list}.",
+    "dropped": "Bei der Bereinigung weggelassen: {list}.",
     "bartlett": "Bartlett-Test auf Sphärizität: χ² = {chi}, df = {df}, p {p} ({result}).",
     "kmo": "KMO insgesamt: {value} ({result}).",
     "factors": "{n} Faktor, {rotation}; er erklärt {pct} der Varianz.",
     "factors_plural": "{n} Faktoren, {rotation}; zusammen erklären sie {pct} der Varianz.",
     "criteria": "Kaiser-Kriterium: {kaiser}; Parallelanalyse ({percentile}. Perzentil, Seed {seed}): {parallel}.",
-    "interpretation_note": "Namen und Zusammenfassungen auf Anfrage vorgeschlagen von {model}; die Analyse hängt nicht von ihnen ab.",
+    "interpretation_note": "Von {model} auf Anfrage vorgeschlagene Namen und Zusammenfassungen. Die Analyse hängt nicht von ihnen ab.",
     "codes_heading": "Kurzzeichen",
     "match": "Die Zahlen stimmen mit denen von {source} überein.",
     "differs": "{n} Zahlen weichen von denen von {source} ab.",
@@ -1612,50 +1612,50 @@
     },
     "steps": {
       "title": "Die sechs Schritte",
-      "p1": "Modellkomplexität analysiert die Maße von ComFy auf Petri-Netzen, Log-Komplexität die Maße von feeed auf Event-Logs. Beide führen durch dieselben Schritte: Daten, Datensatz, Eignung, Faktoren, Ladungen und eine optionale Interpretation. Es ist immer ein Schritt zu sehen; die Liste der Schritte zeigt, was jeder Schritt ergeben hat.",
+      "p1": "Modellkomplexität analysiert die ComFy-Maße von Petri-Netzen, Log-Komplexität die feeed-Maße von Event-Logs. Beide haben dieselben Schritte: Daten, Datensatz, Eignung, Faktoren, Ladungen und eine optionale Interpretation. Es ist immer nur ein Schritt zu sehen. Die Liste der Schritte zeigt, was jeder ergeben hat.",
       "p2": "Die Einstellungszeile über den Schritten fasst jede Entscheidung zusammen, markiert die, die vom Standard des Tools abweichen, und führt zu jedem Regler. Jede Änderung einer Einstellung rechnet die Analyse neu.",
-      "p3": "Die Reiter oben sind auf jeder Seite dieselben: die Analysen (die beiden der Komplexität und Einzelnes Log) und rechts abgesetzt die Werkzeuge Vergleich und Verlauf. Anleitung und Einstellungen stehen im Header und führen zurück zu dem Reiter, von dem du kamst."
+      "p3": "Die Reiter oben sind auf jeder Seite dieselben: die Analysen (Modellkomplexität, Log-Komplexität und Einzelnes Log) und, abgesetzt rechts, die Werkzeuge Vergleich und Verlauf. Anleitung und Einstellungen stehen im Header und führen zurück zu dem Reiter, von dem du kamst."
     },
     "bundled": {
       "title": "Einen veröffentlichten Datensatz analysieren",
       "items": {
         "open": "Öffne Modellkomplexität oder Log-Komplexität.",
         "choose": "Wähle unter Daten einen Datensatz eines Papers, etwa Important Factors: Inductive Miner.",
-        "settings": "Wähle Paper-Einstellungen, um ihn wie im Paper zu analysieren, oder Standard des Tools für die Voreinstellungen von ComFy, dann Datensatz laden. Der Schritt Daten bleibt stehen und zeigt, was geladen ist, und den Weg weiter."
+        "settings": "Wähle Paper-Einstellungen, um ihn wie im Paper zu analysieren, oder Standard des Tools für die Voreinstellungen von ComFy, dann Datensatz laden. Der Schritt Daten bleibt stehen und zeigt, was geladen ist und wie es weitergeht."
       },
       "terms": {
         "open": "Reiter öffnen",
         "choose": "Datensatz wählen",
         "settings": "Einstellungen wählen, laden"
       },
-      "p1": "Mit den Paper-Einstellungen sagt ein Chip in der Einstellungszeile, ob die Zahlen dem veröffentlichten ComFy-Report gleichen und wie sich die Tabellen des Papers dazu verhalten. „Zum Einstieg“, die ersten Karten der mitgelieferten Datensätze im Schritt Daten, lädt eine solche Analyse mit einem Klick; „Ergebnis ansehen“ öffnet dann ihre Ladungen."
+      "p1": "Mit den Paper-Einstellungen sagt ein Chip in der Einstellungszeile, ob die Zahlen mit dem veröffentlichten ComFy-Report übereinstimmen und wie sich die Tabellen des Papers dazu verhalten. „Zum Einstieg“ (die ersten Karten der mitgelieferten Datensätze im Schritt Daten) lädt eine solche Analyse mit einem Klick. „Ergebnis ansehen“ öffnet dann ihre Ladungen."
     },
     "own": {
       "title": "Eigene Daten analysieren",
       "p1": "Wähle unter Daten eine Quelle:",
       "items": {
-        "logs": "Event-Logs (.xes, .xes.gz): Für Modellmaße wird jedes Log mit jedem gewählten Miner entdeckt und jedes Netz gemessen; für Logmaße berechnet feeed die gewählten Feature-Gruppen. Klappe eine Gruppe auf, um einzelne ihrer Maße zu wählen, damit wenige Logs wenige Maße tragen; unter der Auswahl sagt der Schritt Daten, wie viele Beobachtungen und Maße das ergibt und wann es für eine Faktorenanalyse zu wenige sind.",
+        "logs": "Event-Logs (.xes, .xes.gz): Bei Modellmaßen findet jeder gewählte Miner zu jedem Log ein Netz, und jedes Netz wird gemessen. Bei Log-Maßen berechnet feeed die gewählten Feature-Gruppen. Klappe eine Gruppe auf und wähle einzelne Maße, wenn du nur wenige Logs hast und die Zahl der Maße klein halten willst. Unter der Auswahl zeigt der Schritt Daten, wie viele Beobachtungen und Maße das ergibt, und sagt, wann es für eine Faktorenanalyse zu wenige sind.",
         "nets": "Petri-Netze (.pnml): Jedes Netz wird gemessen.",
         "csv": "Eine CSV-Datei: eine Zeile je Beobachtung, eine Spalte je Maß; eine erste Spalte mit Namen wird zu den Zeilenbeschriftungen."
       },
-      "p2": "Logs und Netze werden in einem Job berechnet. Der Reiter „Verlauf“ sagt, was läuft („1 läuft · 37 %“), und hat einen roten Punkt für einen fehlgeschlagenen Run, den du noch nicht gesehen hast; ein fertig berechneter Datensatz meldet sich mit „… ist fertig · Öffnen“, wo du auch bist. „Meine Datensätze“, eine Quelle im Schritt Daten, öffnet einen Datensatz der Sitzung wieder, mit den Einstellungen seiner letzten Analyse.",
-      "p3": "Ein Datensatz aus Netzen mehrerer Miner hat eine Zeile je Log und Miner. Der Datensatz-Schritt bietet alle Miner gemeinsam oder je einen Miner an, so wie Important Factors sie analysiert: Gemeinsam mischen sich die Unterschiede zwischen den Minern in die Dimensionen, und jedes Log zählt einmal je Miner; ein einzelner Miner hat weniger Beobachtungen. Ein Miner mit nicht mehr Beobachtungen als Maßen lässt sich nicht analysieren; unter fünf je Maß warnt die Analyse. Miner vergleichen öffnet dort ihre Faktorstrukturen nebeneinander.",
-      "p4": "Eine Zeile eines aus Logs berechneten Datensatzes hat im Datensatz-Schritt einen Link „Dieses Log ansehen“. Er öffnet die Seite „Ein einzelnes Log ansehen“ mit diesem Log und, bei einer Zeile aus Netzen, nur dem Miner der Zeile, solange das Log zu den zehn neuesten Uploads der Sitzung gehört; die Seite sagt es, wenn nicht.",
-      "p5": "Der Verlauf listet alles aus der Sitzung, das Neueste zuerst: jeden Datensatz beider Tabs mit den Einstellungen seiner letzten Analyse und jeden Run eines einzelnen Logs. Eine Zeile öffnet sich dort, wo sie hingehört, lässt sich abbrechen, solange sie läuft, und löschen; ein gelöschter Datensatz nimmt den Run mit, der ihn berechnet hat, und umgekehrt."
+      "p2": "Logs und Netze werden in einem Run berechnet. Der Reiter „Verlauf“ zeigt, was läuft („1 läuft · 37 %“), und hat einen roten Punkt für einen fehlgeschlagenen Run, den du noch nicht gesehen hast. Ist ein Datensatz fertig berechnet, erscheint der Hinweis „… ist fertig · Öffnen“, egal wo du gerade bist. „Meine Datensätze“, eine Quelle im Schritt Daten, öffnet einen Datensatz der Sitzung wieder, mit den Einstellungen seiner letzten Analyse.",
+      "p3": "Ein Datensatz aus Netzen mehrerer Miner hat eine Zeile je Log und Miner. Der Schritt Datensatz bietet alle Miner gemeinsam oder je einen Miner an, wie Important Factors es macht. Gemeinsam mischen sich die Unterschiede zwischen den Minern in die Dimensionen, und jedes Log zählt einmal je Miner. Ein einzelner Miner hat weniger Beobachtungen. Ein Miner mit nicht mehr Beobachtungen als Maßen lässt sich nicht analysieren, und bei weniger als fünf je Maß warnt die Analyse. Miner vergleichen öffnet dort ihre Faktorstrukturen nebeneinander.",
+      "p4": "Im Schritt Datensatz hat jede Zeile eines aus Logs berechneten Datensatzes einen Link „Dieses Log ansehen“. Er öffnet die Seite „Einzelnes Log untersuchen“ mit diesem Log, bei einer Zeile aus Netzen mit nur dem Miner dieser Zeile. Das klappt, solange das Log zu den zehn neuesten Uploads der Sitzung gehört. Sonst weist die Seite darauf hin.",
+      "p5": "Der Verlauf listet alles aus der Sitzung, das Neueste zuerst: jeden Datensatz beider Reiter mit den Einstellungen seiner letzten Analyse und jeden Run eines einzelnen Logs. Eine Zeile öffnet sich dort, wo sie hingehört, lässt sich abbrechen, solange sie läuft, und löschen. Ein gelöschter Datensatz nimmt den Run mit, der ihn berechnet hat, und umgekehrt."
     },
     "results": {
       "title": "Die Ergebnisse lesen",
       "items": {
-        "dataset": "Datensatz: was die Bereinigung weggelassen hat und warum, die deskriptive Statistik jedes Maßes, wie der ComFy-Report sie ausgibt, und für einen aus Logs oder Netzen berechneten Datensatz die Laufzeiten und Eingabegrößen. Beide Tabellen sind eingeklappt, bis man sie öffnet.",
-        "suitability": "Eignung: der Bartlett-Test, der KMO insgesamt und der MSA jedes Maßes. Der MSA-Filter entfernt Maße in Runden, wie ComFy; jedes Maß lässt sich von Hand ausschließen, alle auf einmal oder die, die eine Suche findet. Wo die Analyse mangels Beobachtungen nicht läuft, sagt ihre Meldung, was eine Beobachtung ist, und führt zu den Maßen oder zurück zu den Daten.",
-        "factors": "Faktoren: der Scree-Plot mit Kaiser-Linie und Parallelanalyse, die Zahl, die jedes Kriterium vorschlägt, und die Rotation.",
-        "loadings": "Ladungen: die Regel, die Maße Faktoren zuordnet, und die beiden Schwellen in einer Zeile über dem Ergebnis, jede Regel in ihrem Tooltip erklärt; darunter eine Matrix (nach Betrag eingefärbt, blass, wo eine Ladung nicht zählt) oder eine Karte je Dimension. Querladungen sind umrandet.",
-        "stability": "Stabilität: Stabilität prüfen unter den Ladungen zieht Bootstrap-Stichproben der Zeilen (100, 200 oder 500), passt jede mit denselben Maßen, derselben Faktorenzahl und Rotation neu an und zeigt für jedes Maß den Anteil der Stichproben, in denen es bei seinen Faktoren bleibt. Der Seed ist fest, ein Lauf lässt sich also wiederholen.",
-        "short_set": "Kurzset: ein Maß je Dimension, das ihr mit der höchsten Reinheit zugeordnete, um wenige Maße zu berichten, die einander nicht wiederholen. Kurzset kopieren legt sie in die Zwischenablage; ein Vertreter mit geringer Stabilität ist mit Vorsicht zu lesen.",
-        "interpretation": "Interpretation: optional, Namen für die Faktoren, von einem Sprachmodell nur auf Anfrage vorgeschlagen. Es entscheidet nichts. Es braucht einen API-Schlüssel auf dem Server; vorberechnete Antworten gibt es erst, wenn scripts/precompute_interpretations.py gelaufen ist. Ohne Schlüssel und ohne eine für die Einstellungen gespeicherte sagt die Liste der Schritte, dass sie hier nicht verfügbar ist.",
-        "names": "Namen: Drücke auf den Titel eines Faktors, auf seiner Karte oder im Kopf seiner Spalte, um ihn zu benennen; Enter behält den Namen, Esc lässt ihn. Die Namen erscheinen in den Ladungen, den Faktorkorrelationen, der Schrittliste und jedem Download. Sie gehören zu Faktorzahl, Rotation und Regel: Ändert sich eines davon, verschwinden sie, und der Hinweis holt sie zurück. Mit einer Interpretation übernimmt Vorgeschlagene Namen übernehmen deren Namen.",
-        "correlations": "Korrelationskarte: in Eignung, eingeklappt, bis man sie öffnet. Eine Zelle je Maßpaar, schiefergrau für eine negative Korrelation und blau für eine positive, ein Paar mit |r| ≥ 0,95 umrandet, nach Faktor oder gruppiert geordnet. Zeige auf eine Zelle oder nimm die Pfeiltasten, um das Paar und sein r zu lesen; eine Tabelle unter der Karte hat jeden Wert. Das Bild-Symbol lädt sie wie die anderen Abbildungen herunter.",
-        "sheet": "Steckbrief: Drücke auf den Namen eines Maßes (oder Enter darauf), wo er auch steht, um ein Fenster neben der Seite zu öffnen. Es zeigt, was das Maß ist (die Beschreibung des Tools und die Funktion in ComFy oder feeed dahinter, mit Link zur Quelle), ein Histogramm seiner Werte, seinen MSA und die Runde des Filters, die es entfernt hat, Kommunalität und Einzigartigkeit, seine Ladungen, die fünf am stärksten korrelierten Maße und eine Schaltfläche zum Ausschließen oder Einbeziehen. Die Pfeiltasten links und rechts blättern durch die Liste, aus der du kommst, Esc schließt das Fenster, und der Fokus kehrt zum Namen zurück."
+        "dataset": "Datensatz: was die Bereinigung weggelassen hat und warum, die deskriptive Statistik jedes Maßes, wie der ComFy-Report sie ausgibt, und für einen aus Logs oder Netzen berechneten Datensatz die Laufzeiten und Eingabegrößen. Beide Tabellen sind zunächst eingeklappt.",
+        "suitability": "Eignung: der Bartlett-Test, der KMO insgesamt und der MSA jedes Maßes. Der MSA-Filter entfernt Maße in Runden, wie ComFy es tut. Du kannst Maße auch von Hand ausschließen: einzeln, alle auf einmal oder die, die eine Suche findet. Bei zu wenigen Beobachtungen läuft die Analyse nicht. Die Meldung sagt dann, was eine Beobachtung ist, und führt zu den Maßen oder zurück zu den Daten.",
+        "factors": "Faktoren: der Screeplot mit Kaiser-Linie und Parallelanalyse, die Zahl, die jedes Kriterium vorschlägt, und die Rotation.",
+        "loadings": "Ladungen: Über dem Ergebnis steht in einer Zeile die Regel, die Maße Faktoren zuordnet, mit den beiden Schwellen. Jede Regel ist in ihrem Tooltip erklärt. Darunter folgt eine Matrix (nach Betrag eingefärbt, blass, wo eine Ladung nicht zählt) oder eine Karte je Dimension. Querladungen sind umrandet.",
+        "stability": "Stabilität: Stabilität prüfen unter den Ladungen zieht Bootstrap-Stichproben der Zeilen (100, 200 oder 500), passt jede mit denselben Maßen, derselben Faktorzahl und Rotation neu an und zeigt für jedes Maß den Anteil der Stichproben, in denen es bei seinen Faktoren bleibt. Der Seed ist fest, ein Lauf lässt sich also wiederholen.",
+        "short_set": "Kurzset: ein Maß je Dimension, das ihr mit der höchsten Reinheit zugeordnete, um wenige Maße zu berichten, die einander nicht wiederholen. Kurzset kopieren legt sie in die Zwischenablage. Einen Stellvertreter mit geringer Stabilität liest du mit Vorsicht.",
+        "interpretation": "Interpretation: optional, Namen für die Faktoren, die ein Sprachmodell nur auf Anfrage vorschlägt. Es entscheidet nichts. Es braucht einen API-Schlüssel auf dem Server. Vorberechnete Antworten gibt es erst, wenn scripts/precompute_interpretations.py gelaufen ist. Ohne Schlüssel und ohne gespeicherte Antwort für die Einstellungen steht in der Liste der Schritte, dass die Interpretation hier nicht verfügbar ist.",
+        "names": "Namen: Klicke auf den Titel eines Faktors, auf seiner Karte oder im Kopf seiner Spalte, um ihn zu benennen. Enter übernimmt den Namen, Esc bricht ab. Die Namen erscheinen in den Ladungen, den Faktorkorrelationen, der Schrittliste und jedem Download. Sie gelten für die jeweilige Faktorzahl, Rotation und Regel. Ändert sich eines davon, verschwinden die Namen, und der Hinweis holt sie zurück. Gibt es eine Interpretation, setzt Vorgeschlagene Namen übernehmen deren Namen ein.",
+        "correlations": "Korrelationskarte: in Eignung, eingeklappt, bis man sie öffnet. Sie hat eine Zelle je Maßpaar: schiefergrau für eine negative, blau für eine positive Korrelation, umrandet bei |r| ≥ 0,95. Geordnet ist sie nach Faktor oder gruppiert. Zeige auf eine Zelle oder nimm die Pfeiltasten, um das Paar und sein r zu lesen. Eine Tabelle unter der Karte enthält jeden Wert. Das Bild-Symbol lädt sie wie die anderen Abbildungen herunter.",
+        "sheet": "Steckbrief: Klicke auf den Namen eines Maßes, wo er auch steht, oder drücke Enter darauf, um neben der Seite ein Fenster zu öffnen. Es zeigt, was das Maß ist (die Beschreibung des Tools und die Funktion in ComFy oder feeed dahinter, mit Link zur Quelle), ein Histogramm seiner Werte, seinen MSA und die Filterrunde, in der es entfernt wurde, Kommunalität und Einzigartigkeit, seine Ladungen, die fünf am stärksten korrelierten Maße und eine Schaltfläche zum Ausschließen oder Einbeziehen. Die Pfeiltasten links und rechts blättern durch die Liste, aus der du kommst. Esc schließt das Fenster, und der Fokus kehrt zum Namen zurück."
       }
     },
     "export": {
@@ -1663,33 +1663,33 @@
       "p1": "Das Download-Menü im Seitenkopf enthält:",
       "items": {
         "zip": "Analyse (ZIP): das Ergebnis, die Matrix, die Tabellen, report.tex, die Abbildungen, correlations.csv, die deskriptive Statistik, die Laufzeiten und ein Manifest mit Einstellungen, Versionen und Herkunft.",
-        "report": "LaTeX-Report: report.tex, aufgebaut wie der ComFy-Report, mit den Dimensionen und den Einstellungen; übersetze ihn mit latexmk -pdf oder lasse pdflatex zweimal laufen, denn lange Tabellen finden ihre Spaltenbreiten erst im zweiten Lauf.",
+        "report": "LaTeX-Report: report.tex, aufgebaut wie der ComFy-Report, mit den Dimensionen und den Einstellungen. Kompiliere ihn mit latexmk -pdf oder lasse pdflatex zweimal laufen: Lange Tabellen bekommen ihre Spaltenbreiten erst im zweiten Lauf.",
         "print": "Druckansicht: die ganze Analyse auf A4-Seiten, zum Drucken oder Speichern als PDF.",
         "tables": "Die Ladungen als CSV oder LaTeX und den bereinigten Datensatz als CSV."
       },
       "terms": {
         "tables": "Tabellen"
       },
-      "p2": "Das Bild-Symbol am Scree-Plot, an den Ladungen und an der Korrelationskarte lädt die Abbildung als SVG herunter, deren Text Text bleibt, oder als PNG mit 300 dpi: immer hell, in der Textbreite eines CEUR-Papers, mit den Beschriftungen in der Sprache der App.",
-      "p3": "Das Etikett-Symbol in der Werkzeugleiste nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder C_mag; der volle Name steht im Tooltip, und Abbildungen, Report und ZIP folgen ihm.",
+      "p2": "Das Bild-Symbol am Screeplot, an den Ladungen und an der Korrelationskarte lädt die Abbildung als SVG (der Text bleibt Text) oder als PNG mit 300 dpi herunter. Die Abbildungen sind immer hell, so breit wie der Text eines CEUR-Papers und in der Sprache der App beschriftet.",
+      "p3": "Das Etikett-Symbol in der Werkzeugleiste nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder C_mag. Der volle Name steht im Tooltip. Abbildungen, Report und ZIP richten sich danach.",
       "p4": "Das Link-Symbol kopiert einen Link auf die Analyse eines veröffentlichten Datensatzes mit ihren Einstellungen."
     },
     "compare": {
       "title": "Miner vergleichen",
-      "p1": "Miner vergleichen stellt die Faktorstrukturen mehrerer veröffentlichter Datensätze nebeneinander, wie Tab. 17 von Important Factors: welche Maße für welchen Miner welche Dimension bilden. Es ist das Werkzeug „Vergleich“ rechts neben den Reitern, und zwei Karten von „Zum Einstieg“ öffnen es. Links stehen die Datensätze und die Regel, rechts das Ergebnis; die Hinweise zu einer Spalte sind eine Zahl in ihrem Kopf und eine eingeklappte Liste unter der Tabelle.",
+      "p1": "Miner vergleichen stellt die Faktorstrukturen mehrerer veröffentlichter Datensätze nebeneinander, wie Tab. 17 von Important Factors: welche Maße für welchen Miner welche Dimension bilden. Es ist das Werkzeug „Vergleich“ rechts neben den Reitern, und zwei Karten von „Zum Einstieg“ öffnen es ebenfalls. Links stehen die Datensätze und die Regel, rechts das Ergebnis. Hinweise zu einer Spalte stehen als Zahl in ihrem Kopf und in einer eingeklappten Liste unter der Tabelle.",
       "items": {
-        "columns": "Datensätze: Wähle 2 bis 8 der Miner aus Important Factors; jeder wird mit den Einstellungen seines Papers analysiert. Die ersten vier sind die aus Tab. 17. Ein Link kann auch einen Datensatz mit eigener Faktorzahl verlangen, etwa 4 gegen 6 Faktoren (Zum Einstieg).",
+        "columns": "Datensätze: Wähle 2 bis 8 der Miner aus Important Factors; jeder wird mit den Einstellungen seines Papers analysiert. Die ersten vier sind die aus Tab. 17. Ein Link kann auch einen Datensatz mit eigener Faktorzahl anfordern, etwa 4 gegen 6 Faktoren (Zum Einstieg).",
         "rule": "Zuordnungsregel: eine Regel für jeden Datensatz, zu Beginn „Ohne Querladungen“ wie in Tab. 17.",
-        "matrix": "Nach Maß: eine Zeile je Maß, nach Dimension gruppiert, und darüber je Datensatz n, die Maße nach dem MSA-Filter, der KMO, die Faktoren, die Rotation und die erklärte Varianz. Eine getönte Zelle liegt in der Dimension ihrer Zeile; ein Ring markiert eine Querladung, eine gestrichelte Kontur ein Maß, das der MSA-Filter entfernt hat.",
+        "matrix": "Nach Maß: eine Zeile je Maß, nach Dimension gruppiert. Darüber zeigt jeder Datensatz n, die Maße nach dem MSA-Filter, den KMO, die Faktoren, die Rotation und die erklärte Varianz. Eine getönte Zelle liegt in der Dimension ihrer Zeile; ein Ring markiert eine Querladung, eine gestrichelte Kontur ein Maß, das der MSA-Filter entfernt hat.",
         "dimensions": "Nach Dimension: eine Zeile je Datensatz mit den Maßen jeder Dimension, aufgebaut wie Tab. 17.",
-        "pairs": "Paare: ein Quadrat der Maße; jede Zelle sagt, in wie vielen der Datensätze, die beide analysiert haben, die beiden eine Dimension teilen. Es hängt nicht davon ab, wie die Dimensionen nummeriert sind.",
+        "pairs": "Paare: ein Quadrat der Maße. Jede Zelle sagt, in wie vielen der Datensätze, die beide Maße analysiert haben, die beiden eine Dimension teilen. Auf die Nummerierung der Dimensionen kommt es dabei nicht an.",
         "export": "Das Download-Menü hat die Matrix als CSV, die Dimensionen als LaTeX-Tabelle wie Tab. 17 und beides in einem ZIP mit Manifest.",
-        "own": "Deine eigenen Daten: Miner vergleichen im Datensatz-Schritt stellt eine Spalte je Miner auf, Vergleichen unter Meine Datensätze eine Spalte je Datensatz, und das Pin-Symbol in den Ladungen heftet die Lösung auf dem Bildschirm an (Datensatz, Miner, Faktorzahl, Rotation, Regel), sodass etwa derselbe Datensatz mit 4 und mit 6 Faktoren nebeneinander steht. Eine solche Spalte geht von den Einstellungen aus, die mit ihrem Datensatz gespeichert sind, und gilt in dieser Sitzung."
+        "own": "Deine eigenen Daten: Miner vergleichen im Schritt Datensatz legt eine Spalte je Miner an, Vergleichen unter Meine Datensätze eine Spalte je Datensatz. Das Pin-Symbol in den Ladungen heftet die aktuelle Lösung (Datensatz, Miner, Faktorzahl, Rotation, Regel) als Spalte an, sodass du etwa denselben Datensatz mit 4 und mit 6 Faktoren nebeneinander legen kannst. Eine solche Spalte beginnt mit den Einstellungen, die mit ihrem Datensatz gespeichert sind, und bleibt für diese Sitzung bestehen."
       },
       "terms": {
         "export": "Download"
       },
-      "p2": "Die Faktoren jeder Analyse sind von der Analyse nummeriert, deshalb werden sie zuerst einander zugeordnet: Der erste Datensatz behält seine Nummern, die Faktoren jedes weiteren kommen in die Dimension, mit der sie die meisten Maße teilen; sind zwei gleich gut, entscheiden die ähnlicheren Ladungen. Tab. 17 hat seine Dimensionen von Hand umnummeriert, deshalb kann eine Nummer von der des Papers abweichen, und eine Zuordnung, die auf einem gemeinsamen Maß beruht, ist geraten: Der Tooltip einer Zelle der Dimensionsansicht nennt die Maße, auf denen sie beruht. Wie die Maße innerhalb eines Datensatzes gruppiert sind, hängt nicht von den Nummern ab."
+      "p2": "Jede Analyse nummeriert ihre Faktoren für sich, deshalb werden sie zuerst einander zugeordnet. Der erste Datensatz behält seine Nummern. Die Faktoren jedes weiteren kommen in die Dimension, mit der sie die meisten Maße teilen; sind zwei gleich gut, entscheiden die ähnlicheren Ladungen. Tab. 17 hat seine Dimensionen von Hand umnummeriert, deshalb kann eine Nummer von der des Papers abweichen. Eine Zuordnung, die auf einem gemeinsamen Maß beruht, ist geraten: Der Tooltip einer Zelle der Dimensionsansicht nennt die Maße, auf denen sie beruht. Wie die Maße innerhalb eines Datensatzes gruppiert sind, hängt nicht von den Nummern ab."
     }
   },
   "compare": {
@@ -1701,7 +1701,7 @@
     "wait_update": "Der Vergleich wird aktualisiert.",
     "stale": "Die Tabelle zeigt die vorherige Auswahl; die Aktualisierung ist fehlgeschlagen.",
     "computing": "Wird verglichen…",
-    "link_invalid": "Ein Teil des Links ließ sich nicht verwenden: Ein Vergleich nimmt {min} bis {max} Datensätze, veröffentlichte oder solche dieser Sitzung, und eine der drei Regeln. Gezeigt wird der Rest davon oder Tab. 17.",
+    "link_invalid": "Ein Teil des Links ließ sich nicht verwenden. Ein Vergleich nimmt {min} bis {max} Datensätze, veröffentlichte oder aus dieser Sitzung, und eine der drei Regeln. Gezeigt wird der Rest des Links oder Tab. 17.",
     "column_k": "{label}, k = {k}",
     "column_k_note": "{k} Faktoren statt der des Papers",
     "result": "Faktorstrukturen",
@@ -1727,7 +1727,7 @@
     "group_dimension_plural": "Dimension {d} · {n} Maße",
     "group_none": "In keiner Dimension · {n} Maß",
     "group_none_plural": "In keiner Dimension · {n} Maße",
-    "alignment_note": "D1, D2, … sind die Dimensionen nach dem Abgleich: Der erste Datensatz behält die Nummern seiner Faktoren, die Faktoren jedes weiteren werden ihnen so zugeordnet, dass möglichst viele ihrer gemeinsamen Maße dieselbe Nummer bekommen. Eine Nummer kann von der des Papers abweichen (Tab. 17 wurde von Hand umnummeriert); wie die Maße innerhalb eines Datensatzes gruppiert sind, hängt nicht davon ab.",
+    "alignment_note": "D1, D2, … sind die Dimensionen nach dem Abgleich. Der erste Datensatz behält die Nummern seiner Faktoren. Die Faktoren jedes weiteren werden ihnen so zugeordnet, dass möglichst viele der gemeinsamen Maße dieselbe Nummer bekommen. Eine Nummer kann von der des Papers abweichen, denn Tab. 17 wurde von Hand umnummeriert. Wie die Maße innerhalb eines Datensatzes gruppiert sind, hängt nicht von den Nummern ab.",
     "same_as": "dieselben Ladungen wie {other}.",
     "codes_more": "Nennt die Maße mit den Kurzzeichen der Papers, etwa CNC oder dens, in den Tabellen und in der LaTeX-Tabelle. Der volle Name steht im Tooltip.",
     "link_more": "Einen Link kopieren, der diesen Vergleich öffnet: die Datensätze und die Regel",
@@ -1743,13 +1743,13 @@
     },
     "factor_named": "Faktor {i} „{name}“",
     "help": {
-      "names": "Die Namen, die du den Faktoren dieser Lösung deines eigenen Datensatzes gegeben hast, Faktor für Faktor; ein Faktor ohne Namen wird ausgelassen. Die Dimensionen werden über die Analysen hinweg zugeordnet, die Namen bleiben bei der jeweiligen Analyse.",
+      "names": "Die Namen, die du den Faktoren dieser Lösung deines eigenen Datensatzes gegeben hast, je Faktor. Ein Faktor ohne Namen wird ausgelassen. Die Dimensionen werden über die Analysen hinweg zugeordnet; die Namen bleiben bei ihrer Analyse.",
       "columns": "Jede Kachel ist eine Analyse: ein veröffentlichter Datensatz mit den Einstellungen seines Papers oder einer deiner Datensätze mit den Einstellungen, die mit ihm gespeichert sind, angeheftet im Ladungen-Schritt oder gewählt unter Meine Datensätze. Wähle {min} bis {max}. Die linke behält die Nummern ihrer Faktoren.",
       "result": "Die Dimensionen jedes Datensatzes unter der gewählten Regel. Die Faktoren der Datensätze werden so zugeordnet, dass möglichst viele gemeinsame Maße dieselbe Nummer bekommen; sind zwei Zuordnungen gleich gut, entscheiden die ähnlicheren Ladungen.",
       "n": "Beobachtungen: die Netze des Datensatzes, eines je Log.",
-      "measures": "Die Maße, die nach der Bereinigung und dem MSA-Filter bleiben, von denen des Datensatzes.",
+      "measures": "Die Maße des Datensatzes, die nach der Bereinigung und dem MSA-Filter bleiben.",
       "kmo": "Das Gesamtmaß der Stichprobeneignung (Kaiser-Meyer-Olkin) der verbliebenen Maße.",
-      "factors": "Die Zahl der Faktoren, wie die Einstellungen der Spalte sie festlegen: die des Papers oder die mit deinem Datensatz gespeicherten oder mit ihm angehefteten.",
+      "factors": "Die Zahl der Faktoren, wie die Einstellungen der Spalte sie festlegen: die des Papers oder die, die mit deinem Datensatz gespeichert oder angeheftet wurden.",
       "variance": "Der Anteil der Varianz der Maße, den die Faktoren zusammen erklären."
     },
     "legend": {
@@ -1802,7 +1802,7 @@
       "compare_nothing_analysed": "Mit diesen Einstellungen ließ sich keiner der Datensätze analysieren."
     },
     "pairs": {
-      "legend": "In wie vielen der Datensätze, die beide analysiert haben, zwei Maße in derselben Dimension liegen; je dunkler, desto mehr. Auf die Nummerierung der Dimensionen kommt es hier nicht an.",
+      "legend": "Je dunkler, desto öfter liegen zwei Maße in derselben Dimension, gezählt über die Datensätze, die beide analysiert haben. Auf die Nummerierung der Dimensionen kommt es hier nicht an.",
       "label": "Paare von Maßen",
       "caption": "In wie vielen Datensätzen zwei Maße eine Dimension teilen, unter der Regel {rule}: {columns}",
       "names": "{a} und {b}",
@@ -1854,7 +1854,7 @@
     "contact_placeholder": "E-Mail oder Name",
     "technical": "Technische Angaben mitsenden",
     "technical_topic": "Technische Angaben",
-    "technical_info": "Nur diese gehen mit: Version und Commit des Tools, Seite und Schritt, Sprache, dein Browser und der Code des letzten Fehlers. Nichts aus deinen Datensätzen.",
+    "technical_info": "Gesendet wird nur: Version und Commit des Tools, Seite und Schritt, Sprache, dein Browser und der Code des letzten Fehlers. Nichts aus deinen Datensätzen.",
     "technical_version": "Version und Commit",
     "technical_version_value": "ergänzt der Server",
     "technical_page": "Seite",

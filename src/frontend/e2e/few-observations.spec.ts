@@ -41,7 +41,7 @@ test("the log measures are chosen one by one within their groups, and the estima
   await data.getByRole("checkbox", { name: new RegExp(text("factor.data.sample_label")) }).check({ force: true });
   // The four sample logs with the standard groups: far more measures than logs, said with the way out.
   const estimate = data.getByRole("status").filter({ hasText: /4 logs and \d+ measures/ });
-  await expect(estimate).toContainText("so with 4 logs at most 3 measures");
+  await expect(estimate).toContainText("so 4 logs allow at most 3 measures");
   await expect(data).toContainText(text("factor.data.estimate_wont_run"));
   // Computing stays possible.
   await expect(data.getByRole("button", { name: text("factor.data.submit_compute") })).toBeEnabled();

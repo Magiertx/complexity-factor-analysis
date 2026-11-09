@@ -74,7 +74,8 @@ test("the dataset step folds the descriptive statistics until asked for", async 
   await page.goto("/");
   await openBundled(page, "Inductive miner");
   const dataset = stepSection(page, "dataset");
-  const fold = dataset.getByRole("button", { name: pattern(text("factor.dataset.descriptives_heading")) });
+  // The fold, not the (i) inside it, whose name also holds the heading.
+  const fold = dataset.getByRole("button", { name: new RegExp(`^${pattern(text("factor.dataset.descriptives_heading")).source}`) });
   await expect(fold).toHaveAttribute("aria-expanded", "false");
   // A bundled dataset was not computed by the tool, so it has no run times.
   await expect(dataset.getByRole("button", { name: pattern(text("factor.dataset.measurement_heading")) })).toHaveCount(0);

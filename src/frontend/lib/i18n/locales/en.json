@@ -80,7 +80,7 @@
       "params_title": "2 · Miners and measures",
       "params_content": "Choose the miners to run and the measures to compute. The preset bar above saves a selection for later.",
       "run_title": "3 · Start the run",
-      "run_content": "Start with the button or Ctrl+Enter (Cmd+Enter on a Mac). The result appears below with the measures, the discovered nets and downloads; the run is listed in the History."
+      "run_content": "Start with the button or Ctrl+Enter (Cmd+Enter on a Mac). The result appears below with the measures, the discovered nets and downloads. The run is listed in the History."
     },
     "onboarding": {
       "step0_title": "Welcome to {app}",
@@ -90,8 +90,8 @@
       "step1_p1": "Model complexity analyses measures of Petri nets discovered from event logs, computed with ComFy. Log complexity analyses measures of the event logs themselves, computed with feeed.",
       "step1_p2": "Both tabs work the same way.",
       "step2_title": "One step at a time",
-      "step2_p1": "Data, dataset, suitability, factors, loadings: the list of steps shows what each one found and opens it; Back and Next lead through them. Every change to a setting re-runs the analysis right away, and the analysis can be downloaded as CSV, LaTeX or ZIP. An optional sixth step lets Claude propose names for the factors.",
-      "step2_p2": "Hover a control or an (i) for what it does; the Tour button walks you through the steps.",
+      "step2_p1": "Data, Dataset, Suitability, Factors, Loadings: the list of steps shows what each one found and opens it. Back and Next move through them. Changing a setting re-runs the analysis right away. You can download the analysis as CSV, LaTeX or ZIP. An optional sixth step lets Claude propose names for the factors.",
+      "step2_p2": "Hover a control or an (i) to see what it does. The Tour button walks you through the steps.",
       "step3_title": "More when you need it",
       "step3_compare": "Compare: the factor structures of several analyses side by side, like Tab. 17 of Important Factors.",
       "progress_aria": "Progress",
@@ -99,7 +99,7 @@
       "step3_inspect": "Single log: discover models for one log with miners and measure their complexity."
     },
     "factor": {
-      "intro": "Five steps from raw measures to factors, and an optional interpretation, one at a time: the list of steps on the left (on a phone the row at the top) and Back and Next move between them. Hover a control or an (i) for what it does. Esc or Skip ends the tour at any time.",
+      "intro": "Five steps lead from the raw measures to the factors, plus an optional interpretation. One step is shown at a time. Switch with the list of steps on the left (on a phone, the row at the top) or with Back and Next. Hover a control or an (i) to see what it does. Esc or Skip ends the tour at any time.",
       "data": "Where the data come from: Get started and the bundled datasets, a CSV of your own, or measures computed from your files. Large computations run in the background.",
       "dataset": "Check the size of the matrix and what the cleaning removed. You can download the cleaned data as CSV.",
       "suitability": "Bartlett and KMO tell you whether a factor analysis makes sense at all. Exclude measures with low MSA here, by hand or with the filter.",
@@ -169,7 +169,7 @@
       "errors": {
         "empty_name": "Give the preset a name.",
         "not_an_object": "This file holds no presets: it is not a JSON object.",
-        "no_groups": "This file holds no presets: its list of groups is missing.",
+        "no_groups": "This file holds no presets: the list of groups is missing.",
         "no_presets": "No valid presets were found in the file."
       }
     },
@@ -194,12 +194,12 @@
       "confirm_delete": "Confirm delete",
       "delete_all_jobs": "Delete all runs",
       "clear_datasets_label": "Delete the factor analysis datasets",
-      "clear_datasets_hint": "{n} dataset of the model and log complexity tabs is stored on the server, with the settings of its last analysis. If it was computed from logs or nets, the run that computed it is deleted as well.",
-      "clear_datasets_hint_plural": "{n} datasets of the model and log complexity tabs are stored on the server, each with the settings of its last analysis. Those computed from logs or nets are deleted with the runs that computed them.",
+      "clear_datasets_hint": "{n} dataset from the Model complexity and Log complexity tabs is stored on the server, with the settings of its last analysis. If it was computed from logs or nets, the run that computed it is deleted too.",
+      "clear_datasets_hint_plural": "{n} datasets from the Model complexity and Log complexity tabs are stored on the server, each with the settings of its last analysis. Those computed from logs or nets are deleted with the runs that computed them.",
       "clear_datasets_short": "{n} dataset on the server.",
       "clear_datasets_short_plural": "{n} datasets on the server.",
-      "clear_datasets_empty": "No datasets of the model and log complexity tabs are stored for this session.",
-      "clear_datasets_unknown": "Datasets of the model and log complexity tabs, each with the settings of its last analysis. Those computed from logs or nets are deleted with the runs that computed them.",
+      "clear_datasets_empty": "No datasets from the Model complexity and Log complexity tabs are stored for this session.",
+      "clear_datasets_unknown": "Datasets from the Model complexity and Log complexity tabs, each with the settings of its last analysis. Those computed from logs or nets are deleted with the runs that computed them.",
       "delete_all_datasets": "Delete datasets",
       "toast_datasets_deleted": "{n} dataset deleted",
       "toast_datasets_deleted_plural": "{n} datasets deleted",
@@ -283,7 +283,7 @@
     "edit_button": "Edit",
     "inline_placeholder": "Add a note about this run…",
     "panel_placeholder": "What was this run for? What did you change?",
-    "panel_empty_text": "No note yet. Use this to jot down what you were trying — parameter choices, context, anything that helps you reread this run later.",
+    "panel_empty_text": "No note yet. Jot down here what you were trying: parameter choices, context, anything that helps you make sense of this run later.",
     "char_count": "{n} / {max}",
     "saving": "Saving…",
     "save_failed": "Failed to save"
@@ -363,8 +363,8 @@
   },
   "run_history": {
     "heading": "History",
-    "subtitle": "Everything of this session, newest first: the datasets of both tabs, each with the settings of its last analysis, and the runs of single logs.",
-    "subtitle_short": "Everything of this session, newest first.",
+    "subtitle": "Everything from this session, newest first: the datasets of both tabs with the settings of their last analysis, and the runs of single logs.",
+    "subtitle_short": "Everything from this session, newest first.",
     "search_placeholder": "Search name, file or ID…",
     "search_aria": "Search the history",
     "filter_type_aria": "Filter by type",
@@ -399,7 +399,7 @@
     "none_match": "Nothing matches the filters.",
     "settings_label": "Settings of the last analysis",
     "abort": "Abort",
-    "abort_more": "Stops the run; a dataset it computes stays, marked as failed.",
+    "abort_more": "Stops the run. A dataset it was computing is kept and marked as failed.",
     "delete_dataset_aria": "Delete {name}",
     "delete_with_dataset": "Deletes the dataset it computes as well.",
     "toast_dataset_deleted": "Dataset deleted"
@@ -469,7 +469,7 @@
       "analysis_failed": "Analysis failed",
       "unknown_submission": "Unknown submission error",
       "file_too_large": "File size exceeds the 100 MB limit.",
-      "wrong_type": "This file type cannot be analysed; use {formats}.",
+      "wrong_type": "This file type cannot be analysed. Use {formats}.",
       "aborted_by_user": "Aborted by the user"
     }
   },
@@ -541,18 +541,18 @@
       "all_miners": "Analyse all miners together",
       "choose_measures": "Choose measures",
       "observation": {
-        "log": "Here an observation is one log, and there is {n}.",
-        "log_plural": "Here an observation is one log, and there are {n}.",
-        "log_miner": "Here an observation is one log mined with one miner, and there is {n}.",
-        "log_miner_plural": "Here an observation is one log mined with one miner, and there are {n}.",
-        "net": "Here an observation is one Petri net, and there is {n}.",
-        "net_plural": "Here an observation is one Petri net, and there are {n}.",
-        "row": "Here an observation is one row of the table, and there is {n}.",
-        "row_plural": "Here an observation is one row of the table, and there are {n}."
+        "log": "Here, each log is one observation. There is {n}.",
+        "log_plural": "Here, each log is one observation. There are {n}.",
+        "log_miner": "Here, each combination of log and miner is one observation. There is {n}.",
+        "log_miner_plural": "Here, each combination of log and miner is one observation. There are {n}.",
+        "net": "Here, each Petri net is one observation. There is {n}.",
+        "net_plural": "Here, each Petri net is one observation. There are {n}.",
+        "row": "Here, each row of the table is one observation. There is {n}.",
+        "row_plural": "Here, each row of the table is one observation. There are {n}."
       },
-      "too_few_observations_way": "A factor analysis needs more observations than measures: with {n} at most {max}, and about 5 per measure make sense. Keep only a few measures, or choose other data with more observations.",
-      "too_few_observations_any": "With {n} observation no factor analysis runs; it needs at least {needed}. Choose other data with more observations.",
-      "too_few_observations_any_plural": "With {n} observations no factor analysis runs; it needs at least {needed}. Choose other data with more observations."
+      "too_few_observations_way": "A factor analysis needs more observations than measures. With {n} observations, at most {max} measures are possible, and about 5 per measure make sense. Keep only a few measures, or choose other data with more observations.",
+      "too_few_observations_any": "With {n} observation no factor analysis runs. It needs at least {needed}. Choose other data with more observations.",
+      "too_few_observations_any_plural": "With {n} observations no factor analysis runs. It needs at least {needed}. Choose other data with more observations."
     },
     "data": {
       "source": {
@@ -593,13 +593,13 @@
       "files_selected": "{n} file",
       "files_selected_plural": "{n} files",
       "sample_demo": "shows the workflow",
-      "sample_demo_why": "Four logs give only four observations with one miner, too few for a factor analysis. More miner runs make the count sufficient, but the measures then correlate so weakly that the MSA filter removes almost all of them. The sample shows the workflow; for a result use the datasets of the paper.",
+      "sample_demo_why": "Four logs give only four observations with one miner, too few for a factor analysis. More miner runs make the count sufficient, but the measures then correlate so weakly that the MSA filter removes almost all of them. The sample shows the workflow. For a result, use the datasets of the paper.",
       "sample_own": "Upload own files instead",
       "clear_files": "Remove all",
       "remove_file_aria": "Remove {name}",
       "wrong_type": "{name} is not a {ext} file and was skipped.",
       "too_large": "{name} is larger than {mb} MB and was skipped.",
-      "too_many_files": "At most {max} files; {n} were not added.",
+      "too_many_files": "At most {max} files. {n} were not added.",
       "miners_heading": "Miners",
       "miners_hint": "Discovery algorithms from ComFy. More miners give more observations per log.",
       "measures_heading": "Measures",
@@ -628,7 +628,7 @@
       },
       "estimate": "This gives up to {rows} observations of {cols} measures.",
       "estimate_thin": "Few observations per measure. Results get more stable with about five per measure ({target}).",
-      "estimate_wont_run": "With this choice the analysis will not run; the values can still be computed and looked at.",
+      "estimate_wont_run": "With this choice the analysis will not run. The values can still be computed and looked at.",
       "need_bundled": "Pick a dataset.",
       "need_mine": "Pick a dataset.",
       "need_csv": "Add a CSV file.",
@@ -643,7 +643,7 @@
       "submitting": "Submitting…",
       "submit_failed": "The dataset could not be created.",
       "computing_title": "Computing {name}",
-      "computing_hint": "This runs in the background. You can leave the page; the dataset is kept for your session.",
+      "computing_hint": "This runs in the background. You can leave the page. The dataset is kept for your session.",
       "cancel": "Stop computing",
       "failed_title": "The dataset could not be built",
       "change": "Choose other data",
@@ -653,8 +653,8 @@
       "catalog_failed": "The catalog could not be loaded.",
       "catalog_error": "Could not load the available datasets and measures: {error}",
       "load_failed": "The dataset could not be loaded. Retrying…",
-      "cancel_failed": "The run could not be canceled. Try again, or abort it in the History.",
-      "too_large_total": "Some files were skipped: all files of one dataset may have at most {mb} MB together.",
+      "cancel_failed": "The run could not be cancelled. Try again, or abort it in the History.",
+      "too_large_total": "Some files were skipped. The files of one dataset may total at most {mb} MB.",
       "mine_open": "open",
       "mine_computing": "computing",
       "mine_failed": "failed",
@@ -678,24 +678,24 @@
       "compare_start": "Compare",
       "compare_pick_aria": "Datasets to compare",
       "compare_not_ready": "Only a dataset that is ready can be compared.",
-      "compare_hint": "{n} chosen; a comparison takes {min} to {max} datasets, each with the settings saved with it.",
+      "compare_hint": "{n} chosen. A comparison takes {min} to {max} datasets, each with its saved settings.",
       "compare_go": "Compare {n}",
       "sample_name": {
         "pdc_sample_logs": "Four PDC training logs",
         "pdc_sample_models": "Petri nets of the four PDC logs"
       },
       "estimate_too_few": {
-        "logs": "{rows} logs and {cols} measures: a factor analysis needs more logs than measures, so with {rows} logs at most {max} measures, and about 5 logs per measure make sense. Choose fewer measures or upload more logs (up to {limit}).",
-        "log_miners": "{logs} logs × {miners} miners = {rows} observations and {cols} measures: a factor analysis needs more observations than measures, so at most {max} measures, and about 5 observations per measure make sense. Choose fewer measures or more miners, or upload more logs (up to {limit}).",
-        "nets": "{rows} nets and {cols} measures: a factor analysis needs more nets than measures, so with {rows} nets at most {max} measures, and about 5 nets per measure make sense. Choose fewer measures or upload more nets (up to {limit})."
+        "logs": "{rows} logs and {cols} measures. A factor analysis needs more logs than measures, so {rows} logs allow at most {max} measures. About 5 logs per measure make sense. Choose fewer measures or upload more logs (up to {limit}).",
+        "log_miners": "{logs} logs × {miners} miners = {rows} observations and {cols} measures. A factor analysis needs more observations than measures, so at most {max} measures are possible. About 5 observations per measure make sense. Choose fewer measures or more miners, or upload more logs (up to {limit}).",
+        "nets": "{rows} nets and {cols} measures. A factor analysis needs more nets than measures, so {rows} nets allow at most {max} measures. About 5 nets per measure make sense. Choose fewer measures or upload more nets (up to {limit})."
       },
       "estimate_too_few_any": {
-        "logs": "With {n} log no factor analysis runs; it needs at least {needed} logs. Upload more logs (up to {limit}).",
-        "logs_plural": "With {n} logs no factor analysis runs; it needs at least {needed} logs. Upload more logs (up to {limit}).",
-        "log_miners": "{logs} logs × {miners} miners give {n} observation; a factor analysis needs at least {needed}. Add more miners or upload more logs (up to {limit}).",
-        "log_miners_plural": "{logs} logs × {miners} miners give {n} observations; a factor analysis needs at least {needed}. Add more miners or upload more logs (up to {limit}).",
-        "nets": "With {n} net no factor analysis runs; it needs at least {needed} nets. Upload more nets (up to {limit}).",
-        "nets_plural": "With {n} nets no factor analysis runs; it needs at least {needed} nets. Upload more nets (up to {limit})."
+        "logs": "With {n} log no factor analysis runs. It needs at least {needed} logs. Upload more logs (up to {limit}).",
+        "logs_plural": "With {n} logs no factor analysis runs. It needs at least {needed} logs. Upload more logs (up to {limit}).",
+        "log_miners": "{logs} logs × {miners} miners give {n} observation. A factor analysis needs at least {needed}. Add more miners or upload more logs (up to {limit}).",
+        "log_miners_plural": "{logs} logs × {miners} miners give {n} observations. A factor analysis needs at least {needed}. Add more miners or upload more logs (up to {limit}).",
+        "nets": "With {n} net no factor analysis runs. It needs at least {needed} nets. Upload more nets (up to {limit}).",
+        "nets_plural": "With {n} nets no factor analysis runs. It needs at least {needed} nets. Upload more nets (up to {limit})."
       },
       "scope": {
         "paper": "in the paper",
@@ -712,11 +712,11 @@
         "too_few_traces": "too few traces",
         "group_failed": "the calculation failed"
       },
-      "skipped_info": "feeed could not compute these feature groups for at least one log. So that every log keeps the same columns, their measures are missing for all logs: {groups}.",
+      "skipped_info": "feeed could not compute these feature groups for at least one log: {groups}. Their measures are therefore missing for all logs, so that every log has the same columns.",
       "skipped_group": "{name} – {reason} ({inputs})",
       "loaded_too_few": "{rows} observations and {cols} measures: a factor analysis needs more observations than measures, so at most {max} measures. Exclude measures or add data.",
-      "loaded_too_few_any": "With {n} observation no factor analysis runs; it needs at least {needed}. Add data.",
-      "loaded_too_few_any_plural": "With {n} observations no factor analysis runs; it needs at least {needed}. Add data.",
+      "loaded_too_few_any": "With {n} observation no factor analysis runs. It needs at least {needed}. Add data.",
+      "loaded_too_few_any_plural": "With {n} observations no factor analysis runs. It needs at least {needed}. Add data.",
       "skipped_plural": "{n} measures skipped: {reason}",
       "submit_show": "Show"
     },
@@ -764,7 +764,7 @@
       "col_reason": "Reason",
       "col_detail": "Detail",
       "descriptives_heading": "Descriptive statistics",
-      "col_n_more": "The values the statistics rest on; missing values are not counted.",
+      "col_n_more": "Number of values the statistics are based on. Missing values are not counted.",
       "col_mean": "Mean",
       "col_median": "Median",
       "col_sd": "SD",
@@ -772,8 +772,8 @@
       "col_min": "Min",
       "col_max": "Max",
       "col_cleaning": "Cleaning",
-      "descriptives_note": "As ComFy's report prints them: over all {n} observations of the data as collected, before cleaning, so the measures cleaning left out are described as well.",
-      "descriptives_note_cleaned": "Over the cleaned matrix: the data before cleaning were not kept for this dataset.",
+      "descriptives_note": "As in the ComFy report: over all {n} observations before cleaning. Measures that cleaning dropped are described too.",
+      "descriptives_note_cleaned": "Computed over the cleaned matrix. The data before cleaning were not kept for this dataset.",
       "measurement_heading": "Run times and input sizes",
       "measurement_total": "{s} s in all",
       "col_traces": "Traces",
@@ -784,7 +784,7 @@
       "col_net_more": "Places, transitions and arcs of the Petri net.",
       "col_read_s": "Read (s)",
       "col_discovery_s": "Discovery (s)",
-      "col_discovery_more": "Wall time of the discovery, including the wait for ProM while other jobs used it.",
+      "col_discovery_more": "Wall time of the discovery, including the wait for ProM while other runs used it.",
       "col_measures_s": "Measures (s)",
       "col_features_s": "Features (s)",
       "measurement_sum": "Sum",
@@ -803,7 +803,7 @@
       "warnings_heading": "Notes from the analysis",
       "bartlett_title": "Bartlett's test of sphericity",
       "bartlett_explain": "Tests whether the measures are correlated at all. It passes when p is below α = {alpha}.",
-      "bartlett_before_filter": "As in ComFy, the test runs on all {n} measures before the MSA filter; KMO and the later steps use the {left} measures left after it.",
+      "bartlett_before_filter": "As in ComFy, the test runs on all {n} measures before the MSA filter. KMO and the later steps use the {left} measures left after it.",
       "df": "df",
       "kmo_title": "Kaiser–Meyer–Olkin (KMO)",
       "kmo_explain": "How strongly the relationships between the measures trace back to something shared, rather than existing only between single pairs. A value of at least {threshold} is adequate.",
@@ -839,14 +839,14 @@
       "exclude_aria": "Exclude {measure}",
       "invert": "Invert selection",
       "invert_title": "Exclude the included measures and include the excluded ones",
-      "removed_summary": "The filter removed {n} measure; the list below marks it.",
-      "removed_summary_plural": "The filter removed {n} measures; the list below marks them.",
+      "removed_summary": "The filter removed {n} measure. The list below marks it.",
+      "removed_summary_plural": "The filter removed {n} measures. The list below marks them.",
       "thin_result": "Only {left} of {total} measures left."
     },
     "factors": {
       "scree_title": "Scree plot",
       "notes_heading": "Notes on the factor solution",
-      "scree_desc": "Eigenvalues in descending order; {n} are above 1.",
+      "scree_desc": "Eigenvalues in descending order. {n} are above 1.",
       "scree_hint": "Click a point to keep that many factors. The dashed line marks an eigenvalue of 1, the dotted one the parallel analysis.",
       "axis_factor": "Factor",
       "axis_eigenvalue": "Eigenvalue",
@@ -872,7 +872,7 @@
       "rotation_hint": {
         "orthogonal": "Keeps the factors uncorrelated. Loadings are correlations between measure and factor.",
         "oblique": "Allows the factors to correlate. Step 5 shows the loadings as regression weights (pattern matrix) or as correlations (structure matrix).",
-        "none": "Unrotated solution. The first factor usually takes most of the variance, which makes the factors hard to interpret."
+        "none": "Unrotated solution. The first factor usually takes most of the variance. That makes the factors hard to interpret."
       },
       "criteria_label": "Criteria",
       "criterion": {
@@ -891,8 +891,8 @@
       "criterion_count_plural": "{n} factors",
       "criterion_capped": "{k} factors are more than the {max} these measures allow.",
       "criteria_differ": "The criteria suggest different numbers of factors. The scree plot and the loadings help to decide.",
-      "criteria_differ_paper": "The criteria suggest different numbers of factors. Kaiser and parallel analysis follow from the data; the paper chose its number before the analysis.",
-      "criteria_differ_report": "The criteria suggest different numbers of factors. Kaiser and parallel analysis follow from the data; the ComFy report fixes its number before the analysis.",
+      "criteria_differ_paper": "The criteria suggest different numbers of factors. Kaiser and parallel analysis depend on the data. The paper fixed its number beforehand.",
+      "criteria_differ_report": "The criteria suggest different numbers of factors. Kaiser and parallel analysis depend on the data. The ComFy report fixes its number beforehand.",
       "random_point": "parallel analysis: {value}",
       "cumulative_point": "cumulative share of the eigenvalues: {pct}",
       "scree_desc_table": "A table with every series follows the plot.",
@@ -925,9 +925,9 @@
       "cumulative": "Cumulative",
       "h2_note": "h² is the share of a measure's variance that the kept factors explain.",
       "footer_rows": "The footer rows give the variance per factor.",
-      "footer_row_pattern": "The footer row gives the sum of squared loadings per factor, from the pattern matrix.",
-      "structure_note": "The structure matrix holds the correlations between measures and factors; sums of squared loadings are given for the pattern matrix.",
-      "oblique_note": "With an oblique rotation the factors correlate, so their shares do not add up; together they explain {pct} of the variance.",
+      "footer_row_pattern": "The footer row gives the sum of squared loadings per factor in the pattern matrix.",
+      "structure_note": "The structure matrix holds the correlations between measures and factors. Sums of squared loadings are given for the pattern matrix.",
+      "oblique_note": "With an oblique rotation the factors correlate, so their shares do not add up. Together they explain {pct} of the variance.",
       "legend_shade": "darker: larger |loading|; the sign is in the number",
       "legend_bold": "bold: |loading| ≥ {threshold}",
       "legend_bold_strict": "bold: |loading| > {threshold}",
@@ -936,7 +936,7 @@
       "factor_variance": "{pct} of variance",
       "factor_empty": "No measure reaches the threshold on this factor.",
       "unassigned_heading": "Unassigned",
-      "unassigned_hint": "These measures join no factor under the chosen rule; the reason is next to each.",
+      "unassigned_hint": "These measures join no factor under the chosen rule. The reason is next to each.",
       "communality_threshold_label": "Communality threshold",
       "communality_raised": "The rule asks for at least {value}.",
       "matrix_label": "Matrix",
@@ -954,12 +954,12 @@
         "multi": {
           "title": "Multiple membership",
           "source": "Important Factors, Tab. 6–16",
-          "text": "|λ| above the threshold and h² ≥ {h2_multi}; a loading at most {gap} below the largest counts as well."
+          "text": "|λ| above the threshold and h² ≥ {h2_multi}. A loading at most {gap} below the largest counts as well."
         },
         "hair": {
           "title": "Without cross-loadings",
           "source": "Important Factors, Tab. 17; the paper justifies both criteria with Hair et al. (p. 119)",
-          "text": "h² ≥ {h2_hair}; a measure with a second loading at most {gap} below its largest is left out."
+          "text": "h² ≥ {h2_hair}. A measure with a second loading at most {gap} below its largest is left out."
         }
       },
       "cross_cell": "cross-loading",
@@ -985,7 +985,7 @@
     "stability": {
       "action": "Check stability",
       "again": "Check again",
-      "help": "Draws {n} bootstrap samples of the rows, with replacement and a fixed seed, and fits each with the same measures, factor count and rotation. Tucker's congruence φ with the Hungarian algorithm matches the factors of a sample to these, mirrored where φ is negative; then the same assignment rule applies. The value of a measure is the share of samples in which it keeps its factors.",
+      "help": "Draws {n} bootstrap samples of the rows, with replacement and a fixed seed, and fits each one with the same measures, factor count and rotation. Tucker's congruence φ and the Hungarian algorithm match the factors of each sample to the factors of this solution; a factor is mirrored where φ is negative. The same assignment rule then applies. The value of a measure is the share of samples in which it keeps its factors.",
       "samples_label": "Bootstrap samples",
       "computing": "Checking stability … {pct} %",
       "cancel": "Cancel",
@@ -998,7 +998,7 @@
         "fit_failed": "{n} failed fit",
         "not_converged": "{n} not converged"
       },
-      "heywood": "In {n} samples a further measure reached the Heywood bound; they are kept.",
+      "heywood": "In {n} samples a measure reached the Heywood bound although it is not at the bound in this solution. These samples are kept.",
       "none_valid": "None of the {samples} samples could be fitted.",
       "stale": "The stability shown before belongs to other settings.",
       "failed": "The stability could not be computed.",
@@ -1020,14 +1020,14 @@
       "pairs_legend": "Each cell is the share of the valid samples in which the two measures share at least one factor; the darker, the more often. A ring marks the pairs that share a factor in the solution itself.",
       "pairs_cell": "{a} and {b}",
       "pairs_cell_more": "Share a factor in {pct} of the samples",
-      "pairs_cell_together": "Share a factor in {pct} of the samples; together in the solution"
+      "pairs_cell_together": "Share a factor in {pct} of the samples, and in the solution itself"
     },
     "short_set": {
       "badge": "Representative",
       "badge_tip": "Represents this dimension in the short set: purity {purity}",
       "heading": "Short set ({n} measure)",
       "heading_plural": "Short set ({n} measures)",
-      "help": "One measure per dimension: the one assigned to it with the highest purity, its absolute loading on the dimension minus its largest absolute loading on any other. It lets you report a few measures that do not repeat each other, as the Important Factors paper motivates. Ties go to the higher loading. A representative with a low stability should be read with care.",
+      "help": "One measure per dimension: the assigned measure with the highest purity. Purity is its absolute loading on the dimension minus its largest absolute loading on any other. This gives a few measures to report that do not repeat each other, as the Important Factors paper motivates. Ties go to the higher loading. Read a representative with low stability with care.",
       "copy_label": "Copy the short set",
       "copy_list": "as list",
       "copy_latex": "as LaTeX table",
@@ -1043,67 +1043,67 @@
     "help": {
       "cleaning": "Before the analysis, rows where most values are missing are dropped. Then columns that are not numeric, that have no variance, that have missing values, or that are perfect copies of an earlier column are removed, as in ComFy for log measures. Such columns would distort or break the correlation matrix.",
       "bartlett": "Bartlett's test checks the null hypothesis that the correlation matrix is an identity matrix, i.e. that the measures are uncorrelated. If p < α, there are correlations that common factors can explain. With many observations the test almost always passes, so read it together with KMO.",
-      "kmo": "The Kaiser–Meyer–Olkin criterion compares the correlations between the measures with their partial correlations. Values near 1 mean the measures share common variance; values near 0 mean the correlations are mostly pairwise. Kaiser's scale (Kaiser 1974): from 0.9 marvelous, 0.8 meritorious, 0.7 middling, 0.6 mediocre, 0.5 miserable, below that unacceptable.",
-      "msa": "The measure of sampling adequacy (MSA) is the KMO value of a single measure. A measure with low MSA shares little with the others and fits no common factor well; removing it usually raises the overall KMO. Tick a measure to exclude it by hand.",
-      "msa_filter": "As in ComFy, all measures below the threshold are removed and the MSA values are recomputed, until every remaining measure reaches the threshold. If the overall MSA then lies below the threshold, ComFy ends its run; the tool only warns.",
+      "kmo": "The Kaiser–Meyer–Olkin criterion compares the correlations between the measures with their partial correlations. Values near 1 mean the measures share common variance. Values near 0 mean the correlations are mostly pairwise. Kaiser's scale (Kaiser 1974): from 0.9 marvelous, 0.8 meritorious, 0.7 middling, 0.6 mediocre, 0.5 miserable, below that unacceptable.",
+      "msa": "The measure of sampling adequacy (MSA) is the KMO value of a single measure. A measure with low MSA shares little with the others and fits no common factor well. Removing it usually raises the overall KMO. Tick a measure to exclude it by hand.",
+      "msa_filter": "As in ComFy, all measures below the threshold are removed and the MSA values are recomputed, until every remaining measure reaches the threshold. If the overall MSA then lies below the threshold, ComFy ends its run. The tool only warns.",
       "msa_threshold": "The filter removes measures whose MSA is below this value, and the overall KMO counts as adequate from this value on. ComFy and ComFy for log measures use 0.6.",
       "bartlett_alpha": "The significance level of Bartlett's test: the test passes when p is below α. ComFy and ComFy for log measures use 0.05.",
-      "scree": "The scree plot shows the eigenvalues of the correlation matrix in descending order. Look for the elbow where the curve flattens; factors after it add little. The elbow, the eigenvalue-above-1 rule and the parallel analysis can disagree, so treat them as starting points. The thin line on the right axis adds up the eigenvalues: the share of the variance the first principal components explain. The factors of the analysis explain somewhat less, as step 5 shows.",
-      "eigenvalue": "An eigenvalue belongs to a principal component of the correlation matrix: the variance it explains, in units of one standardized measure. The suggestion keeps as many factors as there are eigenvalues above 1 (Kaiser criterion), i.e. as many as there are components that explain more than a single measure.",
+      "scree": "The scree plot shows the eigenvalues of the correlation matrix in descending order. Look for the elbow where the curve flattens; factors after it add little. The elbow, the eigenvalue-above-1 rule and the parallel analysis can disagree, so treat them as starting points. The thin line on the right axis shows the cumulative share of the variance that the first principal components explain. The factors of the analysis explain somewhat less, as step 5 shows.",
+      "eigenvalue": "An eigenvalue belongs to a principal component of the correlation matrix. It is the variance the component explains, in units of one standardized measure. The suggestion keeps as many factors as there are eigenvalues above 1 (Kaiser criterion), i.e. as many as there are components that explain more than a single measure.",
       "rotation": "Rotation turns the factor solution so that each measure loads strongly on as few factors as possible, which makes the factors easier to name. It does not change how much variance the factors explain together. Varimax and quartimax keep the factors uncorrelated; promax and oblimin let them correlate.",
-      "threshold": "Loadings with an absolute value at or above this threshold count as substantial. Which factors a measure joins depends on the assignment rule above; with the largest loading, it joins the factor where its absolute loading is highest, if that loading reaches the threshold. Common choices lie between 0.3 and 0.5; ComFy uses 0.35, ComFy for log measures 0.5. Whether a loading exactly on the threshold counts depends on the rule: with the largest loading it counts (≥); ComFy's report, which only greys loadings below its threshold, leaves it black as well. The rules of Important Factors (multiple membership, without cross-loadings) require more than the threshold (>), as the tables of the paper do.",
-      "loading": "A loading says how strongly a measure goes along with a factor. For orthogonal rotations it is the correlation between measure and factor. For oblique rotations the pattern matrix holds regression weights and the structure matrix the correlations. The sign gives the direction: measures with opposite signs on the same factor move in opposite directions. The sign of a whole factor is arbitrary (flipping every sign of a factor changes nothing), so the matrix shades by |loading| only.",
+      "threshold": "Loadings with an absolute value at or above this threshold count as substantial. Which factors a measure joins depends on the assignment rule above. With the largest loading, a measure joins the factor on which its absolute loading is highest, if that loading reaches the threshold. Common values lie between 0.3 and 0.5. ComFy uses 0.35, ComFy for log measures 0.5. Whether a loading exactly on the threshold counts depends on the rule. With the largest loading it counts (≥), and ComFy's report, which only greys loadings below its threshold, leaves it black too. The rules of Important Factors (multiple membership, without cross-loadings) require more than the threshold (>), as the tables of the paper do.",
+      "loading": "A loading says how strongly a measure goes along with a factor. For orthogonal rotations it is the correlation between measure and factor. For oblique rotations the pattern matrix holds regression weights and the structure matrix the correlations. The sign gives the direction: measures with opposite signs on the same factor move in opposite directions. The sign of a whole factor is arbitrary: flipping every sign of a factor changes nothing. The matrix therefore shades by |loading| only.",
       "communality": "The communality h² is the share of a measure's variance that all kept factors explain together. A low value (below about 0.4) means the factors do not capture the measure well.",
       "variance": "SS loadings is the sum of squared loadings of a factor. Divided by the number of measures it gives the proportion of the total variance the factor explains; the cumulative row adds these up.",
       "groups": "Each factor with the measures assigned to it, strongest loading first. Measures in one group capture a similar aspect of complexity; the name of the factor is up to your interpretation. Under multiple membership a measure can be in several groups; a chip names its other factors.",
-      "communality_threshold": "Measures whose communality is below this value are left unassigned, because the factors explain too little of them. ComFy for log measures uses 0.5; 0 keeps every measure, except under multiple membership (at least 0.3) and without cross-loadings (at least 0.5).",
+      "communality_threshold": "Measures whose communality is below this value are left unassigned, because the factors explain too little of them. ComFy for log measures uses 0.5. The value 0 keeps every measure, except under multiple membership (at least 0.3) and without cross-loadings (at least 0.5).",
       "factor_correlations": "With an oblique rotation the factors may correlate. Values near 0 mean the factors are nearly independent; large values mean they measure related aspects.",
-      "assignment": "How the loadings turn into factor groups. The largest loading is the default of this tool: each measure joins the factor it loads on most. ComFy's report assigns nothing; it only greys loadings with |λ| below its threshold. Important Factors states two further rules: for Tab. 6–16, a measure also joins every factor whose loading is at most {gap} below its largest (multiple membership), with h² ≥ {h2_multi}; for Tab. 17 (without cross-loadings, justified in the paper with Hair et al.), h² ≥ {h2_hair} applies and cross-loaded measures are left out. The tool applies the rules as stated; where a table of the paper differs from them, a note below the rules says so for the bundled datasets. The factor solution is the same under every rule; only the groups change.",
-      "criteria": "Kaiser keeps every factor with an eigenvalue above 1. Parallel analysis (Horn) keeps the factors whose eigenvalue is above the {percentile}th percentile of the eigenvalues of {simulations} random normal datasets of the same size, computed on principal components with the fixed seed {seed}; with many observations it comes close to Kaiser. A paper may also fix the number before the analysis. Choosing a criterion sets the number of factors."
+      "assignment": "How the loadings turn into factor groups. The largest loading is the default of this tool: each measure joins the factor it loads on most. ComFy's report assigns nothing. It only greys loadings with |λ| below its threshold. Important Factors states two further rules. For Tab. 6–16, a measure also joins every factor whose loading is at most {gap} below its largest (multiple membership), with h² ≥ {h2_multi}. For Tab. 17 (without cross-loadings, justified in the paper with Hair et al.), h² ≥ {h2_hair} applies and cross-loaded measures are left out. The tool applies the rules as the paper states them. Where a table of the paper differs, a note below the rules says so for the bundled datasets. The factor solution is the same under every rule; only the groups change.",
+      "criteria": "Kaiser keeps every factor with an eigenvalue above 1. Parallel analysis (Horn) keeps the factors whose eigenvalue is above the {percentile}th percentile of the eigenvalues of {simulations} random normal datasets of the same size. It is computed on principal components with the fixed seed {seed}. With many observations it comes close to Kaiser. A paper may also fix the number before the analysis. Choosing a criterion sets the number of factors."
     },
     "errors": {
       "unknown_rotation": "Unknown rotation “{rotation}”.",
-      "n_factors_range": "{requested} factors requested, but with {measures} measures at most {max} are possible; a further factor would stay empty.",
+      "n_factors_range": "{requested} factors requested, but with {measures} measures at most {max} are possible. A further factor would stay empty.",
       "fit_failed": "The factor analysis failed: {error}",
-      "not_converged": "The factor analysis did not converge; the correlation matrix is singular. Exclude measures that are linear combinations of others.",
-      "msa_singular": "The MSA could not be computed; the correlation matrix is singular.",
+      "not_converged": "The factor analysis did not converge. The correlation matrix is singular. Exclude measures that are linear combinations of others.",
+      "msa_singular": "The MSA could not be computed. The correlation matrix is singular.",
       "unknown_excluded": "Unknown measures to exclude: {measures}.",
       "too_few_measures": "At least {min} measures are needed for a factor analysis; {left} are left.",
-      "too_few_observations": "{n} observations are too few for {measures} measures; at least {needed} are needed. Exclude measures or add observations.",
-      "msa_filter_left": "The MSA filter left {left} measures; at least {min} are needed. Turn the filter off or lower the MSA threshold.",
+      "too_few_observations": "{n} observations are too few for {measures} measures. At least {needed} are needed. Exclude measures or add observations.",
+      "msa_filter_left": "The MSA filter left {left} measures. At least {min} are needed. Turn the filter off or lower the MSA threshold.",
       "interpretation_unavailable": "Interpreting factors needs an Anthropic API key on the server, and none is configured.",
       "interpretation_refused": "The model declined to interpret this analysis. The factor analysis itself is not affected.",
       "interpretation_auth": "The Anthropic API rejected the server's API key. The operator has to check it.",
       "interpretation_upstream_limited": "The Anthropic API is rate limiting this server. Try again later.",
       "interpretation_upstream_unavailable": "The Anthropic API is unavailable or overloaded. Try again later.",
-      "interpretation_unreachable": "The server could not reach the Anthropic API; it may have no internet connection.",
+      "interpretation_unreachable": "The server could not reach the Anthropic API. It may have no internet connection.",
       "interpretation_timeout": "The Anthropic API did not answer in time. Try again later.",
-      "interpretation_incomplete": "The answer of the model was cut off. Try again, or with fewer measures.",
+      "interpretation_incomplete": "The model's answer was cut off. Try again, or with fewer measures.",
       "interpretation_failed": "The model returned no usable answer. Try again later.",
       "interpretation_daily_cap": "The server has used up today's interpretations. Try again tomorrow.",
       "interpretation_fallback_unavailable": "The model declined, and the fallback model could not run right now. Try again later.",
       "interpretation_rate_limited": "This session has reached its limit of interpretations ({limit}). Try again later.",
       "interpretation_limits_unavailable": "The server cannot count interpretations right now. Try again later.",
-      "interpretation_too_large": "This analysis is too large to interpret: at most {measures} measures, {factors} factors and measure names of {name_length} characters can be sent. Exclude measures or choose fewer factors.",
-      "too_many_measures_for_analysis": "{n} measures are more than the {max} the server analyses at once. Exclude measures in the table of step 3.",
+      "interpretation_too_large": "This analysis is too large to interpret. At most {measures} measures, {factors} factors and measure names of {name_length} characters can be sent. Exclude measures or choose fewer factors.",
+      "too_many_measures_for_analysis": "{n} measures are too many for one analysis: the server takes at most {max}. Exclude measures in the table of step 3.",
       "superseded": "A newer analysis of this dataset, for example in another tab, replaced this one. Change a setting to run it again.",
-      "unknown_miner": "The dataset has no rows of the miner {miner}.",
+      "unknown_miner": "The dataset has no rows for the miner {miner}.",
       "factor_names_too_many": "{names} factor names for {factors} factors.",
       "dataset_not_ready": "The dataset is not ready ({status}).",
       "too_few_measures_for_map": "At least {min} measures are needed for a correlation map; {left} are left."
     },
     "warnings": {
       "bartlett_not_significant": "Bartlett's test is not significant (p = {p} ≥ {alpha}); the measures may be uncorrelated.",
-      "singular": "The correlation matrix is singular; these measures are linearly dependent: {groups}. Results rely on clamped eigenvalues and pseudo-inverses; consider excluding one measure of each group.",
+      "singular": "The correlation matrix is singular. These measures are linearly dependent: {groups}. The results rely on clamped eigenvalues and pseudo-inverses. Consider excluding one measure from each group.",
       "kmo_low": "The overall KMO {overall} is below {threshold}; a factor analysis is not recommended.",
       "small_sample": "{n} observations for {measures} measures; at least 5 per measure ({recommended}) are recommended.",
-      "not_identified": "{factors} factors for {measures} measures exceed the Ledermann bound; the solution is not identified and the loadings are not unique. Use fewer factors.",
+      "not_identified": "{factors} factors for {measures} measures exceed the Ledermann bound. The solution is not identified and the loadings are not unique. Use fewer factors.",
       "fit_not_converged": "The factor fit did not converge: {message}",
       "single_factor_no_rotation": "No rotation is applied to a single factor.",
       "heywood": "Possible Heywood case: communality close to 1 for {measures}."
     },
     "interpretation": {
-      "intro": "Claude reads the loadings together with the definitions of the measures and proposes a name and a short interpretation for each factor. Sent to Anthropic are the measure (column) names, their catalog definitions and aggregated results such as loadings and test statistics; measure values, row labels and file names are not sent. Each request costs money, so it runs only when you ask for it.",
+      "intro": "Claude reads the loadings together with the definitions of the measures and proposes a name and a short interpretation for each factor. Sent to Anthropic are the measure (column) names, their catalog definitions and aggregated results such as loadings and test statistics. Measure values, row labels and file names are not sent. Each request costs money, so it runs only when you ask for it.",
       "sent_label": "What is sent to Anthropic",
       "button": "Interpret factors",
       "again": "Interpret again",
@@ -1124,7 +1124,7 @@
       "overall": "Overall",
       "caveats": "Caveats",
       "footer": "Automatically generated by {model} (Anthropic). Check against the loadings.",
-      "stale": "The settings or the language changed since this interpretation; it may not fit the results above.",
+      "stale": "The settings or the language changed since this interpretation. It may not fit the results above.",
       "failed": "The interpretation failed.",
       "stale_again": "Interpret again to update it.",
       "ready": "The interpretation of {n} factor is ready.",
@@ -1158,7 +1158,7 @@
       },
       "aria": "Settings of the analysis",
       "chip_title": "Go to this setting",
-      "chip_changed_title": "Differs from the tool standard; go to this setting",
+      "chip_changed_title": "Differs from the tool standard. Go to this setting.",
       "changed": "differs from the standard",
       "reset": "Reset to standard",
       "reset_title": "Back to the standard settings of the tool",
@@ -1175,8 +1175,8 @@
       "chip_match": "Numbers = ComFy report",
       "chip_differs": "Differs from ComFy report",
       "title": "Comparison with the published report",
-      "summary_match": "Every compared number equals the report to {tolerance}, above 1 relative to the number.",
-      "summary_differs": "Numbers that differ from the report by more than {tolerance} (above 1 relative to the number): {n}.",
+      "summary_match": "Every compared number matches the report to within {tolerance}. For values above 1 in magnitude, the tolerance is {tolerance} times the value.",
+      "summary_differs": "Numbers that differ from the report by more than {tolerance} (for values above 1 in magnitude, by more than {tolerance} times the value): {n}.",
       "compared": "Compared",
       "what": {
         "bartlett": "Bartlett's test",
@@ -1210,21 +1210,21 @@
     "paper_notes": {
       "tables": {
         "matches": "The paper prints these numbers, rounded, in {tables}.",
-        "msa_only": "{tables} of the paper prints only the MSA values, and its text Bartlett's p-value and the overall MSA; the paper does not describe the factor analysis and refers to the report in the ComFy repository.",
-        "extra_dup": "{tables} of the paper also use dup without τ, which this dataset does not have. Bartlett's chi-square ({chi_paper} in Tab. 7, {chi_report} here), the KMO ({kmo_paper} and {kmo_report}), the MSA of each measure and the loadings (by up to {loading_gap}) therefore differ; the groups of Tab. 9 stay the same.",
+        "msa_only": "{tables} of the paper prints only the MSA values. Its text gives Bartlett's p-value and the overall MSA. The paper does not describe the factor analysis; it refers to the report in the ComFy repository.",
+        "extra_dup": "{tables} of the paper also use dup without τ, which this dataset does not have. So these differ: Bartlett's chi-square ({chi_paper} in Tab. 7, {chi_report} here), the KMO ({kmo_paper} and {kmo_report}), the MSA of each measure and the loadings (by up to {loading_gap}). The groups of Tab. 9 stay the same.",
         "other_data": "Tab. 14–16 of the paper are based on other data than this dataset.",
-        "not_in_paper": "The paper does not analyse this miner; the numbers are those of the report in the repository."
+        "not_in_paper": "The paper does not analyse this miner. The numbers are those of the report in the repository."
       },
       "rounding": "One value is printed a hundredth lower than rounding gives: the MSA of {measure}, {printed} in the paper and {report} in the report.",
       "source_report": "{source}, as the report in the ComFy repository applies them; the paper does not describe a factor analysis of this dataset",
       "rules": {
-        "alpha_multi": "With the paper settings this rule also puts Connector Heterogeneity (CH) in factor 2; Tab. 6 of the paper lists it in dimension 4 only.",
-        "inductive_multi": "With the paper settings this rule also puts Average connector degree (acd) in factor 2; Tab. 12 of the paper lists it in dimensions 1 and 3 only.",
-        "alpha_hair": "With the paper settings this rule leaves out Connector Mismatch (MM, h² below {h2_hair}) and the cross-loaded Connector Heterogeneity (CH), so factor 4 stays empty; the Alpha row of Tab. 17 of the paper keeps both."
+        "alpha_multi": "With the paper settings this rule also puts Connector Heterogeneity (CH) in factor 2. Tab. 6 of the paper lists it in dimension 4 only.",
+        "inductive_multi": "With the paper settings this rule also puts Average connector degree (acd) in factor 2. Tab. 12 of the paper lists it in dimensions 1 and 3 only.",
+        "alpha_hair": "With the paper settings this rule leaves out Connector Mismatch (MM, h² below {h2_hair}) and the cross-loaded Connector Heterogeneity (CH), so factor 4 stays empty. The Alpha row of Tab. 17 of the paper keeps both."
       },
       "datasets": {
         "directly_follows": "Tab. 7–8 of the paper also use dup without τ.",
-        "hybrid_ilp": "Not deterministic; the data differ from Tab. 14–16.",
+        "hybrid_ilp": "Not deterministic. The data differ from Tab. 14–16.",
         "heuristics": "Tab. 13 of the paper prints only the MSA values: 4 measures are left after the filter. The report in the ComFy repository fits 4 factors to them, the tool at most 3.",
         "alpha_plus": "Only in the repository, not in the paper.",
         "alpha_dollar": "Values identical to the Alpha miner."
@@ -1236,7 +1236,7 @@
       "copied": "Link copied",
       "own_data": "Links work for bundled datasets only; your own data stays in your session.",
       "fallback_title": "Link to this analysis",
-      "fallback_hint": "The browser did not allow copying; copy the link from the field.",
+      "fallback_hint": "The browser did not allow copying. Copy the link from the field.",
       "field_label": "Link",
       "opening": "Opening the linked analysis…",
       "opened": "Opened the linked analysis.",
@@ -1254,7 +1254,7 @@
       "scenario": {
         "if_inductive": {
           "title": "Important Factors: Inductive miner",
-          "text": "With the paper settings: 4 factors and multiple membership, checked against the ComFy report. The numbers are those of Tab. 10–11, the groups those of Tab. 12 with one assignment more (Average connector degree also in factor 2).",
+          "text": "With the paper settings: 4 factors and multiple membership, checked against the ComFy report. The numbers match Tab. 10–11. The groups match Tab. 12, with one extra assignment (Average connector degree also in factor 2).",
           "short": "4 factors and multiple membership, checked against the ComFy report."
         },
         "log_standard": {
@@ -1269,12 +1269,12 @@
         },
         "if_k4_k6": {
           "title": "Important Factors: 4 against 6 factors",
-          "text": "The Inductive miner with the 4 factors of the paper beside 6, under multiple membership. Here MM (loading 0.50, communality 0.33) forms a fifth dimension; section 6 of the paper leaves MM out because of this communality and leaves dimensions 5 and 6 empty.",
+          "text": "The Inductive miner with the paper's 4 factors, next to 6 factors, under multiple membership. Here MM (loading 0.50, communality 0.33) forms a fifth dimension. Section 6 of the paper leaves MM out because of this communality and leaves dimensions 5 and 6 empty.",
           "short": "The Inductive miner with 4 and with 6 factors, as in section 6."
         }
       },
       "example_csv": "Example CSV",
-      "example_csv_hint": "120 synthetic observations of 8 measures, in the format of an own upload."
+      "example_csv_hint": "120 synthetic observations of 8 measures, in the same format as your own uploads."
     },
     "rail_summary": {
       "removed": "{n} removed",
@@ -1323,11 +1323,11 @@
       "export_loadings_csv": "Loadings (CSV)",
       "export_loadings_latex": "Loadings (LaTeX)",
       "export_methods": "Copy methods text",
-      "export_methods_hint": "A short paragraph with LaTeX citation keys, from the settings and results on screen",
+      "export_methods_hint": "A short paragraph with LaTeX citation keys, generated from the settings and results on screen",
       "export_bibtex": "Download BibTeX",
-      "export_bibtex_hint": "The entries of the keys the methods text cites",
+      "export_bibtex_hint": "The BibTeX entries for the keys cited in the methods text",
       "methods_copied": "Methods text copied",
-      "methods_saved": "The browser did not allow copying; the methods text was saved as methods.tex.",
+      "methods_saved": "The browser did not allow copying. The methods text was saved as methods.tex.",
       "export_dataset": "Dataset (CSV)",
       "export_dataset_hint": "The cleaned matrix",
       "wait_analysis": "The analysis is still running.",
@@ -1366,7 +1366,7 @@
       "status_dependent_short": "dependent",
       "show_other": "Show",
       "hide_other": "Hide",
-      "dependent_with": "Linearly dependent with {measures}. Excluding one measure of the group resolves it.",
+      "dependent_with": "Linearly dependent on {measures}. Excluding one measure of the group fixes this.",
       "status_below": "below {threshold}",
       "none_match": "No measure matches the search.",
       "status_miner": "no variance for this miner",
@@ -1386,7 +1386,7 @@
     },
     "miners": {
       "label": "Miners",
-      "help": "The dataset has a net per log and miner. Analyse all of them together, or the nets of one miner as Important Factors does. A miner needs more observations than measures; below {per} per measure the analysis warns. A measure without variance within a miner is left out for that miner only.",
+      "help": "The dataset has one net per log and miner. Analyse all nets together, or only those of one miner, as Important Factors does. A miner needs more observations than measures. Below {per} per measure, the analysis warns. A measure without variance within a miner is left out for that miner only.",
       "together": "All miners together",
       "size": "n = {n} · {p} measures",
       "blocked": "No more observations than measures",
@@ -1395,15 +1395,15 @@
       "hint_together": "All {miners} miners together: the differences between the miners mix into the dimensions, and each log counts once per miner.",
       "hint_one": "Only the nets of the {miner}: the dimensions of this miner alone, from {n} observations.",
       "compare": "Compare the miners",
-      "compare_more": "Opens the factor structures side by side, one column per miner that can be analysed, with the settings saved with the dataset.",
+      "compare_more": "Opens the factor structures side by side, one column per miner that can be analysed. The settings saved with the dataset apply.",
       "compare_none": "Fewer than two miners have more observations than measures."
     },
     "names": {
-      "edit_more": "Press to name the factor: Enter keeps the name, Esc leaves it as it was, at most {max} characters. An empty name gives the factor back its number.",
+      "edit_more": "Press to name the factor. Enter keeps the name, Esc leaves it as it was. At most {max} characters. An empty name gives the factor back its number.",
       "field": "Name of factor {i}",
-      "cleared": "Factor names cleared: they named the factors of another factor count, rotation or rule.",
+      "cleared": "Factor names cleared. They belonged to a different factor count, rotation or rule.",
       "suggested": "Use the suggested names",
-      "suggested_more": "Takes over the names the interpretation suggests for this solution; each stays yours to change.",
+      "suggested_more": "Takes over the names the interpretation suggests for this solution. You can still change each one.",
       "suggested_done": "Suggested names taken over."
     },
     "pin": {
@@ -1419,13 +1419,13 @@
     },
     "correlations": {
       "heading": "Correlation map",
-      "help": "The correlation of every pair of measures, before the MSA filter. Slate cells are negative correlations, the other coloured cells positive ones; the stronger the colour, the larger |r|. Outlined pairs have |r| ≥ {limit}: such measures say almost the same and make the correlation matrix nearly singular. Measures you excluded are left out.",
+      "help": "Correlation of every pair of measures, before the MSA filter. Slate cells are negative, the other coloured cells positive. The stronger the colour, the larger |r|. Outlined pairs have |r| ≥ {limit}. Such measures say almost the same and make the correlation matrix nearly singular. Measures you excluded are left out.",
       "order_label": "Order",
       "order_factor": "By factor",
       "order_cluster": "Clustered",
       "order_factor_reason": "The factor analysis is not ready yet.",
-      "order_more": "By factor puts the measures of each dimension of the analysis on screen together, strongest loading first, and the measures without a dimension last. Clustered orders them by how closely they correlate (average linkage on 1 − |r|), whatever the analysis makes of them.",
-      "region": "Correlation map of {n} measures. Move between the pairs with the arrow keys; Escape leaves the pair.",
+      "order_more": "By factor puts the measures of each dimension together, strongest loading first, and the measures without a dimension last. Clustered orders them by how closely they correlate (average linkage on 1 − |r|), regardless of the analysis.",
+      "region": "Correlation map of {n} measures. Use the arrow keys to move between pairs. Escape leaves the pair.",
       "pair": "{a} × {b}: r = {r}",
       "hint": "Point at a cell or move through the map with the arrow keys to read a pair. The table below has every value.",
       "legend_aria": "Colour scale from −1 in slate over 0 to +1 in blue",
@@ -1456,9 +1456,9 @@
       "source_label": "Source",
       "source_commit": "{tool}, commit {commit}",
       "source_open": "Open the source",
-      "source_open_more": "The file with this function on GitHub, at the commit this tool uses, in a new tab.",
+      "source_open_more": "Opens the file with this function on GitHub in a new tab, at the commit this tool uses.",
       "source_new_tab": "opens in a new tab",
-      "description_note": "In the words of this tool; the definition is the function of ComFy.",
+      "description_note": "Described in the words of this tool. The definition is the function in ComFy.",
       "values": "Distribution",
       "hist_aria": "Histogram of {measure}: {bins} bins from {min} to {max}; the most values, {top}, lie between {from} and {to}",
       "hist_none": "No values to draw.",
@@ -1500,7 +1500,7 @@
       "included_done": "{measure} is included."
     },
     "warnings_tip": {
-      "heywood": "These measures are explained almost completely by the factors (uniqueness of at most 0.005). That is the smallest value the computation allows, and often a sign that the number of factors does not fit or that two measures measure almost the same thing. The grouping and above all the loadings of these measures are therefore uncertain."
+      "heywood": "These measures are almost completely explained by the factors (uniqueness of at most 0.005). That is the smallest value the computation allows. It often means that the number of factors does not fit or that two measures measure almost the same thing. The grouping, and above all the loadings, of these measures are therefore uncertain."
     }
   },
   "inspect": {
@@ -1512,7 +1512,7 @@
     "section_settings": "Miners and measures",
     "section_settings_hint": "Which miners discover the nets, and which measures are computed on them.",
     "section_run": "Run",
-    "section_run_hint": "Starts in the background; the result appears below and the run is listed in the History.",
+    "section_run_hint": "Starts in the background. The result appears below and the run is listed in the History.",
     "about": "Where the measures come from",
     "about_hint": "Source and citation",
     "about_menu": "About {name}",
@@ -1549,12 +1549,12 @@
     "rate_limited": "Too many requests. Wait a moment and try again.",
     "feedback_kind": "Choose what your message is about.",
     "feedback_empty": "Write something in the message first.",
-    "feedback_too_long": "The message is too long; at most {max} characters are allowed.",
-    "feedback_contact_too_long": "The contact is too long; at most {max} characters are allowed.",
+    "feedback_too_long": "The message is too long. At most {max} characters are allowed.",
+    "feedback_contact_too_long": "The contact is too long. At most {max} characters are allowed.",
     "feedback_rate_limited": "You have just sent several messages. Try again in an hour.",
-    "job_quota": "You already have {active} runs queued or running, and this would add {requested}; at most {limit} are allowed. Wait for them to finish or abort some in the History.",
+    "job_quota": "You already have {active} runs queued or running, and this would add {requested}. At most {limit} are allowed. Wait for them to finish or abort some in the History.",
     "dataset_jobs_busy": "The server is already computing {active} datasets, the most it runs at once. Try again in a few minutes.",
-    "prom_unavailable": "ProM, which runs the miners, cannot be reached right now, so no Petri net could be discovered. Try again in a few minutes; if it stays like this, the prom4py service has to be started on the server.",
+    "prom_unavailable": "ProM, which runs the miners, cannot be reached right now, so no Petri net could be discovered. Try again in a few minutes. If that does not help, the prom4py service has to be started on the server.",
     "empty_file": "The file is empty. Choose a file with content.",
     "csv_unparseable": "The CSV file cannot be read. Check that it has a header row and uses a comma, semicolon or tab as separator.",
     "csv_too_few_rows": "The CSV file has too few data rows ({rows} of at least {minimum}). Add rows or choose other data.",
@@ -1567,8 +1567,8 @@
     "gzip_invalid": "“{file}” is not a valid gzip file. Unpack it or pack it again.",
     "too_many_files": "You can upload at most {limit} files at once.",
     "one_csv_file": "Upload exactly one CSV file.",
-    "no_observation": "No values could be computed from any input. Check that the files can be read and have enough traces; the details name the first error.",
-    "dataset_too_few_measures": "Only {have} measures gave values; at least {need} are needed. Choose more measures or feature groups.",
+    "no_observation": "No values could be computed from any input. Check that the files can be read and have enough traces. The details name the first error.",
+    "dataset_too_few_measures": "Only {have} measures gave values, but at least {need} are needed. Choose more measures or feature groups.",
     "compute_failed": "The dataset could not be computed. The details name the technical cause.",
     "job_timeout": "The computation did not finish in time, probably because the server restarted. Start it again.",
     "job_deleted": "The run that computed this dataset was deleted. Choose other data or compute it again.",
@@ -1577,7 +1577,7 @@
   "print": {
     "heading": "Print view",
     "title": "Factor analysis of “{name}”",
-    "invalid": "This address names no analysis. Open the print view from the download menu of an analysis.",
+    "invalid": "This address does not point to an analysis. Open the print view from the download menu of an analysis.",
     "failed": "The analysis could not be loaded: {error}",
     "loading": "Loading the analysis…",
     "hint": "Print the page or save it as PDF with the print dialog of the browser.",
@@ -1589,7 +1589,7 @@
     "factors": "{n} factor, {rotation}; it explains {pct} of the variance.",
     "factors_plural": "{n} factors, {rotation}; together they explain {pct} of the variance.",
     "criteria": "Kaiser criterion: {kaiser}; parallel analysis ({percentile}th percentile, seed {seed}): {parallel}.",
-    "interpretation_note": "Names and summaries suggested by {model} on request; the analysis does not depend on them.",
+    "interpretation_note": "Names and summaries suggested by {model} on request. The analysis does not depend on them.",
     "codes_heading": "Short codes",
     "match": "The numbers equal those of {source}.",
     "differs": "{n} numbers differ from those of {source}.",
@@ -1612,50 +1612,50 @@
     },
     "steps": {
       "title": "The six steps",
-      "p1": "Model complexity analyses the measures of ComFy on Petri nets, Log complexity the measures of feeed on event logs. Both walk through the same steps: Data, Dataset, Suitability, Factors, Loadings and an optional Interpretation. One step is on screen at a time; the list of steps shows what each step found.",
+      "p1": "Model complexity analyses the ComFy measures of Petri nets, Log complexity the feeed measures of event logs. Both go through the same steps: Data, Dataset, Suitability, Factors, Loadings and an optional Interpretation. Only one step is shown at a time. The list of steps shows what each step found.",
       "p2": "The settings row above the steps sums up every choice, marks those that differ from the tool standard and leads to each control. Every change of a setting runs the analysis again.",
-      "p3": "The tabs at the top are the same on every page: the analyses (the two of complexity and Single log), and set apart on the right the tools Compare and History. The guide and the settings are in the header and lead back to the tab you came from."
+      "p3": "The tabs at the top are the same on every page: the analyses (Model complexity, Log complexity and Single log) and, set apart on the right, the tools Compare and History. The guide and the settings are in the header and lead back to the tab you came from."
     },
     "bundled": {
       "title": "Analyse a published dataset",
       "items": {
         "open": "Open Model complexity or Log complexity.",
         "choose": "In Data, choose a dataset of a paper, for example Important Factors: Inductive miner.",
-        "settings": "Choose Paper settings to analyse it as the paper did, or Tool standard for the defaults of ComFy, then Load dataset. The data step stays on screen with what was loaded and the way on."
+        "settings": "Choose Paper settings to analyse it as the paper did, or Tool standard for the defaults of ComFy, then Load dataset. The data step stays on screen and shows what was loaded and how to continue."
       },
       "terms": {
         "open": "Open a tab",
         "choose": "Choose a dataset",
         "settings": "Choose settings, load"
       },
-      "p1": "With the paper settings, a chip in the settings row says whether the numbers equal the published ComFy report and how the tables of the paper relate to it. Get started, the first cards of the bundled datasets in the data step, loads such an analysis in one click; View result then opens its loadings."
+      "p1": "With the paper settings, a chip in the settings row says whether the numbers equal the published ComFy report and how the paper's tables relate to it. Get started, the first cards of the bundled datasets in the data step, loads such an analysis in one click. View result then opens its loadings."
     },
     "own": {
       "title": "Analyse your own data",
       "p1": "In Data, choose a source:",
       "items": {
-        "logs": "Event logs (.xes, .xes.gz): for model measures, every log is mined with every miner you choose and every net is measured; for log measures, feeed computes the feature groups you choose. Unfold a group to choose single measures of it, so that a few logs can carry a few measures; below the choice the data step says how many observations and measures that gives, and when there are too few for a factor analysis.",
+        "logs": "Event logs (.xes, .xes.gz): for model measures, every log is mined with every miner you choose and every net is measured. For log measures, feeed computes the feature groups you choose. Unfold a group to choose single measures from it, which helps when you have only a few logs and want to keep the number of measures small. Below the choice, the data step shows how many observations and measures that gives, and says when there are too few for a factor analysis.",
         "nets": "Petri nets (.pnml): every net is measured.",
         "csv": "A CSV file: one row per observation, one column per measure; a first column of names becomes the row labels."
       },
-      "p2": "Logs and nets are computed in a job. The tab History says what runs (“1 running · 37%”) and has a red dot for a failed run you have not seen yet; a dataset that has been computed raises a notice “… is ready · Open” wherever you are. My datasets, a source of the data step, reopens a dataset of the session with the settings of its last analysis.",
-      "p3": "A dataset of nets from several miners has a row per log and miner. The dataset step offers all miners together or one miner at a time, as Important Factors analyses them: together, the differences between the miners mix into the dimensions and each log counts once per miner; one miner has fewer observations. A miner with no more observations than measures cannot be analysed; below five per measure the analysis warns. Compare the miners there opens their factor structures side by side.",
-      "p4": "A row of a dataset computed from logs has a View this log link in the dataset step. It opens the page Inspect a single log with that log and, for a row of nets, only the miner of the row chosen, as long as the log is among the ten newest uploads of the session; the page says when it is not.",
-      "p5": "History lists everything of the session, newest first: every dataset of both tabs with the settings of its last analysis, and every run of a single log. A row opens where it belongs, can be aborted while it runs, and deleted; deleting a dataset deletes the run that computed it, and the other way round."
+      "p2": "Logs and nets are computed in a run. The tab History shows what is running (“1 running · 37%”) and has a red dot for a failed run you have not seen yet. When a dataset is finished, a notice “… is ready · Open” appears wherever you are. My datasets, a source of the data step, reopens a dataset of the session with the settings of its last analysis.",
+      "p3": "A dataset of nets from several miners has one row per log and miner. The dataset step offers all miners together or one miner at a time, as Important Factors does. Together, the differences between the miners mix into the dimensions and each log counts once per miner. A single miner gives fewer observations. A miner with no more observations than measures cannot be analysed, and below five observations per measure the analysis warns. Compare the miners there opens their factor structures side by side.",
+      "p4": "In the dataset step, each row of a dataset computed from logs has a View this log link. It opens the page Inspect a single log with that log, and for a row of nets with only the miner of that row chosen. This works as long as the log is among the ten newest uploads of the session. Otherwise the page says so.",
+      "p5": "History lists everything from the session, newest first: every dataset of both tabs with the settings of its last analysis, and every run of a single log. A row opens where it belongs, can be aborted while it runs, and can be deleted. Deleting a dataset also deletes the run that computed it, and the other way round."
     },
     "results": {
       "title": "Read the results",
       "items": {
-        "dataset": "Dataset: what cleaning left out and why, the descriptive statistics of every measure as ComFy's report prints them, and for a dataset computed from logs or nets the run times and input sizes. Both tables are folded until opened.",
-        "suitability": "Suitability: Bartlett's test, the overall KMO and the MSA of every measure. The MSA filter removes measures in rounds, as ComFy does; any measure can be excluded by hand, all of them at once, or those a search finds. Where the analysis cannot run for too few observations, its message says what an observation is and leads to the measures or back to the data.",
+        "dataset": "Dataset: what cleaning left out and why, the descriptive statistics of every measure as ComFy's report prints them, and for a dataset computed from logs or nets the run times and input sizes. Both tables start folded.",
+        "suitability": "Suitability: Bartlett's test, the overall KMO and the MSA of every measure. The MSA filter removes measures in rounds, as ComFy does. You can also exclude measures by hand: one at a time, all together, or those a search finds. If there are too few observations for the analysis, its message says what an observation is and leads to the measures or back to the data.",
         "factors": "Factors: the scree plot with the Kaiser line and parallel analysis, the count each criterion suggests, and the rotation.",
-        "loadings": "Loadings: the rule that assigns measures to factors and the two thresholds in one row above the result, each rule explained in its tooltip; then a matrix (shaded by |loading|, faded where a loading does not count) or a card per dimension. Cross-loadings are ringed.",
+        "loadings": "Loadings: above the result, one row holds the rule that assigns measures to factors and the two thresholds; each rule is explained in its tooltip. Below is a matrix (shaded by |loading|, faded where a loading does not count) or a card per dimension. Cross-loadings are ringed.",
         "stability": "Stability: Check stability under the loadings draws bootstrap samples of the rows (100, 200 or 500), refits each with the same measures, factor count and rotation, and shows for every measure the share of samples in which it keeps its factors. The seed is fixed, so a run can be repeated.",
         "short_set": "Short set: one measure per dimension, the one assigned to it with the highest purity, for reporting a few measures that do not repeat each other. Copy the short set puts them on the clipboard; a representative with a low stability should be read with care.",
-        "interpretation": "Interpretation: optional, names for the factors, suggested by a language model only on request. It decides nothing. It needs an API key on the server; precomputed answers exist only once scripts/precompute_interpretations.py has been run. Without a key and without one stored for the settings, the list of steps says that it is not available here.",
-        "names": "Names: press the title of a factor, on its card or at the head of its column, to name it; Enter keeps the name, Esc leaves it. The names appear in the loadings, the factor correlations, the list of steps and every download. They belong to the factor count, the rotation and the rule: changing one of them clears them, and the toast brings them back. With an interpretation, Use the suggested names takes its names over.",
-        "correlations": "Correlation map: in Suitability, folded until opened. One cell for each pair of measures, slate for a negative correlation and blue for a positive one, a pair with |r| ≥ 0.95 outlined, ordered by factor or clustered. Point at a cell or use the arrow keys to read the pair and its r; a table under the map has every value. The image icon downloads it like the other figures.",
-        "sheet": "Fact sheet: press, or Enter on, the name of a measure wherever it stands to open a panel beside the page. It shows what the measure is (the description of the tool and the function of ComFy or feeed behind it, with a link to its source), a histogram of its values, its MSA and the round of the filter that removed it, its communality and uniqueness, its loadings, the five measures it correlates with most, and a button to exclude or include it. The left and right arrow keys page through the list you came from, Esc closes the panel and the focus goes back to the name."
+        "interpretation": "Interpretation: optional, names for the factors, suggested by a language model only on request. It decides nothing. It needs an API key on the server. Precomputed answers exist only once scripts/precompute_interpretations.py has been run. Without a key and without a stored answer for the settings, the list of steps says that it is not available here.",
+        "names": "Names: press the title of a factor, on its card or at the head of its column, to name it. Enter keeps the name, Esc cancels. The names appear in the loadings, the factor correlations, the list of steps and every download. They belong to the factor count, the rotation and the rule: changing one of them clears the names, and the toast brings them back. With an interpretation, Use the suggested names takes over its names.",
+        "correlations": "Correlation map: in Suitability, folded until opened. It has one cell per pair of measures: slate for a negative correlation, blue for a positive one, and an outline where |r| ≥ 0.95. The order is by factor or clustered. Point at a cell or use the arrow keys to read the pair and its r. A table under the map has every value. The image icon downloads it like the other figures.",
+        "sheet": "Fact sheet: press the name of a measure, or Enter on it, wherever it appears to open a panel beside the page. The panel shows what the measure is (the description of the tool and the function of ComFy or feeed behind it, with a link to its source), a histogram of its values, its MSA and the filter round that removed it, its communality and uniqueness, its loadings, the five measures it correlates with most, and a button to exclude or include it. The left and right arrow keys page through the list you came from. Esc closes the panel and the focus goes back to the name."
       }
     },
     "export": {
@@ -1663,33 +1663,33 @@
       "p1": "The download menu in the page header has:",
       "items": {
         "zip": "Analysis (ZIP): the result, the matrix, the tables, report.tex, the figures, correlations.csv, the descriptive statistics, the run times, and a manifest with settings, versions and provenance.",
-        "report": "LaTeX report: report.tex built like the report of ComFy, with the dimensions and the settings; compile it with latexmk -pdf, or run pdflatex twice, since long tables settle their widths in the second run.",
+        "report": "LaTeX report: report.tex built like the report of ComFy, with the dimensions and the settings. Compile it with latexmk -pdf, or run pdflatex twice, because the widths of long tables only settle in the second run.",
         "print": "Print view: the whole analysis on A4 pages, to print or save as PDF.",
         "tables": "The loadings as CSV or LaTeX, and the cleaned dataset as CSV."
       },
       "terms": {
         "tables": "Tables"
       },
-      "p2": "The image icon at the scree plot, the loadings and the correlation map downloads the figure as SVG, whose text stays text, or as PNG with 300 dpi: always light, at the text width of a CEUR paper, with the labels in the language of the app.",
-      "p3": "The tag icon in the toolbar names the measures by the short codes of the papers, such as CNC or C_mag; the full name stays in the tooltip, and the figures, the report and the ZIP follow it.",
+      "p2": "The image icon at the scree plot, the loadings and the correlation map downloads the figure as SVG (text stays text) or as PNG at 300 dpi. Figures are always light, as wide as the text of a CEUR paper, and labelled in the language of the app.",
+      "p3": "The tag icon in the toolbar names the measures by the short codes of the papers, such as CNC or C_mag. The full name stays in the tooltip. Figures, report and ZIP follow the choice.",
       "p4": "The link icon copies a link to the analysis of a published dataset with its settings."
     },
     "compare": {
       "title": "Compare miners",
-      "p1": "Compare miners puts the factor structures of several published datasets side by side, like Tab. 17 of Important Factors: which measures form which dimension for which miner. It is the tool Compare, at the right of the tabs, and two cards of Get started open it. The datasets and the rule are on the left, the result on the right; the notes on a column are a count in its header and one folded list below the table.",
+      "p1": "Compare miners puts the factor structures of several published datasets side by side, like Tab. 17 of Important Factors: which measures form which dimension for which miner. It is the tool Compare, at the right of the tabs, and two cards of Get started open it too. The datasets and the rule are on the left, the result on the right. Notes on a column show as a count in its header and as one folded list below the table.",
       "items": {
-        "columns": "Datasets: choose 2 to 8 of the miners of Important Factors; each is analysed with the settings of its paper. The first four are those of Tab. 17. A link can also ask for a dataset with a factor count of its own, such as 4 against 6 factors (Get started).",
+        "columns": "Datasets: choose 2 to 8 of the miners of Important Factors; each is analysed with the settings of its paper. The first four are those of Tab. 17. A link can also request a dataset with its own factor count, such as 4 against 6 factors (Get started).",
         "rule": "Assignment rule: one rule for every dataset, “Without cross-loadings” as in Tab. 17 to begin with.",
-        "matrix": "By measure: a row per measure, grouped by dimension, and above them n, the measures after the MSA filter, the KMO, the factors, the rotation and the variance explained per dataset. A tinted cell is in the dimension of its row; a ring marks a cross-loading, a dashed outline a measure the MSA filter removed.",
+        "matrix": "By measure: one row per measure, grouped by dimension. Above them, each dataset shows n, the measures after the MSA filter, the KMO, the factors, the rotation and the variance explained. A tinted cell is in the dimension of its row; a ring marks a cross-loading, a dashed outline a measure the MSA filter removed.",
         "dimensions": "By dimension: a row per dataset with the measures of each dimension, laid out like Tab. 17.",
-        "pairs": "Pairs: a square of the measures, each cell saying in how many of the datasets that analysed both the two share a dimension. It does not depend on how the dimensions are numbered.",
+        "pairs": "Pairs: a square of the measures. Each cell says in how many of the datasets that analysed both measures the two share a dimension. The numbering of the dimensions does not matter.",
         "export": "The download menu has the matrix as CSV, the dimensions as a LaTeX table like Tab. 17, and both in a ZIP with a manifest.",
-        "own": "Your own data: Compare the miners in the dataset step puts one column per miner, Compare in My datasets one column per dataset, and the pin icon in the loadings keeps the solution on screen (dataset, miner, factor count, rotation, rule), so that, say, the same dataset with 4 and with 6 factors sits side by side. Such a column starts from the settings saved with its dataset and lives in this session."
+        "own": "Your own data: Compare the miners in the dataset step makes one column per miner, and Compare in My datasets one column per dataset. The pin icon in the loadings pins the current solution (dataset, miner, factor count, rotation, rule) as a column, so you can put, say, the same dataset with 4 and with 6 factors side by side. Such a column starts from the settings saved with its dataset and lasts for this session."
       },
       "terms": {
         "export": "Download"
       },
-      "p2": "The factors of every analysis are numbered by the analysis, so they are matched first: the first dataset keeps its numbers, and the factors of every further one go to the dimension with which they share the most measures; where two are equally good, the more alike loadings decide. Tab. 17 renumbered its dimensions by hand, so a number can differ from the paper's, and a match that rests on one shared measure is a guess: the tooltip of a cell in the dimension view names the measures it rests on. How the measures are grouped within a dataset does not depend on the numbers."
+      "p2": "Each analysis numbers its factors itself, so they are matched first. The first dataset keeps its numbers. The factors of every further dataset go to the dimension with which they share the most measures; where two are equally good, the more alike loadings decide. Tab. 17 renumbered its dimensions by hand, so a number can differ from the paper's. A match that rests on one shared measure is a guess: the tooltip of a cell in the dimension view names the measures it rests on. How the measures are grouped within a dataset does not depend on the numbers."
     }
   },
   "compare": {
@@ -1701,7 +1701,7 @@
     "wait_update": "The comparison is being updated.",
     "stale": "The table shows the previous selection; the update failed.",
     "computing": "Comparing…",
-    "link_invalid": "Part of the link could not be used: a comparison takes {min} to {max} datasets, published or of this session, and one of the three rules. The rest of it is shown, or Tab. 17.",
+    "link_invalid": "Part of the link could not be used. A comparison takes {min} to {max} datasets, published or from this session, and one of the three rules. Shown is the rest of the link, or Tab. 17.",
     "column_k": "{label}, k = {k}",
     "column_k_note": "{k} factors instead of the paper's",
     "result": "Factor structures",
@@ -1727,7 +1727,7 @@
     "group_dimension_plural": "Dimension {d} · {n} measures",
     "group_none": "In no dimension · {n} measure",
     "group_none_plural": "In no dimension · {n} measures",
-    "alignment_note": "D1, D2, … are the dimensions after matching: the first dataset keeps the numbers of its factors, and the factors of every further one are matched to them so that most of the measures they share get the same number. A number can differ from the paper's (Tab. 17 was renumbered by hand); how the measures are grouped within a dataset does not depend on it.",
+    "alignment_note": "D1, D2, … are the dimensions after matching. The first dataset keeps the numbers of its factors. The factors of every further dataset are matched to them so that most of the measures they share get the same number. A number can differ from the paper's, since Tab. 17 was renumbered by hand. How the measures are grouped within a dataset does not depend on the numbers.",
     "same_as": "the same loadings as {other}.",
     "codes_more": "Names the measures by the codes of the papers, such as CNC or dens, in the tables and the LaTeX table. The full name stays in the tooltip.",
     "link_more": "Copy a link that opens this comparison: the datasets and the rule",
@@ -1743,13 +1743,13 @@
     },
     "factor_named": "Factor {i} “{name}”",
     "help": {
-      "names": "The names you gave the factors of this solution of your own dataset, factor by factor; a factor without a name is left out. The dimensions are matched across the analyses, the names stay with each analysis.",
+      "names": "The names you gave the factors in this solution of your own dataset, one per factor. A factor without a name is left out. The dimensions are matched across the analyses; the names stay with their own analysis.",
       "columns": "Each tile is an analysis: a published dataset with the settings of its paper, or one of your datasets with the settings saved with it, pinned in the loadings step or chosen in My datasets. Choose {min} to {max}. The leftmost one keeps the numbers of its factors.",
       "result": "The dimensions of every dataset under the chosen rule. The factors of the datasets are matched so that most shared measures get the same number; where two matches are equally good, the more alike loadings decide.",
       "n": "Observations: the nets of the dataset, one per log.",
-      "measures": "The measures left after cleaning and the MSA filter, of those in the dataset.",
+      "measures": "The measures of the dataset that are left after cleaning and the MSA filter.",
       "kmo": "The overall measure of sampling adequacy (Kaiser-Meyer-Olkin) of the measures that are left.",
-      "factors": "The number of factors, as the settings of the column fix it: those of the paper, or those saved with your dataset or pinned with it.",
+      "factors": "The number of factors, as set by the column's settings: those of the paper, or those saved or pinned with your dataset.",
       "variance": "The share of the variance of the measures that the factors explain together."
     },
     "legend": {
@@ -1802,7 +1802,7 @@
       "compare_nothing_analysed": "None of the datasets could be analysed with these settings."
     },
     "pairs": {
-      "legend": "In how many of the datasets that analysed both, two measures are in the same dimension; the darker, the more. The numbering of the dimensions does not matter here.",
+      "legend": "The darker, the more often two measures share a dimension, counted over the datasets that analysed both. The numbering of the dimensions does not matter here.",
       "label": "Pairs of measures",
       "caption": "In how many datasets two measures share a dimension, under the rule {rule}: {columns}",
       "names": "{a} and {b}",
@@ -1854,7 +1854,7 @@
     "contact_placeholder": "E-mail or name",
     "technical": "Send technical details",
     "technical_topic": "Technical details",
-    "technical_info": "Only these go along: the version and commit of the tool, the page and step, the language, your browser and the code of the last error. Nothing from your datasets.",
+    "technical_info": "Only this is sent: the version and commit of the tool, the page and step, the language, your browser and the code of the last error. Nothing from your datasets.",
     "technical_version": "Version and commit",
     "technical_version_value": "added by the server",
     "technical_page": "Page",

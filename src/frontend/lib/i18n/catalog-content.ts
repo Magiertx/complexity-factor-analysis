@@ -63,7 +63,7 @@ const DE: CatalogContent = {
     "Maximum connector degree": "Größte Zahl der Kanten an einem Konnektor.",
     Sequentiality: "Anteil der Kanten zwischen zwei Knoten, die keine Konnektoren sind.",
     Depth: "Größte Schachtelungstiefe von Splits und Joins; braucht die Markierungen.",
-    Diameter: "Längster azyklischer Pfad von einer anfangs zu einer am Ende markierten Stelle.",
+    Diameter: "Längster azyklischer Pfad von einer Stelle der Anfangsmarkierung zu einer der Endmarkierung.",
     Cyclicity: "Anteil der Knoten, die auf einem Zyklus liegen.",
     "Coefficient of network connectivity": "Kanten je Knoten.",
     Density: "Kanten geteilt durch die größtmögliche Zahl der Kanten, 2·|T|·|P|.",
@@ -89,7 +89,7 @@ const DE: CatalogContent = {
       "feeed-Maße der 2.112 Trainingslogs der Process Discovery Contests 2020 bis 2025. Mit einem älteren feeed berechnet: simple_trace_diversity, distinct_activities_mean, distinct_activities_std, event_density und complexity_factor weichen von Datensätzen ab, die der Dienst berechnet.",
     "pdc-sample-logs": "Trainingslogs der Process Discovery Contests 2020, 2023, 2024 und 2025, je 1.000 Traces.",
     "pdc-sample-models":
-      "32 Netze, mit dem Inductive miner von pm4py bei Rauschschwellen von 0 bis 0,8 aus den vier Beispiel-Logs gefunden (samples/make_sample_models.py).",
+      "32 Netze, die der Inductive miner von pm4py aus den vier Beispiel-Logs bei Rauschschwellen von 0 bis 0,8 gefunden hat (samples/make_sample_models.py).",
   },
   labels: {
     "comfy-log-pdc-training-logs": "PDC-Trainingslogs 2020–2025",
