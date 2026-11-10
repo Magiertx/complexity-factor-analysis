@@ -41,16 +41,16 @@ def backend_environ(
     build: Mapping[str, str],
     *,
     shared_session: bool = True,
-    rate_limits: bool = True,
+    rate_limits: bool = False,
 ) -> dict[str, str]:
     """The backend's environment: ``base`` (the process's own) with the launcher's settings.
 
     ``settings`` (settings.env) and ``build`` (APP_VERSION and APP_COMMIT of build_info.json)
     fill in what the environment does not set itself. ``shared_session=False`` leaves out
     ``SHARED_SESSION_ID``, so that each browser has a session of its own, as on a server; the
-    end-to-end tests that compare two sessions need it. ``rate_limits=False`` switches the
-    request limits off (``RATE_LIMIT_DISABLED=1``), as the end-to-end job of the CI does: they
-    count per client address, and here every request comes from 127.0.0.1.
+    end-to-end tests that compare two sessions need it. ``rate_limits=False`` (the default, as on
+    the command line) switches the request limits off (``RATE_LIMIT_DISABLED=1``): they count per
+    client address, and here every request comes from 127.0.0.1.
     """
     env = {k: v for k, v in base.items() if k not in REMOVED}
     for source in (settings, build):

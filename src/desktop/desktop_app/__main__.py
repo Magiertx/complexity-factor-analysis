@@ -17,6 +17,6 @@ if __name__ == "__main__":
     if sys.stderr is None:
         sys.stderr = open(os.devnull, "w", encoding="utf-8")
 
-    from desktop_app.main import main
+    from desktop_app.main import finish, main
 
-    sys.exit(main())
+    sys.exit(finish(main()))

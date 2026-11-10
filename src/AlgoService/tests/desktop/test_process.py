@@ -141,6 +141,7 @@ def test_start_hand_over_quit_and_restart(tmp_path, export_dir):
     log = (data / "logs" / "app.log").read_text(encoding="utf-8")
     assert "is running at" in log and "has stopped" in log
     assert token not in log and token not in output.read_text(errors="replace")
+    assert identity["shared_session_id"] not in log and identity["session_secret_key"] not in log
 
     # A restart keeps the session and its key.
     third = _launch(data, port_file, export_dir, output)
@@ -153,3 +154,85 @@ def test_start_hand_over_quit_and_restart(tmp_path, export_dir):
     finally:
         assert _quit(third) == 0
     assert json.loads((data / "identity.json").read_text()) == identity
+
+
+def _api(port: int, token: str, method: str, path: str, body=None, form=None):
+    import urllib.parse
+
+    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=60)
+    headers = {"Authorization": f"Bearer {token}"}
+    data = None
+    if form is not None:
+        data = urllib.parse.urlencode(form)
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+    elif body is not None:
+        data = json.dumps(body)
+        headers["Content-Type"] = "application/json"
+    connection.request(method, "/api" + path, body=data, headers=headers)
+    response = connection.getresponse()
+    raw = response.read()
+    connection.close()
+    return response.status, json.loads(raw) if raw else None
+
+
+def test_quitting_with_a_running_job_keeps_the_lock_until_the_process_is_gone(tmp_path, export_dir):
+    """The job threads cannot be killed. The instance lock must stay held until the process has
+    really ended, so no second instance runs on the database meanwhile, and the job must end as
+    interrupted (its writes stop, the shutdown marks it)."""
+    from desktop_app.instance import InstanceLock
+
+    data, output = tmp_path / "data", tmp_path / "output.txt"
+    port_file = tmp_path / "port"
+    process = _launch(data, port_file, export_dir, output)
+    try:
+        port = _wait_for_port(process, port_file, output)
+        token = json.loads((data / "instance.json").read_text())["token"]
+        status, dataset = _api(
+            port, token, "POST", "/factor-analysis/datasets",
+            form={"kind": "log", "source": "bundled", "bundled_id": "comfy-log-pdc-training-logs"},
+        )
+        assert status == 200, dataset
+        status, job = _api(
+            port, token, "POST", f"/factor-analysis/datasets/{dataset['dataset_id']}/stability",
+            body={"samples": 500, "rotation": "oblimin"},
+        )
+        assert status == 200, job
+        deadline = time.monotonic() + 120
+        while time.monotonic() < deadline:
+            _, state = _api(port, token, "GET", f"/jobs/{job['job_id']}")
+            if state.get("status") == "running" and (state.get("percentage") or 0) > 0:
+                break
+            time.sleep(0.5)
+        else:
+            pytest.fail("the job did not start computing")
+
+        process.send_signal(signal.CTRL_BREAK_EVENT if os.name == "nt" else signal.SIGINT)
+        lock = InstanceLock(data / "instance.lock")
+        deadline = time.monotonic() + 90
+        held_while_stopping = 0
+        while process.poll() is None and time.monotonic() < deadline:
+            # While the process lives (its job threads too), nobody else may take the lock. It is
+            # released by the system at the moment the process ends, which poll() may report a
+            # moment later: then the process is gone within a second.
+            if lock.acquire():
+                lock.release()
+                process.wait(5)
+                break
+            held_while_stopping += 1
+            time.sleep(0.05)
+        assert process.poll() is not None, "the process did not end"
+        assert held_while_stopping > 0, "the lock was never seen held while the app was stopping"
+    finally:
+        if process.poll() is None:
+            process.kill()
+    assert process.returncode == 0, output.read_text(errors="replace")[-4000:]
+    assert lock.acquire(), "the lock is still held after the process ended"
+    lock.release()
+    with sqlite3.connect(data / "app.db") as db:
+        rows = db.execute("SELECT status, error, params_json FROM runs WHERE id = ?", (job["job_id"].replace("-", ""),)).fetchall()
+    assert len(rows) == 1
+    run_status, error, params = rows[0]
+    assert run_status == "failed" and "interrupted" in error and json.loads(params)["_error_code"] == "interrupted"
+    # Nothing writes to the log after the last line it says about the end.
+    log = (data / "logs" / "app.log").read_text(encoding="utf-8")
+    assert "has stopped" in log or "did not stop" in log

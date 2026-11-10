@@ -5,6 +5,8 @@
 2. Read or create the session key and id, read settings.env, pick the port.
 3. Set the backend's environment, migrate the database, import the backend.
 4. Serve API and pages on 127.0.0.1, open the browser, show the status window until Quit.
+5. Quit: stop the server, tell the running jobs to stop, and hold the instance lock until the
+   process has really ended (see :func:`_hold_until_exit`).
 """
 
 from __future__ import annotations
@@ -16,10 +18,11 @@ import secrets
 import signal
 import sys
 import threading
+import time
 import webbrowser
 from pathlib import Path
 
-from . import environment, instance, logs, paths, resources, state, ui
+from . import app, environment, instance, logs, paths, resources, state, ui
 from .pages import PageServer, register_mime_types
 from .state import LauncherError
 
@@ -29,6 +32,13 @@ logger = logging.getLogger("desktop")
 STARTUP_TIMEOUT_S = 120
 #: Longest a second start waits for the running instance, which may itself be starting.
 HANDOVER_TIMEOUT_S = 90
+#: Longest a quitting app waits for the threads of its running jobs, which cannot be killed but
+#: stop at their next check once the app is stopping (``job_runner.request_stop``).
+JOB_STOP_WAIT_S = 10
+
+#: The instance lock after ``_run``: it is never released by hand, the system does that when the
+#: process ends, so no second instance can start on the data before then. See :func:`finish`.
+_held: list[instance.InstanceLock] = []
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
@@ -62,10 +72,9 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         "--rate-limits",
         action="store_true",
         help="switch the request rate limits on, as on a server; here all requests share them, "
-        "since they count per address (the daily caps of Claude calls always apply)",
+        "since they count per address (off by default; the daily caps of Claude calls apply, "
+        "counted in memory and reset at every start)",
     )
-    # The default since the limits count per address, and one installation has one user.
-    parser.add_argument("--no-rate-limits", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--access-log", action="store_true", help="log every request")
     args = parser.parse_args(argv)
     if args.port is not None and not 0 <= args.port <= 65535:
@@ -88,7 +97,8 @@ def write_token_file(path: Path, token: str) -> None:
 
 def access_url(port: int, code: str) -> str:
     """The address that opens the app: the page server redeems the one-time ``code`` for a cookie and
-    redirects to the same address without it."""
+    redirects to the same address without it. Never on a command line: the browser gets the login
+    file that holds it (``app.Access.new_login_file``)."""
     return f"http://{instance.HOST}:{port}/?token={code}"
 
 
@@ -101,13 +111,13 @@ def main(argv: list[str] | None = None) -> int:
         print(exc, file=sys.stderr)
         return 1
 
-    app_paths = paths.AppPaths.under(args.data_dir) if args.data_dir else paths.AppPaths.for_user(name)
+    app_paths = paths.AppPaths.under(args.data_dir) if args.data_dir else paths.AppPaths.for_user()
     try:
         app_paths.create()
-    except OSError as exc:
-        print(f"{name} cannot create its directories: {exc}", file=sys.stderr)
+    except (OSError, LauncherError) as exc:
+        print(f"{name} cannot use its directories: {exc}", file=sys.stderr)
         if not args.headless:
-            ui.show_error(name, f"{name} cannot create its directories:\n{exc}")
+            ui.show_error(name, f"{name} cannot use its directories:\n{exc}")
         return 1
     logs.install(app_paths.log_file)
 
@@ -128,23 +138,48 @@ def main(argv: list[str] | None = None) -> int:
 def _run(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> int:
     logger.info("Starting %s. Data: %s; log: %s", name, app_paths.data, app_paths.log_file)
     lock = instance.InstanceLock(app_paths.lock)
-    if not lock.acquire():
-        return _hand_over(args, name, app_paths)
+    # The lock is taken again and again while another process holds it: that one may be quitting
+    # (it holds the lock until it has ended), and then this start takes over.
+    running = _wait_for_lock_or_instance(lock, name, app_paths)
+    if running is not None:
+        return _show_running(args, running)
     try:
+        # What an earlier instance left (it was killed): nothing of it is true any more.
+        app_paths.instance.unlink(missing_ok=True)
+        app.remove_login_files(app_paths.data)
         return _serve(args, name, app_paths)
     finally:
-        lock.release()
+        _hold_until_exit(lock)
 
 
-def _hand_over(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> int:
+def _wait_for_lock_or_instance(
+    lock: instance.InstanceLock, name: str, app_paths: paths.AppPaths
+) -> dict | None:
+    """``None`` once this process holds the lock; else the running instance that holds it.
+
+    Waits up to :data:`HANDOVER_TIMEOUT_S` for either: the holder may still be starting (no
+    ``instance.json`` yet) or quitting (``instance.json`` gone, the lock held until it ends).
+    """
+    deadline = time.monotonic() + HANDOVER_TIMEOUT_S
+    announced = False
+    while not lock.acquire():
+        if not announced:
+            logger.info("%s is already running for %s; asking it.", name, app_paths.data)
+            announced = True
+        running = instance.find_running(app_paths.instance)
+        if running is not None:
+            return running
+        if time.monotonic() >= deadline:
+            raise LauncherError(
+                f"{name} is already running for {app_paths.data}, but does not answer. "
+                "Wait a moment and start it again, or end the other process."
+            )
+        time.sleep(0.5)
+    return None
+
+
+def _show_running(args: argparse.Namespace, running: dict) -> int:
     """Another process serves this data directory: show that one."""
-    logger.info("%s is already running for %s; waiting for it to answer.", name, app_paths.data)
-    running = instance.wait_for_running(app_paths.instance, HANDOVER_TIMEOUT_S)
-    if running is None:
-        raise LauncherError(
-            f"{name} is already running for {app_paths.data}, but does not answer. "
-            "Wait a moment and start it again, or end the other process."
-        )
     url = f"http://{instance.HOST}:{running['port']}/"
     logger.info("Showing the running instance (pid %s) at %s.", running.get("pid"), url)
     if args.port_file:
@@ -152,11 +187,57 @@ def _hand_over(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -
     if args.token_file:
         write_token_file(args.token_file, running["token"])
     if not args.headless:
-        # A one-time code from the running instance, not its token: the command line of the browser
-        # is visible to other users. Without one the page says to open the app from its window.
-        code = instance.request_login_code(running["port"], running["token"])
-        webbrowser.open(access_url(running["port"], code) if code else url, new=2)  # not in a thread: this process ends right after
+        # The running instance (it has proved that it knows the token) writes the login file and
+        # deletes it once the code is redeemed: the code is not on the command line of the
+        # browser, where other users can read it. Without one the page says to use the window.
+        login = instance.request_login(running["port"], running["token"])
+        target = Path(login["file"]).as_uri() if login and login["file"] else url
+        webbrowser.open(target, new=2)  # not in a thread: this process ends right after
     return 0
+
+
+def _job_threads() -> list[threading.Thread]:
+    """The non-daemon threads besides this one: the threads of the jobs the app runs itself."""
+    me = threading.current_thread()
+    return [t for t in threading.enumerate() if t is not me and t is not threading.main_thread() and not t.daemon]
+
+
+def _hold_until_exit(lock: instance.InstanceLock) -> None:
+    """Keep the instance lock until the process has ended, after giving the jobs time to stop.
+
+    A job thread cannot be killed and outlives the server. At quit the jobs are told to stop
+    (``job_runner.request_stop``, from ``BackgroundServer``) and get :data:`JOB_STOP_WAIT_S` to
+    do so. The lock is not released by hand, not even then: the system releases it when the
+    process ends, so no second instance can start on the same database while any part of this
+    one still runs. Then :func:`finish` ends the process at once (``os._exit``), without waiting for
+    job threads that are left.
+    """
+    _held.append(lock)
+    deadline = time.monotonic() + JOB_STOP_WAIT_S
+    while _job_threads() and time.monotonic() < deadline:
+        time.sleep(0.1)
+    leftover = _job_threads()
+    if leftover:
+        logger.warning(
+            "%d job thread(s) did not stop in %d s (%s); the process ends without them.",
+            len(leftover), JOB_STOP_WAIT_S, ", ".join(t.name for t in leftover),
+        )
+
+
+def finish(code: int) -> int:
+    """The exit code. After a start that served, the process ends here with ``os._exit``, once the
+    log is flushed: the interpreter would wait for the job threads that are left for as long as
+    they run, and would release the instance lock (a file it closes) before the process is gone.
+    ``os._exit`` leaves the release to the system, at the moment the process ends."""
+    if _held:
+        logging.shutdown()
+        for stream in (sys.stdout, sys.stderr):
+            try:
+                stream.flush()
+            except (OSError, ValueError, AttributeError):
+                pass
+        os._exit(code)
+    return code
 
 
 def _log_settings(settings: dict[str, str], env: dict[str, str], args: argparse.Namespace) -> None:
@@ -186,7 +267,8 @@ def _serve(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> in
     frontend = Path(args.frontend_dir) if args.frontend_dir else resources.frontend_dir()
     PageServer.from_export(frontend)  # fails now, not after the imports, if the export is missing
 
-    identity = state.load_or_create_identity(app_paths.identity)
+    identity = state.load_or_create_identity(app_paths.identity, app_paths.database)
+    logs.hide(identity.shared_session_id, identity.session_secret_key)
     settings = state.read_settings_env(app_paths.settings_env)
     remembered = state.remembered_port(app_paths.launcher_state)
     if args.port is not None:
@@ -206,7 +288,7 @@ def _serve(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> in
             settings,
             resources.build_info(),
             shared_session=not args.separate_sessions,
-            rate_limits=args.rate_limits and not args.no_rate_limits,
+            rate_limits=args.rate_limits,
         )
         environment.apply(env)
         _log_settings(settings, env, args)
@@ -220,13 +302,15 @@ def _serve(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> in
 
         import srv_main
 
+        import job_runner
+
         from .app import Access, Shutdown, build_app
         from .server import BackgroundServer
 
         token = secrets.token_urlsafe(32)
-        access = Access(token)
+        access = Access(token, app_paths.data)
         shutdown = Shutdown()
-        app = build_app(
+        web_app = build_app(
             srv_main.app,
             frontend,
             port=port,
@@ -235,7 +319,12 @@ def _serve(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> in
             shutdown=shutdown,
             access=access,
         )
-        server = BackgroundServer(app, sock, access_log=args.access_log, on_stop=shutdown.request)
+
+        def on_stop() -> None:
+            shutdown.request()  # ends the progress streams
+            job_runner.request_stop()  # the running jobs give up at their next check
+
+        server = BackgroundServer(web_app, sock, access_log=args.access_log, on_stop=on_stop)
     except BaseException:
         sock.close()
         raise
@@ -258,8 +347,9 @@ def _serve(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> in
         url = f"http://{instance.HOST}:{port}/"
 
         def open_url() -> str:
-            """A new one-time code for each opening; the address is never logged or shown."""
-            return access_url(port, access.new_code())
+            """The login file of a new one-time code, for the browser; never logged or shown."""
+            _, path = access.new_login_file(lambda code: access_url(port, code))
+            return path.as_uri()
 
         logger.info("%s is running at %s", name, url)
 
@@ -284,5 +374,6 @@ def _serve(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> in
         server.stop()
     finally:
         instance.remove_info(app_paths.instance, token)
+        access.close()
     logger.info("%s has stopped.", name)
     return 1 if crashed else 0

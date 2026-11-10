@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import secrets
+import sqlite3
 import tempfile
 import uuid
 from dataclasses import dataclass
@@ -27,7 +28,8 @@ def write_private_text(path: Path, text: str) -> None:
     have planted, opened with ``O_EXCL``, mode 0600), whose mode is set again before anything is
     written, and which then replaces ``path``; there is no moment where the secret is readable
     by others or written through a link. On Windows the mode only sets the read-only flag; the
-    files lie in the user's profile, whose permissions keep other users out.
+    file has the permissions of its folder, which ``AppPaths.create`` restricts to the user when
+    it creates the folder (an existing folder, e.g. one named with ``--data-dir``, keeps its own).
     """
     path = Path(path)
     fd, name = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".", suffix=".tmp")
@@ -73,12 +75,52 @@ def _is_uuid(value: Any) -> bool:
     return True
 
 
-def load_or_create_identity(path: Path) -> Identity:
+def sessions_in_database(database: Path) -> list[str]:
+    """The ids of the sessions the SQLite file ``database`` knows, empty if it is missing, has no
+    ``sessions`` table or cannot be read. Read only."""
+    if not Path(database).is_file():
+        return []
+    try:
+        connection = sqlite3.connect(Path(database).resolve().as_uri() + "?mode=ro", uri=True, timeout=5)
+        try:
+            rows = connection.execute("SELECT id FROM sessions").fetchall()
+        finally:
+            connection.close()
+    except sqlite3.Error:
+        return []
+    return sorted(str(row[0]) for row in rows if _is_uuid(row[0]))
+
+
+def _recover_session_id(path: Path, database: Path | None) -> str | None:
+    """The one session the database holds, for a lost ``identity.json``; else ``None``.
+
+    Every dataset and run is stored under the session id, so a new one would hide all of them.
+    With exactly one session in the database that is the old id. With several it cannot be told,
+    so the data stay as they are (hidden) and the log names the folder.
+    """
+    if database is None:
+        return None
+    found = sessions_in_database(database)
+    if len(found) == 1:
+        logger.info("%s has no session id; taking the only session of %s.", path.name, database.name)
+        return found[0]
+    if len(found) > 1:
+        logger.warning(
+            "%s has no session id and %s holds %d sessions, so the old one cannot be told: a new session "
+            "starts, and the datasets and runs of the old ones stay hidden. Restore %s from a backup to get "
+            "them back. Data folder: %s",
+            path.name, database.name, len(found), path.name, path.parent,
+        )
+    return None
+
+
+def load_or_create_identity(path: Path, database: Path | None = None) -> Identity:
     """The identity in ``path``, created on the first start.
 
     A key that is missing is made anew (a new key only invalidates the cookie). A session id
     that is there but broken stops the start: a new one would hide every dataset and run of the
-    old session.
+    old session. One that is missing is taken from ``database`` if that holds exactly one
+    session (the file was lost, not the data).
     """
     stored: dict[str, Any] = {}
     if path.exists():
@@ -99,7 +141,7 @@ def load_or_create_identity(path: Path) -> Identity:
         key = secrets.token_urlsafe(48)
         changed = True
     if session_id is None:
-        session_id = str(uuid.uuid4())
+        session_id = _recover_session_id(path, database) or str(uuid.uuid4())
         changed = True
     elif not _is_uuid(session_id):
         raise LauncherError(

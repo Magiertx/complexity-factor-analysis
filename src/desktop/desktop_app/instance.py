@@ -4,9 +4,11 @@
   system releases it when the process ends, also after a crash. Two processes on one SQLite
   file, each running its own jobs and marking the other's as interrupted at startup, must not
   happen.
-- ``instance.json`` next to it (pid, port, token), written once the server answers. A second
-  start that finds the lock taken asks that port with the token whether the instance is there
-  (:func:`probe`) and opens the browser on it.
+- ``instance.json`` next to it (pid, port, token), written once the server answers and deleted
+  by the next owner of the lock, so a crash leaves nothing a later start believes. A second start
+  that finds the lock taken asks that port whether the instance is there (:func:`probe`): the
+  server must answer a random nonce with HMAC(token, nonce), so the token is not sent to
+  whatever listens on that port, and opens the browser on it.
 - The port: the one of the last start (``launcher.json``), else :data:`DEFAULT_PORT`. If another
   program holds it, a free one, which is then remembered, since the browser keeps the app's
   local storage per origin and so per port.
@@ -14,16 +16,18 @@
 
 from __future__ import annotations
 
+import hmac
 import http.client
 import json
 import logging
 import os
+import secrets
 import socket
 import time
 from pathlib import Path
 from typing import IO, Any
 
-from .app import INSTANCE_HEADER, INSTANCE_PATH, LOGIN_PATH
+from .app import INSTANCE_HEADER, INSTANCE_PATH, LOGIN_PATH, NONCE_HEADER, proof
 from .state import write_private_json
 
 logger = logging.getLogger("desktop")
@@ -147,53 +151,63 @@ def remove_info(path: Path, token: str) -> None:
 
 
 def probe(port: int, token: str, timeout: float = 2.0) -> dict[str, Any] | None:
-    """What the instance on ``port`` says about itself when it knows ``token``, else ``None``.
+    """What the instance on ``port`` says about itself if it proves that it knows ``token``,
+    else ``None``. The token is not sent: the instance answers a random nonce with
+    HMAC-SHA256(token, nonce), which only a holder of the token can.
 
     Plain http.client: urllib would send the request through a proxy configured for the system.
     """
+    nonce = secrets.token_urlsafe(24)
     connection = http.client.HTTPConnection(HOST, port, timeout=timeout)
     try:
-        connection.request("GET", INSTANCE_PATH, headers={INSTANCE_HEADER.decode(): token})
+        connection.request("GET", INSTANCE_PATH, headers={NONCE_HEADER.decode(): nonce})
         response = connection.getresponse()
-        body = response.read()
+        body = response.read(65536)
         if response.status != 200:
             return None
         answer = json.loads(body)
-        return answer if isinstance(answer, dict) else None
+        given = answer.get("proof") if isinstance(answer, dict) else None
+        if not isinstance(given, str) or not hmac.compare_digest(given.encode(), proof(token, nonce).encode()):
+            return None
+        return {k: v for k, v in answer.items() if k != "proof"}
     except (OSError, ValueError, http.client.HTTPException):
         return None
     finally:
         connection.close()
 
 
-def request_login_code(port: int, token: str, timeout: float = 5.0) -> str | None:
-    """A one-time code for the browser from the instance on ``port``, which only the master
-    ``token`` may ask for; ``None`` if it does not give one."""
+def request_login(port: int, token: str, timeout: float = 5.0) -> dict[str, Any] | None:
+    """A login from the instance on ``port``, which only the master ``token`` may ask for: its
+    one-time ``code`` and the ``file`` (a redirect page in its data directory) that opens the
+    browser with it. ``None`` if it does not give one. Call this only for an instance that has
+    proved to know the token (:func:`probe`)."""
     connection = http.client.HTTPConnection(HOST, port, timeout=timeout)
     try:
         connection.request("GET", LOGIN_PATH, headers={INSTANCE_HEADER.decode(): token})
         response = connection.getresponse()
-        body = response.read()
+        body = response.read(65536)
         if response.status != 200:
             return None
-        code = json.loads(body).get("code")
-        return code if isinstance(code, str) and code else None
+        answer = json.loads(body)
+        code = answer.get("code")
+        if not isinstance(code, str) or not code:
+            return None
+        file = answer.get("file")
+        return {"code": code, "file": file if isinstance(file, str) and file else None}
     except (OSError, ValueError, AttributeError, http.client.HTTPException):
         return None
     finally:
         connection.close()
 
 
-def wait_for_running(path: Path, timeout: float, interval: float = 0.5) -> dict[str, Any] | None:
-    """The running instance of a data directory whose lock is taken: ``instance.json`` with a
-    port that answers to its token. It may still be starting, so this waits up to ``timeout``."""
-    deadline = time.monotonic() + timeout
-    while True:
-        info = read_info(path)
-        if info is not None:
-            answer = probe(info["port"], info["token"])
-            if answer is not None:
-                return {**info, **answer}
-        if time.monotonic() >= deadline:
-            return None
-        time.sleep(interval)
+def find_running(path: Path) -> dict[str, Any] | None:
+    """The instance that ``instance.json`` names, if it proves to know the token: that file's
+    ``port`` and ``token`` plus what the instance says about itself (never the other way round:
+    an answer does not get to change where we connect or which token we send)."""
+    info = read_info(path)
+    if info is None:
+        return None
+    answer = probe(info["port"], info["token"])
+    if answer is None:
+        return None
+    return {**answer, "port": info["port"], "token": info["token"]}

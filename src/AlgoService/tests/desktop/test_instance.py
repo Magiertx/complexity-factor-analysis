@@ -102,14 +102,95 @@ def test_a_second_start_finds_the_running_instance(tmp_path, export_dir):
         assert instance.probe(port, "a stale token") is None
 
         info_path = tmp_path / "instance.json"
-        assert instance.wait_for_running(info_path, timeout=0.2, interval=0.05) is None
+        assert instance.find_running(info_path) is None
         instance.write_info(info_path, port=port, token=token)
-        assert instance.wait_for_running(info_path, timeout=5)["port"] == port
+        running = instance.find_running(info_path)
+        assert running["port"] == port and running["token"] == token and running["pid"] == 42
+        instance.write_info(info_path, port=port, token="a stale token")
+        assert instance.find_running(info_path) is None
     finally:
         server.stop()
     assert not server.running and server.error is None
     # Nothing answers any more.
     assert instance.probe(port, token, timeout=1) is None
+
+
+def test_a_foreign_server_on_the_old_port_never_gets_the_token(tmp_path):
+    """instance.json of a crashed start names a port another program may hold now. The check
+    must not send the token there, and must not take over what that server answers."""
+    import http.server
+    import threading
+
+    seen: list[dict[str, str]] = []
+
+    class Foreign(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            seen.append({k.lower(): v for k, v in self.headers.items()})
+            body = json.dumps({"pid": 1, "port": 1, "token": "the foreign token", "proof": "x"}).encode()
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    server = http.server.HTTPServer(("127.0.0.1", 0), Foreign)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        port = server.server_address[1]
+        info_path = tmp_path / "instance.json"
+        instance.write_info(info_path, port=port, token="the old token")
+        assert instance.find_running(info_path) is None
+        assert instance.probe(port, "the old token") is None
+    finally:
+        server.shutdown()
+    assert seen and all("the old token" not in " ".join(h.values()) for h in seen)
+    assert all("x-desktop-instance" not in h for h in seen)
+
+
+def test_the_answer_does_not_change_port_or_token(tmp_path, monkeypatch):
+    info_path = tmp_path / "instance.json"
+    instance.write_info(info_path, port=1234, token="from the file")
+    monkeypatch.setattr(instance, "probe", lambda port, token: {"pid": 7, "port": 9999, "token": "from the answer"})
+    running = instance.find_running(info_path)
+    assert running["port"] == 1234 and running["token"] == "from the file" and running["pid"] == 7
+
+
+def test_a_start_takes_the_lock_when_the_holder_quits(tmp_path):
+    """The holder is quitting: its instance.json is gone but it holds the lock until it ends.
+    The second start keeps trying and takes over; it does not wait for an instance.json."""
+    import threading
+    from types import SimpleNamespace
+
+    from desktop_app import main
+
+    paths = SimpleNamespace(instance=tmp_path / "instance.json", data=tmp_path)
+    holder = instance.InstanceLock(tmp_path / "instance.lock")
+    assert holder.acquire()
+    threading.Timer(1.0, holder.release).start()
+    lock = instance.InstanceLock(tmp_path / "instance.lock")
+    assert main._wait_for_lock_or_instance(lock, "App", paths) is None
+    lock.release()
+
+
+def test_a_start_that_waits_too_long_says_so(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from desktop_app import main
+    from desktop_app.state import LauncherError
+
+    monkeypatch.setattr(main, "HANDOVER_TIMEOUT_S", 0.3)
+    holder = instance.InstanceLock(tmp_path / "instance.lock")
+    assert holder.acquire()
+    try:
+        with pytest.raises(LauncherError, match="does not answer"):
+            main._wait_for_lock_or_instance(
+                instance.InstanceLock(tmp_path / "instance.lock"), "App", SimpleNamespace(instance=tmp_path / "i.json", data=tmp_path)
+            )
+    finally:
+        holder.release()
 
 
 def test_quitting_ends_the_progress_stream_at_once(export_dir):
@@ -155,20 +236,27 @@ def test_quitting_ends_the_progress_stream_at_once(export_dir):
     assert lines[-2:] == [b"0\r\n", b"\r\n"]
 
 
-def test_the_hand_over_opens_the_address_with_the_token(tmp_path, export_dir, monkeypatch):
-    """A second start shows the running app in the browser: with the key of that start, which it
-    reads from instance.json, and writes it where a script asks for it."""
+def test_the_hand_over_opens_a_private_login_file(tmp_path, export_dir, monkeypatch):
+    """A second start shows the running app in the browser: through a login file the running
+    instance writes (no code on the command line of the browser), and writes the key of that
+    start where a script asks for it."""
     import argparse
     import http.client
+    from pathlib import Path
     from types import SimpleNamespace
 
     from desktop_app import main
+    from desktop_app.app import Access
 
     sock = instance.bind(0)
     port = sock.getsockname()[1]
     token = "the-running-instance"
     server = BackgroundServer(
-        build_app(_tiny_api, export_dir, port=port, token=token, instance={"pid": 42, "port": port}), sock
+        build_app(
+            _tiny_api, export_dir, port=port, token=token, instance={"pid": 42, "port": port},
+            access=Access(token, tmp_path),
+        ),
+        sock,
     )
     server.start()
     opened: list[str] = []
@@ -178,18 +266,26 @@ def test_the_hand_over_opens_the_address_with_the_token(tmp_path, export_dir, mo
         paths = SimpleNamespace(instance=tmp_path / "instance.json", data=tmp_path)
         instance.write_info(paths.instance, port=port, token=token)
         args = argparse.Namespace(headless=False, port_file=tmp_path / "port", token_file=tmp_path / "token")
-        assert main._hand_over(args, "App", paths) == 0
+        running = instance.find_running(paths.instance)
+        assert main._show_running(args, running) == 0
 
-        # The address has a one-time code of the running app (its command line is visible to other
-        # users), not the token, and the code works.
-        assert len(opened) == 1
-        code = opened[0].split("?token=", 1)[1]
-        assert opened[0] == f"http://127.0.0.1:{port}/?token={code}" and code != token and token not in opened[0]
+        # The browser gets a file (its command line is visible to other users), which holds a
+        # one-time code of the running app, not the token, and the code works.
+        assert len(opened) == 1 and opened[0].startswith("file:")
+        from urllib.request import url2pathname
+        from urllib.parse import urlsplit
+
+        login = Path(url2pathname(urlsplit(opened[0]).path))
+        assert login.parent == tmp_path and login.is_file()
+        page = login.read_text(encoding="utf-8")
+        code = page.split("?token=", 1)[1].split('"', 1)[0]
+        assert f"http://127.0.0.1:{port}/?token={code}" in page and code != token and token not in page
         connection = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
         connection.request("GET", f"/?token={code}")
         assert connection.getresponse().status == 303
         connection.close()
-        assert instance.request_login_code(port, "wrong") is None
+        assert not login.exists()  # used up
+        assert instance.request_login(port, "wrong") is None
     finally:
         server.stop()
     assert (tmp_path / "token").read_text().strip() == token

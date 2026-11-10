@@ -6,21 +6,25 @@ user opens can send requests to it:
 
 - :class:`HostCheck`: only ``127.0.0.1:<port>`` and ``localhost:<port>``, against DNS rebinding
   (a foreign name that resolves to 127.0.0.1 arrives with its own name in ``Host``).
-- :class:`SameOriginCheck`: POST, PUT, PATCH and DELETE only from the app's own pages. A form
-  post or a multipart upload of another site is a "simple" request that CORS does not stop.
+- :class:`SameOriginCheck`: every method but GET, HEAD and OPTIONS only from the app's own pages. A
+  form post or a multipart upload of another site is a "simple" request that CORS does not stop.
 - :class:`NoCors`: no ``Access-Control-*`` header leaves the app, so no other origin can read
   an answer (the backend's own CORS setting is for the Docker build).
 
 Behind them the :class:`Router` asks for credentials, as Jupyter does, since any other program
 on the machine (also of another user) can reach 127.0.0.1 and these checks only stop web pages.
-:class:`Access` holds them. The launcher opens ``/?token=<code>`` with a one-time code (the
-command line of the browser is visible to other users, so the long-lived token is never in it);
-the page server redeems the code for a fresh random session value, sets it as an ``HttpOnly``,
+:class:`Access` holds them. The launcher does not put a code on the command line of the browser
+(other users can read it there, e.g. in ``/proc/<pid>/cmdline``): it writes a small redirect page
+into the private data directory (mode 0600) and opens that file; the page forwards to
+``/?token=<code>``, with a one-time code that is valid for :data:`CODE_TTL_S` seconds. The file
+is deleted when the code is redeemed, or at the latest when the app quits. The page server
+redeems the code (on GET only) for a fresh random session value, sets it as an ``HttpOnly``,
 ``SameSite=Strict`` session cookie and redirects to the same address without the code. Every
 request to the API and every page needs that cookie, or ``Authorization: Bearer <token>`` with
-the launch's master token for scripts. The master token also opens the instance check and asks
-for a code (``/_desktop/login``, for the second start). Only ``/api/health`` is open, and says
-no more than "ok".
+the launch's master token for scripts. The master token also asks for a login file
+(``/_desktop/login``, for the second start). The instance check (``/_desktop/instance``) proves
+that the server knows the token without anybody sending it: it answers a random nonce with
+HMAC-SHA256(token, nonce). Only ``/api/health`` is open, and says no more than "ok".
 
 :class:`Shutdown` ends the progress streams (Server-Sent Events) when the app quits; they never
 end by themselves, and the server would wait for them.
@@ -29,28 +33,35 @@ end by themselves, and the server would wait for them.
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import hmac
+import html
 import json
 import logging
 import secrets
 import threading
 import time
+from pathlib import Path
+from typing import Callable
 from urllib.parse import parse_qsl, urlencode, urlsplit
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from .pages import PageServer, SessionCookies, local_location, without_trailing_slash
+from .state import write_private_text
 
 logger = logging.getLogger("desktop")
 
 API_PREFIX = "/api"
-#: Answers another start of the launcher whether this is the instance it looks for.
+#: Proves to another start of the launcher that this is the instance it looks for.
 INSTANCE_PATH = "/_desktop/instance"
-#: Gives a caller with the master token a one-time code for the browser.
+#: Gives a caller with the master token a login file (and its one-time code) for the browser.
 LOGIN_PATH = "/_desktop/login"
 INSTANCE_HEADER = b"x-desktop-instance"
+NONCE_HEADER = b"x-desktop-nonce"
 
 #: How long a one-time code can be redeemed, and how many sessions (browsers) are remembered.
-CODE_TTL_S = 300.0
+CODE_TTL_S = 60.0
 MAX_SESSIONS = 64
 
 #: The cookie of the session value carries the port, since cookies are shared between ports of a host.
@@ -58,7 +69,33 @@ ACCESS_COOKIE = "desktop_access"
 TOKEN_PARAMETER = "token"
 HEALTH_PATH = API_PREFIX + "/health"
 
-STATE_CHANGING = frozenset({"POST", "PUT", "PATCH", "DELETE"})
+#: Methods that change nothing and need no origin check; every other method is checked.
+SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
+LOGIN_FILE_PREFIX = "open-"
+
+
+def proof(token: str, nonce: str) -> str:
+    """What a server that knows ``token`` answers to ``nonce`` (the instance check)."""
+    return hmac.new(token.encode("utf-8"), nonce.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+def redirect_page(url: str) -> str:
+    """The page that sends the browser on to ``url``; what the login file holds."""
+    quoted = html.escape(url, quote=True)
+    return (
+        "<!doctype html><html lang=en><head><meta charset=utf-8><title>Opening the app</title>"
+        f'<meta http-equiv=refresh content="0;url={quoted}"></head>'
+        f'<body><p>Opening the app. If nothing happens, <a href="{quoted}">continue here</a>.</p></body></html>\n'
+    )
+
+
+def remove_login_files(directory: Path) -> None:
+    """Delete the login files a crashed start left behind."""
+    try:
+        for path in Path(directory).glob(LOGIN_FILE_PREFIX + "*.html"):
+            path.unlink(missing_ok=True)
+    except OSError:
+        pass
 
 #: On the answers the launcher gives itself (refusals, redirects, the instance check), like the API's.
 _OWN_HEADERS = [
@@ -101,14 +138,16 @@ def access_cookie_name(port: int) -> str:
     return f"{ACCESS_COOKIE}_{port}"
 
 
-def _cookies(scope: Scope) -> dict[str, str]:
-    out: dict[str, str] = {}
+def _cookie_values(scope: Scope, wanted: str) -> list[str]:
+    """Every value of the cookie called ``wanted``. There can be several: cookies are shared
+    between the ports of 127.0.0.1, so another server there can set one of the same name."""
+    out: list[str] = []
     for key, value in scope["headers"]:
         if key == b"cookie":
             for part in value.decode("latin-1").split(";"):
                 name, _, text = part.strip().partition("=")
-                if name:
-                    out.setdefault(name, text)
+                if name == wanted:
+                    out.append(text)
     return out
 
 
@@ -141,8 +180,8 @@ class HostCheck:
 
 
 class SameOriginCheck:
-    """POST, PUT, PATCH and DELETE only with the app's own ``Origin``, or ``Referer`` where a
-    browser sends no ``Origin``.
+    """Every method but GET, HEAD and OPTIONS (an allowlist, whatever the case of the name) only
+    with the app's own ``Origin``, or ``Referer`` where a browser sends no ``Origin``.
 
     Browsers send ``Origin`` with every such request, ``null`` from an opaque origin, which is
     refused. A request with neither header comes from a program, not from a web page (the smoke
@@ -164,7 +203,7 @@ class SameOriginCheck:
         return True
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] == "http" and scope["method"] in STATE_CHANGING and not self.allowed(scope):
+        if scope["type"] == "http" and scope["method"].upper() not in SAFE_METHODS and not self.allowed(scope):
             await _refuse(send, 403, "Cross-origin request refused.")
             return
         await self.app(scope, receive, send)
@@ -259,10 +298,13 @@ class Access:
     comparison takes constant time. Safe to call from any thread.
     """
 
-    def __init__(self, token: str) -> None:
+    def __init__(self, token: str, login_dir: Path | None = None) -> None:
         self.token = token
+        #: Where the login files go: a private directory (``AppPaths.data``).
+        self.login_dir = Path(login_dir) if login_dir is not None else None
         self._lock = threading.Lock()
         self._codes: dict[str, float] = {}
+        self._files: dict[str, Path] = {}
         self._sessions: list[str] = []
 
     @staticmethod
@@ -278,10 +320,39 @@ class Access:
     def new_code(self) -> str:
         code = secrets.token_urlsafe(32)
         now = time.monotonic()
+        expired: list[Path] = []
         with self._lock:
-            self._codes = {c: t for c, t in self._codes.items() if t > now}
+            for old, expires in list(self._codes.items()):
+                if expires <= now:
+                    del self._codes[old]
+                    if old in self._files:
+                        expired.append(self._files.pop(old))
             self._codes[code] = now + CODE_TTL_S
+        for path in expired:
+            path.unlink(missing_ok=True)
         return code
+
+    def new_login_file(self, address: Callable[[str], str]) -> tuple[str, Path]:
+        """A new one-time code and the file that opens the app with it: a redirect page to
+        ``address(code)`` that only the owner can read. The file goes when the code is redeemed
+        or has expired, or at :meth:`close`."""
+        if self.login_dir is None:
+            raise RuntimeError("no directory for login files")
+        code = self.new_code()
+        path = self.login_dir / f"{LOGIN_FILE_PREFIX}{secrets.token_hex(8)}.html"
+        write_private_text(path, redirect_page(address(code)))
+        with self._lock:
+            self._files[code] = path
+        return code, path
+
+    def close(self) -> None:
+        """Delete the login files that are left."""
+        with self._lock:
+            files = list(self._files.values())
+            self._files.clear()
+            self._codes.clear()
+        for path in files:
+            path.unlink(missing_ok=True)
 
     def redeem(self, given: str) -> str | None:
         """A new session value for a valid code, which is used up; else ``None``."""
@@ -294,9 +365,12 @@ class Access:
             if match is None:
                 return None
             del self._codes[match]
+            used = self._files.pop(match, None)
             session = secrets.token_urlsafe(32)
             self._sessions = [*self._sessions, session][-MAX_SESSIONS:]
-            return session
+        if used is not None:
+            used.unlink(missing_ok=True)
+        return session
 
     def is_session(self, given: str | None) -> bool:
         with self._lock:
@@ -325,6 +399,7 @@ class Router:
         self.instance = instance
         self.token = token
         self.shutdown = shutdown
+        self.port = port
         self.cookie_name = access_cookie_name(port)
         self.access = access or Access(token)
 
@@ -334,7 +409,7 @@ class Router:
         scheme, _, value = auth.partition(" ")
         if scheme.lower() == "bearer" and self.access.is_master(value.strip()):
             return True
-        return self.access.is_session(_cookies(scope).get(self.cookie_name))
+        return any(self.access.is_session(value) for value in _cookie_values(scope, self.cookie_name))
 
     def redeem_code(self, scope: Scope) -> tuple[str | None, str]:
         """The session value for a valid one-time code in the query string (which is used up),
@@ -385,7 +460,7 @@ class Router:
             return
         is_api = path == API_PREFIX or path.startswith(API_PREFIX + "/")
         if not (is_api and path == HEALTH_PATH):
-            if not is_api and scope["method"] in ("GET", "HEAD"):
+            if not is_api and scope["method"] == "GET":  # not HEAD: it must not use up the code
                 session, rest = self.redeem_code(scope)
                 if session is not None:
                     await self._trade_token(scope, session, rest, send)
@@ -440,11 +515,17 @@ class Router:
             await send({"type": "http.response.body", "body": b"", "more_body": False})
 
     async def _login(self, scope: Scope, send: Send) -> None:
-        """A one-time code for a caller with the master token (the second start, a test)."""
+        """A login file and its one-time code for a caller with the master token (the second
+        start, a test). Without a directory for login files only the code."""
         if scope["method"] != "GET" or not self.access.is_master(_header(scope, INSTANCE_HEADER)):
             await _refuse(send, 404, "Not Found")
             return
-        body = json.dumps({"code": self.access.new_code()}).encode()
+        if self.access.login_dir is None:
+            answer = {"code": self.access.new_code()}
+        else:
+            code, path = self.access.new_login_file(lambda c: f"http://127.0.0.1:{self.port}/?{TOKEN_PARAMETER}={c}")
+            answer = {"code": code, "file": str(path)}
+        body = json.dumps(answer).encode()
         await send(
             {
                 "type": "http.response.start",
@@ -455,11 +536,13 @@ class Router:
         await send({"type": "http.response.body", "body": body})
 
     async def _instance(self, scope: Scope, send: Send) -> None:
-        given = _header(scope, INSTANCE_HEADER)
-        if self.instance is None or not self.access.is_master(given):
+        """The answer to a nonce: HMAC-SHA256(master token, nonce), with the instance's details.
+        The token itself is never sent, so a caller that asks a foreign server loses nothing."""
+        nonce = _header(scope, NONCE_HEADER)
+        if scope["method"] != "GET" or self.instance is None or not nonce or not 16 <= len(nonce) <= 128:
             await _refuse(send, 404, "Not Found")
             return
-        body = json.dumps(self.instance).encode()
+        body = json.dumps({**self.instance, "proof": proof(self.token, nonce)}).encode()
         await send(
             {
                 "type": "http.response.start",

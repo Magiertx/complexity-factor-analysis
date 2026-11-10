@@ -28,6 +28,49 @@ def test_the_name_is_read_from_config():
     assert app_name() == config.APP_NAME
 
 
+def test_the_folder_is_named_independently_of_the_display_name(monkeypatch):
+    """The display name will change; the data of an installation must stay where they are."""
+    from desktop_app import paths as paths_module
+
+    assert paths_module.DATA_DIR_NAME == "complexity-factor-analysis"
+    paths = AppPaths.for_user()
+    for directory in (paths.data, paths.config):
+        assert directory.name == "complexity-factor-analysis" or directory.parent.name == "complexity-factor-analysis"
+    assert paths.logs.name == "complexity-factor-analysis" or paths.logs.parent.name == "complexity-factor-analysis"
+    assert AppPaths.for_user() == AppPaths.for_user(paths_module.DATA_DIR_NAME)
+
+    import config
+
+    monkeypatch.setattr(config, "APP_NAME", "XCom")
+    assert AppPaths.for_user() == paths
+    assert "xcom" not in str(paths).lower()
+
+
+@pytest.mark.skipif(os.name == "nt", reason="modes")
+def test_a_directory_others_can_write_to_is_refused(tmp_path):
+    shared = tmp_path / "shared"
+    shared.mkdir()
+    shared.chmod(0o777)
+    with pytest.raises(LauncherError, match="can be written to by other users"):
+        AppPaths.under(shared).create()
+    shared.chmod(0o755)  # readable is no problem
+    AppPaths.under(shared).create()
+    own = tmp_path / "own"
+    AppPaths.under(own).create()
+    assert stat.S_IMODE(own.stat().st_mode) == 0o700
+
+
+@pytest.mark.skipif(os.name != "nt", reason="ACLs")
+def test_a_new_directory_is_restricted_to_the_user_on_windows(tmp_path):
+    fresh = tmp_path / "fresh"
+    AppPaths.under(fresh).create()
+    out = subprocess.run(["icacls", str(fresh)], capture_output=True, text=True).stdout
+    # Not inherited from the parent (which would show BUILTIN\Users or Everyone on a shared drive).
+    assert "(I)" not in out
+    assert "Everyone" not in out and "BUILTIN\\Users" not in out
+    assert (fresh / "artifacts").is_dir()
+
+
 def test_a_data_dir_holds_everything(tmp_path):
     paths = AppPaths.under(tmp_path / "d")
     assert paths.data == paths.config == (tmp_path / "d").resolve()
@@ -70,6 +113,53 @@ def test_a_broken_identity_stops_the_start(tmp_path, content):
     with pytest.raises(LauncherError, match="identity.json"):
         state.load_or_create_identity(path)
     assert path.read_text() == content
+
+
+def _database_with_sessions(path, ids):
+    import sqlite3
+
+    with sqlite3.connect(path) as db:
+        db.execute("CREATE TABLE sessions (id VARCHAR(255) PRIMARY KEY)")
+        db.executemany("INSERT INTO sessions VALUES (?)", [(i,) for i in ids])
+
+
+def test_a_lost_identity_takes_the_only_session_of_the_database(tmp_path, caplog):
+    session = str(uuid.uuid4())
+    _database_with_sessions(tmp_path / "app.db", [session])
+    path = tmp_path / "identity.json"
+    with caplog.at_level(logging.INFO, logger="desktop"):
+        identity = state.load_or_create_identity(path, tmp_path / "app.db")
+    assert identity.shared_session_id == session
+    assert json.loads(path.read_text())["shared_session_id"] == session
+    assert session not in caplog.text and identity.session_secret_key not in caplog.text  # nothing secret in the log
+    assert "only session" in caplog.text
+    # The next start reads the file.
+    assert state.load_or_create_identity(path, tmp_path / "app.db") == identity
+
+
+def test_a_lost_identity_with_several_sessions_starts_a_new_one_and_warns(tmp_path, caplog):
+    sessions = [str(uuid.uuid4()), str(uuid.uuid4())]
+    _database_with_sessions(tmp_path / "app.db", sessions)
+    with caplog.at_level(logging.WARNING, logger="desktop"):
+        identity = state.load_or_create_identity(tmp_path / "identity.json", tmp_path / "app.db")
+    assert identity.shared_session_id not in sessions
+    assert "holds 2 sessions" in caplog.text and str(tmp_path) in caplog.text
+    assert not any(s in caplog.text for s in sessions)
+
+
+def test_a_lost_identity_without_a_usable_database_is_a_first_start(tmp_path):
+    assert uuid.UUID(state.load_or_create_identity(tmp_path / "a.json", tmp_path / "missing.db").shared_session_id)
+    (tmp_path / "broken.db").write_text("not a database")
+    assert uuid.UUID(state.load_or_create_identity(tmp_path / "b.json", tmp_path / "broken.db").shared_session_id)
+    _database_with_sessions(tmp_path / "junk.db", ["not-a-uuid"])
+    assert uuid.UUID(state.load_or_create_identity(tmp_path / "c.json", tmp_path / "junk.db").shared_session_id)
+
+
+def test_an_identity_with_a_session_is_not_replaced_by_the_database(tmp_path):
+    kept, other = str(uuid.uuid4()), str(uuid.uuid4())
+    _database_with_sessions(tmp_path / "app.db", [other])
+    (tmp_path / "identity.json").write_text(json.dumps({"session_secret_key": "k" * 40, "shared_session_id": kept}))
+    assert state.load_or_create_identity(tmp_path / "identity.json", tmp_path / "app.db").shared_session_id == kept
 
 
 # --- settings.env ---------------------------------------------------------------------------
@@ -135,7 +225,7 @@ def _environ(tmp_path, **kwargs):
 
 
 def test_the_backend_environment(tmp_path):
-    paths, identity, env = _environ(tmp_path)
+    paths, identity, env = _environ(tmp_path, rate_limits=True)
     for name in ("REDIS_URL", "RATE_LIMIT_DISABLED", "TESTING", "TEST_DATABASE_URL"):
         assert name not in env
     assert env["DATABASE_URL"] == environment.sqlite_url(paths.database)
@@ -159,9 +249,11 @@ def test_separate_sessions_leave_out_the_shared_id(tmp_path):
     assert "SHARED_SESSION_ID" not in env
 
 
-def test_rate_limits_are_on_unless_switched_off(tmp_path):
-    assert "RATE_LIMIT_DISABLED" not in _environ(tmp_path)[2]
+def test_rate_limits_are_off_unless_switched_on(tmp_path):
+    """As on the command line (``--rate-limits``): off by default, since they count per address."""
+    assert _environ(tmp_path)[2]["RATE_LIMIT_DISABLED"] == "1"
     assert _environ(tmp_path, rate_limits=False)[2]["RATE_LIMIT_DISABLED"] == "1"
+    assert "RATE_LIMIT_DISABLED" not in _environ(tmp_path, rate_limits=True)[2]
 
 
 def test_the_database_url_survives_odd_directory_names(tmp_path):
@@ -174,7 +266,7 @@ def test_the_database_url_survives_odd_directory_names(tmp_path):
 def test_the_backend_accepts_the_environment(tmp_path):
     """The backend reads the settings at import time; a fresh interpreter shows what it makes of
     them (and a malformed one would stop it)."""
-    paths, identity, env = _environ(tmp_path)
+    paths, identity, env = _environ(tmp_path, rate_limits=True)
     env = {**os.environ, **env}
     env.pop("PYTEST_CURRENT_TEST", None)
     env.pop("SOME_OTHER_SETTING", None)

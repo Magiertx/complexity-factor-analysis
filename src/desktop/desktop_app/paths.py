@@ -4,17 +4,29 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import logging
+import os
+import stat
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+
+from .state import LauncherError
+
+logger = logging.getLogger("desktop")
+
+#: The folder of the app's data, settings and logs. Fixed: the display name (``APP_NAME``) will
+#: change, and the data of an installation must stay where they are. It matches the repository.
+DATA_DIR_NAME = "complexity-factor-analysis"
 
 
 def app_name() -> str:
     """``config.APP_NAME``, read from the source of the backend's ``config`` without running it.
 
-    Importing ``config`` reads settings from the environment (``SHARED_SESSION_ID`` among them).
-    The launcher sets those from files in the data directory, which is named after the app, so
-    it needs the name before it may import ``config``. A frozen build has to ship the source of
-    ``config`` for this (PyInstaller: ``module_collection_mode`` ``"pyz+py"``).
+    Importing ``config`` reads settings from the environment (``SHARED_SESSION_ID`` among them),
+    which the launcher sets first, so it needs the display name (for its messages and the status
+    window) before it may import ``config``. A frozen build has to ship the source of ``config``
+    for this (PyInstaller: ``module_collection_mode`` ``"pyz+py"``).
     """
     spec = importlib.util.find_spec("config")
     source = None
@@ -45,8 +57,9 @@ class AppPaths:
     logs: Path
 
     @classmethod
-    def for_user(cls, name: str) -> "AppPaths":
-        """The platform's directories for ``name``: on Windows ``%LOCALAPPDATA%\\<name>`` (also
+    def for_user(cls, name: str = DATA_DIR_NAME) -> "AppPaths":
+        """The platform's directories for ``name`` (always :data:`DATA_DIR_NAME`, whatever the app
+        is called; the display name is not a folder name): on Windows ``%LOCALAPPDATA%\\<name>`` (also
         for the settings) with ``Logs`` in it, on macOS ``~/Library/Application Support/<name>``
         and ``~/Library/Logs/<name>``, on Linux the XDG directories."""
         import platformdirs
@@ -104,6 +117,47 @@ class AppPaths:
         return self.logs / "app.log"
 
     def create(self) -> None:
-        """Create the directories, for the owner only where the system has modes."""
+        """Create the directories, for the owner only (modes on POSIX, an ACL on Windows).
+
+        An existing directory is used as it is, except on POSIX where one that others can write
+        to is refused: they could replace the secrets (``identity.json``, ``settings.env``) or
+        plant files the app then reads.
+        """
         for directory in (self.data, self.config, self.logs, self.artifacts, self.uploads):
+            existed = directory.exists()
+            if existed:
+                _refuse_shared(directory)
             directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+            if not existed and os.name == "nt":
+                _restrict_to_user(directory)
+
+
+def _refuse_shared(directory: Path) -> None:
+    if os.name == "nt" or not directory.is_dir():
+        return
+    mode = stat.S_IMODE(directory.stat().st_mode)
+    if mode & (stat.S_IWGRP | stat.S_IWOTH):
+        raise LauncherError(
+            f"{directory} can be written to by other users (mode {mode:04o}). The app keeps its secrets "
+            f"there, so it needs a directory only you can write to: run `chmod go-w {directory}`, or "
+            "choose another one with --data-dir."
+        )
+
+
+def _restrict_to_user(directory: Path) -> None:
+    """Windows: only the current user (and the system) get access to a new directory, and what
+    is created in it. A directory inherits the permissions of its parent otherwise, which for a
+    folder outside the user's profile may include other users. Best effort; the log says if it
+    did not work."""
+    try:
+        user = subprocess.run(
+            ["whoami", "/user", "/fo", "csv", "/nh"], capture_output=True, text=True, timeout=15, check=True
+        ).stdout.strip().split(",")[-1].strip().strip('"')
+        if not user.startswith("S-1-"):
+            raise ValueError("no SID")
+        subprocess.run(
+            ["icacls", str(directory), "/inheritance:r", "/grant:r", f"*{user}:(OI)(CI)F", "/grant:r", "*S-1-5-18:(OI)(CI)F"],
+            capture_output=True, text=True, timeout=30, check=True,
+        )
+    except (OSError, ValueError, subprocess.SubprocessError) as exc:
+        logger.warning("Could not restrict %s to the current user (%s); it has the permissions of its parent.", directory, exc)

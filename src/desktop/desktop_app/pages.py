@@ -142,7 +142,7 @@ class PageServer:
                 return None
             candidates = [relative, relative + ".html"]
         for candidate in candidates:
-            if candidate == "_headers.json":
+            if candidate.lower() == "_headers.json":  # also where the file system ignores the case
                 continue
             try:
                 found = (self.root / candidate).resolve(strict=True)

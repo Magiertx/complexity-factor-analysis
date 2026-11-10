@@ -66,8 +66,22 @@ class RotatingFile:
 _TOKEN = re.compile(r"([?&]token=)[^&\s\"']+")
 
 
+#: Values that are never written, wherever they turn up (a path under the artifacts directory, an
+#: error message, a traceback): the id of the one session, the key that signs its cookie.
+_HIDDEN: set[str] = set()
+
+
+def hide(*values: str) -> None:
+    """Replace these values by ``***`` in everything the log and the console get."""
+    _HIDDEN.update(v for v in values if v and len(v) >= 8)
+
+
 def redact(text: str) -> str:
-    return _TOKEN.sub(lambda m: m.group(1) + "***", text)
+    text = _TOKEN.sub(lambda m: m.group(1) + "***", text)
+    for value in _HIDDEN:
+        if value in text:
+            text = text.replace(value, "***")
+    return text
 
 
 class Tee(io.TextIOBase):

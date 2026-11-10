@@ -154,6 +154,63 @@ def test_the_login_code_needs_the_master_token(anonymous_client):
     assert anonymous_client.get(f"/?token={code}", follow_redirects=False).status_code == 303
 
 
+def test_the_login_comes_as_a_private_file_that_goes_when_the_code_is_used(anonymous_client, access):
+    import os
+    import stat
+    from pathlib import Path
+
+    response = anonymous_client.get("/_desktop/login", headers={"X-Desktop-Instance": TOKEN})
+    code, path = response.json()["code"], Path(response.json()["file"])
+    assert path.parent == access.login_dir and path.name.startswith("open-") and path.suffix == ".html"
+    page = path.read_text(encoding="utf-8")
+    assert f"http://127.0.0.1:{PORT}/?token={code}" in page and TOKEN not in page
+    if os.name != "nt":
+        assert stat.S_IMODE(path.stat().st_mode) == 0o600
+    assert anonymous_client.get(f"/?token={code}", follow_redirects=False).status_code == 303
+    assert not path.exists()
+
+
+def test_login_files_go_when_the_code_expires_and_when_the_app_quits(access, monkeypatch):
+    import desktop_app.app as app_module
+
+    _, old = access.new_login_file(lambda code: f"http://127.0.0.1:{PORT}/?token={code}")
+    now = app_module.time.monotonic()
+    monkeypatch.setattr(app_module.time, "monotonic", lambda: now + app_module.CODE_TTL_S + 1)
+    _, new = access.new_login_file(lambda code: f"http://127.0.0.1:{PORT}/?token={code}")
+    assert not old.exists() and new.exists()
+    access.close()
+    assert not new.exists() and not list(access.login_dir.iterdir())
+
+
+def test_a_code_lives_a_minute():
+    import desktop_app.app as app_module
+
+    assert app_module.CODE_TTL_S == 60
+
+
+def test_head_does_not_use_up_the_code(anonymous_client, access):
+    code = access.new_code()
+    assert anonymous_client.head(f"/?token={code}", headers=HTML, follow_redirects=False).status_code == 401
+    assert anonymous_client.get(f"/?token={code}", follow_redirects=False).status_code == 303
+
+
+def test_any_cookie_of_that_name_with_a_valid_value_opens_the_app(anonymous_client, access):
+    """Another server on 127.0.0.1 can set a cookie of the same name for its own path (cookies
+    are not bound to a port); the browser sends both, and the junk one must not lock the user out."""
+    code = access.new_code()
+    value = anonymous_client.get(f"/?token={code}", follow_redirects=False).headers["set-cookie"].split(";")[0]
+    valid = value.split("=", 1)[1]
+    anonymous_client.cookies.clear()
+    for cookie in (f"{COOKIE}=junk; {COOKIE}={valid}", f"{COOKIE}={valid}; {COOKIE}=junk"):
+        assert anonymous_client.get("/api/session", headers={"Cookie": cookie}).status_code == 204, cookie
+    assert anonymous_client.get("/api/session", headers={"Cookie": f"{COOKIE}=junk; {COOKIE}=junk2"}).status_code == 401
+
+
+def test_the_headers_file_is_not_served_in_any_case(desktop_client):
+    for name in ("_headers.json", "_HEADERS.JSON", "_Headers.json"):
+        assert desktop_client.get("/" + name, headers=HTML).status_code == 404, name
+
+
 def test_the_bearer_token_works_for_the_api_and_pages(anonymous_client):
     assert anonymous_client.get("/api/session", headers=BEARER).status_code == 204
     assert anonymous_client.get("/log", headers=BEARER).status_code == 200
@@ -167,10 +224,11 @@ def test_the_origin_and_host_checks_still_come_first(anonymous_client):
     assert response.status_code == 400
 
 
-def test_the_instance_check_keeps_its_own_key(anonymous_client):
+def test_the_instance_check_is_no_way_in(anonymous_client):
     assert anonymous_client.get("/_desktop/instance").status_code == 404
     assert anonymous_client.get("/_desktop/instance", headers=BEARER).status_code == 404
-    assert anonymous_client.get("/_desktop/instance", headers={"X-Desktop-Instance": TOKEN}).status_code == 200
+    # The master token does not open it: it answers a nonce, with a proof (tests/security).
+    assert anonymous_client.get("/_desktop/instance", headers={"X-Desktop-Instance": TOKEN}).status_code == 404
 
 
 def test_the_token_never_reaches_the_log():
@@ -179,3 +237,13 @@ def test_the_token_never_reaches_the_log():
     line = f'INFO:     127.0.0.1:5 - "GET /?token={TOKEN}&a=1 HTTP/1.1" 303'
     assert TOKEN not in redact(line) and "token=***&a=1" in redact(line)
     assert redact("GET /x?a=1&token=abc_-DEF HTTP/1.1") == "GET /x?a=1&token=*** HTTP/1.1"
+
+
+def test_the_session_id_and_key_never_reach_the_log(monkeypatch):
+    from desktop_app import logs
+
+    monkeypatch.setattr(logs, "_HIDDEN", set())
+    session = "6bf602ed-d491-46e3-a18e-902a1c5b0ea3"
+    logs.hide(session, "k" * 64, "", "x")  # the empty and the short value are no secret worth hiding
+    line = f"Could not read artifacts/{session}/dataset-1/meta.json; key {'k' * 64}; x"
+    assert logs.redact(line) == "Could not read artifacts/***/dataset-1/meta.json; key ***; x"

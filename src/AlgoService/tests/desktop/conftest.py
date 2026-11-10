@@ -19,11 +19,13 @@ def export_dir(tmp_path) -> Path:
 
 
 @pytest.fixture
-def access():
+def access(tmp_path):
     """What opens the app: the master token, the one-time codes and the sessions."""
     from desktop_app.app import Access
 
-    return Access(TOKEN)
+    login_dir = tmp_path / "login"
+    login_dir.mkdir()
+    return Access(TOKEN, login_dir)
 
 
 @pytest.fixture
