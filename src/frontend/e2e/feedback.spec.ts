@@ -189,6 +189,8 @@ for (const scheme of ["light", "dark"] as const) {
     await open(page, "/settings");
     await message(page).fill("Something");
     const problems = async () => {
+      // A button that just became enabled fades in; axe would measure it half way.
+      await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
       const results = await new AxeBuilder({ page })
         .include('[role="dialog"]')
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
