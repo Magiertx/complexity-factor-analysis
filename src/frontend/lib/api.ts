@@ -3,6 +3,7 @@
 
 import { downloadBlob } from "./factor-analysis";
 import { noteError } from "./last-error";
+import type { InterpretationChoice, StoredVariant } from "./interpretation-choice";
 
 export type ParameterType = "int" | "float" | "bool" | "enum" | "multi_enum" | "string";
 // Open string; the backend's `/algorithms` response carries the authoritative
@@ -1411,12 +1412,19 @@ async function attachment(r: Response, fallback: string): Promise<{ blob: Blob; 
 export interface InterpretationStatus {
   /** A key is configured on the server, so factors can be interpreted live. */
   available: boolean;
+  /** The default model; null without a key. */
   model: string | null;
+  /** The default effort. */
+  effort: string;
+  /** What a live call may use. */
+  models: string[];
+  efforts: string[];
   /** No key, but precomputed interpretations of bundled datasets exist. */
   precomputed_only: boolean;
 }
 
 export type InterpretationLanguage = "en" | "de";
+export type { StoredVariant };
 
 export interface FactorInterpretation {
   /** Counts from 1, as in "Factor 1"; `factors[].index` of the analysis counts from 0. */
@@ -1429,14 +1437,19 @@ export interface FactorInterpretation {
   }[];
   overall: string;
   caveats: string[];
-  /** The model that wrote it. */
+  /** The model that wrote it; a fallback model if the requested one declined. */
   model: string;
+  /** The model and effort it was asked for and is stored under. */
+  requested_model: string;
+  effort: string;
   created_at: string;
   language: InterpretationLanguage;
   prompt_version: string;
   /** No model call was made for this request. */
   cached: boolean;
   precomputed: boolean;
+  /** What is stored for this analysis and language, whatever model and effort. */
+  variants: StoredVariant[];
 }
 
 export async function fetchInterpretationStatus(signal?: AbortSignal): Promise<InterpretationStatus> {
@@ -1453,17 +1466,44 @@ export async function interpretDataset(
   id: string,
   options: AnalyzeOptions,
   language: InterpretationLanguage,
-  { cachedOnly = false, signal }: { cachedOnly?: boolean; signal?: AbortSignal } = {},
+  {
+    cachedOnly = false,
+    choice,
+    signal,
+  }: { cachedOnly?: boolean; choice?: InterpretationChoice | null; signal?: AbortSignal } = {},
 ): Promise<FactorInterpretation | null> {
   const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/interpret`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...options, language, cached_only: cachedOnly }),
+    body: JSON.stringify({
+      ...options,
+      language,
+      cached_only: cachedOnly,
+      model: choice?.model ?? null,
+      effort: choice?.effort ?? null,
+    }),
     signal,
   });
   if (r.status === 204) return null;
   if (!r.ok) throw await httpError(r, "Interpretation failed");
   return r.json();
+}
+
+/** The models and efforts an interpretation of this analysis is stored for. Never calls the model. */
+export async function fetchInterpretationVariants(
+  id: string,
+  options: AnalyzeOptions,
+  language: InterpretationLanguage,
+  signal?: AbortSignal,
+): Promise<StoredVariant[]> {
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/interpret/variants`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...options, language }),
+    signal,
+  });
+  if (!r.ok) throw await httpError(r, "Failed to look up the interpretations");
+  return (await r.json()).variants;
 }
 
 export type FeedbackKind = "bug" | "idea" | "other";

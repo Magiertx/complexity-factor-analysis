@@ -4,11 +4,21 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 import type { FactorInterpretation, InterpretationStatus } from "@/lib/api";
 import { countText } from "@/lib/factor-analysis";
+import {
+  effortOptions,
+  isStored,
+  modelLabel,
+  modelOptions,
+  withModel,
+  type InterpretationChoice,
+  type StoredVariant,
+} from "@/lib/interpretation-choice";
 import { cn } from "@/lib/utils";
-import { useT } from "@/lib/i18n";
+import { useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { InfoTip } from "@/components/ui/info-tip";
 import { Notice } from "@/components/ui/notice";
+import { Select } from "@/components/ui/select";
 import { MeasureListScope, MeasureName } from "@/components/ui/table";
 import { useTip, useTipZone } from "@/components/ui/tip";
 
@@ -22,6 +32,11 @@ interface Props {
   error: string | null;
   /** The analysis on screen matches the settings, so it can be interpreted. */
   canRun: boolean;
+  /** The model and effort in force; null while nothing can be chosen. */
+  choice: InterpretationChoice | null;
+  /** What is stored for the analysis on screen. */
+  variants: StoredVariant[];
+  onChoice: (choice: InterpretationChoice) => void;
   onInterpret: () => void;
   measureName: (key: string) => string;
   /** What a measure measures, for its tooltip. */
@@ -43,11 +58,17 @@ export function InterpretationView({
   running,
   error,
   canRun,
+  choice,
+  variants,
+  onChoice,
   onInterpret,
   measureName,
   measureDescription,
 }: Props) {
   const t = useT();
+  const tMaybe = useTMaybe();
+  const effortName = (e: string) => tMaybe(`factor.interpretation.effort_name.${e}`) ?? e;
+  const stored = (c: InterpretationChoice) => (isStored(variants, c) ? ` · ${t("factor.interpretation.stored")}` : "");
   const zone = useTipZone<HTMLOListElement>();
   const precomputedTip = useTip<HTMLSpanElement>({ more: t("factor.interpretation.precomputed_title") });
   const available = !!status?.available;
@@ -79,8 +100,9 @@ export function InterpretationView({
           {available && ` ${t("factor.interpretation.stale_again")}`}
         </Notice>
       )}
-      {!fresh && (
+      {(!fresh || choice) && (
         <div className="flex items-center gap-3 flex-wrap">
+          {!fresh && (
           <Button
             size="sm"
             onClick={onInterpret}
@@ -90,7 +112,27 @@ export function InterpretationView({
             {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
             {interpretation ? t("factor.interpretation.again") : t("factor.interpretation.button")}
           </Button>
-          {running ? (
+          )}
+          {status && choice && (
+            <ChoiceControls
+              status={status}
+              choice={choice}
+              variants={variants}
+              disabled={running}
+              onChoice={onChoice}
+              modelText={(m, c) => `${modelLabel(m)}${stored({ ...choice, model: m, ...(c ?? {}) })}`}
+              effortText={(e) => `${effortName(e)}${stored({ ...choice, effort: e })}`}
+              modelAria={t("factor.interpretation.model_label")}
+              effortAria={t("factor.interpretation.effort_label")}
+              hint={[
+                tMaybe(`factor.interpretation.model_hint.${choice.model}`),
+                tMaybe(`factor.interpretation.effort_hint.${choice.effort}`),
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            />
+          )}
+          {!fresh && (running ? (
             <span role="status" className="text-xs text-muted">
               {t("factor.interpretation.running")}
             </span>
@@ -100,7 +142,7 @@ export function InterpretationView({
                 {statusFailed ? t("factor.interpretation.status_failed") : t("factor.interpretation.needs_key")}
               </span>
             )
-          )}
+          ))}
         </div>
       )}
       {status?.precomputed_only && !interpretation && <Notice size="sm">{t("factor.interpretation.precomputed_only")}</Notice>}
@@ -173,10 +215,78 @@ export function InterpretationView({
             )}
 
             <p className="text-xs text-muted border-t border-border pt-3">
-              {t("factor.interpretation.footer", { model: interpretation.model })}
+              {t("factor.interpretation.footer", {
+                model: modelLabel(interpretation.model),
+                effort: interpretation.effort ? effortName(interpretation.effort) : "?",
+              })}
             </p>
           </div>
         )}
       </div>
     );
   }
+
+interface ChoiceControlsProps {
+  status: InterpretationStatus;
+  choice: InterpretationChoice;
+  variants: StoredVariant[];
+  disabled: boolean;
+  onChoice: (choice: InterpretationChoice) => void;
+  /** Option labels, with the mark for what is stored; `effort` is the one the model would get. */
+  modelText: (model: string, effort?: { effort: string }) => string;
+  effortText: (effort: string) => string;
+  modelAria: string;
+  effortAria: string;
+  /** What the chosen model and effort mean. */
+  hint: string;
+}
+
+/** Model and effort, as small selects; a single option, as without a key, is plain text. */
+function ChoiceControls({
+  status,
+  choice,
+  variants,
+  disabled,
+  onChoice,
+  modelText,
+  effortText,
+  modelAria,
+  effortAria,
+  hint,
+}: ChoiceControlsProps) {
+  const models = modelOptions(status, variants);
+  const efforts = effortOptions(status, variants, choice.model);
+  const className = "h-8 w-auto min-w-[8rem]";
+  return (
+    <>
+      {models.length > 1 ? (
+        <Select
+          aria-label={modelAria}
+          className={className}
+          disabled={disabled}
+          value={choice.model}
+          onValueChange={(model) => onChoice(withModel(status, variants, choice, model))}
+          options={models.map((m) => ({
+            value: m,
+            label: modelText(m, { effort: withModel(status, variants, choice, m).effort }),
+          }))}
+        />
+      ) : (
+        <span className="text-xs text-muted">{modelLabel(choice.model)}</span>
+      )}
+      {efforts.length > 1 ? (
+        <Select
+          aria-label={effortAria}
+          className={className}
+          disabled={disabled}
+          value={choice.effort}
+          onValueChange={(effort) => onChoice({ model: choice.model, effort })}
+          options={efforts.map((e) => ({ value: e, label: effortText(e) }))}
+        />
+      ) : (
+        <span className="text-xs text-muted">{efforts.length ? effortText(efforts[0]) : ""}</span>
+      )}
+      {hint && <span className="text-xs text-muted">{hint}</span>}
+    </>
+  );
+}

@@ -1043,6 +1043,7 @@
       "too_few_observations": "{n} Beobachtungen sind zu wenige für {measures} Maße. Nötig sind mindestens {needed}. Schließe Maße aus oder füge Beobachtungen hinzu.",
       "msa_filter_left": "Nach dem MSA-Filter sind {left} Maße übrig. Nötig sind mindestens {min}. Schalte den Filter aus oder senke die MSA-Schwelle.",
       "interpretation_unavailable": "Für die Interpretation braucht der Server einen Anthropic-API-Schlüssel, und es ist keiner eingerichtet.",
+      "interpretation_choice_not_allowed": "Dieses Modell oder dieser Aufwand wird vom Server nicht angeboten. Wähle ein anderes.",
       "interpretation_refused": "Das Modell hat die Interpretation dieser Analyse abgelehnt. Die Faktorenanalyse selbst ist davon nicht betroffen.",
       "interpretation_auth": "Die Anthropic-API hat den API-Schlüssel des Servers abgelehnt. Der Betreiber muss ihn prüfen.",
       "interpretation_upstream_limited": "Die Anthropic-API drosselt diesen Server. Versuche es später noch einmal.",
@@ -1080,6 +1081,28 @@
       "again": "Neu interpretieren",
       "running": "Claude interpretiert die Faktoren. Das kann bis zu drei Minuten dauern.",
       "needs_key": "Erfordert einen API-Schlüssel auf dem Server",
+      "model_label": "Modell",
+      "effort_label": "Aufwand",
+      "stored": "gespeichert",
+      "stored_title": "Für diese Einstellungen schon gespeichert; sie anzuzeigen kostet nichts",
+      "model_hint": {
+        "claude-opus-5-5": "Beste Qualität",
+        "claude-sonnet-5-5": "Etwa halb so teuer, schneller"
+      },
+      "effort_name": {
+        "low": "Niedrig",
+        "medium": "Mittel",
+        "high": "Hoch",
+        "xhigh": "Sehr hoch",
+        "max": "Maximal"
+      },
+      "effort_hint": {
+        "low": "Am schnellsten",
+        "medium": "Ausgewogen (Standard)",
+        "high": "Gründlicher, langsamer",
+        "xhigh": "Am gründlichsten, am langsamsten, am teuersten",
+        "max": "Wie sehr hoch, noch etwas mehr"
+      },
       "precomputed_only": "Ohne API-Schlüssel auf dem Server werden nur die vorberechneten Interpretationen der mitgelieferten Datensätze angezeigt, mit den Standard- oder den Paper-Einstellungen.",
       "status_failed": "Ob die Interpretation verfügbar ist, ließ sich nicht prüfen.",
       "precomputed": "vorberechnet",
@@ -1094,7 +1117,7 @@
       "driving": "Tragende Maße",
       "overall": "Gesamtbild",
       "caveats": "Einschränkungen",
-      "footer": "Automatisch erzeugt von {model} (Anthropic). Bitte mit den Ladungen abgleichen.",
+      "footer": "Automatisch erzeugt von {model} (Anthropic), Aufwand {effort}. Bitte mit den Ladungen abgleichen.",
       "stale": "Einstellungen oder Sprache haben sich seit dieser Interpretation geändert. Sie passt womöglich nicht mehr zu den Ergebnissen oben.",
       "failed": "Die Interpretation ist fehlgeschlagen.",
       "stale_again": "Interpretiere neu, um sie zu aktualisieren.",
@@ -1621,7 +1644,7 @@
         "loadings": "Ladungen: Über dem Ergebnis steht in einer Zeile die Regel, die Maße Faktoren zuordnet, mit den beiden Schwellen. Jede Regel ist in ihrem Tooltip erklärt. Darunter folgt eine Matrix (nach Betrag eingefärbt, blass, wo eine Ladung nicht zählt) oder eine Karte je Dimension. Querladungen sind umrandet.",
         "stability": "Stabilität: Stabilität prüfen unter den Ladungen zieht Bootstrap-Stichproben der Zeilen (100, 200 oder 500), passt jede mit denselben Maßen, derselben Faktorzahl und Rotation neu an und zeigt für jedes Maß den Anteil der Stichproben, in denen es bei seinen Faktoren bleibt. Der Seed ist fest, ein Lauf lässt sich also wiederholen.",
         "short_set": "Kurzset: ein Maß je Dimension, das ihr mit der höchsten Reinheit zugeordnete, um wenige Maße zu berichten, die einander nicht wiederholen. Kurzset kopieren legt sie in die Zwischenablage. Einen Stellvertreter mit geringer Stabilität liest du mit Vorsicht.",
-        "interpretation": "Interpretation: optional, Namen für die Faktoren, die ein Sprachmodell nur auf Anfrage vorschlägt. Es entscheidet nichts. Es braucht einen API-Schlüssel auf dem Server. Vorberechnete Antworten liegen den mitgelieferten Datensätzen bei, für die Standard- und die Paper-Einstellungen. Ohne Schlüssel und ohne gespeicherte Antwort für die Einstellungen steht in der Liste der Schritte, dass die Interpretation hier nicht verfügbar ist.",
+        "interpretation": "Interpretation: optional, Namen für die Faktoren, die ein Sprachmodell nur auf Anfrage vorschlägt. Es entscheidet nichts. Es braucht einen API-Schlüssel auf dem Server. Modell und Aufwand wählst du neben dem Knopf: Opus 5.5 liefert die beste Qualität, Sonnet 5.5 kostet etwa die Hälfte und ist schneller; höhere Aufwände denken länger, kosten mehr und dauern länger. Schon gespeicherte Auswahlen sind markiert und kosten nichts. Vorberechnete Antworten liegen den mitgelieferten Datensätzen bei, für die Standard- und die Paper-Einstellungen. Ohne Schlüssel wird nur Gespeichertes angeboten, und ohne gespeicherte Antwort für die Einstellungen steht in der Liste der Schritte, dass die Interpretation hier nicht verfügbar ist.",
         "names": "Namen: Klicke auf den Titel eines Faktors, auf seiner Karte oder im Kopf seiner Spalte, um ihn zu benennen. Enter übernimmt den Namen, Esc bricht ab. Die Namen erscheinen in den Ladungen, den Faktorkorrelationen, der Schrittliste und jedem Download. Sie gelten für die jeweilige Faktorzahl, Rotation und Regel. Ändert sich eines davon, verschwinden die Namen, und der Hinweis holt sie zurück. Gibt es eine Interpretation, setzt Vorgeschlagene Namen übernehmen deren Namen ein.",
         "correlations": "Korrelationskarte: in Eignung, eingeklappt, bis man sie öffnet. Sie hat eine Zelle je Maßpaar: schiefergrau für eine negative, blau für eine positive Korrelation, umrandet bei |r| ≥ 0,95. Geordnet ist sie nach Faktor oder gruppiert. Zeige auf eine Zelle oder nimm die Pfeiltasten, um das Paar und sein r zu lesen. Eine Tabelle unter der Karte enthält jeden Wert. Das Bild-Symbol lädt sie wie die anderen Abbildungen herunter.",
         "sheet": "Steckbrief: Klicke auf den Namen eines Maßes, wo er auch steht, oder drücke Enter darauf, um neben der Seite ein Fenster zu öffnen. Es zeigt, was das Maß ist (die Beschreibung des Tools und die Funktion in ComFy oder feeed dahinter, mit Link zur Quelle), ein Histogramm seiner Werte, seinen MSA und die Filterrunde, in der es entfernt wurde, Kommunalität und Einzigartigkeit, seine Ladungen, die fünf am stärksten korrelierten Maße und eine Schaltfläche zum Ausschließen oder Einbeziehen. Die Pfeiltasten links und rechts blättern durch die Liste, aus der du kommst. Esc schließt das Fenster, und der Fokus kehrt zum Namen zurück."

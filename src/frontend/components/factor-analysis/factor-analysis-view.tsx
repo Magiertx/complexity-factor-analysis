@@ -20,6 +20,7 @@ import {
   fetchCorrelations,
   fetchDataset,
   fetchFactorCatalog,
+  fetchInterpretationVariants,
   fetchInterpretationStatus,
   fetchMethods,
   interpretDataset,
@@ -36,7 +37,15 @@ import {
   type FigureFormat,
   type FigureName,
   type InterpretationStatus,
+  type StoredVariant,
 } from "@/lib/api";
+import {
+  choiceKey,
+  readChoice,
+  resolveChoice,
+  saveChoice,
+  type InterpretationChoice,
+} from "@/lib/interpretation-choice";
 import {
   PREVIEW_ROWS,
   countText,
@@ -124,6 +133,7 @@ const POLL_MS = 1500;
 const HIDDEN_POLL_MS = 15000;
 const ANALYZE_DEBOUNCE_MS = 300;
 const SAVE_OPTIONS_DEBOUNCE_MS = 1000;
+const NO_VARIANTS: StoredVariant[] = [];
 
 /** What an interpretation was requested for; a change of any part makes it stale. */
 function interpretationKey(datasetId: string, options: AnalysisOptions, locale: string) {
@@ -287,15 +297,41 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
 
   const [interpStatus, setInterpStatus] = useState<InterpretationStatus | null>(null);
   const [interpStatusFailed, setInterpStatusFailed] = useState(false);
-  const [interpretation, setInterpretation] = useState<{ key: string; result: FactorInterpretation } | null>(null);
+  // `key` is what the interpretation was made for (dataset, settings, language), `choice` the
+  // model and effort. Another choice does not make it stale, it shows another interpretation.
+  const [storedInterpretation, setInterpretation] = useState<{
+    key: string;
+    choice: string;
+    result: FactorInterpretation;
+  } | null>(null);
+  const [variantsState, setVariantsState] = useState<{ key: string; list: StoredVariant[] } | null>(null);
+  const [wantedChoice, setWantedChoice] = useState<InterpretationChoice | null>(null);
+  useEffect(() => {
+    setWantedChoice(readChoice());
+  }, []);
+  const variantsKey = datasetId && analyzedOptions ? interpretationKey(datasetId, analyzedOptions, locale) : null;
+  const variantsLoaded = !!variantsState && variantsState.key === variantsKey;
+  const variants = variantsLoaded ? variantsState.list : NO_VARIANTS;
+  const choice = useMemo(
+    () => resolveChoice(interpStatus, variants, wantedChoice),
+    [interpStatus, variants, wantedChoice],
+  );
+  const currentChoice = choiceKey(choice);
+  const interpretation =
+    storedInterpretation && storedInterpretation.choice === currentChoice ? storedInterpretation : null;
+  const pickChoice = useCallback((next: InterpretationChoice) => {
+    setWantedChoice(next);
+    saveChoice(next);
+    setInterpretError(null);
+  }, []);
   const [interpreting, setInterpreting] = useState(false);
   const [interpretError, setInterpretError] = useState<string | null>(null);
-  const interpretationRef = useRef(interpretation);
+  const interpretationRef = useRef(storedInterpretation);
   const datasetIdRef = useRef(datasetId);
   useEffect(() => {
-    interpretationRef.current = interpretation;
+    interpretationRef.current = storedInterpretation;
     datasetIdRef.current = datasetId;
-  }, [interpretation, datasetId]);
+  }, [storedInterpretation, datasetId]);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -646,17 +682,37 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   // The settings whose stored interpretation is being looked up; the step waits for the answer
   // before it says that there is none.
   const [lookingUp, setLookingUp] = useState<string | null>(null);
+  // What is stored for the analysis on screen, whatever model and effort: without a key these
+  // are the choices, with one they are marked.
   useEffect(() => {
     if (!ready || !datasetId || !analyzedOptions || analyzedFactors === null || !lookupInterpretation) return;
     const key = interpretationKey(datasetId, analyzedOptions, locale);
-    if (interpretationRef.current?.key === key) return;
+    const ctrl = new AbortController();
+    fetchInterpretationVariants(datasetId, { ...analyzedOptions, n_factors: analyzedFactors }, locale, ctrl.signal)
+      .then((list) => setVariantsState({ key, list }))
+      .catch(() => {
+        if (!ctrl.signal.aborted) setVariantsState({ key, list: [] });
+      });
+    return () => ctrl.abort();
+  }, [ready, datasetId, analyzedOptions, analyzedFactors, locale, lookupInterpretation]);
+
+  // Without a key the choices are the stored ones, so the lookup waits for them.
+  const waitingForVariants = !!interpStatus && !interpStatus.available && lookupInterpretation && !variantsLoaded;
+  useEffect(() => {
+    if (!ready || !datasetId || !analyzedOptions || analyzedFactors === null || !lookupInterpretation) return;
+    if (waitingForVariants || !choice) return;
+    const key = interpretationKey(datasetId, analyzedOptions, locale);
+    const asked = choiceKey(choice);
+    if (interpretationRef.current?.key === key && interpretationRef.current.choice === asked) return;
     const ctrl = new AbortController();
     const done = () => setLookingUp((k) => (k === key ? null : k));
     setLookingUp(key);
     const lookup = { ...analyzedOptions, n_factors: analyzedFactors };
-    interpretDataset(datasetId, lookup, locale, { cachedOnly: true, signal: ctrl.signal })
+    interpretDataset(datasetId, lookup, locale, { cachedOnly: true, choice, signal: ctrl.signal })
       .then((res) => {
-        if (res) setInterpretation({ key, result: res });
+        if (!res) return;
+        setInterpretation({ key, choice: asked, result: res });
+        setVariantsState({ key, list: res.variants });
       })
       .catch(() => {
         // Nothing to show; asking for an interpretation reports errors.
@@ -666,22 +722,26 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       ctrl.abort();
       done();
     };
-  }, [ready, datasetId, analyzedOptions, analyzedFactors, locale, lookupInterpretation]);
+  }, [ready, datasetId, analyzedOptions, analyzedFactors, locale, lookupInterpretation, waitingForVariants, choice]);
 
   // Only the analysis on screen can be interpreted or downloaded as a whole: during the
   // debounce after a change of the settings, `options` are already ahead of it.
   const analysisCurrent = !!analyzedOptions && analyzedOptions === options && !analyzing;
 
   const runInterpretation = async () => {
-    if (!datasetId || !analyzedOptions || !analysisCurrent) return;
+    if (!datasetId || !analyzedOptions || !analysisCurrent || !choice) return;
     const forDataset = datasetId;
     const forOptions = analyzedOptions;
     const key = interpretationKey(datasetId, forOptions, locale);
+    const asked = choiceKey(choice);
     setInterpreting(true);
     setInterpretError(null);
     try {
-      const res = await interpretDataset(datasetId, forOptions, locale);
-      if (res && datasetIdRef.current === forDataset) setInterpretation({ key, result: res });
+      const res = await interpretDataset(datasetId, forOptions, locale, { choice });
+      if (res && datasetIdRef.current === forDataset) {
+        setInterpretation({ key, choice: asked, result: res });
+        setVariantsState({ key, list: res.variants });
+      }
     } catch (e) {
       if (datasetIdRef.current === forDataset) setInterpretError(errorText(e, t("factor.interpretation.failed")));
     } finally {
@@ -1070,7 +1130,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     !!interpretation && (!datasetId || interpretation.key !== interpretationKey(datasetId, options, locale));
   const pendingAnalysis = ready && !analysis && !analysisError;
   const interpretationPending =
-    !!datasetId && !!analyzedOptions && lookingUp === interpretationKey(datasetId, analyzedOptions, locale);
+    !!datasetId &&
+    !!analyzedOptions &&
+    (lookingUp === interpretationKey(datasetId, analyzedOptions, locale) || waitingForVariants);
   const interpretationUnavailable =
     ready && analysis && interpStatus && !interpStatus.available && !interpretation && !interpretationPending
       ? t(
@@ -1804,6 +1866,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                   running={interpreting}
                   error={interpretError}
                   canRun={analysisCurrent}
+                  choice={choice}
+                  variants={variants}
+                  onChoice={pickChoice}
                   onInterpret={runInterpretation}
                   measureName={measureName}
                   measureDescription={measureDescription}
