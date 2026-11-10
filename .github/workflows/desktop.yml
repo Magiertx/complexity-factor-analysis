@@ -118,10 +118,6 @@ jobs:
       # The numbers of the paper, the invariance of the MSA, the core of the factor analysis and the
       # launcher. Linux runs the whole suite (ProM, Graphviz and TeX tests skip), which also shows
       # that PM4Py works without cvxopt for everything the app does.
-      # Two tests depend on the platform's linear algebra and are left out on Windows and macOS (the
-      # next step runs them for their numbers): the fit of exactly collinear data raises "Singular
-      # matrix" on the Windows runner, and the MSA of the log dataset, which has six exact
-      # dependencies, differs by more than 1e-6 between column orders on macOS.
       - name: Backend tests
         working-directory: src/AlgoService
         run: |
@@ -129,19 +125,8 @@ jobs:
             python -m pytest -q -rs
           else
             python -m pytest -q -rs tests/test_published_numbers.py tests/test_msa_invariance.py \
-              tests/test_factor_analysis_core.py tests/desktop \
-              --deselect tests/test_factor_analysis_core.py::test_analyze_marks_a_regularised_bartlett_test \
-              --deselect tests/test_msa_invariance.py::test_log_msa_filter_does_not_depend_on_the_column_order
+              tests/test_factor_analysis_core.py tests/desktop tests/test_job_runner.py tests/test_dataset_history.py
           fi
-
-      - name: Backend tests that depend on the platform (information)
-        if: runner.os != 'Linux'
-        continue-on-error: true
-        working-directory: src/AlgoService
-        run: |
-          python -m pytest -q -rs \
-              tests/test_factor_analysis_core.py::test_analyze_marks_a_regularised_bartlett_test \
-              tests/test_msa_invariance.py::test_log_msa_filter_does_not_depend_on_the_column_order
 
       - uses: actions/download-artifact@v7
         with:
@@ -172,6 +157,20 @@ jobs:
           echo '|---|---|---|' >> "$GITHUB_STEP_SUMMARY"
           python scripts/build_desktop.py pack
           ls -l build/desktop/release
+
+      # The copyleft packages (AGPL, GPL, MPL) that are really in this bundle, at the versions
+      # in it; the release job fetches their sources.
+      - name: List the copyleft packages of the bundle
+        run: |
+          python scripts/build_desktop.py copyleft | tee build/desktop/copyleft.txt
+          test -s build/desktop/copyleft.txt
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: copyleft-${{ matrix.os }}
+          path: build/desktop/copyleft.txt
+          retention-days: 3
+          if-no-files-found: error
 
       - name: Install the browser
         working-directory: src/frontend
@@ -240,7 +239,28 @@ jobs:
           path: archives
           merge-multiple: true
 
-      - name: Attach the archives to the release
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: copyleft-*
+          path: copyleft
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      # The source distribution of every copyleft package, at the version that is in the binaries
+      # (the three systems may differ), attached next to them: the source offer of the licences
+      # (THIRD-PARTY-LICENSES.txt, docs/DEPLOYMENT.md for the Docker images).
+      - name: Download the sources of the copyleft packages
+        run: |
+          cat copyleft/*/copyleft.txt | sort -u > copyleft-all.txt
+          cat copyleft-all.txt
+          test -s copyleft-all.txt
+          python -m pip download --no-binary :all: --no-deps -r copyleft-all.txt -d sources
+          ls -l sources
+          test "$(ls sources | wc -l)" -ge "$(wc -l < copyleft-all.txt)"
+
+      - name: Attach the archives and the sources to the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -251,4 +271,4 @@ jobs:
             gh release create "$GITHUB_REF_NAME" --draft $pre --title "$GITHUB_REF_NAME" --generate-notes \
               || gh release view "$GITHUB_REF_NAME" > /dev/null
           fi
-          gh release upload "$GITHUB_REF_NAME" archives/* --clobber
+          gh release upload "$GITHUB_REF_NAME" archives/* sources/* --clobber

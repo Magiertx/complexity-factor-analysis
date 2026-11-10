@@ -7,12 +7,15 @@
     python scripts/build_desktop.py all          # the three in a row (the default)
     python scripts/build_desktop.py verify-macos # the bundle needs no newer macOS than MACOS_MIN
     python scripts/build_desktop.py exe          # print the program in the bundle (for the CI)
+    python scripts/build_desktop.py copyleft     # name==version of the bundled copyleft packages
 
 Run it from any directory with the backend's requirements, ``requirements-desktop.txt`` and, for
 ``frontend``, Node.js installed (``npm ci`` in ``src/frontend`` first). Output goes to
 ``build/desktop`` of the repository:
 
-    stage/   build_info.json, meta.json, LICENSE, THIRD-PARTY-LICENSES.txt (read by desktop.spec)
+    stage/   build_info.json, meta.json, LICENSE, THIRD-PARTY-LICENSES.txt (read by desktop.spec;
+             the licence list is rewritten after PyInstaller ran, from what it really bundled),
+             bundled-packages.json, copyleft.txt
     work/    PyInstaller's scratch directory
     dist/    the bundle: <slug>/ (Windows, Linux) or <name>.app (macOS)
     release/ the archive that is published
@@ -29,6 +32,7 @@ import ast
 import json
 import os
 import platform
+from importlib import metadata
 import re
 import shutil
 import subprocess
@@ -54,14 +58,20 @@ RELEASE = BUILD / "release"
 #: cvxopt 1.3.3 would raise it to 15 and is left out (docs/DESKTOP.md, "cvxopt").
 MACOS_MIN = "14.0"
 
-#: Installed distributions the bundle does not contain: the Celery worker and Postgres driver of
-#: the Docker stack, the test tools, the solver left out, and the tools that build the bundle.
-NOT_BUNDLED = [
-    "celery", "kombu", "billiard", "amqp", "vine", "asyncpg", "uvloop", "cvxopt",
-    "click-didyoumean", "click-plugins", "click-repl", "prompt_toolkit", "wcwidth",
-    "pytest", "pytest-cov", "coverage", "iniconfig", "pluggy", "Pygments",
-    "pyinstaller", "pyinstaller-hooks-contrib", "altgraph", "pefile", "pywin32-ctypes",
-    "macholib", "pip-licenses", "prettytable", "pip", "setuptools", "wheel",
+#: Distributions that are in the environment of the build and never part of the program: the tools
+#: that build it and licence it. A distribution is listed as bundled only if PyInstaller's table of
+#: contents has a file of it (``bundled_distributions``), so this only keeps a tool out if a
+#: dependency of PyInstaller itself ended up in the table of contents.
+BUILD_TOOLS = {"pyinstaller", "pyinstaller-hooks-contrib", "altgraph", "pefile", "pywin32-ctypes", "macholib", "pip-licenses", "prettytable"}
+
+#: Substrings of a licence name (as pip-licenses reports it) that make a package copyleft: its
+#: source must be offered with the binaries (the GPL family, the AGPL, the MPL, the EPL).
+COPYLEFT_MARKERS = ("GPL", "MPL", "MOZILLA PUBLIC", "EPL", "ECLIPSE PUBLIC", "CDDL", "EUPL")
+
+#: The ComFy code the app carries (src/AlgoService/vendored/*/PROVENANCE.md); MIT, with its own notice.
+VENDORED = [
+    ("vendored/comfy", "ComFy (https://github.com/Pati-nets/ComFy)"),
+    ("vendored/comfy_log", "ComFy for log measures (vendored/comfy_log)"),
 ]
 
 
@@ -157,42 +167,168 @@ def cmd_frontend(_: argparse.Namespace) -> None:
 # --- bundle -----------------------------------------------------------------------------------
 
 
-def python_licenses() -> str:
+def norm(name: str) -> str:
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def toc_files(toc_path: Path) -> list[str]:
+    """The source paths in PyInstaller's table of contents (``Analysis-00.toc``) that lie in
+    ``site-packages``: the modules, binaries and data files that are really in the bundle."""
+    import ast
+
+    tree = ast.literal_eval(toc_path.read_text(encoding="utf-8"))
+    found: set[str] = set()
+
+    def walk(node: object) -> None:
+        if isinstance(node, str):
+            if "site-packages" in node.lower() and len(node) > 12:
+                found.add(node)
+        elif isinstance(node, dict):
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, (list, tuple)):
+            for value in node:
+                walk(value)
+
+    walk(tree)
+    return sorted(found)
+
+
+def bundled_distributions(toc_path: Path) -> list[tuple[str, str]]:
+    """``(name, version)`` of every installed distribution that has code, a compiled library or a
+    data file in PyInstaller's table of contents, which is what is bundled. (The spec copies the
+    metadata of every installed package for ``importlib.metadata``; that alone does not count.)"""
+    if not toc_path.is_file():
+        raise SystemExit(f"{toc_path} is missing: run `bundle` first.")
+    tops: set[str] = set()
+    for path in toc_files(toc_path):
+        tail = re.split(r"site-packages[\\/]", path, maxsplit=1, flags=re.I)[-1]
+        top = re.split(r"[\\/]", tail, maxsplit=1)[0].lower()
+        if not top.endswith((".dist-info", ".egg-info")):  # the metadata of every installed package is copied; only code, libraries and data count
+            tops.add(top)
+    owners: dict[str, set[str]] = {}
+    versions: dict[str, str] = {}
+    for dist in metadata.distributions():
+        name = dist.metadata["Name"]
+        if not name:
+            continue
+        key = norm(name)
+        versions[key] = dist.version
+        for file in dist.files or []:
+            owners.setdefault(file.parts[0].lower(), set()).add(key)
+        info = getattr(dist, "_path", None)
+        if info is not None:
+            owners.setdefault(Path(info).name.lower(), set()).add(key)
+    bundled = {key for top in tops for key in owners.get(top, set())}
+    bundled -= {norm(n) for n in BUILD_TOOLS}
+    return sorted((key, versions[key]) for key in bundled)
+
+
+def licence_table(names: list[str]) -> list[dict]:
+    """pip-licenses' view of the given distributions: name, version, licence and URL."""
+    cmd = [sys.executable, "-m", "piplicenses", "--format=json", "--with-urls", "--packages", *names]
+    env = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
+    out = subprocess.run(cmd, capture_output=True, text=True, check=True, encoding="utf-8", env=env)
+    return json.loads(out.stdout)
+
+
+def copyleft_packages(table: list[dict]) -> list[dict]:
+    return [row for row in table if any(m in (row.get("License") or "").upper() for m in COPYLEFT_MARKERS)]
+
+
+def python_licenses(names: list[str]) -> str:
     cmd = [
         sys.executable, "-m", "piplicenses", "--format=plain-vertical", "--with-license-file",
-        "--no-license-path", "--with-notice-file", "--with-urls",
-        "--ignore-packages", *NOT_BUNDLED,
+        "--no-license-path", "--with-notice-file", "--with-urls", "--packages", *names,
     ]
     env = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
     out = subprocess.run(cmd, capture_output=True, text=True, check=True, encoding="utf-8", env=env)
     return out.stdout
 
 
-def third_party_text(name: str, version: str) -> str:
+def vendored_licenses() -> str:
+    """The notices of the ComFy sources under src/AlgoService/vendored (MIT requires them)."""
+    parts = []
+    for folder, title in VENDORED:
+        text = (BACKEND / folder / "LICENSE").read_text(encoding="utf-8").strip()
+        parts.append(f"{title}\n{'-' * 78}\nsource: src/AlgoService/{folder}/ (PROVENANCE.md names the origin and the changes)\n\n{text}\n")
+    return "\n".join(parts)
+
+
+def third_party_text(name: str, version: str, packages: list[tuple[str, str]] | None = None) -> str:
+    """The licence file. ``packages`` is what the bundle contains (``bundled_distributions``);
+    without it (before PyInstaller ran) only the header and the notices are written."""
     npm_file = FRONTEND / "npm-licenses.txt"
     npm = npm_file.read_text(encoding="utf-8") if npm_file.is_file() else "(not generated: run `frontend`)"
     repo = "https://github.com/Magiertx/complexity-factor-analysis"
+    table = licence_table([n for n, _ in packages]) if packages else []
+    copyleft = copyleft_packages(table)
+    lines = []
+    for row in copyleft:
+        lines.append(f"  - {row['Name']} {row['Version']}: {row['License']}")
+    copyleft_block = "\n".join(lines) if lines else "  (the list is made when the bundle is built)"
     header = f"""Third-party software in {name} {version}
 {'=' * 78}
 
 {name} is licensed under the MIT licence (LICENSE). The program contains the software below,
 under its own licences, which are reproduced after this note.
 
-PM4Py is licensed under the GNU Affero General Public License v3 or later; its source code of the
-version used here is the sdist of pm4py on https://pypi.org/project/pm4py/. The source code of this program, with the build scripts that made this bundle
-(scripts/build_desktop.py, src/desktop/desktop.spec) and the exact versions of every library
-(src/AlgoService/constraints.txt), is at {repo}; the commit is in build_info.json.
+Copyleft packages in this program, and where their source code is
+-----------------------------------------------------------------
+{copyleft_block}
+
+PM4Py (GNU Affero General Public License v3 or later) and Levenshtein (GNU General Public
+License v2 or later) are part of this program; certifi and tqdm (Mozilla Public License 2.0) are
+included unmodified. For every package in the list above the exact source distribution (sdist) of
+the version in this program is attached to the release of {name} on {repo}/releases, next to the
+binaries, and is also on https://pypi.org/project/<package>/ . The source code of this program,
+with the build scripts that made this bundle (scripts/build_desktop.py, src/desktop/desktop.spec)
+and the exact version of every library (src/AlgoService/constraints.txt), is at {repo}; the
+commit is in build_info.json. If you cannot get a source code in this way, ask the maintainers of
+that repository.
 
 The program also contains the Python interpreter (Python Software Foundation License) and Tcl/Tk
 (BSD-style licence) for its status window. The wheels of NumPy, SciPy
 and others contain compiled libraries (OpenBLAS, GCC runtime, ...) whose licences are part of the
 texts below.
 
+Vendored source code
+{'=' * 78}
+
+{vendored_licenses()}
+The ProM4Py client in vendored/comfy/prom4py is not covered by this note: ComFy's README asks users
+to copy it in from the ProM4Py distribution (Zenodo record 13853660); its licence is not recorded
+in this repository (see vendored/comfy/PROVENANCE.md).
+
 Python packages
 {'=' * 78}
 
 """
-    return header + python_licenses() + "\n\nWeb pages\n" + "=" * 78 + "\n\n" + npm
+    body = python_licenses([n for n, _ in packages]) if packages else "(made when the bundle is built)\n"
+    return header + body + "\n\nWeb pages\n" + "=" * 78 + "\n\n" + npm
+
+
+def toc_path() -> Path:
+    return WORK / SPEC.stem / "Analysis-00.toc"
+
+
+def write_licences(meta: dict) -> None:
+    """The licence file and the list of copyleft packages, from what the bundle really contains."""
+    packages = bundled_distributions(toc_path())
+    table = licence_table([n for n, _ in packages])
+    text = third_party_text(meta["name"], meta["version"], packages)
+    (STAGE / "THIRD-PARTY-LICENSES.txt").write_text(text, encoding="utf-8")
+    (STAGE / "bundled-packages.json").write_text(json.dumps(table, indent=2) + "\n", encoding="utf-8")
+    copyleft = copyleft_packages(table)
+    (STAGE / "copyleft.txt").write_text("".join(f"{row['Name']}=={row['Version']}\n" for row in copyleft), encoding="utf-8")
+    # PyInstaller copied the provisional file into the bundle; replace every copy.
+    copies = list(bundle_dir(meta).rglob("THIRD-PARTY-LICENSES.txt"))
+    if not copies:
+        raise SystemExit(f"THIRD-PARTY-LICENSES.txt is not in {bundle_dir(meta)}: the spec has to put it there.")
+    for target in copies:
+        target.write_text(text, encoding="utf-8")
+    print(f"{len(packages)} packages in the bundle, {len(copyleft)} copyleft: "
+          f"{', '.join(r['Name'] for r in copyleft)}; licences written to {len(copies)} place(s)")
 
 
 def write_stage() -> dict:
@@ -233,6 +369,7 @@ def cmd_bundle(_: argparse.Namespace) -> None:
         cwd=ROOT,
         env=env,
     )
+    write_licences(meta)
     print(f"Bundle: {bundle_dir(meta)}  ({human(tree_size(bundle_dir(meta)))} unpacked)")
 
 
@@ -352,6 +489,12 @@ def cmd_verify_macos(_: argparse.Namespace) -> None:
         raise SystemExit(f"The bundle needs a newer macOS than {MACOS_MIN}.")
 
 
+def cmd_copyleft(_: argparse.Namespace) -> None:
+    """Print ``name==version`` of the bundled copyleft packages (for the release job, which
+    downloads their sdists and attaches them)."""
+    print((STAGE / "copyleft.txt").read_text(encoding="utf-8"), end="")
+
+
 def cmd_exe(args: argparse.Namespace) -> None:
     """Print the program inside the bundle: on Windows the one with a console unless --windowed
     (it quits on Ctrl+Break, which the CI needs), inside the .app on macOS."""
@@ -370,6 +513,7 @@ def cmd_exe(args: argparse.Namespace) -> None:
 
 
 COMMANDS = {
+    "copyleft": cmd_copyleft,
     "exe": cmd_exe,
     "frontend": cmd_frontend,
     "bundle": cmd_bundle,
