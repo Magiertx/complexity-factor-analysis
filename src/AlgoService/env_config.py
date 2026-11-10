@@ -117,3 +117,56 @@ def csv_list(
 
     OVERRIDES[var] = ",".join(items)
     return tuple(items)
+
+
+def positive_number_or_never(var: str, default: float | None, *, unit: str = "") -> float | None:
+    """A positive number (``unit`` is only for the message), or ``never`` for ``None``:
+    the rule it belongs to is switched off. ``default`` may be ``None`` as well."""
+    raw = os.environ.get(var)
+    if raw is None or not raw.strip():
+        return default
+    if raw.strip().lower() == "never":
+        OVERRIDES[var] = "never"
+        return None
+    try:
+        value = float(raw.strip())
+    except ValueError:
+        raise ConfigError(
+            f"{var}={raw!r} is not a number{f' of {unit}' if unit else ''} or 'never'."
+        ) from None
+    if not value > 0:
+        raise ConfigError(f"{var}={raw!r} must be above 0, or 'never'.")
+    OVERRIDES[var] = raw.strip()
+    return value
+
+
+def data_max_idle_s() -> float | None:
+    """Seconds after which the data of an idle session is removed (``DATA_MAX_IDLE_DAYS``,
+    default 7 days); ``None`` for ``never``. Datasets and upload directories share it."""
+    days = positive_number_or_never("DATA_MAX_IDLE_DAYS", 7, unit="days")
+    return None if days is None else days * 24 * 3600
+
+
+def positive_int_or_never(var: str, default: int | None) -> int | None:
+    """A positive integer, or ``never`` for ``None`` (no limit)."""
+    value = positive_number_or_never(var, None if default is None else float(default))
+    if value is None:
+        return None
+    if value != int(value):
+        raise ConfigError(f"{var}={os.environ.get(var)!r} is not a whole number or 'never'.")
+    return int(value)
+
+
+def uuid_text(var: str) -> str | None:
+    """A UUID setting without a default; ``None`` when unset."""
+    import uuid
+
+    raw = os.environ.get(var)
+    if raw is None or not raw.strip():
+        return None
+    try:
+        value = str(uuid.UUID(raw.strip()))
+    except ValueError:
+        raise ConfigError(f"{var}={raw!r} is not a UUID.") from None
+    OVERRIDES[var] = value
+    return value

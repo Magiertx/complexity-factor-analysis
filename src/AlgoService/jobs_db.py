@@ -21,7 +21,7 @@ import uuid
 import logging
 
 import models
-from env_config import positive_int, text
+from env_config import positive_int, positive_number_or_never, text
 from database import AsyncSessionLocal, engine, Base
 from sqlalchemy import select, delete, func, update
 from sqlalchemy.exc import IntegrityError
@@ -32,6 +32,14 @@ logger = logging.getLogger("algoservice")
 # Job artifacts and factor-analysis datasets. The Docker image mounts a volume here; outside of
 # it, e.g. for the end-to-end tests, ARTIFACTS_DIR points elsewhere.
 ARTIFACTS_DIR = Path(text("ARTIFACTS_DIR", "/app/artifacts"))
+
+
+#: Free disk space, in percent, below which the oldest finished runs are deleted; they go until
+#: 5 points more are free. ``LOW_DISK_CLEANUP_FREE_PCT=never`` (``None``) deletes nothing, for a
+#: desktop installation whose runs are the user's own.
+LOW_DISK_CLEANUP_FREE_PCT: float | None = positive_number_or_never(
+    "LOW_DISK_CLEANUP_FREE_PCT", 10.0, unit="percent"
+)
 
 
 async def init_db() -> None:
@@ -246,6 +254,35 @@ async def set_job_failed(job_id: str, error_msg: str, code: str | None = None) -
             await session.commit()
 
 
+INTERRUPTED_MESSAGE = (
+    "The application was closed or stopped while this job was queued or running, so it was "
+    "interrupted. Start it again."
+)
+
+
+async def fail_interrupted_jobs() -> int:
+    """Mark every job still ``pending`` or ``running`` as failed ("interrupted"); returns how many.
+
+    Only for a process that runs its jobs itself: whatever it left in those states died with the
+    previous process. They would otherwise count towards the quotas (``MAX_ACTIVE_JOBS_PER_SESSION``,
+    ``MAX_ACTIVE_STABILITY_JOBS``) for good. Never call this when a separate worker (Celery) may be
+    running jobs of its own.
+    """
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(models.Run).where(models.Run.status.in_(("pending", "running")))
+        )
+        runs = result.scalars().all()
+        now = _utcnow_naive()
+        for run in runs:
+            run.status = "failed"
+            run.error = INTERRUPTED_MESSAGE
+            run.params_json = {**(run.params_json or {}), "_error_code": "interrupted"}
+            run.finished_at = now
+        await session.commit()
+        return len(runs)
+
+
 async def update_job_notes(
     job_id: str,
     notes: str | None,
@@ -328,7 +365,8 @@ async def delete_all_jobs(session_id: str | None = None) -> None:
 
 async def cleanup_old_jobs() -> None:
     """Check disk usage and delete oldest completed or failed runs (and their artifacts)
-    until free space is at least 15%."""
+    until free space is 5 points above ``LOW_DISK_CLEANUP_FREE_PCT`` (15% by default).
+    Does nothing when that setting is ``never``."""
     if not ARTIFACTS_DIR.exists():
         try:
             ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -336,10 +374,15 @@ async def cleanup_old_jobs() -> None:
             logger.exception(f"Failed to create artifacts directory: {e}")
             return
 
+    if LOW_DISK_CLEANUP_FREE_PCT is None:
+        return
+    trigger = LOW_DISK_CLEANUP_FREE_PCT / 100
+    target = (LOW_DISK_CLEANUP_FREE_PCT + 5) / 100
+
     try:
         usage = shutil.disk_usage(ARTIFACTS_DIR)
         free_pct = usage.free / usage.total
-        if free_pct >= 0.10:
+        if free_pct >= trigger:
             return
 
         # Free space is less than 10%. Query completed or failed runs, oldest first.
@@ -370,7 +413,7 @@ async def cleanup_old_jobs() -> None:
                 # Re-check usage
                 usage = shutil.disk_usage(ARTIFACTS_DIR)
                 free_pct = usage.free / usage.total
-                if free_pct >= 0.15:
+                if free_pct >= target:
                     break
     except Exception as e:
         logger.exception(f"Disk space cleanup failed: {e}")

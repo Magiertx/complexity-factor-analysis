@@ -195,6 +195,31 @@ MAX_ACTIVE_JOBS_PER_SESSION=3
 # COMPOSE_SUBNET=172.28.0.0/16
 ```
 
+### Running as one local process (desktop)
+
+Without Docker the backend can run as a single process, which is what the desktop app does. None
+of this is in `docker-compose.yml`; with default settings the Docker deployment behaves as
+described above.
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `DATABASE_URL` | Postgres of the compose file | `sqlite+aiosqlite:///<file>` uses a SQLite file: default connection pool, `journal_mode=WAL`, `busy_timeout` 10 s, `synchronous=NORMAL` on every connection. An in-memory URL keeps one shared connection. |
+| `REDIS_URL` | set by compose | Unset: jobs run in the server process instead of Celery, and the rate limits and quotas that use Redis are counted in memory. |
+| `LOCAL_JOB_SLOTS` | `2` | Jobs computing at once in that mode; the others wait as `pending`. Progress (SSE) and cooperative abort work as with Celery. |
+| `DATA_MAX_IDLE_DAYS` | `7` | Days of idleness after which a session's datasets and upload directories are deleted. `never` keeps them. |
+| `MAX_DATASETS_PER_SESSION` | `30` | Datasets kept per session, oldest finished first. `never` for no limit. |
+| `LOW_DISK_CLEANUP_FREE_PCT` | `10` | Free disk space below which the oldest finished runs are deleted (until 5 points more are free). `never` deletes none. |
+| `SESSION_MAX_AGE` | `1209600` (14 days) | Lifetime of the session cookie in seconds. `never` is ten years. |
+| `SHARED_SESSION_ID` | unset | A UUID. When set, every caller is in this one session, whatever the cookie says. Only for a single-user installation; on a server it would give all visitors the same runs and datasets. |
+
+- With no `REDIS_URL`, jobs found `pending` or `running` at startup are marked `failed` with the
+  code `interrupted`, because the process that ran them is gone. Left alone they would count
+  towards `MAX_ACTIVE_JOBS_PER_SESSION` and `MAX_ACTIVE_STABILITY_JOBS` for good.
+- A malformed value of any of these stops the start, like the other settings.
+- Migrations: Docker runs `alembic upgrade head` in `entrypoint.sh`. A launcher without the
+  `alembic` command calls `db_migrate.upgrade_to_head(url)` (in `src/AlgoService`), which works
+  on SQLite and Postgres and may be called from inside a running event loop.
+
 ### Interpretation by Claude
 
 The optional interpretation step sends the measure names (the column headers of an own CSV),

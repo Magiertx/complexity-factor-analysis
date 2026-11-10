@@ -23,14 +23,21 @@ import pandas as pd
 
 import jobs_db
 
+from env_config import data_max_idle_s, positive_int_or_never
+
 from .core import clean_matrix
 from .descriptives import describe
 
-#: Datasets kept per session; the oldest finished ones go first.
-MAX_DATASETS_PER_SESSION = 30
+#: Datasets kept per session; the oldest finished ones go first. ``MAX_DATASETS_PER_SESSION=never``
+#: keeps all of them (``None``), e.g. for a single-user installation.
+MAX_DATASETS_PER_SESSION: int | None = positive_int_or_never("MAX_DATASETS_PER_SESSION", 30)
 
-#: A session directory untouched for this long is removed.
-SESSION_MAX_IDLE_S = 7 * 24 * 3600
+#: A session directory untouched for this long is removed; ``None`` never removes it.
+#: ``DATA_MAX_IDLE_DAYS`` sets it (``never`` for none), also for ``routes.algorithms``.
+SESSION_MAX_IDLE_S: float | None = data_max_idle_s()
+
+# "Not given", as opposed to None, which means no limit.
+_DEFAULT: Any = object()
 
 #: A dataset still computing after this long outlived Celery's time limit of an hour, e.g.
 #: because the worker restarted.
@@ -305,9 +312,12 @@ def _meta_file(path: Path) -> dict[str, Any]:
         return {}
 
 
-def prune_session(session_id: str, keep: int = MAX_DATASETS_PER_SESSION) -> list[str]:
-    """Drop the oldest finished datasets beyond ``keep``; computing ones are left alone
-    unless they are stale. Returns the ids of the jobs that computed the dropped ones."""
+def prune_session(session_id: str, keep: int | None = _DEFAULT) -> list[str]:
+    """Drop the oldest finished datasets beyond ``keep`` (default ``MAX_DATASETS_PER_SESSION``,
+    ``None`` for no limit); computing ones are left alone unless they are stale. Returns the ids
+    of the jobs that computed the dropped ones."""
+    if keep is _DEFAULT:
+        keep = MAX_DATASETS_PER_SESSION
     session_root = root() / session_id
     if not session_root.is_dir():
         return []
@@ -322,18 +332,21 @@ def prune_session(session_id: str, keep: int = MAX_DATASETS_PER_SESSION) -> list
     jobs = []
     for i, (mtime, directory, meta) in enumerate(entries):
         status = meta.get("status")
-        if (i >= keep and status != "computing") or (status == "computing" and mtime < stale):
+        if (keep is not None and i >= keep and status != "computing") or (status == "computing" and mtime < stale):
             shutil.rmtree(directory, ignore_errors=True)
             if meta.get("job_id"):
                 jobs.append(meta["job_id"])
     return jobs
 
 
-def cleanup_idle_sessions(max_idle_s: float = SESSION_MAX_IDLE_S) -> list[str]:
-    """Remove dataset directories of sessions nobody touched for ``max_idle_s``. Returns the
-    ids of the jobs that computed the removed datasets."""
+def cleanup_idle_sessions(max_idle_s: float | None = _DEFAULT) -> list[str]:
+    """Remove dataset directories of sessions nobody touched for ``max_idle_s`` (default
+    ``SESSION_MAX_IDLE_S``; ``None`` removes nothing). Returns the ids of the jobs that computed
+    the removed datasets."""
+    if max_idle_s is _DEFAULT:
+        max_idle_s = SESSION_MAX_IDLE_S
     base = root()
-    if not base.is_dir():
+    if max_idle_s is None or not base.is_dir():
         return []
     cutoff = time.time() - max_idle_s
     jobs = []

@@ -87,6 +87,8 @@ def validate_job_id(job_id: str) -> None:
 import uuid
 from fastapi import Request
 
+from env_config import positive_number_or_never, uuid_text
+
 
 def session_secret() -> str:
     """The key that signs the session cookie, and the root of every other key the server
@@ -104,6 +106,17 @@ def session_secret() -> str:
         "the algoservice and celery_worker services (see docs/DEPLOYMENT.md)."
     )
 
+#: Lifetime of the session cookie in seconds; Starlette's own default is 14 days.
+#: ``SESSION_MAX_AGE=never`` is ten years.
+_TEN_YEARS_S = 10 * 365 * 24 * 3600
+_session_max_age = positive_number_or_never("SESSION_MAX_AGE", 14 * 24 * 3600, unit="seconds")
+SESSION_MAX_AGE: int = _TEN_YEARS_S if _session_max_age is None else int(_session_max_age)
+
+#: One fixed session for everybody who reaches the server, for a single-user installation
+#: (the desktop app). Unset on a server, where the cookie separates users.
+SHARED_SESSION_ID: str | None = uuid_text("SHARED_SESSION_ID")
+
+
 def ensure_session_cookie(request: Request) -> str:
     """The caller's session id, guaranteed to be a well-formed UUID; starts a session if needed.
 
@@ -111,7 +124,15 @@ def ensure_session_cookie(request: Request) -> str:
     ``../..`` must never get through. Anything that is not a UUID is replaced by a fresh one,
     so a tampered or corrupted cookie starts a new session instead of returning an error.
     The cookie is set by the session middleware when the response goes out.
+
+    With ``SHARED_SESSION_ID`` set, that id is the answer for every caller, whatever the cookie
+    says.
     """
+    if SHARED_SESSION_ID:
+        if request.session.get("session_id") != SHARED_SESSION_ID:
+            request.session["session_id"] = SHARED_SESSION_ID
+        return SHARED_SESSION_ID
+
     session_id = request.session.get("session_id")
     if session_id is not None:
         try:
