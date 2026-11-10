@@ -1,0 +1,239 @@
+name: Desktop
+
+# Builds the desktop app (docs/DESKTOP.md) with PyInstaller for Windows, Linux and macOS and tests
+# the frozen program: the backend tests that guard the numbers, then the built program started
+# headless with the smoke test, the checks of scripts/check_desktop.py and Playwright.
+# A v* tag attaches the three archives to the release.
+on:
+  push:
+    branches: [main, "desktop*"]
+    # Not evaluated for tags, which always build.
+    paths:
+      - "src/desktop/**"
+      - "src/AlgoService/**"
+      - "src/frontend/**"
+      - "scripts/build_desktop.py"
+      - "scripts/check_desktop.py"
+      - "scripts/run_frozen.py"
+      - "scripts/smoke.py"
+      - "LICENSE"
+      - ".github/workflows/desktop.yml"
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
+permissions:
+  contents: read
+
+env:
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  # The static export of the pages and the licences of their npm packages; the same for all systems.
+  frontend-export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: src/frontend
+        run: npm ci
+
+      - name: Build the static export
+        run: python3 scripts/build_desktop.py frontend
+
+      - name: Check the export
+        working-directory: src/frontend
+        run: npm run check:export
+
+      - name: Collect the files
+        run: |
+          mkdir frontend-export
+          mv src/frontend/out frontend-export/out
+          mv src/frontend/npm-licenses.txt frontend-export/npm-licenses.txt
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frontend-export
+          path: frontend-export
+          retention-days: 3
+          if-no-files-found: error
+
+  build:
+    needs: frontend-export
+    name: build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        # ubuntu-22.04 for the glibc of the binary: it runs on everything newer.
+        os: [ubuntu-22.04, windows-2022, macos-15]
+    defaults:
+      run:
+        shell: bash
+    env:
+      # Playwright: the full suite without ProM on Linux and Windows, the specs for a missing ProM on macOS.
+      PLAYWRIGHT_ARGS: ${{ matrix.os == 'macos-15' && '--grep @no-prom' || '' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            src/AlgoService/requirements.txt
+            src/AlgoService/requirements-dev.txt
+            src/AlgoService/constraints.txt
+            src/desktop/requirements-desktop.txt
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Install the Python packages
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r src/AlgoService/requirements-dev.txt -r src/desktop/requirements-desktop.txt \
+            -c src/AlgoService/constraints.txt
+          # The bundle has no cvxopt (docs/DESKTOP.md, "cvxopt"): test what is shipped.
+          python -m pip uninstall -y cvxopt
+          python -c "import importlib.util as u; assert u.find_spec('cvxopt') is None"
+          python --version
+          python -m pip list
+
+      # The numbers of the paper, the invariance of the MSA, the core of the factor analysis and the
+      # launcher. Linux runs the whole suite (ProM, Graphviz and TeX tests skip), which also shows
+      # that PM4Py works without cvxopt for everything the app does.
+      - name: Backend tests
+        working-directory: src/AlgoService
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            python -m pytest -q -rs
+          else
+            python -m pytest -q -rs tests/test_published_numbers.py tests/test_msa_invariance.py \
+              tests/test_factor_analysis_core.py tests/desktop
+          fi
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: frontend-export
+          path: frontend-export
+
+      - name: Place the export
+        run: |
+          mv frontend-export/out src/frontend/out
+          mv frontend-export/npm-licenses.txt src/frontend/npm-licenses.txt
+
+      - name: Build
+        env:
+          APP_COMMIT: ${{ github.sha }}
+        run: |
+          start=$(date +%s)
+          python scripts/build_desktop.py bundle
+          echo "bundle took $(( $(date +%s) - start )) s"
+
+      # No binary of the bundle may need a newer macOS than the one the release states.
+      - name: Check the minimum macOS
+        if: runner.os == 'macOS'
+        run: python scripts/build_desktop.py verify-macos
+
+      - name: Pack
+        run: |
+          echo '| archive | unpacked | packed |' >> "$GITHUB_STEP_SUMMARY"
+          echo '|---|---|---|' >> "$GITHUB_STEP_SUMMARY"
+          python scripts/build_desktop.py pack
+          ls -l build/desktop/release
+
+      - name: Install the browser
+        working-directory: src/frontend
+        run: |
+          npm ci
+          if [ "$RUNNER_OS" = Linux ]; then
+            npx playwright install --with-deps chromium
+          else
+            npx playwright install chromium
+          fi
+
+      # Start the built program headless, as a user's machine would, and run everything against it.
+      - name: Smoke test, checks and Playwright against the built program
+        env:
+          APP_COMMIT_EXPECTED: ${{ github.sha }}
+        run: |
+          exe=$(python scripts/build_desktop.py exe)
+          version=$(python -c "import json; print(json.load(open('build/desktop/stage/meta.json'))['version'])")
+          start=$(date +%s)
+          python scripts/run_frozen.py --exe "$exe" --data-dir "$RUNNER_TEMP/cfa-data" \
+            --run "python scripts/smoke.py --port-file {port_file} --no-prom" \
+            --run "python scripts/check_desktop.py --port-file {port_file} --commit $APP_COMMIT_EXPECTED --version $version" \
+            --run "cd src/frontend && npx playwright test $PLAYWRIGHT_ARGS"
+          echo "the three took $(( $(date +%s) - start )) s"
+
+      # The program without a console, as a user starts it: it must come up and answer.
+      - name: Start the program without a console
+        if: runner.os == 'Windows'
+        run: |
+          python scripts/run_frozen.py --quit kill --exe "$(python scripts/build_desktop.py exe --windowed)" \
+            --data-dir "$RUNNER_TEMP/cfa-data-windowed"
+
+      - name: Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-${{ matrix.os }}
+          path: |
+            src/frontend/playwright-report
+            src/frontend/test-results
+          retention-days: 3
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: desktop-${{ matrix.os }}
+          path: build/desktop/release/*
+          retention-days: 3
+          if-no-files-found: error
+
+  # A draft, so the notes and the assets can be checked before the release goes out (images.yml
+  # drafts the same release; whichever comes first creates it).
+  release:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: desktop-*
+          path: archives
+          merge-multiple: true
+
+      - name: Attach the archives to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -l archives
+          pre=""
+          case "$GITHUB_REF_NAME" in *-*) pre="--prerelease" ;; esac
+          if ! gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" --draft $pre --title "$GITHUB_REF_NAME" --generate-notes \
+              || gh release view "$GITHUB_REF_NAME" > /dev/null
+          fi
+          gh release upload "$GITHUB_REF_NAME" archives/* --clobber
