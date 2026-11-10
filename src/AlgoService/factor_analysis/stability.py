@@ -24,7 +24,6 @@ from typing import Any, Callable
 
 import numpy as np
 import pandas as pd
-from factor_analyzer.utils import smc
 from scipy.linalg import eigh
 from scipy.optimize import linear_sum_assignment, minimize
 
@@ -36,6 +35,7 @@ from .core import (
     StopCheck,
     _check_stop,
     _fit_factors,
+    _smc,
     _StoppableFactorAnalyzer,
     assign,
 )
@@ -70,7 +70,7 @@ class _GradientFactorAnalyzer(_StoppableFactorAnalyzer):
 
     def _fit_factor_analysis(self, corr_mtx):  # type: ignore[override]
         k = self.n_factors
-        start = (np.diag(corr_mtx) - smc(corr_mtx).T).squeeze()
+        start = (np.diag(corr_mtx) - _smc(corr_mtx).T).squeeze()
         bounds = [self.bounds for _ in range(corr_mtx.shape[0])]
         reduced = corr_mtx.copy()
 

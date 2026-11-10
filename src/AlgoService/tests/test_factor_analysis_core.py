@@ -264,6 +264,39 @@ def test_analyze_marks_a_regularised_bartlett_test():
     assert "singular" in [w["code"] for w in result["warning_details"]]
 
 
+def test_a_singular_matrix_that_inv_refuses_still_gives_start_values(monkeypatch):
+    """Rounding decides whether ``np.linalg.inv`` raises for a matrix with an exact linear
+    dependency; it did on a Windows runner. The analysis must not depend on that."""
+    from factor_analyzer.utils import smc
+
+    data = _correlated()
+    data["sum"] = data["a1"] + data["b1"]
+    corr = np.corrcoef(data.to_numpy(dtype=float), rowvar=False)
+    real_inv = np.linalg.inv
+
+    def strict_inv(a):
+        if np.linalg.matrix_rank(a) < a.shape[0]:
+            raise np.linalg.LinAlgError("Singular matrix")
+        return real_inv(a)
+
+    monkeypatch.setattr(np.linalg, "inv", strict_inv)
+    with pytest.raises(np.linalg.LinAlgError):
+        smc(corr)
+    start = core._smc(corr)
+    assert start.shape == (corr.shape[0],) and np.all(np.isfinite(start))
+    result = core.analyze(data, core.AnalysisParams(auto_msa_filter=False))
+    assert result["bartlett"]["regularised"]
+    assert "singular" in [w["code"] for w in result["warning_details"]]
+
+
+def test_the_start_values_are_factor_analyzers_where_inv_works():
+    from factor_analyzer.utils import smc
+
+    corr = np.corrcoef(_correlated().to_numpy(dtype=float), rowvar=False)
+    assert np.array_equal(core._smc(corr), smc(corr))
+    assert np.array_equal(core._smc(corr, sort=True), smc(corr, sort=True))
+
+
 def test_analyze_warns_about_small_samples_and_failed_bartlett():
     rng = np.random.default_rng(3)
     data = pd.DataFrame(rng.normal(size=(12, 3)), columns=list("abc"))

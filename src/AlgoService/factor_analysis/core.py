@@ -30,6 +30,7 @@ import numpy as np
 import pandas as pd
 import factor_analyzer.factor_analyzer as _fa_module
 from factor_analyzer.factor_analyzer import FactorAnalyzer
+import factor_analyzer.utils as _fa_utils
 from factor_analyzer.utils import corr as _corr
 from scipy.stats import chi2
 from sklearn.utils import check_array as _sklearn_check_array
@@ -114,6 +115,26 @@ def _check_array_compat(x, force_all_finite=None, **kwargs):
 
 
 _fa_module.check_array = _check_array_compat
+
+
+def _smc(corr_mtx, sort=False):
+    """factor_analyzer's squared multiple correlations (the start values of every minres fit),
+    with ``pinv`` for a matrix that ``inv`` calls singular.
+
+    A correlation matrix with an exact linear dependency (a measure that is the sum of two
+    others) is singular up to rounding, and rounding decides whether ``np.linalg.inv`` raises:
+    it did on a Windows runner and returned huge numbers elsewhere. The start values only seed
+    the optimiser, so the pseudo-inverse does as well; and where ``inv`` works, the result is
+    factor_analyzer's own, to the last bit.
+    """
+    try:
+        return _fa_utils.smc(corr_mtx, sort)
+    except np.linalg.LinAlgError:
+        smc = 1 - 1 / np.diag(np.linalg.pinv(corr_mtx))
+        return np.sort(smc) if sort else smc
+
+
+_fa_module.smc = _smc
 
 # minres bounds every uniqueness below by 0.005, so a Heywood case ends at a communality of
 # about 0.995 rather than 1. The cut stays at 0.9949 (decided for the demo): a lower one would
@@ -642,7 +663,8 @@ class _StoppableFactorAnalyzer(FactorAnalyzer):
     """``FactorAnalyzer`` that asks ``should_stop`` before each evaluation of the minres
     objective. The optimiser evaluates it p + 1 times per step for its numerical gradient, so
     a fit of a hundred measures stops within milliseconds instead of running on for seconds.
-    The objective itself is factor_analyzer's, so the loadings are the same to the last bit."""
+    The objective itself is factor_analyzer's, so the loadings are the same to the last bit. Its
+    start values come from ``_smc``, which falls back to ``pinv`` where ``inv`` fails."""
 
     should_stop: StopCheck | None = None
 

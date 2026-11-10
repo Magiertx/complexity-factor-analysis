@@ -74,9 +74,11 @@ def test_log_msa_filter_does_not_depend_on_the_column_order(log_data):
         result = core.msa_filter(log_data[order])
         assert {r["measure"] for r in result.removed} == set(LOG_REMOVED)
         assert set(result.data.columns) == set(reference.data.columns)
-        assert abs(result.overall - reference.overall) <= 1e-6
+        # The correlation matrix has a condition number of about 1e9, so a single MSA moves in the
+        # sixth digit with the order of the columns (1.14e-6 on macOS); which measures stay does not.
+        assert abs(result.overall - reference.overall) <= 1e-5
         for measure, msa in reference.per_measure.items():
-            assert abs(result.per_measure[measure] - msa) <= 1e-6, (measure, result.per_measure[measure], msa)
+            assert abs(result.per_measure[measure] - msa) <= 1e-5, (measure, result.per_measure[measure], msa)
 
 
 def test_msa_does_not_depend_on_the_units_on_singular_data():
