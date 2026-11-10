@@ -688,3 +688,19 @@ def test_zip_errors_match_the_analysis(client):
 
     computing, _ = _computing_with_job(client)
     assert client.post(f"/factor-analysis/datasets/{computing}/export/zip", json={}).status_code == 409
+
+
+def test_a_process_with_its_own_jobs_keeps_a_long_computing_dataset(client, monkeypatch):
+    """Without Celery there is no kill after an hour: a healthy long job is not failed, and its
+    inputs are not deleted, by the listing or the pruning."""
+    import job_runner
+    from factor_analysis import storage
+
+    dataset_id, job_id = _computing_with_job(client)
+    monkeypatch.setattr(storage, "STALE_COMPUTING_S", 0)
+    monkeypatch.setattr(job_runner, "runs_jobs_itself", lambda: True)
+    assert _list(client)[0]["status"] == "computing"
+    assert client.get(f"/jobs/{job_id}").json()["status"] != "failed"
+    assert client.get(f"/factor-analysis/datasets/{dataset_id}").json()["status"] == "computing"
+    session_id = next(iter(storage.root().iterdir())).name
+    assert storage.prune_session(session_id) == []

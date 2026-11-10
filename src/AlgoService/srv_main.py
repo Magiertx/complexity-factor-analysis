@@ -131,6 +131,14 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
+        if job_runner.runs_jobs_itself():
+            # The server is down and its jobs are cancelled, but their threads may still run (they
+            # cannot be killed). Tell them to stop, and mark every job that is not done as
+            # interrupted now: a process that still computes writes nothing from here on.
+            job_runner.request_stop()
+            interrupted = await jobs_db.fail_interrupted_jobs()
+            if interrupted:
+                config.logger.info("Marked %d running job(s) as interrupted: the application is stopping.", interrupted)
         if precompute_task is not None:
             precompute_task.cancel()
             try:

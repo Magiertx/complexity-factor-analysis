@@ -14,6 +14,7 @@ import asyncio
 import inspect
 import logging
 import os
+import threading
 import weakref
 from typing import Any, Awaitable, Callable
 
@@ -48,6 +49,27 @@ def runs_jobs_itself() -> bool:
     from database import IS_TESTING
 
     return not os.environ.get("REDIS_URL") and not IS_TESTING
+
+
+# Set once when the process that runs its own jobs is shutting down (see ``request_stop``).
+_stopping = threading.Event()
+
+
+def request_stop() -> None:
+    """The process is quitting: every job of this process gives up at its next check.
+
+    A job thread cannot be killed, and it outlives the server's event loop. Left alone it would go
+    on computing and writing after the instance lock of the desktop app is released, next to a
+    second instance on the same database. So the status checks of the jobs (``is_stopping``) answer
+    "aborted" from now on, and the writes of a job that is stopped this way are dropped
+    (``jobs_db``): whatever is still ``pending`` or ``running`` is marked "interrupted" at the end
+    of the shutdown. Only for a process that runs its jobs itself, never with a Celery worker.
+    """
+    _stopping.set()
+
+
+def is_stopping() -> bool:
+    return _stopping.is_set()
 
 
 def _semaphore() -> asyncio.Semaphore:

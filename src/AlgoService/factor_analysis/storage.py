@@ -43,6 +43,18 @@ _DEFAULT: Any = object()
 #: because the worker restarted.
 STALE_COMPUTING_S = 3600 + 600
 
+
+def stale_computing_s() -> float | None:
+    """How long a dataset may stay ``computing``, or ``None`` for as long as it takes.
+
+    The limit is Celery's time limit. A process that runs its jobs itself (the desktop app) has
+    none, and a job that died with the process is marked at the next start, so a long but healthy
+    job must not be taken for a dead one.
+    """
+    import job_runner
+
+    return None if job_runner.runs_jobs_itself() else STALE_COMPUTING_S
+
 _cache: dict[str, tuple[float, pd.DataFrame]] = {}
 
 
@@ -328,11 +340,12 @@ def prune_session(session_id: str, keep: int | None = _DEFAULT) -> list[str]:
             continue
         entries.append((meta_path.stat().st_mtime, directory, _meta_file(meta_path)))
     entries.sort(key=lambda e: e[0], reverse=True)
-    stale = time.time() - STALE_COMPUTING_S
+    limit = stale_computing_s()
+    stale = None if limit is None else time.time() - limit
     jobs = []
     for i, (mtime, directory, meta) in enumerate(entries):
         status = meta.get("status")
-        if (keep is not None and i >= keep and status != "computing") or (status == "computing" and mtime < stale):
+        if (keep is not None and i >= keep and status != "computing") or (status == "computing" and stale is not None and mtime < stale):
             shutil.rmtree(directory, ignore_errors=True)
             if meta.get("job_id"):
                 jobs.append(meta["job_id"])

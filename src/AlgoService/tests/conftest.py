@@ -118,6 +118,17 @@ def no_anthropic_api(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def jobs_not_stopping():
+    """A test that shuts the app down as a process that runs its own jobs does (``request_stop``)
+    must not leave the next test with jobs that give up."""
+    import job_runner
+
+    job_runner._stopping.clear()
+    yield
+    job_runner._stopping.clear()
+
+
+@pytest.fixture(autouse=True)
 def private_prom4py_turn(monkeypatch, tmp_path):
     """Each test gets its own ProM4Py turn locks and "stuck" mark, instead of the files in the
     shared temp directory that another test run or a local server may have left."""

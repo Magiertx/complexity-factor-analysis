@@ -198,3 +198,71 @@ def test_startup_fails_interrupted_jobs_only_when_the_process_runs_them(monkeypa
         pass
     after = _run(jobs_db.read_job(job))
     assert after["status"] == "failed" and after["error_code"] == "interrupted"
+
+
+# --- quitting: the jobs of this process stop and are marked interrupted -----------------------
+
+
+def test_a_stopping_process_aborts_its_jobs_at_the_next_check():
+    from routes.algorithms import _make_status_cache
+
+    async def scenario():
+        job = str(uuid.uuid4())
+        await jobs_db.create_job(job, "comfy", "ComFy", "x", {})
+        loop = asyncio.get_running_loop()
+        check = await asyncio.to_thread(lambda: _make_status_cache(job, loop, max_age_s=3600))
+        assert await asyncio.to_thread(check) is False  # the answer is cached for an hour ...
+        job_runner.request_stop()
+        assert await asyncio.to_thread(check) is True  # ... but not once the process is stopping
+
+    _run(scenario())
+    assert job_runner.is_stopping()
+
+
+def test_a_stopping_process_drops_what_its_jobs_still_write_and_marks_them_interrupted():
+    async def scenario():
+        job = str(uuid.uuid4())
+        await jobs_db.create_job(job, "comfy", "ComFy", "x", {})
+        await jobs_db.update_job_progress(job, 10.0, "working", status="running")
+        job_runner.request_stop()
+        # What the stopped job thread and its handlers still write is dropped ...
+        await jobs_db.update_job_progress(job, 20.0, "Aborted by user", status="aborted")
+        await jobs_db.set_job_failed(job, "Task aborted by user")
+        state = await jobs_db.read_job(job)
+        assert state["status"] == "running" and state["percentage"] == 10.0
+        # ... and the shutdown marks the job, which nothing can overwrite any more.
+        assert await jobs_db.fail_interrupted_jobs() == 1
+        await jobs_db.update_job_progress(job, 30.0, "working", status="running")
+        state = await jobs_db.read_job(job)
+        assert state["status"] == "failed" and state["error_code"] == "interrupted"
+
+    _run(scenario())
+
+
+def test_the_shutdown_of_a_process_with_its_own_jobs_stops_them(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from srv_main import app
+
+    job = str(uuid.uuid4())
+    _run(jobs_db.create_job(job, "comfy", "ComFy", "x", {}))
+    monkeypatch.setattr(job_runner, "runs_jobs_itself", lambda: True)
+    with TestClient(app):
+        # Started: the job of the previous run is marked; this one is new.
+        job2 = str(uuid.uuid4())
+        _run(jobs_db.create_job(job2, "comfy", "ComFy", "x", {}))
+        _run(jobs_db.update_job_progress(job2, 5.0, "working", status="running"))
+        assert not job_runner.is_stopping()
+    assert job_runner.is_stopping()
+    after = _run(jobs_db.read_job(job2))
+    assert after["status"] == "failed" and after["error_code"] == "interrupted"
+
+
+def test_without_a_celery_worker_the_one_hour_rule_does_not_fail_long_jobs(monkeypatch):
+    """Celery kills a task after an hour; a process that runs its jobs itself has no such limit,
+    and a dead job is marked at the next start."""
+    from factor_analysis import storage
+
+    assert storage.stale_computing_s() == storage.STALE_COMPUTING_S  # the harness: as with Celery
+    monkeypatch.setattr(job_runner, "runs_jobs_itself", lambda: True)
+    assert storage.stale_computing_s() is None

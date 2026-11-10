@@ -162,8 +162,19 @@ async def read_job(job_id: str, session_id: str | None = None) -> dict[str, Any]
         return _serialize_run_full(run)
 
 
+def _stopping() -> bool:
+    """The process is quitting (``job_runner.request_stop``): the jobs it runs are stopped, and
+    what a stopped job would still write (progress, "aborted", "failed") must not overwrite the
+    "interrupted" that the shutdown puts on every job that is not done."""
+    import job_runner
+
+    return job_runner.is_stopping()
+
+
 async def update_job_progress(job_id: str, percentage: float, status_msg: str, status: str = "running") -> None:
     """Update progress percentage and status message of a running job."""
+    if _stopping():
+        return
     async with AsyncSessionLocal() as session:
         uid = uuid.UUID(job_id)
         result = await session.execute(select(models.Run).where(models.Run.id == uid))
@@ -241,6 +252,8 @@ async def set_job_failed(job_id: str, error_msg: str, code: str | None = None) -
     """Mark a job as failed and store the error message. ``code`` names a known cause, e.g.
     ``prom_unavailable``, so the UI can say it in its own language; it is kept with the
     internal params, like ``_summary``, and served as ``error_code``."""
+    if _stopping():
+        return
     async with AsyncSessionLocal() as session:
         uid = uuid.UUID(job_id)
         result = await session.execute(select(models.Run).where(models.Run.id == uid))

@@ -26,6 +26,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_serializer, model_validator
 
+import job_runner
 import jobs_db
 from job_runner import enqueue
 import provenance
@@ -408,6 +409,8 @@ async def run_dataset_task(job_id: str, session_id: str, dataset_id: str, spec: 
 
     def fail_dataset(error: str, code: str | None = None, **params: Any) -> None:
         """The dataset failed: ``error`` is the English text, ``code`` and ``params`` the cause."""
+        if job_runner.is_stopping():  # whatever the cause looks like now, the app is quitting
+            error, code, params = jobs_db.INTERRUPTED_MESSAGE, "interrupted", {}
         try:
             storage.update_meta(
                 session_id, dataset_id, status="failed", error=error, error_code=code, error_params=params
@@ -417,6 +420,9 @@ async def run_dataset_task(job_id: str, session_id: str, dataset_id: str, spec: 
 
     def abort_dataset() -> None:
         """The user stopped the job: not a failure, so the dataset is aborted."""
+        if job_runner.is_stopping():  # not the user: the app is quitting
+            fail_dataset(jobs_db.INTERRUPTED_MESSAGE, "interrupted")
+            return
         try:
             storage.update_meta(
                 session_id, dataset_id, status="aborted", error="Aborted by user", error_code="aborted",
@@ -847,8 +853,11 @@ async def _meta_or_404(dataset_id: str, session_id: str) -> dict[str, Any]:
 async def _fail_stale_job(meta: dict[str, Any], session_id: str, job: dict[str, Any]) -> bool:
     """Mark a dataset failed whose job outlived the time limit; True if it did."""
     # created_at is a naive UTC time turned into a timestamp; compare like with like.
+    limit = storage.stale_computing_s()
+    if limit is None:  # this process runs its jobs itself; one that died is marked at the next start
+        return False
     now = jobs_db._utcnow_naive().timestamp()
-    if now - float(job.get("created_at") or now) < storage.STALE_COMPUTING_S:
+    if now - float(job.get("created_at") or now) < limit:
         return False
     error = "The job did not finish within the time limit; the worker may have restarted."
     await jobs_db.set_job_failed(meta["job_id"], error)

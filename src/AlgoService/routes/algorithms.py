@@ -15,6 +15,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, B
 from fastapi.concurrency import run_in_threadpool
 
 import jobs_db
+import job_runner
 from job_runner import enqueue
 from config import CodedHTTPException, broadcast_jobs_update, MAX_FILE_SIZE, logger, get_session_id, limiter
 from env_config import data_max_idle_s, rate_limit, text
@@ -78,6 +79,8 @@ def _make_status_cache(job_id: str, loop: asyncio.AbstractEventLoop, *, max_age_
     state = {"last_check": 0.0, "cached": False}
 
     def is_aborted() -> bool:
+        if job_runner.is_stopping():  # the app is quitting: stop now, not after the cached answer
+            return True
         now = time.time()
         if now - state["last_check"] < max_age_s:
             return state["cached"]
