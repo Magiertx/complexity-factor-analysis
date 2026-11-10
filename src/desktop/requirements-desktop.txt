@@ -1,0 +1,11 @@
+# What builds the desktop bundle (scripts/build_desktop.py), on top of the backend's
+# requirements. Install with the backend's constraints:
+#
+#   pip install -r src/AlgoService/requirements.txt -r src/desktop/requirements-desktop.txt \
+#       -c src/AlgoService/constraints.txt
+#
+# Not part of the bundle; the versions are pinned here since constraints.txt describes the
+# Docker image.
+pyinstaller==6.22.3
+pyinstaller-hooks-contrib==2026.10
+pip-licenses==5.5.5

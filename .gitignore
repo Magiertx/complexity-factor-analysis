@@ -35,3 +35,4 @@ data/
 .env.local
 .env.*.local
 
+src/frontend/npm-licenses.txt
