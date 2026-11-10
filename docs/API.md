@@ -453,7 +453,7 @@ tools: 0.35 and 0 for `model` (ComFy), 0.5 and 0.5 for `log` (ComFy for log meas
 Factors analyses every miner on its own; `null` analyses every row, so the differences between
 the miners mix into the dimensions and every log counts once per miner. No dataset is made of
 the rows: nothing is stored, and the limits of new datasets are not touched. The rows keep their
-values and the measures their stored order, on which the KMO of singular data depends. A
+values and the measures their stored order, on which the last bits of the numbers depend. A
 measure without variance within the miner's rows, or perfectly correlated with another there,
 is left out for that miner only, as cleaning leaves it out of a dataset; an `excluded` measure
 the miner leaves out anyway is no error. The response then has `miner`: its `name`,
@@ -474,9 +474,9 @@ The steps match ComFy:
 
 1. Bartlett's test of sphericity on the measures left after `excluded`. The log-determinant
    comes from the eigenvalues, clamped at 1e-10, so it does not become NaN.
-2. KMO/MSA. With `auto_msa_filter`, every measure below `msa_threshold` is removed in one
-   step and the MSA is recomputed until none is below (ComFy's
-   `repeat_calculate_measure_of_sampling_adequacy`).
+2. KMO/MSA, from the correlation matrix (see below for singular data). With
+   `auto_msa_filter`, every measure below `msa_threshold` is removed in one step and the MSA is
+   recomputed until none is below (ComFy's `repeat_calculate_measure_of_sampling_adequacy`).
 3. Eigenvalues of the correlation matrix; the suggestion is the number above 1 (Kaiser).
    Next to it, Horn's parallel analysis on the same matrix: the eigenvalues of the
    correlation matrices of 100 samples of standard normal data of the same size, their 95th
@@ -605,9 +605,14 @@ session, wait for the one that is running instead of fitting again. Clients that
 analyses of one dataset at once send `?latest_wins=false`; their requests are then given up
 only when their connection closes. `export` and `export/zip` are given up only then, too.
 
-On a singular correlation matrix (common with log measures, e.g. `iqr = q3 - q1`) KMO uses a
-pseudo-inverse. Measures with an MSA right at the threshold can then be removed on one machine
-and kept on another; the bundled log measures show this for `trace_len_hist6`.
+On a singular correlation matrix (common with log measures, e.g. `iqr = q3 - q1`) the MSA
+leaves the eigenvalues below 1e-10, the same ones Bartlett's test clamps, out of the inverse of
+the correlation matrix. The result does not depend on the units, the column order or the
+platform. factor_analyzer's `calculate_kmo`, which ComFy for log measures uses, inverts the
+covariance matrix instead and gives the same on regular data, but not on singular data: there
+its MSA changes with all three. On the bundled log measures the tool therefore keeps 125
+measures with a KMO of 0.928, where the upstream report keeps 123 with 0.882
+(`src/AlgoService/datasets/PROVENANCE.md`).
 
 `POST /factor-analysis/datasets/{id}/export` takes the same body plus
 `"format": "csv" | "latex"` and returns the loadings table as a file: one row per measure
