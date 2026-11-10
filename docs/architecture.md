@@ -190,9 +190,10 @@ parameter change:
    kept), as in ComFy for log measures.
 2. Bartlett's test of sphericity, with log det R from the eigenvalues (the numerically stable
    variant of ComFy for log measures).
-3. KMO/MSA; with the filter on, every measure below the threshold is removed and the MSA is
-   recomputed until all remaining measures pass, as ComFy's
-   `repeat_calculate_measure_of_sampling_adequacy` does.
+3. KMO/MSA, with factor_analyzer's formula but the partial correlations from the correlation
+   matrix rather than the covariance matrix (`core.kmo`); with the filter on, every measure
+   below the threshold is removed and the MSA is recomputed until all remaining measures pass,
+   as ComFy's `repeat_calculate_measure_of_sampling_adequacy` does.
 4. Eigenvalues of the correlation matrix for the scree plot; the suggestion is the Kaiser
    criterion (eigenvalue > 1). Next to it, Horn's parallel analysis on the same matrix (95th
    percentile of 100 standard normal samples from the seed 20261012, cached per size).
@@ -210,10 +211,13 @@ pattern and structure matrices, so they equal the unrotated ones, and returns th
 matrix and the factor correlations as well. Heywood cases are flagged at a communality of
 about 0.995, where minres stops (uniqueness bounded below by 0.005).
 
-A singular correlation matrix (common with log measures, e.g. `iqr = q3 - q1`) is analysed as
-upstream does and reported as a warning. KMO then rests on a pseudo-inverse and Bartlett's
-chi-square on clamped eigenvalues (`bartlett.regularised`), so measures with an MSA at the
-threshold can come out differently on different platforms. Fits are cached by data, factor
+A singular correlation matrix (common with log measures, e.g. `iqr = q3 - q1`) is reported as
+a warning. Its eigenvalues below `Constants.eigenvalue_floor` count as zero: Bartlett's
+chi-square clamps them (`bartlett.regularised`), and the MSA leaves them out of the inverse of
+the correlation matrix, so KMO and MSA do not depend on the units, the column order or the
+platform. Here the tool deviates from upstream on purpose: factor_analyzer's `calculate_kmo`
+pseudo-inverts the covariance matrix, which on the bundled log measures leaves the MSA filter
+to rounding and units (`datasets/PROVENANCE.md`). Fits are cached by data, factor
 count and rotation. After the start the API computes the analyses of the bundled datasets
 in the background (`factor_analysis/precompute.py`, `PRECOMPUTE_BUNDLED`, set to 1 by
 docker-compose, off under test): each bundled dataset with the standard settings of its kind

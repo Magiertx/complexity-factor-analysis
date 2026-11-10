@@ -8,8 +8,9 @@ once by ``scripts/extract_published.py``:
   or None if it cannot yet;
 - ``verified``: the fields ``tests/test_published_numbers.py`` checks; only these may be
   compared at runtime;
-- ``platform_dependent``: fields that are published but depend on the platform's linear
-  algebra, so they are kept for reference and never compared;
+- ``platform_dependent``: fields that are published but were computed with linear algebra
+  that depends on the platform (and on units and column order), which the tool does
+  differently, so they are kept for reference and never compared;
 - the values themselves (``bartlett``, ``kmo``, ``msa_filter``, ``loadings``, ...), rounded
   as the report prints them (``decimals``), and ``notes`` on how they were read.
 

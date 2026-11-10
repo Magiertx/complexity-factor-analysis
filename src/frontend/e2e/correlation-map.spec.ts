@@ -16,7 +16,7 @@ import {
 // The correlation map of the suitability step: folded and loaded only when it is opened, one cell for
 // each pair of measures, read with the pointer or the arrow keys, with a table as its text, and a
 // figure like the others. The model dataset has 12 measures, so every cell is an SVG rectangle; the
-// log dataset has 123, drawn on a canvas, which has to be on screen within a second.
+// log dataset has 125, drawn on a canvas, which has to be on screen within a second.
 
 test.afterEach(async ({ page }) => deleteSessionDatasets(page));
 

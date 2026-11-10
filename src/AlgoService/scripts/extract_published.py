@@ -258,9 +258,12 @@ def log_report(path: Path, commit: str) -> dict[str, Any]:
         "kmo": {"overall": overall, "per_measure": per_measure},
         "msa_filter": {"threshold": 0.6, "removed": [{"measure": m, "msa": v} for m, v in removed]},
         "notes": [
-            "After cleaning, the correlation matrix has six exact linear dependencies; KMO and MSA "
-            "then rest on a pseudo-inverse and differ between platforms and column orders "
-            "(datasets/PROVENANCE.md). Only the cleaning and Bartlett's chi-square are checked.",
+            "After cleaning, the correlation matrix has six exact linear dependencies. The report's "
+            "KMO and MSA come from factor_analyzer's pseudo-inverse of the covariance matrix and "
+            "change with the units, the column order and the platform; the tool takes them from "
+            "the correlation matrix and gets a KMO of 0.928 with 125 measures instead of 0.882 "
+            "with 123 (datasets/PROVENANCE.md). Only the cleaning and Bartlett's chi-square are "
+            "checked.",
         ],
     }
 

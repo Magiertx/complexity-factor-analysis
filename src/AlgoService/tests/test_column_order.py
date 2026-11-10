@@ -1,10 +1,10 @@
 """The analysis always gets the measures in the order the dataset stores them.
 
-On singular data the KMO rests on a pseudo-inverse and changes with the column order, in the
-last bits or, on the log measures, in the third decimal (datasets/PROVENANCE.md). So the
-analysis, the MSA filter and every export use the stored order. Sorting or grouping the
-measures in the UI changes only what is shown, and a dataset that leaves the tool as CSV and
-comes back gives the same numbers to the last bit.
+Another column order changes the numbers only in their last bits (on the singular log
+measures the MSA by about 1e-8; tests/test_msa_invariance.py), but those bits would show in
+exports and break the round trip. So the analysis, the MSA filter and every export use the
+stored order. Sorting or grouping the measures in the UI changes only what is shown, and a
+dataset that leaves the tool as CSV and comes back gives the same numbers to the last bit.
 """
 
 from __future__ import annotations

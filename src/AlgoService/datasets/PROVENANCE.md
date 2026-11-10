@@ -31,12 +31,27 @@ unless noted.
   `complexity_factor` (e.g. `event_density` 0.999000999 here, 1.0 now: a mean over 1001
   instead of 1000 entries). The other 141 features match. Do not compare loadings of these
   five between this file and datasets computed by the service.
-- **Singular data:** after cleaning, 128 measures remain with exact linear dependencies
-  (e.g. `trace_len_q3 - trace_len_q1 = trace_len_iqr`). KMO then rests on a pseudo-inverse
-  and Bartlett's chi-square on clamped eigenvalues, so both depend slightly on the platform's
-  linear algebra: `trace_len_hist6` has an MSA of about 0.593, at the threshold of 0.6, and
-  is removed on some machines and kept on others. The service equals the upstream code run
-  in the same environment, not necessarily the published upstream output.
+- **Singular data:** after cleaning, 128 measures remain with six exact linear dependencies
+  (four `iqr = q3 - q1`, `cyclomatic_number_dfg` and `n_edges_dfg`). Bartlett's chi-square
+  clamps the six eigenvalues of the correlation matrix below `Constants.eigenvalue_floor` and
+  is the same on every platform. KMO and MSA leave the same six directions out of the inverse
+  of the correlation matrix (`core.kmo`). Here the tool deviates on purpose from ComFy for Log
+  Measures, which calls factor_analyzer's `calculate_kmo`: that inverts the covariance matrix
+  and cuts its singular values below 1e-15 of the largest. With variances from 1.6e-6
+  (`structure`) to 1.6e11 (`activities_variance`) the cut drops 30 directions, 24 of them
+  genuine ones of measures on a small scale, and leaves the rest to rounding. The published
+  result (KMO 0.882187; `start_activities_iqr`, `end_activities_iqr`, `structure`,
+  `average_affinity` and `sequentiality_ratio_dfg` removed, 123 measures left) comes out in
+  the CSV's column order, but other orders remove 5 to 14 measures or fail, the KMO of some
+  orders differs between Windows and Linux in the third decimal, and the units decide:
+  with `structure` in thousandths its MSA is 0.819 instead of 0.281. Three of the five
+  removals (`structure`, `average_affinity`, `sequentiality_ratio_dfg`, among the measures
+  with the smallest variances) are such unit artifacts. The tool removes
+  `start_activities_iqr` (MSA 0.287), `end_activities_iqr` (0.318) and `trace_len_hist6`
+  (0.546) and keeps 125 measures with a KMO of 0.928, the same on every platform, in every
+  column order and in any units; with the standard settings Kaiser's criterion gives 16
+  factors (parallel analysis 12), 14 of them with measures. `tests/test_msa_invariance.py`
+  pins this. On regular data both computations agree: on the seven ComFy reports to 1e-11.
 - **Licence:** MIT (`vendored/comfy_log/LICENSE`).
 
 ## `published/` — the numbers the bundled datasets were published with
@@ -53,8 +68,9 @@ unless noted.
   numbers rounded, with two exceptions found: the MSA of Density for the Inductive miner is
   0.7559 in the report and 0.75 in Tab. 10, that of the duplicate tasks for the Heuristics
   miner 0.5965 in the report and 0.59 in Tab. 13. For the log measures
-  only the cleaning and Bartlett's chi-square are checked; KMO and MSA are kept for reference
-  and marked platform dependent (see "Singular data" above).
+  only the cleaning and Bartlett's chi-square are checked; the published KMO and MSA are kept
+  for reference and marked platform dependent, since the tool computes them differently (see
+  "Singular data" above).
 - **Used at runtime:** the seven datasets of Important Factors carry in `manifest.json` the
   settings of the paper (`published_options`, `published_source`), whether the paper analyses
   the dataset with them or only the report in the ComFy repository does (`published_scope`:
