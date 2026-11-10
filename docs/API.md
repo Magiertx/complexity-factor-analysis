@@ -126,8 +126,9 @@ Details in [Factor analysis](#factor-analysis) below.
 | POST | `/factor-analysis/datasets/{id}/export/zip` | The whole analysis as a ZIP archive: result, matrix, tables, report, figures, descriptive statistics, run times, parameters, library versions and provenance. |
 | POST | `/factor-analysis/compare` | The factor structures of 2 to 8 analyses side by side, like Tab. 17 of Important Factors, under one assignment rule: of bundled datasets (no dataset of the session needed) or of the session's own, per miner if they have several. |
 | POST | `/factor-analysis/compare/export` | The comparison as CSV, as a LaTeX table like Tab. 17, or as a ZIP with both, the full result and a manifest. |
-| GET | `/factor-analysis/interpretation/status` | Whether factors can be interpreted by Claude, and with which model. |
+| GET | `/factor-analysis/interpretation/status` | Whether factors can be interpreted by Claude, with which model and effort by default, and which are offered. |
 | POST | `/factor-analysis/datasets/{id}/interpret` | Names and short interpretations of the factors by Claude (optional, needs an API key on the server). |
+| POST | `/factor-analysis/datasets/{id}/interpret/variants` | Which models and efforts an interpretation of this analysis is stored for; never calls Claude. |
 
 ### Job lifecycle
 
@@ -715,7 +716,7 @@ analysis. The errors of these exports are those of `analyze`.
 | `descriptives.csv` | `measure`, `n`, `mean`, `median`, `std`, `min`, `max` and `dropped` for every measure, as `descriptives` of the dataset. |
 | `inputs.csv` | Only for a computed dataset: one row per observation with `observation`, `input`, `miner`, `events`, `traces`, `variants`, `activities`, `places`, `transitions`, `arcs`, `read_s`, `discovery_s`, `discovery_run_s`, `measures_s` or `features_s`, and `error`. |
 | `stages.csv` | Only for a computed dataset: `observation`, `stage` (a measure or a feature group) and `seconds`. |
-| `interpretation.<language>.json` | Only if an interpretation of exactly these parameters is cached or precomputed in that language: the stored entry with its model, prompt version and parameters. The export never asks for a new one. |
+| `interpretation.<language>.json` | Only if an interpretation of exactly these parameters is cached or precomputed in that language: the stored entry with its model, effort, prompt version and parameters, for the default model and effort. The export never asks for a new one. |
 
 `dataset.provenance` says how the dataset was made, as recorded when it was created: `kind`
 and `source`; for a bundled dataset `bundled` (`id`, `file` in `datasets/` and `copied_from`
@@ -925,12 +926,15 @@ short interpretation for each factor. Without a key, only the precomputed interp
 the bundled datasets are served (see below).
 
 `GET /factor-analysis/interpretation/status` answers
-`{"available": bool, "model": str | null, "precomputed_only": bool}`: `available` when a key
-is configured, `model` the configured model id, `precomputed_only` when there is no key but
-precomputed interpretations exist.
+`{"available": bool, "model": str | null, "effort": str, "models": [str], "efforts": [str],
+"precomputed_only": bool}`: `available` when a key is configured, `model` the default model id
+(null without a key), `effort` the default effort, `models` and `efforts` what a live call may
+use (`INTERPRETATION_MODELS`, `INTERPRETATION_EFFORTS`; the defaults are always among them),
+`precomputed_only` when there is no key but precomputed interpretations exist.
 
 `POST /factor-analysis/datasets/{id}/interpret` takes the body of `analyze` plus
-`"language": "en" | "de"` (default `en`) and `"cached_only": bool` (default `false`). It runs
+`"language": "en" | "de"` (default `en`), `"cached_only": bool` (default `false`) and
+`"model": str | null`, `"effort": str | null` (null is the server default). It runs
 the analysis with these parameters and sends its aggregated result to Claude: the kind,
 the number of observations, used and removed measures, Bartlett, KMO with the MSA per measure,
 eigenvalues, factor count and rotation, loadings, communalities, explained variance, the
@@ -942,14 +946,19 @@ as they are. Observation labels, dataset and file names and measure values are n
 { "factors": [ { "index": 1, "name": "Size", "summary": "Two or three sentences.",
                  "driving_measures": ["Size", "Token split"], "confidence": "high" } ],
   "overall": "One short paragraph.", "caveats": ["One sentence each."],
-  "model": "claude-opus-5-5", "created_at": "2026-10-05T20:56:17+00:00", "language": "en",
-  "prompt_version": "2", "cached": false, "precomputed": false }
+  "model": "claude-opus-5-5", "requested_model": "claude-opus-5-5", "effort": "medium",
+  "created_at": "2026-10-05T20:56:17+00:00", "language": "en", "prompt_version": "3",
+  "cached": false, "precomputed": false,
+  "variants": [ { "model": "claude-opus-5-5", "effort": "medium", "precomputed": false } ] }
 ```
 
 - `factors[].index` counts from 1, as in "Factor 1" (the `factors` of `analyze` count from 0).
   `driving_measures` only names measures of the analysis; `confidence` is `low`, `medium` or
   `high`. `model` is the model that wrote the answer, a fallback model if the requested one
-  declined.
+  declined; `requested_model` and `effort` are what was asked for and what the result is
+  stored under. `variants` lists the model and effort combinations stored for exactly this
+  analysis and language (`precomputed` marks files of the repository), so a client can offer
+  them without a key.
 - Results are cached by the cleaned data, the parameters (with the factor count the analysis
   used), the language, the model, the effort and a hash of the prompt, the output schema and
   the payload format. `cached: true` means no model call was made for this request. Own
@@ -960,12 +969,20 @@ as they are. Observation labels, dataset and file names and measure values are n
   the default parameters or the published options of the dataset ("Paper settings"). It is
   served without a key.
 - With `cached_only: true` the server never calls Claude and answers 204 when nothing is
-  stored; the UI uses it to show stored interpretations without spending anything. Given
+  stored; the UI uses it to show stored interpretations without spending anything. Model and
+  effort are part of the lookup: an interpretation made at medium effort is not served for
+  `high`. Without a key any model and effort can be looked up, none is called. Given
   `n_factors` as well (the UI sends the count of the analysis on screen), it skips the
   analysis and only looks the parameters up.
 
+`POST /factor-analysis/datasets/{id}/interpret/variants` takes the same body (`model`,
+`effort` and `cached_only` are ignored) and answers `{"variants": [...]}` as above. It never calls
+Claude, so the UI can learn what is stored where `interpret` answers 204 or
+`interpretation_unavailable`.
+
 Errors carry `detail` and `code`. Analysis errors come first, as for `analyze`. Then: 503
-`interpretation_unavailable` (no key), 422 `interpretation_too_large` (more than 150 used
+`interpretation_unavailable` (no key), 422 `interpretation_choice_not_allowed` (a live call
+with a model or effort outside `models` and `efforts` of the status; `params` lists them), 422 `interpretation_too_large` (more than 150 used
 measures or 20 factors, a measure name longer than 120 characters, or a message over 80,000
 characters; `params` names the limits; checked before any limit counts), 429 `interpretation_rate_limited`
 (more than `INTERPRETATION_RATE_LIMIT`, default `10/hour`, live calls in this session) or

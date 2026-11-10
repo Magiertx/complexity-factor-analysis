@@ -117,10 +117,12 @@ Schalk do it, but interactively in the browser.
   for a name and a short interpretation of each factor, with the measures it rests on, a
   confidence and caveats such as cross-loadings or a failed Bartlett or KMO test. Only the
   measure (column) names, their definitions and aggregated results are sent, never measure
-  values, row labels or file names. It needs `ANTHROPIC_API_KEY` on the server, is limited per session and per
+  values, row labels or file names. Model (Opus 5.5 or Sonnet 5.5) and effort are chosen in the
+  step. It needs `ANTHROPIC_API_KEY` on the server, is limited per session and per
   day, and caches every answer. Without a key the step is marked as unavailable, unless an
   interpretation was precomputed for the settings: the repository holds them for the bundled
-  datasets with the default and the paper settings (`scripts/precompute_interpretations.py`). Details in [`docs/API.md`](docs/API.md#interpretation-by-claude)
+  datasets with the default and the paper settings, at several efforts (`scripts/precompute_interpretations.py`),
+  and the step offers those. Details in [`docs/API.md`](docs/API.md#interpretation-by-claude)
   and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#interpretation-by-claude).
 - **Single-log inspection.** "Inspect a single log" (a log, the miners and measures, the run, in
   three sections) runs the chosen miners on one log and shows the measures next to the rendered

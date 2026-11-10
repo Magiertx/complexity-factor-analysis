@@ -177,6 +177,8 @@ MAX_ACTIVE_JOBS_PER_SESSION=3
 # ANTHROPIC_API_KEY=
 # INTERPRETATION_RATE_LIMIT=10/hour
 # INTERPRETATION_DAILY_CAP=200
+# INTERPRETATION_MODELS=claude-opus-5-5,claude-sonnet-5-5
+# INTERPRETATION_EFFORTS=low,medium,high,xhigh
 
 # --- Feedback form (optional), see "Feedback form" below ---
 # FEEDBACK_SMTP_HOST=smtp.example.org
@@ -209,14 +211,22 @@ and for the published options ("Paper settings") of each bundled dataset.
   (default 200 per day over all sessions) bound the number of live calls; the counters live in
   Redis. One call sends about 2,000 input tokens for the bundled model datasets and roughly
   15,000 to 20,000 for the bundled log dataset (122 measures, 15 factors), and may use up to
-  16,000 output tokens including thinking. Larger analyses are refused before any call: more
+  16,000 output tokens including thinking (24,000 at `high`, 32,000 at `xhigh` and `max`;
+  `MAX_TOKENS_BY_EFFORT` in `interpretation/client.py`). Larger analyses are refused before any call: more
   than 150 measures or 20 factors, measure names longer than 120 characters, or a message
   over 80,000 characters (about 30,000 tokens). So one call costs at most about $0.45 at the
-  prices of Claude Opus 5.5, and the daily cap bounds a day. Cached and precomputed
+  prices of Claude Opus 5.5 at medium effort (more at higher efforts), and the daily cap
+  bounds a day. Cached and precomputed
   interpretations cost nothing.
 - **Model.** `INTERPRETATION_MODEL` (default `claude-opus-5-5`) and `INTERPRETATION_EFFORT`
-  (default `medium`; at `high` an analysis with many factors can run into the limit of 16,000
-  output tokens, which thinking counts towards). Requests opt into Anthropic's server-side fallback (`fallbacks: "default"`),
+  (default `medium`) are the default selection. Visitors can choose another model and effort in
+  the interpretation step: `INTERPRETATION_MODELS` (default `claude-opus-5-5,claude-sonnet-5-5`)
+  and `INTERPRETATION_EFFORTS` (comma-separated subset of `low,medium,high,xhigh,max`, default
+  `low,medium,high,xhigh`) list what is offered; the default selection is added if missing
+  (with a warning in the log), and a live call with anything else is refused with
+  `interpretation_choice_not_allowed`. Higher efforts think longer, cost more and may run into
+  the 170 s limit of a live call; each effort has its own output limit. Stored
+  interpretations of any model and effort can always be shown. Requests opt into Anthropic's server-side fallback (`fallbacks: "default"`),
   so a request the model's safety classifiers decline is retried on the recommended fallback
   model; the footer of the result names the model that answered. Another model has to support
   that option and structured outputs.
@@ -225,7 +235,9 @@ and for the published options ("Paper settings") of each bundled dataset.
   call.
 - **Precomputed results.** `src/AlgoService/scripts/precompute_interpretations.py` writes the
   interpretations of the bundled datasets for the default parameters and the published options to
-  `src/AlgoService/datasets/interpretations/`; they are part of the image. Run it with a key
+  `src/AlgoService/datasets/interpretations/`, one file per model and effort (by default Opus 5.5
+  at medium, high and xhigh; `--variant model:effort`, repeatable, chooses others, `--timeout`
+  sets the limit of one call, 600 s by default); they are part of the image. Run it with a key
   from `src/AlgoService` and rebuild. Rerun it with `--force` after changing the prompt
   (`interpretation/prompt.py`), the output schema or the payload; files made for another
   prompt are no longer served, and the log says so.

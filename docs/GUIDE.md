@@ -129,10 +129,14 @@ log is among the ten newest uploads of the session; the page says when it is not
   clipboard. A representative with a low stability should be read with care.
 - **Interpretation**: optional. Names and summaries for the factors, suggested by a language
   model only on request. It decides nothing; the analysis does not depend on it. It needs an API
-  key on the server. Precomputed answers come with the bundled datasets, for the default
-  settings and the paper settings (`scripts/precompute_interpretations.py`). Without
-  a key and without an interpretation stored for the settings, the list of steps says that it
-  is not available here and the loadings are the last step.
+  key on the server. Two small selects next to the button choose the model (Opus 5.5 for the best
+  quality, Sonnet 5.5 for about half the cost and more speed) and the effort (low is fastest,
+  medium is balanced and the default, high and xhigh think longer, cost more and take longer).
+  Choices that are already stored are marked and cost nothing; the footer of a result names the
+  model and the effort. Precomputed answers come with the bundled datasets, for the default
+  settings and the paper settings, at several efforts (`scripts/precompute_interpretations.py`).
+  Without a key, the selects offer only what is stored for the settings; if nothing is stored,
+  the list of steps says that it is not available here and the loadings are the last step.
 
 ## Compare miners
 
