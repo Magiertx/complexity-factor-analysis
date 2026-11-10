@@ -226,7 +226,11 @@ private, and the API cannot change that, so the owner sets it once per package (
 
 The tool also runs as one local Python process, which serves the API and the pages on
 `127.0.0.1` and opens the browser: SQLite instead of Postgres, jobs in the process, one session
-for the installation, no ProM yet. Packaged builds are not available yet; from a checkout:
+for the installation, no ProM yet. Packaged builds for Windows (`.zip`), macOS on Apple silicon
+(`.dmg`) and Linux (`.tar.gz`) are attached to the
+[releases](https://github.com/Magiertx/complexity-factor-analysis/releases); nothing to install,
+the first-start warnings are in [`docs/DESKTOP.md`](docs/DESKTOP.md#download-and-first-start).
+From a checkout:
 
 ```bash
 cd src/frontend && npm ci && npm run build:export
@@ -234,7 +238,7 @@ cd ../desktop && python -m desktop_app
 ```
 
 See [`docs/DESKTOP.md`](docs/DESKTOP.md) for the options, where it keeps its data, the
-`settings.env` for an API key, and its security checks.
+`settings.env` for an API key, its security checks and how the packages are built.
 
 ### Troubleshooting
 
