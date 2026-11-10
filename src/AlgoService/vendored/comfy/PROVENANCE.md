@@ -8,8 +8,8 @@
   (different entry points, and some definitions differ, e.g. Depth).
 - The rest of `prom4py/` (`client/`, `model/`, `objects/`, `conformance.py`,
   `util.py`) is the ProM4Py Python client that ComFy's README asks users to
-  copy in from the ProM4Py distribution (Zenodo record 13853660). The exact
-  version of that copy is not recorded.
+  copy in from the ProM4Py distribution (Zenodo record 13853660, licensed
+  CC BY 4.0). The exact version of that copy is not recorded.
 
 ## Not copied
 

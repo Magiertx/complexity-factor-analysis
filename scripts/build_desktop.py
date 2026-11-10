@@ -296,9 +296,9 @@ Vendored source code
 {'=' * 78}
 
 {vendored_licenses()}
-The ProM4Py client in vendored/comfy/prom4py is not covered by this note: ComFy's README asks users
-to copy it in from the ProM4Py distribution (Zenodo record 13853660); its licence is not recorded
-in this repository (see vendored/comfy/PROVENANCE.md).
+The ProM4Py client in vendored/comfy/prom4py comes from the ProM4Py distribution, Zenodo record
+13853660 ("Resources for ProM4Py's ICPM demo submission", https://zenodo.org/records/13853660),
+licensed CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); see vendored/comfy/PROVENANCE.md.
 
 Python packages
 {'=' * 78}
