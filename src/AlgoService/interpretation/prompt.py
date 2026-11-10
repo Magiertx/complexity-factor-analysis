@@ -55,9 +55,9 @@ sentence per caveat.
 - Write all free text in the language the user message asks for. Keep measure names exactly as \
 given.
 - When you write German, use these terms and no variants of them: factor = Faktor, factor count = \
-Faktorenzahl, loading = Ladung, cross-loading = Querladung, communality = Kommunalität, \
+Faktorzahl, loading = Ladung, cross-loading = Querladung, communality = Kommunalität, \
 eigenvalue = Eigenwert, explained variance = erklärte Varianz, measure = Maß (plural Maße), \
-separability = Separierbarkeit, threshold = Schwellenwert, dimension = Dimension.
+separability = Separierbarkeit, threshold = Schwelle, dimension = Dimension.
 """
 
 
