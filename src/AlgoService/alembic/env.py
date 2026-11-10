@@ -27,6 +27,12 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
+def _database_url() -> str:
+    """The database to migrate: the one a caller handed to :func:`db_migrate.upgrade_to_head`,
+    else the one the service itself uses."""
+    return config.attributes.get("database_url") or DATABASE_URL
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
@@ -39,12 +45,13 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = DATABASE_URL
+    url = _database_url()
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        render_as_batch=True,
     )
 
     with context.begin_transaction():
@@ -55,6 +62,9 @@ def do_run_migrations(connection) -> None:
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
+        # SQLite cannot alter columns in place; batch mode rebuilds the table there and
+        # emits the ordinary ALTER statements on every other database.
+        render_as_batch=True,
     )
 
     with context.begin_transaction():
@@ -69,7 +79,7 @@ async def run_migrations_online() -> None:
 
     """
     connectable = create_async_engine(
-        DATABASE_URL,
+        _database_url(),
         poolclass=pool.NullPool,
     )
 
