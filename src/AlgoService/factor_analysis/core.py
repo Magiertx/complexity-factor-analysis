@@ -6,7 +6,9 @@ ComFy for log measures (https://github.com/Pati-nets/ComFy-for-Log-Measures,
 
 - data cleaning as in ``prepare_data_for_factor_analysis`` of the log version,
 - Bartlett's test with the eigenvalue-based log-determinant of the log version,
-- the MSA filter of ``repeat_calculate_measure_of_sampling_adequacy``,
+- the MSA filter of ``repeat_calculate_measure_of_sampling_adequacy``, with the MSA taken
+  from the correlation matrix rather than factor_analyzer's covariance matrix (``kmo``; the
+  same on regular data, unlike it independent of units and platform on singular data),
 - a ``FactorAnalyzer`` fit with factor_analyzer's defaults (minres, SMC start values).
 
 Thresholds come from the vendored log-side ``Constants.py``.
@@ -27,7 +29,7 @@ from typing import Any, Callable
 import numpy as np
 import pandas as pd
 import factor_analyzer.factor_analyzer as _fa_module
-from factor_analyzer.factor_analyzer import FactorAnalyzer, calculate_kmo
+from factor_analyzer.factor_analyzer import FactorAnalyzer
 from factor_analyzer.utils import corr as _corr
 from scipy.stats import chi2
 from sklearn.utils import check_array as _sklearn_check_array
@@ -399,13 +401,29 @@ def singular_measures(data: pd.DataFrame) -> list[list[str]]:
 
 
 def kmo(data: pd.DataFrame) -> tuple[dict[str, float], float]:
-    """Kaiser-Meyer-Olkin measure of sampling adequacy, per measure and overall."""
-    # factor_analyzer warns about a pseudo-inverse whenever det(cov) is tiny, which depends on
-    # the scale of the measures and fires on regular data too; singular_measures reports
-    # actual singularity.
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        per_measure, overall = calculate_kmo(np.asarray(data, dtype=float))
+    """Kaiser-Meyer-Olkin measure of sampling adequacy, per measure and overall.
+
+    The formula of factor_analyzer's ``calculate_kmo``, with the partial correlations taken
+    from the inverse of the correlation matrix instead of the covariance matrix. Both give the
+    same on regular data (the seven ComFy reports agree to 1e-11). On singular data
+    factor_analyzer falls back to ``pinv(cov)`` with a cutoff relative to the largest
+    variance, which also drops genuine directions of measures on a small scale and leaves the
+    MSA to rounding: it changes with the units, the column order and the platform. Here the
+    eigenvalues of the correlation matrix below ``Constants.eigenvalue_floor`` count as zero,
+    the same ones Bartlett's test clamps and ``singular_measures`` reports.
+    """
+    correlations = correlation_matrix(data)
+    values, vectors = np.linalg.eigh(correlations)
+    kept = values >= _C.eigenvalue_floor
+    inverse = (vectors[:, kept] / values[kept]) @ vectors[:, kept].T
+    with np.errstate(divide="ignore", invalid="ignore"):
+        scale = np.sqrt(np.diag(inverse))
+        partial = -inverse / np.outer(scale, scale)
+    np.fill_diagonal(partial, 0.0)
+    np.fill_diagonal(correlations, 0.0)
+    r2, p2 = correlations ** 2, partial ** 2
+    per_measure = r2.sum(axis=0) / (r2.sum(axis=0) + p2.sum(axis=0))
+    overall = r2.sum() / (r2.sum() + p2.sum())
     if not np.all(np.isfinite(per_measure)) or not math.isfinite(overall):
         raise AnalysisError("The MSA could not be computed; the correlation matrix is singular.", "msa_singular")
     return {c: float(v) for c, v in zip(data.columns, per_measure)}, float(overall)
@@ -873,11 +891,13 @@ def analyze(data: pd.DataFrame, params: AnalysisParams, should_stop: StopCheck |
 
     Bartlett's test runs on the measures before the MSA filter, as in ComFy; the KMO values
     and everything after describe the measures that are left. A singular correlation matrix
-    is analysed like ComFy for log measures does (clamped eigenvalues, pseudo-inverse in the
-    MSA) and reported as a warning; it is an error only if the factor analysis then fails.
+    is analysed with its eigenvalues below ``Constants.eigenvalue_floor`` taken as zero
+    (clamped in Bartlett's test, left out of the inverse in the MSA) and reported as a
+    warning; it is an error only if the factor analysis then fails.
 
-    The measures keep the order of ``data``, which callers take as stored: on singular data
-    the KMO depends on the column order, so nothing may sort the columns on the way here.
+    The measures keep the order of ``data``, which callers take as stored: the results list
+    them in this order, and the last bits of every number follow it, so nothing may sort the
+    columns on the way here.
 
     ``should_stop`` is asked between the steps and during the fit; once it says True, the
     analysis is given up with ``Superseded``.

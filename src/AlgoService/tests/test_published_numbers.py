@@ -183,17 +183,19 @@ def test_the_extracted_files_are_what_the_script_writes():
 
 
 def test_log_paper_cleaning_and_bartlett_are_reproduced():
-    """What reproduces on every platform: the 128 measures left after cleaning and Bartlett's
-    chi-square.
+    """What the tool reproduces of the log report: the 128 measures left after cleaning and
+    Bartlett's chi-square.
 
     KMO and MSA are not compared. After cleaning, the correlation matrix has six exact linear
-    dependencies (four iqr = q3 - q1, cyclomatic_number_dfg and n_edges_dfg), so
-    factor_analyzer computes them with a pseudo-inverse: in CSV order the published KMO
-    (0.882187) and the five removed measures come out on Linux, but on Windows
-    trace_len_hist6 falls below 0.6 as well (datasets/PROVENANCE.md). The file keeps those
-    values as ``platform_dependent``. Chi-square sums the logs of the eigenvalues, six of
-    them clamped to the same floor on every platform, so it is stable; 1e-6 relative leaves
-    room for the platform's eigenvalue solver.
+    dependencies (four iqr = q3 - q1, cyclomatic_number_dfg and n_edges_dfg). factor_analyzer,
+    which ComFy for log measures uses, then inverts the covariance matrix with a cutoff
+    relative to the largest variance, which also drops genuine directions of the measures on a
+    small scale: its KMO (0.882187 published) and the five removed measures change with the
+    units, the column order and the platform. The tool takes the MSA from the correlation
+    matrix and gets a KMO of 0.9283 with three measures removed (tests/test_msa_invariance.py,
+    datasets/PROVENANCE.md). The file keeps the published values as ``platform_dependent``.
+    Chi-square sums the logs of the eigenvalues, six of them clamped to the same floor on every
+    platform, so it is stable; 1e-6 relative leaves room for the platform's eigenvalue solver.
     """
     numbers = published(LOG_DATASET)
     assert numbers["reproduce_with"] is None

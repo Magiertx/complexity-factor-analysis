@@ -102,7 +102,7 @@ const DE: CatalogContent = {
     },
     "comfy-log-paper": {
       description: "feeed-Maße der 2.112 Trainingslogs der Process Discovery Contests 2020 bis 2025.",
-      note: "Mit einem älteren feeed berechnet: simple_trace_diversity, distinct_activities_mean, distinct_activities_std, event_density und complexity_factor weichen von Datensätzen ab, die der Dienst berechnet.",
+      note: "Mit einem älteren feeed berechnet: simple_trace_diversity, distinct_activities_mean, distinct_activities_std, event_density und complexity_factor weichen von Datensätzen ab, die der Dienst berechnet. Das Tool berechnet die MSA aus der Korrelationsmatrix; sein MSA-Filter behält deshalb 125 Maße (KMO 0,928), ComFy for Log Measures 123 (KMO 0,882).",
     },
   },
 };

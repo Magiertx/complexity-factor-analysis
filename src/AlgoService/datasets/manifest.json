@@ -15,7 +15,7 @@
       "kind": "log",
       "name": "ComFy for Log Measures",
       "description": "feeed measures of the 2,112 training logs of the Process Discovery Contests 2020 to 2025.",
-      "note": "Computed with an older feeed: simple_trace_diversity, distinct_activities_mean, distinct_activities_std, event_density and complexity_factor differ from datasets the service computes.",
+      "note": "Computed with an older feeed: simple_trace_diversity, distinct_activities_mean, distinct_activities_std, event_density and complexity_factor differ from datasets the service computes. The tool computes the MSA from the correlation matrix, so its MSA filter keeps 125 measures (KMO 0.928), where ComFy for Log Measures keeps 123 (KMO 0.882).",
       "citation": "Data of ComFy for Log Measures by Patrizia Schalk, https://github.com/Pati-nets/ComFy-for-Log-Measures",
       "license": "MIT",
       "source_url": "https://github.com/Pati-nets/ComFy-for-Log-Measures"
