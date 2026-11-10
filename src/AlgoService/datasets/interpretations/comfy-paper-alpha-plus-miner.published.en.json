@@ -1,0 +1,78 @@
+{
+ "dataset_id": "comfy-paper-alpha-plus-miner",
+ "kind": "model",
+ "data_hash": "02480599437e2de0fbae80efc62d13129a5a697878a388686fb38ed4cc4b0f20",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 4,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.3,
+  "assignment_rule": "multi"
+ },
+ "language": "en",
+ "settings": "published",
+ "model": "claude-opus-5-5",
+ "prompt_version": "2",
+ "prompt_digest": "5a0d8770fc9a3942",
+ "effort": "medium",
+ "created_at": "2026-11-10T02:59:08+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Number of empty sequence flows",
+     "Token split",
+     "Size",
+     "Control flow complexity",
+     "Connector Mismatch"
+    ],
+    "name": "Size and parallel branching",
+    "summary": "Number of empty sequence flows (0.92), Token split (0.84), Size (0.82), Control flow complexity (0.72) and Connector Mismatch (0.71) load highly, so the factor combines net size with the amount of splitting, especially parallel splitting. Size also loads moderately on Factor 3 (0.53), Token split on Factor 2 (0.46), and Control flow complexity cross-loads on Factor 2 (0.60). It is the strongest factor (37% of variance).",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Maximum connector degree",
+     "Coefficient of network connectivity",
+     "Control flow complexity"
+    ],
+    "name": "Connector degree / connectivity",
+    "summary": "Maximum connector degree (0.87), Coefficient of network connectivity (0.79) and Control flow complexity (0.60, cross-loading with Factor 1) load highly, so the factor reflects how many arcs attach to nodes, i.e. local arc concentration rather than size. It explains 21% of variance.",
+    "confidence": "medium"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "Density",
+     "Separability"
+    ],
+    "name": "Sparseness / separability",
+    "summary": "Density loads negatively (-0.79) and Separability positively (0.64), so high scores mean sparse nets with few articulation points. Size also loads moderately (0.53), consistent with larger nets having lower density by definition. The factor rests on two measures and explains 17% of variance.",
+    "confidence": "medium"
+   },
+   {
+    "index": 4,
+    "driving_measures": [
+     "Sequentiality"
+    ],
+    "name": "Sequentiality",
+    "summary": "Only Sequentiality loads highly (0.95); other loadings are at most 0.17, so this is essentially a single-measure factor for the share of arcs between non-connector nodes. Its communality is at the bound (possible Heywood case), and it explains 10% of variance.",
+    "confidence": "low"
+   }
+  ],
+  "overall": "The data are suitable for factor analysis (Bartlett p < 0.001, KMO 0.82). Four varimax factors explain 85% of variance: a dominant factor combining size with parallel splitting, a connector degree/connectivity factor, a sparseness/separability factor and a single-measure sequentiality factor. All ten measures are assigned, with Control flow complexity cross-loading on Factors 1 and 2. Four factors were extracted although three were suggested and the fourth eigenvalue is only 0.53, so Factor 4 is weak and largely a split-off of one measure.",
+  "caveats": [
+   "Four factors were retained although three were suggested and the fourth eigenvalue (0.53) is below 1, so Factor 4 may be over-extraction.",
+   "Sequentiality shows a possible Heywood case (uniqueness at most 0.005), which makes Factor 4 unreliable.",
+   "Control flow complexity cross-loads on Factors 1 and 2, and Size and Token split have notable secondary loadings, so the factors are not cleanly separated.",
+   "Connector Heterogeneity and Average connector degree were removed by the MSA filter, and Number of duplicate tasks was removed as constant, so their relations are not represented.",
+   "The results reflect shared variance in these 288 nets and depend on the discovery algorithms, the rotation and the number of factors; they do not imply causes."
+  ]
+ }
+}

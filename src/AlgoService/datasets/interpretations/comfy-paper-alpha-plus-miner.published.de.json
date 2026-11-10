@@ -1,0 +1,78 @@
+{
+ "dataset_id": "comfy-paper-alpha-plus-miner",
+ "kind": "model",
+ "data_hash": "02480599437e2de0fbae80efc62d13129a5a697878a388686fb38ed4cc4b0f20",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 4,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.3,
+  "assignment_rule": "multi"
+ },
+ "language": "de",
+ "settings": "published",
+ "model": "claude-opus-5-5",
+ "prompt_version": "2",
+ "prompt_digest": "5a0d8770fc9a3942",
+ "effort": "medium",
+ "created_at": "2026-11-10T02:58:44+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Number of empty sequence flows",
+     "Token split",
+     "Size",
+     "Control flow complexity",
+     "Connector Mismatch"
+    ],
+    "name": "Größe und Parallelität",
+    "summary": "Faktor 1 bündelt Größe (Size), parallele Verzweigungen (Number of empty sequence flows, Token split), Control flow complexity und Connector Mismatch und erklärt 37 % der Varianz. Größere Netze weisen in diesem Datensatz also zugleich mehr Splits und mehr Unbalanciertheit der Konnektoren auf. Size lädt zusätzlich deutlich auf Faktor 3 (0,53), liegt aber mehr als 0,15 unter der Hauptladung, und Control flow complexity ist eine Querladung mit Faktor 2.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Maximum connector degree",
+     "Coefficient of network connectivity",
+     "Control flow complexity"
+    ],
+    "name": "Konnektorgrad und Vernetzung",
+    "summary": "Faktor 2 wird von Maximum connector degree (0,87) und Coefficient of network connectivity (0,79) getragen, also von der Zahl der Kanten pro Knoten bzw. pro Konnektor. Control flow complexity lädt mit 0,60 querladend auch hier, Token split moderat (0,46). Der Faktor beschreibt eher die lokale Verzweigungsstärke als die Netzgröße.",
+    "confidence": "medium"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "Density",
+     "Separability"
+    ],
+    "name": "Geringe Dichte und Separierbarkeit",
+    "summary": "Density lädt negativ (-0,79), Separability positiv (0,64); hohe Werte stehen für dünn besetzte Netze mit wenigen Artikulationspunkten-Engstellen. Da Density durch 2·|T|·|P| normiert ist und mit der Größe sinkt, spiegelt der Faktor teilweise auch Größe wider (Size 0,53). Mit nur zwei Hauptmessgrößen ist der Faktor schmal.",
+    "confidence": "medium"
+   },
+   {
+    "index": 4,
+    "driving_measures": [
+     "Sequentiality"
+    ],
+    "name": "Sequentialität",
+    "summary": "Faktor 4 wird praktisch nur von Sequentiality (0,95) getragen und erklärt 10 % der Varianz. Seine Kommunalität liegt an der Grenze (möglicher Heywood-Fall), und der vierte Eigenwert (0,53) liegt unter 1, sodass es sich eher um einen messgrößenspezifischen als um einen gemeinsamen Faktor handelt.",
+    "confidence": "low"
+   }
+  ],
+  "overall": "Die Daten sind für eine Faktorenanalyse geeignet (Bartlett signifikant, KMO 0,82). Vier varimax-rotierte Faktoren erklären 85 % der Varianz: ein dominanter Größen- und Parallelitätsfaktor, ein Faktor für Konnektorgrad und Vernetzung, ein Faktor geringer Dichte/Separierbarkeit sowie ein Ein-Messgrößen-Faktor für Sequentialität. Alle Messgrößen sind zugeordnet; einzige Querladung ist Control flow complexity (Faktor 1 und 2). Vorgeschlagen waren drei Faktoren, die Wahl von vier erzeugt vor allem den schwachen Faktor 4.",
+  "caveats": [
+   "Es wurden vier Faktoren extrahiert, obwohl nur drei Eigenwerte über 1 liegen und drei Faktoren vorgeschlagen wurden.",
+   "Für Sequentiality liegt ein möglicher Heywood-Fall vor, Faktor 4 ist daher nur eingeschränkt interpretierbar.",
+   "Connector Heterogeneity und Average connector degree wurden wegen niedriger MSA entfernt, Number of duplicate tasks war konstant; diese Aspekte fehlen in der Lösung.",
+   "Mehrere Messgrößen sind rechnerisch voneinander abhängig (z. B. Density und Size), was gemeinsame Varianz teils mechanisch erzeugt.",
+   "Die Lösung hängt vom Datensatz der 288 entdeckten Netze, der Rotation und der Faktorenzahl ab und zeigt keine Ursachen."
+  ]
+ }
+}

@@ -1,0 +1,79 @@
+{
+ "dataset_id": "comfy-paper-alpha-dollar-miner",
+ "kind": "model",
+ "data_hash": "53a729372bcd2e31fb15fd22f91dc5e4d85c7d53c7a2e6783de8ec908755ef14",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 4,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.3,
+  "assignment_rule": "multi"
+ },
+ "language": "en",
+ "settings": "published",
+ "model": "claude-opus-5-5",
+ "prompt_version": "2",
+ "prompt_digest": "5a0d8770fc9a3942",
+ "effort": "medium",
+ "created_at": "2026-11-10T02:59:56+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Number of empty sequence flows",
+     "Token split",
+     "Control flow complexity",
+     "Size",
+     "Coefficient of network connectivity",
+     "Maximum connector degree",
+     "Connector Mismatch"
+    ],
+    "name": "Size and parallel/branching volume",
+    "summary": "Very high loadings (0.92–0.97) of Number of empty sequence flows, Token split, Control flow complexity, Size and Coefficient of network connectivity, plus Maximum connector degree (0.80) and Connector Mismatch (0.56), describe nets that are larger and contain more splits, parallel branches and arcs per node. It explains about 50% of the variance and is clearly the dominant size/branching dimension in this dataset; Density loads moderately negatively (-0.43, assigned to Factor 2), consistent with larger nets being sparser.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Average connector degree",
+     "Density",
+     "Connector Heterogeneity"
+    ],
+    "name": "Connector degree and density",
+    "summary": "Average connector degree (0.90) and Density (0.81) load highly, with Maximum connector degree at 0.41 as a secondary loading, so the factor captures how many arcs meet at connectors relative to net size. Connector Heterogeneity loads negatively (-0.49), suggesting nets with dense, high-degree connectors tend to use one connector type, though this measure cross-loads on Factor 4.",
+    "confidence": "medium"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "Separability",
+     "Sequentiality"
+    ],
+    "name": "Sequential structure",
+    "summary": "Separability (0.93) and Sequentiality (0.76) load highly, both reflecting how much of the net consists of simple chains of non-connector nodes and articulation points. It explains about 15% of the variance but rests on only two measures.",
+    "confidence": "medium"
+   },
+   {
+    "index": 4,
+    "driving_measures": [
+     "Connector Heterogeneity"
+    ],
+    "name": "Connector type mix (weak)",
+    "summary": "Only Connector Heterogeneity loads notably (0.62), and it also loads -0.49 on Factor 2, so the factor is essentially a single-measure factor about the mix of parallel and choice connectors. It explains only 4.4% of the variance and its eigenvalue (0.68) is below 1, so it is likely over-extracted.",
+    "confidence": "low"
+   }
+  ],
+  "overall": "The data are suitable for factor analysis (Bartlett p < 0.001, overall KMO 0.83). Four varimax-rotated factors explain 86% of the variance, dominated by a size/branching factor (50%), followed by a connector degree/density factor and a sequentiality/separability factor; the fourth factor is weak and carried by Connector Heterogeneity alone. All measures are assigned, and Connector Mismatch has a modest communality (0.37).",
+  "caveats": [
+   "Four factors were extracted although the eigenvalue criterion suggests three, so Factor 4 (eigenvalue 0.68, 4.4% variance) may be an artefact of over-extraction.",
+   "Connector Heterogeneity cross-loads on Factor 4 (0.62) and Factor 2 (-0.49) and has the lowest MSA (0.61), so its placement is uncertain.",
+   "Number of duplicate tasks was removed as constant, so this dimension is not represented.",
+   "Results reflect shared variance in these 288 discovered nets and depend on the discovery algorithms, rotation and number of factors; they do not imply causal relations."
+  ]
+ }
+}

@@ -1,0 +1,80 @@
+{
+ "dataset_id": "comfy-paper-alpha-miner",
+ "kind": "model",
+ "data_hash": "53a729372bcd2e31fb15fd22f91dc5e4d85c7d53c7a2e6783de8ec908755ef14",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 4,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.3,
+  "assignment_rule": "multi"
+ },
+ "language": "en",
+ "settings": "published",
+ "model": "claude-opus-5-5",
+ "prompt_version": "2",
+ "prompt_digest": "5a0d8770fc9a3942",
+ "effort": "medium",
+ "created_at": "2026-11-10T02:58:13+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Number of empty sequence flows",
+     "Token split",
+     "Control flow complexity",
+     "Size",
+     "Coefficient of network connectivity",
+     "Maximum connector degree",
+     "Connector Mismatch"
+    ],
+    "name": "Size and parallel/branching volume",
+    "summary": "Very high loadings (0.92–0.97) of Number of empty sequence flows, Token split, Control flow complexity, Size and Coefficient of network connectivity, plus Maximum connector degree (0.80) and a moderate Connector Mismatch (0.56), show that larger nets in this dataset also have more splits, more parallel structure and more arcs per node. Density loads negatively (-0.43, below the gap rule), in line with larger nets being sparser relative to 2·|T|·|P|. The factor explains about 50% of the variance.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Average connector degree",
+     "Density",
+     "Connector Heterogeneity"
+    ],
+    "name": "Connector degree and density",
+    "summary": "Average connector degree (0.90) and Density (0.81) load highly, with Maximum connector degree loading moderately (0.41) and Connector Heterogeneity negatively (-0.49). The factor reflects how many arcs meet at connectors and how dense the net is, independent of size, and it is associated with less mixing of connector types. It explains about 17% of the variance.",
+    "confidence": "medium"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "Separability",
+     "Sequentiality"
+    ],
+    "name": "Sequential, separable structure",
+    "summary": "Separability (0.93) and Sequentiality (0.76) load highly, so nets with many articulation points and many arcs between non-connector nodes share variance here. This resembles a 'serial, chain-like structure' dimension, though it rests on only two measures. It explains about 15% of the variance.",
+    "confidence": "medium"
+   },
+   {
+    "index": 4,
+    "driving_measures": [
+     "Connector Heterogeneity"
+    ],
+    "name": "Connector type mix (weak)",
+    "summary": "Only Connector Heterogeneity loads notably (0.62), and it cross-loads on Factor 2 (-0.49). The factor explains just 4% of the variance and its eigenvalue (0.68) is below 1, so it is essentially a measure-specific factor.",
+    "confidence": "low"
+   }
+  ],
+  "overall": "The data are suitable for factor analysis (Bartlett p < 0.001, overall KMO 0.83), and four varimax factors explain 86% of the variance. A dominant size/branching factor accounts for half of it, followed by a connector degree/density factor and a sequentiality/separability factor. The fourth factor, retained beyond the three suggested by the eigenvalues, is carried by Connector Heterogeneity alone and adds little. All measures are assigned; Connector Mismatch has low communality (0.37) and only a moderate loading on Factor 1.",
+  "caveats": [
+   "Four factors were extracted although three were suggested, and three eigenvalues exceed 1, so Factor 4 is likely overextraction.",
+   "Connector Heterogeneity cross-loads on Factors 2 and 4, and its MSA (0.61) is close to the threshold, as are those of Average connector degree and Density.",
+   "Number of duplicate tasks was removed as constant, so this dimension is not represented.",
+   "Connector Mismatch is only moderately explained (communality 0.37).",
+   "Factors reflect shared variance across these 288 nets, mostly discovered models, and depend on the discovery algorithms, the rotation and the number of factors."
+  ]
+ }
+}

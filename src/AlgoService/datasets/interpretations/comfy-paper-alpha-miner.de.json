@@ -1,0 +1,72 @@
+{
+ "dataset_id": "comfy-paper-alpha-miner",
+ "kind": "model",
+ "data_hash": "53a729372bcd2e31fb15fd22f91dc5e4d85c7d53c7a2e6783de8ec908755ef14",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 3,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.0,
+  "assignment_rule": "largest"
+ },
+ "language": "de",
+ "settings": "standard",
+ "model": "claude-opus-5-5",
+ "prompt_version": "2",
+ "prompt_digest": "5a0d8770fc9a3942",
+ "effort": "medium",
+ "created_at": "2026-11-10T02:57:37+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Token split",
+     "Number of empty sequence flows",
+     "Control flow complexity",
+     "Size",
+     "Coefficient of network connectivity",
+     "Maximum connector degree",
+     "Connector Mismatch"
+    ],
+    "name": "Größe und Verzweigungsumfang",
+    "summary": "Sehr hohe Ladungen (0,90–0,97) von Size, Token split, Control flow complexity, Number of empty sequence flows und Coefficient of network connectivity zeigen, dass in diesen Netzen Größe, Menge der Verzweigungen und Bögen pro Knoten gemeinsam variieren. Maximum connector degree (0,76) und Connector Mismatch (0,55, Kommunalität nur 0,35) laden schwächer. Density lädt hier mit −0,46 sekundär, passend dazu, dass die Dichte mit wachsender Netzgröße sinkt.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Average connector degree",
+     "Density",
+     "Connector Heterogeneity"
+    ],
+    "name": "Konnektorgrad und Dichte",
+    "summary": "Average connector degree (0,89) und Density (0,84) laden hoch, Connector Heterogeneity negativ (−0,58). Der Faktor beschreibt dichte Netze mit Konnektoren vieler Bögen und eher einheitlichem Konnektortyp. Maximum connector degree lädt mit 0,39 zusätzlich mäßig auf diesem Faktor.",
+    "confidence": "medium"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "Sequentiality",
+     "Separability"
+    ],
+    "name": "Sequentialität und Zerlegbarkeit",
+    "summary": "Sequentiality (0,96) und Separability (0,69) bilden diesen Faktor, also der Anteil von Bögen zwischen Nicht-Konnektoren und der Anteil der Knoten, die keine Artikulationspunkte sind. Er erfasst damit eine eher lineare, schwach verzweigte Struktur; da er nur auf zwei Maßen beruht und Sequentiality einen möglichen Heywood-Fall zeigt, ist die Deutung vorsichtig zu sehen.",
+    "confidence": "medium"
+   }
+  ],
+  "overall": "Die Daten sind für eine Faktorenanalyse geeignet (Bartlett-Test signifikant, KMO 0,83). Drei varimax-rotierte Faktoren erklären zusammen 82 % der Varianz: ein dominanter Faktor für Größe und Verzweigungsumfang (49 %), ein Faktor für Konnektorgrad und Dichte (17 %) und ein Faktor für Sequentialität bzw. Zerlegbarkeit (16 %). Alle Maße sind zugeordnet, formale Querladungen gibt es nicht, wobei Maximum connector degree und Coefficient of network connectivity auch nennenswerte Nebenladungen (0,32–0,39) aufweisen.",
+  "caveats": [
+   "Für Sequentiality liegt die Kommunalität bei 1,017, ein möglicher Heywood-Fall, der die Schätzung von Faktor 3 verzerren kann.",
+   "Connector Mismatch und Connector Heterogeneity haben nur geringe Kommunalitäten (ca. 0,35) und werden durch die Faktoren schlecht abgebildet.",
+   "Connector Heterogeneity ist für Netze ohne Konnektoren undefiniert, was ihre Ladung beeinflussen kann.",
+   "Der dritte Eigenwert liegt mit 1,2 nur knapp über 1, sodass die Faktorenzahl nicht eindeutig ist.",
+   "Number of duplicate tasks wurde als konstant entfernt und kann daher nicht interpretiert werden.",
+   "Die Ergebnisse spiegeln gemeinsame Varianz in diesen 288 Netzen wider und hängen von Daten, Rotation und Faktorenzahl ab, nicht von kausalen Zusammenhängen."
+  ]
+ }
+}

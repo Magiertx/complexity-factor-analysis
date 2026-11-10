@@ -1,0 +1,77 @@
+{
+ "dataset_id": "comfy-paper-directly-follows-miner",
+ "kind": "model",
+ "data_hash": "9536126aa582391ece15262c0c2a6c7f6dee5641f2691e40ee9f7102dbe98efc",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 4,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.3,
+  "assignment_rule": "multi"
+ },
+ "language": "de",
+ "settings": "published",
+ "model": "claude-opus-5-5",
+ "prompt_version": "2",
+ "prompt_digest": "5a0d8770fc9a3942",
+ "effort": "medium",
+ "created_at": "2026-11-10T03:02:05+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Number of duplicate tasks",
+     "Average connector degree",
+     "Control flow complexity",
+     "Size",
+     "Maximum connector degree",
+     "Coefficient of network connectivity"
+    ],
+    "name": "Größe und Verzweigungskomplexität",
+    "summary": "Size, Control flow complexity, Number of duplicate tasks und Average connector degree laden alle hoch (ca. 0,80–0,82), d. h. größere Netze haben mehr Verzweigungen, mehr doppelte bzw. stille Transitionen und dichter verknüpfte Konnektoren. Maximum connector degree (0,60) und Coefficient of network connectivity (0,56) laden mäßig und zugleich auf Faktor 3 (Querladungen). Der Faktor ist zudem nahe an einem Generalfaktor, da fast alle Maße hier nennenswert laden.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Density"
+    ],
+    "name": "(Geringe) Dichte",
+    "summary": "Getragen fast nur von Density (−0,90); Size, Control flow complexity und Maximum connector degree laden mäßig positiv (0,42–0,45), bleiben aber unter der Zuordnungsregel. Der Faktor spiegelt vermutlich, dass die Dichte mit wachsender Netzgröße sinkt, und ist als Ein-Maß-Faktor nur schwach abgesichert.",
+    "confidence": "low"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "Coefficient of network connectivity",
+     "Maximum connector degree"
+    ],
+    "name": "Vernetzungsgrad (Kanten pro Knoten)",
+    "summary": "Coefficient of network connectivity (0,71) und Maximum connector degree (0,48) laden hier, beide jedoch mit deutlichen Querladungen auf Faktor 1; Average connector degree lädt ebenfalls 0,44. Der Faktor beschreibt die Anzahl der Kanten je Knoten bzw. Konnektor unabhängig von der Größe, ist aber nicht klar von Faktor 1 getrennt.",
+    "confidence": "medium"
+   },
+   {
+    "index": 4,
+    "driving_measures": [
+     "Separability"
+    ],
+    "name": "Separierbarkeit",
+    "summary": "Nur Separability lädt substanziell (0,69, Kommunalität 0,54); alle anderen Maße liegen unter 0,40. Es handelt sich um einen schwachen, spezifischen Faktor, der im Wesentlichen ein einzelnes Maß abbildet.",
+    "confidence": "low"
+   }
+  ],
+  "overall": "Bartlett-Test (p < 0,001) und KMO (0,73) zeigen, dass die Daten grundsätzlich für eine Faktorenanalyse geeignet sind. Die Eigenwerte (6,25; 0,82; 0,53; …) sprechen jedoch klar für eine einfaktorielle Lösung, wie auch vorgeschlagen; die extrahierten vier Faktoren erklären zwar 91 % der Varianz, aber Faktor 1 (Größe/Verzweigungskomplexität, 44 %) dominiert, während die Faktoren 2 bis 4 jeweils im Wesentlichen ein einzelnes Maß (Density, Coefficient of network connectivity, Separability) abbilden. Insgesamt variieren die meisten Komplexitätsmaße dieser 288 Netze gemeinsam mit der Netzgröße.",
+  "caveats": [
+   "Nur ein Eigenwert liegt über 1 und vorgeschlagen war ein Faktor, daher sind die Faktoren 2 bis 4 vermutlich überextrahiert und wenig stabil.",
+   "Kommunalitäten nahe 1 bei Size, Control flow complexity, Density und Number of duplicate tasks deuten auf einen möglichen Heywood-Fall hin.",
+   "Maximum connector degree und Coefficient of network connectivity laden kreuzweise auf Faktor 1 und 3, sodass diese Faktoren nicht sauber getrennt sind.",
+   "Sequentiality und Connector Mismatch wurden wegen niedriger MSA, drei weitere Maße wegen Konstanz ausgeschlossen, was die Aussagekraft auf acht Maße beschränkt.",
+   "Die Ergebnisse hängen von Datensatz, Varimax-Rotation und Faktorenzahl ab und zeigen gemeinsame Varianz, keine Ursachen."
+  ]
+ }
+}

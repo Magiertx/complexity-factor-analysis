@@ -1,0 +1,226 @@
+{
+ "dataset_id": "comfy-log-pdc-training-logs",
+ "kind": "log",
+ "data_hash": "537c9dc5f5a982597251fad6ed8a477819b48201138dde26b8c2262529548cb0",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 15,
+  "rotation": "varimax",
+  "loading_threshold": 0.5,
+  "communality_threshold": 0.5,
+  "assignment_rule": "largest"
+ },
+ "language": "de",
+ "settings": "standard",
+ "model": "claude-opus-5-5",
+ "prompt_version": "2",
+ "prompt_digest": "5a0d8770fc9a3942",
+ "effort": "medium",
+ "created_at": "2026-11-10T03:03:15+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "epa_normalized_sequence_entropy_linear_forgetting",
+     "heterogeneity_rate_variants",
+     "epa_normalized_sequence_entropy_exponential_forgetting",
+     "epa_normalized_sequence_entropy",
+     "eventropy_k_block_ratio_5",
+     "n_variants",
+     "ratio_top_75_variants",
+     "ratio_top_50_variants",
+     "eventropy_trace"
+    ],
+    "name": "Variantenvielfalt / normierte Entropie",
+    "summary": "Hohe positive Ladungen der Variantenanzahl, der Heterogenitätsrate und vieler (normierter) Entropiemaße stehen negativen Ladungen der Anteile häufigster Varianten (ratio_top_*_variants, ratio_most_common_variant, std_variant_occurrence) gegenüber. Der Faktor beschreibt also, wie stark sich die Traces auf viele unterschiedliche Varianten verteilen statt sich auf wenige zu konzentrieren. Mehrere Maße (z. B. trace_len_q1, DFG-Maße) laden zusätzlich auf Faktor 2 bzw. 5, was ihn breit macht.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "activities_max",
+     "activities_std",
+     "activities_variance",
+     "epa_variant_entropy",
+     "activities_mean",
+     "epa_sequence_entropy",
+     "n_events",
+     "average_edit_distance",
+     "trace_len_geometric_mean",
+     "trace_len_median"
+    ],
+    "name": "Loggröße / Tracelänge (absolut)",
+    "summary": "Hier laden absolute Häufigkeiten von Aktivitäten, die Anzahl der Events, Lage-Maße der Tracelänge und nicht normierte EPA-Entropien hoch; event_density lädt negativ. Gemeinsam ist ihnen der Umfang des Logs bzw. die Länge der Traces. n_events, epa_sequence_entropy und average_edit_distance zeigen mögliche Heywood-Fälle, und viele Tracelängenmaße haben Querladungen auf Faktor 1 oder 3.",
+    "confidence": "high"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "distinct_activities_std",
+     "n_unique_activities",
+     "distinct_activities_max",
+     "eventropy_k_block_diff_1",
+     "trace_len_entropy",
+     "trace_len_geometric_std",
+     "advanced_trace_diversity",
+     "epa_normalized_variant_entropy",
+     "number_of_ties"
+    ],
+    "name": "Aktivitätsvokabular und Streuung der Tracelänge",
+    "summary": "Die Zahl unterschiedlicher Aktivitäten und deren Maximum/Streuung pro Trace laden gemeinsam mit Streuungsmaßen der Tracelänge (geometric_std, coefficient_variation, iqr) hoch, trace_len_entropy, epa_normalized_variant_entropy und density_dfg dagegen negativ. Der Faktor verbindet ein großes Aktivitätsvokabular mit heterogenen Tracelängen und einem dünneren, strukturierteren DFG (structure_dfg positiv). Die Mischung aus Vokabular- und Längenstreuung ist inhaltlich nicht ganz einheitlich.",
+    "confidence": "medium"
+   },
+   {
+    "index": 4,
+    "driving_measures": [
+     "start_activities_q1",
+     "start_activities_min",
+     "start_activities_mean",
+     "start_activities_median",
+     "start_activities_q3",
+     "n_cut_vertices_dfg",
+     "end_activities_median",
+     "separability_ratio_dfg",
+     "n_unique_start_activities",
+     "n_unique_end_activities"
+    ],
+    "name": "Eindeutigkeit von Start- und Endaktivitäten",
+    "summary": "Lagemaße der Start- und Endaktivitätshäufigkeiten laden sehr hoch positiv, die Anzahl verschiedener Start- und Endaktivitäten und deren Streuung negativ. Hohe Werte bedeuten wenige, häufige Start-/Endaktivitäten, was zu den hohen Ladungen von n_cut_vertices_dfg und separability_ratio_dfg (eher sequenzieller DFG) passt.",
+    "confidence": "high"
+   },
+   {
+    "index": 5,
+    "driving_measures": [
+     "cyclomatic_number_dfg",
+     "n_edges_dfg",
+     "number_of_successions",
+     "max_node_degree_dfg",
+     "coeff_of_connectivity_dfg"
+    ],
+    "name": "Größe und Vernetzung des DFG",
+    "summary": "Kantenanzahl, zyklomatische Zahl, Knotengrad und Verbindungskoeffizient des Directly-follows-Graphen laden moderat (0,59–0,66). Alle diese Maße laden zugleich mit 0,52–0,55 auf Faktor 1 und sind teils linear abhängig (siehe Singularitätswarnung), daher ist der Faktor nur teilweise eigenständig.",
+    "confidence": "medium"
+   },
+   {
+    "index": 6,
+    "driving_measures": [
+     "max_loops_per_trace",
+     "n_traces_with_loop",
+     "avg_loops_per_trace",
+     "avg_loop_size_per_trace",
+     "max_loop_size_per_trace"
+    ],
+    "name": "Schleifen in Traces",
+    "summary": "Alle Schleifenmaße der Gruppe Repetitions laden klar auf diesen Faktor (0,60–0,88), andere Maße kaum. Er erfasst Häufigkeit und Größe von Schleifen innerhalb der Traces; n_traces_with_repetition lädt dagegen eher auf Faktor 2.",
+    "confidence": "high"
+   },
+   {
+    "index": 7,
+    "driving_measures": [
+     "start_activities_max",
+     "start_activities_variance",
+     "start_activities_std"
+    ],
+    "name": "Dominante Startaktivität (schwach)",
+    "summary": "Nur start_activities_max ist zugeordnet (0,66); start_activities_variance und start_activities_std laden zusätzlich mittel, aber stärker negativ auf Faktor 4. Der Faktor deutet auf die Konzentration auf eine häufigste Startaktivität hin, ist aber schwach.",
+    "confidence": "low"
+   },
+   {
+    "index": 8,
+    "driving_measures": [
+     "end_activities_std",
+     "end_activities_variance"
+    ],
+    "name": "Streuung der Endaktivitäten",
+    "summary": "Nur Standardabweichung und Varianz der Endaktivitätshäufigkeiten laden hoch (0,78–0,81), end_activities_max moderat (0,37). Ein kleiner Faktor, getragen von zwei fast redundanten Maßen.",
+    "confidence": "low"
+   },
+   {
+    "index": 9,
+    "driving_measures": [
+     "trace_len_hist9",
+     "trace_len_hist5",
+     "eventropy_lempel_ziv_flattened"
+    ],
+    "name": "Unbesetzter Restfaktor (Histogramm)",
+    "summary": "Keinem Maß zugeordnet; die höchsten Ladungen sind moderat (trace_len_hist9 0,55, trace_len_hist5 0,42, eventropy_lempel_ziv_flattened 0,38), und diese Histogrammmaße haben niedrige Kommunalitäten. Der Faktor sollte nicht inhaltlich interpretiert werden.",
+    "confidence": "low"
+   },
+   {
+    "index": 10,
+    "driving_measures": [
+     "activities_kurtosis",
+     "activities_skewness"
+    ],
+    "name": "Schiefe der Aktivitätshäufigkeiten",
+    "summary": "Kurtosis und Schiefe der Aktivitätshäufigkeitsverteilung laden auf diesen Faktor (0,74 bzw. 0,62), Schiefe zusätzlich −0,50 auf Faktor 1. Er beschreibt die Ungleichverteilung der Aktivitäten, ruht aber auf nur zwei Maßen.",
+    "confidence": "low"
+   },
+   {
+    "index": 11,
+    "driving_measures": [
+     "trace_len_hist7",
+     "trace_len_hist4"
+    ],
+    "name": "Tracelängen-Histogramm (Bins 4 und 7)",
+    "summary": "Nur zwei Histogrammbins der Tracelänge laden hoch. Ein inhaltlicher Zusammenhang der beiden Bins ist nicht ersichtlich; vermutlich ein datenspezifisches Artefakt.",
+    "confidence": "low"
+   },
+   {
+    "index": 12,
+    "driving_measures": [
+     "trace_len_hist1",
+     "trace_len_hist10"
+    ],
+    "name": "Tracelängen-Histogramm (Randbins)",
+    "summary": "Der erste und letzte Histogrammbin der Tracelänge laden hoch (0,87 bzw. 0,77), also der Anteil sehr kurzer bzw. sehr langer Traces relativ zum Bereich. Getragen von nur zwei Maßen.",
+    "confidence": "low"
+   },
+   {
+    "index": 13,
+    "driving_measures": [
+     "activities_min",
+     "activities_q1"
+    ],
+    "name": "Seltene Aktivitäten (schwach)",
+    "summary": "Nur activities_min lädt moderat (0,53), activities_q1 schwach (0,42); beide laden auch auf Faktor 1 und 2. Ein schwacher Faktor zur Häufigkeit der seltensten Aktivitäten.",
+    "confidence": "low"
+   },
+   {
+    "index": 14,
+    "driving_measures": [
+     "trace_len_kurtosis_hist",
+     "trace_len_skewness_hist",
+     "trace_len_hist6"
+    ],
+    "name": "Form der Tracelängenverteilung",
+    "summary": "Kurtosis und Schiefe des Tracelängen-Histogramms laden um 0,67–0,69, mit Querladungen von 0,50–0,55 auf Faktor 3. Er beschreibt die Asymmetrie und Spitzheit der Längenverteilung.",
+    "confidence": "low"
+   },
+   {
+    "index": 15,
+    "driving_measures": [
+     "mean_variant_occurrence",
+     "ratio_top_1_variants",
+     "end_activities_q3"
+    ],
+    "name": "Unbesetzter Restfaktor",
+    "summary": "Kein Maß ist zugeordnet; die höchsten Ladungen liegen nur um |0,23–0,31| (mean_variant_occurrence −0,31). Mit 1 % erklärter Varianz sollte dieser Faktor nicht interpretiert werden.",
+    "confidence": "low"
+   }
+  ],
+  "overall": "Bartlett-Test (p < 0,001) und KMO (0,88) sprechen für die Eignung der Daten. Die 15 varimax-rotierten Faktoren erklären 89 % der Varianz, wobei die ersten vier Faktoren (Variantenvielfalt/normierte Entropie, Loggröße/Tracelänge, Aktivitätsvokabular mit Längenstreuung, Eindeutigkeit von Start-/Endaktivitäten) zusammen rund 69 % tragen. Klar abgrenzbar sind außerdem DFG-Vernetzung und Schleifen; die Faktoren 7–15 sind schwach, oft nur von zwei Maßen getragen oder ganz unbesetzt und eher als Überextraktion zu werten. Viele Maße, besonders Tracelängen- und DFG-Maße, zeigen Querladungen zwischen den Faktoren 1, 2, 3 und 5.",
+  "caveats": [
+   "Die Korrelationsmatrix ist singulär (z. B. n_edges_dfg, cyclomatic_number_dfg, number_of_successions, Quartile), die Ergebnisse beruhen auf geklemmten Eigenwerten und Pseudo-Inversen.",
+   "Für n_events, epa_sequence_entropy, epa_sequence_entropy_exponential_forgetting und average_edit_distance liegt ein möglicher Heywood-Fall vor.",
+   "Die Maße haben keine einzelnen Definitionen, nur Gruppenbeschreibungen; die Interpretation stützt sich auf Namen und Gruppen.",
+   "Mit 15 Faktoren ist die Lösung vermutlich überextrahiert; mehrere Faktoren tragen nur ein bis zwei Maße oder keines.",
+   "Sechs Histogrammbins der Tracelänge, end_activities_max und cyclicity_dfg bleiben unzugeordnet.",
+   "Die Faktoren zeigen gemeinsame Varianz in diesen 2112 Logs, keine Ursachen, und hängen von Datensatz, Rotation und Faktorenzahl ab."
+  ]
+ }
+}

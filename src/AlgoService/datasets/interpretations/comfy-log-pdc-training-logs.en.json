@@ -1,0 +1,227 @@
+{
+ "dataset_id": "comfy-log-pdc-training-logs",
+ "kind": "log",
+ "data_hash": "537c9dc5f5a982597251fad6ed8a477819b48201138dde26b8c2262529548cb0",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 15,
+  "rotation": "varimax",
+  "loading_threshold": 0.5,
+  "communality_threshold": 0.5,
+  "assignment_rule": "largest"
+ },
+ "language": "en",
+ "settings": "standard",
+ "model": "claude-opus-5-5",
+ "prompt_version": "2",
+ "prompt_digest": "5a0d8770fc9a3942",
+ "effort": "medium",
+ "created_at": "2026-11-10T03:03:44+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "epa_normalized_sequence_entropy_linear_forgetting",
+     "heterogeneity_rate_variants",
+     "epa_normalized_sequence_entropy_exponential_forgetting",
+     "epa_normalized_sequence_entropy",
+     "eventropy_k_block_ratio_5",
+     "n_variants",
+     "ratio_top_75_variants",
+     "ratio_top_50_variants",
+     "eventropy_trace",
+     "ratio_top_20_variants"
+    ],
+    "name": "Variant variability / normalized entropy",
+    "summary": "Number of variants, variant heterogeneity, normalized EPA sequence entropies and most entropy measures load high positively, while the ratios of traces covered by the top variants and variant occurrence statistics load high negatively. The factor contrasts logs spread over many distinct variants with logs dominated by a few frequent variants. It is the largest factor (27.8% of variance), and DFG size measures, trace_len_q1, activities_q1 and the global block entropies cross-load on it.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "activities_max",
+     "activities_std",
+     "activities_variance",
+     "epa_variant_entropy",
+     "activities_mean",
+     "epa_sequence_entropy",
+     "n_events",
+     "average_edit_distance",
+     "trace_len_geometric_mean",
+     "trace_len_median"
+    ],
+    "name": "Log size and trace length",
+    "summary": "Activity occurrence counts, the number of events, typical trace length (median, geometric mean, q3), the non-normalized EPA entropies, average_edit_distance and lempel_ziv_complexity load high positively, and event_density loads negatively. Together they describe the absolute volume of a log: how many events it has and how long its traces are. Several trace length measures cross-load with Factor 1 or Factor 3, and n_events, epa_sequence_entropy and average_edit_distance sit at a possible Heywood bound.",
+    "confidence": "high"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "distinct_activities_std",
+     "n_unique_activities",
+     "distinct_activities_max",
+     "eventropy_k_block_diff_1",
+     "trace_len_entropy",
+     "trace_len_geometric_std",
+     "advanced_trace_diversity",
+     "epa_normalized_variant_entropy",
+     "number_of_ties",
+     "trace_len_coefficient_variation"
+    ],
+    "name": "Activity alphabet and trace length dispersion",
+    "summary": "The number of unique activities, the maximum and spread of distinct activities per trace, and the dispersion of trace length (geometric std, coefficient of variation, IQR, std) load positively, as do advanced_trace_diversity and structure_dfg. Trace_len_entropy, epa_normalized_variant_entropy and density_dfg load negatively. The factor captures logs with a large activity alphabet, heterogeneous trace lengths and a sparse directly-follows graph; trace_len_max, trace_len_std and trace_len_variance cross-load with Factor 2.",
+    "confidence": "medium"
+   },
+   {
+    "index": 4,
+    "driving_measures": [
+     "start_activities_q1",
+     "start_activities_min",
+     "start_activities_mean",
+     "start_activities_median",
+     "start_activities_q3",
+     "n_cut_vertices_dfg",
+     "end_activities_median",
+     "separability_ratio_dfg",
+     "end_activities_q1",
+     "n_unique_start_activities",
+     "n_unique_end_activities"
+    ],
+    "name": "Single start/end activity concentration",
+    "summary": "High counts of the typical start and end activity load positively, together with n_cut_vertices_dfg and separability_ratio_dfg. The numbers of unique start and end activities and the spread of start activities load negatively. The factor describes logs whose traces share few start and end activities, which goes with a DFG that has many cut vertices.",
+    "confidence": "high"
+   },
+   {
+    "index": 5,
+    "driving_measures": [
+     "cyclomatic_number_dfg",
+     "n_edges_dfg",
+     "number_of_successions",
+     "max_node_degree_dfg",
+     "coeff_of_connectivity_dfg"
+    ],
+    "name": "DFG connectivity",
+    "summary": "Moderate loadings (0.59–0.66) of the number of DFG edges, the cyclomatic number, the number of successions, the maximum node degree and the coefficient of connectivity. The factor reflects how densely connected the directly-follows graph is. All five measures cross-load on Factor 1 (about 0.52–0.55), and several of them are linearly dependent.",
+    "confidence": "medium"
+   },
+   {
+    "index": 6,
+    "driving_measures": [
+     "max_loops_per_trace",
+     "n_traces_with_loop",
+     "avg_loops_per_trace",
+     "avg_loop_size_per_trace",
+     "max_loop_size_per_trace"
+    ],
+    "name": "Loops / repetition",
+    "summary": "All loop measures of the Repetitions group load clearly and only on this factor (0.60–0.88). The factor captures how often traces contain loops and how long those loops are. n_traces_with_repetition loads on Factor 2 instead.",
+    "confidence": "high"
+   },
+   {
+    "index": 7,
+    "driving_measures": [
+     "start_activities_max",
+     "start_activities_variance",
+     "start_activities_std"
+    ],
+    "name": "Dominant start activity spread (weak)",
+    "summary": "Only start_activities_max is assigned to this factor (0.66); start_activities_variance (0.59) and start_activities_std (0.49) also load on it but load more strongly on Factor 4. It may reflect unequal frequencies of the start activities, but it explains only about 2% of the variance.",
+    "confidence": "low"
+   },
+   {
+    "index": 8,
+    "driving_measures": [
+     "end_activities_std",
+     "end_activities_variance"
+    ],
+    "name": "End activity spread",
+    "summary": "Only the std and variance of end activity occurrences load high on this factor (about 0.8). It captures how unevenly traces are distributed over their end activities. The factor is a two-measure, near-redundant pair.",
+    "confidence": "low"
+   },
+   {
+    "index": 9,
+    "driving_measures": [
+     "trace_len_hist9",
+     "trace_len_hist5"
+    ],
+    "name": "Weak trace length histogram factor",
+    "summary": "No measure is assigned to this factor. Only moderate loadings of trace_len_hist9 (0.55) and trace_len_hist5 (0.42) appear, and both have low communality, so the factor is not interpretable beyond residual trace length histogram variance.",
+    "confidence": "low"
+   },
+   {
+    "index": 10,
+    "driving_measures": [
+     "activities_kurtosis",
+     "activities_skewness"
+    ],
+    "name": "Activity frequency shape",
+    "summary": "The kurtosis and skewness of activity occurrences load on this factor. It describes how strongly a few activities dominate the occurrence distribution. Only two measures carry it.",
+    "confidence": "low"
+   },
+   {
+    "index": 11,
+    "driving_measures": [
+     "trace_len_hist7",
+     "trace_len_hist4"
+    ],
+    "name": "Trace length histogram bins 4/7",
+    "summary": "This factor rests only on two trace length histogram bins with high loadings. It probably reflects artefacts of the histogram binning in this dataset rather than a general property of logs.",
+    "confidence": "low"
+   },
+   {
+    "index": 12,
+    "driving_measures": [
+     "trace_len_hist1",
+     "trace_len_hist10"
+    ],
+    "name": "Trace length histogram bins 1/10",
+    "summary": "Two outer histogram bins of trace length load on this factor. It is a narrow, binning-specific factor with little explained variance.",
+    "confidence": "low"
+   },
+   {
+    "index": 13,
+    "driving_measures": [
+     "activities_min",
+     "activities_q1"
+    ],
+    "name": "Rare activity frequency (weak)",
+    "summary": "Only activities_min (0.53) and activities_q1 (0.42) load moderately on this factor. It may reflect the frequency of the rarest activities, but its support is weak.",
+    "confidence": "low"
+   },
+   {
+    "index": 14,
+    "driving_measures": [
+     "trace_len_kurtosis_hist",
+     "trace_len_skewness_hist",
+     "trace_len_hist6"
+    ],
+    "name": "Trace length histogram shape",
+    "summary": "The skewness and kurtosis of the trace length histogram load on this factor, with a moderate loading of trace_len_hist6 (0.44). trace_len_kurtosis_hist cross-loads on Factor 3 (0.55), and the factor captures the shape of the trace length distribution.",
+    "confidence": "low"
+   },
+   {
+    "index": 15,
+    "driving_measures": [
+     "mean_variant_occurrence",
+     "end_activities_q3"
+    ],
+    "name": "Residual factor",
+    "summary": "No measure is assigned to this factor, and the largest loadings are only about ±0.3, for example mean_variant_occurrence -0.31 and end_activities_q3 0.30. It explains under 1% of the variance and should not be interpreted.",
+    "confidence": "low"
+   }
+  ],
+  "overall": "Bartlett's test is significant and the overall KMO of 0.88 is good, so the data are suitable for a factor analysis. The 15 varimax factors explain 89% of the variance. Four large factors dominate: variant variability with entropy (Factor 1), log size and trace length (Factor 2), activity alphabet with trace length dispersion (Factor 3), and start/end activity concentration (Factor 4). They are followed by two clear smaller factors for DFG connectivity (Factor 5) and loops (Factor 6). Factors 7–15 are weak, mostly carried by one or two measures such as individual trace length histogram bins, or they have no assigned measures at all. Retaining 15 factors probably over-extracts.",
+  "caveats": [
+   "The correlation matrix is singular because of linearly dependent measures (e.g. n_edges_dfg, number_of_successions, cyclomatic_number_dfg, activities_q3, trace_len_q3), so the results rely on pseudo-inverses.",
+   "Possible Heywood cases for n_events, epa_sequence_entropy, epa_sequence_entropy_exponential_forgetting and average_edit_distance make their loadings less trustworthy.",
+   "Measure definitions only give the group name, so the interpretations rest on measure names and group descriptions.",
+   "Many trace length and DFG measures cross-load on Factors 1, 2, 3 and 5, so these factors are not cleanly separated.",
+   "Six trace length histogram bins have low communality, and end_activities_max and cyclicity_dfg stay unassigned.",
+   "Factors 7–15 explain little variance and depend on the chosen number of factors and on the varimax rotation."
+  ]
+ }
+}

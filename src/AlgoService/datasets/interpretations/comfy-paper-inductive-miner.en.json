@@ -1,0 +1,60 @@
+{
+ "dataset_id": "comfy-paper-inductive-miner",
+ "kind": "model",
+ "data_hash": "c397a6e506d816ba066dbc4a4780ccf0f9add1a5238a2aa7dc169366567f86bc",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 2,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.0,
+  "assignment_rule": "largest"
+ },
+ "language": "en",
+ "settings": "standard",
+ "model": "claude-opus-5-5",
+ "prompt_version": "2",
+ "prompt_digest": "5a0d8770fc9a3942",
+ "effort": "medium",
+ "created_at": "2026-11-10T02:57:09+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Number of duplicate tasks",
+     "Size",
+     "Token split"
+    ],
+    "name": "Size and label duplication",
+    "summary": "Number of duplicate tasks (0.99), Size (0.99) and Token split (0.96) load almost perfectly, so this factor captures how large a net is, including its repeated and silent transitions and its outgoing arcs. Density (-0.53), Coefficient of network connectivity (-0.48) and Average connector degree (-0.46) have moderate negative secondary loadings, consistent with larger nets in this dataset being sparser.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Average connector degree",
+     "Density",
+     "Coefficient of network connectivity",
+     "Connector Heterogeneity",
+     "Maximum connector degree",
+     "Separability"
+    ],
+    "name": "Connectivity and density",
+    "summary": "Average connector degree (0.89), Density (0.81), Coefficient of network connectivity (0.80) and Maximum connector degree (0.62) load positively, so the factor reflects how densely connected the net and its connectors are. Separability (0.58) also loads positively, and Connector Heterogeneity loads negatively (-0.72), meaning denser nets here tend to use a less mixed set of connector types. Density and connectivity also carry the moderate negative secondary loadings on Factor 1 noted there.",
+    "confidence": "medium"
+   }
+  ],
+  "overall": "Bartlett's test is significant and the overall KMO (0.75) exceeds 0.6, so the data are suitable for factor analysis. Two varimax-rotated factors explain 73% of the variance: a size factor (39%) and a connectivity/density factor (34%). This matches the common separation of size from density in process model complexity. No cross-loadings are flagged by the 0.15 gap rule, although Density, Coefficient of network connectivity and Average connector degree have notable secondary negative loadings on Factor 1. Connector Mismatch stays unassigned because of low loadings (communality 0.12).",
+  "caveats": [
+   "Communalities of Average connector degree and Number of duplicate tasks are at the bound (possible Heywood case), so their loadings may be inflated and the solution somewhat unstable.",
+   "Sequentiality and Control flow complexity were removed by the MSA filter, and Number of empty sequence flows was constant, so these aspects are not represented.",
+   "Connector Mismatch is unassigned with a communality of 0.12, so this analysis says little about it.",
+   "The structure reflects shared variance in these 288 nets, which depends on the discovery algorithms used, the rotation and the chosen number of factors.",
+   "The third eigenvalue (0.91) is close to 1, so a three-factor solution might show additional structure."
+  ]
+ }
+}

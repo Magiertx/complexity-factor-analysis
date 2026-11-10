@@ -1,0 +1,47 @@
+{
+ "dataset_id": "comfy-paper-heuristics-miner",
+ "kind": "model",
+ "data_hash": "53669147e54cc2e6c7ced59c2c9483c1da9e4c3b51d387879753d629d2f7567e",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 1,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.0,
+  "assignment_rule": "largest"
+ },
+ "language": "en",
+ "settings": "standard",
+ "model": "claude-opus-5-5",
+ "prompt_version": "2",
+ "prompt_digest": "5a0d8770fc9a3942",
+ "effort": "medium",
+ "created_at": "2026-11-10T03:00:37+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Connector Heterogeneity",
+     "Density",
+     "Token split",
+     "Control flow complexity"
+    ],
+    "name": "Choice-based branching vs. dense, mixed connectors",
+    "summary": "This is the only factor retained, and with four measures it is essentially a general factor. Connector Heterogeneity (-0.995), Density (-0.886) and Token split (-0.773) load negatively, while Control flow complexity (+0.723) loads positively. High scores therefore describe sparse nets with homogeneous connectors and few extra arcs leaving transitions (little parallelism) but many arcs leaving choice splits, so the factor plausibly contrasts choice-dominated branching with small, dense nets that mix parallel and choice connectors.",
+    "confidence": "medium"
+   }
+  ],
+  "overall": "Bartlett's test is significant and the overall KMO of 0.718 is above the 0.6 threshold, so the data are suitable for factor analysis. However, only 4 of 13 measures remain after the MSA filter and the removal of one constant measure. A single unrotated factor was retained, in line with the eigenvalues (3.14, then 0.59). It explains 72% of the variance, and all four measures are assigned to it with no cross-loadings or unassigned measures. The factor mainly reflects the type of branching (choice-heavy versus mixed or parallel) together with net density. Size and connectivity measures were dropped, so they do not shape this result.",
+  "caveats": [
+   "Eight measures, including Size, Sequentiality and connectivity measures, were removed by the MSA filter, so the factor covers only a narrow part of model complexity.",
+   "With only four measures and one factor, no dimensional structure can be shown; the factor is a general factor of these measures.",
+   "Connector Heterogeneity has a communality of 0.99, so the factor is nearly identical to this single measure and may be an overfit.",
+   "The mixed signs (positive for Control flow complexity, negative for Token split) are an interpretation of shared variance in this dataset, not a causal relationship.",
+   "Bartlett's test reports 66 degrees of freedom, which corresponds to 12 measures rather than the 4 used, so it was probably computed before the filtering."
+  ]
+ }
+}
