@@ -956,8 +956,9 @@ as they are. Observation labels, dataset and file names and measure values are n
   datasets are cached in the session, bundled ones for all sessions.
 - `precomputed: true` marks an interpretation from
   `src/AlgoService/datasets/interpretations/`, made with
-  `scripts/precompute_interpretations.py` for a bundled dataset with all measures and the
-  default parameters. It is served without a key.
+  `scripts/precompute_interpretations.py` for a bundled dataset with all measures and either
+  the default parameters or the published options of the dataset ("Paper settings"). It is
+  served without a key.
 - With `cached_only: true` the server never calls Claude and answers 204 when nothing is
   stored; the UI uses it to show stored interpretations without spending anything. Given
   `n_factors` as well (the UI sends the count of the analysis on screen), it skips the

@@ -1080,10 +1080,10 @@
       "again": "Interpret again",
       "running": "Claude is interpreting the factors. This can take up to three minutes.",
       "needs_key": "Requires an API key on the server",
-      "precomputed_only": "Without an API key on the server, only the precomputed interpretations of the bundled datasets with the default settings are shown.",
+      "precomputed_only": "Without an API key on the server, only the precomputed interpretations of the bundled datasets are shown, with the default settings or the paper settings.",
       "status_failed": "Could not check whether interpretation is available.",
       "precomputed": "precomputed",
-      "precomputed_title": "Computed in advance for this dataset with the default settings",
+      "precomputed_title": "Computed in advance for this dataset with these settings",
       "factor": "Factor {n}",
       "confidence": "Confidence: {level}",
       "confidence_level": {
@@ -1621,7 +1621,7 @@
         "loadings": "Loadings: above the result, one row holds the rule that assigns measures to factors and the two thresholds; each rule is explained in its tooltip. Below is a matrix (shaded by |loading|, faded where a loading does not count) or a card per dimension. Cross-loadings are ringed.",
         "stability": "Stability: Check stability under the loadings draws bootstrap samples of the rows (100, 200 or 500), refits each with the same measures, factor count and rotation, and shows for every measure the share of samples in which it keeps its factors. The seed is fixed, so a run can be repeated.",
         "short_set": "Short set: one measure per dimension, the one assigned to it with the highest purity, for reporting a few measures that do not repeat each other. Copy the short set puts them on the clipboard; a representative with a low stability should be read with care.",
-        "interpretation": "Interpretation: optional, names for the factors, suggested by a language model only on request. It decides nothing. It needs an API key on the server. Precomputed answers exist only once scripts/precompute_interpretations.py has been run. Without a key and without a stored answer for the settings, the list of steps says that it is not available here.",
+        "interpretation": "Interpretation: optional, names for the factors, suggested by a language model only on request. It decides nothing. It needs an API key on the server. Precomputed answers come with the bundled datasets, for the default settings and the paper settings. Without a key and without a stored answer for the settings, the list of steps says that it is not available here.",
         "names": "Names: press the title of a factor, on its card or at the head of its column, to name it. Enter keeps the name, Esc cancels. The names appear in the loadings, the factor correlations, the list of steps and every download. They belong to the factor count, the rotation and the rule: changing one of them clears the names, and the toast brings them back. With an interpretation, Use the suggested names takes over its names.",
         "correlations": "Correlation map: in Suitability, folded until opened. It has one cell per pair of measures: slate for a negative correlation, blue for a positive one, and an outline where |r| ≥ 0.95. The order is by factor or clustered. Point at a cell or use the arrow keys to read the pair and its r. A table under the map has every value. The image icon downloads it like the other figures.",
         "sheet": "Fact sheet: press the name of a measure, or Enter on it, wherever it appears to open a panel beside the page. The panel shows what the measure is (the description of the tool and the function of ComFy or feeed behind it, with a link to its source), a histogram of its values, its MSA and the filter round that removed it, its communality and uniqueness, its loadings, the five measures it correlates with most, and a button to exclude or include it. The left and right arrow keys page through the list you came from. Esc closes the panel and the focus goes back to the name."

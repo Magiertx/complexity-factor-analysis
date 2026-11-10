@@ -463,6 +463,117 @@ def test_precomputed_needs_the_same_data(client, claude, monkeypatch):
     assert r.status_code == 204, r.text
 
 
+def _precompute_published(monkeypatch, claude, language="en"):
+    import asyncio
+
+    from factor_analysis import catalog as cat
+    from interpretation import store
+    from scripts import precompute_interpretations as script
+
+    entry = cat.bundled_entry(BUNDLED)
+    result = asyncio.run(script.precompute(entry, language, KEY, "published"))
+    store.write_precomputed(BUNDLED, language, result, "published")
+    claude.calls.clear()
+    monkeypatch.delenv("ANTHROPIC_API_KEY")
+    return entry["published_options"]
+
+
+def test_precomputed_for_the_published_options(client, claude, monkeypatch):
+    """Get started opens a bundled dataset with the paper settings; their interpretation is
+    served without a key, as the frontend asks for it."""
+    options = _precompute_published(monkeypatch, claude)
+    dataset_id = _bundled(client)
+
+    body = _interpret(client, dataset_id, cached_only=True, **options).json()
+    assert body["precomputed"] is True and len(body["factors"]) == options["n_factors"]
+    assert claude.calls == []
+    # Only the published file exists: the defaults of the tool find nothing.
+    assert _interpret(client, dataset_id, cached_only=True).status_code == 204
+
+
+def test_both_precomputed_settings_are_served(client, claude, monkeypatch):
+    import asyncio
+
+    from factor_analysis import catalog as cat
+    from interpretation import store
+    from scripts import precompute_interpretations as script
+
+    entry = cat.bundled_entry(BUNDLED)
+    assert asyncio.run(script.run([entry], ["en"], False, KEY)) == 0
+    assert len(claude.calls) == 2
+    claude.calls.clear()
+    monkeypatch.delenv("ANTHROPIC_API_KEY")
+    dataset_id = _bundled(client)
+    standard = _interpret(client, dataset_id, cached_only=True).json()
+    published = _interpret(client, dataset_id, cached_only=True, **entry["published_options"]).json()
+    assert standard["precomputed"] is True and published["precomputed"] is True
+    assert len(standard["factors"]) != len(published["factors"])
+    assert store.has_precomputed() and claude.calls == []
+
+
+def test_params_from_options_match_the_request():
+    """The script builds the parameters of the published options as the API does."""
+    from factor_analysis import catalog as cat
+    from interpretation.payload import default_params, params_from_options
+    from routes.factor_analysis import AnalyzeRequest
+
+    entries = [d for d in cat.manifest()["datasets"] if d.get("published_options")]
+    assert entries
+    for d in entries:
+        options = d["published_options"]
+        assert params_from_options(d["kind"], options) == AnalyzeRequest(**options).params(d["kind"])
+    for kind in ("model", "log"):
+        assert params_from_options(kind, {}) == default_params(kind) == AnalyzeRequest().params(kind)
+        partial = {"loading_threshold": None, "rotation": "promax"}
+        assert params_from_options(kind, partial) == AnalyzeRequest(**partial).params(kind)
+
+
+def test_script_skips_datasets_without_published_options(claude, monkeypatch, no_precomputed):
+    import asyncio
+
+    from factor_analysis import catalog as cat
+    from scripts import precompute_interpretations as script
+
+    entry = {**cat.bundled_entry(BUNDLED), "id": "plain", "published_options": None}
+    assert asyncio.run(script.run([entry], ["en"], False, KEY)) == 0
+    assert len(claude.calls) == 1
+    assert sorted(p.name for p in no_precomputed.iterdir()) == ["plain.en.json"]
+
+
+def test_shipped_precomputed_files_are_current():
+    """The interpretations in the repository are served only while they fit the current prompt,
+    data and parameters; after a change of any of them, rerun the script with --force."""
+    from factor_analysis import catalog as cat
+    from factor_analysis.core import analyze
+    from interpretation import client as claude_client
+    from interpretation import store
+    from interpretation.payload import data_hash, default_params, effective_params, params_from_options
+    from scripts import precompute_interpretations as script
+
+    files = sorted(store.PRECOMPUTED_DIR.glob("*.json"))
+    if not files:
+        pytest.skip("no precomputed interpretations in the repository")
+    expected = {
+        store.precomputed_path(d["id"], language, settings).name
+        for d in cat.manifest()["datasets"]
+        for settings in script.settings_of(d, store.SETTINGS)
+        for language in ("en", "de")
+    }
+    assert {f.name for f in files} == expected
+    for path in files:
+        entry = json.loads(path.read_text(encoding="utf-8"))
+        bundled = cat.bundled_entry(entry["dataset_id"])
+        settings = entry.get("settings", "standard")
+        data, _ = script.bundled_matrix(bundled)
+        params = (default_params(bundled["kind"]) if settings == "standard"
+                  else params_from_options(bundled["kind"], bundled[f"{settings}_options"]))
+        n_factors = analyze(data, params)["n_factors"]
+        assert entry["prompt_digest"] == claude_client.PROMPT_DIGEST, path.name
+        assert entry["data_hash"] == data_hash(data), path.name
+        assert entry["params"] == effective_params(params, n_factors), path.name
+        assert len(entry["interpretation"]["factors"]) == n_factors, path.name
+
+
 def test_script_matrix_equals_the_stored_one(client):
     from factor_analysis import catalog as cat
     from factor_analysis import storage
@@ -493,7 +604,7 @@ def test_script_goes_on_after_an_analysis_error(claude, monkeypatch, no_precompu
 
     monkeypatch.setattr(script, "analyze", first_fails)
     entry = cat.bundled_entry(BUNDLED)
-    failed = asyncio.run(script.run([entry, {**entry, "id": "copy"}], ["en"], False, KEY))
+    failed = asyncio.run(script.run([entry, {**entry, "id": "copy"}], ["en"], False, KEY, ["standard"]))
     assert failed == 1 and len(claude.calls) == 1
     assert "FAIL" in capsys.readouterr().err
     assert (no_precomputed / "copy.en.json").is_file()
@@ -502,12 +613,14 @@ def test_script_goes_on_after_an_analysis_error(claude, monkeypatch, no_precompu
 def test_script_skips_existing_files(claude, monkeypatch, no_precomputed, capsys):
     from scripts import precompute_interpretations as script
 
+    # The default parameters and the published options: two files.
     assert script.main(["--dataset", BUNDLED, "--language", "en"]) == 0
     assert script.main(["--dataset", BUNDLED, "--language", "en"]) == 0
-    assert "skip" in capsys.readouterr().out and len(claude.calls) == 1
-    assert script.main(["--dataset", BUNDLED, "--language", "en", "--force"]) == 0
-    assert len(claude.calls) == 2
+    assert "skip" in capsys.readouterr().out and len(claude.calls) == 2
+    assert script.main(["--dataset", BUNDLED, "--language", "en", "--force", "--settings", "published"]) == 0
+    assert len(claude.calls) == 3
     assert (no_precomputed / f"{BUNDLED}.en.json").is_file()
+    assert (no_precomputed / f"{BUNDLED}.published.en.json").is_file()
 
     monkeypatch.delenv("ANTHROPIC_API_KEY")
     assert script.main(["--dataset", BUNDLED]) == 2

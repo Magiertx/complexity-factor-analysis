@@ -197,3 +197,15 @@ def default_params(kind: str) -> AnalysisParams:
         loading_threshold=LOADING_THRESHOLDS[kind],
         communality_threshold=COMMUNALITY_THRESHOLDS[kind],
     )
+
+
+def params_from_options(kind: str, options: dict[str, Any]) -> AnalysisParams:
+    """The parameters of an analyze request with these options, e.g. the published options of
+    a bundled dataset ("Paper settings"); as ``AnalyzeRequest.params`` builds them."""
+    values = {k: v for k, v in options.items() if k in AnalysisParams.__dataclass_fields__}
+    params = dataclasses.replace(default_params(kind), **values)
+    if params.loading_threshold is None:
+        params = dataclasses.replace(params, loading_threshold=LOADING_THRESHOLDS[kind])
+    if params.communality_threshold is None:
+        params = dataclasses.replace(params, communality_threshold=COMMUNALITY_THRESHOLDS[kind])
+    return params

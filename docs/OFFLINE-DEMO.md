@@ -20,9 +20,9 @@ downloads. This was checked in the code and by running the stack without a route
 [What was verified](#what-was-verified)).
 
 The optional interpretation step is the one exception. Precomputed interpretations of the
-bundled datasets exist only once `scripts/precompute_interpretations.py` has been run with a key
-(they go to `src/AlgoService/datasets/interpretations/`, which holds none yet); then they are
-shown offline, with or without an API key.
+bundled datasets, for the default settings and the paper settings, are in
+`src/AlgoService/datasets/interpretations/` (made by `scripts/precompute_interpretations.py`);
+they are shown offline, with or without an API key.
 Any other interpretation needs the Anthropic API and therefore internet; offline, with a key
 set, the request fails with "could not reach the Anthropic API" and the rest of the tool is
 unaffected. Without a key the button stays disabled. Interpretations requested before, while

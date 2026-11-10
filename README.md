@@ -119,9 +119,8 @@ Schalk do it, but interactively in the browser.
   measure (column) names, their definitions and aggregated results are sent, never measure
   values, row labels or file names. It needs `ANTHROPIC_API_KEY` on the server, is limited per session and per
   day, and caches every answer. Without a key the step is marked as unavailable, unless an
-  interpretation was precomputed for the settings: the repository holds none, they exist only
-  once `scripts/precompute_interpretations.py` has been run (with a key) for the bundled
-  datasets. Details in [`docs/API.md`](docs/API.md#interpretation-by-claude)
+  interpretation was precomputed for the settings: the repository holds them for the bundled
+  datasets with the default and the paper settings (`scripts/precompute_interpretations.py`). Details in [`docs/API.md`](docs/API.md#interpretation-by-claude)
   and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#interpretation-by-claude).
 - **Single-log inspection.** "Inspect a single log" (a log, the miners and measures, the run, in
   three sections) runs the chosen miners on one log and shows the measures next to the rendered

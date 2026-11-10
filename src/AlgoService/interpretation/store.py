@@ -3,9 +3,10 @@
 - Own datasets: next to the dataset in the session directory; they go with it.
 - Bundled datasets: in one directory for all sessions, ``<ARTIFACTS_DIR>/interpretations``,
   since their data are public.
-- Precomputed: ``datasets/interpretations/<bundled id>.<language>.json``, written by
-  ``scripts/precompute_interpretations.py`` for the default parameters. Served without an API
-  key, so the offline demo has them.
+- Precomputed: ``datasets/interpretations/<bundled id>[.published].<language>.json``, written
+  by ``scripts/precompute_interpretations.py`` for the default parameters and for the published
+  options of the dataset ("Paper settings"). Served without an API key, so the offline demo
+  has them.
 """
 
 from __future__ import annotations
@@ -96,8 +97,15 @@ def _prune(directory: Path, keep: int = MAX_SHARED_ENTRIES) -> None:
         path.unlink(missing_ok=True)
 
 
-def precomputed_path(bundled_id: str, language: str) -> Path:
-    return PRECOMPUTED_DIR / f"{bundled_id}.{language}.json"
+#: The settings interpretations are precomputed for: the defaults of the tool, and the
+#: published options of the dataset ("Paper settings", where Get started leads).
+SETTINGS = ("standard", "published")
+
+
+def precomputed_path(bundled_id: str, language: str, settings: str = "standard") -> Path:
+    if settings == "standard":
+        return PRECOMPUTED_DIR / f"{bundled_id}.{language}.json"
+    return PRECOMPUTED_DIR / f"{bundled_id}.{settings}.{language}.json"
 
 
 def read_precomputed(
@@ -108,18 +116,20 @@ def read_precomputed(
     without a key."""
     if not bundled_id:
         return None
-    path = precomputed_path(bundled_id, language)
-    entry = _read(path)
-    if not entry or entry.get("data_hash") != data_hash or entry.get("params") != params:
-        return None
-    if entry.get("prompt_digest") != prompt:
-        logger.warning("Precomputed interpretation %s was made for another prompt; rerun the script", path.name)
-        return None
-    return entry
+    for settings in SETTINGS:
+        path = precomputed_path(bundled_id, language, settings)
+        entry = _read(path)
+        if not entry or entry.get("data_hash") != data_hash or entry.get("params") != params:
+            continue
+        if entry.get("prompt_digest") != prompt:
+            logger.warning("Precomputed interpretation %s was made for another prompt; rerun the script", path.name)
+            continue
+        return entry
+    return None
 
 
-def write_precomputed(bundled_id: str, language: str, entry: dict[str, Any]) -> Path:
-    path = precomputed_path(bundled_id, language)
+def write_precomputed(bundled_id: str, language: str, entry: dict[str, Any], settings: str = "standard") -> Path:
+    path = precomputed_path(bundled_id, language, settings)
     path.parent.mkdir(parents=True, exist_ok=True)
     _write(path, entry)
     return path

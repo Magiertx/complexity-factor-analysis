@@ -195,8 +195,8 @@ MAX_ACTIVE_JOBS_PER_SESSION=3
 
 The optional interpretation step sends the measure names (the column headers of an own CSV),
 their definitions and aggregated analysis results to the Anthropic API and needs an API key. Without one, the step only shows precomputed interpretations of the
-bundled datasets, and those exist only once `scripts/precompute_interpretations.py` has been run
-with a key; the repository holds none.
+bundled datasets. The repository holds them in English and German for the default parameters
+and for the published options ("Paper settings") of each bundled dataset.
 
 - **Key.** Create a key for this deployment in the Claude Console
   (<https://platform.claude.com>), ideally in a workspace of its own, and put it into `.env` as
@@ -224,7 +224,7 @@ with a key; the repository holds none.
   interpretation takes up to about a minute, at most 170 s including the analysis before the
   call.
 - **Precomputed results.** `src/AlgoService/scripts/precompute_interpretations.py` writes the
-  interpretations of the bundled datasets for the default parameters to
+  interpretations of the bundled datasets for the default parameters and the published options to
   `src/AlgoService/datasets/interpretations/`; they are part of the image. Run it with a key
   from `src/AlgoService` and rebuild. Rerun it with `--force` after changing the prompt
   (`interpretation/prompt.py`), the output schema or the payload; files made for another

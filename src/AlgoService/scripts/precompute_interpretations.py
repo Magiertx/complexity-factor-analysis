@@ -1,13 +1,15 @@
-"""Precompute the interpretations of the bundled datasets for the default parameters.
+"""Precompute the interpretations of the bundled datasets for the default parameters and for
+the published options of each dataset ("Paper settings", where Get started leads).
 
 The API serves these files without an API key, so the offline demo shows interpretations for
 the bundled datasets. Needs ANTHROPIC_API_KEY; existing files are skipped unless --force is
 given. Run from src/AlgoService:
 
     python scripts/precompute_interpretations.py
-    python scripts/precompute_interpretations.py --force --dataset comfy-paper-inductive-miner --language de
+    python scripts/precompute_interpretations.py --force --dataset comfy-paper-inductive-miner --language de --settings published
 
-Writes datasets/interpretations/<dataset id>.<language>.json.
+Writes datasets/interpretations/<dataset id>.<language>.json (default parameters) and
+<dataset id>.published.<language>.json (published options; only datasets that have them).
 """
 
 from __future__ import annotations
@@ -28,7 +30,13 @@ from factor_analysis import storage  # noqa: E402
 from factor_analysis.core import AnalysisError, analyze, clean_matrix  # noqa: E402
 from interpretation import client, store  # noqa: E402
 from interpretation.client import InterpretationError  # noqa: E402
-from interpretation.payload import build_payload, data_hash, default_params, effective_params  # noqa: E402
+from interpretation.payload import (  # noqa: E402
+    build_payload,
+    data_hash,
+    default_params,
+    effective_params,
+    params_from_options,
+)
 from interpretation.prompt import LANGUAGES, PROMPT_VERSION  # noqa: E402
 
 
@@ -39,10 +47,15 @@ def bundled_matrix(entry: dict[str, Any]) -> tuple[pd.DataFrame, list[dict[str, 
     return storage.as_stored(cleaned.data), cleaned.dropped
 
 
-async def precompute(entry: dict[str, Any], language: str, key: str) -> dict[str, Any]:
+def settings_of(entry: dict[str, Any], wanted: tuple[str, ...] | list[str]) -> list[str]:
+    """The wanted settings this dataset has: published options only where the manifest has them."""
+    return [s for s in wanted if s == "standard" or entry.get(f"{s}_options")]
+
+
+async def precompute(entry: dict[str, Any], language: str, key: str, settings: str = "standard") -> dict[str, Any]:
     kind = entry["kind"]
     data, dropped = bundled_matrix(entry)
-    params = default_params(kind)
+    params = default_params(kind) if settings == "standard" else params_from_options(kind, entry[f"{settings}_options"])
     result = analyze(data, params)
     payload = build_payload(kind, result, params, dropped)
     client.check_size(payload, language)
@@ -53,6 +66,7 @@ async def precompute(entry: dict[str, Any], language: str, key: str) -> dict[str
         "data_hash": data_hash(data),
         "params": effective_params(params, result["n_factors"]),
         "language": language,
+        "settings": settings,
         "model": answer.model,
         "prompt_version": PROMPT_VERSION,
         "prompt_digest": client.PROMPT_DIGEST,
@@ -62,25 +76,30 @@ async def precompute(entry: dict[str, Any], language: str, key: str) -> dict[str
     }
 
 
-async def run(datasets: list[dict[str, Any]], languages: list[str], force: bool, key: str) -> int:
+async def run(
+    datasets: list[dict[str, Any]], languages: list[str], force: bool, key: str,
+    settings: tuple[str, ...] | list[str] = store.SETTINGS,
+) -> int:
     failed = 0
     for entry in datasets:
-        for language in languages:
-            path = store.precomputed_path(entry["id"], language)
-            if path.exists() and not force:
-                print(f"skip  {path.name} (exists; --force to replace)")
-                continue
-            try:
-                store.write_precomputed(entry["id"], language, await precompute(entry, language, key))
-            except InterpretationError as e:
-                failed += 1
-                print(f"FAIL  {path.name}: {e.detail}", file=sys.stderr)
-                continue
-            except AnalysisError as e:
-                failed += 1
-                print(f"FAIL  {path.name}: {e}", file=sys.stderr)
-                continue
-            print(f"wrote {path.name}")
+        for which in settings_of(entry, settings):
+            for language in languages:
+                path = store.precomputed_path(entry["id"], language, which)
+                if path.exists() and not force:
+                    print(f"skip  {path.name} (exists; --force to replace)")
+                    continue
+                try:
+                    result = await precompute(entry, language, key, which)
+                    store.write_precomputed(entry["id"], language, result, which)
+                except InterpretationError as e:
+                    failed += 1
+                    print(f"FAIL  {path.name}: {e.detail}", file=sys.stderr)
+                    continue
+                except AnalysisError as e:
+                    failed += 1
+                    print(f"FAIL  {path.name}: {e}", file=sys.stderr)
+                    continue
+                print(f"wrote {path.name}")
     return failed
 
 
@@ -89,6 +108,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--force", action="store_true", help="replace existing files")
     parser.add_argument("--dataset", nargs="+", metavar="ID", help="only these bundled datasets")
     parser.add_argument("--language", nargs="+", choices=sorted(LANGUAGES), default=sorted(LANGUAGES))
+    parser.add_argument("--settings", nargs="+", choices=store.SETTINGS, default=list(store.SETTINGS))
     args = parser.parse_args(argv)
 
     key = client.api_key()
@@ -102,7 +122,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Unknown dataset(s): {', '.join(sorted(unknown))}", file=sys.stderr)
             return 2
         datasets = [d for d in datasets if d["id"] in args.dataset]
-    failed = asyncio.run(run(datasets, args.language, args.force, key))
+    failed = asyncio.run(run(datasets, args.language, args.force, key, args.settings))
     return 1 if failed else 0
 
 

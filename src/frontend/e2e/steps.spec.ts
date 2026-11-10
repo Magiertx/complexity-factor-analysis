@@ -131,15 +131,25 @@ test("the tour keeps its spotlight below the settings row and ends on the step i
 
 test("an interpretation the server cannot give is unavailable with its reason, and no Next leads into it", async ({ page }) => {
   const status = await (await page.request.get("/api/factor-analysis/interpretation/status")).json();
-  test.skip(status.available || status.precomputed_only, "the server has a key or stored interpretations");
-  await page.goto("/");
-  await openBundled(page, "Inductive miner");
+  test.skip(status.available, "the server has a key");
+  let reason = "factor.interpretation.unavailable_key";
+  if (status.precomputed_only) {
+    // Stored interpretations cover the default and the paper settings, so the dataset opens from
+    // a link with another rotation. Changing it on the page would keep the interpretation shown
+    // before, marked as stale. Answers for bundled datasets are kept for all sessions, hence a
+    // rarely chosen rotation.
+    await page.goto("/?bundled=comfy-paper-inductive-miner&rot=quartimax");
+    reason = "factor.interpretation.unavailable_settings";
+  } else {
+    await page.goto("/");
+    await openBundled(page, "Inductive miner");
+  }
   await expectStep(page, "loadings", "done");
   const link = stepLink(page, "interpretation");
   // Not a dead end to walk into: the list of steps says why, with a key instead of a lock.
   await expect(link).toHaveAttribute("aria-disabled", "true");
-  await expect(link).toHaveAttribute("aria-description", pattern(text("factor.interpretation.unavailable_key")));
-  await expect(link).toContainText(text("factor.interpretation.unavailable_key"));
+  await expect(link).toHaveAttribute("aria-description", pattern(text(reason)));
+  await expect(link).toContainText(text(reason));
   await expect(link).toHaveAccessibleName(pattern(`(${text("factor.state.unavailable")})`));
   await expect(link.locator("svg.lucide-key-round")).toBeVisible();
   await expect(link.locator("svg.lucide-lock")).toHaveCount(0);

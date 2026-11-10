@@ -129,8 +129,8 @@ log is among the ten newest uploads of the session; the page says when it is not
   clipboard. A representative with a low stability should be read with care.
 - **Interpretation**: optional. Names and summaries for the factors, suggested by a language
   model only on request. It decides nothing; the analysis does not depend on it. It needs an API
-  key on the server. Precomputed answers for the bundled datasets exist only once
-  `scripts/precompute_interpretations.py` has been run; the repository does not hold them. Without
+  key on the server. Precomputed answers come with the bundled datasets, for the default
+  settings and the paper settings (`scripts/precompute_interpretations.py`). Without
   a key and without an interpretation stored for the settings, the list of steps says that it
   is not available here and the loadings are the last step.
 
