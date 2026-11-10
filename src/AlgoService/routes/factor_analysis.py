@@ -61,7 +61,7 @@ from factor_analysis.export import (
 from factor_analysis.report import report_tex
 from interpretation import client as claude_client
 from interpretation import store
-from interpretation.payload import data_hash, effective_params
+from interpretation.payload import data_hash, effective_params, result_fingerprint
 from routes.algorithms import (
     _enforce_job_quota,
     _LoopCalls,
@@ -1713,11 +1713,11 @@ async def _interpretation(
     exported: _Exported, session_id: str, language: str, model: str | None = None, effort: str | None = None
 ) -> dict[str, Any] | None:
     """The interpretation stored for exactly this analysis, in this language, made with this
-    model and effort (by default the server's), if any; never calls the API."""
+    model and effort (by default the server's) for a result with the same fingerprint, if any; never calls the API."""
     digest = await run_in_threadpool(data_hash, exported.data)
     stored = store.lookup(
         session_id, exported.meta, digest, effective_params(exported.params, exported.result["n_factors"]),
-        language, model, effort,
+        result_fingerprint(exported.result), language, model, effort,
     )
     return stored[0] if stored else None
 

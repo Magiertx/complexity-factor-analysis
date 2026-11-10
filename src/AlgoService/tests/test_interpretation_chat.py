@@ -277,6 +277,26 @@ def test_needs_a_stored_interpretation(client, claude, csv_dataset):
     assert claude.calls == []
 
 
+def test_needs_the_interpretation_of_this_result(client, claude, ready):
+    """Stored for the same data and parameters, but for another solution or from before the
+    fingerprint existed: no context for questions."""
+    from factor_analysis import storage
+    from interpretation import store
+
+    (path,) = (next(storage.root().iterdir()) / ready / "interpretations").glob("*.json")
+    entry = json.loads(path.read_text(encoding="utf-8"))
+    assert _chat(client, ready).status_code == 200
+    for fingerprint in ("0" * 32, None):
+        changed = {k: v for k, v in entry.items() if k != "result_fingerprint"}
+        if fingerprint:
+            changed["result_fingerprint"] = fingerprint
+        store._write(path, changed)
+        claude.calls.clear()
+        r = _chat(client, ready)
+        assert r.status_code == 409 and r.json()["code"] == "interpretation_required"
+        assert claude.calls == []
+
+
 def test_needs_the_interpretation_of_exactly_this_analysis_and_language(client, claude, ready):
     assert _chat(client, ready, language="de").json()["code"] == "interpretation_required"
     assert _chat(client, ready, n_factors=1).json()["code"] == "interpretation_required"
