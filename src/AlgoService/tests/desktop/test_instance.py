@@ -110,3 +110,46 @@ def test_a_second_start_finds_the_running_instance(tmp_path, export_dir):
     assert not server.running and server.error is None
     # Nothing answers any more.
     assert instance.probe(port, token, timeout=1) is None
+
+
+def test_quitting_ends_the_progress_stream_at_once(export_dir):
+    """A page keeps /api/jobs/events open; quitting must neither wait for it nor cut it off."""
+    import http.client
+    import threading
+    import time
+
+    from desktop_app.app import Shutdown
+    from srv_main import app as api
+
+    sock = instance.bind(0)
+    port = sock.getsockname()[1]
+    shutdown = Shutdown()
+    server = BackgroundServer(build_app(api, export_dir, port=port, token="t", shutdown=shutdown), sock, on_stop=shutdown.request)
+    server.start()
+    lines: list[bytes] = []
+    try:
+        assert server.wait_started(30)
+        connection = http.client.HTTPConnection("127.0.0.1", port, timeout=30)
+        connection.request("GET", "/api/jobs/events", headers={"accept": "text/event-stream"})
+        response = connection.getresponse()
+        assert response.status == 200
+
+        def read() -> None:
+            while line := response.fp.readline():
+                lines.append(line)
+
+        reader = threading.Thread(target=read, daemon=True)
+        reader.start()
+        deadline = time.monotonic() + 10
+        while b"data: initial\n" not in lines and time.monotonic() < deadline:
+            time.sleep(0.05)
+        assert b"data: initial\n" in lines
+    finally:
+        began = time.monotonic()
+        server.stop()
+        took = time.monotonic() - began
+    reader.join(5)
+    assert not server.running and server.error is None
+    assert took < 3, f"quitting took {took:.1f} s"
+    # The stream was completed (the last chunk of a chunked response), not cut off.
+    assert lines[-2:] == [b"0\r\n", b"\r\n"]

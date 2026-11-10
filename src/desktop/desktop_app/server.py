@@ -7,19 +7,29 @@ import logging
 import socket
 import threading
 import time
+from typing import Callable
 
 import uvicorn
 from starlette.types import ASGIApp
 
 logger = logging.getLogger("desktop")
 
-#: Seconds open connections get to finish when the app quits. The page keeps one open for
-#: progress updates (Server-Sent Events), which never finishes by itself.
+#: Seconds open requests get to finish when the app quits. The progress streams of the pages,
+#: which never finish by themselves, are ended at once (``app.Shutdown``).
 GRACEFUL_SHUTDOWN_S = 5
 
 
 class BackgroundServer:
-    def __init__(self, app: ASGIApp, sock: socket.socket, *, access_log: bool = False) -> None:
+    """``on_stop`` is called first when the server is to stop (``app.Shutdown.request``)."""
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        sock: socket.socket,
+        *,
+        access_log: bool = False,
+        on_stop: Callable[[], None] | None = None,
+    ) -> None:
         host, port = sock.getsockname()[:2]
         config = uvicorn.Config(
             app,
@@ -39,6 +49,7 @@ class BackgroundServer:
         )
         self.server = uvicorn.Server(config)
         self.sock = sock
+        self.on_stop = on_stop
         self.error: BaseException | None = None
         self.thread = threading.Thread(target=self._run, name="uvicorn", daemon=True)
 
@@ -73,6 +84,8 @@ class BackgroundServer:
         run the backend's shutdown, and wait for all of it."""
         if not self.thread.is_alive():
             return
+        if self.on_stop is not None:
+            self.on_stop()
         self.server.should_exit = True
         self.thread.join(timeout)
         if self.thread.is_alive():

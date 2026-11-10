@@ -183,14 +183,20 @@ def _serve(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> in
 
         import srv_main
 
-        from .app import build_app
+        from .app import Shutdown, build_app
         from .server import BackgroundServer
 
         token = secrets.token_urlsafe(32)
+        shutdown = Shutdown()
         app = build_app(
-            srv_main.app, frontend, port=port, token=token, instance={"pid": os.getpid(), "port": port, "app": name}
+            srv_main.app,
+            frontend,
+            port=port,
+            token=token,
+            instance={"pid": os.getpid(), "port": port, "app": name},
+            shutdown=shutdown,
         )
-        server = BackgroundServer(app, sock, access_log=args.access_log)
+        server = BackgroundServer(app, sock, access_log=args.access_log, on_stop=shutdown.request)
     except BaseException:
         sock.close()
         raise

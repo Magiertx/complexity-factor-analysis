@@ -10,6 +10,9 @@ user opens can send requests to it:
   post or a multipart upload of another site is a "simple" request that CORS does not stop.
 - :class:`NoCors`: no ``Access-Control-*`` header leaves the app, so no other origin can read
   an answer (the backend's own CORS setting is for the Docker build).
+
+:class:`Shutdown` ends the progress streams (Server-Sent Events) when the app quits; they never
+end by themselves, and the server would wait for them.
 """
 
 from __future__ import annotations
@@ -152,6 +155,43 @@ class NoCors:
         await self.app(scope, receive, strip)
 
 
+class Shutdown:
+    """Tells the open progress streams that the app quits, from any thread.
+
+    A page keeps ``/api/jobs/events`` open for as long as it is shown. When the app quits, the
+    stream is told that its client went away, ends, and the response is completed, so that the
+    server need not wait for it and cut it off.
+    """
+
+    def __init__(self) -> None:
+        self._loop: asyncio.AbstractEventLoop | None = None
+        self._event: asyncio.Event | None = None
+
+    def bind(self) -> None:
+        """Called in the server's event loop when it starts."""
+        self._loop = asyncio.get_running_loop()
+        self._event = asyncio.Event()
+
+    @property
+    def requested(self) -> bool:
+        return self._event is not None and self._event.is_set()
+
+    def request(self) -> None:
+        loop, event = self._loop, self._event
+        if loop is not None and event is not None and not loop.is_closed():
+            loop.call_soon_threadsafe(event.set)
+
+    async def wait(self) -> None:
+        if self._event is not None:
+            await self._event.wait()
+        else:
+            await asyncio.Event().wait()
+
+
+def is_event_stream(scope: Scope) -> bool:
+    return scope["method"] == "GET" and "text/event-stream" in (_header(scope, b"accept") or "")
+
+
 def api_scope(scope: Scope) -> Scope:
     """``scope`` as the API sees it: the full path, with ``/api`` as the root path, so that the
     API's routes match on what follows ``/api`` and its links (OpenAPI) keep the prefix."""
@@ -163,16 +203,26 @@ def api_scope(scope: Scope) -> Scope:
 class Router:
     """``/api`` to the API, the instance check to the launcher, the rest to the pages."""
 
-    def __init__(self, api: ASGIApp, pages: PageServer | ASGIApp, instance: dict | None, token: str) -> None:
+    def __init__(
+        self, api: ASGIApp, pages: PageServer | ASGIApp, instance: dict | None, token: str, shutdown: Shutdown
+    ) -> None:
         self.api = api
         self.pages = pages
         self.instance = instance
         self.token = token
+        self.shutdown = shutdown
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         kind = scope["type"]
         if kind == "lifespan":
-            await self.api(scope, receive, send)
+
+            async def watch() -> Message:
+                message = await receive()
+                if message["type"] == "lifespan.startup":
+                    self.shutdown.bind()
+                return message
+
+            await self.api(scope, watch, send)
             return
         if kind != "http":
             await send({"type": "websocket.close", "code": 1000})
@@ -183,12 +233,47 @@ class Router:
             if path.endswith("/"):
                 await _refuse(send, 308, "Permanent redirect.", [(b"location", without_trailing_slash(scope))])
                 return
-            await self.api(api_scope(scope), receive, send)
+            if is_event_stream(scope):
+                await self._event_stream(api_scope(scope), receive, send)
+            else:
+                await self.api(api_scope(scope), receive, send)
             return
         if path == INSTANCE_PATH:
             await self._instance(scope, send)
             return
         await self.pages(scope, receive, send)
+
+    async def _event_stream(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """A stream that ends as if its client had gone when the app quits (Starlette's
+        StreamingResponse stops on ``http.disconnect``), and is then completed here."""
+        started = complete = False
+
+        async def receive_or_quit() -> Message:
+            if self.shutdown.requested:
+                return {"type": "http.disconnect"}
+            get = asyncio.ensure_future(receive())
+            stop = asyncio.ensure_future(self.shutdown.wait())
+            try:
+                await asyncio.wait({get, stop}, return_when=asyncio.FIRST_COMPLETED)
+            finally:
+                for task in (get, stop):
+                    if not task.done():
+                        task.cancel()
+            if get.done() and not get.cancelled():
+                return get.result()
+            return {"type": "http.disconnect"}
+
+        async def watch(message: Message) -> None:
+            nonlocal started, complete
+            if message["type"] == "http.response.start":
+                started = True
+            elif message["type"] == "http.response.body" and not message.get("more_body", False):
+                complete = True
+            await send(message)
+
+        await self.api(scope, receive_or_quit, watch)
+        if started and not complete and self.shutdown.requested:
+            await send({"type": "http.response.body", "body": b"", "more_body": False})
 
     async def _instance(self, scope: Scope, send: Send) -> None:
         given = _header(scope, INSTANCE_HEADER)
@@ -264,11 +349,13 @@ def build_app(
     port: int,
     token: str,
     instance: dict | None = None,
+    shutdown: Shutdown | None = None,
 ) -> ASGIApp:
     """The desktop app on ``port``: ``api`` (``srv_main.app``) and the export in ``pages_root``.
-    ``instance`` is what the instance check answers to a caller with ``token``."""
+    ``instance`` is what the instance check answers to a caller with ``token``; ``shutdown``
+    ends the progress streams when the app quits."""
     pages = PageServer.from_export(pages_root, session_cookie_fetcher(api))
-    app: ASGIApp = Router(api, pages, instance, token)
+    app: ASGIApp = Router(api, pages, instance, token, shutdown or Shutdown())
     app = NoCors(app, port)
     app = SameOriginCheck(app, port)
     return HostCheck(app, port)
