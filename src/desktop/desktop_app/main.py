@@ -52,6 +52,11 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         action="store_true",
         help="a session per browser as on a server, instead of one for everybody (end-to-end tests)",
     )
+    parser.add_argument(
+        "--no-rate-limits",
+        action="store_true",
+        help="switch the request rate limits off, which all requests share here (end-to-end tests)",
+    )
     parser.add_argument("--access-log", action="store_true", help="log every request")
     args = parser.parse_args(argv)
     if args.port is not None and not 0 <= args.port <= 65535:
@@ -129,7 +134,7 @@ def _hand_over(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -
     return 0
 
 
-def _log_settings(settings: dict[str, str], env: dict[str, str], shared_session: bool) -> None:
+def _log_settings(settings: dict[str, str], env: dict[str, str], args: argparse.Namespace) -> None:
     if settings:
         logger.info("settings.env sets %s.", ", ".join(sorted(settings)))
     key = env.get("ANTHROPIC_API_KEY", "").strip()
@@ -137,8 +142,10 @@ def _log_settings(settings: dict[str, str], env: dict[str, str], shared_session:
     logger.info(
         "Interpretation by Claude: %s.", f"on, key from {source}" if key else "precomputed only (no ANTHROPIC_API_KEY)"
     )
-    if not shared_session:
+    if args.separate_sessions:
         logger.info("Separate sessions per browser (--separate-sessions).")
+    if args.no_rate_limits:
+        logger.warning("Request rate limits are off (--no-rate-limits).")
 
 
 def _install_signal_handlers(stop: threading.Event) -> None:
@@ -167,12 +174,17 @@ def _serve(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> in
     port = sock.getsockname()[1]
 
     try:
-        shared = not args.separate_sessions
         env = environment.backend_environ(
-            os.environ, app_paths, identity, settings, resources.build_info(), shared_session=shared
+            os.environ,
+            app_paths,
+            identity,
+            settings,
+            resources.build_info(),
+            shared_session=not args.separate_sessions,
+            rate_limits=not args.no_rate_limits,
         )
         environment.apply(env)
-        _log_settings(settings, env, shared)
+        _log_settings(settings, env, args)
         register_mime_types()
 
         # The backend reads its settings when it is imported, so only now.

@@ -55,6 +55,7 @@ Starting it a second time while it runs opens the browser on the running app and
 | `--data-dir PATH` | Keep data, settings and logs (`PATH/logs`) in PATH instead of the user's directories. |
 | `--frontend-dir PATH` | Serve another static export. |
 | `--separate-sessions` | A session per browser, as on a server, instead of the one shared session. For the end-to-end tests, whose specs compare sessions. |
+| `--no-rate-limits` | Switch the request rate limits off (`RATE_LIMIT_DISABLED=1`), as the end-to-end job of the CI does. For the end-to-end tests, which create more than 60 datasets an hour. |
 | `--access-log` | Log every request. |
 
 ## Where it keeps its files
@@ -116,7 +117,10 @@ Before it imports the backend, which reads its settings at import time:
 | removed | `REDIS_URL`, `RATE_LIMIT_DISABLED`, `TESTING`, `TEST_DATABASE_URL` |
 
 The rate limits stay on. They count per client address, which is `127.0.0.1` for every request
-here, so they apply to the installation as a whole.
+here, so they apply to the installation as a whole: for example 60 datasets an hour
+(`RATE_LIMIT_DATASETS`; opening a bundled dataset counts, also when the session's copy comes
+back) and 60 single runs an hour (`RATE_LIMIT_ANALYZE`). Past a limit the app answers 429 until
+the hour is over.
 
 ## Security
 
@@ -159,7 +163,8 @@ Against the running app, with ports from a file:
 
 ```bash
 cd src/desktop
-python -m desktop_app --headless --port 0 --port-file /tmp/cfa-port --data-dir /tmp/cfa-data --separate-sessions &
+python -m desktop_app --headless --port 0 --port-file /tmp/cfa-port --data-dir /tmp/cfa-data \
+    --separate-sessions --no-rate-limits &
 
 python scripts/smoke.py --port-file /tmp/cfa-port --no-prom
 
@@ -168,9 +173,9 @@ BASE_URL=http://127.0.0.1:$(cat /tmp/cfa-port) npx playwright test
 ```
 
 `--separate-sessions` gives each Playwright browser context a session of its own, as the specs
-expect of a server. Without it, all specs share the one session, and those that count the
-datasets of their session or compare two sessions fail. On Windows without Playwright's own
-Chromium, add `PW_CHANNEL=msedge`.
+expect of a server. `--no-rate-limits` is needed because the specs create far more than 60
+datasets within the hour, all from 127.0.0.1. On Windows without Playwright's own Chromium, add
+`PW_CHANNEL=msedge`.
 
 ## Packaging
 

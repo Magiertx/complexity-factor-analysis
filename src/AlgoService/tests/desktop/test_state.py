@@ -159,6 +159,11 @@ def test_separate_sessions_leave_out_the_shared_id(tmp_path):
     assert "SHARED_SESSION_ID" not in env
 
 
+def test_rate_limits_are_on_unless_switched_off(tmp_path):
+    assert "RATE_LIMIT_DISABLED" not in _environ(tmp_path)[2]
+    assert _environ(tmp_path, rate_limits=False)[2]["RATE_LIMIT_DISABLED"] == "1"
+
+
 def test_the_database_url_survives_odd_directory_names(tmp_path):
     from sqlalchemy.engine import make_url
 
