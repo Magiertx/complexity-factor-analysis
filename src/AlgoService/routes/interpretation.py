@@ -5,12 +5,14 @@ from __future__ import annotations
 import asyncio
 import time
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, AsyncIterator, Literal
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, Response
+from pydantic import Field
 
 from config import get_session_id, limiter, logger
 from env_config import rate_limit
@@ -47,6 +49,11 @@ class InterpretRequest(AnalyzeRequest):
     language: Literal["en", "de"] = "en"
     #: Only look up a cached or precomputed interpretation; never calls the API.
     cached_only: bool = False
+    #: The model and effort to look up or to call with; None is the server default. A live
+    #: call only takes the ones the server offers (``GET /interpretation/status``); lookups
+    #: take any, since they cost nothing.
+    model: str | None = Field(default=None, pattern=client.CHOICE_RE.pattern)
+    effort: str | None = Field(default=None, pattern=client.CHOICE_RE.pattern)
 
 
 def _error(e: InterpretationError) -> JSONResponse:
@@ -56,28 +63,100 @@ def _error(e: InterpretationError) -> JSONResponse:
     return JSONResponse(status_code=e.status, content=content)
 
 
-def _response(entry: dict[str, Any], *, cached: bool, precomputed: bool) -> dict[str, Any]:
+def _response(
+    entry: dict[str, Any], *, cached: bool, precomputed: bool, variants: list[dict[str, Any]]
+) -> dict[str, Any]:
     return {
         **entry["interpretation"],
         "model": entry["model"],
+        "requested_model": store.requested_model(entry),
+        "effort": entry.get("effort"),
         "created_at": entry["created_at"],
         "language": entry["language"],
         "prompt_version": entry["prompt_version"],
         "cached": cached,
         "precomputed": precomputed,
+        "variants": variants,
     }
 
 
 @router.get("/interpretation/status")
 def interpretation_status() -> dict[str, Any]:
-    """Whether factors can be interpreted live; without an API key only precomputed
-    interpretations of the bundled datasets are served."""
+    """Whether factors can be interpreted live, and the model and effort chosen by default
+    and offered; without an API key only precomputed interpretations of the bundled datasets
+    are served."""
     available = client.api_key() is not None
     return {
         "available": available,
         "model": client.MODEL if available else None,
+        "effort": client.EFFORT,
+        "models": list(client.allowed_models()),
+        "efforts": list(client.allowed_efforts()),
         "precomputed_only": not available and store.has_precomputed(),
     }
+
+
+@dataclass
+class _Prepared:
+    meta: dict[str, Any]
+    kind: str
+    params: dict[str, Any]
+    selection: Any
+    result: dict[str, Any] | None
+    effective: dict[str, Any]
+    digest: str
+    model: str
+    effort: str
+
+
+async def _prepare(
+    dataset_id: str, session_id: str, body: InterpretRequest, *, lookup_only: bool
+) -> _Prepared | JSONResponse:
+    meta, data = await _ready_matrix(dataset_id, session_id)
+    kind = meta["kind"]
+    params = body.params(kind)
+    # The rows of one miner are data of their own, with interpretations of their own.
+    try:
+        data, params, selection = await run_in_threadpool(_select, meta, data, body.miner, params)
+    except AnalysisError as e:
+        return _AnalysisFailed(e).response
+    if lookup_only and body.n_factors is not None:
+        # A lookup needs only the data and the parameters; the analysis runs for a live call.
+        result = None
+        n_factors = body.n_factors
+    else:
+        try:
+            result = await _analyze(data, params)
+        except _AnalysisFailed as e:
+            return e.response
+        n_factors = result["n_factors"]
+    effective = effective_params(params, n_factors)
+    digest = await run_in_threadpool(data_hash, data)
+    return _Prepared(
+        meta, kind, params, selection, result, effective, digest,
+        client.MODEL if body.model is None else body.model,
+        client.EFFORT if body.effort is None else body.effort,
+    )
+
+
+@router.post("/datasets/{dataset_id}/interpret/variants")
+@limiter.limit(rate_limit("fa_analyze", "120/minute"))
+async def interpretation_variants(
+    request: Request,
+    dataset_id: str,
+    body: InterpretRequest | None = None,
+    session_id: str = Depends(get_session_id),
+) -> Any:
+    """The models and efforts an interpretation of this analysis and language is stored for,
+    so the UI can offer them without an API key. Never calls the API."""
+    body = body or InterpretRequest()
+    prepared = await _prepare(dataset_id, session_id, body, lookup_only=True)
+    if isinstance(prepared, JSONResponse):
+        return prepared
+    found = await run_in_threadpool(
+        store.variants, session_id, prepared.meta, prepared.digest, prepared.effective, body.language
+    )
+    return {"variants": found}
 
 
 @router.post("/datasets/{dataset_id}/interpret")
@@ -95,38 +174,32 @@ async def interpret_dataset(
     """
     started = time.monotonic()
     body = body or InterpretRequest()
-    meta, data = await _ready_matrix(dataset_id, session_id)
-    kind = meta["kind"]
-    params = body.params(kind)
-    # The rows of one miner are data of their own, with interpretations of their own.
-    try:
-        data, params, selection = await run_in_threadpool(_select, meta, data, body.miner, params)
-    except AnalysisError as e:
-        return _AnalysisFailed(e).response
-    if body.cached_only and body.n_factors is not None:
-        # A lookup needs only the data and the parameters; the analysis runs for a live call.
-        result = None
-        n_factors = body.n_factors
-    else:
-        try:
-            result = await _analyze(data, params)
-        except _AnalysisFailed as e:
-            return e.response
-        n_factors = result["n_factors"]
+    prepared = await _prepare(dataset_id, session_id, body, lookup_only=body.cached_only)
+    if isinstance(prepared, JSONResponse):
+        return prepared
+    meta, kind, params, selection, result, effective, digest, model, effort = (
+        prepared.meta, prepared.kind, prepared.params, prepared.selection, prepared.result,
+        prepared.effective, prepared.digest, prepared.model, prepared.effort,
+    )
 
-    effective = effective_params(params, n_factors)
-    digest = await run_in_threadpool(data_hash, data)
-    stored = store.lookup(session_id, meta, digest, effective, body.language)
+    def variants() -> Any:
+        return run_in_threadpool(store.variants, session_id, meta, digest, effective, body.language)
+
+    stored = store.lookup(session_id, meta, digest, effective, body.language, model, effort)
     if stored:
         entry, precomputed = stored
-        return _response(entry, cached=True, precomputed=precomputed)
+        return _response(entry, cached=True, precomputed=precomputed, variants=await variants())
     if body.cached_only:
         return Response(status_code=204)
-    key = store.key_for(meta, digest, effective, body.language)
+    key = store.key_for(meta, digest, effective, body.language, model, effort)
 
     api_key = client.api_key()
     if api_key is None:
         return _error(client.unavailable())
+    try:
+        client.check_choice(model, effort)
+    except InterpretationError as e:
+        return _error(e)
 
     dropped = [*(meta.get("dropped") or []), *(selection.dropped if selection else [])]
     payload = build_payload(kind, result, params, dropped)
@@ -140,22 +213,25 @@ async def interpret_dataset(
         async with _key_lock(key):
             cached = store.read_cached(session_id, meta, key)
             if cached:
-                return _response(cached, cached=True, precomputed=False)
+                return _response(cached, cached=True, precomputed=False, variants=await variants())
             # The analysis and the wait for the lock count against the time of the request.
             time_left = client.TIMEOUT_S - (time.monotonic() - started)
             if time_left < client.MIN_CALL_S:
                 raise client.timed_out()
             await run_in_threadpool(quota.claim, session_id)
-            answer = await client.interpret(payload, body.language, api_key, timeout=time_left)
+            answer = await client.interpret(
+                payload, body.language, api_key, timeout=time_left, model=model, effort=effort
+            )
             entry = {
                 "kind": kind,
                 "data_hash": digest,
                 "params": effective,
                 "language": body.language,
                 "model": answer.model,
+                "requested_model": model,
                 "prompt_version": PROMPT_VERSION,
                 "prompt_digest": client.PROMPT_DIGEST,
-                "effort": client.EFFORT,
+                "effort": effort,
                 "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                 "interpretation": answer.interpretation.model_dump(),
             }
@@ -166,4 +242,4 @@ async def interpret_dataset(
                 logger.warning("Interpretation could not be cached: %s", e)
     except InterpretationError as e:
         return _error(e)
-    return _response(entry, cached=False, precomputed=False)
+    return _response(entry, cached=False, precomputed=False, variants=await variants())

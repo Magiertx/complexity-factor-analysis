@@ -17,6 +17,7 @@ import asyncio
 import hashlib
 import json
 import os
+import re
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -24,7 +25,7 @@ import anthropic
 from pydantic import ValidationError
 
 from config import logger
-from env_config import choice, positive_int, rate_limit_var, text
+from env_config import choice, csv_list, positive_int, rate_limit_var, text
 
 from .payload import PAYLOAD_FORMAT
 from .prompt import SYSTEM_PROMPT, user_message
@@ -36,14 +37,46 @@ MODEL = text("INTERPRETATION_MODEL", "claude-opus-5-5")
 # Claude Opus 5.5 thinks more per level than earlier models, and thinking counts towards
 # MAX_TOKENS; at high, an analysis with many factors can be cut off.
 EFFORT = choice("INTERPRETATION_EFFORT", "medium", EFFORTS)
+
+#: What a model id or an effort may look like in a request: it becomes part of a file name.
+CHOICE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+
+
+def _with_default(kind: str, allowed: tuple[str, ...], default: str) -> tuple[str, ...]:
+    if default in allowed:
+        return allowed
+    logger.warning("Default %s %s is not in the allowed list; it is added", kind, default)
+    return (*allowed, default)
+
+
+#: Models and efforts the UI may choose from when the server calls the API. The default
+#: selection (``MODEL``, ``EFFORT``) is always part of them.
+ALLOWED_MODELS = _with_default(
+    "model", csv_list("INTERPRETATION_MODELS", ("claude-opus-5-5", "claude-sonnet-5-5")), MODEL
+)
+ALLOWED_EFFORTS = _with_default(
+    "effort",
+    csv_list("INTERPRETATION_EFFORTS", ("low", "medium", "high", "xhigh"), allowed=EFFORTS, lower=True),
+    EFFORT,
+)
+
+
+def allowed_models() -> tuple[str, ...]:
+    """Read at call time: the default can change under tests."""
+    return ALLOWED_MODELS if MODEL in ALLOWED_MODELS else (*ALLOWED_MODELS, MODEL)
+
+
+def allowed_efforts() -> tuple[str, ...]:
+    return ALLOWED_EFFORTS if EFFORT in ALLOWED_EFFORTS else (*ALLOWED_EFFORTS, EFFORT)
 #: Live calls per session; served cache hits and precomputed results do not count.
 RATE_LIMIT = rate_limit_var("INTERPRETATION_RATE_LIMIT", "10/hour")
 #: Live calls per day over all sessions, a bound on the spending.
 DAILY_CAP = positive_int("INTERPRETATION_DAILY_CAP", 200)
 
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
-# Thinking counts towards max_tokens, so leave room beyond the answer of a few hundred words.
-MAX_TOKENS = 16000
+# Thinking counts towards max_tokens, so leave room beyond the answer of a few hundred words;
+# higher efforts think longer.
+MAX_TOKENS_BY_EFFORT = {"low": 16000, "medium": 16000, "high": 24000, "xhigh": 32000, "max": 32000}
 # The frontend's /api rewrite gives up after 180 s (proxyTimeout in next.config.mjs). The whole
 # request, the analysis before the call and the retries of the SDK included, has this budget.
 TIMEOUT_S = 170.0
@@ -74,12 +107,15 @@ def api_key() -> str | None:
     return os.environ.get("ANTHROPIC_API_KEY", "").strip() or None
 
 
-def make_client(key: str) -> Any:
-    return anthropic.AsyncAnthropic(api_key=key, timeout=TIMEOUT_S - 10, max_retries=2)
+def make_client(key: str, timeout: float | None = None) -> Any:
+    """``timeout`` is the limit of one request of the SDK; the default leaves room below
+    ``TIMEOUT_S`` for the work before the call."""
+    return anthropic.AsyncAnthropic(api_key=key, timeout=TIMEOUT_S - 10 if timeout is None else timeout, max_retries=2)
 
 
-#: Replaced by tests with a fake client.
-client_factory: Callable[[str], Any] = make_client
+#: Replaced by tests with a fake client; called with the key, and with ``timeout`` only
+#: when the caller sets one.
+client_factory: Callable[..., Any] = make_client
 
 
 class InterpretationError(Exception):
@@ -100,6 +136,20 @@ def unavailable() -> InterpretationError:
         "Interpreting factors needs an Anthropic API key on the server (ANTHROPIC_API_KEY), and "
         "none is configured.",
     )
+
+
+def choice_not_allowed(model: str, effort: str) -> InterpretationError:
+    return InterpretationError(
+        422, "interpretation_choice_not_allowed",
+        "This model or effort is not offered by the server.",
+        {"model": model, "effort": effort, "models": list(allowed_models()), "efforts": list(allowed_efforts())},
+    )
+
+
+def check_choice(model: str, effort: str) -> None:
+    """Refuse a model or effort the operator does not offer; only live calls cost money."""
+    if model not in allowed_models() or effort not in allowed_efforts():
+        raise choice_not_allowed(model, effort)
 
 
 def check_size(payload: dict[str, Any], language: str) -> None:
@@ -164,19 +214,28 @@ class Answer:
     model: str
 
 
-async def interpret(payload: dict[str, Any], language: str, key: str, timeout: float | None = None) -> Answer:
-    """``timeout`` is the time left for the call; ``TIMEOUT_S`` without it."""
+async def interpret(
+    payload: dict[str, Any], language: str, key: str, timeout: float | None = None,
+    *, model: str | None = None, effort: str | None = None, sdk_timeout: float | None = None,
+) -> Answer:
+    """``timeout`` is the time left for the call; ``TIMEOUT_S`` without it. ``model`` and
+    ``effort`` default to ``MODEL`` and ``EFFORT``; ``sdk_timeout`` is the limit of one
+    request of the SDK, for callers with a longer ``timeout`` than a live call."""
     timeout = TIMEOUT_S if timeout is None else timeout
+    model = MODEL if model is None else model
+    effort = EFFORT if effort is None else effort
+    if effort not in MAX_TOKENS_BY_EFFORT:
+        raise ValueError(f"Unknown effort {effort!r}")
     try:
-        async with client_factory(key) as client:
+        async with (client_factory(key) if sdk_timeout is None else client_factory(key, sdk_timeout)) as client:
             response = await asyncio.wait_for(
                 client.beta.messages.create(
-                    model=MODEL,
-                    max_tokens=MAX_TOKENS,
+                    model=model,
+                    max_tokens=MAX_TOKENS_BY_EFFORT[effort],
                     system=SYSTEM_PROMPT,
                     messages=[{"role": "user", "content": user_message(payload, language)}],
                     output_config={
-                        "effort": EFFORT,
+                        "effort": effort,
                         "format": {"type": "json_schema", "schema": OUTPUT_SCHEMA},
                     },
                     fallbacks="default",

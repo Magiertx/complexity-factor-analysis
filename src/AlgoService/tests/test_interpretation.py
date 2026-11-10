@@ -54,6 +54,7 @@ def _answer_for(kwargs: dict) -> BetaMessage:
 class FakeMessages:
     def __init__(self) -> None:
         self.calls: list[dict] = []
+        self.sdk_timeouts: list[float | None] = []
         self.outcome = _answer_for
 
     async def create(self, **kwargs):
@@ -89,8 +90,9 @@ def claude(monkeypatch, no_precomputed) -> FakeMessages:
     messages = FakeMessages()
     keys: list[str] = []
 
-    def factory(key):
+    def factory(key, timeout=None):
         keys.append(key)
+        messages.sdk_timeouts.append(timeout)
         return FakeClient(messages)
 
     monkeypatch.setenv("ANTHROPIC_API_KEY", KEY)
@@ -148,16 +150,20 @@ def _interpret(client, dataset_id: str, **body):
 def test_status_without_key(client, monkeypatch, no_precomputed):
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     assert client.get("/factor-analysis/interpretation/status").json() == {
-        "available": False, "model": None, "precomputed_only": False,
+        "available": False, "model": None, "effort": "medium", "precomputed_only": False,
+        "models": ["claude-opus-5-5", "claude-sonnet-5-5"], "efforts": ["low", "medium", "high", "xhigh"],
     }
     no_precomputed.mkdir()
-    (no_precomputed / f"{BUNDLED}.en.json").write_text("{}")
+    (no_precomputed / f"{BUNDLED}.en.claude-opus-5-5.medium.json").write_text("{}")
     assert client.get("/factor-analysis/interpretation/status").json()["precomputed_only"] is True
 
 
 def test_status_with_key(client, claude):
     body = client.get("/factor-analysis/interpretation/status").json()
-    assert body == {"available": True, "model": "claude-opus-5-5", "precomputed_only": False}
+    assert body == {
+        "available": True, "model": "claude-opus-5-5", "effort": "medium", "precomputed_only": False,
+        "models": ["claude-opus-5-5", "claude-sonnet-5-5"], "efforts": ["low", "medium", "high", "xhigh"],
+    }
     assert KEY not in json.dumps(body)
 
 
@@ -500,7 +506,7 @@ def test_both_precomputed_settings_are_served(client, claude, monkeypatch):
 
     entry = cat.bundled_entry(BUNDLED)
     assert asyncio.run(script.run([entry], ["en"], False, KEY)) == 0
-    assert len(claude.calls) == 2
+    assert len(claude.calls) == 2 * len(script.PRECOMPUTE_VARIANTS)
     claude.calls.clear()
     monkeypatch.delenv("ANTHROPIC_API_KEY")
     dataset_id = _bundled(client)
@@ -536,8 +542,10 @@ def test_script_skips_datasets_without_published_options(claude, monkeypatch, no
 
     entry = {**cat.bundled_entry(BUNDLED), "id": "plain", "published_options": None}
     assert asyncio.run(script.run([entry], ["en"], False, KEY)) == 0
-    assert len(claude.calls) == 1
-    assert sorted(p.name for p in no_precomputed.iterdir()) == ["plain.en.json"]
+    assert len(claude.calls) == 3
+    assert sorted(p.name for p in no_precomputed.iterdir()) == [
+        f"plain.en.claude-opus-5-5.{effort}.json" for effort in ("high", "medium", "xhigh")
+    ]
 
 
 def test_shipped_precomputed_files_are_current():
@@ -554,16 +562,20 @@ def test_shipped_precomputed_files_are_current():
     if not files:
         pytest.skip("no precomputed interpretations in the repository")
     expected = {
-        store.precomputed_path(d["id"], language, settings).name
+        store.precomputed_path(d["id"], language, settings, model, effort).name
         for d in cat.manifest()["datasets"]
         for settings in script.settings_of(d, store.SETTINGS)
         for language in ("en", "de")
+        for model, effort in script.PRECOMPUTE_VARIANTS
     }
     assert {f.name for f in files} == expected
     for path in files:
         entry = json.loads(path.read_text(encoding="utf-8"))
         bundled = cat.bundled_entry(entry["dataset_id"])
         settings = entry.get("settings", "standard")
+        assert path == store.precomputed_path(
+            entry["dataset_id"], entry["language"], settings, store.requested_model(entry), entry["effort"]
+        ), path.name
         data, _ = script.bundled_matrix(bundled)
         params = (default_params(bundled["kind"]) if settings == "standard"
                   else params_from_options(bundled["kind"], bundled[f"{settings}_options"]))
@@ -604,26 +616,310 @@ def test_script_goes_on_after_an_analysis_error(claude, monkeypatch, no_precompu
 
     monkeypatch.setattr(script, "analyze", first_fails)
     entry = cat.bundled_entry(BUNDLED)
-    failed = asyncio.run(script.run([entry, {**entry, "id": "copy"}], ["en"], False, KEY, ["standard"]))
+    failed = asyncio.run(script.run(
+        [entry, {**entry, "id": "copy"}], ["en"], False, KEY, ["standard"], [("claude-opus-5-5", "medium")]
+    ))
     assert failed == 1 and len(claude.calls) == 1
     assert "FAIL" in capsys.readouterr().err
-    assert (no_precomputed / "copy.en.json").is_file()
+    assert (no_precomputed / "copy.en.claude-opus-5-5.medium.json").is_file()
 
 
 def test_script_skips_existing_files(claude, monkeypatch, no_precomputed, capsys):
     from scripts import precompute_interpretations as script
 
     # The default parameters and the published options: two files.
-    assert script.main(["--dataset", BUNDLED, "--language", "en"]) == 0
-    assert script.main(["--dataset", BUNDLED, "--language", "en"]) == 0
+    one = ["--dataset", BUNDLED, "--language", "en", "--variant", "claude-opus-5-5:medium"]
+    assert script.main(one) == 0
+    assert script.main(one) == 0
     assert "skip" in capsys.readouterr().out and len(claude.calls) == 2
-    assert script.main(["--dataset", BUNDLED, "--language", "en", "--force", "--settings", "published"]) == 0
+    assert script.main([*one, "--force", "--settings", "published"]) == 0
     assert len(claude.calls) == 3
-    assert (no_precomputed / f"{BUNDLED}.en.json").is_file()
-    assert (no_precomputed / f"{BUNDLED}.published.en.json").is_file()
+    assert (no_precomputed / f"{BUNDLED}.en.claude-opus-5-5.medium.json").is_file()
+    assert (no_precomputed / f"{BUNDLED}.published.en.claude-opus-5-5.medium.json").is_file()
 
     monkeypatch.delenv("ANTHROPIC_API_KEY")
     assert script.main(["--dataset", BUNDLED]) == 2
+
+
+def test_script_writes_one_file_per_variant(claude, no_precomputed):
+    from scripts import precompute_interpretations as script
+
+    args = ["--dataset", BUNDLED, "--language", "de", "--settings", "published"]
+    assert script.main([*args, "--variant", "claude-sonnet-5-5:low", "--variant", "claude-opus-5-5:high"]) == 0
+    assert sorted(p.name for p in no_precomputed.iterdir()) == [
+        f"{BUNDLED}.published.de.claude-opus-5-5.high.json",
+        f"{BUNDLED}.published.de.claude-sonnet-5-5.low.json",
+    ]
+    assert [(c["model"], c["output_config"]["effort"]) for c in claude.calls] == [
+        ("claude-sonnet-5-5", "low"), ("claude-opus-5-5", "high"),
+    ]
+    entry = json.loads((no_precomputed / f"{BUNDLED}.published.de.claude-sonnet-5-5.low.json").read_text("utf-8"))
+    assert entry["requested_model"] == "claude-sonnet-5-5" and entry["effort"] == "low"
+    assert entry["settings"] == "published" and entry["language"] == "de"
+
+
+def test_script_default_variants_and_timeout(claude, no_precomputed):
+    from scripts import precompute_interpretations as script
+
+    assert script.PRECOMPUTE_VARIANTS == (
+        ("claude-opus-5-5", "medium"), ("claude-opus-5-5", "high"), ("claude-opus-5-5", "xhigh"),
+    )
+    assert script.main(["--dataset", BUNDLED, "--language", "en", "--settings", "standard"]) == 0
+    assert [c["output_config"]["effort"] for c in claude.calls] == ["medium", "high", "xhigh"]
+    assert [c["max_tokens"] for c in claude.calls] == [16000, 24000, 32000]
+    # Longer than a live call, and the SDK waits for it too.
+    assert claude.sdk_timeouts == [590.0] * 3
+    claude.sdk_timeouts.clear()
+    assert script.main(["--dataset", BUNDLED, "--language", "de", "--settings", "standard",
+                        "--variant", "claude-opus-5-5:low", "--timeout", "900"]) == 0
+    assert claude.sdk_timeouts == [890.0]
+
+
+def test_script_rejects_a_bad_variant(claude, no_precomputed):
+    from scripts import precompute_interpretations as script
+
+    for bad in ("claude-opus-5-5", "claude-opus-5-5:fast", ":low", "../x:low"):
+        with pytest.raises(SystemExit):
+            script.main(["--variant", bad])
+
+
+# --- model and effort ---------------------------------------------------------------------
+
+
+def test_allowed_lists_are_parsed_and_validated(monkeypatch):
+    from env_config import ConfigError, csv_list
+
+    default = ("a", "b")
+    monkeypatch.delenv("TEST_LIST", raising=False)
+    assert csv_list("TEST_LIST", default) == default
+    monkeypatch.setenv("TEST_LIST", " High , low,high ")
+    assert csv_list("TEST_LIST", default, lower=True) == ("high", "low")
+    assert csv_list("TEST_LIST", default) == ("High", "low", "high")
+    assert csv_list("TEST_LIST", default, allowed=("high", "low"), lower=True) == ("high", "low")
+    with pytest.raises(ConfigError):
+        csv_list("TEST_LIST", default, allowed=("high", "low"))
+    monkeypatch.setenv("TEST_LIST", "high,,low")
+    with pytest.raises(ConfigError):
+        csv_list("TEST_LIST", default)
+
+
+def test_default_selection_joins_the_allowed_lists(monkeypatch, caplog):
+    from interpretation import client as claude_client
+
+    assert claude_client._with_default("model", ("a", "b"), "b") == ("a", "b")
+    assert claude_client._with_default("model", ("a", "b"), "c") == ("a", "b", "c")
+    assert "not in the allowed list" in caplog.text
+    # The default can change after import, as in the tests below.
+    monkeypatch.setattr(claude_client, "MODEL", "claude-other")
+    monkeypatch.setattr(claude_client, "EFFORT", "max")
+    assert claude_client.allowed_models() == ("claude-opus-5-5", "claude-sonnet-5-5", "claude-other")
+    assert claude_client.allowed_efforts() == ("low", "medium", "high", "xhigh", "max")
+
+
+def test_status_follows_the_allowed_lists(client, claude, monkeypatch):
+    from interpretation import client as claude_client
+
+    monkeypatch.setattr(claude_client, "ALLOWED_MODELS", ("claude-sonnet-5-5",))
+    monkeypatch.setattr(claude_client, "ALLOWED_EFFORTS", ("low",))
+    body = client.get("/factor-analysis/interpretation/status").json()
+    # The default selection is always offered.
+    assert body["models"] == ["claude-sonnet-5-5", "claude-opus-5-5"]
+    assert body["efforts"] == ["low", "medium"]
+    assert body["model"] == "claude-opus-5-5" and body["effort"] == "medium"
+
+
+def test_model_and_effort_reach_the_call(client, claude, csv_dataset):
+    r = _interpret(client, csv_dataset[0], auto_msa_filter=False, model="claude-sonnet-5-5", effort="xhigh")
+    assert r.status_code == 200, r.text
+    (call,) = claude.calls
+    assert call["model"] == "claude-sonnet-5-5"
+    assert call["output_config"]["effort"] == "xhigh"
+    assert call["max_tokens"] == 32000
+    body = r.json()
+    assert body["requested_model"] == "claude-sonnet-5-5" and body["effort"] == "xhigh"
+    assert claude.sdk_timeouts == [None]
+
+
+@pytest.mark.parametrize("effort, tokens", [("low", 16000), ("medium", 16000), ("high", 24000), ("xhigh", 32000)])
+def test_output_budget_follows_the_effort(client, claude, csv_dataset, effort, tokens):
+    _interpret(client, csv_dataset[0], auto_msa_filter=False, effort=effort)
+    assert claude.calls[0]["max_tokens"] == tokens
+
+
+def test_defaults_are_used_without_a_choice(client, claude, csv_dataset):
+    body = _interpret(client, csv_dataset[0], auto_msa_filter=False).json()
+    assert body["requested_model"] == "claude-opus-5-5" and body["effort"] == "medium"
+    assert claude.calls[0]["max_tokens"] == 16000
+
+
+def test_requested_model_is_kept_when_the_fallback_answers(client, claude, csv_dataset):
+    claude.outcome = lambda kwargs: _message(_answer_for(kwargs).content[0].text, model="claude-fallback")
+    body = _interpret(client, csv_dataset[0], auto_msa_filter=False).json()
+    assert body["model"] == "claude-fallback" and body["requested_model"] == "claude-opus-5-5"
+    # The next request for the same choice is a hit, not a second call.
+    again = _interpret(client, csv_dataset[0], auto_msa_filter=False).json()
+    assert again["cached"] is True and len(claude.calls) == 1
+
+
+@pytest.mark.parametrize("choice", [{"model": "claude-haiku-5-5"}, {"effort": "max"}, {"model": "x", "effort": "low"}])
+def test_choice_outside_the_allowed_lists_is_refused(client, claude, csv_dataset, choice):
+    r = _interpret(client, csv_dataset[0], auto_msa_filter=False, **choice)
+    assert r.status_code == 422 and r.json()["code"] == "interpretation_choice_not_allowed"
+    assert r.json()["params"]["models"] == ["claude-opus-5-5", "claude-sonnet-5-5"]
+    assert claude.calls == []
+
+
+@pytest.mark.parametrize("choice", [{"model": "../x"}, {"effort": "a/b"}, {"model": ""}, {"effort": "x" * 80}])
+def test_malformed_choice_is_a_validation_error(client, claude, csv_dataset, choice):
+    assert _interpret(client, csv_dataset[0], auto_msa_filter=False, **choice).status_code == 422
+    assert claude.calls == []
+
+
+def test_a_stored_choice_is_served_though_not_offered(client, claude, csv_dataset, monkeypatch):
+    from interpretation import client as claude_client
+
+    _interpret(client, csv_dataset[0], auto_msa_filter=False, effort="low")
+    monkeypatch.setattr(claude_client, "ALLOWED_EFFORTS", ("medium",))
+    r = _interpret(client, csv_dataset[0], auto_msa_filter=False, effort="low")
+    assert r.status_code == 200 and r.json()["cached"] is True and len(claude.calls) == 1
+
+
+def test_cache_is_per_model_and_effort(client, claude, csv_dataset):
+    dataset_id = csv_dataset[0]
+    _interpret(client, dataset_id, auto_msa_filter=False)
+    _interpret(client, dataset_id, auto_msa_filter=False, effort="high")
+    _interpret(client, dataset_id, auto_msa_filter=False, model="claude-sonnet-5-5")
+    assert len(claude.calls) == 3
+    # An explicit default is the same as none.
+    assert _interpret(
+        client, dataset_id, auto_msa_filter=False, model="claude-opus-5-5", effort="medium"
+    ).json()["cached"] is True
+    assert len(claude.calls) == 3
+
+
+def test_variants_of_the_cache(client, claude, csv_dataset):
+    dataset_id = csv_dataset[0]
+    body = _interpret(client, dataset_id, auto_msa_filter=False).json()
+    assert body["variants"] == [{"model": "claude-opus-5-5", "effort": "medium", "precomputed": False}]
+    _interpret(client, dataset_id, auto_msa_filter=False, model="claude-sonnet-5-5", effort="low")
+    body = _interpret(client, dataset_id, auto_msa_filter=False, effort="high").json()
+    assert body["variants"] == [
+        {"model": "claude-opus-5-5", "effort": "medium", "precomputed": False},
+        {"model": "claude-opus-5-5", "effort": "high", "precomputed": False},
+        {"model": "claude-sonnet-5-5", "effort": "low", "precomputed": False},
+    ]
+    # Another language is another analysis.
+    r = client.post(f"/factor-analysis/datasets/{dataset_id}/interpret/variants",
+                    json={"auto_msa_filter": False, "language": "de"})
+    assert r.status_code == 200 and r.json() == {"variants": []}
+
+
+def test_variants_endpoint_never_calls_and_works_without_a_key(client, claude, csv_dataset, monkeypatch):
+    dataset_id = csv_dataset[0]
+    _interpret(client, dataset_id, auto_msa_filter=False, n_factors=2)
+    _interpret(client, dataset_id, auto_msa_filter=False, n_factors=2, effort="xhigh")
+    claude.calls.clear()
+    monkeypatch.delenv("ANTHROPIC_API_KEY")
+    url = f"/factor-analysis/datasets/{dataset_id}/interpret/variants"
+    r = client.post(url, json={"auto_msa_filter": False, "n_factors": 2})
+    assert r.status_code == 200
+    assert [(v["model"], v["effort"]) for v in r.json()["variants"]] == [
+        ("claude-opus-5-5", "medium"), ("claude-opus-5-5", "xhigh"),
+    ]
+    # Without an explicit factor count the analysis runs and finds the same.
+    assert client.post(url, json={"auto_msa_filter": False}).json() == r.json()
+    assert client.post(url, json={"auto_msa_filter": False, "n_factors": 3}).json() == {"variants": []}
+    assert client.post(url, json={"auto_msa_filter": False, "rotation": "bogus"}).status_code == 422
+    assert client.post("/factor-analysis/datasets/nope/interpret/variants", json={}).status_code == 400
+    assert claude.calls == []
+
+
+def test_any_stored_variant_is_served_without_a_key(client, claude, csv_dataset, monkeypatch):
+    dataset_id = csv_dataset[0]
+    _interpret(client, dataset_id, auto_msa_filter=False, model="claude-sonnet-5-5", effort="high")
+    claude.calls.clear()
+    monkeypatch.delenv("ANTHROPIC_API_KEY")
+    hit = _interpret(client, dataset_id, auto_msa_filter=False, model="claude-sonnet-5-5", effort="high")
+    assert hit.status_code == 200 and hit.json()["cached"] is True
+    assert hit.json()["variants"] == [{"model": "claude-sonnet-5-5", "effort": "high", "precomputed": False}]
+    # A choice that was not stored is not made up, whatever it is: nothing is called.
+    r = _interpret(client, dataset_id, auto_msa_filter=False, model="claude-sonnet-5-5", effort="low")
+    assert r.status_code == 503 and r.json()["code"] == "interpretation_unavailable"
+    r = _interpret(client, dataset_id, auto_msa_filter=False, model="whatever", effort="max", cached_only=True)
+    assert r.status_code == 204
+    assert claude.calls == []
+
+
+def test_precomputed_is_matched_by_model_and_effort(client, claude, monkeypatch):
+    import asyncio
+
+    from factor_analysis import catalog as cat
+    from interpretation import store
+    from scripts import precompute_interpretations as script
+
+    entry = cat.bundled_entry(BUNDLED)
+    for model, effort in (("claude-opus-5-5", "medium"), ("claude-opus-5-5", "high"), ("claude-sonnet-5-5", "medium")):
+        result = asyncio.run(script.precompute(entry, "en", KEY, model=model, effort=effort))
+        store.write_precomputed(BUNDLED, "en", result)
+    claude.calls.clear()
+    monkeypatch.delenv("ANTHROPIC_API_KEY")
+    dataset_id = _bundled(client)
+
+    got = _interpret(client, dataset_id, cached_only=True, effort="high").json()
+    assert got["precomputed"] is True and got["effort"] == "high" and got["requested_model"] == "claude-opus-5-5"
+    got = _interpret(client, dataset_id, cached_only=True, model="claude-sonnet-5-5").json()
+    assert got["precomputed"] is True and got["requested_model"] == "claude-sonnet-5-5" and got["effort"] == "medium"
+    assert got["variants"] == [
+        {"model": "claude-opus-5-5", "effort": "medium", "precomputed": True},
+        {"model": "claude-opus-5-5", "effort": "high", "precomputed": True},
+        {"model": "claude-sonnet-5-5", "effort": "medium", "precomputed": True},
+    ]
+    # Neither a medium file for high nor any file for another effort or model is served.
+    assert _interpret(client, dataset_id, cached_only=True, effort="xhigh").status_code == 204
+    assert _interpret(client, dataset_id, cached_only=True, model="claude-sonnet-5-5", effort="high").status_code == 204
+    assert _interpret(client, dataset_id, effort="xhigh").status_code == 503
+    assert claude.calls == []
+
+
+def test_precomputed_matches_the_requested_model_not_the_answering_one(client, claude, monkeypatch):
+    import asyncio
+
+    from factor_analysis import catalog as cat
+    from interpretation import store
+    from scripts import precompute_interpretations as script
+
+    entry = cat.bundled_entry(BUNDLED)
+    result = asyncio.run(script.precompute(entry, "en", KEY))
+    result["model"] = "claude-fallback"
+    path = store.write_precomputed(BUNDLED, "en", result)
+    assert path.name == f"{BUNDLED}.en.claude-opus-5-5.medium.json"
+    monkeypatch.delenv("ANTHROPIC_API_KEY")
+    body = _interpret(client, _bundled(client), cached_only=True).json()
+    assert body["model"] == "claude-fallback" and body["requested_model"] == "claude-opus-5-5"
+
+    # Files from before requested_model was stored match on the model that answered.
+    old = {k: v for k, v in result.items() if k != "requested_model"}
+    old["model"] = "claude-opus-5-5"
+    path.write_text(json.dumps(old), encoding="utf-8")
+    body = _interpret(client, _bundled(client), cached_only=True).json()
+    assert body["requested_model"] == "claude-opus-5-5" and body["precomputed"] is True
+    path.write_text(json.dumps({**old, "model": "claude-other"}), encoding="utf-8")
+    assert _interpret(client, _bundled(client), cached_only=True).status_code == 204
+
+
+def test_variants_need_the_current_prompt_and_the_same_data(client, claude, monkeypatch):
+    from interpretation import client as claude_client
+
+    _precompute(monkeypatch, claude)
+    dataset_id = _bundled(client)
+    variants_url = f"/factor-analysis/datasets/{dataset_id}/interpret/variants"
+    assert client.post(variants_url, json={}).json()["variants"] == [
+        {"model": "claude-opus-5-5", "effort": "medium", "precomputed": True},
+    ]
+    assert client.post(variants_url, json={"rotation": "promax"}).json() == {"variants": []}
+    assert client.post(variants_url, json={"language": "de"}).json() == {"variants": []}
+    monkeypatch.setattr(claude_client, "PROMPT_DIGEST", "another prompt")
+    assert client.post(variants_url, json={}).json() == {"variants": []}
 
 
 # --- errors -------------------------------------------------------------------------------

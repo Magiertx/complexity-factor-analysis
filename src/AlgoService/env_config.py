@@ -94,3 +94,26 @@ def text(var: str, default: str) -> str:
     value = raw.strip()
     OVERRIDES[var] = value
     return value
+
+
+def csv_list(
+    var: str, default: tuple[str, ...], *, allowed: tuple[str, ...] | None = None, lower: bool = False
+) -> tuple[str, ...]:
+    """A comma-separated list setting, overridable via its own name; duplicates are dropped,
+    the order is kept. With ``allowed``, every item has to be one of them."""
+    raw = os.environ.get(var)
+    if raw is None or not raw.strip():
+        return default
+
+    items: list[str] = []
+    for part in raw.split(","):
+        item = part.strip().lower() if lower else part.strip()
+        if not item:
+            raise ConfigError(f"{var}={raw!r} contains an empty item.")
+        if allowed is not None and item not in allowed:
+            raise ConfigError(f"{var}={raw!r}: {item!r} is not one of {', '.join(allowed)}.")
+        if item not in items:
+            items.append(item)
+
+    OVERRIDES[var] = ",".join(items)
+    return tuple(items)

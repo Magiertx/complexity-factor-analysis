@@ -574,6 +574,7 @@ def test_zip_includes_a_precomputed_interpretation(client, monkeypatch, tmp_path
         "data_hash": data_hash(storage.load_matrix(session_id, dataset_id)),
         "params": effective_params(default_params("model"), analysis["n_factors"]),
         "language": "en", "model": "test-model", "prompt_version": "2",
+        "requested_model": claude_client.MODEL, "effort": claude_client.EFFORT,
         "prompt_digest": claude_client.PROMPT_DIGEST, "created_at": "2026-10-06T10:00:00+00:00",
         "interpretation": {"factors": [], "overall": "Two factors.", "caveats": []},
     }

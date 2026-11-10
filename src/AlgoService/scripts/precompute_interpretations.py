@@ -8,8 +8,12 @@ given. Run from src/AlgoService:
     python scripts/precompute_interpretations.py
     python scripts/precompute_interpretations.py --force --dataset comfy-paper-inductive-miner --language de --settings published
 
-Writes datasets/interpretations/<dataset id>.<language>.json (default parameters) and
-<dataset id>.published.<language>.json (published options; only datasets that have them).
+Writes datasets/interpretations/<dataset id>.<language>.<model>.<effort>.json (default
+parameters) and <dataset id>.published.<language>.<model>.<effort>.json (published options;
+only datasets that have them), one file per variant. Variants are model:effort pairs, by
+default PRECOMPUTE_VARIANTS; choose others with --variant (repeatable), e.g.
+
+    python scripts/precompute_interpretations.py --variant claude-sonnet-5-5:medium
 """
 
 from __future__ import annotations
@@ -40,6 +44,25 @@ from interpretation.payload import (  # noqa: E402
 from interpretation.prompt import LANGUAGES, PROMPT_VERSION  # noqa: E402
 
 
+#: The models and efforts interpretations are shipped for.
+PRECOMPUTE_VARIANTS: tuple[tuple[str, str], ...] = (
+    ("claude-opus-5-5", "medium"),
+    ("claude-opus-5-5", "high"),
+    ("claude-opus-5-5", "xhigh"),
+)
+#: Longer than a live call: the script waits for the high efforts, no browser is waiting.
+DEFAULT_TIMEOUT_S = 600.0
+
+
+def parse_variant(text: str) -> tuple[str, str]:
+    model, _, effort = text.partition(":")
+    if not client.CHOICE_RE.match(model) or effort not in client.MAX_TOKENS_BY_EFFORT:
+        raise argparse.ArgumentTypeError(
+            f"{text!r} is not model:effort; effort is one of {', '.join(client.EFFORTS)}"
+        )
+    return model, effort
+
+
 def bundled_matrix(entry: dict[str, Any]) -> tuple[pd.DataFrame, list[dict[str, Any]]]:
     """The cleaned matrix of a bundled dataset, as the API stores it when it is chosen
     with all measures."""
@@ -52,14 +75,22 @@ def settings_of(entry: dict[str, Any], wanted: tuple[str, ...] | list[str]) -> l
     return [s for s in wanted if s == "standard" or entry.get(f"{s}_options")]
 
 
-async def precompute(entry: dict[str, Any], language: str, key: str, settings: str = "standard") -> dict[str, Any]:
+async def precompute(
+    entry: dict[str, Any], language: str, key: str, settings: str = "standard",
+    *, model: str | None = None, effort: str | None = None, timeout: float = DEFAULT_TIMEOUT_S,
+) -> dict[str, Any]:
+    """``model`` and ``effort`` default to the server's."""
+    model = client.MODEL if model is None else model
+    effort = client.EFFORT if effort is None else effort
     kind = entry["kind"]
     data, dropped = bundled_matrix(entry)
     params = default_params(kind) if settings == "standard" else params_from_options(kind, entry[f"{settings}_options"])
     result = analyze(data, params)
     payload = build_payload(kind, result, params, dropped)
     client.check_size(payload, language)
-    answer = await client.interpret(payload, language, key)
+    answer = await client.interpret(
+        payload, language, key, timeout=timeout, model=model, effort=effort, sdk_timeout=timeout - 10
+    )
     return {
         "dataset_id": entry["id"],
         "kind": kind,
@@ -68,9 +99,10 @@ async def precompute(entry: dict[str, Any], language: str, key: str, settings: s
         "language": language,
         "settings": settings,
         "model": answer.model,
+        "requested_model": model,
         "prompt_version": PROMPT_VERSION,
         "prompt_digest": client.PROMPT_DIGEST,
-        "effort": client.EFFORT,
+        "effort": effort,
         "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "interpretation": answer.interpretation.model_dump(),
     }
@@ -79,27 +111,32 @@ async def precompute(entry: dict[str, Any], language: str, key: str, settings: s
 async def run(
     datasets: list[dict[str, Any]], languages: list[str], force: bool, key: str,
     settings: tuple[str, ...] | list[str] = store.SETTINGS,
+    variants: tuple[tuple[str, str], ...] | list[tuple[str, str]] | None = None,
+    timeout: float = DEFAULT_TIMEOUT_S,
 ) -> int:
     failed = 0
     for entry in datasets:
         for which in settings_of(entry, settings):
             for language in languages:
-                path = store.precomputed_path(entry["id"], language, which)
-                if path.exists() and not force:
-                    print(f"skip  {path.name} (exists; --force to replace)")
-                    continue
-                try:
-                    result = await precompute(entry, language, key, which)
-                    store.write_precomputed(entry["id"], language, result, which)
-                except InterpretationError as e:
-                    failed += 1
-                    print(f"FAIL  {path.name}: {e.detail}", file=sys.stderr)
-                    continue
-                except AnalysisError as e:
-                    failed += 1
-                    print(f"FAIL  {path.name}: {e}", file=sys.stderr)
-                    continue
-                print(f"wrote {path.name}")
+                for model, effort in PRECOMPUTE_VARIANTS if variants is None else variants:
+                    path = store.precomputed_path(entry["id"], language, which, model, effort)
+                    if path.exists() and not force:
+                        print(f"skip  {path.name} (exists; --force to replace)")
+                        continue
+                    try:
+                        result = await precompute(
+                            entry, language, key, which, model=model, effort=effort, timeout=timeout
+                        )
+                        store.write_precomputed(entry["id"], language, result, which)
+                    except InterpretationError as e:
+                        failed += 1
+                        print(f"FAIL  {path.name}: {e.detail}", file=sys.stderr)
+                        continue
+                    except AnalysisError as e:
+                        failed += 1
+                        print(f"FAIL  {path.name}: {e}", file=sys.stderr)
+                        continue
+                    print(f"wrote {path.name}")
     return failed
 
 
@@ -109,7 +146,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dataset", nargs="+", metavar="ID", help="only these bundled datasets")
     parser.add_argument("--language", nargs="+", choices=sorted(LANGUAGES), default=sorted(LANGUAGES))
     parser.add_argument("--settings", nargs="+", choices=store.SETTINGS, default=list(store.SETTINGS))
+    parser.add_argument(
+        "--variant", action="append", type=parse_variant, metavar="MODEL:EFFORT",
+        help="a model and effort to make files for; repeatable (default: "
+             + ", ".join(f"{m}:{e}" for m, e in PRECOMPUTE_VARIANTS) + ")",
+    )
+    parser.add_argument(
+        "--timeout", type=float, default=DEFAULT_TIMEOUT_S, metavar="SECONDS",
+        help=f"limit of one call (default {DEFAULT_TIMEOUT_S:.0f}; a live call has {client.TIMEOUT_S:.0f})",
+    )
     args = parser.parse_args(argv)
+    if args.timeout <= 10:
+        parser.error("--timeout must be more than 10 seconds")
 
     key = client.api_key()
     if key is None:
@@ -122,7 +170,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Unknown dataset(s): {', '.join(sorted(unknown))}", file=sys.stderr)
             return 2
         datasets = [d for d in datasets if d["id"] in args.dataset]
-    failed = asyncio.run(run(datasets, args.language, args.force, key, args.settings))
+    failed = asyncio.run(run(datasets, args.language, args.force, key, args.settings, args.variant, args.timeout))
     return 1 if failed else 0
 
 
