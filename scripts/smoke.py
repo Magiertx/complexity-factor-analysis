@@ -1,15 +1,19 @@
 """Smoke test of a running stack: every dataset source, an analysis, the exports.
 
-Works against the frontend (``/api`` is the backend behind it) of the Docker stack or a
-deployed instance, in a session of its own, and deletes what it created, also when a step
-fails. Exits with 1 if a step fails and prints a table of the steps with their times.
+Works against the frontend (``/api`` is the backend behind it) of the Docker stack, a
+deployed instance or the desktop app, and deletes what it created, also when a step fails.
+Exits with 1 if a step fails and prints a table of the steps with their times.
 
     python scripts/smoke.py                                  # http://localhost:3000
     python scripts/smoke.py --base-url https://cfa.example.org
     python scripts/smoke.py --api-url http://localhost:8000  # the backend directly
+    python scripts/smoke.py --port-file port.txt --no-prom   # the desktop app (docs/DESKTOP.md)
+
+On a server the smoke test has a session of its own. The desktop app has one session for
+everybody, so there it works next to the datasets that are already there and leaves them alone.
 
 Steps: catalog of both kinds; a model dataset from the four sample logs with the default
-miner (needs ProM); the sample Petri nets; the sample logs through feeed; a paper dataset,
+miner (needs ProM; ``--no-prom`` skips it); the sample Petri nets; the sample logs through feeed; a paper dataset,
 analysed with the settings its numbers were published with and compared with them, here and
 by the server against the report; the session's copy of it handed back instead of a new one;
 its ZIP and LaTeX export. Only the standard library, so it runs with any Python 3.10 or later.
@@ -75,6 +79,8 @@ class Smoke:
         self.dataset_timeout = dataset_timeout
         self.rows: list[tuple[str, float, bool, str]] = []
         self.created: list[str] = []
+        # Datasets of the session from before the test (the desktop app's one session).
+        self.existing: set[str] = set()
 
     def step(self, name: str, run: Callable[[], str]) -> bool:
         start = time.monotonic()
@@ -92,7 +98,9 @@ class Smoke:
 
     def create(self, form: dict[str, str]) -> dict[str, Any]:
         created = self.client.request("POST", "/factor-analysis/datasets", form=form)
-        self.created.append(created["dataset_id"])
+        # A copy the session had already is handed back ("reused"); it is not the test's to delete.
+        if created["dataset_id"] not in self.existing:
+            self.created.append(created["dataset_id"])
         return self.wait(created["dataset_id"])
 
     def wait(self, dataset_id: str) -> dict[str, Any]:
@@ -125,7 +133,9 @@ class Smoke:
     # --- steps ----------------------------------------------------------------------------
 
     def health(self) -> str:
-        return self.client.request("GET", "/health")["status"]
+        status = self.client.request("GET", "/health")["status"]
+        self.existing = {d["id"] for d in self.client.request("GET", "/factor-analysis/datasets")["datasets"]}
+        return status + (f", {len(self.existing)} dataset(s) in the session already" if self.existing else "")
 
     def catalog(self) -> str:
         out = []
@@ -224,16 +234,20 @@ class Smoke:
                 # Gone already is fine; anything else is reported.
                 if "HTTP 404" not in str(e):
                     raise
-        left = [d["id"] for d in self.client.request("GET", "/factor-analysis/datasets")["datasets"]]
+        left = [
+            d["id"] for d in self.client.request("GET", "/factor-analysis/datasets")["datasets"]
+            if d["id"] not in self.existing
+        ]
         if left:
             raise StepFailed(f"{len(left)} dataset(s) left in the session")
         return f"deleted {len(self.created)} dataset(s) with their runs"
 
-    def run(self) -> bool:
+    def run(self, prom: bool = True) -> bool:
         if not self.step("health", self.health):
             return False
         self.step("catalog", self.catalog)
-        self.step("4 sample logs x default miner (ProM)", self.model_from_logs)
+        if prom:
+            self.step("4 sample logs x default miner (ProM)", self.model_from_logs)
         self.step("sample Petri nets", self.model_from_pnml)
         self.step("sample logs with feeed", self.log_from_logs)
         if self.step("paper dataset as published", self.paper):
@@ -254,14 +268,22 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--base-url", default="http://localhost:3000", help="the frontend; the API is <base-url>/api")
     parser.add_argument("--api-url", help="the backend itself, instead of <base-url>/api")
+    parser.add_argument(
+        "--port-file", type=Path,
+        help="the file the desktop app wrote its port to (--port-file there); the base URL is then http://127.0.0.1:<port>",
+    )
+    parser.add_argument("--no-prom", action="store_true", help="skip the step that needs ProM (no ProM in the stack)")
     parser.add_argument("--dataset-timeout", type=float, default=900, help="seconds a dataset may take (default 900)")
     parser.add_argument("--request-timeout", type=float, default=300, help="seconds per request (default 300)")
     args = parser.parse_args()
 
-    api = args.api_url or args.base_url.rstrip("/") + "/api"
+    base_url = args.base_url
+    if args.port_file:
+        base_url = f"http://127.0.0.1:{int(args.port_file.read_text(encoding='utf-8').strip())}"
+    api = args.api_url or base_url.rstrip("/") + "/api"
     smoke = Smoke(Client(api, args.request_timeout), args.dataset_timeout)
-    print(f"Smoke test of {api}", flush=True)
-    passed = smoke.run()
+    print(f"Smoke test of {api}" + (" without the ProM step" if args.no_prom else ""), flush=True)
+    passed = smoke.run(prom=not args.no_prom)
     print()
     print(smoke.table())
     print("\nPASSED" if passed else "\nFAILED")
