@@ -72,7 +72,7 @@ def test_log_msa_filter_does_not_depend_on_the_column_order(log_data):
         assert set(result.data.columns) == set(reference.data.columns)
         assert abs(result.overall - reference.overall) <= 1e-6
         for measure, msa in reference.per_measure.items():
-            assert abs(result.per_measure[measure] - msa) <= 1e-6, measure
+            assert abs(result.per_measure[measure] - msa) <= 1e-6, (measure, result.per_measure[measure], msa)
 
 
 def test_msa_does_not_depend_on_the_units_on_singular_data():
