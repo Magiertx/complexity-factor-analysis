@@ -200,3 +200,27 @@ def test_a_stopped_stability_job_is_aborted(client, monkeypatch):
     started = client.post(f"{url}/stability", json={"samples": 100}).json()
     assert client.get(f"/jobs/{started['job_id']}").json()["status"] == "aborted"
     assert client.post(f"{url}/stability?start=false", json={"samples": 100}).json()["status"] == "none"
+
+
+def test_a_stability_of_another_measure_set_is_not_served(client, monkeypatch):
+    """The key names the result the stability is about: a computation that keeps other measures
+    (as the MSA change did) does not get the stability stored for the old ones."""
+    from routes import factor_analysis as route
+
+    url = f"/factor-analysis/datasets/{_bundled(client)}"
+    body = {"samples": 100}
+    started = client.post(f"{url}/stability", json=body).json()
+    assert client.get(f"/jobs/{started['job_id']}").json()["status"] == "completed"
+    assert client.post(f"{url}/stability?start=false", json=body).json()["status"] == "ready"
+    assert "stability.csv" in _zip(client, url, {"stability_samples": 100}).namelist()
+
+    original = route.run_analysis
+
+    def other_measures(data, params, should_stop=None):
+        result = original(data, params, should_stop)
+        return {**result, "used_measures": result["used_measures"][:-1]}
+
+    monkeypatch.setattr(route, "run_analysis", other_measures)
+    looked = client.post(f"{url}/stability?start=false", json=body).json()
+    assert looked["status"] == "none" and looked["key"] != started["key"]
+    assert "stability.csv" not in _zip(client, url, {"stability_samples": 100}).namelist()
