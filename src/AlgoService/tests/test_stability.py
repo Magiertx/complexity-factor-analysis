@@ -5,8 +5,12 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import re
+import shutil
+import uuid
 import zipfile
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -224,3 +228,73 @@ def test_a_stability_of_another_measure_set_is_not_served(client, monkeypatch):
     looked = client.post(f"{url}/stability?start=false", json=body).json()
     assert looked["status"] == "none" and looked["key"] != started["key"]
     assert "stability.csv" not in _zip(client, url, {"stability_samples": 100}).namelist()
+
+
+def _job_after_write_fails(client, monkeypatch, write):
+    from factor_analysis import storage
+
+    monkeypatch.setattr(storage, "write_stability", write)
+    url = f"/factor-analysis/datasets/{_bundled(client)}"
+    started = client.post(f"{url}/stability", json={"samples": 100}).json()
+    return client.get(f"/jobs/{started['job_id']}").json()
+
+
+def test_a_file_that_cannot_be_opened_is_a_failure_not_a_gone_dataset(client, monkeypatch, caplog):
+    """FileNotFoundError also means a path the system rejects (too long on Windows): the dataset
+    is still there, so the job fails with its own code and the cause is logged."""
+    def cannot_open(*args, **kwargs):
+        raise FileNotFoundError("the path is too long")
+
+    with caplog.at_level("ERROR"):
+        job = _job_after_write_fails(client, monkeypatch, cannot_open)
+    assert job["status"] == "failed" and job["error_code"] == "stability_failed"
+    assert "too long" in job["error"]
+    assert any("too long" in r.getMessage() or "too long" in str(r.exc_info) for r in caplog.records)
+
+
+def test_a_dataset_deleted_during_the_stability_is_gone(client, monkeypatch):
+    from factor_analysis import storage
+
+    def deleted(session_id, dataset_id, key, result):
+        shutil.rmtree(storage.dataset_dir(session_id, dataset_id))
+        raise FileNotFoundError(dataset_id)
+
+    job = _job_after_write_fails(client, monkeypatch, deleted)
+    assert job["status"] == "failed" and job["error_code"] == "dataset_gone"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="MAX_PATH is a Windows limit")
+def test_a_result_under_a_path_beyond_max_path_is_kept(tmp_path, monkeypatch):
+    """The desktop app hands the backend its data directory as an extended-length path."""
+    import jobs_db
+    from desktop_app.environment import directory_setting
+    from factor_analysis import storage
+
+    from .desktop._support import DESKTOP  # noqa: F401  (puts the launcher on the path)
+
+    artifacts = tmp_path.joinpath(*["a-long-directory-name-" + "x" * 20] * 5, "artifacts")
+    session, key = str(uuid.uuid4()), uuid.uuid4().hex
+    monkeypatch.setattr(jobs_db, "ARTIFACTS_DIR", Path(directory_setting(artifacts)))
+    meta = storage.create(session, kind="model", name="n", source="csv", status="ready", inputs={})
+    path = storage.dataset_dir(session, meta["id"]) / "stability" / f"{key}.json"
+    assert str(path).startswith(chr(92) * 2 + "?" + chr(92))
+    assert len(str(path)) - 4 > 260
+    result = {"samples": 3, "measures": []}
+    storage.write_stability(session, meta["id"], key, result)
+    assert storage.read_stability(session, meta["id"], key) == result
+    assert not list(path.parent.glob("*.tmp"))
+    assert storage.exists(session, meta["id"])
+
+
+def test_a_result_under_a_short_path_is_kept(tmp_path, monkeypatch):
+    import jobs_db
+    from factor_analysis import storage
+
+    from .desktop._support import DESKTOP  # noqa: F401
+    from desktop_app.environment import directory_setting
+
+    monkeypatch.setattr(jobs_db, "ARTIFACTS_DIR", Path(directory_setting(tmp_path / "artifacts")))
+    session, key = str(uuid.uuid4()), uuid.uuid4().hex
+    meta = storage.create(session, kind="model", name="n", source="csv", status="ready", inputs={})
+    storage.write_stability(session, meta["id"], key, {"samples": 3})
+    assert storage.read_stability(session, meta["id"], key) == {"samples": 3}

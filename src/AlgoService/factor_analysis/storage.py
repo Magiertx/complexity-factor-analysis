@@ -73,6 +73,11 @@ def dataset_dir(session_id: str, dataset_id: str) -> Path:
     return root() / session_id / dataset_id
 
 
+def exists(session_id: str, dataset_id: str) -> bool:
+    """Whether the dataset is still stored (its directory and ``meta.json``)."""
+    return read_meta(session_id, dataset_id) is not None
+
+
 def _write_json(path: Path, data: dict[str, Any]) -> None:
     tmp = path.with_suffix(".tmp")
     with open(tmp, "w", encoding="utf-8") as f:

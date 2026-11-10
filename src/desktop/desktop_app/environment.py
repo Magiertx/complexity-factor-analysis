@@ -33,6 +33,24 @@ def sqlite_url(path: Path) -> str:
     return "sqlite+aiosqlite:///" + urllib.parse.quote(Path(path).resolve().as_posix(), safe="/:")
 
 
+#: The prefix of an extended-length path on Windows (``\\?\C:\...``), which lifts MAX_PATH.
+EXTENDED_PREFIX = "\\\\?\\"
+
+
+def directory_setting(path: Path) -> str:
+    """``path`` as the backend is told a data directory.
+
+    On Windows an absolute, normalized path with the extended-length prefix: the backend appends
+    ``datasets/<session>/<dataset>/stability/<key>.json`` and the like, which with a long data
+    directory exceeds MAX_PATH (260) and then fails with FileNotFoundError. A UNC path or one that
+    already has a double-backslash prefix is left as it is. Elsewhere it is the path itself.
+    """
+    text = str(path)
+    if os.name != "nt" or text.startswith("\\\\"):
+        return text
+    return EXTENDED_PREFIX + os.path.abspath(text)
+
+
 def backend_environ(
     base: Mapping[str, str],
     paths: AppPaths,
@@ -60,8 +78,8 @@ def backend_environ(
     env.update(
         {
             "DATABASE_URL": sqlite_url(paths.database),
-            "ARTIFACTS_DIR": str(paths.artifacts),
-            "UPLOADED_LOGS_DIR": str(paths.uploads),
+            "ARTIFACTS_DIR": directory_setting(paths.artifacts),
+            "UPLOADED_LOGS_DIR": directory_setting(paths.uploads),
             "SESSION_SECRET_KEY": identity.session_secret_key,
             # As in docker-compose.yml: the API is reached under /api.
             "FASTAPI_ROOT_PATH": "/api",

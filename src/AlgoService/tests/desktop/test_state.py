@@ -229,7 +229,8 @@ def test_the_backend_environment(tmp_path):
     for name in ("REDIS_URL", "RATE_LIMIT_DISABLED", "TESTING", "TEST_DATABASE_URL"):
         assert name not in env
     assert env["DATABASE_URL"] == environment.sqlite_url(paths.database)
-    assert env["ARTIFACTS_DIR"] == str(paths.artifacts) and env["UPLOADED_LOGS_DIR"] == str(paths.uploads)
+    assert env["ARTIFACTS_DIR"] == environment.directory_setting(paths.artifacts)
+    assert env["UPLOADED_LOGS_DIR"] == environment.directory_setting(paths.uploads)
     assert env["SESSION_SECRET_KEY"] == identity.session_secret_key
     assert env["SHARED_SESSION_ID"] == identity.shared_session_id
     for name in ("DATA_MAX_IDLE_DAYS", "MAX_DATASETS_PER_SESSION", "LOW_DISK_CLEANUP_FREE_PCT", "SESSION_MAX_AGE"):
@@ -289,7 +290,7 @@ def test_the_backend_accepts_the_environment(tmp_path):
     assert max_age == 10 * 365 * 24 * 3600
     assert no_limits is False  # the rate limits stay on
     assert (max_datasets, idle, low_disk) == (None, None, None)
-    assert artifacts == str(paths.artifacts)
+    assert artifacts == environment.directory_setting(paths.artifacts)
     assert in_process is True
 
 
@@ -334,3 +335,23 @@ def test_private_files_are_written_through_a_fresh_owner_only_file(tmp_path):
 
     write_private_text(target, "second")  # replaces an existing file
     assert target.read_text() == "second"
+
+
+@pytest.mark.skipif(os.name != "nt", reason="extended-length paths are a Windows matter")
+def test_the_data_directories_are_extended_length_paths_on_windows(tmp_path):
+    prefix = environment.EXTENDED_PREFIX
+    assert prefix == chr(92) * 2 + "?" + chr(92)
+    directory = tmp_path / "data" / "." / "artifacts"
+    setting = environment.directory_setting(directory)
+    assert setting == prefix + os.path.abspath(tmp_path / "data" / "artifacts")
+    (tmp_path / "data" / "artifacts").mkdir(parents=True)
+    assert os.path.samefile(setting, tmp_path / "data" / "artifacts")
+    # Already prefixed, or a UNC path: left alone.
+    assert environment.directory_setting(Path(setting)) == setting
+    unc = chr(92) * 2 + "server" + chr(92) + "share" + chr(92) + "data"
+    assert environment.directory_setting(Path(unc)) == unc
+
+
+def test_the_data_directories_are_left_alone_off_windows(tmp_path, monkeypatch):
+    monkeypatch.setattr(environment.os, "name", "posix")
+    assert environment.directory_setting(tmp_path) == str(tmp_path)

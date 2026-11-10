@@ -1116,7 +1116,11 @@ async def _ready_meta(dataset_id: str, session_id: str) -> dict[str, Any]:
 
 async def _ready_matrix(dataset_id: str, session_id: str) -> tuple[dict[str, Any], pd.DataFrame]:
     meta = await _ready_meta(dataset_id, session_id)
-    return meta, await run_in_threadpool(storage.load_matrix, session_id, meta["id"])
+    try:
+        return meta, await run_in_threadpool(storage.load_matrix, session_id, meta["id"])
+    except FileNotFoundError:
+        # The dataset was deleted after its meta was read.
+        raise HTTPException(status_code=404, detail="Dataset not found.") from None
 
 
 def _attachment(content: str | bytes, filename: str, media_type: str) -> Response:
@@ -2069,9 +2073,19 @@ async def run_stability_task(job_id: str, session_id: str, dataset_id: str, requ
     except _AnalysisFailed as e:
         await jobs_db.set_job_failed(job_id, str(e.error), e.error.code)
         await broadcast_jobs_update()
-    except (HTTPException, FileNotFoundError):
+    except HTTPException:
         # The dataset was deleted meanwhile, or is not ready.
         await jobs_db.set_job_failed(job_id, "The dataset of the stability is gone.", "dataset_gone")
+        await broadcast_jobs_update()
+    except FileNotFoundError as e:
+        # Gone only if the dataset is; a path the system cannot open (too long, say) is a failure.
+        if await asyncio.to_thread(storage.exists, session_id, dataset_id):
+            logger.exception(f"Stability job {job_id} failed")
+            await jobs_db.set_job_failed(
+                job_id, f"The stability could not be computed: a file could not be accessed ({e})", "stability_failed"
+            )
+        else:
+            await jobs_db.set_job_failed(job_id, "The dataset of the stability is gone.", "dataset_gone")
         await broadcast_jobs_update()
     except Exception as e:
         logger.exception(f"Stability job {job_id} failed")

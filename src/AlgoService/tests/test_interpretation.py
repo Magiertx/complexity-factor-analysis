@@ -170,6 +170,23 @@ def test_status_with_key(client, claude):
 # --- request and payload -------------------------------------------------------------------
 
 
+def test_a_dataset_whose_matrix_is_gone_is_not_found_not_a_server_error(client, claude, csv_dataset):
+    """The matrix can vanish after the dataset's meta was read (deleted meanwhile): 404, as for
+    a dataset that is not there."""
+    import jobs_db
+
+    dataset_id = csv_dataset[0]
+    (matrix,) = (jobs_db.ARTIFACTS_DIR / "datasets").glob(f"*/{dataset_id}/data.csv")
+    matrix.unlink()
+    for r in (
+        _interpret(client, dataset_id, auto_msa_filter=False),
+        client.post(f"/factor-analysis/datasets/{dataset_id}/interpret/variants", json={}),
+        client.post(f"/factor-analysis/datasets/{dataset_id}/stability?start=false", json={}),
+    ):
+        assert r.status_code == 404, r.text
+    assert claude.calls == []
+
+
 def test_request_shape(client, claude, csv_dataset):
     r = _interpret(client, csv_dataset[0], auto_msa_filter=False, language="de")
     assert r.status_code == 200, r.text
