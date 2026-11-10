@@ -6,7 +6,7 @@ import { desktopAccess } from "./e2e/desktop-access";
 //   BASE_URL     the frontend to test (default http://localhost:3000)
 //   PW_CHANNEL   a browser installed on the machine instead of Playwright's Chromium, e.g.
 //                "msedge"; CI installs Chromium and leaves it unset
-//   CFA_TOKEN    the access token of a desktop app (its --token-file), which every request needs
+//   CFA_TOKEN    the access token of a desktop app (its --token-file), whose cookie every request needs (desktop-setup.ts)
 //   E2E_PROM=1   the stack has ProM: runs the specs tagged @prom and skips those tagged
 //                @no-prom, which expect ProM to be missing (as in CI)
 //
@@ -15,6 +15,7 @@ const prom = process.env.E2E_PROM === "1";
 
 export default defineConfig({
   testDir: "./e2e",
+  globalSetup: "./e2e/desktop-setup.ts",
   timeout: 120_000,
   expect: { timeout: 20_000 },
   forbidOnly: !!process.env.CI,

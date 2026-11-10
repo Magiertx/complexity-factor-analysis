@@ -14,7 +14,7 @@ async function code(request: import("@playwright/test").APIRequestContext): Prom
 
 test("a one-time code opens the app once, in exchange for a session cookie", async ({ browser, baseURL, request }) => {
   const first = await code(request);
-  const context = await browser.newContext({ baseURL, locale: "en-US", extraHTTPHeaders: {} }); // no header: the browser's own way in
+  const context = await browser.newContext({ baseURL, locale: "en-US", storageState: { cookies: [], origins: [] } }); // no cookie: the browser's own way in
   try {
     const page = await context.newPage();
     // Without credentials nothing but a note, and the API refuses.
@@ -33,7 +33,7 @@ test("a one-time code opens the app once, in exchange for a session cookie", asy
     expect((await context.request.get("/api/factor-analysis/datasets")).ok()).toBeTruthy();
 
     // The code is used up.
-    const other = await browser.newContext({ baseURL, locale: "en-US", extraHTTPHeaders: {} });
+    const other = await browser.newContext({ baseURL, locale: "en-US", storageState: { cookies: [], origins: [] } });
     try {
       const reused = await (await other.newPage()).goto(`/?token=${first}`);
       expect(reused?.status()).toBe(401);

@@ -234,7 +234,7 @@ cd src/frontend
 BASE_URL=http://127.0.0.1:$(cat /tmp/cfa-port) CFA_TOKEN=$(cat /tmp/cfa-token) npx playwright test
 ```
 
-`CFA_TOKEN` makes each browser context send the token as a bearer header (`e2e/desktop-access.spec.ts` runs the browser's way in, with a one-time code). `--separate-sessions` gives each Playwright browser context a session of its own, as the specs
+`CFA_TOKEN` lets a global setup redeem a one-time code once and gives every browser context the session cookie (`e2e/desktop-setup.ts`; `e2e/desktop-access.spec.ts` runs the way in itself). `--separate-sessions` gives each Playwright browser context a session of its own, as the specs
 expect of a server. The request limits are off by default, which the specs need: they create far more than 60
 datasets within the hour, all from 127.0.0.1. On Windows without Playwright's own Chromium, add
 `PW_CHANNEL=msedge`.
