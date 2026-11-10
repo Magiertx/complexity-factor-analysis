@@ -157,14 +157,13 @@ own jobs, cannot happen.
 
 The launcher's tests are in `src/AlgoService/tests/desktop` and run with the backend's suite
 (`python -m pytest` in `src/AlgoService`). One of them starts `python -m desktop_app` as a
-process twice.
+process, starts it a second time on the same data directory, quits it and starts it again.
 
-Against the running app, with ports from a file:
+Against the running app, from the root of the repository, with the port from a file:
 
 ```bash
-cd src/desktop
-python -m desktop_app --headless --port 0 --port-file /tmp/cfa-port --data-dir /tmp/cfa-data \
-    --separate-sessions --no-rate-limits &
+(cd src/desktop && python -m desktop_app --headless --port 0 --port-file /tmp/cfa-port \
+    --data-dir /tmp/cfa-data --separate-sessions --no-rate-limits) &
 
 python scripts/smoke.py --port-file /tmp/cfa-port --no-prom
 
