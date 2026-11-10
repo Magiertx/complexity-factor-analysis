@@ -42,6 +42,12 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     )
     parser.add_argument("--port-file", type=Path, help="write the port to this file once the server answers")
     parser.add_argument(
+        "--token-file",
+        type=Path,
+        help="write the access token of this start to this file (readable by the owner only), "
+        "for scripts: they send it as `Authorization: Bearer <token>`",
+    )
+    parser.add_argument(
         "--data-dir", type=Path, help="keep data, settings and logs in this directory instead of the user's"
     )
     parser.add_argument(
@@ -73,6 +79,23 @@ def write_port_file(path: Path, port: int) -> None:
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_text(f"{port}\n", encoding="utf-8")
     os.replace(tmp, path)
+
+
+def write_token_file(path: Path, token: str) -> None:
+    """The token, in a file only the owner can read where the system has modes."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(token)
+    os.replace(tmp, path)
+
+
+def access_url(port: int, token: str) -> str:
+    """The address that opens the app: the page server trades the token for a cookie and
+    redirects to the same address without it."""
+    return f"http://{instance.HOST}:{port}/?token={token}"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -132,8 +155,10 @@ def _hand_over(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -
     logger.info("Showing the running instance (pid %s) at %s.", running.get("pid"), url)
     if args.port_file:
         write_port_file(args.port_file, running["port"])
+    if args.token_file:
+        write_token_file(args.token_file, running["token"])
     if not args.headless:
-        webbrowser.open(url, new=2)  # not in a thread: this process ends right after
+        webbrowser.open(access_url(running["port"], running["token"]), new=2)  # not in a thread: this process ends right after
     return 0
 
 
@@ -227,17 +252,21 @@ def _serve(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> in
     try:
         if args.port is None and port != remembered:
             state.remember_port(app_paths.launcher_state, port)
-        if args.port_file:
+        if args.token_file:
+            write_token_file(args.token_file, token)
+        if args.port_file:  # last: scripts wait for it
             write_port_file(args.port_file, port)
         url = f"http://{instance.HOST}:{port}/"
+        open_url = access_url(port, token)  # never logged or shown
         logger.info("%s is running at %s", name, url)
 
         shown = False
         if not args.headless:
-            ui.open_browser(url)
+            ui.open_browser(open_url)
             shown = ui.run_window(
                 name,
                 url,
+                open_url=open_url,
                 data_dir=app_paths.data,
                 log_file=app_paths.log_file,
                 should_close=lambda: stop.is_set() or not server.running,

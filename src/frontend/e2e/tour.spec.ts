@@ -1,10 +1,11 @@
+import { desktopAccess } from "./desktop-access";
 import { expect, pattern, test as base, text } from "./fixtures";
 
 // The welcome tour of a first visit: its language follows the browser, and a switch in the window
 // sets the same choice as the language of the page. No fixture here: the tests need an empty storage.
 
 base("a browser in en-US with an empty storage gets the tour in English", async ({ browser, baseURL }) => {
-  const context = await browser.newContext({ baseURL, locale: "en-US" });
+  const context = await browser.newContext({ baseURL, locale: "en-US", ...desktopAccess() });
   const page = await context.newPage();
   await page.goto("/");
   const tour = page.getByRole("dialog");
@@ -17,7 +18,7 @@ base("a browser in en-US with an empty storage gets the tour in English", async 
 });
 
 base("the switch in the tour sets the language of the page too", async ({ browser, baseURL }) => {
-  const context = await browser.newContext({ baseURL, locale: "en-US" });
+  const context = await browser.newContext({ baseURL, locale: "en-US", ...desktopAccess() });
   const page = await context.newPage();
   await page.goto("/");
   const tour = page.getByRole("dialog");

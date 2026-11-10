@@ -1,3 +1,4 @@
+import { desktopAccess } from "./desktop-access";
 import type { Page } from "@playwright/test";
 import { expect, expectStep, seedStorage, test } from "./fixtures";
 
@@ -24,7 +25,7 @@ function trackSessions(page: Page): { ids: string[]; errors: string[] } {
 test("a first visit without a cookie gets one session, and the run it starts survives", async ({ browser, baseURL }) => {
   // A browser that has never been here, and no cookie request beforehand: the page fires its
   // first requests (catalog, datasets, the dataset the link opens) at once.
-  const context = await browser.newContext({ baseURL, locale: "en-US" });
+  const context = await browser.newContext({ baseURL, locale: "en-US", ...desktopAccess() });
   try {
     const page = await context.newPage();
     await seedStorage(page);
@@ -50,7 +51,7 @@ test("a first visit without a cookie gets one session, and the run it starts sur
 test("a cookie the server cannot read is replaced on the next page load", async ({ browser, baseURL }) => {
   // E.g. after the server's secret changed: the cookie is there, but every request would start
   // a session of its own, as without a cookie.
-  const context = await browser.newContext({ baseURL, locale: "en-US" });
+  const context = await browser.newContext({ baseURL, locale: "en-US", ...desktopAccess() });
   try {
     await context.addCookies([{ name: "session_id", value: "e30=.AAAAAA.not-a-signature", url: baseURL ?? "http://localhost:3000" }]);
     const page = await context.newPage();

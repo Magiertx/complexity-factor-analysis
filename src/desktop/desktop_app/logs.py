@@ -11,6 +11,7 @@ from __future__ import annotations
 import io
 import logging
 import os
+import re
 import sys
 import threading
 from pathlib import Path
@@ -61,6 +62,14 @@ class RotatingFile:
                 self._file = None
 
 
+#: The access token in an address (an access log line, a traceback): never written.
+_TOKEN = re.compile(r"([?&]token=)[^&\s\"']+")
+
+
+def redact(text: str) -> str:
+    return _TOKEN.sub(lambda m: m.group(1) + "***", text)
+
+
 class Tee(io.TextIOBase):
     """A text stream that writes to the console (if there is one) and to the log file."""
 
@@ -80,6 +89,7 @@ class Tee(io.TextIOBase):
         return False
 
     def write(self, text: str) -> int:
+        text = redact(text)
         if self.console is not None:
             try:
                 self.console.write(text)

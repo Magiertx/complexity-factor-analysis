@@ -7,7 +7,7 @@ import uuid
 
 import pytest
 
-from ._support import API_CSP, HTML, ORIGIN, PAGE_HEADERS, cookie_session_id
+from ._support import API_CSP, BEARER, HTML, ORIGIN, PAGE_HEADERS, asgi_get, cookie_session_id
 
 # --- routing --------------------------------------------------------------------------------
 
@@ -72,6 +72,48 @@ def test_a_trailing_slash_redirects_like_nextjs(desktop_client):
     assert response.headers["location"] == "/log?tab=1"
     response = desktop_client.get("/api/health/", follow_redirects=False)
     assert (response.status_code, response.headers["location"]) == (308, "/api/health")
+
+
+@pytest.mark.parametrize(
+    "path, location",
+    [
+        ("//evil.example/", "/evil.example"),
+        ("/\evil.example/", "/evil.example"),
+        ("/%2F%2Fevil.example/", "/evil.example"),  # as the server has it, decoded
+        ("///evil.example/", "/evil.example"),
+        ("//", "/"),
+        ("/\/", "/"),
+        ("/a//", "/a"),
+    ],
+)
+def test_a_redirect_never_leaves_the_origin(desktop_app, path, location):
+    """``Location: //evil.example`` would send the browser to another site."""
+    decoded = path.replace("%2F", "/")
+    status, headers = asgi_get(desktop_app, decoded, "x=1", BEARER)
+    assert status == 308, path
+    assert headers["location"] == location + "?x=1"
+    assert not headers["location"].startswith(("//", "/\\"))
+
+
+@pytest.mark.parametrize("path", ["/%2F%2Fevil.example/", "/%5Cevil.example/", "/x//"])
+def test_the_encoded_forms_through_a_real_client(desktop_client, path):
+    response = desktop_client.get(path, follow_redirects=False)
+    assert response.status_code in (308, 404)
+    assert not response.headers.get("location", "/").startswith(("//", "/\\"))
+
+
+@pytest.mark.parametrize("path", ["//evil.example/", "/api//evil.example/", "/api/\evil/"])
+def test_the_api_redirect_stays_on_the_origin_too(desktop_app, path):
+    status, headers = asgi_get(desktop_app, path, "", BEARER)
+    assert status in (308, 404)
+    assert not headers.get("location", "/").startswith(("//", "/\\"))
+
+
+def test_a_control_character_in_the_path_stays_out_of_the_header(desktop_client):
+    response = desktop_client.get("/log%0d%0aSet-Cookie:x=1/", follow_redirects=False)
+    assert response.status_code == 308
+    assert "\r" not in response.headers["location"] and "set-cookie" not in response.headers
+    assert response.headers["location"] == "/log%0D%0ASet-Cookie:x=1"
 
 
 def test_head_and_other_methods(desktop_client):
@@ -175,7 +217,7 @@ def test_with_a_shared_session_every_browser_is_in_it(monkeypatch, desktop_app):
 
     shared = str(uuid.uuid4())
     monkeypatch.setattr(config, "SHARED_SESSION_ID", shared)
-    with TestClient(desktop_app, base_url=ORIGIN) as a, TestClient(desktop_app, base_url=ORIGIN) as b:
+    with TestClient(desktop_app, base_url=ORIGIN, headers=BEARER) as a, TestClient(desktop_app, base_url=ORIGIN, headers=BEARER) as b:
         for client in (a, b):
             assert cookie_session_id(client.get("/", headers=HTML).headers["set-cookie"]) == shared
         created = a.post("/api/factor-analysis/datasets", data={"kind": "model", "source": "bundled", "bundled_id": "comfy-paper-inductive-miner"})

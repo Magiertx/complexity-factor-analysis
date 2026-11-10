@@ -1,3 +1,4 @@
+import { desktopAccess } from "./desktop-access";
 import { readFileSync } from "node:fs";
 import { inflateRawSync } from "node:zlib";
 import { expect, test as base, type Browser, type BrowserContext, type Download, type Locator, type Page } from "@playwright/test";
@@ -63,7 +64,7 @@ export async function freshPage(
   baseURL: string | undefined,
   language: "en" | "de" = "en",
 ): Promise<{ context: BrowserContext; page: Page }> {
-  const context = await browser.newContext({ baseURL, locale: "en-US", acceptDownloads: true });
+  const context = await browser.newContext({ baseURL, locale: "en-US", acceptDownloads: true, ...desktopAccess() });
   const page = await context.newPage();
   await preparePage(page, language);
   return { context, page };

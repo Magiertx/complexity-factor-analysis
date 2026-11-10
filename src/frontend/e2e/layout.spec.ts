@@ -1,3 +1,4 @@
+import { desktopAccess } from "./desktop-access";
 import { expect, pattern, stepSection, test, text } from "./fixtures";
 
 // The navigation without description lines, the keyboard, the 404 page, the language of a first
@@ -85,7 +86,7 @@ test("a factor without a name is labelled with the measure that loads highest", 
 });
 
 test("a first visit follows the language of the browser", async ({ browser, baseURL }) => {
-  const context = await browser.newContext({ baseURL, locale: "de-DE" });
+  const context = await browser.newContext({ baseURL, locale: "de-DE", ...desktopAccess() });
   const page = await context.newPage();
   await page.addInitScript(() => {
     try {

@@ -11,6 +11,13 @@ user opens can send requests to it:
 - :class:`NoCors`: no ``Access-Control-*`` header leaves the app, so no other origin can read
   an answer (the backend's own CORS setting is for the Docker build).
 
+Behind them the :class:`Router` asks for the launch's access token, as Jupyter does, since any
+other program on the machine (also of another user) can reach 127.0.0.1 and these checks only
+stop web pages. The launcher opens ``/?token=<token>``; the page server trades the token for an
+``HttpOnly``, ``SameSite=Strict`` cookie and redirects to the same address without it. Every
+request to the API and every page needs that cookie, or ``Authorization: Bearer <token>`` for
+scripts. Only ``/api/health`` is open, and says no more than "ok".
+
 :class:`Shutdown` ends the progress streams (Server-Sent Events) when the app quits; they never
 end by themselves, and the server would wait for them.
 """
@@ -21,11 +28,11 @@ import asyncio
 import json
 import logging
 import secrets
-from urllib.parse import urlsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from .pages import PageServer, SessionCookies, without_trailing_slash
+from .pages import PageServer, SessionCookies, local_location, without_trailing_slash
 
 logger = logging.getLogger("desktop")
 
@@ -33,6 +40,11 @@ API_PREFIX = "/api"
 #: Answers another start of the launcher whether this is the instance it looks for.
 INSTANCE_PATH = "/_desktop/instance"
 INSTANCE_HEADER = b"x-desktop-instance"
+
+#: The cookie of the access token carries the port, since cookies are shared between ports of a host.
+ACCESS_COOKIE = "desktop_access"
+TOKEN_PARAMETER = "token"
+HEALTH_PATH = API_PREFIX + "/health"
 
 STATE_CHANGING = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
@@ -63,6 +75,29 @@ def _header(scope: Scope, name: bytes) -> str | None:
         if key == name:
             return value.decode("latin-1")
     return None
+
+
+LANDING_PAGE = (
+    b"<!doctype html><html lang=en><meta charset=utf-8><title>Not opened from the app</title>"
+    b"<h1>This address needs the app</h1>"
+    b"<p>Start the app from its icon, or use the button &quot;Open in browser&quot; of its window. "
+    b"That opens this address with the key of the current start.</p></html>"
+)
+
+
+def access_cookie_name(port: int) -> str:
+    return f"{ACCESS_COOKIE}_{port}"
+
+
+def _cookies(scope: Scope) -> dict[str, str]:
+    out: dict[str, str] = {}
+    for key, value in scope["headers"]:
+        if key == b"cookie":
+            for part in value.decode("latin-1").split(";"):
+                name, _, text = part.strip().partition("=")
+                if name:
+                    out.setdefault(name, text)
+    return out
 
 
 async def _refuse(send: Send, status: int, detail: str, extra: list[tuple[bytes, bytes]] | None = None) -> None:
@@ -204,13 +239,53 @@ class Router:
     """``/api`` to the API, the instance check to the launcher, the rest to the pages."""
 
     def __init__(
-        self, api: ASGIApp, pages: PageServer | ASGIApp, instance: dict | None, token: str, shutdown: Shutdown
+        self,
+        api: ASGIApp,
+        pages: PageServer | ASGIApp,
+        instance: dict | None,
+        token: str,
+        shutdown: Shutdown,
+        port: int = 0,
     ) -> None:
         self.api = api
         self.pages = pages
         self.instance = instance
         self.token = token
         self.shutdown = shutdown
+        self.cookie_name = access_cookie_name(port)
+
+    def _is_token(self, given: str | bytes | None) -> bool:
+        if given is None:
+            return False
+        raw = given.encode("utf-8", "surrogatepass") if isinstance(given, str) else given
+        return secrets.compare_digest(raw, self.token.encode("utf-8"))
+
+    def authorized(self, scope: Scope) -> bool:
+        """The cookie the page server set, or the bearer token of a script."""
+        auth = _header(scope, b"authorization") or ""
+        scheme, _, value = auth.partition(" ")
+        if scheme.lower() == "bearer" and self._is_token(value.strip()):
+            return True
+        return self._is_token(_cookies(scope).get(self.cookie_name))
+
+    def token_in_query(self, scope: Scope) -> tuple[bool, str]:
+        """Whether the query string holds the valid token, and the query without any ``token``."""
+        pairs = parse_qsl(scope.get("query_string", b"").decode("latin-1"), keep_blank_values=True)
+        valid = any(k == TOKEN_PARAMETER and self._is_token(v) for k, v in pairs)
+        return valid, urlencode([(k, v) for k, v in pairs if k != TOKEN_PARAMETER])
+
+    async def _trade_token(self, scope: Scope, rest: str, send: Send) -> None:
+        """303 to the same page without the token, with the cookie that replaces it."""
+        location = local_location(scope["path"], rest)
+        cookie = f"{self.cookie_name}={self.token}; HttpOnly; SameSite=Strict; Path=/"
+        await _refuse(send, 303, "Signed in.", [(b"location", location), (b"set-cookie", cookie.encode("ascii"))])
+
+    async def _landing(self, send: Send) -> None:
+        headers = [
+            (k, v) for k, v in _OWN_HEADERS if k != b"content-type"
+        ] + [(b"content-type", b"text/html; charset=utf-8"), (b"content-length", str(len(LANDING_PAGE)).encode())]
+        await send({"type": "http.response.start", "status": 401, "headers": headers})
+        await send({"type": "http.response.body", "body": LANDING_PAGE})
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         kind = scope["type"]
@@ -229,7 +304,23 @@ class Router:
             return
 
         path: str = scope["path"]
-        if path == API_PREFIX or path.startswith(API_PREFIX + "/"):
+        if path == INSTANCE_PATH:  # has its own key
+            await self._instance(scope, send)
+            return
+        is_api = path == API_PREFIX or path.startswith(API_PREFIX + "/")
+        if not (is_api and path == HEALTH_PATH):
+            if not is_api and scope["method"] in ("GET", "HEAD"):
+                valid, rest = self.token_in_query(scope)
+                if valid:
+                    await self._trade_token(scope, rest, send)
+                    return
+            if not self.authorized(scope):
+                if is_api:
+                    await _refuse(send, 401, "Not authorized: this app needs the key of its current start.")
+                else:
+                    await self._landing(send)
+                return
+        if is_api:
             if path.endswith("/"):
                 await _refuse(send, 308, "Permanent redirect.", [(b"location", without_trailing_slash(scope))])
                 return
@@ -237,9 +328,6 @@ class Router:
                 await self._event_stream(api_scope(scope), receive, send)
             else:
                 await self.api(api_scope(scope), receive, send)
-            return
-        if path == INSTANCE_PATH:
-            await self._instance(scope, send)
             return
         await self.pages(scope, receive, send)
 
@@ -355,7 +443,7 @@ def build_app(
     ``instance`` is what the instance check answers to a caller with ``token``; ``shutdown``
     ends the progress streams when the app quits."""
     pages = PageServer.from_export(pages_root, session_cookie_fetcher(api))
-    app: ASGIApp = Router(api, pages, instance, token, shutdown or Shutdown())
+    app: ASGIApp = Router(api, pages, instance, token, shutdown or Shutdown(), port)
     app = NoCors(app, port)
     app = SameOriginCheck(app, port)
     return HostCheck(app, port)

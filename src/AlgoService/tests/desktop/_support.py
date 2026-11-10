@@ -15,6 +15,7 @@ if str(DESKTOP) not in sys.path:
 PORT = 8765
 ORIGIN = f"http://127.0.0.1:{PORT}"
 TOKEN = "instance-token-for-the-tests"
+BEARER = {"Authorization": f"Bearer {TOKEN}"}
 INSTANCE = {"pid": 1234, "port": PORT, "app": "test"}
 
 #: As scripts/build-export.mjs writes them, shortened.
@@ -63,3 +64,33 @@ def cookie_session_id(set_cookie: str) -> str | None:
     payload = set_cookie.split("=", 1)[1].split(";", 1)[0].split(".", 1)[0]
     payload += "=" * (-len(payload) % 4)
     return json.loads(base64.b64decode(payload))["session_id"]
+
+
+def asgi_get(app, path: str, query: str = "", headers: dict[str, str] | None = None):
+    """``GET path`` straight into the ASGI ``app`` with ``path`` as the server has it (decoded),
+    which an HTTP client cannot send for a path that starts with ``//``. Returns the status and
+    the response headers (lowercase names)."""
+    import anyio
+
+    sent: dict = {}
+    host = f"127.0.0.1:{PORT}"
+    raw = [(b"host", host.encode())] + [(k.lower().encode(), v.encode()) for k, v in (headers or {}).items()]
+    scope = {
+        "type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1", "method": "GET", "scheme": "http",
+        "path": path, "raw_path": path.encode(), "query_string": query.encode(), "root_path": "",
+        "headers": raw, "client": ("127.0.0.1", 5), "server": ("127.0.0.1", PORT),
+    }
+
+    async def receive():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    async def send(message):
+        if message["type"] == "http.response.start":
+            sent["status"] = message["status"]
+            sent["headers"] = {k.decode().lower(): v.decode("latin-1") for k, v in message["headers"]}
+
+    async def run():
+        await app(scope, receive, send)
+
+    anyio.run(run)
+    return sent["status"], sent["headers"]

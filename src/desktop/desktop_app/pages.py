@@ -17,6 +17,7 @@ import json
 import mimetypes
 from pathlib import Path
 from typing import Awaitable, Callable
+from urllib.parse import quote
 
 from starlette.responses import FileResponse, PlainTextResponse
 from starlette.types import Receive, Scope, Send
@@ -63,13 +64,25 @@ def media_type(path: Path) -> str:
     return MIME_TYPES.get(path.suffix.lower()) or mimetypes.guess_type(path.name)[0] or "application/octet-stream"
 
 
+def local_location(path: str, query: str | bytes = b"") -> bytes:
+    """A ``Location`` for ``path`` that stays on this origin.
+
+    A run of leading slashes and backslashes (also from ``%2F`` or ``%5C``, which
+    ``scope["path"]`` has decoded) would make a ``//host``, which a browser takes for another
+    site, so it collapses to one ``/``. The path is percent-encoded again, so that no control
+    character reaches the header.
+    """
+    text = query.decode("latin-1") if isinstance(query, bytes) else query
+    location = quote("/" + path.lstrip("/\\"), safe="/:@!$&'()*+,;=-._~")
+    if text:
+        location += "?" + text
+    return location.encode("latin-1")
+
+
 def without_trailing_slash(scope: Scope) -> bytes:
     """Where Next.js redirects a path that ends in ``/`` (``trailingSlash: false``), with the
     query string."""
-    location = scope["path"].rstrip("/") or "/"
-    if scope.get("query_string"):
-        location += "?" + scope["query_string"].decode("latin-1")
-    return location.encode("utf-8")
+    return local_location(scope["path"].rstrip("/"), scope.get("query_string") or b"")
 
 
 def _safe_segment(segment: str) -> bool:

@@ -362,7 +362,7 @@ times; a failed step makes it exit with 1.
 python scripts/smoke.py --base-url http://localhost:3000
 ```
 
-Against the desktop app, which has no ProM: `--port-file <file> --no-prom` (see
+Against the desktop app, which has no ProM: `--port-file <file> --token-file <file> --no-prom` (see
 [`docs/DESKTOP.md`](docs/DESKTOP.md#tests)).
 
 ## Operating it

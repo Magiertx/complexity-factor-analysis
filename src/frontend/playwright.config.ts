@@ -1,10 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
+import { desktopAccess } from "./e2e/desktop-access";
 
 // End-to-end tests against a running stack, by default the Docker stack on port 3000.
 //
 //   BASE_URL     the frontend to test (default http://localhost:3000)
 //   PW_CHANNEL   a browser installed on the machine instead of Playwright's Chromium, e.g.
 //                "msedge"; CI installs Chromium and leaves it unset
+//   CFA_TOKEN    the access token of a desktop app (its --token-file), which every request needs
 //   E2E_PROM=1   the stack has ProM: runs the specs tagged @prom and skips those tagged
 //                @no-prom, which expect ProM to be missing (as in CI)
 //
@@ -28,6 +30,7 @@ export default defineConfig({
     baseURL: process.env.BASE_URL || "http://localhost:3000",
     locale: "en-US",
     acceptDownloads: true,
+    ...desktopAccess(),
     trace: "retain-on-failure",
   },
 });

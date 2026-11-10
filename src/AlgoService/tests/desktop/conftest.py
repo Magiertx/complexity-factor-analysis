@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from ._support import INSTANCE, ORIGIN, PORT, TOKEN, make_export
+from ._support import BEARER, INSTANCE, ORIGIN, PORT, TOKEN, make_export
 
 
 @pytest.fixture
@@ -29,6 +29,16 @@ def desktop_app(export_dir):
 
 @pytest.fixture
 def desktop_client(desktop_app):
+    """A client that holds the access token (as a script does), for the tests of everything else."""
+    from fastapi.testclient import TestClient
+
+    with TestClient(desktop_app, base_url=ORIGIN, headers=BEARER) as client:
+        yield client
+
+
+@pytest.fixture
+def anonymous_client(desktop_app):
+    """A client that does not know the token: any other program on the machine."""
     from fastapi.testclient import TestClient
 
     with TestClient(desktop_app, base_url=ORIGIN) as client:

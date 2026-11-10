@@ -35,9 +35,10 @@ PAPER_DATASET = "comfy-paper-inductive-miner"
 JS_TYPES = {"text/javascript", "application/javascript"}
 
 
-def fetch(base: str, path: str) -> tuple[int, dict[str, str], bytes]:
+def fetch(base: str, path: str, token: str | None = None) -> tuple[int, dict[str, str], bytes]:
+    request = urllib.request.Request(base + path, headers={"Authorization": f"Bearer {token}"} if token else {})
     try:
-        with urllib.request.urlopen(base + path, timeout=60) as response:
+        with urllib.request.urlopen(request, timeout=60) as response:
             return response.status, {k.lower(): v for k, v in response.headers.items()}, response.read()
     except urllib.error.HTTPError as exc:
         return exc.code, {k.lower(): v for k, v in exc.headers.items()}, exc.read()
@@ -123,8 +124,19 @@ def libraries(client: Client, checks: Checks) -> None:
             client.request("DELETE", f"/factor-analysis/datasets/{dataset_id}")
 
 
-def pages(base: str, checks: Checks) -> None:
+def access(base: str, checks: Checks, token: str) -> None:
+    """Without the token nothing but the health check answers; with it as a query parameter the
+    page server sets its cookie and redirects without the token."""
+    status, _, body = fetch(base, "/api/factor-analysis/datasets")
+    checks.check("API without the token", status == 401, str(status))
     status, headers, body = fetch(base, "/")
+    checks.check("page without the token", status == 401 and token.encode() not in body, str(status))
+    status, _, _ = fetch(base, "/api/health")
+    checks.check("health stays open", status == 200, str(status))
+
+
+def pages(base: str, checks: Checks, token: str) -> None:
+    status, headers, body = fetch(base, "/", token)
     csp = headers.get("content-security-policy", "")
     checks.check("page: status and type", status == 200 and media_type(headers) == "text/html", f"{status} {media_type(headers)}")
     checks.check("page: security headers", "default-src 'self'" in csp and headers.get("x-content-type-options") == "nosniff", csp[:60])
@@ -134,20 +146,20 @@ def pages(base: str, checks: Checks) -> None:
     checks.check("page: loads scripts and styles", bool(scripts) and bool(styles), f"{len(scripts)} scripts, {len(styles)} styles")
     bad = []
     for path in scripts:
-        _, h, _ = fetch(base, path)
+        _, h, _ = fetch(base, path, token)
         if media_type(h) not in JS_TYPES:
             bad.append(f"{path}: {media_type(h)}")
     for path in styles:
-        _, h, _ = fetch(base, path)
+        _, h, _ = fetch(base, path, token)
         if media_type(h) != "text/css":
             bad.append(f"{path}: {media_type(h)}")
     checks.check("scripts are JavaScript, styles CSS", not bad, "; ".join(bad[:3]))
     for route in ("/log", "/runs", "/settings", "/inspect", "/compare", "/guide"):
-        status, h, _ = fetch(base, route)
+        status, h, _ = fetch(base, route, token)
         checks.check(f"page {route}", status == 200 and media_type(h) == "text/html", str(status))
-    status, h, _ = fetch(base, "/no-such-page")
+    status, h, _ = fetch(base, "/no-such-page", token)
     checks.check("unknown page: 404 as a page", status == 404 and media_type(h) == "text/html", str(status))
-    status, h, _ = fetch(base, "/api/health")
+    status, h, _ = fetch(base, "/api/health", token)
     checks.check(
         "API keeps its own security headers",
         status == 200 and "default-src 'none'" in h.get("content-security-policy", ""),
@@ -158,17 +170,20 @@ def pages(base: str, checks: Checks) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--port-file", type=Path, required=True)
+    parser.add_argument("--token-file", type=Path, required=True, help="the access token (--token-file of the app)")
     parser.add_argument("--commit", help="the commit the build was made from")
     parser.add_argument("--version", help="the version the build carries")
     args = parser.parse_args()
     base = f"http://127.0.0.1:{int(args.port_file.read_text(encoding='utf-8').strip())}"
-    client = Client(base + "/api", 300)
+    token = args.token_file.read_text(encoding="utf-8").strip()
+    client = Client(base + "/api", 300, token)
     checks = Checks()
     for step in (
         lambda: manifest_and_kmo(client, checks, args.commit, args.version),
         lambda: sources(client, checks),
         lambda: libraries(client, checks),
-        lambda: pages(base, checks),
+        lambda: access(base, checks, token),
+        lambda: pages(base, checks, token),
     ):
         try:
             step()

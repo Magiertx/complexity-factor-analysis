@@ -7,7 +7,7 @@ Exits with 1 if a step fails and prints a table of the steps with their times.
     python scripts/smoke.py                                  # http://localhost:3000
     python scripts/smoke.py --base-url https://cfa.example.org
     python scripts/smoke.py --api-url http://localhost:8000  # the backend directly
-    python scripts/smoke.py --port-file port.txt --no-prom   # the desktop app (docs/DESKTOP.md)
+    python scripts/smoke.py --port-file port.txt --token-file token.txt --no-prom   # the desktop app (docs/DESKTOP.md)
 
 On a server the smoke test has a session of its own. The desktop app has one session for
 everybody, so there it works next to the datasets that are already there and leaves them alone.
@@ -45,14 +45,17 @@ class StepFailed(Exception):
 class Client:
     """JSON over HTTP with one session cookie, like a browser tab."""
 
-    def __init__(self, api: str, timeout: float) -> None:
+    def __init__(self, api: str, timeout: float, token: str | None = None) -> None:
         self.api = api.rstrip("/")
         self.timeout = timeout
+        self.token = token  # the desktop app wants it as a bearer token
         self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
 
     def request(self, method: str, path: str, *, form: dict[str, str] | None = None,
                 body: Any = None, raw: bool = False) -> Any:
         data, headers = None, {"Accept": "application/json"}
+        if self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
         if form is not None:
             data = urllib.parse.urlencode(form).encode()
             headers["Content-Type"] = "application/x-www-form-urlencoded"
@@ -272,6 +275,10 @@ def main() -> int:
         "--port-file", type=Path,
         help="the file the desktop app wrote its port to (--port-file there); the base URL is then http://127.0.0.1:<port>",
     )
+    parser.add_argument(
+        "--token-file", type=Path,
+        help="the file the desktop app wrote its access token to (--token-file there); sent as a bearer token",
+    )
     parser.add_argument("--no-prom", action="store_true", help="skip the step that needs ProM (no ProM in the stack)")
     parser.add_argument("--dataset-timeout", type=float, default=900, help="seconds a dataset may take (default 900)")
     parser.add_argument("--request-timeout", type=float, default=300, help="seconds per request (default 300)")
@@ -280,8 +287,9 @@ def main() -> int:
     base_url = args.base_url
     if args.port_file:
         base_url = f"http://127.0.0.1:{int(args.port_file.read_text(encoding='utf-8').strip())}"
+    token = args.token_file.read_text(encoding="utf-8").strip() if args.token_file else None
     api = args.api_url or base_url.rstrip("/") + "/api"
-    smoke = Smoke(Client(api, args.request_timeout), args.dataset_timeout)
+    smoke = Smoke(Client(api, args.request_timeout, token), args.dataset_timeout)
     print(f"Smoke test of {api}" + (" without the ProM step" if args.no_prom else ""), flush=True)
     passed = smoke.run(prom=not args.no_prom)
     print()

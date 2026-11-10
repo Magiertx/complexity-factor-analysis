@@ -33,7 +33,8 @@ def _launch(data: Path, port_file: Path, export: Path, output: Path) -> subproce
     port_file.unlink(missing_ok=True)
     command = [
         sys.executable, "-m", "desktop_app", "--headless", "--port", "0",
-        "--port-file", str(port_file), "--data-dir", str(data), "--frontend-dir", str(export),
+        "--port-file", str(port_file), "--token-file", str(port_file.with_name(port_file.name + ".token")),
+        "--data-dir", str(data), "--frontend-dir", str(export),
     ]
     flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
     with open(output, "ab") as out:
@@ -89,9 +90,23 @@ def test_start_hand_over_quit_and_restart(tmp_path, export_dir):
         health = _get(port, "/api/health")
         assert health.status == 200 and json.loads(health.body)["status"] == "ok"
 
+        # Only the token opens anything else; the launcher's own files carry it, for the owner only.
+        token = json.loads((data / "instance.json").read_text())["token"]
+        token_file = port_file.with_name(port_file.name + ".token")
+        assert token_file.read_text().strip() == token
+        if os.name != "nt":
+            assert token_file.stat().st_mode & 0o077 == 0 and (data / "instance.json").stat().st_mode & 0o077 == 0
+        assert _get(port, "/api/factor-analysis/datasets").status == 401
+        assert _get(port, "/", HTML).status == 401
+        auth = {"Authorization": f"Bearer {token}"}
+        assert _get(port, "/api/factor-analysis/datasets", auth).status == 200
+        traded = _get(port, f"/?token={token}", HTML)
+        assert traded.status == 303 and traded.getheader("location") == "/"
+        assert token in traded.getheader("set-cookie")
+
         # The first start made the identity; the page brings the cookie of its one session.
         identity = json.loads((data / "identity.json").read_text())
-        page = _get(port, "/", HTML)
+        page = _get(port, "/", {**HTML, **auth})
         assert page.status == 200 and b"index page" in page.body
         assert cookie_session_id(page.getheader("set-cookie")) == identity["shared_session_id"]
 
@@ -102,12 +117,17 @@ def test_start_hand_over_quit_and_restart(tmp_path, export_dir):
 
         # A second start on the same data directory shows the running one and ends.
         second_port = tmp_path / "port2"
+        second_token = tmp_path / "token2"
         second = subprocess.run(
-            [sys.executable, "-m", "desktop_app", "--headless", "--port-file", str(second_port), "--data-dir", str(data)],
+            [
+                sys.executable, "-m", "desktop_app", "--headless", "--port-file", str(second_port),
+                "--token-file", str(second_token), "--data-dir", str(data),
+            ],
             cwd=DESKTOP, env=_env(), capture_output=True, text=True, timeout=120,
         )
         assert second.returncode == 0, second.stdout + second.stderr
         assert int(second_port.read_text()) == port
+        assert second_token.read_text().strip() == token
         assert "already running" in second.stdout + second.stderr
     finally:
         code = _quit(first)
@@ -115,12 +135,15 @@ def test_start_hand_over_quit_and_restart(tmp_path, export_dir):
     assert not (data / "instance.json").exists()
     log = (data / "logs" / "app.log").read_text(encoding="utf-8")
     assert "is running at" in log and "has stopped" in log
+    assert token not in log and token not in output.read_text(errors="replace")
 
     # A restart keeps the session and its key.
     third = _launch(data, port_file, export_dir, output)
     try:
         port = _wait_for_port(third, port_file, output)
-        page = _get(port, "/", HTML)
+        new_token = json.loads((data / "instance.json").read_text())["token"]
+        assert new_token != token  # a key for each start
+        page = _get(port, "/", {**HTML, "Authorization": f"Bearer {new_token}"})
         assert cookie_session_id(page.getheader("set-cookie")) == identity["shared_session_id"]
     finally:
         assert _quit(third) == 0

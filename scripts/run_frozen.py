@@ -5,9 +5,10 @@
         --run "python scripts/smoke.py --port-file {port_file} --no-prom" \\
         --run "python scripts/check_desktop.py --port-file {port_file}"
 
-Starts ``PATH --headless --port 0 --port-file ... --data-dir DIR --separate-sessions`` (a process
+Starts ``PATH --headless --port 0 --port-file ... --token-file ... --data-dir DIR --separate-sessions`` (a process
 group of its own on Windows), waits until ``/api/health`` answers, runs each ``--run`` command in
-a shell (``{port_file}`` and ``{port}`` are replaced; ``BASE_URL`` is set for Playwright), then
+a shell (``{port_file}``, ``{token_file}`` and ``{port}`` are replaced; ``BASE_URL`` and
+``CFA_TOKEN``, the access token the app wants, are set for Playwright), then
 quits the app: SIGTERM, or Ctrl+Break on Windows, which only a program with a console can receive
 (``--quit kill`` ends a windowed one). The app must exit with 0 within 30 s. On any failure the
 app's log is printed. Exit code: 0 when every command and the quit succeeded.
@@ -64,9 +65,11 @@ def main() -> int:
 
     args.data_dir.mkdir(parents=True, exist_ok=True)
     port_file = args.data_dir.parent / f"{args.data_dir.name}.port"
+    token_file = args.data_dir.parent / f"{args.data_dir.name}.token"
     port_file.unlink(missing_ok=True)
+    token_file.unlink(missing_ok=True)
     command = [
-        str(args.exe), "--headless", "--port", "0", "--port-file", str(port_file),
+        str(args.exe), "--headless", "--port", "0", "--port-file", str(port_file), "--token-file", str(token_file),
         "--data-dir", str(args.data_dir), "--separate-sessions",
     ]
     flags = subprocess.CREATE_NEW_PROCESS_GROUP if sys.platform == "win32" else 0
@@ -76,9 +79,10 @@ def main() -> int:
     try:
         port = wait_for_health(proc, port_file, args.start_timeout)
         print(f"The app answers on port {port} after {time.monotonic() - started:.1f} s.", flush=True)
-        env = {**os.environ, "BASE_URL": f"http://127.0.0.1:{port}"}
+        token = token_file.read_text(encoding="utf-8").strip()
+        env = {**os.environ, "BASE_URL": f"http://127.0.0.1:{port}", "CFA_TOKEN": token}
         for run in args.run:
-            line = run.format(port_file=port_file, port=port)
+            line = run.format(port_file=port_file, token_file=token_file, port=port)
             print(f"\n$ {line}", flush=True)
             if subprocess.run(line, shell=True, env=env).returncode != 0:
                 ok = False

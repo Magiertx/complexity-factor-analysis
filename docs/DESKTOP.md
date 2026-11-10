@@ -93,6 +93,7 @@ Starting it a second time while it runs opens the browser on the running app and
 |---|---|
 | `--headless` | No browser, no window; for CI and scripts. Ctrl+C (Ctrl+Break on Windows when started in a process group) or SIGTERM quits. |
 | `--port N` | Listen on port N, `0` for any free port. Neither remembered nor replaced by another port if it is taken. |
+| `--token-file PATH` | Write the access token of this start to PATH (owner only), for scripts; they send it as `Authorization: Bearer <token>` (see "Security"). Also written when a second start found a running app. |
 | `--port-file PATH` | Write the port to PATH once the server answers (also when a second start found a running app). |
 | `--data-dir PATH` | Keep data, settings and logs (`PATH/logs`) in PATH instead of the user's directories. |
 | `--frontend-dir PATH` | Serve another static export. |
@@ -167,7 +168,22 @@ the hour is over.
 ## Security
 
 The server listens on `127.0.0.1` only, but every web page open in the browser can send
-requests to it. Therefore:
+requests to it, and every other program on the machine, also of another user, can reach it.
+Therefore:
+
+- **Access token.** Each start makes a random token (`secrets.token_urlsafe(32)`), kept in
+  `instance.json` (owner only where the system has modes) and never logged (the log and the
+  console replace `token=...` by `token=***`). The launcher opens `http://127.0.0.1:<port>/?token=<token>`
+  (a second start does the same for the running one); the page server trades the token for a
+  cookie (`desktop_access_<port>`, `HttpOnly`, `SameSite=Strict`, `Path=/`, until the browser
+  closes) and redirects to the same address without it. Every page, every file and every API
+  request, the progress stream included, needs that cookie, or `Authorization: Bearer <token>`
+  for scripts. Without it the API answers 401 and a page shows a short note to start the app from
+  its icon. Only `/api/health` is open, and says only "ok" and whether the database answers.
+  The comparison takes constant time. A new start has a new token, so an old bookmark of
+  `http://127.0.0.1:8765/` shows the note until the app is opened from its icon or window.
+  Browsers share cookies between ports of one host, so another local web server could see the
+  cookie of the browser that visits it; that is why the token is not a password for anything else.
 
 - **Host check.** Only `Host: 127.0.0.1:<port>` and `localhost:<port>`; anything else gets 400.
   A foreign domain that resolves to 127.0.0.1 (DNS rebinding) arrives with its own name.
@@ -204,16 +220,16 @@ process, starts it a second time on the same data directory, quits it and starts
 Against the running app, from the root of the repository, with the port from a file:
 
 ```bash
-(cd src/desktop && python -m desktop_app --headless --port 0 --port-file /tmp/cfa-port \
+(cd src/desktop && python -m desktop_app --headless --port 0 --port-file /tmp/cfa-port --token-file /tmp/cfa-token \
     --data-dir /tmp/cfa-data --separate-sessions) &
 
-python scripts/smoke.py --port-file /tmp/cfa-port --no-prom
+python scripts/smoke.py --port-file /tmp/cfa-port --token-file /tmp/cfa-token --no-prom
 
 cd src/frontend
-BASE_URL=http://127.0.0.1:$(cat /tmp/cfa-port) npx playwright test
+BASE_URL=http://127.0.0.1:$(cat /tmp/cfa-port) CFA_TOKEN=$(cat /tmp/cfa-token) npx playwright test
 ```
 
-`--separate-sessions` gives each Playwright browser context a session of its own, as the specs
+`CFA_TOKEN` puts the access token into each browser context as its cookie. `--separate-sessions` gives each Playwright browser context a session of its own, as the specs
 expect of a server. The request limits are off by default, which the specs need: they create far more than 60
 datasets within the hour, all from 127.0.0.1. On Windows without Playwright's own Chromium, add
 `PW_CHANNEL=msedge`.
@@ -267,7 +283,7 @@ layout, `src/desktop/desktop.spec` writes it):
 
 ### What the CI checks of the built program
 
-`scripts/run_frozen.py` starts it headless (`--port 0 --port-file`, own process group), waits for
+`scripts/run_frozen.py` starts it headless (`--port 0 --port-file --token-file`, own process group), waits for
 `/api/health`, runs the commands below and quits it with SIGTERM (Ctrl+Break on Windows), which
 must end with exit code 0:
 

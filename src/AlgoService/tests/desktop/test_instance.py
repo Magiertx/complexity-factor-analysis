@@ -130,7 +130,7 @@ def test_quitting_ends_the_progress_stream_at_once(export_dir):
     try:
         assert server.wait_started(30)
         connection = http.client.HTTPConnection("127.0.0.1", port, timeout=30)
-        connection.request("GET", "/api/jobs/events", headers={"accept": "text/event-stream"})
+        connection.request("GET", "/api/jobs/events", headers={"accept": "text/event-stream", "Authorization": "Bearer t"})
         response = connection.getresponse()
         assert response.status == 200
 
@@ -153,3 +153,32 @@ def test_quitting_ends_the_progress_stream_at_once(export_dir):
     assert took < 3, f"quitting took {took:.1f} s"
     # The stream was completed (the last chunk of a chunked response), not cut off.
     assert lines[-2:] == [b"0\r\n", b"\r\n"]
+
+
+def test_the_hand_over_opens_the_address_with_the_token(tmp_path, export_dir, monkeypatch):
+    """A second start shows the running app in the browser: with the key of that start, which it
+    reads from instance.json, and writes it where a script asks for it."""
+    import argparse
+    from types import SimpleNamespace
+
+    from desktop_app import main
+
+    sock = instance.bind(0)
+    port = sock.getsockname()[1]
+    token = "the-running-instance"
+    server = BackgroundServer(
+        build_app(_tiny_api, export_dir, port=port, token=token, instance={"pid": 42, "port": port}), sock
+    )
+    server.start()
+    opened: list[str] = []
+    monkeypatch.setattr(main.webbrowser, "open", lambda url, new=0: opened.append(url))
+    try:
+        assert server.wait_started(30)
+        paths = SimpleNamespace(instance=tmp_path / "instance.json", data=tmp_path)
+        instance.write_info(paths.instance, port=port, token=token)
+        args = argparse.Namespace(headless=False, port_file=tmp_path / "port", token_file=tmp_path / "token")
+        assert main._hand_over(args, "App", paths) == 0
+    finally:
+        server.stop()
+    assert opened == [f"http://127.0.0.1:{port}/?token={token}"]
+    assert (tmp_path / "token").read_text().strip() == token
