@@ -370,19 +370,156 @@ def test_cached_only_never_calls(client, claude, csv_dataset):
     assert r.status_code == 200 and r.json()["cached"] is True and len(claude.calls) == 1
 
 
-def test_lookup_with_a_factor_count_skips_the_analysis(client, claude, csv_dataset, monkeypatch):
+def test_lookup_with_a_factor_count_still_runs_the_analysis(client, claude, csv_dataset, monkeypatch):
+    """A stored interpretation is served only for a result with its fingerprint, so even a
+    lookup that names the factor count needs the result to compare."""
     from routes import interpretation as route
 
     _interpret(client, csv_dataset[0], auto_msa_filter=False)
+    analyze = route._analyze
+    ran: list[int] = []
 
-    async def no_analysis(*args):
-        raise AssertionError("analysis ran for a lookup")
+    async def counting(*args):
+        ran.append(1)
+        return await analyze(*args)
 
-    monkeypatch.setattr(route, "_analyze", no_analysis)
+    monkeypatch.setattr(route, "_analyze", counting)
     r = _interpret(client, csv_dataset[0], auto_msa_filter=False, n_factors=2, cached_only=True)
-    assert r.status_code == 200 and r.json()["cached"] is True
+    assert r.status_code == 200 and r.json()["cached"] is True and ran == [1]
     r = _interpret(client, csv_dataset[0], auto_msa_filter=False, n_factors=3, cached_only=True)
-    assert r.status_code == 204 and len(claude.calls) == 1
+    assert r.status_code == 204 and len(claude.calls) == 1 and ran == [1, 1]
+
+
+# --- the result an interpretation was made for ---------------------------------------------
+
+
+def _result(**params):
+    from factor_analysis.core import analyze
+    from interpretation.payload import default_params
+    import dataclasses
+
+    data = _rng_table(LABELS)
+    return analyze(data, dataclasses.replace(default_params("model"), auto_msa_filter=False, **params))
+
+
+def test_fingerprint_is_stable_and_follows_the_solution():
+    import copy
+
+    from interpretation.payload import result_fingerprint
+
+    result = _result(n_factors=2)
+    fingerprint = result_fingerprint(result)
+    assert len(fingerprint) == 32 and fingerprint == result_fingerprint(_result(n_factors=2))
+    # Floating-point values do not count: they differ in the last digits between BLAS builds.
+    noisy = copy.deepcopy(result)
+    noisy["loadings"] = {m: [v + 1e-12 for v in row] for m, row in noisy["loadings"].items()}
+    noisy["eigenvalues"] = [v * (1 + 1e-12) for v in noisy["eigenvalues"]]
+    for f in noisy["factors"]:
+        for m in f["measures"]:
+            m["loading"] += 1e-12
+    assert result_fingerprint(noisy) == fingerprint
+
+    def changed(mutate) -> str:
+        other = copy.deepcopy(result)
+        mutate(other)
+        return result_fingerprint(other)
+
+    # Another factor count or rotation.
+    assert result_fingerprint(_result(n_factors=3)) != fingerprint
+    assert result_fingerprint(_result(n_factors=2, rotation="promax")) != fingerprint
+    # A measure the MSA filter keeps or removes, in the used measures or in the removed ones.
+    assert changed(lambda r: r["used_measures"].pop()) != fingerprint
+    assert changed(lambda r: r["used_measures"].reverse()) != fingerprint
+    assert changed(lambda r: r["msa_filter"]["removed"].append({"measure": "Size", "msa": 0.1})) != fingerprint
+    # Another assignment: a measure in the other factor, cross-loaded, or unassigned.
+    first, second = result["factors"][0]["measures"], result["factors"][1]["measures"]
+    assert first and second
+    assert changed(lambda r: r["factors"][1]["measures"].append(r["factors"][0]["measures"].pop())) != fingerprint
+    assert changed(lambda r: r["cross_loadings"].append({"measure": "Size", "factors": [0, 1], "loadings": [1, 1]})) != fingerprint
+    assert changed(lambda r: r["unassigned"].append("Size")) != fingerprint
+    # The order inside a factor is the loadings', not part of the solution.
+    assert changed(lambda r: r["factors"][0]["measures"].reverse()) == fingerprint
+
+
+def _stored_entries(session_dataset_dir):
+    return sorted((session_dataset_dir / "interpretations").glob("*.json"))
+
+
+def test_live_entries_store_the_fingerprint(client, claude, csv_dataset):
+    from factor_analysis import storage
+    from interpretation import store
+    from interpretation.payload import result_fingerprint
+
+    _interpret(client, csv_dataset[0], auto_msa_filter=False)
+    session = next(storage.root().iterdir())
+    (path,) = _stored_entries(session / csv_dataset[0])
+    entry = json.loads(path.read_text(encoding="utf-8"))
+    assert entry["result_fingerprint"] == result_fingerprint(_result())
+    assert store.fits_result(entry, entry["result_fingerprint"]) and not store.fits_result(entry, "0" * 32)
+
+
+def _rewrite_cached(csv_dataset, **changes):
+    """Change the stored entry of the csv dataset: a key set to None is removed."""
+    from factor_analysis import storage
+    from interpretation import store
+
+    session = next(storage.root().iterdir())
+    (path,) = _stored_entries(session / csv_dataset[0])
+    entry = json.loads(path.read_text(encoding="utf-8"))
+    for key, value in changes.items():
+        if value is None:
+            entry.pop(key, None)
+        else:
+            entry[key] = value
+    store._write(path, entry)
+
+
+@pytest.mark.parametrize("change", [{"result_fingerprint": "0" * 32}, {"result_fingerprint": None}])
+def test_an_entry_of_another_result_is_not_served(client, claude, csv_dataset, change):
+    """Same data, parameters, language, model, effort and prompt, but made for another solution,
+    or from before the fingerprint existed: not served by any path, and replaced by a live call."""
+    dataset_id = csv_dataset[0]
+    body = {"auto_msa_filter": False}
+    _interpret(client, dataset_id, **body)
+    _rewrite_cached(csv_dataset, **change)
+    claude.calls.clear()
+
+    assert _interpret(client, dataset_id, cached_only=True, **body).status_code == 204
+    assert _interpret(client, dataset_id, cached_only=True, n_factors=2, **body).status_code == 204
+    r = client.post(f"/factor-analysis/datasets/{dataset_id}/interpret/variants", json=body)
+    assert r.json() == {"variants": []}
+    r = client.post(
+        f"/factor-analysis/datasets/{dataset_id}/interpret/chat",
+        json={**body, "messages": [{"role": "user", "content": "Why?"}]},
+    )
+    assert r.status_code == 409 and r.json()["code"] == "interpretation_required"
+    assert claude.calls == []
+
+    # A live call makes a new entry for this result, which is served afterwards.
+    r = _interpret(client, dataset_id, **body)
+    assert r.status_code == 200 and r.json()["cached"] is False and len(claude.calls) == 1
+    assert _interpret(client, dataset_id, cached_only=True, **body).json()["cached"] is True
+    assert len(_interpret(client, dataset_id, **body).json()["variants"]) == 1
+
+
+def test_a_computation_that_moves_measures_hides_old_interpretations(client, claude, csv_dataset, monkeypatch):
+    """What the fingerprint is for: the same request, after the computation changed (here the
+    solution is made to differ), is not answered with the interpretation of the old solution."""
+    from routes import interpretation as route
+
+    dataset_id = csv_dataset[0]
+    _interpret(client, dataset_id, auto_msa_filter=False)
+    assert _interpret(client, dataset_id, auto_msa_filter=False, cached_only=True).status_code == 200
+
+    analyze = route._analyze
+
+    async def moved(*args):
+        result = await analyze(*args)
+        result["msa_filter"]["removed"] = [*result["msa_filter"]["removed"], {"measure": "Size", "msa": 0.1}]
+        return result
+
+    monkeypatch.setattr(route, "_analyze", moved)
+    assert _interpret(client, dataset_id, auto_msa_filter=False, cached_only=True).status_code == 204
 
 
 def test_bundled_datasets_share_the_cache(isolated_jobs_dir, claude):
@@ -467,6 +604,113 @@ def test_precomputed_needs_the_same_data(client, claude, monkeypatch):
     })
     r = _interpret(client, r.json()["dataset_id"], cached_only=True)
     assert r.status_code == 204, r.text
+
+
+@pytest.mark.parametrize("change", [{"result_fingerprint": "0" * 32}, {"result_fingerprint": None}])
+def test_precomputed_needs_the_same_result(client, claude, monkeypatch, change):
+    """A file for the same data and parameters but another solution, or without a fingerprint,
+    is neither served nor listed as a variant, nor answers questions."""
+    from interpretation import store
+
+    _precompute(monkeypatch, claude)
+    (path,) = store.PRECOMPUTED_DIR.glob("*.json")
+    entry = json.loads(path.read_text(encoding="utf-8"))
+    assert entry["result_fingerprint"]
+    dataset_id = _bundled(client)
+    assert _interpret(client, dataset_id, cached_only=True).status_code == 200
+    for key, value in change.items():
+        entry.pop(key) if value is None else entry.__setitem__(key, value)
+    store._write(path, entry)
+    assert _interpret(client, dataset_id, cached_only=True).status_code == 204
+    assert _interpret(client, dataset_id, cached_only=True, n_factors=entry["params"]["n_factors"]).status_code == 204
+    r = client.post(f"/factor-analysis/datasets/{dataset_id}/interpret/variants", json={})
+    assert r.json() == {"variants": []}
+
+
+def test_precomputed_entries_store_the_fingerprint(claude, no_precomputed):
+    import asyncio
+
+    from factor_analysis import catalog as cat
+    from scripts import precompute_interpretations as script
+
+    entry = cat.bundled_entry(BUNDLED)
+    made = asyncio.run(script.precompute(entry, "en", KEY))
+    data, _, _, result = script.analysis_of(entry, "standard")
+    from interpretation.payload import result_fingerprint
+
+    assert made["result_fingerprint"] == result_fingerprint(result)
+    # Right after the parameters, where the backfill puts it too.
+    keys = list(made)
+    assert keys[keys.index("params") + 1] == "result_fingerprint"
+
+
+def test_backfill_adds_only_the_fingerprint_and_calls_nothing(monkeypatch, tmp_path, capsys):
+    import shutil
+
+    from interpretation import client as claude_client
+    from interpretation import store
+    from scripts import precompute_interpretations as script
+
+    sources = sorted(store.PRECOMPUTED_DIR.glob(f"{BUNDLED}*.json"))
+    if not sources:
+        pytest.skip("no precomputed interpretations in the repository")
+    directory = tmp_path / "interpretations"
+    directory.mkdir()
+    for path in sources[:2]:
+        shutil.copy(path, directory / path.name)
+    originals = {}
+    for path in directory.iterdir():
+        entry = json.loads(path.read_text(encoding="utf-8"))
+        fingerprint = entry.pop("result_fingerprint")
+        store._write(path, entry)
+        originals[path.name] = (path.read_bytes(), fingerprint)
+
+    def no_call(*args, **kwargs):
+        raise AssertionError("the backfill called the API")
+
+    monkeypatch.setattr(claude_client, "client_factory", no_call)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr(store, "PRECOMPUTED_DIR", directory)
+    assert script.main(["--backfill-fingerprints"]) == 0
+    for path in directory.iterdir():
+        before, fingerprint = originals[path.name]
+        entry = json.loads(path.read_text(encoding="utf-8"))
+        assert entry["result_fingerprint"] == fingerprint
+        del entry["result_fingerprint"]
+        store._write(path, entry)
+        assert path.read_bytes() == before  # nothing else changed
+    # The files lack the key again (the loop above removed it): a second run writes it, a third finds nothing to do.
+    store_bytes = {p.name: p.read_bytes() for p in directory.iterdir()}
+    assert script.backfill_fingerprints(directory) == (len(store_bytes), 0)
+    assert script.backfill_fingerprints(directory) == (0, 0)
+    assert all(json.loads(p.read_text(encoding="utf-8"))["result_fingerprint"] for p in directory.iterdir())
+
+
+def test_backfill_leaves_a_file_of_another_analysis_alone(tmp_path):
+    import shutil
+
+    from interpretation import store
+    from scripts import precompute_interpretations as script
+
+    sources = sorted(store.PRECOMPUTED_DIR.glob(f"{BUNDLED}*.json"))
+    if not sources:
+        pytest.skip("no precomputed interpretations in the repository")
+    directory = tmp_path / "interpretations"
+    directory.mkdir()
+    path = directory / sources[0].name
+    shutil.copy(sources[0], path)
+    entry = json.loads(path.read_text(encoding="utf-8"))
+    entry["result_fingerprint"] = "0" * 32
+    store._write(path, entry)
+    before = path.read_bytes()
+    assert script.backfill_fingerprints(directory) == (0, 1)
+    assert path.read_bytes() == before
+    entry.pop("result_fingerprint")
+    entry["data_hash"] = "0" * 64
+    store._write(path, entry)
+    before = path.read_bytes()
+    assert script.backfill_fingerprints(directory) == (0, 1)
+    assert path.read_bytes() == before
 
 
 def _precompute_published(monkeypatch, claude, language="en"):
@@ -555,7 +799,9 @@ def test_shipped_precomputed_files_are_current():
     from factor_analysis.core import analyze
     from interpretation import client as claude_client
     from interpretation import store
-    from interpretation.payload import data_hash, default_params, effective_params, params_from_options
+    from interpretation.payload import (
+        data_hash, default_params, effective_params, params_from_options, result_fingerprint,
+    )
     from scripts import precompute_interpretations as script
 
     files = sorted(store.PRECOMPUTED_DIR.glob("*.json"))
@@ -579,10 +825,12 @@ def test_shipped_precomputed_files_are_current():
         data, _ = script.bundled_matrix(bundled)
         params = (default_params(bundled["kind"]) if settings == "standard"
                   else params_from_options(bundled["kind"], bundled[f"{settings}_options"]))
-        n_factors = analyze(data, params)["n_factors"]
+        result = analyze(data, params)
+        n_factors = result["n_factors"]
         assert entry["prompt_digest"] == claude_client.PROMPT_DIGEST, path.name
         assert entry["data_hash"] == data_hash(data), path.name
         assert entry["params"] == effective_params(params, n_factors), path.name
+        assert entry.get("result_fingerprint") == result_fingerprint(result), path.name
         assert len(entry["interpretation"]["factors"]) == n_factors, path.name
 
 

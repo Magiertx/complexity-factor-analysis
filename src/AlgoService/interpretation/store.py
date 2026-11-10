@@ -133,22 +133,28 @@ def _precomputed_choices(bundled_id: str, language: str, settings: str) -> list[
     return found
 
 
-def _fits(entry: dict[str, Any], data_hash: str, params: dict[str, Any]) -> bool:
-    return entry.get("data_hash") == data_hash and entry.get("params") == params
+def fits_result(entry: dict[str, Any], fingerprint: str) -> bool:
+    """Whether the entry was made for a result with this ``payload.result_fingerprint``.
+    Entries from before the field existed do not fit: what they describe is unknown."""
+    return entry.get("result_fingerprint") == fingerprint
+
+
+def _fits(entry: dict[str, Any], data_hash: str, params: dict[str, Any], fingerprint: str) -> bool:
+    return entry.get("data_hash") == data_hash and entry.get("params") == params and fits_result(entry, fingerprint)
 
 
 def read_precomputed(
-    bundled_id: str | None, language: str, data_hash: str, params: dict[str, Any], prompt: str,
-    model: str, effort: str,
+    bundled_id: str | None, language: str, data_hash: str, params: dict[str, Any], fingerprint: str,
+    prompt: str, model: str, effort: str,
 ) -> dict[str, Any] | None:
-    """The precomputed entry if it was made for exactly this data, these parameters, the
-    current prompt and the requested model and effort."""
+    """The precomputed entry if it was made for exactly this data, these parameters, this
+    result (``fingerprint``), the current prompt and the requested model and effort."""
     if not bundled_id:
         return None
     for settings in SETTINGS:
         path = precomputed_path(bundled_id, language, settings, model, effort)
         entry = _read(path)
-        if not entry or not _fits(entry, data_hash, params):
+        if not entry or not _fits(entry, data_hash, params, fingerprint):
             continue
         if requested_model(entry) != model or entry.get("effort") != effort:
             continue
@@ -185,25 +191,29 @@ def key_for(
 
 
 def lookup(
-    session_id: str, meta: dict[str, Any], data_hash: str, params: dict[str, Any], language: str,
-    model: str | None = None, effort: str | None = None,
+    session_id: str, meta: dict[str, Any], data_hash: str, params: dict[str, Any], fingerprint: str,
+    language: str, model: str | None = None, effort: str | None = None,
 ) -> tuple[dict[str, Any], bool] | None:
     """The precomputed or cached interpretation of exactly this analysis made with this
     model and effort, and whether it was precomputed. Never calls the API. ``params`` are
-    ``payload.effective_params``."""
+    ``payload.effective_params``, ``fingerprint`` is ``payload.result_fingerprint`` of the
+    result: an entry for another result is not served."""
     model = client.MODEL if model is None else model
     effort = client.EFFORT if effort is None else effort
-    entry = read_precomputed(meta.get("bundled_id"), language, data_hash, params, client.PROMPT_DIGEST, model, effort)
+    entry = read_precomputed(
+        meta.get("bundled_id"), language, data_hash, params, fingerprint, client.PROMPT_DIGEST, model, effort
+    )
     if entry:
         return entry, True
     entry = read_cached(session_id, meta, key_for(meta, data_hash, params, language, model, effort))
-    return (entry, False) if entry else None
+    return (entry, False) if entry and fits_result(entry, fingerprint) else None
 
 
 def variants(
-    session_id: str, meta: dict[str, Any], data_hash: str, params: dict[str, Any], language: str
+    session_id: str, meta: dict[str, Any], data_hash: str, params: dict[str, Any], fingerprint: str,
+    language: str,
 ) -> list[dict[str, Any]]:
-    """The model and effort combinations stored for exactly this analysis and the current
+    """The model and effort combinations stored for exactly this analysis and result and the current
     prompt: ``{"model", "effort", "precomputed"}``, models and efforts in the order the server
     offers them. Cached entries are found by their key, for the offered models and efforts
     (and the models of precomputed files), so this never scans a directory of cached entries. A
@@ -214,16 +224,19 @@ def variants(
         for settings in SETTINGS:
             for model, effort in _precomputed_choices(bundled_id, language, settings):
                 # The same test as ``lookup``, so a listed variant is always served.
-                if read_precomputed(bundled_id, language, data_hash, params, client.PROMPT_DIGEST, model, effort):
+                if read_precomputed(
+                    bundled_id, language, data_hash, params, fingerprint, client.PROMPT_DIGEST, model, effort
+                ):
                     found[(model, effort)] = True
     models = list(client.allowed_models())
     models += [m for m, _ in found if m not in models]
     efforts = list(dict.fromkeys([*client.EFFORTS, *client.allowed_efforts()]))
     for model in models:
         for effort in efforts:
-            if (model, effort) not in found and read_cached(
-                session_id, meta, key_for(meta, data_hash, params, language, model, effort)
-            ):
+            if (model, effort) in found:
+                continue
+            cached = read_cached(session_id, meta, key_for(meta, data_hash, params, language, model, effort))
+            if cached and fits_result(cached, fingerprint):
                 found[(model, effort)] = False
     order_m = {m: i for i, m in enumerate(models)}
     order_e = {e: i for i, e in enumerate(efforts)}

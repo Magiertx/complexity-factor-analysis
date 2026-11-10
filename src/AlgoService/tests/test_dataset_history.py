@@ -527,6 +527,16 @@ def test_readme_reproduces_the_loadings(client, tmp_path, monkeypatch):
     assert scope["fa"].loadings_.tolist() == list(loadings.values())
 
 
+def _fingerprint(session_id: str, dataset_id: str, body: dict) -> str:
+    """``result_fingerprint`` of the analysis the request asks for, as the server computes it."""
+    from factor_analysis import storage
+    from factor_analysis.core import analyze
+    from interpretation.payload import result_fingerprint
+    from routes.factor_analysis import AnalyzeRequest
+
+    return result_fingerprint(analyze(storage.load_matrix(session_id, dataset_id), AnalyzeRequest(**body).params("model")))
+
+
 def test_zip_includes_a_stored_interpretation_only(client):
     from factor_analysis import storage
     from interpretation import store
@@ -542,7 +552,8 @@ def test_zip_includes_a_stored_interpretation_only(client):
     digest = data_hash(storage.load_matrix(session_id, dataset_id))
     params = effective_params(AnalyzeRequest(**body).params("model"), 2)
     entry = {
-        "kind": "model", "data_hash": digest, "params": params, "language": "de", "model": "test-model",
+        "kind": "model", "data_hash": digest, "params": params,
+        "result_fingerprint": _fingerprint(session_id, dataset_id, body), "language": "de", "model": "test-model",
         "prompt_version": "2", "created_at": "2026-10-06T10:00:00+00:00",
         "interpretation": {"factors": [], "overall": "Zwei Faktoren.", "caveats": []},
     }
@@ -559,6 +570,38 @@ def test_zip_includes_a_stored_interpretation_only(client):
     assert not any(n.startswith("interpretation") for n in other)
 
 
+def test_zip_leaves_out_an_interpretation_of_another_result(client):
+    """An entry for the same data and parameters, made for a different solution (here: another
+    fingerprint, as after a change of the computation), or from before the field, is not included."""
+    from factor_analysis import storage
+    from interpretation import store
+    from interpretation.payload import data_hash, effective_params
+    from routes.factor_analysis import AnalyzeRequest
+
+    dataset_id = _csv(client)
+    body = {"n_factors": 2, "auto_msa_filter": False}
+    session_id = _session_of(dataset_id)
+    meta = storage.read_meta(session_id, dataset_id)
+    digest = data_hash(storage.load_matrix(session_id, dataset_id))
+    params = effective_params(AnalyzeRequest(**body).params("model"), 2)
+    entry = {
+        "kind": "model", "data_hash": digest, "params": params, "language": "de", "model": "test-model",
+        "prompt_version": "2", "created_at": "2026-10-06T10:00:00+00:00",
+        "interpretation": {"factors": [], "overall": "Zwei Faktoren.", "caveats": []},
+    }
+    key = store.key_for(meta, digest, params, "de")
+
+    def included() -> bool:
+        return "interpretation.de.json" in _zip(client, dataset_id, **body, language="de").namelist()
+
+    store.write_cached(session_id, meta, key, entry)  # no fingerprint: from before the field
+    assert not included()
+    store.write_cached(session_id, meta, key, {**entry, "result_fingerprint": "0" * 32})
+    assert not included()
+    store.write_cached(session_id, meta, key, {**entry, "result_fingerprint": _fingerprint(session_id, dataset_id, body)})
+    assert included()
+
+
 def test_zip_includes_the_chosen_variant(client):
     from factor_analysis import storage
     from interpretation import store
@@ -571,10 +614,12 @@ def test_zip_includes_the_chosen_variant(client):
     meta = storage.read_meta(session_id, dataset_id)
     digest = data_hash(storage.load_matrix(session_id, dataset_id))
     params = effective_params(AnalyzeRequest(**body).params("model"), 2)
+    fingerprint = _fingerprint(session_id, dataset_id, body)
 
     def stored(model: str, effort: str) -> dict:
         entry = {
-            "kind": "model", "data_hash": digest, "params": params, "language": "en", "model": model,
+            "kind": "model", "data_hash": digest, "params": params, "result_fingerprint": fingerprint,
+            "language": "en", "model": model,
             "requested_model": model, "effort": effort, "prompt_version": "2",
             "created_at": "2026-10-06T10:00:00+00:00",
             "interpretation": {"factors": [], "overall": f"{model} at {effort}.", "caveats": []},
@@ -602,9 +647,10 @@ def test_zip_includes_the_chosen_variant(client):
 
 def test_zip_includes_a_precomputed_interpretation(client, monkeypatch, tmp_path):
     from factor_analysis import storage
+    from factor_analysis.core import analyze
     from interpretation import client as claude_client
     from interpretation import store
-    from interpretation.payload import data_hash, default_params, effective_params
+    from interpretation.payload import data_hash, default_params, effective_params, result_fingerprint
 
     monkeypatch.setattr(store, "PRECOMPUTED_DIR", tmp_path / "precomputed")
     dataset_id = _bundled(client)
@@ -614,6 +660,7 @@ def test_zip_includes_a_precomputed_interpretation(client, monkeypatch, tmp_path
         "dataset_id": BUNDLED, "kind": "model",
         "data_hash": data_hash(storage.load_matrix(session_id, dataset_id)),
         "params": effective_params(default_params("model"), analysis["n_factors"]),
+        "result_fingerprint": result_fingerprint(analyze(storage.load_matrix(session_id, dataset_id), default_params("model"))),
         "language": "en", "model": "test-model", "prompt_version": "2",
         "requested_model": claude_client.MODEL, "effort": claude_client.EFFORT,
         "prompt_digest": claude_client.PROMPT_DIGEST, "created_at": "2026-10-06T10:00:00+00:00",
@@ -621,6 +668,11 @@ def test_zip_includes_a_precomputed_interpretation(client, monkeypatch, tmp_path
     }
     store.write_precomputed(BUNDLED, "en", entry)
     assert json.loads(_zip(client, dataset_id).read("interpretation.en.json")) == entry
+    store.write_precomputed(BUNDLED, "en", {**entry, "result_fingerprint": "0" * 32})
+    assert "interpretation.en.json" not in _zip(client, dataset_id).namelist()
+    stale = {k: v for k, v in entry.items() if k != "result_fingerprint"}
+    store.write_precomputed(BUNDLED, "en", stale)
+    assert "interpretation.en.json" not in _zip(client, dataset_id).namelist()
 
 
 def test_zip_errors_match_the_analysis(client):
