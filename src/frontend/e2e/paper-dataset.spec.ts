@@ -82,3 +82,20 @@ test("IF Inductive goes through all six steps and exports the analysis as ZIP", 
   const analysis = JSON.parse(files.get("analysis.json")!.toString("utf8"));
   expect(analysis.kmo.overall).toBeCloseTo(0.7466686435594551, 9);
 });
+
+test("without a key a stored interpretation comes with no follow-up questions, and says why", async ({ page }) => {
+  const status = await (await page.request.get("/api/factor-analysis/interpretation/status")).json();
+  test.skip(status.chat, "the server has a key, so follow-up questions are offered");
+  test.skip(!status.precomputed_only, "no stored interpretation to show");
+  await page.goto("/");
+  await openBundled(page, "Inductive miner");
+  test.skip(!(await interpretationOpens(page)), "none is stored for these settings");
+  await goToStep(page, "interpretation");
+  const interpretation = stepSection(page, "interpretation");
+  await expect(interpretation.getByText(text("factor.interpretation.precomputed"), { exact: true })).toBeVisible();
+  // One muted line instead of the section; nothing to type into.
+  await expect(interpretation.getByText(text("factor.interpretation.chat.needs_key"))).toBeVisible();
+  await expect(interpretation.getByRole("heading", { name: text("factor.interpretation.chat.title") })).toHaveCount(0);
+  await expect(interpretation.getByRole("textbox")).toHaveCount(0);
+  await expect(interpretation.getByRole("log")).toHaveCount(0);
+});

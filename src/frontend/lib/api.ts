@@ -1421,6 +1421,8 @@ export interface InterpretationStatus {
   efforts: string[];
   /** No key, but precomputed interpretations of bundled datasets exist. */
   precomputed_only: boolean;
+  /** Follow-up questions about an interpretation are possible (a key is configured). */
+  chat: boolean;
 }
 
 export type InterpretationLanguage = "en" | "de";
@@ -1504,6 +1506,37 @@ export async function fetchInterpretationVariants(
   });
   if (!r.ok) throw await httpError(r, "Failed to look up the interpretations");
   return (await r.json()).variants;
+}
+
+export interface ChatAnswer {
+  answer: string;
+  /** The model that answered; a fallback model if the requested one declined. */
+  model: string;
+  requested_model: string;
+  effort: string;
+}
+
+/**
+ * One follow-up question about the stored interpretation of this analysis. `messages` is the
+ * conversation so far, ending with the new question; the server keeps nothing. Every question is
+ * one live call.
+ */
+export async function askAboutInterpretation(
+  id: string,
+  options: AnalyzeOptions,
+  language: InterpretationLanguage,
+  choice: InterpretationChoice,
+  messages: { role: "user" | "assistant"; content: string }[],
+  signal?: AbortSignal,
+): Promise<ChatAnswer> {
+  const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/interpret/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...options, language, model: choice.model, effort: choice.effort, messages }),
+    signal,
+  });
+  if (!r.ok) throw await httpError(r, "The question failed");
+  return r.json();
 }
 
 export type FeedbackKind = "bug" | "idea" | "other";

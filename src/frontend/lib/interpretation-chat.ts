@@ -1,0 +1,115 @@
+/**
+ * Follow-up questions about an interpretation: the conversation lives in the browser only and is
+ * sent whole with every question. The limits are the server's (docs/API.md).
+ */
+
+import type { InterpretationChoice } from "./interpretation-choice";
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export const MAX_QUESTION_CHARS = 2000;
+export const MAX_MESSAGES = 20;
+export const MAX_TOTAL_CHARS = 40_000;
+/** From this length on the counter is shown. */
+export const COUNTER_FROM = Math.floor(MAX_QUESTION_CHARS * 0.8);
+
+/**
+ * What the conversation was started for: the analysis, the language and the model and effort of
+ * the interpretation it refers to. Another key means another interpretation, so the conversation
+ * starts again.
+ */
+export function chatKey(
+  datasetId: string,
+  options: unknown,
+  language: string,
+  choice: InterpretationChoice,
+): string {
+  return JSON.stringify([datasetId, options, language, choice.model, choice.effort]);
+}
+
+/** The messages that belong to `key`; a conversation of another key is gone. */
+export function messagesFor(
+  conversation: { key: string; messages: ChatMessage[] } | null,
+  key: string,
+): ChatMessage[] {
+  return conversation && conversation.key === key ? conversation.messages : [];
+}
+
+export type ChatProblem = "empty" | "question_too_long" | "count" | "too_long";
+
+/**
+ * Why `question` cannot be sent after `history`, or null. The server takes at most 20 messages
+ * that alternate, from the user to the user, so a history of 19 is full.
+ */
+export function chatProblem(history: ChatMessage[], question: string): ChatProblem | null {
+  if (!question.trim()) return "empty";
+  if (question.length > MAX_QUESTION_CHARS) return "question_too_long";
+  if (history.length + 1 > MAX_MESSAGES) return "count";
+  const total = history.reduce((n, m) => n + m.content.length, 0) + question.length;
+  return total > MAX_TOTAL_CHARS ? "too_long" : null;
+}
+
+/** Whether a conversation can take no further question; the visitor has to clear it. */
+export function chatFull(history: ChatMessage[]): boolean {
+  return chatProblem(history, "x") === "count" || chatProblem(history, "x") === "too_long";
+}
+
+/** The history with the question added; refused as `chatProblem` says. */
+export function withQuestion(history: ChatMessage[], question: string): ChatMessage[] {
+  return [...history, { role: "user", content: question }];
+}
+
+/** The history with the answer added; the last message must be the question it answers. */
+export function withAnswer(history: ChatMessage[], answer: string): ChatMessage[] {
+  if (history.length === 0 || history[history.length - 1].role !== "user") return history;
+  return [...history, { role: "assistant", content: answer }];
+}
+
+/** Whether the messages are what the server takes: alternating, from user to user. */
+export function isValidConversation(messages: ChatMessage[]): boolean {
+  return (
+    messages.length % 2 === 1 &&
+    messages.every((m, i) => m.role === (i % 2 === 0 ? "user" : "assistant") && m.content.trim() !== "")
+  );
+}
+
+export type AnswerBlock = { kind: "p"; text: string } | { kind: "list"; items: string[] };
+
+/**
+ * An answer as paragraphs and `-` lists, to be shown as text. The model is told to write plain
+ * paragraphs and simple lists; anything else stays a paragraph. Nothing here becomes markup.
+ */
+export function answerBlocks(answer: string): AnswerBlock[] {
+  const blocks: AnswerBlock[] = [];
+  let paragraph: string[] = [];
+  let list: string[] | null = null;
+  const flush = () => {
+    if (paragraph.length) blocks.push({ kind: "p", text: paragraph.join(" ") });
+    if (list) blocks.push({ kind: "list", items: list });
+    paragraph = [];
+    list = null;
+  };
+  for (const raw of answer.replace(/\r\n?/g, "\n").split("\n")) {
+    const line = raw.trim();
+    const item = /^[-*•]\s+(.*)$/.exec(line);
+    if (!line) {
+      flush();
+    } else if (item) {
+      if (!list) {
+        flush();
+        list = [];
+      }
+      list.push(item[1]);
+    } else if (list) {
+      // A continuation of the last item, as models wrap long ones.
+      list[list.length - 1] += ` ${line}`;
+    } else {
+      paragraph.push(line);
+    }
+  }
+  flush();
+  return blocks;
+}

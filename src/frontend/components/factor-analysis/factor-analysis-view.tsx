@@ -1870,6 +1870,16 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
                   variants={variants}
                   onChoice={pickChoice}
                   onInterpret={runInterpretation}
+                  chat={
+                    datasetId && analyzedOptions && analyzedFactors !== null
+                      ? {
+                          datasetId,
+                          options: { ...analyzedOptions, n_factors: analyzedFactors },
+                          language: locale,
+                        }
+                      : null
+                  }
+                  errorText={errorText}
                   measureName={measureName}
                   measureDescription={measureDescription}
                 />

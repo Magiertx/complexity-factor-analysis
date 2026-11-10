@@ -2,8 +2,9 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
-import type { FactorInterpretation, InterpretationStatus } from "@/lib/api";
+import type { AnalyzeOptions, FactorInterpretation, InterpretationLanguage, InterpretationStatus } from "@/lib/api";
 import { countText } from "@/lib/factor-analysis";
+import { chatKey } from "@/lib/interpretation-chat";
 import {
   effortOptions,
   isStored,
@@ -21,6 +22,7 @@ import { Notice } from "@/components/ui/notice";
 import { Select } from "@/components/ui/select";
 import { MeasureListScope, MeasureName } from "@/components/ui/table";
 import { useTip, useTipZone } from "@/components/ui/tip";
+import { InterpretationChat } from "./interpretation-chat";
 
 interface Props {
   status: InterpretationStatus | null;
@@ -38,6 +40,10 @@ interface Props {
   variants: StoredVariant[];
   onChoice: (choice: InterpretationChoice) => void;
   onInterpret: () => void;
+  /** What a follow-up question needs besides the choice; null while the analysis is not on screen. */
+  chat: { datasetId: string; options: AnalyzeOptions; language: InterpretationLanguage } | null;
+  /** The text of an error of the API in the UI language. */
+  errorText: (e: unknown, fallback: string) => string;
   measureName: (key: string) => string;
   /** What a measure measures, for its tooltip. */
   measureDescription: (key: string) => string | undefined;
@@ -62,6 +68,8 @@ export function InterpretationView({
   variants,
   onChoice,
   onInterpret,
+  chat,
+  errorText,
   measureName,
   measureDescription,
 }: Props) {
@@ -221,6 +229,20 @@ export function InterpretationView({
               })}
             </p>
           </div>
+        )}
+
+        {fresh && choice && chat && status?.chat && (
+          <InterpretationChat
+            key={chatKey(chat.datasetId, chat.options, chat.language, choice)}
+            datasetId={chat.datasetId}
+            options={chat.options}
+            language={chat.language}
+            choice={choice}
+            errorText={errorText}
+          />
+        )}
+        {fresh && status && !status.chat && (
+          <p className="text-xs text-muted">{t("factor.interpretation.chat.needs_key")}</p>
         )}
       </div>
     );
