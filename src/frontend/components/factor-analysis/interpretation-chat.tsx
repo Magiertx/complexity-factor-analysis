@@ -9,11 +9,12 @@ import {
   answerBlocks,
   chatFull,
   chatProblem,
+  toWire,
   withAnswer,
   withQuestion,
   type ChatMessage,
 } from "@/lib/interpretation-chat";
-import type { InterpretationChoice } from "@/lib/interpretation-choice";
+import { modelLabel, type InterpretationChoice } from "@/lib/interpretation-choice";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
@@ -67,10 +68,12 @@ export function InterpretationChat({ datasetId, options, language, choice, error
     // leaves it to try again.
     setMessages(history);
     try {
-      const res = await askAboutInterpretation(datasetId, options, language, choice, history, ctrl.signal);
+      const res = await askAboutInterpretation(datasetId, options, language, choice, toWire(history), ctrl.signal);
       if (ctrl.signal.aborted) return;
-      setMessages(withAnswer(history, res.answer));
-      setDraft("");
+      // The fallback model is named only when it answered instead of the one asked.
+      setMessages(withAnswer(history, res.answer, res.signature, res.model !== res.requested_model ? res.model : undefined));
+      // Text typed while the answer was coming is the next question; only the one sent goes.
+      setDraft((d) => (d === question ? "" : d));
     } catch (e) {
       if (ctrl.signal.aborted) return;
       // Back to the conversation before this question; the question stays in the box.
@@ -220,6 +223,11 @@ function Message({ message }: { message: ChatMessage }) {
             ))}
           </ul>
         ),
+      )}
+      {message.answeredBy && (
+        <p className="text-xs text-muted">
+          {t("factor.interpretation.chat.answered_by", { model: modelLabel(message.answeredBy) })}
+        </p>
       )}
     </div>
   );

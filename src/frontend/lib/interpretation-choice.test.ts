@@ -35,6 +35,16 @@ describe("the options of the choice", () => {
     expect(effortOptions({ ...withKey, efforts: ["xhigh", "low", "high"] }, [], OPUS)).toEqual(["low", "high", "xhigh"]);
   });
 
+  it("adds what is stored outside the lists when the server has a key", () => {
+    const variants = [stored("claude-old", "max"), stored(OPUS, "max"), stored(SONNET, "high")];
+    expect(modelOptions(withKey, variants)).toEqual([OPUS, SONNET, "claude-old"]);
+    // A listed model: its offered efforts and its stored ones.
+    expect(effortOptions(withKey, variants, OPUS)).toEqual(["low", "medium", "high", "xhigh", "max"]);
+    expect(effortOptions(withKey, variants, SONNET)).toEqual(["low", "medium", "high", "xhigh"]);
+    // An unlisted model cannot be called, so only its stored efforts are offered.
+    expect(effortOptions(withKey, variants, "claude-old")).toEqual(["max"]);
+  });
+
   it("offers only the stored variants without a key", () => {
     const variants = [stored(OPUS, "high"), stored(OPUS, "medium"), stored(SONNET, "low")];
     expect(modelOptions(noKey, variants)).toEqual([OPUS, SONNET]);
@@ -68,6 +78,16 @@ describe("the choice in force", () => {
     expect(resolveChoice(withKey, [], { model: SONNET, effort: "high" })).toEqual({ model: SONNET, effort: "high" });
     expect(resolveChoice(withKey, [], { model: "claude-old", effort: "high" })).toEqual({ model: OPUS, effort: "medium" });
     expect(resolveChoice(withKey, [], { model: SONNET, effort: "max" })).toEqual({ model: OPUS, effort: "medium" });
+  });
+
+  it("keeps a stored choice outside the lists, and drops it once it is no longer stored", () => {
+    const wanted = { model: "claude-old", effort: "max" };
+    expect(resolveChoice(withKey, [stored("claude-old", "max")], wanted)).toEqual(wanted);
+    expect(resolveChoice(withKey, [], wanted)).toEqual({ model: OPUS, effort: "medium" });
+    expect(resolveChoice(withKey, [stored(OPUS, "max")], { model: OPUS, effort: "max" })).toEqual({
+      model: OPUS,
+      effort: "max",
+    });
   });
 
   it("needs the status", () => {

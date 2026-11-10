@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 export interface SelectOption {
   value: string;
   label: string;
+  /** Said on hover, and by the trigger while the option is chosen. */
+  title?: string;
   /** Options with the same group are listed under a small heading, in order of appearance. */
   group?: string;
   disabled?: boolean;
@@ -141,6 +143,7 @@ export function Select({
         id={triggerId}
         type="button"
         disabled={disabled}
+        title={selected?.title}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
@@ -209,6 +212,7 @@ export function Select({
                     role="option"
                     aria-selected={isSelected}
                     aria-disabled={o.disabled || undefined}
+                    title={o.title}
                     onMouseEnter={() => enabled(i) && setActive(i)}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => pick(i)}

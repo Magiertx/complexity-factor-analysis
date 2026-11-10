@@ -7,8 +7,7 @@ import {
   chatFull,
   chatKey,
   chatProblem,
-  isValidConversation,
-  messagesFor,
+  toWire,
   withAnswer,
   withQuestion,
   type ChatMessage,
@@ -39,13 +38,6 @@ describe("when the conversation starts again", () => {
     ["the effort", chatKey("d1", options, "en", { ...choice, effort: "high" })],
   ])("drops it when %s changes", (_, other) => {
     expect(other).not.toBe(key);
-    const kept = { key, messages: conversation(3) };
-    expect(messagesFor(kept, key)).toHaveLength(3);
-    expect(messagesFor(kept, other)).toEqual([]);
-  });
-
-  it("has nothing before the first question", () => {
-    expect(messagesFor(null, key)).toEqual([]);
   });
 });
 
@@ -53,32 +45,36 @@ describe("the messages", () => {
   it("alternate from the question to the answer and back", () => {
     let h: ChatMessage[] = [];
     h = withQuestion(h, "Why?");
-    expect(isValidConversation(h)).toBe(true);
-    h = withAnswer(h, "Because.");
+    h = withAnswer(h, "Because.", "sig-1");
     expect(h.map((m) => m.role)).toEqual(["user", "assistant"]);
-    expect(isValidConversation(h)).toBe(false); // an answer last: the next question is not added yet
     h = withQuestion(h, "And?");
-    expect(isValidConversation(h)).toBe(true);
+    expect(h.map((m) => m.role)).toEqual(["user", "assistant", "user"]);
+  });
+
+  it("keep the signature of an answer, which goes back with it", () => {
+    const h = withAnswer(withQuestion([], "q"), "a", "sig-1", "claude-sonnet-5-5");
+    expect(h[1]).toEqual({ role: "assistant", content: "a", signature: "sig-1", answeredBy: "claude-sonnet-5-5" });
+    expect(h[0]).toEqual({ role: "user", content: "q" });
   });
 
   it("take an answer only after a question", () => {
-    expect(withAnswer([], "Hi")).toEqual([]);
-    const answered = withAnswer(withQuestion([], "q"), "a");
-    expect(withAnswer(answered, "again")).toBe(answered);
+    expect(withAnswer([], "Hi", "s")).toEqual([]);
+    const answered = withAnswer(withQuestion([], "q"), "a", "s");
+    expect(withAnswer(answered, "again", "s")).toBe(answered);
   });
 
   it("do not change the history they extend", () => {
     const h = withQuestion([], "q");
-    withAnswer(h, "a");
+    withAnswer(h, "a", "s");
     expect(h).toHaveLength(1);
   });
 
-  it("are checked like the server does", () => {
-    expect(isValidConversation([])).toBe(false);
-    expect(isValidConversation(conversation(2))).toBe(false);
-    expect(isValidConversation(conversation(3))).toBe(true);
-    expect(isValidConversation([{ role: "assistant", content: "x" }])).toBe(false);
-    expect(isValidConversation([{ role: "user", content: " " }])).toBe(false);
+  it("go to the server as role, content and signature only", () => {
+    const h = withAnswer(withQuestion([], "q"), "a", "sig", "claude-sonnet-5-5");
+    expect(toWire(h)).toEqual([
+      { role: "user", content: "q" },
+      { role: "assistant", content: "a", signature: "sig" },
+    ]);
   });
 });
 

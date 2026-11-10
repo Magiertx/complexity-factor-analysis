@@ -77,6 +77,7 @@ export function InterpretationView({
   const tMaybe = useTMaybe();
   const effortName = (e: string) => tMaybe(`factor.interpretation.effort_name.${e}`) ?? e;
   const stored = (c: InterpretationChoice) => (isStored(variants, c) ? ` · ${t("factor.interpretation.stored")}` : "");
+  const storedTitle = (c: InterpretationChoice) => (isStored(variants, c) ? t("factor.interpretation.stored_title") : undefined);
   const zone = useTipZone<HTMLOListElement>();
   const precomputedTip = useTip<HTMLSpanElement>({ more: t("factor.interpretation.precomputed_title") });
   const available = !!status?.available;
@@ -130,6 +131,8 @@ export function InterpretationView({
               onChoice={onChoice}
               modelText={(m, c) => `${modelLabel(m)}${stored({ ...choice, model: m, ...(c ?? {}) })}`}
               effortText={(e) => `${effortName(e)}${stored({ ...choice, effort: e })}`}
+              modelTitle={(m, c) => storedTitle({ ...choice, model: m, ...(c ?? {}) })}
+              effortTitle={(e) => storedTitle({ ...choice, effort: e })}
               modelAria={t("factor.interpretation.model_label")}
               effortAria={t("factor.interpretation.effort_label")}
               hint={[
@@ -257,6 +260,9 @@ interface ChoiceControlsProps {
   /** Option labels, with the mark for what is stored; `effort` is the one the model would get. */
   modelText: (model: string, effort?: { effort: string }) => string;
   effortText: (effort: string) => string;
+  /** The explanation of the mark of a stored option; undefined when it is not stored. */
+  modelTitle: (model: string, effort?: { effort: string }) => string | undefined;
+  effortTitle: (effort: string) => string | undefined;
   modelAria: string;
   effortAria: string;
   /** What the chosen model and effort mean. */
@@ -272,6 +278,8 @@ function ChoiceControls({
   onChoice,
   modelText,
   effortText,
+  modelTitle,
+  effortTitle,
   modelAria,
   effortAria,
   hint,
@@ -279,11 +287,15 @@ function ChoiceControls({
   const models = modelOptions(status, variants);
   const efforts = effortOptions(status, variants, choice.model);
   const className = "h-8 w-auto min-w-[8rem]";
+  // What the chosen model and effort mean belongs to both controls.
+  const hintId = useId();
+  const describedBy = hint ? hintId : undefined;
   return (
     <>
       {models.length > 1 ? (
         <Select
           aria-label={modelAria}
+          aria-describedby={describedBy}
           className={className}
           disabled={disabled}
           value={choice.model}
@@ -291,24 +303,39 @@ function ChoiceControls({
           options={models.map((m) => ({
             value: m,
             label: modelText(m, { effort: withModel(status, variants, choice, m).effort }),
+            title: modelTitle(m, { effort: withModel(status, variants, choice, m).effort }),
           }))}
         />
       ) : (
-        <span className="text-xs text-muted">{modelLabel(choice.model)}</span>
+        // A single option is plain text; its label is read, not shown.
+        <span className="text-xs text-muted" title={modelTitle(choice.model)}>
+          <span className="sr-only">{modelAria}: </span>
+          {modelLabel(choice.model)}
+        </span>
       )}
       {efforts.length > 1 ? (
         <Select
           aria-label={effortAria}
+          aria-describedby={describedBy}
           className={className}
           disabled={disabled}
           value={choice.effort}
           onValueChange={(effort) => onChoice({ model: choice.model, effort })}
-          options={efforts.map((e) => ({ value: e, label: effortText(e) }))}
+          options={efforts.map((e) => ({ value: e, label: effortText(e), title: effortTitle(e) }))}
         />
       ) : (
-        <span className="text-xs text-muted">{efforts.length ? effortText(efforts[0]) : ""}</span>
+        efforts.length > 0 && (
+          <span className="text-xs text-muted" title={effortTitle(efforts[0])}>
+            <span className="sr-only">{effortAria}: </span>
+            {effortText(efforts[0])}
+          </span>
+        )
       )}
-      {hint && <span className="text-xs text-muted">{hint}</span>}
+      {hint && (
+        <span id={hintId} className="text-xs text-muted">
+          {hint}
+        </span>
+      )}
     </>
   );
 }

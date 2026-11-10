@@ -3,6 +3,7 @@
 
 import { downloadBlob } from "./factor-analysis";
 import { noteError } from "./last-error";
+import type { WireMessage } from "./interpretation-chat";
 import type { InterpretationChoice, StoredVariant } from "./interpretation-choice";
 
 export type ParameterType = "int" | "float" | "bool" | "enum" | "multi_enum" | "string";
@@ -1088,7 +1089,7 @@ export async function exportLoadings(
 
 /**
  * Downloads the whole analysis as a ZIP: the dataset, every result table, the interpretation
- * if one is stored for these options and language, and a manifest to reproduce it. The rows of
+ * if one is stored for these options, language and `choice`, and a manifest to reproduce it. The rows of
  * its loadings heatmap follow `order` and the measures of its correlation map `correlationOrder`,
  * as the figure menu draws them; its figures are English, as a paper is.
  */
@@ -1101,11 +1102,14 @@ export async function downloadAnalysisZip(
     order = "factor",
     correlationOrder = "factor",
     stabilitySamples = null,
+    choice = null,
   }: {
     shortCodes?: boolean;
     order?: FigureOrder;
     correlationOrder?: CorrelationOrder;
     stabilitySamples?: StabilitySamples | null;
+    /** The model and effort of the interpretation to include; null is the server's default. */
+    choice?: InterpretationChoice | null;
   } = {},
 ): Promise<void> {
   const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/export/zip`, {
@@ -1118,6 +1122,8 @@ export async function downloadAnalysisZip(
       order,
       correlation_order: correlationOrder,
       stability_samples: stabilitySamples,
+      model: choice?.model ?? null,
+      effort: choice?.effort ?? null,
     }),
   });
   if (!r.ok) throw await httpError(r, "Export failed");
@@ -1510,6 +1516,8 @@ export async function fetchInterpretationVariants(
 
 export interface ChatAnswer {
   answer: string;
+  /** The server's signature of the answer; the answer goes back with it in the next question. */
+  signature: string;
   /** The model that answered; a fallback model if the requested one declined. */
   model: string;
   requested_model: string;
@@ -1518,15 +1526,15 @@ export interface ChatAnswer {
 
 /**
  * One follow-up question about the stored interpretation of this analysis. `messages` is the
- * conversation so far, ending with the new question; the server keeps nothing. Every question is
- * one live call.
+ * conversation so far, ending with the new question; the server keeps nothing, and takes an
+ * answer back only with the signature it gave it. Every question is one live call.
  */
 export async function askAboutInterpretation(
   id: string,
   options: AnalyzeOptions,
   language: InterpretationLanguage,
   choice: InterpretationChoice,
-  messages: { role: "user" | "assistant"; content: string }[],
+  messages: WireMessage[],
   signal?: AbortSignal,
 ): Promise<ChatAnswer> {
   const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/interpret/chat`, {

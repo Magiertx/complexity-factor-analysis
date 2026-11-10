@@ -1,7 +1,7 @@
 /**
  * Which model and effort an interpretation is asked for or shown from. With a key on the server
- * the choice is the lists the server offers; without one only what is stored for the analysis
- * on screen can be shown.
+ * the choice is the lists the server offers, plus whatever is stored for the analysis on screen
+ * (it is served without a call); without a key only what is stored can be shown.
  */
 
 export interface InterpretationChoice {
@@ -61,31 +61,34 @@ function sortEfforts(efforts: string[]): string[] {
   return [...new Set(efforts)].sort((a, b) => rank(a) - rank(b));
 }
 
-/** Models that can be chosen, in the order of the server (without a key: of the stored ones). */
+/**
+ * Models that can be chosen, in the order of the server, then the other stored ones: they are
+ * served without a call, whatever the server offers. Without a key: the stored ones.
+ */
 export function modelOptions(status: ChoiceStatus, variants: StoredVariant[]): string[] {
-  return status.available ? (status.models ?? []) : [...new Set(variants.map((v) => v.model))];
+  const stored = variants.map((v) => v.model);
+  return [...new Set(status.available ? [...(status.models ?? []), ...stored] : stored)];
 }
 
 /**
- * Efforts that can be chosen for `model`: the ones the server offers, or, without a key, the
- * ones stored for that model.
+ * Efforts that can be chosen for `model`: the ones the server offers if it offers the model
+ * (and has a key), and the ones stored for that model, whatever the server offers.
  */
 export function effortOptions(status: ChoiceStatus, variants: StoredVariant[], model: string): string[] {
-  return status.available
-    ? sortEfforts(status.efforts ?? [])
-    : sortEfforts(variants.filter((v) => v.model === model).map((v) => v.effort));
+  const stored = variants.filter((v) => v.model === model).map((v) => v.effort);
+  const offered = status.available && !!status.models?.includes(model) ? (status.efforts ?? []) : [];
+  return sortEfforts([...offered, ...stored]);
 }
 
 function allowed(status: ChoiceStatus, variants: StoredVariant[], choice: InterpretationChoice): boolean {
-  return status.available
-    ? !!status.models?.includes(choice.model) && !!status.efforts?.includes(choice.effort)
-    : isStored(variants, choice);
+  if (isStored(variants, choice)) return true;
+  return status.available && !!status.models?.includes(choice.model) && !!status.efforts?.includes(choice.effort);
 }
 
 /**
  * The choice in force: `wanted` (what the visitor picked or kept from earlier) if it is
- * offered, else the server's default if that is offered, else, without a key, the first stored
- * variant. Null while the status is unknown or when nothing can be chosen.
+ * offered or stored, else the server's default if that is offered or stored, else, without a
+ * key, the first stored variant. Null while the status is unknown or when nothing can be chosen.
  */
 export function resolveChoice(
   status: ChoiceStatus | null,

@@ -8,6 +8,17 @@ import type { InterpretationChoice } from "./interpretation-choice";
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  /** Of an answer: what the server signed it with. It takes no answer back without it. */
+  signature?: string;
+  /** Of an answer: the model that wrote it. Shown, never sent. */
+  answeredBy?: string;
+}
+
+/** What the server takes of a message: its role, its content and, of an answer, the signature. */
+export interface WireMessage {
+  role: "user" | "assistant";
+  content: string;
+  signature?: string;
 }
 
 export const MAX_QUESTION_CHARS = 2000;
@@ -28,14 +39,6 @@ export function chatKey(
   choice: InterpretationChoice,
 ): string {
   return JSON.stringify([datasetId, options, language, choice.model, choice.effort]);
-}
-
-/** The messages that belong to `key`; a conversation of another key is gone. */
-export function messagesFor(
-  conversation: { key: string; messages: ChatMessage[] } | null,
-  key: string,
-): ChatMessage[] {
-  return conversation && conversation.key === key ? conversation.messages : [];
 }
 
 export type ChatProblem = "empty" | "question_too_long" | "count" | "too_long";
@@ -62,17 +65,26 @@ export function withQuestion(history: ChatMessage[], question: string): ChatMess
   return [...history, { role: "user", content: question }];
 }
 
-/** The history with the answer added; the last message must be the question it answers. */
-export function withAnswer(history: ChatMessage[], answer: string): ChatMessage[] {
+/**
+ * The history with the answer added; the last message must be the question it answers. The
+ * signature is the one the server sent with the answer.
+ */
+export function withAnswer(
+  history: ChatMessage[],
+  answer: string,
+  signature: string,
+  answeredBy?: string,
+): ChatMessage[] {
   if (history.length === 0 || history[history.length - 1].role !== "user") return history;
-  return [...history, { role: "assistant", content: answer }];
+  return [...history, { role: "assistant", content: answer, signature, ...(answeredBy ? { answeredBy } : {}) }];
 }
 
-/** Whether the messages are what the server takes: alternating, from user to user. */
-export function isValidConversation(messages: ChatMessage[]): boolean {
-  return (
-    messages.length % 2 === 1 &&
-    messages.every((m, i) => m.role === (i % 2 === 0 ? "user" : "assistant") && m.content.trim() !== "")
+/** The messages as the server takes them: nothing but role, content and the signature of an answer. */
+export function toWire(history: ChatMessage[]): WireMessage[] {
+  return history.map((m) =>
+    m.role === "assistant" && m.signature !== undefined
+      ? { role: m.role, content: m.content, signature: m.signature }
+      : { role: m.role, content: m.content },
   );
 }
 

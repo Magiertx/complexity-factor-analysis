@@ -312,9 +312,14 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   const variantsKey = datasetId && analyzedOptions ? interpretationKey(datasetId, analyzedOptions, locale) : null;
   const variantsLoaded = !!variantsState && variantsState.key === variantsKey;
   const variants = variantsLoaded ? variantsState.list : NO_VARIANTS;
+  // The same object for the same model and effort: a new list of variants (every answer brings
+  // one) must not look like a new choice and start the lookups again.
+  const resolved = resolveChoice(interpStatus, variants, wantedChoice);
+  const choiceModel = resolved?.model ?? null;
+  const choiceEffort = resolved?.effort ?? null;
   const choice = useMemo(
-    () => resolveChoice(interpStatus, variants, wantedChoice),
-    [interpStatus, variants, wantedChoice],
+    () => (choiceModel !== null && choiceEffort !== null ? { model: choiceModel, effort: choiceEffort } : null),
+    [choiceModel, choiceEffort],
   );
   const currentChoice = choiceKey(choice);
   const interpretation =
@@ -986,6 +991,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
           order: figureOrder,
           correlationOrder: mapOrder,
           stabilitySamples,
+          choice,
         });
       } else if (format === "report") {
         const { blob, filename } = await exportReport(datasetId, shown, locale, codesShown, stabilitySamples);
