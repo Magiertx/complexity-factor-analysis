@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "XCom"
+abstract: "A tool for the exploration of event log and process model complexity: exploratory factor analysis on complexity measures of Petri nets and event logs, with every decision changeable and analyses comparable side by side."
+authors:
+  - family-names: Reichle
+    given-names: Jonas
+    affiliation: University of Augsburg
+  - family-names: Schalk
+    given-names: Patrizia
+    affiliation: University of Augsburg
+    orcid: "https://orcid.org/0009-0001-7757-6628"
+license: MIT
+repository-code: "https://github.com/Magiertx/complexity-factor-analysis"
+version: "1.0.0"
+keywords:
+  - process mining
+  - complexity measures
+  - exploratory factor analysis
+  - Petri nets
+  - event logs
