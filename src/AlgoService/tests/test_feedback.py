@@ -140,7 +140,7 @@ def test_the_mail_is_sent_when_it_is_set_up(client, inbox, smtp, mail):
     assert conn["calls"] == ["starttls", ("login", "robot", "s3cret-pw")]
     (msg,) = smtp.sent
     assert (msg["From"], msg["To"]) == ("cfa@example.org", "owner@example.org")
-    assert msg["Subject"] == "[CFA feedback] bug: The matrix stays empty."
+    assert msg["Subject"] == "[XCom feedback] bug: The matrix stays empty."
     body = msg.get_content()
     assert body.startswith("The matrix stays empty.\n")
     assert "Contact: me@example.org" in body
@@ -235,7 +235,7 @@ def test_a_header_cannot_be_injected(client, inbox, smtp, mail, monkeypatch):
     assert msg["Bcc"] is None
     for header in ("Subject", "From", "To"):
         assert "\r" not in msg[header] and "\n" not in msg[header]
-    assert msg["Subject"] == "[CFA feedback] bug: Hi Bcc: attacker@example.org Subject: spam more text"
+    assert msg["Subject"] == "[XCom feedback] bug: Hi Bcc: attacker@example.org Subject: spam more text"
     body = msg.get_content()
     assert "Contact: a@b.example Bcc: x@y.example\n" in body
     assert "  user_agent: UA Bcc: z@z.example\n" in body
@@ -243,7 +243,7 @@ def test_a_header_cannot_be_injected(client, inbox, smtp, mail, monkeypatch):
 
 def test_the_subject_has_sixty_characters_of_the_message():
     subject = feedback_mail.subject("idea", "w" * 100)
-    assert subject == "[CFA feedback] idea: " + "w" * 60
+    assert subject == "[XCom feedback] idea: " + "w" * 60
 
 
 def test_the_form_is_rate_limited(client, inbox, monkeypatch):

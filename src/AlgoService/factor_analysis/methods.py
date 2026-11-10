@@ -19,6 +19,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from config import APP_NAME
 from version import REPOSITORY_URL
 
 from .report import tex
@@ -203,7 +204,7 @@ def _tool_reference(tool: dict[str, Any], year: int) -> dict[str, Any]:
             "one of its git history and the year that of this export. Add co-authors once the tool has a DOI."
         ),
         "fields": [
-            ("author", "Reichle, Jonas"), ("title", tool.get("name") or "Complexity Factor Analysis"),
+            ("author", "Reichle, Jonas"), ("title", tool.get("name") or APP_NAME),
             ("year", str(year)), *([("note", note)] if note else []), ("url", REPOSITORY_URL),
         ],
     }
@@ -226,7 +227,7 @@ def bibtex(keys: list[str], tool: dict[str, Any], libraries: dict[str, str | Non
     on what its source does not record. An unknown key is an error."""
     entries = {
         **REFERENCES,
-        "cfa_tool": _tool_reference(tool, year),
+        "xcom_tool": _tool_reference(tool, year),
         "factor_analyzer": _library_reference(libraries),
     }
     out = [
@@ -512,12 +513,12 @@ def methods(
     # The tool and its fitting.
     version = tool.get("version")
     commit = (tool.get("commit") or "")[:8]
-    described = _tex(tool.get("name") or "Complexity Factor Analysis")
+    described = _tex(tool.get("name") or APP_NAME)
     described += f" {_tex(version)}" if version else ""
     described += f" ({'Commit' if language == 'de' else 'commit'} {_tex(commit)})" if commit else ""
     sentences.append(
         fill(
-            "tool", tool=described, cite_tool=cite("cfa_tool"), cite_minres=cite("harman1966", tie=False),
+            "tool", tool=described, cite_tool=cite("xcom_tool"), cite_minres=cite("harman1966", tie=False),
             library=_tex(libraries.get("factor_analyzer") or ""), cite_library=cite("factor_analyzer"),
         )
     )

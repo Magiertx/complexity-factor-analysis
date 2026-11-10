@@ -84,7 +84,7 @@ FEATURES = ["n_variants", "n_events", "trace_len_max", "n_unique_activities"]
 
 def _check_tool_and_analysis(manifest: dict) -> None:
     assert manifest["tool"] == {
-        "name": "Complexity Factor Analysis",
+        "name": "XCom",
         "version": "v0.9",
         "commit": "0123456789abcdef0123456789abcdef01234567",
     }
@@ -121,7 +121,7 @@ def test_paper_dataset(client):
             },
         },
     }
-    assert "Complexity Factor Analysis v0.9, commit 0123456789abcdef0123456789abcdef01234567." in readme
+    assert "XCom v0.9, commit 0123456789abcdef0123456789abcdef01234567." in readme
     assert "the bundled dataset comfy-paper-inductive-miner, copied from https://github.com/Pati-nets/ComFy" in readme
     assert "assignment rule largest: each measure on the factor of its largest absolute loading." in readme
     assert (
@@ -222,7 +222,7 @@ def test_tool_version_from_git_without_the_environment(monkeypatch):
     monkeypatch.delenv("APP_COMMIT")
     monkeypatch.setattr(provenance, "_git", lambda *args: "abc123" if args[0] == "rev-parse" else "v0.9-3-gabc123")
     provenance.tool.cache_clear()
-    assert provenance.tool() == {"name": "Complexity Factor Analysis", "version": "v0.9-3-gabc123", "commit": "abc123"}
+    assert provenance.tool() == {"name": "XCom", "version": "v0.9-3-gabc123", "commit": "abc123"}
 
 
 def test_run_zip_names_the_tool(client):
@@ -269,7 +269,7 @@ def test_without_the_environment_or_a_tag_the_version_is_the_constant_and_the_co
     monkeypatch.delenv("APP_COMMIT")
     monkeypatch.setattr(provenance, "_git", lambda *args: None)
     provenance.tool.cache_clear()
-    assert provenance.tool() == {"name": "Complexity Factor Analysis", "version": VERSION, "commit": "unknown"}
+    assert provenance.tool() == {"name": "XCom", "version": VERSION, "commit": "unknown"}
     provenance.tool.cache_clear()
 
 
@@ -277,7 +277,7 @@ def test_the_exports_cite_the_version_and_the_address(client):
     from factor_analysis import methods
     from version import REPOSITORY_URL
 
-    tool = {"name": "Complexity Factor Analysis", "version": "1.0.0-dev", "commit": "unknown"}
+    tool = {"name": "XCom", "version": "1.0.0-dev", "commit": "unknown"}
     entry = methods._tool_reference(tool, 2026)
     fields = dict(entry["fields"])
     assert "Version 1.0.0-dev" in fields["note"] and fields["url"] == REPOSITORY_URL

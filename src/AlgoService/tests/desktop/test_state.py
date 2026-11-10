@@ -259,7 +259,7 @@ def test_rate_limits_are_off_unless_switched_on(tmp_path):
 def test_the_database_url_survives_odd_directory_names(tmp_path):
     from sqlalchemy.engine import make_url
 
-    odd = tmp_path / "Complexity Factor Analysis" / "50%20 #1" / "app.db"
+    odd = tmp_path / "XCom" / "50%20 #1" / "app.db"
     assert make_url(environment.sqlite_url(odd)).database == odd.resolve().as_posix()
 
 

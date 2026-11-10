@@ -165,7 +165,7 @@ def test_the_report_starts_with_the_hint_to_compile_it_twice_and_names_the_softw
 
     text = SNAPSHOT.read_text(encoding="utf-8")
     assert text.splitlines()[0] == f"% {COMPILE_HINT}" and "twice" in COMPILE_HINT
-    assert "Software & Complexity Factor Analysis (version v0.0.0, commit 000000000000);" in text
+    assert "Software & XCom (version v0.0.0, commit 000000000000);" in text
 
 
 def test_the_scree_plot_of_many_eigenvalues_labels_every_fifth_factor(client):

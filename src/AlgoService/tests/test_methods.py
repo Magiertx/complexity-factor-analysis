@@ -14,7 +14,7 @@ import pytest
 
 from factor_analysis import methods
 
-TOOL = {"name": "Complexity Factor Analysis", "version": "v0.12-3-gabcdef0", "commit": "0123456789abcdef0123"}
+TOOL = {"name": "XCom", "version": "v0.12-3-gabcdef0", "commit": "0123456789abcdef0123"}
 LIBRARIES = {"factor_analyzer": "0.5.1"}
 IMPORTANT_FACTORS = {"citation": 'Data of the paper "Important Factors: Complexity Dimensions for Petri Nets" (ATAED 2026)'}
 
@@ -71,7 +71,7 @@ def test_the_published_settings_of_a_bundled_dataset():
         'The dataset "Inductive miner" has 288 observations of 15 model complexity measures after cleaning, '
         "published with \\cite{schalk2026important}, whose measures were computed with \\cite{schalk_comfy}. "
         "1 measure was dropped in cleaning because it has no variance or repeats another measure. "
-        "The factor analysis was run with Complexity Factor Analysis v0.12-3-gabcdef0 (commit 01234567)~\\cite{cfa_tool}, "
+        "The factor analysis was run with XCom v0.12-3-gabcdef0 (commit 01234567)~\\cite{xcom_tool}, "
         "which extracts the factors with the minimum residual (minres)\\cite{harman1966} method of the Python package "
         "factor\\_analyzer 0.5.1~\\cite{factor_analyzer}. "
         "Bartlett's test of sphericity~\\cite{bartlett1950} was significant ($\\chi^2(66) = 6822.4$, $p < 0.001$, "
@@ -86,7 +86,7 @@ def test_the_published_settings_of_a_bundled_dataset():
         "1 measure was assigned to no factor."
     )
     assert built.keys == [
-        "schalk2026important", "schalk_comfy", "cfa_tool", "harman1966", "factor_analyzer", "bartlett1950",
+        "schalk2026important", "schalk_comfy", "xcom_tool", "harman1966", "factor_analyzer", "bartlett1950",
         "kaiser1974", "kaiser1960", "horn1965", "kaiser1958", "lieben2018improved",
     ]
     assert sorted(_cited(built.text)) == sorted(built.keys)
@@ -113,7 +113,7 @@ def test_the_kaiser_criterion_in_german_with_an_oblique_rotation_and_the_filter_
         "Die Faktorenanalyse wurde mit"
     )
     for part in (
-        "Die Faktorenanalyse wurde mit Complexity Factor Analysis (Commit 01234567)~\\cite{cfa_tool} durchgef\u00fchrt",
+        "Die Faktorenanalyse wurde mit XCom (Commit 01234567)~\\cite{xcom_tool} durchgef\u00fchrt",
         "Bartletts Test auf Sph\u00e4rizit\u00e4t~\\cite{bartlett1950} war nicht signifikant ($\\chi^2(91) = 120{,}0$, $p = 0{,}012$, $\\alpha = 0{,}01$)",
         "Kaiser-Meyer-Olkin-Ma\u00df der Stichprobeneignung insgesamt~\\cite{kaiser1974} betrug 0,50.",
         "Die Korrelationsmatrix ist singul\u00e4r",

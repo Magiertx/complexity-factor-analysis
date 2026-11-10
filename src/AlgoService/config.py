@@ -12,7 +12,7 @@ from fastapi import HTTPException
 
 # Product name shown in the API docs and wherever the backend names itself. The frontend has
 # its own copy in src/frontend/lib/app-config.ts.
-APP_NAME = "Complexity Factor Analysis"
+APP_NAME = "XCom"
 
 # Logger initialization
 class JSONFormatter(logging.Formatter):

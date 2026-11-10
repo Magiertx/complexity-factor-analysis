@@ -10,7 +10,7 @@ base("a browser in en-US with an empty storage gets the tour in English", async 
   await page.goto("/");
   const tour = page.getByRole("dialog");
   await expect(tour).toBeVisible();
-  await expect(tour.getByRole("heading")).toHaveText(text("tours.onboarding.step0_title", { app: "Complexity Factor Analysis" }, "en"), {
+  await expect(tour.getByRole("heading")).toHaveText(text("tours.onboarding.step0_title", { app: "XCom" }, "en"), {
     timeout: 15_000,
   });
   await expect(page.locator("html")).toHaveAttribute("lang", "en");

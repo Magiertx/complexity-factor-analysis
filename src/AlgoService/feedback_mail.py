@@ -17,6 +17,7 @@ from datetime import datetime
 from email.message import EmailMessage
 from typing import Any
 
+from config import APP_NAME
 from env_config import choice, positive_int
 
 #: Seconds to wait for the mail server, so a dead one cannot hold a background task for long.
@@ -66,7 +67,7 @@ def one_line(value: object) -> str:
 
 
 def subject(kind: str, message: str) -> str:
-    return f"[CFA feedback] {one_line(kind)}: {one_line(message)[:SUBJECT_CHARS]}"
+    return f"[{APP_NAME} feedback] {one_line(kind)}: {one_line(message)[:SUBJECT_CHARS]}"
 
 
 def compose(
