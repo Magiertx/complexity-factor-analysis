@@ -32,6 +32,7 @@ from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 import feedback_mail
+import job_runner
 import jobs_db
 from config import APP_NAME, CodedHTTPException, JSONFormatter, limiter
 from routes import health, algorithms, jobs, factor_analysis, interpretation, session, feedback
@@ -109,6 +110,13 @@ async def lifespan(app: FastAPI):
         config.logger.info("All request and job limits are at their defaults.")
 
     await jobs_db.init_db()
+
+    # Without a Celery worker the jobs of the previous process died with it. They would stay
+    # pending or running for good and count towards the job quotas.
+    if job_runner.runs_jobs_itself():
+        interrupted = await jobs_db.fail_interrupted_jobs()
+        if interrupted:
+            config.logger.info("Marked %d job(s) of the previous run as interrupted.", interrupted)
 
     redis_task: asyncio.Task[None] | None = None
     if os.environ.get("REDIS_URL"):
@@ -194,6 +202,7 @@ app.add_middleware(
     secret_key=_session_secret,
     session_cookie="session_id",
     same_site="lax",
+    max_age=config.SESSION_MAX_AGE,
     # Set SESSION_COOKIE_SECURE=1 behind TLS; off by default for http://localhost.
     https_only=os.environ.get("SESSION_COOKIE_SECURE") == "1",
 )

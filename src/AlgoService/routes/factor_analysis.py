@@ -27,6 +27,7 @@ from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_serializer, model_validator
 
 import jobs_db
+from job_runner import enqueue
 import provenance
 from algorithms._log_io import MAX_DECOMPRESSED_BYTES
 from config import MAX_FILE_SIZE, CodedHTTPException, broadcast_jobs_update, get_session_id, limiter, logger
@@ -766,18 +767,13 @@ async def _create_dataset(
     storage.update_meta(session_id, dataset_id, job_id=job_id)
     await broadcast_jobs_update()
 
-    from database import IS_TESTING
-
-    if os.environ.get("REDIS_URL") and not IS_TESTING:
-        try:
-            from celery_worker import celery_app
-
-            celery_app.send_task("celery_worker.build_dataset", args=[job_id, session_id, dataset_id, spec])
-        except Exception:
-            logger.exception("Failed to enqueue dataset job via Celery, falling back to local task")
-            background_tasks.add_task(run_dataset_task, job_id, session_id, dataset_id, spec)
-    else:
-        background_tasks.add_task(run_dataset_task, job_id, session_id, dataset_id, spec)
+    enqueue(
+        background_tasks,
+        celery_task="celery_worker.build_dataset",
+        local=run_dataset_task,
+        args=(job_id, session_id, dataset_id, spec),
+        label=f"dataset job {job_id}",
+    )
 
     return {"dataset_id": dataset_id, "status": "computing", "job_id": job_id}
 
@@ -2136,18 +2132,13 @@ async def dataset_stability(
     await broadcast_jobs_update()
     values = body.model_dump()
 
-    from database import IS_TESTING
-
-    if os.environ.get("REDIS_URL") and not IS_TESTING:
-        try:
-            from celery_worker import celery_app
-
-            celery_app.send_task("celery_worker.compute_stability", args=[job_id, session_id, meta["id"], values])
-        except Exception:
-            logger.exception("Failed to enqueue stability job via Celery, falling back to local task")
-            background_tasks.add_task(run_stability_task, job_id, session_id, meta["id"], values)
-    else:
-        background_tasks.add_task(run_stability_task, job_id, session_id, meta["id"], values)
+    enqueue(
+        background_tasks,
+        celery_task="celery_worker.compute_stability",
+        local=run_stability_task,
+        args=(job_id, session_id, meta["id"], values),
+        label=f"stability job {job_id}",
+    )
     return {"status": "computing", "key": key, "job_id": job_id, "percentage": 0.0}
 
 

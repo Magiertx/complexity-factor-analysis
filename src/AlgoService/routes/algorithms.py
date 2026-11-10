@@ -15,8 +15,9 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, B
 from fastapi.concurrency import run_in_threadpool
 
 import jobs_db
+from job_runner import enqueue
 from config import CodedHTTPException, broadcast_jobs_update, MAX_FILE_SIZE, logger, get_session_id, limiter
-from env_config import rate_limit, text
+from env_config import data_max_idle_s, rate_limit, text
 from algorithms import REGISTRY, get as get_algorithm
 from algorithms.base import ParameterValidationError, TOOL_CATEGORIES
 
@@ -144,7 +145,8 @@ class _ProgressThrottle:
 TMP_FILE_MAX_AGE_S = 12 * 3600
 
 #: A session directory untouched for this long belongs to a session nobody will return to.
-SESSION_DIR_MAX_IDLE_S = 7 * 24 * 3600
+#: ``None`` (``DATA_MAX_IDLE_DAYS=never``) keeps them.
+SESSION_DIR_MAX_IDLE_S = data_max_idle_s()
 
 
 def cleanup_uploaded_logs(session_id: str):
@@ -191,6 +193,8 @@ def cleanup_orphaned_session_dirs() -> int:
     Returns the number of directories removed, for logging.
     """
     removed = 0
+    if SESSION_DIR_MAX_IDLE_S is None:
+        return 0
     try:
         if not UPLOADED_LOGS_DIR.exists():
             return 0
@@ -687,19 +691,13 @@ async def analyze(
         # Original filename for display; the temp path's name is meaningless.
         params[f"{spec.name}_filename"] = sec_name
 
-    # Enqueue background task (use Celery worker pool if Redis is configured and not in testing mode)
-    from database import IS_TESTING
-    redis_url = os.environ.get("REDIS_URL")
-    if redis_url and not IS_TESTING:
-        try:
-            from celery_worker import celery_app
-            celery_app.send_task("celery_worker.run_analysis", args=[task_id, tmp_path, params, algorithm_id])
-            logger.info(f"Enqueued Celery task for job {task_id}")
-        except Exception:
-            logger.exception("Failed to enqueue task via Celery, falling back to local background task")
-            background_tasks.add_task(run_analysis_task, task_id, tmp_path, params, algorithm_id)
-    else:
-        background_tasks.add_task(run_analysis_task, task_id, tmp_path, params, algorithm_id)
+    enqueue(
+        background_tasks,
+        celery_task="celery_worker.run_analysis",
+        local=run_analysis_task,
+        args=(task_id, tmp_path, params, algorithm_id),
+        label=f"job {task_id}",
+    )
 
     return {
         "algorithm": algorithm_id,
