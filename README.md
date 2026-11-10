@@ -276,8 +276,8 @@ published with, extracted once into `datasets/published/` by
 `scripts/extract_published.py`: all seven ComFy reports (Bartlett, KMO, every MSA with its
 filter round, eigenvalues, loadings, communalities and descriptive statistics) and, for the
 log measures, the cleaning and Bartlett's chi-square. `tests/test_column_order.py` checks that
-the analysis, the MSA filter and the exports keep the stored column order, on which the KMO of
-singular data depends. `tests/test_assignment_rules.py` checks the three assignment rules
+the analysis, the MSA filter and the exports keep the stored column order, on which the last
+bits of every number depend. `tests/test_assignment_rules.py` checks the three assignment rules
 against the dimension tables of Important Factors (Tab. 6, 9 and 12 with the two documented
 deviations, and two rows of Tab. 17), `tests/test_compare.py` the comparison of the miners
 against all four rows of Tab. 17 with its documented deviations, `tests/test_published_match.py` the published settings

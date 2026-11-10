@@ -582,7 +582,9 @@ chi-square reflects the floor more than the data), `kmo` (overall and per measur
   cache, in which case their seconds are those of the computation that filled it.
 - `warnings` are English sentences; `warning_details` gives each as `{code, message, params}`:
   `bartlett_not_significant`, `kmo_low`, `small_sample` (fewer than 5 observations per
-  measure), `singular` (linearly dependent measures), `not_identified` (more factors than the
+  measure), `singular` (linearly dependent measures), `eigenvalue_near_floor` (an eigenvalue within a
+  factor of 100 of the floor 1e-10, so that Bartlett's test and the MSA depend on it;
+  `params` `smallest` and `floor`), `not_identified` (more factors than the
   Ledermann bound allows), `fit_not_converged`, `single_factor_no_rotation` and `heywood`
   (a communality at the optimizer's bound of 0.995, a possible Heywood case).
 
@@ -591,7 +593,9 @@ Errors are 400 with a `detail`, a `code` and `params`: `too_few_measures` (fewer
 `n`; checked before anything is computed),
 `too_few_observations` (fewer than measures + 1), `msa_filter_left` (the MSA filter left fewer
 than 3 measures), `n_factors_range` (more factors than measures − 1; a further factor would
-stay empty), `unknown_excluded`, `msa_singular`, `fit_failed` and `not_converged`. A dataset
+stay empty), `unknown_excluded`, `unusable_measures` (a measure with missing, infinite or
+constant values; cleaned datasets have none), `msa_singular` (the MSA is undefined, e.g. a
+measure exactly uncorrelated with all others), `fit_failed` and `not_converged`. A dataset
 that is not ready answers 409.
 
 **Latest wins.** The UI sends an analyze request on every change and drops the answer to the
@@ -607,8 +611,10 @@ only when their connection closes. `export` and `export/zip` are given up only t
 
 On a singular correlation matrix (common with log measures, e.g. `iqr = q3 - q1`) the MSA
 leaves the eigenvalues below 1e-10, the same ones Bartlett's test clamps, out of the inverse of
-the correlation matrix. The result does not depend on the units, the column order or the
-platform. factor_analyzer's `calculate_kmo`, which ComFy for log measures uses, inverts the
+the correlation matrix (Bartlett's test clamps the same eigenvalues up to the floor instead). The
+result does not depend on the units, the column order or the platform as long as the spectrum
+has a clear gap around the floor; with an eigenvalue between 1e-12 and 1e-8 the values move
+with the floor, and the analysis warns (`eigenvalue_near_floor`). factor_analyzer's `calculate_kmo`, which ComFy for log measures uses, inverts the
 covariance matrix instead and gives the same on regular data, but not on singular data: there
 its MSA changes with all three. On the bundled log measures the tool therefore keeps 125
 measures with a KMO of 0.928, where the upstream report keeps 123 with 0.882
@@ -980,9 +986,12 @@ as they are. Observation labels, dataset and file names and measure values are n
   effort are part of the lookup: an interpretation made at medium effort is not served for
   `high`. Without a key any model and effort can be looked up, none is called. A stored
   interpretation is served only for a result with the `result_fingerprint` it was made for
-  (the measures kept and removed by the MSA filter, the factor count, the rotation and the
-  assignment; no floating-point values), so the lookup runs the analysis, also when
-  `n_factors` is given. Entries without a fingerprint (from before it existed) are not
+  (the measures kept and removed by the MSA filter with the round, the factor count, the
+  rotation, the assignment with the sign of each loading (with more than one factor), the
+  cross-loadings with their factors, whether Bartlett's test and the MSA passed, and the codes
+  of the warnings; no floating-point values), so the lookup runs the analysis, also when
+  `n_factors` is given. The analysis is given up when the client leaves (409 `superseded`),
+  but no newer request replaces it. Entries without a fingerprint (from before it existed) are not
   served; a live call replaces them.
 
 `POST /factor-analysis/datasets/{id}/interpret/variants` takes the same body (`model`,

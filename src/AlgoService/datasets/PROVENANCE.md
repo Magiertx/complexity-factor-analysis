@@ -35,21 +35,26 @@ unless noted.
   (four `iqr = q3 - q1`, `cyclomatic_number_dfg` and `n_edges_dfg`). Bartlett's chi-square
   clamps the six eigenvalues of the correlation matrix below `Constants.eigenvalue_floor` and
   is the same on every platform. KMO and MSA leave the same six directions out of the inverse
-  of the correlation matrix (`core.kmo`). Here the tool deviates on purpose from ComFy for Log
+  of the correlation matrix (`core.kmo`; Bartlett's test clamps them up to the floor, the MSA
+  drops them: opposite conventions for the same eigenvalues). Here the tool deviates on purpose from ComFy for Log
   Measures, which calls factor_analyzer's `calculate_kmo`: that inverts the covariance matrix
   and cuts its singular values below 1e-15 of the largest. With variances from 1.6e-6
   (`structure`) to 1.6e11 (`activities_variance`) the cut drops 30 directions, 24 of them
   genuine ones of measures on a small scale, and leaves the rest to rounding. The published
   result (KMO 0.882187; `start_activities_iqr`, `end_activities_iqr`, `structure`,
   `average_affinity` and `sequentiality_ratio_dfg` removed, 123 measures left) comes out in
-  the CSV's column order, but other orders remove 5 to 14 measures or fail, the KMO of some
+  the CSV's column order, but other orders remove other numbers of measures or fail (4 to 18
+  measures over 40 random orders, 15 of the 40 failed; a sample, not a bound), the KMO of some
   orders differs between Windows and Linux in the third decimal, and the units decide:
   with `structure` in thousandths its MSA is 0.819 instead of 0.281. Three of the five
   removals (`structure`, `average_affinity`, `sequentiality_ratio_dfg`, among the measures
   with the smallest variances) are such unit artifacts. The tool removes
   `start_activities_iqr` (MSA 0.287), `end_activities_iqr` (0.318) and `trace_len_hist6`
   (0.546) and keeps 125 measures with a KMO of 0.928, the same on every platform, in every
-  column order and in any units; with the standard settings Kaiser's criterion gives 16
+  column order and in any units. That holds because the spectrum has a clear gap around the
+  floor here (six eigenvalues at rounding level, the smallest of the others far above 1e-10);
+  with an eigenvalue within a factor of 100 of 1e-10 the MSA depends on where the floor lies and
+  the analysis warns (`eigenvalue_near_floor`). With the standard settings Kaiser's criterion gives 16
   factors (parallel analysis 12), 14 of them with measures. `tests/test_msa_invariance.py`
   pins this. On regular data both computations agree: on the seven ComFy reports to 1e-11.
 - **Licence:** MIT (`vendored/comfy_log/LICENSE`).

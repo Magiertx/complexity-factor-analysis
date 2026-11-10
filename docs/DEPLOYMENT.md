@@ -234,7 +234,7 @@ and for the published options ("Paper settings") of each bundled dataset.
   `xhigh` and `max`). Measured on the API (Claude Opus 5.5, English, one call each; the cost
   follows the thinking, so it varies between calls):
 
-  | Effort | 12 measures (model dataset) | 123 measures, 13 factors (2,112 logs) |
+  | Effort | 12 measures (model dataset) | 123 measures, 13 factors (2,112 logs; earlier computation, the tool now keeps 125 measures and 16 factors) |
   | --- | --- | --- |
   | `low` | $0.030, 8 s | not measured |
   | `medium` (default) | $0.034, 10 s | $0.17, 27 s |

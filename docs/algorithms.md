@@ -77,7 +77,8 @@ factor_analyzer's minres (Harman & Jones, 1966), but with the analytic gradient 
 eigenvalues beyond the first k; factor_analyzer differentiates numerically, at p + 1
 eigendecompositions per step. On the full data both give the same loadings to 3 · 10⁻⁷. B = 200
 takes about half a second on Important Factors: Inductive (10 measures, 2 factors) and about
-100 s on the PDC log measures (123 measures, 15 factors).
+100 s on the PDC log measures (measured with the earlier computation: 123 measures, 15 factors;
+the tool now keeps 125 measures and suggests 16 factors, so expect somewhat more).
 
 The result is kept with the dataset under a key of its rows, settings, factor count, B and seed,
 so it reopens at once; a change of any of them asks for a new one. The exports include it only
