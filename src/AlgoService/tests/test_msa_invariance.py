@@ -5,8 +5,12 @@ below ``Constants.eigenvalue_floor`` counted as zero. factor_analyzer's ``calcul
 inverts the covariance matrix instead and, on singular data, cuts its singular values
 relative to the largest variance. On the bundled log measures (variances from 1.6e-6 to
 1.6e11) that cut 30 directions, of which only six are the exact dependencies; the MSA filter
-then removed between 5 and 14 measures depending on the column order, failed on some orders,
-and moved by up to 0.003 in the KMO between Windows and Linux (datasets/PROVENANCE.md).
+then removed 4 to 18 measures over 40 random column orders and failed on 15 of the 40 (a
+sample, not a bound), and moved by up to 0.003 in the KMO between Windows and Linux
+(datasets/PROVENANCE.md).
+
+The independence holds while the spectrum has a clear gap around the floor; with an eigenvalue
+within a factor of 100 of it the analysis warns (``eigenvalue_near_floor``, tested below).
 
 The log dataset is pinned here, so that CI on any platform catches a drift.
 """
@@ -112,3 +116,58 @@ def test_log_msa_does_not_depend_on_the_units(log_data):
         for measure, msa in per.items():
             assert abs(per_rescaled[measure] - msa) <= 1e-6, (column, measure)
         assert {r["measure"] for r in core.msa_filter(rescaled).removed} == set(LOG_REMOVED)
+
+
+# --- an eigenvalue near the floor ----------------------------------------------------------
+
+
+def _with_small_eigenvalue(smallest: float) -> pd.DataFrame:
+    """Two factors with four measures each, and a twin of the first measure whose correlation
+    matrix has an eigenvalue of about ``smallest`` (1 - r of the pair)."""
+    rng = np.random.default_rng(11)
+    f1, f2 = rng.normal(size=(2, 300))
+    noise = rng.normal(scale=0.5, size=(8, 300))
+    data = pd.DataFrame({f"a{i}": f1 + noise[i] for i in range(4)} | {f"b{i}": f2 + noise[4 + i] for i in range(4)})
+    # 1 - r is about scale ** 2 / 2 for a twin with noise of that scale.
+    data["twin"] = data["a0"] + rng.normal(size=300) * np.sqrt(2 * smallest) * data["a0"].std()
+    return data
+
+
+def _codes(result: dict) -> list[str]:
+    return [w["code"] for w in result["warning_details"]]
+
+
+@pytest.mark.parametrize("smallest, warns", [(3e-12, True), (1e-10, True), (3e-9, True), (1e-6, False), (1e-3, False)])
+def test_an_eigenvalue_near_the_floor_is_warned_about(smallest, warns):
+    data = _with_small_eigenvalue(smallest)
+    for msa_filter in (False, True):
+        result = core.analyze(data, core.AnalysisParams(auto_msa_filter=msa_filter, n_factors=2))
+        assert ("eigenvalue_near_floor" in _codes(result)) is warns, (smallest, msa_filter)
+    if warns:
+        warning = next(w for w in result["warning_details"] if w["code"] == "eigenvalue_near_floor")
+        assert warning["params"]["floor"] == "1e-10" and 1e-12 <= float(warning["params"]["smallest"]) <= 1e-8
+
+
+def test_no_warning_where_the_spectrum_has_a_gap_around_the_floor(log_data):
+    """The bundled log measures: six exact dependencies (eigenvalues at rounding level), the
+    smallest real one far above the floor."""
+    result = core.analyze(log_data, core.AnalysisParams(n_factors=16, loading_threshold=0.5))
+    assert "singular" in _codes(result) and "eigenvalue_near_floor" not in _codes(result)
+
+
+def test_unusable_measures_give_a_coded_error_not_a_linalg_error():
+    data = _with_small_eigenvalue(1e-3)
+    for broken in (data.assign(a1=1.0), data.assign(a1=np.where(np.arange(300) == 3, np.nan, data["a1"])),
+                   data.assign(a1=np.where(np.arange(300) == 3, np.inf, data["a1"]))):
+        with pytest.raises(core.AnalysisError) as raised:
+            core.analyze(broken, core.AnalysisParams(n_factors=2))
+        assert raised.value.code == "unusable_measures" and raised.value.params["measures"] == "a1"
+
+
+def test_an_undefined_msa_is_a_coded_error():
+    """A measure that is exactly uncorrelated with the others has 0 / 0 as its MSA."""
+    # Three orthogonal columns of +-1: every correlation is exactly 0.
+    data = pd.DataFrame({"a": [1.0, 1, -1, -1], "b": [1.0, -1, 1, -1], "c": [1.0, -1, -1, 1]})
+    with pytest.raises(core.AnalysisError) as raised:
+        core.kmo(data)
+    assert raised.value.code == "msa_singular" and "undefined" in str(raised.value)

@@ -1037,7 +1037,8 @@
       "n_factors_range": "{requested} Faktoren gewünscht, aber bei {measures} Maßen sind höchstens {max} möglich. Ein weiterer Faktor bliebe leer.",
       "fit_failed": "Die Faktorenanalyse ist fehlgeschlagen: {error}",
       "not_converged": "Die Faktorenanalyse hat nicht konvergiert. Die Korrelationsmatrix ist singulär. Schließe Maße aus, die Linearkombinationen anderer Maße sind.",
-      "msa_singular": "Der MSA ließ sich nicht berechnen. Die Korrelationsmatrix ist singulär.",
+      "msa_singular": "Der MSA ist nicht definiert: Ein Maß ist mit allen anderen unkorreliert, oder die Pseudoinverse der Korrelationsmatrix hat keine brauchbare Diagonale.",
+      "unusable_measures": "Diese Maße haben fehlende, unendliche oder konstante Werte, ihre Korrelationen sind daher nicht definiert: {measures}. Bereinige die Matrix oder schließe sie aus.",
       "unknown_excluded": "Unbekannte auszuschließende Maße: {measures}.",
       "too_few_measures": "Für eine Faktorenanalyse sind mindestens {min} Maße nötig; übrig sind {left}.",
       "too_few_observations": "{n} Beobachtungen sind zu wenige für {measures} Maße. Nötig sind mindestens {needed}. Schließe Maße aus oder füge Beobachtungen hinzu.",
@@ -1078,6 +1079,7 @@
     "warnings": {
       "bartlett_not_significant": "Der Test nach Bartlett ist nicht signifikant (p = {p} ≥ {alpha}); die Maße sind womöglich unkorreliert.",
       "singular": "Die Korrelationsmatrix ist singulär. Diese Maße sind linear abhängig: {groups}. Die Ergebnisse beruhen auf nach unten begrenzten Eigenwerten und Pseudoinversen. Schließe am besten aus jeder Gruppe ein Maß aus.",
+      "eigenvalue_near_floor": "Ein Eigenwert der Korrelationsmatrix ({smallest}) liegt nahe der Schwelle {floor}, unter der Eigenwerte als null gelten. MSA und Bartlett-Test hängen dann davon ab, wo diese Schwelle liegt, und können sich mit den Einheiten der Maße, ihrer Reihenfolge oder der Plattform ändern. Das gilt auch für die Maße, die der MSA-Filter entfernt.",
       "kmo_low": "Der KMO-Gesamtwert {overall} liegt unter {threshold}; eine Faktorenanalyse ist nicht zu empfehlen.",
       "small_sample": "{n} Beobachtungen für {measures} Maße; empfohlen sind mindestens 5 je Maß ({recommended}).",
       "not_identified": "{factors} Faktoren für {measures} Maße überschreiten die Ledermann-Grenze. Die Lösung ist nicht identifiziert und die Ladungen sind nicht eindeutig. Wähle weniger Faktoren.",

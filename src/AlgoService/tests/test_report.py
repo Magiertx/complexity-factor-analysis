@@ -41,7 +41,7 @@ def _report(client, dataset_id: str, **extra) -> str:
 
 
 def _report_of_the_log_dataset(client, **extra) -> str:
-    """The report of the 123 measures of the bundled log dataset: long tables, many eigenvalues."""
+    """The report of the bundled log dataset (125 measures after the MSA filter): long tables, many eigenvalues."""
     created = _post(client, kind="log", source="bundled", bundled_id="comfy-log-pdc-training-logs").json()["dataset_id"]
     r = client.post(f"/factor-analysis/datasets/{created}/export/report", json=extra)
     assert r.status_code == 200, r.text
@@ -129,6 +129,17 @@ def test_short_codes_name_the_measures_and_the_list_says_what_they_stand_for(cli
     assert "\\item CNC (Coefficient of network connectivity)" in text
     assert "\nCNC & " in text and "\nCoefficient of network connectivity & " not in text
     assert "Measure names & short codes of the papers" in text
+
+
+def test_a_singular_matrix_says_how_the_msa_was_computed(client):
+    text = _report_of_the_log_dataset(client)
+    assert "The correlation matrix is singular;" in text
+    assert (
+        "The MSA was computed from the pseudo-inverse of the correlation matrix, with eigenvalues below "
+        "$10^{-10}$ treated as zero."
+    ) in text
+    # A regular matrix says nothing of it.
+    assert "pseudo-inverse" not in _report(client, "comfy-paper-inductive-miner")
 
 
 def test_the_report_of_log_measures_writes_the_codes_as_the_paper_does():

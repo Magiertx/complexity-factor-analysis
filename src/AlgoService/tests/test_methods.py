@@ -117,6 +117,8 @@ def test_the_kaiser_criterion_in_german_with_an_oblique_rotation_and_the_filter_
         "Bartletts Test auf Sph\u00e4rizit\u00e4t~\\cite{bartlett1950} war nicht signifikant ($\\chi^2(91) = 120{,}0$, $p = 0{,}012$, $\\alpha = 0{,}01$)",
         "Kaiser-Meyer-Olkin-Ma\u00df der Stichprobeneignung insgesamt~\\cite{kaiser1974} betrug 0,50.",
         "Die Korrelationsmatrix ist singul\u00e4r",
+        "Der MSA wurde aus der Pseudoinversen der Korrelationsmatrix berechnet, wobei Eigenwerte unter $10^{-10}$ als null "
+        "behandelt wurden.",
         "Von den 15 Ma\u00dfen, die nach der Bereinigung blieben, gingen 14 in die Analyse ein (1 von Hand ausgeschlossen; der MSA-Filter war aus).",
         "Die Zahl der Faktoren folgte dem Kaiser-Kriterium~\\cite{kaiser1960} und betrug 2; die Parallelanalyse~\\cite{horn1965} schl\u00e4gt 3 vor "
         "(100 Simulationen, 95. Perzentil, Seed 20261012).",

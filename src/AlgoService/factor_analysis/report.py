@@ -294,7 +294,8 @@ def _validity_section(
     if bartlett.get("regularised"):
         out.append(
             "The correlation matrix is singular; eigenvalues near zero were clamped, so $\\chi^2$ reflects "
-            "the clamping more than the data."
+            "the clamping more than the data. The MSA was computed from the pseudo-inverse of the "
+            "correlation matrix, with eigenvalues below $10^{-10}$ treated as zero."
         )
     out.append("")
     kmo = result["kmo"]

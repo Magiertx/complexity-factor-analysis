@@ -679,8 +679,9 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
 
   // Show a stored interpretation of the analysis on screen without asking for a new one:
   // precomputed for a bundled dataset, or requested before. Never calls the model. Without a
-  // key only bundled datasets can have one. The factor count of the analysis lets the server
-  // look it up without running the analysis again.
+  // key only bundled datasets can have one. The server runs the analysis for the lookup too (a
+  // stored interpretation is served only for a result with the fingerprint it was made for); the
+  // fits are cached there, and the factor count of the analysis spares the criterion's choice.
   const lookupInterpretation =
     !!interpStatus && (interpStatus.available || (interpStatus.precomputed_only && dataset?.source === "bundled"));
   const analyzedFactors = analysis?.n_factors ?? null;
