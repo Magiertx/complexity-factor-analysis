@@ -693,7 +693,7 @@ measure named. The SVG keeps its text as text and is the
 same file for the same analysis; the PNG has 300 dpi.
 
 `POST /factor-analysis/datasets/{id}/export/zip` takes the same body plus `"language": "en" |
-"de"` (default `en`, the language of the stored interpretation), `"short_codes"` (default
+"de"` (default `en`, the language of the stored interpretation), `"model"` and `"effort"` (null, the default, is the server's default selection; the model and effort of the stored interpretation to include, which is looked up and never made, so any stored one can be named), `"short_codes"` (default
 `false`, for the report and the figures), `"order": "factor" | "dataset"` (the rows of the
 loadings heatmap, as of the figure), `"correlation_order": "factor" | "cluster" | "dataset"` (default
 `factor`: the order of the correlation map and of `correlations.csv`) and `"figure_language": "en" | "de"` (default `en`, as the
@@ -717,7 +717,7 @@ analysis. The errors of these exports are those of `analyze`.
 | `descriptives.csv` | `measure`, `n`, `mean`, `median`, `std`, `min`, `max` and `dropped` for every measure, as `descriptives` of the dataset. |
 | `inputs.csv` | Only for a computed dataset: one row per observation with `observation`, `input`, `miner`, `events`, `traces`, `variants`, `activities`, `places`, `transitions`, `arcs`, `read_s`, `discovery_s`, `discovery_run_s`, `measures_s` or `features_s`, and `error`. |
 | `stages.csv` | Only for a computed dataset: `observation`, `stage` (a measure or a feature group) and `seconds`. |
-| `interpretation.<language>.json` | Only if an interpretation of exactly these parameters is cached or precomputed in that language: the stored entry with its model, effort, prompt version and parameters, for the default model and effort. The export never asks for a new one. |
+| `interpretation.<language>.json` | Only if an interpretation of exactly these parameters is cached or precomputed in that language: the stored entry with its model, effort, prompt version and parameters, for the `model` and `effort` of the request (by default the server's). The export never asks for a new one. |
 
 `dataset.provenance` says how the dataset was made, as recorded when it was created: `kind`
 and `source`; for a bundled dataset `bundled` (`id`, `file` in `datasets/` and `copied_from`
@@ -978,18 +978,25 @@ as they are. Observation labels, dataset and file names and measure values are n
   analysis and only looks the parameters up.
 
 `POST /factor-analysis/datasets/{id}/interpret/variants` takes the same body (`model`,
-`effort` and `cached_only` are ignored) and answers `{"variants": [...]}` as above. It never calls
-Claude, so the UI can learn what is stored where `interpret` answers 204 or
-`interpretation_unavailable`.
+`effort` and `cached_only` are ignored, but a malformed `model` or `effort` is still a 422 of the
+validation) and answers `{"variants": [...]}` as above. It never calls Claude, so the UI can
+learn what is stored where `interpret` answers 204 or `interpretation_unavailable`. A variant is
+listed only if `interpret` with `cached_only` serves it: a precomputed file is matched by its
+file name (`<dataset>[.published].<language>.<model>.<effort>.json`) and must hold an entry made
+for this data, these parameters, the current prompt and that model and effort.
 
 Errors carry `detail` and `code`. Analysis errors come first, as for `analyze`. Then: 503
 `interpretation_unavailable` (no key), 422 `interpretation_choice_not_allowed` (a live call
 with a model or effort outside `models` and `efforts` of the status; `params` lists them), 422 `interpretation_too_large` (more than 150 used
 measures or 20 factors, a measure name longer than 120 characters, or a message over 80,000
 characters; `params` names the limits; checked before any limit counts), 429 `interpretation_rate_limited`
-(more than `INTERPRETATION_RATE_LIMIT`, default `10/hour`, live calls in this session) or
+(more than `INTERPRETATION_RATE_LIMIT`, default `10/hour`, live calls in this session; `params`
+has the `limit`), `interpretation_ip_rate_limited` (more than `INTERPRETATION_IP_RATE_LIMIT`,
+default `30/hour`, from this client address, whatever the session; `params` has the `limit`) or
 `interpretation_daily_cap` (more than `INTERPRETATION_DAILY_CAP`, default 200, live calls today
-over all sessions), 503 `interpretation_limits_unavailable` (the counters cannot be reached,
+over all sessions); interpretations and follow-up questions count together in all of these. The
+limits are checked in this order, and a request that one refuses has used up the counters of the
+limits before it. 503 `interpretation_limits_unavailable` (the counters cannot be reached,
 e.g. Redis is down; no call is made), 422 `interpretation_refused` (the model and its fallback declined, or the
 category is not retried on a fallback), 503 `interpretation_fallback_unavailable` (the model
 declined and the fallback could not run; a later try may succeed), 502
@@ -1012,14 +1019,28 @@ browser:
 ```
 
 ```json
-{ "answer": "Plain paragraphs and lists that start with a dash.",
+{ "answer": "Plain paragraphs and lists that start with a dash.", "signature": "9f2c...64 hex digits",
   "model": "claude-opus-5-5", "requested_model": "claude-opus-5-5", "effort": "medium" }
 ```
 
 - `messages` ends with the new question; roles alternate and start with `user`, so the count is
-  odd. At most 20 messages, a user message at most 2,000 characters, all contents together at
-  most 40,000 characters, none empty. Nothing is stored on the server, and neither question nor
+  odd. At most 20 messages, a user message at most 2,000 characters, an assistant message at
+  most 6,000, all contents together at most 40,000 characters, none empty. A message has the
+  keys `role`, `content` and, for an assistant message, `signature`, and no others: content blocks,
+  `cache_control`, other roles and extra keys are refused by the validation (422), and a `system`
+  role is `interpretation_chat_order`. Nothing is stored on the server, and neither question nor
   answer is logged (only lengths and codes).
+- **Signature.** The server keeps no conversation, so it signs each answer. `signature` is the
+  HMAC-SHA256 (hex) over the session id, the dataset id, the requested model, the effort, the
+  language, the position the answer has in the conversation (an answer to a conversation of n
+  messages has position n) and the SHA-256 of the answer text, with a key derived from the secret
+  of the session cookie (`SESSION_SECRET_KEY`) and a fixed context string. The client sends every
+  assistant message back with its `signature`; one without it, with a wrong one, with an altered
+  text, at another position, or from another session, dataset, language, model or effort is
+  refused with 422 `interpretation_chat_history_invalid`, so the model is never shown text the
+  server did not produce. An answer the model writes longer than 6,000 characters is cut at the
+  end of a line or sentence and ends with an ellipsis, so it can come back. Changing the secret
+  invalidates open conversations.
 - The server never takes analysis data from the client. It runs the analysis as `interpret` does,
   builds the same payload (measure names and definitions and aggregated results; never
   observation labels, file names or measure values) and looks up the stored interpretation of
@@ -1028,16 +1049,30 @@ browser:
   from these data, in the requested language; `model` is the model that wrote it, `requested_model`
   and `effort` are what was asked for.
 - Every question is one live call and counts like a live interpretation towards
-  `INTERPRETATION_RATE_LIMIT` and `INTERPRETATION_DAILY_CAP`. It has the time budget and the
-  output limit per effort of a live interpretation. The request limit of the endpoint is that
-  of `interpret`.
-- Errors, besides the analysis errors and those of `interpret` (503 `interpretation_unavailable`,
-  422 `interpretation_choice_not_allowed`, 422 `interpretation_too_large`, 429, 503
-  `interpretation_limits_unavailable`, 502/503/504 of the upstream call; all checked before a
-  limit counts where possible): 422 `interpretation_chat_count` (not 1 to 20 messages),
+  `INTERPRETATION_RATE_LIMIT`, `INTERPRETATION_IP_RATE_LIMIT` and `INTERPRETATION_DAILY_CAP`,
+  and besides towards `INTERPRETATION_CHAT_DAILY_CAP` (default 100 a day over all sessions), so
+  that questions cannot use up the interpretations: 429 `interpretation_chat_daily_cap`
+  ("interpretations still work"). It has the time budget of a live interpretation, and an output
+  limit of its own per effort (8,000 tokens at `low` and `medium`, 12,000 at `high`, 16,000 at
+  `xhigh` and `max`). The request limit of the endpoint is that of `interpret`.
+- **Order of the checks**, each before the next and all before any limit counts: (1) the
+  validation of the body (types, keys, 6,000 characters of content, 128 of signature; 422 with a
+  `detail` list); (2) the shape of the conversation (`interpretation_chat_count`,
+  `interpretation_chat_order`, `interpretation_chat_empty`,
+  `interpretation_chat_question_too_long`, `interpretation_chat_too_long`); (3) 503
+  `interpretation_unavailable` (no key); (4) 422 `interpretation_choice_not_allowed`; (5) the
+  signatures (`interpretation_chat_history_invalid`); (6) the analysis (its errors, as for
+  `analyze`); (7) 409 `interpretation_required`; (8) 422 `interpretation_too_large` and 504
+  `interpretation_timeout` (too little of the time budget left); (9) the limits (session, address,
+  questions of the day, day; 429, or 503 `interpretation_limits_unavailable`); (10) the call
+  (502/503/504 of the upstream).
+- Errors, besides the analysis errors and those of `interpret`: 422 `interpretation_chat_count`
+  (not 1 to 20 messages),
   `interpretation_chat_order` (roles do not alternate from `user` to `user`),
   `interpretation_chat_empty`, `interpretation_chat_question_too_long`,
-  `interpretation_chat_too_long` (over 40,000 characters in all); 409 `interpretation_required`
+  `interpretation_chat_too_long` (over 40,000 characters in all),
+  `interpretation_chat_history_invalid` (an assistant message without a valid signature, or over
+  6,000 characters); 409 `interpretation_required`
   (nothing is stored for these settings, language, model and effort; a question never starts an
   interpretation); 422 `interpretation_chat_refused` (the model and its fallback declined);
   502 `interpretation_chat_incomplete` (answer cut off) or `interpretation_failed` (empty or

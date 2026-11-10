@@ -176,7 +176,9 @@ MAX_ACTIVE_JOBS_PER_SESSION=3
 # --- Interpretation by Claude (optional), see "Interpretation by Claude" below ---
 # ANTHROPIC_API_KEY=
 # INTERPRETATION_RATE_LIMIT=10/hour
+# INTERPRETATION_IP_RATE_LIMIT=30/hour
 # INTERPRETATION_DAILY_CAP=200
+# INTERPRETATION_CHAT_DAILY_CAP=100
 # INTERPRETATION_MODELS=claude-opus-5-5,claude-sonnet-5-5
 # INTERPRETATION_EFFORTS=low,medium,high,xhigh
 
@@ -206,25 +208,76 @@ and for the published options ("Paper settings") of each bundled dataset.
   environment, never logs it and never returns it; the browser only learns whether a key is
   set and which model is configured. Rotate it in the Console if it leaks.
 - **Spending.** Set a monthly spending limit for the workspace or organisation in the Claude
-  Console; once it is reached, interpretations fail with an error until it is raised. On the server,
-  `INTERPRETATION_RATE_LIMIT` (default `10/hour` per session) and `INTERPRETATION_DAILY_CAP`
-  (default 200 per day over all sessions) bound the number of live calls; the counters live in
-  Redis. One call sends about 2,000 input tokens for the bundled model datasets and roughly
-  15,000 to 20,000 for the bundled log dataset (122 measures, 15 factors), and may use up to
-  16,000 output tokens including thinking (24,000 at `high`, 32,000 at `xhigh` and `max`;
-  `MAX_TOKENS_BY_EFFORT` in `interpretation/client.py`). Larger analyses are refused before any call: more
-  than 150 measures or 20 factors, measure names longer than 120 characters, or a message
-  over 80,000 characters (about 30,000 tokens). So one call costs at most about $0.45 at the
-  prices of Claude Opus 5.5 at medium effort (more at higher efforts), and the daily cap
-  bounds a day. Cached and precomputed
-  interpretations cost nothing.
+  Console; once it is reached, interpretations fail with an error until it is raised. On the
+  server, three limits count live calls, interpretations and follow-up questions together; the
+  counters live in Redis and a request that is refused by one limit uses up the counters of the
+  limits checked before it:
+  - `INTERPRETATION_RATE_LIMIT` (default `10/hour`) per session;
+  - `INTERPRETATION_IP_RATE_LIMIT` (default `30/hour`) per client address. Sessions are free (a
+    request without a cookie starts one), so the session limit alone bounds nothing; the address
+    is the one the request limiter uses (`rate_limit_key`), which follows `X-Forwarded-For` only
+    where uvicorn trusts it (`FORWARDED_ALLOW_IPS`, see above). Behind a proxy that is not
+    trusted, all visitors share one address and one counter;
+  - `INTERPRETATION_DAILY_CAP` (default 200 per day over all sessions) and, of those,
+    `INTERPRETATION_CHAT_DAILY_CAP` (default 100) for follow-up questions, so that questions
+    cannot use up the interpretations. Both always apply; the session and address limits are off
+    under pytest and with `RATE_LIMIT_DISABLED=1`.
+
+  Cached and precomputed interpretations cost nothing and do not count.
+
+  What a call costs. One call sends about 2,000 input tokens for the bundled model datasets and
+  roughly 15,000 to 20,000 for the bundled log dataset (122 measures, 15 factors). Larger
+  analyses are refused before any call: more than 150 measures or 20 factors, measure names longer
+  than 120 characters, or a message over 80,000 characters (about 30,000 tokens). Thinking counts
+  towards the output limit, which grows with the effort (`MAX_TOKENS_BY_EFFORT` in
+  `interpretation/client.py`: 16,000 tokens at `low` and `medium`, 24,000 at `high`, 32,000 at
+  `xhigh` and `max`). Measured on the API (Claude Opus 5.5, English, one call each; the cost
+  follows the thinking, so it varies between calls):
+
+  | Effort | 12 measures (model dataset) | 123 measures, 13 factors (2,112 logs) |
+  | --- | --- | --- |
+  | `low` | $0.030, 8 s | not measured |
+  | `medium` (default) | $0.034, 10 s | $0.17, 27 s |
+  | `high` | $0.043, 14 s | not measured |
+  | `xhigh` | $0.06, 18 to 37 s (once 60 s) | $0.24, 54 s (German: $0.35, 92 s) |
+  | `max` | $0.36, 150 s | not measured |
+
+  Claude Sonnet 5.5 at `medium`: $0.015 and 6 s on the model dataset, $0.08 and 16 s on the
+  log dataset.
+
+  A live call may take 170 s at most, the analysis before the call included (the frontend
+  gives up at 180 s). `xhigh` fits that budget on the bundled datasets, with margin. `max` does
+  not: it took 150 s already on the small dataset, and it costs six times as much as `xhigh`
+  there. So `max` is not in the default `INTERPRETATION_EFFORTS`; adding it means live calls
+  that run into the limit and fail after being paid for, on larger analyses.
+
+  One follow-up question sends the same context as the interpretation (up to about 30,000 tokens
+  for the largest analysis allowed) plus the conversation (at most 40,000 characters, about
+  12,000 tokens) and may use up to 8,000 output tokens (12,000 at `high`, 16,000 at `xhigh` and
+  `max`; `CHAT_MAX_TOKENS_BY_EFFORT` in `interpretation/chat.py`), since the answers are short.
+  Not measured on the API, so this is a bound, not a measurement: a question costs at most about
+  as much as the largest measured `xhigh` interpretation, about $0.40. Typically it costs a few
+  cents, since the context is cached after the first question.
+
+  What the caps bound per day, with the default lists and caps (efforts up to `xhigh`, so no
+  `max`), taking the largest measured call, about $0.35, for an interpretation and $0.40 for a
+  question: at most 200 calls a day, at most 100 of them questions, so about $75 (for example 100
+  interpretations and 100 questions; 200 interpretations are $70). At the default effort the
+  same 200 calls cost about $7 on the model datasets and about $34 on the log dataset. One
+  address alone can make 30 calls an hour, about $12 at the worst case, and reaches the daily
+  cap in about seven hours; many addresses reach it faster, which the daily cap is for. The
+  monthly limit in the Console is the final bound.
 - **Follow-up questions.** Under a shown interpretation the step offers a chat about the analysis.
-  Every question is one live call, counted in the same limits as an interpretation
-  (`INTERPRETATION_RATE_LIMIT`, `INTERPRETATION_DAILY_CAP`) and with the output budget of the
-  chosen effort. A call sends the analysis context, the stored interpretation and the conversation
-  so far (at most 20 messages and 40,000 characters, a question at most 2,000); the context is
-  marked for prompt caching, so the questions after the first one read it cheaply. Nothing is
-  stored, and no question or answer is logged. Without a key the chat is not offered.
+  Every question is one live call, counted in the same limits as an interpretation (session,
+  address, day) and, besides, in `INTERPRETATION_CHAT_DAILY_CAP`; it has the output budget of the
+  chosen effort listed above. A call sends the analysis context, the stored interpretation and the
+  conversation so far (at most 20 messages and 40,000 characters, a question at most 2,000 and an
+  answer at most 6,000); the context is marked for prompt caching, so the questions after the
+  first one read it cheaply. Nothing is stored, and no question or answer is logged. The browser
+  keeps the conversation and sends it back with every question, so the server signs every answer
+  (HMAC-SHA256 with a key derived from `SESSION_SECRET_KEY`) and refuses an answer it did not
+  write; changing `SESSION_SECRET_KEY` ends the open conversations. Without a key the chat is not
+  offered.
 - **Model.** `INTERPRETATION_MODEL` (default `claude-opus-5-5`) and `INTERPRETATION_EFFORT`
   (default `medium`) are the default selection. Visitors can choose another model and effort in
   the interpretation step: `INTERPRETATION_MODELS` (default `claude-opus-5-5,claude-sonnet-5-5`)
@@ -232,7 +285,9 @@ and for the published options ("Paper settings") of each bundled dataset.
   `low,medium,high,xhigh`) list what is offered; the default selection is added if missing
   (with a warning in the log), and a live call with anything else is refused with
   `interpretation_choice_not_allowed`. Higher efforts think longer, cost more and may run into
-  the 170 s limit of a live call; each effort has its own output limit. Stored
+  the 170 s limit of a live call (see the table above); each effort has its own output limit. A malformed
+  `INTERPRETATION_MODEL(S)` or `INTERPRETATION_EFFORT(S)` (anything but letters, digits, `.`, `_`
+  and `-`, at most 64 characters) stops the server at startup. Stored
   interpretations of any model and effort can always be shown. Requests opt into Anthropic's server-side fallback (`fallbacks: "default"`),
   so a request the model's safety classifiers decline is retried on the recommended fallback
   model; the footer of the result names the model that answered. Another model has to support
