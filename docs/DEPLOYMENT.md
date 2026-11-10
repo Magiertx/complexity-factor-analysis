@@ -214,7 +214,13 @@ Without Docker the backend can run as a single process, which is what the deskto
 
 - With no `REDIS_URL`, jobs found `pending` or `running` at startup are marked `failed` with the
   code `interrupted`, because the process that ran them is gone. Left alone they would count
-  towards `MAX_ACTIVE_JOBS_PER_SESSION` and `MAX_ACTIVE_STABILITY_JOBS` for good.
+  towards `MAX_ACTIVE_JOBS_PER_SESSION` and `MAX_ACTIVE_STABILITY_JOBS` for good. The same
+  happens when the server shuts down: the jobs are told to stop (`job_runner.request_stop()`), what
+  they still write is dropped, and the jobs that are not done are marked at the end of the
+  shutdown.
+- Celery kills a task after an hour, so a dataset that has been `computing` for 70 minutes counts as
+  dead and is failed, with its inputs deleted. With no `REDIS_URL` that rule is off: a job in the
+  process has no time limit, and one that died with the process is marked at the next start.
 - A malformed value of any of these stops the start, like the other settings.
 - Migrations: Docker runs `alembic upgrade head` in `entrypoint.sh`. A launcher without the
   `alembic` command calls `db_migrate.upgrade_to_head(url)` (in `src/AlgoService`), which works
@@ -456,6 +462,18 @@ and `-frontend` (the Celery worker runs the algoservice image):
 
 The workflow `compose-smoke.yml` has a `mode` input: `images` runs the same checks against the
 release compose file and the given tag instead of a build.
+
+### Source code of the copyleft packages
+
+The images contain PM4Py (AGPL-3.0-or-later), Levenshtein (GPL-2.0-or-later), certifi and tqdm
+(MPL-2.0), among others; the licence file of a package is in its `dist-info` directory in
+`site-packages` where the package ships one. The source offer for these four
+is the same as for the desktop builds: the `desktop.yml` workflow downloads the source
+distributions (sdists) of the copyleft packages at the exact versions of the bundles and attaches
+them to the GitHub release of the same tag, next to the binaries. The images install the same
+versions (`constraints.txt` pins both). `python scripts/build_desktop.py copyleft` lists them after
+a build; for another version, `pip download --no-binary :all: --no-deps <package>==<version>`
+fetches the sdist from PyPI.
 
 ### Pinned dependency versions
 

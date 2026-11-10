@@ -11,7 +11,8 @@ and runs from a checkout; the launcher is `src/desktop/desktop_app`.
 
 Take the archive for your system from the
 [releases](https://github.com/Magiertx/complexity-factor-analysis/releases). Nothing is
-installed; the program is a folder (about 300 MB unpacked, 150 MB to download).
+installed; the program is a folder (about 300 MB unpacked, 150 MB to download). The app is meant for a
+machine that one person uses: see "Security" for what that means.
 
 | System | File | Needs |
 |---|---|---|
@@ -56,9 +57,9 @@ app shows the precomputed interpretations only, and it makes no other network ca
 | Processes | frontend (Next.js), API, Celery worker, Postgres, Redis, ProM4Py | one Python process |
 | Pages | Next.js server | the static export (`npm run build:export`), served by the launcher |
 | Database | Postgres | SQLite file, WAL mode |
-| Jobs | Celery worker | in the process, at most `LOCAL_JOB_SLOTS` (2) at once; jobs that were running when the app ended are marked "interrupted" at the next start |
+| Jobs | Celery worker | in the process, at most `LOCAL_JOB_SLOTS` (2) at once, without a time limit (the Docker stack's Celery kills a task after an hour); jobs that are running when the app quits are stopped and marked "interrupted" (see "Port and single instance") |
 | Sessions | one per browser, 14 days | one for the installation (`SHARED_SESSION_ID`), kept for good |
-| Clean-up | idle datasets after 7 days, more than 30 datasets, runs on a full disk | none: the data are the user's own |
+| Clean-up | idle datasets after 7 days, more than 30 datasets, runs on a full disk, a dataset that has been computing for more than 70 minutes is failed | none of these: the data are the user's own, and a long job is not taken for a dead one (a job that died with the process is marked at the next start). Still applying: the 10 most recent uploads of single runs are kept, older scratch files are dropped |
 | ProM | ProM4Py container | not yet: everything that mines a log fails after 2 s with the "ProM unavailable" error |
 
 Without ProM the app runs fully offline with the bundled datasets, Petri nets (PNML), log
@@ -93,26 +94,34 @@ Starting it a second time while it runs opens the browser on the running app and
 |---|---|
 | `--headless` | No browser, no window; for CI and scripts. Ctrl+C (Ctrl+Break on Windows when started in a process group) or SIGTERM quits. |
 | `--port N` | Listen on port N, `0` for any free port. Neither remembered nor replaced by another port if it is taken. |
-| `--token-file PATH` | Write the access token of this start to PATH (owner only), for scripts; they send it as `Authorization: Bearer <token>` (see "Security"). Also written when a second start found a running app. |
+| `--token-file PATH` | Write the access token of this start to PATH, for scripts; they send it as `Authorization: Bearer <token>` (see "Security"). Mode 0600 where the system has modes; on Windows the file has the permissions of its folder (owner only if the app made that folder, see "Where it keeps its files"). Also written when a second start found a running app. |
 | `--port-file PATH` | Write the port to PATH once the server answers (also when a second start found a running app). |
 | `--data-dir PATH` | Keep data, settings and logs (`PATH/logs`) in PATH instead of the user's directories. |
 | `--frontend-dir PATH` | Serve another static export. |
 | `--separate-sessions` | A session per browser, as on a server, instead of the one shared session. For the end-to-end tests, whose specs compare sessions. |
-| `--rate-limits` | Switch the request rate limits on, as on a server. They are off by default (`RATE_LIMIT_DISABLED=1`): they count per address, and here every request comes from 127.0.0.1, so one user would share them with everything else (e.g. 60 new datasets an hour). The daily caps of Claude calls apply either way. |
+| `--rate-limits` | Switch the request rate limits on, as on a server. They are off by default (`RATE_LIMIT_DISABLED=1` is set): they count per address, and here every request comes from 127.0.0.1, so one user would share them with everything else (e.g. 60 new datasets an hour). The daily caps of Claude calls apply either way (they are counted in memory and start again at zero with every start of the app). |
 | `--access-log` | Log every request. |
 
 ## Where it keeps its files
 
-The directories are named after `APP_NAME` (`src/AlgoService/config.py`):
+The directories have a fixed name, `complexity-factor-analysis` (`DATA_DIR_NAME` in
+`desktop_app/paths.py`, the name of the repository), whatever the app is called on screen: the
+display name (`APP_NAME`) will change, and the data of an installation must stay where they are.
 
 | | Data | Settings | Log |
 |---|---|---|---|
-| Windows | `%LOCALAPPDATA%\<name>` | the same | `%LOCALAPPDATA%\<name>\Logs` |
-| macOS | `~/Library/Application Support/<name>` | the same | `~/Library/Logs/<name>` |
-| Linux | `~/.local/share/<name>` | `~/.config/<name>` | `~/.local/state/<name>/log` |
+| Windows | `%LOCALAPPDATA%\complexity-factor-analysis` | the same | `%LOCALAPPDATA%\complexity-factor-analysis\Logs` |
+| macOS | `~/Library/Application Support/complexity-factor-analysis` | the same | `~/Library/Logs/complexity-factor-analysis` |
+| Linux | `~/.local/share/complexity-factor-analysis` | `~/.config/complexity-factor-analysis` | `~/.local/state/complexity-factor-analysis/log` |
 
-On Linux the `XDG_*` variables move them. The directories are created for the owner only
-(mode 0700 where the system has modes).
+On Linux the `XDG_*` variables move them. Where the system has modes (macOS, Linux) the app creates
+the directories with mode 0700 and refuses to start on an existing one that group or others can
+write to (they could replace `identity.json` or `settings.env`); it says which `chmod` fixes
+that. On Windows a directory that the app creates gets an access list for the current user and
+SYSTEM only, without the permissions of its parent. A directory that already exists keeps its own
+(the same for one named with `--data-dir`): the secret files in it, which are written with mode
+0600 where that exists, have the permissions of that folder, which in the user's profile exclude
+other users.
 
 - Data: `app.db` (with `-wal` and `-shm`), `artifacts/` (datasets, runs, interpretations),
   `uploaded_logs/`, `identity.json` (the key that signs the session cookie and the id of the one
@@ -120,9 +129,12 @@ On Linux the `XDG_*` variables move them. The directories are created for the ow
 - Settings: `launcher.json` (the port), and `settings.env` if you create it.
 - Log: `app.log`, everything the process writes, rotated at 2 MB with five old files.
 
-Back up the data directory to keep datasets and runs. Without `identity.json` the next start
-makes a new session, and the datasets and runs of the old one are no longer shown (they stay on
-disk). A broken `identity.json` stops the start with a message instead.
+Back up the data directory to keep datasets and runs. If `identity.json` is lost, the next start
+takes the one session that `app.db` holds (it says so in the log, without the id) and the data
+stay visible. If the database holds several sessions it cannot tell which was the installation's:
+the app then makes a new session, the datasets and runs of the old ones are no longer shown (they
+stay on disk), and the log has a warning with the data folder. Restore `identity.json` from a
+backup to get them back. A broken `identity.json` stops the start with a message instead.
 
 ## settings.env
 
@@ -139,7 +151,11 @@ INTERPRETATION_MODEL=claude-opus-5-5
 ```
 
 The key is never logged; the log says whether interpretation is on and where the key came from.
-The limits on interpretations apply as on a server. `PRECOMPUTE_BUNDLED=1` computes the analyses
+Of the limits on live interpretations the per-session and per-address ones are off, like the other
+request limits (they count per address). The daily caps (`INTERPRETATION_DAILY_CAP`, and the one
+for follow-up questions) apply, but are counted in the memory of the process: they start again at
+zero with every start of the app, so they bound a day's spending only as long as the app is not
+restarted. `PRECOMPUTE_BUNDLED=1` computes the analyses
 of the bundled datasets after each start, as the Docker stack does; it is off, since it would
 take the analysis slots right when the app opens.
 
@@ -157,13 +173,14 @@ Before it imports the backend, which reads its settings at import time:
 | `FASTAPI_ROOT_PATH` | `/api` |
 | `PROM4PY_START_WAIT` | `2` unless set |
 | `APP_VERSION`, `APP_COMMIT` | from `build_info.json` of a packaged build, unless set; from a checkout git answers |
-| removed | `REDIS_URL`, `RATE_LIMIT_DISABLED`, `TESTING`, `TEST_DATABASE_URL` |
+| `RATE_LIMIT_DISABLED` | `1`, unless `--rate-limits` |
+| removed | `REDIS_URL`, `TESTING`, `TEST_DATABASE_URL` |
 
-The rate limits stay on. They count per client address, which is `127.0.0.1` for every request
-here, so they apply to the installation as a whole: for example 60 datasets an hour
-(`RATE_LIMIT_DATASETS`; opening a bundled dataset counts, also when the session's copy comes
-back) and 60 single runs an hour (`RATE_LIMIT_ANALYZE`). Past a limit the app answers 429 until
-the hour is over.
+The request rate limits are off: `RATE_LIMIT_DISABLED=1` is set (a value of the process
+environment is replaced, not kept). They count per client address, which is `127.0.0.1` for every
+request here, so they would apply to the installation as a whole: for example 60 datasets an hour
+(`RATE_LIMIT_DATASETS`) and 60 single runs an hour (`RATE_LIMIT_ANALYZE`). `--rate-limits` switches
+them on; past a limit the app then answers 429 until the hour is over.
 
 ## Security
 
@@ -172,28 +189,37 @@ requests to it, and every other program on the machine, also of another user, ca
 Therefore:
 
 - **Access.** Each start makes a random master token (`secrets.token_urlsafe(32)`), kept in
-  `instance.json` (owner only) and in the file of `--token-file`, and never logged (the log and
-  the console replace `token=...` by `token=***`). The files that hold a secret are written
-  through a new owner-only file made with `mkstemp` and moved into place. The master token is for
-  programs: `Authorization: Bearer <token>`, the instance check, and asking the running app for
-  a code (`/_desktop/login`, which a second start uses). A browser is let in with a
-  **one-time code**: the launcher opens `http://127.0.0.1:<port>/?token=<code>` (the command line
-  of the browser is visible to other users, so the token is never in it; a code is valid once and
-  for 5 minutes, "Open in browser" makes a new one). The page server redeems it for a fresh random
-  session value, sets that as the cookie `desktop_access_<port>` (`HttpOnly`, `SameSite=Strict`,
-  `Path=/`, no expiry: it goes with the browser session) and redirects to the same address
-  without the code. Every page, every file and every API request, the progress stream included,
-  needs that cookie or the bearer header. Without them the API answers 401 and a page shows a
-  short note to start the app from its icon. Only `/api/health` is open, and says only "ok" and
-  whether the database answers. All comparisons take constant time. A new start has new values,
-  so an old bookmark of `http://127.0.0.1:8765/` shows the note until the app is opened from its
-  icon or window. Browsers share cookies between ports of a host, so another local web server
-  could receive the cookie; it holds a value that opens nothing but this app, until it quits.
-
+  `instance.json` (mode 0600 where there is one) and in the file of `--token-file`, and never
+  logged (the log and the console replace `token=...` by `token=***`). The files that hold a secret
+  are written through a new file made with `mkstemp` and moved into place. The master token is for
+  programs: `Authorization: Bearer <token>`, and asking the running app for a login (`/_desktop/login`,
+  which a second start uses). A browser is let in with a **one-time code**. The code is not put on
+  the command line of the browser, where other users can read it (on Linux in
+  `/proc/<pid>/cmdline`, with `ps` on macOS): the app writes a small redirect page (mode 0600) into
+  its data directory and opens that file, `file:///.../open-<random>.html`, which forwards to
+  `http://127.0.0.1:<port>/?token=<code>`. A code is valid for 60 seconds and once, "Open in
+  browser" makes a new one, and the file is deleted when the code is redeemed, when it has expired
+  (at the next one), when the app quits, and at the next start if it was killed. The page server
+  redeems a code on `GET` only (a `HEAD` request does not use it up) for a fresh random session
+  value, sets that as the cookie `desktop_access_<port>` (`HttpOnly`, `SameSite=Strict`, `Path=/`,
+  no expiry: it goes with the browser session) and redirects to the same address without the code.
+  If several cookies of that name arrive (another server on 127.0.0.1 can set one for its own
+  path; cookies are not bound to a port), any valid one is enough. Every page, every file and
+  every API request, the progress stream included, needs that cookie or the bearer header. Without
+  them the API answers 401 and a page shows a short note to start the app from its icon. Only
+  `/api/health` is open, and says only "ok" and whether the database answers. All comparisons take
+  constant time. A new start has new values, so an old bookmark of `http://127.0.0.1:8765/` shows
+  the note until the app is opened from its icon or window.
+- **Meant for one user.** The app is built for a machine that one person uses. Browsers share
+  cookies between ports of a host, so another local web server of the same browser could receive
+  the cookie (it holds a value that opens nothing but this app, until it quits), and every other
+  program of every user of the machine can connect to the port, where only the token or the
+  cookie keeps it out. Do not run it on a shared machine, a terminal server or a multi-user
+  server; use the Docker stack with its own sessions there.
 - **Host check.** Only `Host: 127.0.0.1:<port>` and `localhost:<port>`; anything else gets 400.
   A foreign domain that resolves to 127.0.0.1 (DNS rebinding) arrives with its own name.
-- **Origin check.** POST, PUT, PATCH and DELETE need the app's own `Origin` (or `Referer` where
-  there is no `Origin`); others get 403. A form post or multipart upload of another site is a
+- **Origin check.** Every method but GET, HEAD and OPTIONS (an allowlist; the name's case does not
+  matter) needs the app's own `Origin` (or `Referer` where there is no `Origin`); others get 403. A form post or multipart upload of another site is a
   "simple" request that CORS does not stop. Requests without either header come from programs
   (the smoke test, curl), not from web pages, and pass.
 - **No CORS.** No `Access-Control-*` header leaves the app, and preflights of other origins get
@@ -211,16 +237,33 @@ the app takes a free port and remembers that one: the browser keeps the app's se
 language, tour) per origin, so a new port starts with fresh ones.
 
 The process that serves a data directory holds a lock on `instance.lock`, which the system
-releases when the process ends, also after a crash. A second start on the same data directory
-finds the lock taken, asks the port in `instance.json` with the token there whether the app
-answers, opens the browser on it and ends. Two processes on one SQLite file, each running its
-own jobs, cannot happen.
+releases when the process ends, also after a crash. `instance.json` (pid, port, token) is written
+once the server answers, and deleted by the next process that takes the lock, so a crash leaves
+nothing that a later start believes. A second start on the same data directory finds the lock
+taken and asks the port in `instance.json` whether the app answers: it sends a random nonce, and
+the app must answer with HMAC-SHA256(token, nonce), which only the holder of the token can. The
+token is not sent, so a program that listens on a stale port learns nothing, and what the answer
+says never replaces the port or token from the file. Then the second start asks that app for a
+login file, opens the browser on it and ends. While there is no answer (the app is still starting,
+or is quitting) the second start keeps trying to take the lock, for 90 seconds at most: when the
+other process is gone it starts in its place.
+
+At quit the server stops, and the jobs that are running are told to stop: from then on their
+status checks answer "aborted", so they end at their next check (within a second or two; a fit of
+the factor analysis checks before each step), and what a stopped job would still write is dropped.
+The jobs that are not done are marked "interrupted", which the pages show in the language of the
+interface. Then the app waits up to 10 seconds for the threads of the jobs, keeps the lock, and
+ends with `os._exit`, so the system releases the lock when the process is really gone and not
+before: two processes on one SQLite file, each running its own jobs, cannot happen, also not
+while a job is still computing at quit.
 
 ## Tests
 
 The launcher's tests are in `src/AlgoService/tests/desktop` and run with the backend's suite
 (`python -m pytest` in `src/AlgoService`). One of them starts `python -m desktop_app` as a
-process, starts it a second time on the same data directory, quits it and starts it again.
+process, starts it a second time on the same data directory, quits it and starts it again;
+another quits it while a stability job computes, and checks that the instance lock is not free
+until the process is gone and that the job ends as "interrupted".
 
 Against the running app, from the root of the repository, with the port from a file:
 
@@ -255,10 +298,11 @@ python scripts/build_desktop.py all     # frontend, bundle, pack; output in buil
 | Step | Does |
 |---|---|
 | `frontend` | `npm run build:export`, and `src/frontend/npm-licenses.txt` with the licences of the npm packages in the pages |
-| `bundle` | writes `build/desktop/stage` (`build_info.json` with `APP_VERSION` from `version.py` and `APP_COMMIT` from git, `LICENSE`, `THIRD-PARTY-LICENSES.txt` from `pip-licenses` and the npm licences), then runs PyInstaller on `src/desktop/desktop.spec` |
+| `bundle` | writes `build/desktop/stage` (`build_info.json` with `APP_VERSION` from `version.py` and `APP_COMMIT` from git, `LICENSE`, a first `THIRD-PARTY-LICENSES.txt`), runs PyInstaller on `src/desktop/desktop.spec`, and then writes the final `THIRD-PARTY-LICENSES.txt` (into the stage and into the bundle) from what PyInstaller really bundled, see "Licences" |
 | `pack` | Windows: `.zip`; macOS: `.dmg` of `<name>.app` (`hdiutil`); Linux: `.tar.gz` |
 | `verify-macos` | no binary of the bundle needs a newer macOS than the stated minimum |
 | `exe` | prints the program inside the bundle (for the CI) |
+| `copyleft` | prints `name==version` of the bundled packages under a copyleft licence (for the release job) |
 
 A tag build checks that the tag names the version of `version.py` (`v1.0.0` for `1.0.0`). On
 Windows a checkout in a deep directory exceeds the 260 characters of a path; set `CFA_BUILD_DIR`
@@ -318,7 +362,21 @@ image still installs cvxopt.
 
 ### Licences
 
-The tool is MIT licensed. PM4Py (AGPL-3.0-or-later) and Levenshtein (GPL-2.0-or-later) are part of
-the bundle, so a build is a combined work that is also offered under their terms.
-`THIRD-PARTY-LICENSES.txt` lists every package with its licence text, names where the source of
-the tool and of PM4Py is, and carries the licences of the npm packages in the pages.
+The tool is MIT licensed. PM4Py (AGPL-3.0-or-later), Levenshtein (GPL-2.0-or-later), certifi and
+tqdm (MPL-2.0) are part of the bundle; the ComFy sources under `src/AlgoService/vendored` are MIT
+licensed (Patrizia Schalk; Pati-nets).
+
+`THIRD-PARTY-LICENSES.txt` is made after PyInstaller has run, from its table of contents
+(`work/desktop/Analysis-00.toc`): every installed distribution that has code, a compiled library
+or a data file in the bundle is listed with its licence text, and nothing that is merely installed
+for building or testing (the metadata that the spec copies for every package does not count).
+The file names the copyleft packages at the top, with their versions and where the source is, has
+the MIT notices of the vendored ComFy code (`vendored/comfy/LICENSE`,
+`vendored/comfy_log/LICENSE`), and carries the licences of the npm packages in the pages. The
+bundle and the stage hold the same file.
+
+**Source code.** The tag build of `desktop.yml` lists the copyleft packages of each bundle
+(`build_desktop.py copyleft`, names and exact versions), merges the three lists, downloads their
+source distributions with `pip download --no-binary :all: --no-deps` and attaches them to the
+release next to the binaries. The same applies to the Docker images, which contain the same
+packages: see "Source code of the copyleft packages" in [`DEPLOYMENT.md`](DEPLOYMENT.md).
