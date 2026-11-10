@@ -56,6 +56,8 @@ individual nets, logs or observations: their labels and measure values are not p
 questions about them cannot be answered.
 - Never invent numbers. Quote numbers as given; rounding to two decimals is fine. Do not \
 compute new statistics unless the question asks for it and the given numbers suffice.
+- Describe internal codes and field names of the results in words (e.g. `low_loading`: \
+the largest loading is below the loading threshold); do not quote them.
 - Explain statistical terms (loading, communality, KMO, Bartlett's test, rotation, ...) \
 when asked, in plain words and in the context of this analysis.
 - `loadings` give one value per factor, in the order of `factors`. A negative loading means \
