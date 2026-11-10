@@ -222,6 +222,20 @@ The images have to be public for this to work without a login. GitHub makes new 
 private, and the API cannot change that, so the owner sets it once per package (`-prom4py`,
 `-algoservice`, `-frontend`) under Packages, Package settings, Change visibility.
 
+### Desktop app (without Docker)
+
+The tool also runs as one local Python process, which serves the API and the pages on
+`127.0.0.1` and opens the browser: SQLite instead of Postgres, jobs in the process, one session
+for the installation, no ProM yet. Packaged builds are not available yet; from a checkout:
+
+```bash
+cd src/frontend && npm ci && npm run build:export
+cd ../desktop && python -m desktop_app
+```
+
+See [`docs/DESKTOP.md`](docs/DESKTOP.md) for the options, where it keeps its data, the
+`settings.env` for an API key, and its security checks.
+
 ### Troubleshooting
 
 - `unauthorized` when pulling: the images are still private, or the tag does not exist (see the
@@ -344,6 +358,9 @@ times; a failed step makes it exit with 1.
 python scripts/smoke.py --base-url http://localhost:3000
 ```
 
+Against the desktop app, which has no ProM: `--port-file <file> --no-prom` (see
+[`docs/DESKTOP.md`](docs/DESKTOP.md#tests)).
+
 ## Operating it
 
 All of this is set in `docker-compose.yml`; reverse proxy, TLS, volumes and backups are in
@@ -375,7 +392,7 @@ All of this is set in `docker-compose.yml`; reverse proxy, TLS, volumes and back
 ## Project structure
 
 ```
-├── docs/                      # architecture, API, deployment
+├── docs/                      # architecture, API, deployment, desktop app
 ├── scripts/smoke.py           # smoke test of a running stack
 ├── docker-compose.yml
 └── src/
@@ -389,6 +406,7 @@ All of this is set in `docker-compose.yml`; reverse proxy, TLS, volumes and back
     │   ├── vendored/comfy_log/ #  ComFy for log measures (constants), MIT
     │   └── tests/
     ├── prom4py/               # Java ProM bridge
+    ├── desktop/               # desktop app: the tool as one local process
     └── frontend/              # Next.js frontend
 ```
 

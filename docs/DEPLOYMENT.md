@@ -197,9 +197,9 @@ MAX_ACTIVE_JOBS_PER_SESSION=3
 
 ### Running as one local process (desktop)
 
-Without Docker the backend can run as a single process, which is what the desktop app does. None
-of this is in `docker-compose.yml`; with default settings the Docker deployment behaves as
-described above.
+Without Docker the backend can run as a single process, which is what the desktop app does
+([`DESKTOP.md`](DESKTOP.md); its launcher sets all of this). None of this is in
+`docker-compose.yml`; with default settings the Docker deployment behaves as described above.
 
 | Setting | Default | Meaning |
 |---|---|---|
