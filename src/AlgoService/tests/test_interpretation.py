@@ -150,7 +150,7 @@ def _interpret(client, dataset_id: str, **body):
 def test_status_without_key(client, monkeypatch, no_precomputed):
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     assert client.get("/factor-analysis/interpretation/status").json() == {
-        "available": False, "model": None, "effort": "medium", "precomputed_only": False,
+        "available": False, "model": None, "effort": "medium", "precomputed_only": False, "chat": False,
         "models": ["claude-opus-5-5", "claude-sonnet-5-5"], "efforts": ["low", "medium", "high", "xhigh"],
     }
     no_precomputed.mkdir()
@@ -161,7 +161,7 @@ def test_status_without_key(client, monkeypatch, no_precomputed):
 def test_status_with_key(client, claude):
     body = client.get("/factor-analysis/interpretation/status").json()
     assert body == {
-        "available": True, "model": "claude-opus-5-5", "effort": "medium", "precomputed_only": False,
+        "available": True, "model": "claude-opus-5-5", "effort": "medium", "precomputed_only": False, "chat": True,
         "models": ["claude-opus-5-5", "claude-sonnet-5-5"], "efforts": ["low", "medium", "high", "xhigh"],
     }
     assert KEY not in json.dumps(body)

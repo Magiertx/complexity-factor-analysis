@@ -12,12 +12,12 @@ from typing import Any, AsyncIterator, Literal
 from fastapi import APIRouter, Depends, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, Response
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from config import get_session_id, limiter, logger
 from env_config import rate_limit
 from factor_analysis.core import AnalysisError
-from interpretation import client, quota, store
+from interpretation import chat, client, quota, store
 from interpretation.client import InterpretationError
 from interpretation.payload import build_payload, data_hash, effective_params
 from interpretation.prompt import PROMPT_VERSION
@@ -54,6 +54,17 @@ class InterpretRequest(AnalyzeRequest):
     #: take any, since they cost nothing.
     model: str | None = Field(default=None, pattern=client.CHOICE_RE.pattern)
     effort: str | None = Field(default=None, pattern=client.CHOICE_RE.pattern)
+
+
+class ChatMessage(BaseModel):
+    #: Checked by ``chat.check_messages``, so a mistake gets a code the UI can say.
+    role: str
+    content: str
+
+
+class ChatRequest(InterpretRequest):
+    #: The conversation so far, kept by the browser, ending with the new question.
+    messages: list[ChatMessage] = Field(default_factory=list)
 
 
 def _error(e: InterpretationError) -> JSONResponse:
@@ -93,6 +104,7 @@ def interpretation_status() -> dict[str, Any]:
         "models": list(client.allowed_models()),
         "efforts": list(client.allowed_efforts()),
         "precomputed_only": not available and store.has_precomputed(),
+        "chat": available,
     }
 
 
@@ -243,3 +255,58 @@ async def interpret_dataset(
     except InterpretationError as e:
         return _error(e)
     return _response(entry, cached=False, precomputed=False, variants=await variants())
+
+
+@router.post("/datasets/{dataset_id}/interpret/chat")
+@limiter.limit(rate_limit("fa_analyze", "120/minute"))
+async def interpretation_chat(
+    request: Request,
+    dataset_id: str,
+    body: ChatRequest,
+    session_id: str = Depends(get_session_id),
+) -> Any:
+    """Answer a follow-up question about the stored interpretation of this analysis, language,
+    model and effort. The server rebuilds the context itself; every question is one live call
+    and counts like a live interpretation. Nothing is stored."""
+    started = time.monotonic()
+    messages = [m.model_dump() for m in body.messages]
+    try:
+        chat.check_messages(messages)
+    except InterpretationError as e:
+        return _error(e)
+    api_key = client.api_key()
+    if api_key is None:
+        return _error(client.unavailable())
+    model = client.MODEL if body.model is None else body.model
+    effort = client.EFFORT if body.effort is None else body.effort
+    try:
+        client.check_choice(model, effort)
+    except InterpretationError as e:
+        return _error(e)
+
+    prepared = await _prepare(dataset_id, session_id, body, lookup_only=False)
+    if isinstance(prepared, JSONResponse):
+        return prepared
+    stored = await run_in_threadpool(
+        store.lookup, session_id, prepared.meta, prepared.digest, prepared.effective, body.language, model, effort
+    )
+    if not stored:
+        return _error(chat.interpretation_required())
+    entry, _ = stored
+
+    selection = prepared.selection
+    dropped = [*(prepared.meta.get("dropped") or []), *(selection.dropped if selection else [])]
+    payload = build_payload(prepared.kind, prepared.result, prepared.params, dropped)
+    try:
+        client.check_size(payload, body.language)
+        time_left = client.TIMEOUT_S - (time.monotonic() - started)
+        if time_left < client.MIN_CALL_S:
+            raise client.timed_out()
+        await run_in_threadpool(quota.claim, session_id)
+        answer = await chat.ask(
+            payload, entry["interpretation"], messages, body.language,
+            api_key, timeout=time_left, model=model, effort=effort,
+        )
+    except InterpretationError as e:
+        return _error(e)
+    return {"answer": answer.text, "model": answer.model, "requested_model": model, "effort": effort}
