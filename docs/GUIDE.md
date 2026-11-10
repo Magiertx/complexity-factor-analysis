@@ -137,6 +137,12 @@ log is among the ten newest uploads of the session; the page says when it is not
   settings and the paper settings, at several efforts (`scripts/precompute_interpretations.py`).
   Without a key, the selects offer only what is stored for the settings; if nothing is stored,
   the list of steps says that it is not available here and the loadings are the last step.
+  Under a shown interpretation, **Ask about this analysis** takes follow-up questions (it needs
+  the key as well). Enter sends, Shift+Enter starts a new line; the conversation stays in the
+  browser and starts again when the settings, the language, the model or the effort change, or
+  with Clear. The answers use only the aggregated results and the interpretation, never the data
+  of single logs or nets, and can contain errors: check them against the tables. Each question
+  is one request and counts towards the same limits as an interpretation.
 
 ## Compare miners
 

@@ -122,7 +122,8 @@ Schalk do it, but interactively in the browser.
   day, and caches every answer. Without a key the step is marked as unavailable, unless an
   interpretation was precomputed for the settings: the repository holds them for the bundled
   datasets with the default and the paper settings, at several efforts (`scripts/precompute_interpretations.py`),
-  and the step offers those. Details in [`docs/API.md`](docs/API.md#interpretation-by-claude)
+  and the step offers those. With a key, follow-up questions about a shown interpretation can be
+  asked in a small chat; each question is one live call. Details in [`docs/API.md`](docs/API.md#interpretation-by-claude)
   and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#interpretation-by-claude).
 - **Single-log inspection.** "Inspect a single log" (a log, the miners and measures, the run, in
   three sections) runs the chosen miners on one log and shows the measures next to the rendered

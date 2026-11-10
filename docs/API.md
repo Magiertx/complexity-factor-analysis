@@ -129,6 +129,7 @@ Details in [Factor analysis](#factor-analysis) below.
 | GET | `/factor-analysis/interpretation/status` | Whether factors can be interpreted by Claude, with which model and effort by default, and which are offered. |
 | POST | `/factor-analysis/datasets/{id}/interpret` | Names and short interpretations of the factors by Claude (optional, needs an API key on the server). |
 | POST | `/factor-analysis/datasets/{id}/interpret/variants` | Which models and efforts an interpretation of this analysis is stored for; never calls Claude. |
+| POST | `/factor-analysis/datasets/{id}/interpret/chat` | A follow-up question about the stored interpretation of this analysis (needs an API key; one live call per question). |
 
 ### Job lifecycle
 
@@ -927,10 +928,11 @@ the bundled datasets are served (see below).
 
 `GET /factor-analysis/interpretation/status` answers
 `{"available": bool, "model": str | null, "effort": str, "models": [str], "efforts": [str],
-"precomputed_only": bool}`: `available` when a key is configured, `model` the default model id
+"precomputed_only": bool, "chat": bool}`: `available` when a key is configured, `model` the default model id
 (null without a key), `effort` the default effort, `models` and `efforts` what a live call may
 use (`INTERPRETATION_MODELS`, `INTERPRETATION_EFFORTS`; the defaults are always among them),
-`precomputed_only` when there is no key but precomputed interpretations exist.
+`precomputed_only` when there is no key but precomputed interpretations exist, `chat` when
+follow-up questions are possible (the same as `available`).
 
 `POST /factor-analysis/datasets/{id}/interpret` takes the body of `analyze` plus
 `"language": "en" | "de"` (default `en`), `"cached_only": bool` (default `false`) and
@@ -996,6 +998,50 @@ declined and the fallback could not run; a later try may succeed), 502
 limit), 503 `interpretation_upstream_unavailable` or `interpretation_unreachable`, 504
 `interpretation_timeout`. Cache hits and precomputed answers do not count towards the two
 limits.
+
+#### Follow-up questions
+
+`POST /factor-analysis/datasets/{id}/interpret/chat` answers a question about an interpretation
+that is already stored. The body is the one of `interpret` (the settings of the analysis,
+`language`, `model`, `effort`; `cached_only` is ignored) plus the conversation, kept by the
+browser:
+
+```json
+{ "language": "en", "model": "claude-opus-5-5", "effort": "medium",
+  "messages": [ { "role": "user", "content": "Why does Size load on factor 1?" } ] }
+```
+
+```json
+{ "answer": "Plain paragraphs and lists that start with a dash.",
+  "model": "claude-opus-5-5", "requested_model": "claude-opus-5-5", "effort": "medium" }
+```
+
+- `messages` ends with the new question; roles alternate and start with `user`, so the count is
+  odd. At most 20 messages, a user message at most 2,000 characters, all contents together at
+  most 40,000 characters, none empty. Nothing is stored on the server, and neither question nor
+  answer is logged (only lengths and codes).
+- The server never takes analysis data from the client. It runs the analysis as `interpret` does,
+  builds the same payload (measure names and definitions and aggregated results; never
+  observation labels, file names or measure values) and looks up the stored interpretation of
+  exactly this analysis, language, model and effort. Context and interpretation go first, as a
+  block marked for prompt caching, then the messages. The answer is free text, answered only
+  from these data, in the requested language; `model` is the model that wrote it, `requested_model`
+  and `effort` are what was asked for.
+- Every question is one live call and counts like a live interpretation towards
+  `INTERPRETATION_RATE_LIMIT` and `INTERPRETATION_DAILY_CAP`. It has the time budget and the
+  output limit per effort of a live interpretation. The request limit of the endpoint is that
+  of `interpret`.
+- Errors, besides the analysis errors and those of `interpret` (503 `interpretation_unavailable`,
+  422 `interpretation_choice_not_allowed`, 422 `interpretation_too_large`, 429, 503
+  `interpretation_limits_unavailable`, 502/503/504 of the upstream call; all checked before a
+  limit counts where possible): 422 `interpretation_chat_count` (not 1 to 20 messages),
+  `interpretation_chat_order` (roles do not alternate from `user` to `user`),
+  `interpretation_chat_empty`, `interpretation_chat_question_too_long`,
+  `interpretation_chat_too_long` (over 40,000 characters in all); 409 `interpretation_required`
+  (nothing is stored for these settings, language, model and effort; a question never starts an
+  interpretation); 422 `interpretation_chat_refused` (the model and its fallback declined);
+  502 `interpretation_chat_incomplete` (answer cut off) or `interpretation_failed` (empty or
+  unusable answer).
 
 ### Example
 

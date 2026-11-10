@@ -218,6 +218,13 @@ and for the published options ("Paper settings") of each bundled dataset.
   prices of Claude Opus 5.5 at medium effort (more at higher efforts), and the daily cap
   bounds a day. Cached and precomputed
   interpretations cost nothing.
+- **Follow-up questions.** Under a shown interpretation the step offers a chat about the analysis.
+  Every question is one live call, counted in the same limits as an interpretation
+  (`INTERPRETATION_RATE_LIMIT`, `INTERPRETATION_DAILY_CAP`) and with the output budget of the
+  chosen effort. A call sends the analysis context, the stored interpretation and the conversation
+  so far (at most 20 messages and 40,000 characters, a question at most 2,000); the context is
+  marked for prompt caching, so the questions after the first one read it cheaply. Nothing is
+  stored, and no question or answer is logged. Without a key the chat is not offered.
 - **Model.** `INTERPRETATION_MODEL` (default `claude-opus-5-5`) and `INTERPRETATION_EFFORT`
   (default `medium`) are the default selection. Visitors can choose another model and effort in
   the interpretation step: `INTERPRETATION_MODELS` (default `claude-opus-5-5,claude-sonnet-5-5`)
