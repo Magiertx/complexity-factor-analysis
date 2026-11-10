@@ -213,3 +213,32 @@ def test_build_info(tmp_path, monkeypatch):
     path.write_text("{")
     with pytest.raises(RuntimeError, match="build_info.json"):
         resources.build_info()
+
+
+def test_private_files_are_written_through_a_fresh_owner_only_file(tmp_path):
+    """No fixed ``.tmp`` name a planted file or link could sit on; no moment where others can read."""
+    import os
+
+    from desktop_app.state import write_private_json, write_private_text
+
+    target = tmp_path / "instance.json"
+    secret_target = tmp_path / "elsewhere"
+    secret_target.write_text("keep")
+    planted = tmp_path / "instance.json.tmp"
+    try:
+        planted.symlink_to(secret_target)
+    except (OSError, NotImplementedError):  # no symlinks for this user (Windows)
+        planted.write_text("planted")
+
+    write_private_json(target, {"token": "t"})
+    write_private_text(tmp_path / "token", "abc")
+
+    assert target.read_text().count('"token": "t"') == 1
+    assert (tmp_path / "token").read_text() == "abc"
+    assert secret_target.read_text() == "keep"  # the planted link was not written through
+    assert not [p for p in tmp_path.iterdir() if p.name.endswith(".tmp") and p != planted]  # nothing left over
+    if os.name != "nt":
+        assert target.stat().st_mode & 0o077 == 0 and (tmp_path / "token").stat().st_mode & 0o077 == 0
+
+    write_private_text(target, "second")  # replaces an existing file
+    assert target.read_text() == "second"

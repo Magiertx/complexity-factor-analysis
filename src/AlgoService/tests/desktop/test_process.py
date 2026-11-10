@@ -99,10 +99,15 @@ def test_start_hand_over_quit_and_restart(tmp_path, export_dir):
         assert _get(port, "/api/factor-analysis/datasets").status == 401
         assert _get(port, "/", HTML).status == 401
         auth = {"Authorization": f"Bearer {token}"}
+        code = json.loads(_get(port, "/_desktop/login", {"X-Desktop-Instance": token}).body)["code"]
         assert _get(port, "/api/factor-analysis/datasets", auth).status == 200
-        traded = _get(port, f"/?token={token}", HTML)
+        assert _get(port, f"/?token={token}", HTML).status == 401  # the master token is no code
+        traded = _get(port, f"/?token={code}", HTML)
         assert traded.status == 303 and traded.getheader("location") == "/"
-        assert token in traded.getheader("set-cookie")
+        cookie = traded.getheader("set-cookie")
+        assert token not in cookie and code not in cookie
+        assert _get(port, "/api/factor-analysis/datasets", {"Cookie": cookie.split(";")[0]}).status == 200
+        assert _get(port, f"/?token={code}", HTML).status == 401  # used up
 
         # The first start made the identity; the page brings the cookie of its one session.
         identity = json.loads((data / "identity.json").read_text())

@@ -159,6 +159,7 @@ def test_the_hand_over_opens_the_address_with_the_token(tmp_path, export_dir, mo
     """A second start shows the running app in the browser: with the key of that start, which it
     reads from instance.json, and writes it where a script asks for it."""
     import argparse
+    import http.client
     from types import SimpleNamespace
 
     from desktop_app import main
@@ -178,7 +179,17 @@ def test_the_hand_over_opens_the_address_with_the_token(tmp_path, export_dir, mo
         instance.write_info(paths.instance, port=port, token=token)
         args = argparse.Namespace(headless=False, port_file=tmp_path / "port", token_file=tmp_path / "token")
         assert main._hand_over(args, "App", paths) == 0
+
+        # The address has a one-time code of the running app (its command line is visible to other
+        # users), not the token, and the code works.
+        assert len(opened) == 1
+        code = opened[0].split("?token=", 1)[1]
+        assert opened[0] == f"http://127.0.0.1:{port}/?token={code}" and code != token and token not in opened[0]
+        connection = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+        connection.request("GET", f"/?token={code}")
+        assert connection.getresponse().status == 303
+        connection.close()
+        assert instance.request_login_code(port, "wrong") is None
     finally:
         server.stop()
-    assert opened == [f"http://127.0.0.1:{port}/?token={token}"]
     assert (tmp_path / "token").read_text().strip() == token

@@ -76,26 +76,20 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
 def write_port_file(path: Path, port: int) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(f"{port}\n", encoding="utf-8")
-    os.replace(tmp, path)
+    state.write_private_text(path, f"{port}\n")
 
 
 def write_token_file(path: Path, token: str) -> None:
-    """The token, in a file only the owner can read where the system has modes."""
+    """The master token, in a file only the owner can read where the system has modes."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(path.name + ".tmp")
-    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as f:
-        f.write(token)
-    os.replace(tmp, path)
+    state.write_private_text(path, token)
 
 
-def access_url(port: int, token: str) -> str:
-    """The address that opens the app: the page server trades the token for a cookie and
+def access_url(port: int, code: str) -> str:
+    """The address that opens the app: the page server redeems the one-time ``code`` for a cookie and
     redirects to the same address without it."""
-    return f"http://{instance.HOST}:{port}/?token={token}"
+    return f"http://{instance.HOST}:{port}/?token={code}"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -158,7 +152,10 @@ def _hand_over(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -
     if args.token_file:
         write_token_file(args.token_file, running["token"])
     if not args.headless:
-        webbrowser.open(access_url(running["port"], running["token"]), new=2)  # not in a thread: this process ends right after
+        # A one-time code from the running instance, not its token: the command line of the browser
+        # is visible to other users. Without one the page says to open the app from its window.
+        code = instance.request_login_code(running["port"], running["token"])
+        webbrowser.open(access_url(running["port"], code) if code else url, new=2)  # not in a thread: this process ends right after
     return 0
 
 
@@ -223,10 +220,11 @@ def _serve(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> in
 
         import srv_main
 
-        from .app import Shutdown, build_app
+        from .app import Access, Shutdown, build_app
         from .server import BackgroundServer
 
         token = secrets.token_urlsafe(32)
+        access = Access(token)
         shutdown = Shutdown()
         app = build_app(
             srv_main.app,
@@ -235,6 +233,7 @@ def _serve(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> in
             token=token,
             instance={"pid": os.getpid(), "port": port, "app": name},
             shutdown=shutdown,
+            access=access,
         )
         server = BackgroundServer(app, sock, access_log=args.access_log, on_stop=shutdown.request)
     except BaseException:
@@ -257,12 +256,16 @@ def _serve(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> in
         if args.port_file:  # last: scripts wait for it
             write_port_file(args.port_file, port)
         url = f"http://{instance.HOST}:{port}/"
-        open_url = access_url(port, token)  # never logged or shown
+
+        def open_url() -> str:
+            """A new one-time code for each opening; the address is never logged or shown."""
+            return access_url(port, access.new_code())
+
         logger.info("%s is running at %s", name, url)
 
         shown = False
         if not args.headless:
-            ui.open_browser(open_url)
+            ui.open_browser(open_url())
             shown = ui.run_window(
                 name,
                 url,

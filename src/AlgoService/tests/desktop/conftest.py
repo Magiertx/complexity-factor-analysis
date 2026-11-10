@@ -19,12 +19,20 @@ def export_dir(tmp_path) -> Path:
 
 
 @pytest.fixture
-def desktop_app(export_dir):
+def access():
+    """What opens the app: the master token, the one-time codes and the sessions."""
+    from desktop_app.app import Access
+
+    return Access(TOKEN)
+
+
+@pytest.fixture
+def desktop_app(export_dir, access):
     """The desktop app around the backend's app, for a server on :data:`PORT`."""
     from desktop_app.app import build_app
     from srv_main import app as api
 
-    return build_app(api, export_dir, port=PORT, token=TOKEN, instance=INSTANCE)
+    return build_app(api, export_dir, port=PORT, token=TOKEN, instance=INSTANCE, access=access)
 
 
 @pytest.fixture

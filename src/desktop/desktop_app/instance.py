@@ -23,7 +23,7 @@ import time
 from pathlib import Path
 from typing import IO, Any
 
-from .app import INSTANCE_HEADER, INSTANCE_PATH
+from .app import INSTANCE_HEADER, INSTANCE_PATH, LOGIN_PATH
 from .state import write_private_json
 
 logger = logging.getLogger("desktop")
@@ -161,6 +161,24 @@ def probe(port: int, token: str, timeout: float = 2.0) -> dict[str, Any] | None:
         answer = json.loads(body)
         return answer if isinstance(answer, dict) else None
     except (OSError, ValueError, http.client.HTTPException):
+        return None
+    finally:
+        connection.close()
+
+
+def request_login_code(port: int, token: str, timeout: float = 5.0) -> str | None:
+    """A one-time code for the browser from the instance on ``port``, which only the master
+    ``token`` may ask for; ``None`` if it does not give one."""
+    connection = http.client.HTTPConnection(HOST, port, timeout=timeout)
+    try:
+        connection.request("GET", LOGIN_PATH, headers={INSTANCE_HEADER.decode(): token})
+        response = connection.getresponse()
+        body = response.read()
+        if response.status != 200:
+            return None
+        code = json.loads(body).get("code")
+        return code if isinstance(code, str) and code else None
+    except (OSError, ValueError, AttributeError, http.client.HTTPException):
         return None
     finally:
         connection.close()

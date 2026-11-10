@@ -50,14 +50,14 @@ def run_window(
     name: str,
     url: str,
     *,
-    open_url: str | None = None,
+    open_url: Callable[[], str] | None = None,
     data_dir: Path,
     log_file: Path,
     should_close: Callable[[], bool],
     quit_app: Callable[[], None],
 ) -> bool:
-    """Show the status window, which displays ``url`` and whose "Open in browser" opens
-    ``open_url`` (the address with the access token, not displayed) where given, until Quit, closing it or :func:`should_close` (Ctrl+C, the server
+    """Show the status window, which displays ``url`` and whose "Open in browser" opens what
+    ``open_url()`` returns (an address with a one-time code, not displayed) where given, until Quit, closing it or :func:`should_close` (Ctrl+C, the server
     stopped). ``quit_app`` stops the server; it runs in a thread while the window says so.
     Returns ``False`` at once if there is no Tk or no display: the caller then waits in the
     console.
@@ -104,7 +104,7 @@ def run_window(
         threading.Thread(target=work, name="quit", daemon=True).start()
 
     buttons = [
-        ttk.Button(frame, text="Open in browser", command=lambda: open_browser(open_url or url)),
+        ttk.Button(frame, text="Open in browser", command=lambda: open_browser(open_url() if open_url else url)),
         ttk.Button(frame, text="Open data folder", command=lambda: open_path(data_dir)),
         ttk.Button(frame, text="Open log", command=lambda: open_path(log_file)),
         ttk.Button(frame, text="Quit", command=stop),

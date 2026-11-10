@@ -11,12 +11,16 @@ user opens can send requests to it:
 - :class:`NoCors`: no ``Access-Control-*`` header leaves the app, so no other origin can read
   an answer (the backend's own CORS setting is for the Docker build).
 
-Behind them the :class:`Router` asks for the launch's access token, as Jupyter does, since any
-other program on the machine (also of another user) can reach 127.0.0.1 and these checks only
-stop web pages. The launcher opens ``/?token=<token>``; the page server trades the token for an
-``HttpOnly``, ``SameSite=Strict`` cookie and redirects to the same address without it. Every
-request to the API and every page needs that cookie, or ``Authorization: Bearer <token>`` for
-scripts. Only ``/api/health`` is open, and says no more than "ok".
+Behind them the :class:`Router` asks for credentials, as Jupyter does, since any other program
+on the machine (also of another user) can reach 127.0.0.1 and these checks only stop web pages.
+:class:`Access` holds them. The launcher opens ``/?token=<code>`` with a one-time code (the
+command line of the browser is visible to other users, so the long-lived token is never in it);
+the page server redeems the code for a fresh random session value, sets it as an ``HttpOnly``,
+``SameSite=Strict`` session cookie and redirects to the same address without the code. Every
+request to the API and every page needs that cookie, or ``Authorization: Bearer <token>`` with
+the launch's master token for scripts. The master token also opens the instance check and asks
+for a code (``/_desktop/login``, for the second start). Only ``/api/health`` is open, and says
+no more than "ok".
 
 :class:`Shutdown` ends the progress streams (Server-Sent Events) when the app quits; they never
 end by themselves, and the server would wait for them.
@@ -28,6 +32,8 @@ import asyncio
 import json
 import logging
 import secrets
+import threading
+import time
 from urllib.parse import parse_qsl, urlencode, urlsplit
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -39,9 +45,15 @@ logger = logging.getLogger("desktop")
 API_PREFIX = "/api"
 #: Answers another start of the launcher whether this is the instance it looks for.
 INSTANCE_PATH = "/_desktop/instance"
+#: Gives a caller with the master token a one-time code for the browser.
+LOGIN_PATH = "/_desktop/login"
 INSTANCE_HEADER = b"x-desktop-instance"
 
-#: The cookie of the access token carries the port, since cookies are shared between ports of a host.
+#: How long a one-time code can be redeemed, and how many sessions (browsers) are remembered.
+CODE_TTL_S = 300.0
+MAX_SESSIONS = 64
+
+#: The cookie of the session value carries the port, since cookies are shared between ports of a host.
 ACCESS_COOKIE = "desktop_access"
 TOKEN_PARAMETER = "token"
 HEALTH_PATH = API_PREFIX + "/health"
@@ -235,6 +247,66 @@ def api_scope(scope: Scope) -> Scope:
     return child
 
 
+class Access:
+    """What opens the app: the launch's master token, one-time codes and the session values
+    that codes are redeemed for.
+
+    The master token (kept in ``instance.json``, in a ``--token-file``) is for programs: the
+    bearer header, the instance check, asking for a code. Browsers get a code, which is valid
+    once and for :data:`CODE_TTL_S` seconds, and trade it for a random session value that is
+    their cookie; so the cookie, which other servers on 127.0.0.1 can receive since cookies are
+    not bound to a port, is worth nothing but this app's pages, and only until it quits. Every
+    comparison takes constant time. Safe to call from any thread.
+    """
+
+    def __init__(self, token: str) -> None:
+        self.token = token
+        self._lock = threading.Lock()
+        self._codes: dict[str, float] = {}
+        self._sessions: list[str] = []
+
+    @staticmethod
+    def _same(given: str | bytes | None, expected: str) -> bool:
+        if given is None:
+            return False
+        raw = given.encode("utf-8", "surrogatepass") if isinstance(given, str) else given
+        return secrets.compare_digest(raw, expected.encode("utf-8"))
+
+    def is_master(self, given: str | bytes | None) -> bool:
+        return self._same(given, self.token)
+
+    def new_code(self) -> str:
+        code = secrets.token_urlsafe(32)
+        now = time.monotonic()
+        with self._lock:
+            self._codes = {c: t for c, t in self._codes.items() if t > now}
+            self._codes[code] = now + CODE_TTL_S
+        return code
+
+    def redeem(self, given: str) -> str | None:
+        """A new session value for a valid code, which is used up; else ``None``."""
+        now = time.monotonic()
+        with self._lock:
+            match = None
+            for code, expires in self._codes.items():  # all of them: no early exit to time
+                if self._same(given, code) and expires > now and match is None:
+                    match = code
+            if match is None:
+                return None
+            del self._codes[match]
+            session = secrets.token_urlsafe(32)
+            self._sessions = [*self._sessions, session][-MAX_SESSIONS:]
+            return session
+
+    def is_session(self, given: str | None) -> bool:
+        with self._lock:
+            sessions = list(self._sessions)
+        found = False
+        for session in sessions:
+            found = self._same(given, session) or found
+        return found
+
+
 class Router:
     """``/api`` to the API, the instance check to the launcher, the rest to the pages."""
 
@@ -246,6 +318,7 @@ class Router:
         token: str,
         shutdown: Shutdown,
         port: int = 0,
+        access: Access | None = None,
     ) -> None:
         self.api = api
         self.pages = pages
@@ -253,31 +326,31 @@ class Router:
         self.token = token
         self.shutdown = shutdown
         self.cookie_name = access_cookie_name(port)
-
-    def _is_token(self, given: str | bytes | None) -> bool:
-        if given is None:
-            return False
-        raw = given.encode("utf-8", "surrogatepass") if isinstance(given, str) else given
-        return secrets.compare_digest(raw, self.token.encode("utf-8"))
+        self.access = access or Access(token)
 
     def authorized(self, scope: Scope) -> bool:
-        """The cookie the page server set, or the bearer token of a script."""
+        """The session cookie the page server set, or the master token of a script as a bearer."""
         auth = _header(scope, b"authorization") or ""
         scheme, _, value = auth.partition(" ")
-        if scheme.lower() == "bearer" and self._is_token(value.strip()):
+        if scheme.lower() == "bearer" and self.access.is_master(value.strip()):
             return True
-        return self._is_token(_cookies(scope).get(self.cookie_name))
+        return self.access.is_session(_cookies(scope).get(self.cookie_name))
 
-    def token_in_query(self, scope: Scope) -> tuple[bool, str]:
-        """Whether the query string holds the valid token, and the query without any ``token``."""
+    def redeem_code(self, scope: Scope) -> tuple[str | None, str]:
+        """The session value for a valid one-time code in the query string (which is used up),
+        and the query without any ``token``."""
         pairs = parse_qsl(scope.get("query_string", b"").decode("latin-1"), keep_blank_values=True)
-        valid = any(k == TOKEN_PARAMETER and self._is_token(v) for k, v in pairs)
-        return valid, urlencode([(k, v) for k, v in pairs if k != TOKEN_PARAMETER])
+        session = None
+        for key, value in pairs:
+            if key == TOKEN_PARAMETER and session is None:
+                session = self.access.redeem(value)
+        return session, urlencode([(k, v) for k, v in pairs if k != TOKEN_PARAMETER])
 
-    async def _trade_token(self, scope: Scope, rest: str, send: Send) -> None:
-        """303 to the same page without the token, with the cookie that replaces it."""
+    async def _trade_token(self, scope: Scope, session: str, rest: str, send: Send) -> None:
+        """303 to the same page without the code, with the session cookie (no ``Max-Age``: it
+        goes with the browser session)."""
         location = local_location(scope["path"], rest)
-        cookie = f"{self.cookie_name}={self.token}; HttpOnly; SameSite=Strict; Path=/"
+        cookie = f"{self.cookie_name}={session}; HttpOnly; SameSite=Strict; Path=/"
         await _refuse(send, 303, "Signed in.", [(b"location", location), (b"set-cookie", cookie.encode("ascii"))])
 
     async def _landing(self, send: Send) -> None:
@@ -307,12 +380,15 @@ class Router:
         if path == INSTANCE_PATH:  # has its own key
             await self._instance(scope, send)
             return
+        if path == LOGIN_PATH:
+            await self._login(scope, send)
+            return
         is_api = path == API_PREFIX or path.startswith(API_PREFIX + "/")
         if not (is_api and path == HEALTH_PATH):
             if not is_api and scope["method"] in ("GET", "HEAD"):
-                valid, rest = self.token_in_query(scope)
-                if valid:
-                    await self._trade_token(scope, rest, send)
+                session, rest = self.redeem_code(scope)
+                if session is not None:
+                    await self._trade_token(scope, session, rest, send)
                     return
             if not self.authorized(scope):
                 if is_api:
@@ -363,9 +439,24 @@ class Router:
         if started and not complete and self.shutdown.requested:
             await send({"type": "http.response.body", "body": b"", "more_body": False})
 
+    async def _login(self, scope: Scope, send: Send) -> None:
+        """A one-time code for a caller with the master token (the second start, a test)."""
+        if scope["method"] != "GET" or not self.access.is_master(_header(scope, INSTANCE_HEADER)):
+            await _refuse(send, 404, "Not Found")
+            return
+        body = json.dumps({"code": self.access.new_code()}).encode()
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 200,
+                "headers": [*_OWN_HEADERS, (b"content-length", str(len(body)).encode())],
+            }
+        )
+        await send({"type": "http.response.body", "body": body})
+
     async def _instance(self, scope: Scope, send: Send) -> None:
         given = _header(scope, INSTANCE_HEADER)
-        if self.instance is None or given is None or not secrets.compare_digest(given.encode(), self.token.encode()):
+        if self.instance is None or not self.access.is_master(given):
             await _refuse(send, 404, "Not Found")
             return
         body = json.dumps(self.instance).encode()
@@ -438,12 +529,13 @@ def build_app(
     token: str,
     instance: dict | None = None,
     shutdown: Shutdown | None = None,
+    access: Access | None = None,
 ) -> ASGIApp:
     """The desktop app on ``port``: ``api`` (``srv_main.app``) and the export in ``pages_root``.
     ``instance`` is what the instance check answers to a caller with ``token``; ``shutdown``
     ends the progress streams when the app quits."""
     pages = PageServer.from_export(pages_root, session_cookie_fetcher(api))
-    app: ASGIApp = Router(api, pages, instance, token, shutdown or Shutdown(), port)
+    app: ASGIApp = Router(api, pages, instance, token, shutdown or Shutdown(), port, access)
     app = NoCors(app, port)
     app = SameOriginCheck(app, port)
     return HostCheck(app, port)

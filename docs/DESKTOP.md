@@ -171,19 +171,24 @@ The server listens on `127.0.0.1` only, but every web page open in the browser c
 requests to it, and every other program on the machine, also of another user, can reach it.
 Therefore:
 
-- **Access token.** Each start makes a random token (`secrets.token_urlsafe(32)`), kept in
-  `instance.json` (owner only where the system has modes) and never logged (the log and the
-  console replace `token=...` by `token=***`). The launcher opens `http://127.0.0.1:<port>/?token=<token>`
-  (a second start does the same for the running one); the page server trades the token for a
-  cookie (`desktop_access_<port>`, `HttpOnly`, `SameSite=Strict`, `Path=/`, until the browser
-  closes) and redirects to the same address without it. Every page, every file and every API
-  request, the progress stream included, needs that cookie, or `Authorization: Bearer <token>`
-  for scripts. Without it the API answers 401 and a page shows a short note to start the app from
-  its icon. Only `/api/health` is open, and says only "ok" and whether the database answers.
-  The comparison takes constant time. A new start has a new token, so an old bookmark of
-  `http://127.0.0.1:8765/` shows the note until the app is opened from its icon or window.
-  Browsers share cookies between ports of one host, so another local web server could see the
-  cookie of the browser that visits it; that is why the token is not a password for anything else.
+- **Access.** Each start makes a random master token (`secrets.token_urlsafe(32)`), kept in
+  `instance.json` (owner only) and in the file of `--token-file`, and never logged (the log and
+  the console replace `token=...` by `token=***`). The files that hold a secret are written
+  through a new owner-only file made with `mkstemp` and moved into place. The master token is for
+  programs: `Authorization: Bearer <token>`, the instance check, and asking the running app for
+  a code (`/_desktop/login`, which a second start uses). A browser is let in with a
+  **one-time code**: the launcher opens `http://127.0.0.1:<port>/?token=<code>` (the command line
+  of the browser is visible to other users, so the token is never in it; a code is valid once and
+  for 5 minutes, "Open in browser" makes a new one). The page server redeems it for a fresh random
+  session value, sets that as the cookie `desktop_access_<port>` (`HttpOnly`, `SameSite=Strict`,
+  `Path=/`, no expiry: it goes with the browser session) and redirects to the same address
+  without the code. Every page, every file and every API request, the progress stream included,
+  needs that cookie or the bearer header. Without them the API answers 401 and a page shows a
+  short note to start the app from its icon. Only `/api/health` is open, and says only "ok" and
+  whether the database answers. All comparisons take constant time. A new start has new values,
+  so an old bookmark of `http://127.0.0.1:8765/` shows the note until the app is opened from its
+  icon or window. Browsers share cookies between ports of a host, so another local web server
+  could receive the cookie; it holds a value that opens nothing but this app, until it quits.
 
 - **Host check.** Only `Host: 127.0.0.1:<port>` and `localhost:<port>`; anything else gets 400.
   A foreign domain that resolves to 127.0.0.1 (DNS rebinding) arrives with its own name.
@@ -229,7 +234,7 @@ cd src/frontend
 BASE_URL=http://127.0.0.1:$(cat /tmp/cfa-port) CFA_TOKEN=$(cat /tmp/cfa-token) npx playwright test
 ```
 
-`CFA_TOKEN` puts the access token into each browser context as its cookie. `--separate-sessions` gives each Playwright browser context a session of its own, as the specs
+`CFA_TOKEN` makes each browser context send the token as a bearer header (`e2e/desktop-access.spec.ts` runs the browser's way in, with a one-time code). `--separate-sessions` gives each Playwright browser context a session of its own, as the specs
 expect of a server. The request limits are off by default, which the specs need: they create far more than 60
 datasets within the hour, all from 127.0.0.1. On Windows without Playwright's own Chromium, add
 `PW_CHANNEL=msedge`.

@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import secrets
+import tempfile
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -19,22 +20,35 @@ class LauncherError(RuntimeError):
     """A problem the user has to fix; the message says how."""
 
 
-def write_private_json(path: Path, data: dict[str, Any]) -> None:
+def write_private_text(path: Path, text: str) -> None:
     """Write ``path`` atomically, readable by the owner only where the system has modes.
 
-    On Windows the mode only sets the read-only flag; the files lie in the user's profile,
-    whose permissions keep other users out.
+    The data go into a file that ``mkstemp`` creates in the same directory (a name nobody can
+    have planted, opened with ``O_EXCL``, mode 0600), whose mode is set again before anything is
+    written, and which then replaces ``path``; there is no moment where the secret is readable
+    by others or written through a link. On Windows the mode only sets the read-only flag; the
+    files lie in the user's profile, whose permissions keep other users out.
     """
-    tmp = path.with_name(path.name + ".tmp")
-    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
-        f.write("\n")
-        f.flush()
-        os.fsync(f.fileno())
-    os.replace(tmp, path)
-    if os.name != "nt":
-        os.chmod(path, 0o600)
+    path = Path(path)
+    fd, name = tempfile.mkstemp(dir=path.parent, prefix=path.name + ".", suffix=".tmp")
+    try:
+        if hasattr(os, "fchmod"):
+            os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(name, path)
+    except BaseException:
+        try:
+            os.unlink(name)
+        except OSError:
+            pass
+        raise
+
+
+def write_private_json(path: Path, data: dict[str, Any]) -> None:
+    write_private_text(path, json.dumps(data, indent=2) + "\n")
 
 
 # --- Identity -------------------------------------------------------------------------------
@@ -116,9 +130,7 @@ def remembered_port(path: Path) -> int | None:
 
 
 def remember_port(path: Path, port: int) -> None:
-    tmp = path.with_name(path.name + ".tmp")
-    tmp.write_text(json.dumps({"port": port}) + "\n", encoding="utf-8")
-    os.replace(tmp, path)
+    write_private_text(path, json.dumps({"port": port}) + "\n")
 
 
 # --- settings.env ---------------------------------------------------------------------------
