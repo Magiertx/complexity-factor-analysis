@@ -16,12 +16,20 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from config import get_session_id, limiter, logger, rate_limit_key
 from env_config import rate_limit
-from factor_analysis.core import AnalysisError
+from factor_analysis.core import AnalysisError, Superseded
 from interpretation import chat, client, quota, store
 from interpretation.client import InterpretationError
 from interpretation.payload import build_payload, data_hash, effective_params, result_fingerprint
 from interpretation.prompt import PROMPT_VERSION
-from routes.factor_analysis import AnalyzeRequest, _AnalysisFailed, _analyze, _ready_matrix, _select
+from routes.factor_analysis import (
+    AnalyzeRequest,
+    _AnalysisFailed,
+    _analyze,
+    _ready_matrix,
+    _select,
+    _superseded,
+    _Watch,
+)
 
 router = APIRouter(prefix="/factor-analysis", tags=["factor analysis"])
 
@@ -128,10 +136,13 @@ class _Prepared:
     effort: str
 
 
-async def _prepare(dataset_id: str, session_id: str, body: InterpretRequest) -> _Prepared | JSONResponse:
+async def _prepare(
+    request: Request, dataset_id: str, session_id: str, body: InterpretRequest
+) -> _Prepared | JSONResponse:
     """Runs the analysis in every case, lookups too: a stored interpretation is served only for
     a result with the fingerprint it was made for, and that needs the result. The fits are cached
-    in the process, so a repeated request does not refit."""
+    in the process, so a repeated request does not refit. A request whose client left is given up
+    (409 superseded) instead of holding an analysis slot; no newer request replaces it."""
     meta, data = await _ready_matrix(dataset_id, session_id)
     kind = meta["kind"]
     params = body.params(kind)
@@ -141,9 +152,11 @@ async def _prepare(dataset_id: str, session_id: str, body: InterpretRequest) -> 
     except AnalysisError as e:
         return _AnalysisFailed(e).response
     try:
-        result = await _analyze(data, params)
+        result = await _analyze(data, params, _Watch(request))
     except _AnalysisFailed as e:
         return e.response
+    except Superseded:
+        return _superseded()
     effective = effective_params(params, result["n_factors"])
     digest = await run_in_threadpool(data_hash, data)
     return _Prepared(
@@ -164,7 +177,7 @@ async def interpretation_variants(
     """The models and efforts an interpretation of this analysis and language is stored for,
     so the UI can offer them without an API key. Never calls the API."""
     body = body or InterpretRequest()
-    prepared = await _prepare(dataset_id, session_id, body)
+    prepared = await _prepare(request, dataset_id, session_id, body)
     if isinstance(prepared, JSONResponse):
         return prepared
     found = await run_in_threadpool(
@@ -189,7 +202,7 @@ async def interpret_dataset(
     """
     started = time.monotonic()
     body = body or InterpretRequest()
-    prepared = await _prepare(dataset_id, session_id, body)
+    prepared = await _prepare(request, dataset_id, session_id, body)
     if isinstance(prepared, JSONResponse):
         return prepared
     meta, kind, params, selection, result, effective, digest, fingerprint, model, effort = (
@@ -297,7 +310,7 @@ async def interpretation_chat(
     except InterpretationError as e:
         return _error(e)
 
-    prepared = await _prepare(dataset_id, session_id, body)
+    prepared = await _prepare(request, dataset_id, session_id, body)
     if isinstance(prepared, JSONResponse):
         return prepared
     stored = await run_in_threadpool(

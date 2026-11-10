@@ -430,13 +430,41 @@ def test_fingerprint_is_stable_and_follows_the_solution():
     # A measure the MSA filter keeps or removes, in the used measures or in the removed ones.
     assert changed(lambda r: r["used_measures"].pop()) != fingerprint
     assert changed(lambda r: r["used_measures"].reverse()) != fingerprint
-    assert changed(lambda r: r["msa_filter"]["removed"].append({"measure": "Size", "msa": 0.1})) != fingerprint
+    assert changed(lambda r: r["msa_filter"]["removed"].append({"measure": "Size", "msa": 0.1, "step": 1})) != fingerprint
+    # ... and the step: the order of removal is not the order of the MSA values.
+    removed = lambda r: r["msa_filter"]["removed"].extend(
+        [{"measure": "Size", "msa": 0.2, "step": 1}, {"measure": "Density", "msa": 0.1, "step": 2}]
+    )
+    flipped = lambda r: r["msa_filter"]["removed"].extend(
+        [{"measure": "Density", "msa": 0.1, "step": 2}, {"measure": "Size", "msa": 0.2, "step": 1}]
+    )
+    swapped = lambda r: r["msa_filter"]["removed"].extend(
+        [{"measure": "Size", "msa": 0.2, "step": 2}, {"measure": "Density", "msa": 0.1, "step": 1}]
+    )
+    assert changed(removed) == changed(flipped) != changed(swapped)
     # Another assignment: a measure in the other factor, cross-loaded, or unassigned.
     first, second = result["factors"][0]["measures"], result["factors"][1]["measures"]
     assert first and second
     assert changed(lambda r: r["factors"][1]["measures"].append(r["factors"][0]["measures"].pop())) != fingerprint
     assert changed(lambda r: r["cross_loadings"].append({"measure": "Size", "factors": [0, 1], "loadings": [1, 1]})) != fingerprint
     assert changed(lambda r: r["unassigned"].append("Size")) != fingerprint
+    # A cross-loading counts with its factors, not only its name.
+    crossed = lambda factors: changed(
+        lambda r: r["cross_loadings"].append({"measure": "Size", "factors": factors, "loadings": [1, 1]})
+    )
+    assert crossed([0, 1]) != crossed([0, 2]) and crossed([1, 0]) == crossed([0, 1])
+    # The suitability verdicts and the codes of the warnings, not their texts (the groups of a
+    # singular matrix differ between platforms).
+    assert changed(lambda r: r["kmo"].__setitem__("passed", not r["kmo"]["passed"])) != fingerprint
+    assert changed(lambda r: r["bartlett"].__setitem__("passed", not r["bartlett"]["passed"])) != fingerprint
+    code = {"code": "singular", "message": "a, b", "params": {"groups": "a, b"}}
+    assert changed(lambda r: r["warning_details"].append(code)) != fingerprint
+    assert changed(lambda r: r["warning_details"].append(code)) == changed(
+        lambda r: r["warning_details"].append({**code, "message": "b, a", "params": {"groups": "b, a"}})
+    )
+    # The sign of an assigned loading (several factors: factor_analyzer fixes it by the column sums).
+    flip = lambda r: r["factors"][0]["measures"][0].__setitem__("loading", -r["factors"][0]["measures"][0]["loading"])
+    assert changed(flip) != fingerprint
     # The order inside a factor is the loadings', not part of the solution.
     assert changed(lambda r: r["factors"][0]["measures"].reverse()) == fingerprint
 
@@ -515,7 +543,7 @@ def test_a_computation_that_moves_measures_hides_old_interpretations(client, cla
 
     async def moved(*args):
         result = await analyze(*args)
-        result["msa_filter"]["removed"] = [*result["msa_filter"]["removed"], {"measure": "Size", "msa": 0.1}]
+        result["msa_filter"]["removed"] = [*result["msa_filter"]["removed"], {"measure": "Size", "msa": 0.1, "step": 1}]
         return result
 
     monkeypatch.setattr(route, "_analyze", moved)
@@ -1597,3 +1625,113 @@ def test_daily_cap_over_all_sessions(isolated_jobs_dir, claude, monkeypatch):
         r = _interpret(bob, _bundled(bob), language="de")
     assert r.status_code == 429 and r.json()["code"] == "interpretation_daily_cap"
     assert len(claude.calls) == 1
+
+
+def test_a_lookup_runs_its_analysis_under_a_watch_of_the_client_without_latest_wins(client, monkeypatch, no_precomputed):
+    """A lookup runs the analysis too, so a client that left must not keep an analysis slot: the
+    analysis gets a watch on the connection, and no key (an interpretation request does not
+    replace the analysis of the page)."""
+    from routes import factor_analysis as route
+    from routes import interpretation as interpretation_route
+
+    watches: list[route._Watch] = []
+    analyze = route._analyze
+
+    async def spy(data, params, watch=None):
+        watches.append(watch)
+        return await analyze(data, params, watch)
+
+    monkeypatch.setattr(interpretation_route, "_analyze", spy)
+    dataset_id = _bundled(client)
+    assert _interpret(client, dataset_id, cached_only=True).status_code == 204
+    r = client.post(f"/factor-analysis/datasets/{dataset_id}/interpret/variants", json={})
+    assert r.status_code == 200
+    assert len(watches) == 2
+    assert all(isinstance(w, route._Watch) and w.key is None for w in watches)
+
+
+def test_a_lookup_whose_client_left_is_given_up_before_it_fits(monkeypatch):
+    import asyncio
+
+    from routes import interpretation as interpretation_route
+
+    class Left:
+        async def receive(self) -> dict:
+            return {"type": "http.disconnect"}
+
+    async def run():
+        # _prepare reads the dataset first; hand it a small one.
+        import numpy as np
+        import pandas as pd
+
+        data = pd.DataFrame(np.random.default_rng(0).normal(size=(40, 4)), columns=list("abcd"))
+        meta = {"id": "x", "kind": "model", "name": "x"}
+
+        async def matrix(dataset_id, session_id):
+            return meta, data
+
+        monkeypatch.setattr(interpretation_route, "_ready_matrix", matrix)
+        monkeypatch.setattr(interpretation_route, "_select", lambda meta, data, miner, params: (data, params, None))
+        fitted: list[int] = []
+        monkeypatch.setattr("routes.factor_analysis.run_analysis", lambda *a, **k: fitted.append(1))
+        body = interpretation_route.InterpretRequest()
+        return await interpretation_route._prepare(Left(), "x", "s", body), fitted
+
+    answer, fitted = asyncio.run(run())
+    assert answer.status_code == 409 and json.loads(answer.body)["code"] == "superseded"
+    assert fitted == []
+
+
+def _copy_of(tmp_path):
+    import shutil
+
+    from interpretation import store
+
+    sources = sorted(store.PRECOMPUTED_DIR.glob(f"{BUNDLED}*.json"))
+    if not sources:
+        pytest.skip("no precomputed interpretations in the repository")
+    directory = tmp_path / "interpretations"
+    directory.mkdir()
+    path = directory / sources[0].name
+    shutil.copy(sources[0], path)
+    return directory, path
+
+
+@pytest.mark.parametrize("damage", ["measure", "factors"])
+def test_backfill_refuses_a_file_that_describes_other_measures_or_factors(tmp_path, damage):
+    """The guard against backfilling a key onto files of another computation: a name the analysis
+    does not use, or another number of factors."""
+    from interpretation import store
+    from scripts import precompute_interpretations as script
+
+    directory, path = _copy_of(tmp_path)
+    entry = json.loads(path.read_text(encoding="utf-8"))
+    entry.pop("result_fingerprint")
+    if damage == "measure":
+        entry["interpretation"]["factors"][0]["driving_measures"].append("Not a measure of this analysis")
+    else:
+        entry["interpretation"]["factors"].pop()
+    store._write(path, entry)
+    before = path.read_bytes()
+    assert script.backfill_fingerprints(directory) == (0, 1)
+    assert script.backfill_fingerprints(directory, replace=True) == (0, 1)
+    assert path.read_bytes() == before
+
+
+def test_backfill_replaces_an_outdated_key_only_when_asked(tmp_path):
+    from interpretation import store
+    from scripts import precompute_interpretations as script
+
+    directory, path = _copy_of(tmp_path)
+    entry = json.loads(path.read_text(encoding="utf-8"))
+    entry["result_fingerprint"] = "0" * 32
+    store._write(path, entry)
+    assert script.backfill_fingerprints(directory) == (0, 1)
+    assert script.backfill_fingerprints(directory, replace=True) == (1, 0)
+    # The key sits where it did, nothing else moved.
+    replaced = json.loads(path.read_text(encoding="utf-8"))
+    assert replaced["result_fingerprint"] != "0" * 32
+    assert list(replaced) == list(entry) and {k: v for k, v in replaced.items() if k != "result_fingerprint"} == {
+        k: v for k, v in entry.items() if k != "result_fingerprint"
+    }
+    assert script.backfill_fingerprints(directory, replace=True) == (0, 0)

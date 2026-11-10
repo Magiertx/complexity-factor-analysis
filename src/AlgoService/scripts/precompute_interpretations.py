@@ -16,10 +16,17 @@ default PRECOMPUTE_VARIANTS; choose others with --variant (repeatable), e.g.
     python scripts/precompute_interpretations.py --variant claude-sonnet-5-5:medium
 
 Every file stores ``result_fingerprint`` (payload.result_fingerprint), and is served only for an
-analysis with the same fingerprint. After a change of the computation that moves measures,
-``--backfill-fingerprints`` adds the key to files that lack it, from a local analysis; it makes
-no API call, needs no key and never changes a file whose data, parameters or fingerprint
-disagree with the current analysis (those need --force).
+analysis with the same fingerprint. ``--backfill-fingerprints`` adds the key to files that lack
+it (with ``--replace-fingerprints`` it also rewrites a key that a change of the fingerprint's
+fields made outdated), from a local analysis; it makes no API call and needs no key.
+
+It is valid ONLY on the code that produced the files, or on a change that leaves the
+computation as it was (the fields of the fingerprint, a new warning): the key then vouches that
+the interpretation describes the current result, and the script cannot check that. After a
+change of the computation that moves measures the files are stale and need --force; backfilling
+them would show an old reading for the new solution. Two cheap guards catch the grossest case:
+every ``driving_measures`` name must be one of the current ``used_measures`` and the number of
+factors must match, else the file fails; so must a file whose data or parameters differ.
 """
 
 from __future__ import annotations
@@ -92,13 +99,30 @@ def analysis_of(entry: dict[str, Any], settings: str) -> tuple[pd.DataFrame, lis
     return data, dropped, params, analyze(data, params)
 
 
-def backfill_fingerprints(directory: Path | None = None) -> tuple[int, int]:
+def disagreement(entry: dict[str, Any], result: dict[str, Any]) -> str | None:
+    """Why a stored interpretation cannot describe this result, or None: the number of its
+    factors differs, or a measure it names is not one the analysis uses. A cheap guard against
+    backfilling the key onto files of another computation, not a proof that they fit."""
+    reading = entry.get("interpretation") or {}
+    factors = reading.get("factors") or []
+    if len(factors) != result["n_factors"]:
+        return f"{len(factors)} factors stored, the analysis has {result['n_factors']}"
+    used = set(result["used_measures"])
+    unknown = sorted({m for f in factors for m in f.get("driving_measures", []) if m not in used})
+    if unknown:
+        return f"names measures the analysis does not use: {', '.join(unknown)}"
+    return None
+
+
+def backfill_fingerprints(directory: Path | None = None, replace: bool = False) -> tuple[int, int]:
     """Add ``result_fingerprint`` to the files that lack it, from a local analysis; no API call.
-    The key goes after ``params``, the rest of a file stays as it is. A file whose data hash,
-    parameters or fingerprint disagree with the current analysis is left alone and counted as
-    a failure. Returns (written, failed)."""
+    Valid only on the code that produced the files (see the module docstring). The key goes
+    after ``params``, the rest of a file stays as it is. A file whose data hash or parameters
+    disagree with the current analysis, that fails ``disagreement`` or, without ``replace``,
+    whose stored fingerprint differs, is left alone and counted as a failure; with ``replace`` a
+    differing fingerprint is rewritten in place. Returns (written, failed)."""
     directory = store.PRECOMPUTED_DIR if directory is None else directory
-    analyses: dict[tuple[str, str], tuple[str, dict[str, Any], str]] = {}
+    analyses: dict[tuple[str, str], tuple[str, dict[str, Any], str, dict[str, Any]]] = {}
     written = failed = 0
     for path in sorted(directory.glob("*.json")):
         entry = json.loads(path.read_text(encoding="utf-8"))
@@ -111,22 +135,31 @@ def backfill_fingerprints(directory: Path | None = None) -> tuple[int, int]:
         if (bundled["id"], settings) not in analyses:
             data, _, params, result = analysis_of(bundled, settings)
             analyses[(bundled["id"], settings)] = (
-                data_hash(data), effective_params(params, result["n_factors"]), result_fingerprint(result)
+                data_hash(data), effective_params(params, result["n_factors"]), result_fingerprint(result), result
             )
-        digest, effective, fingerprint = analyses[(bundled["id"], settings)]
+        digest, effective, fingerprint, result = analyses[(bundled["id"], settings)]
         if entry.get("data_hash") != digest or entry.get("params") != effective:
             failed += 1
             print(f"FAIL  {path.name}: data or parameters differ from the current analysis; rerun with --force",
                   file=sys.stderr)
             continue
+        why = disagreement(entry, result)
+        if why:
+            failed += 1
+            print(f"FAIL  {path.name}: {why}; rerun with --force", file=sys.stderr)
+            continue
         if "result_fingerprint" in entry:
-            if entry["result_fingerprint"] != fingerprint:
+            if entry["result_fingerprint"] == fingerprint:
+                continue
+            if not replace:
                 failed += 1
                 print(f"FAIL  {path.name}: fingerprint differs from the current analysis; rerun with --force",
                       file=sys.stderr)
-            continue
+                continue
         updated: dict[str, Any] = {}
         for key, value in entry.items():
+            if key == "result_fingerprint":
+                continue
             updated[key] = value
             if key == "params":
                 updated["result_fingerprint"] = fingerprint
@@ -216,6 +249,11 @@ def main(argv: list[str] | None = None) -> int:
         help="add result_fingerprint to existing files from a local analysis; no API call, no key needed",
     )
     parser.add_argument(
+        "--replace-fingerprints", action="store_true",
+        help="with --backfill-fingerprints: also rewrite a fingerprint made by an older scheme; "
+             "valid only if the computation is unchanged",
+    )
+    parser.add_argument(
         "--timeout", type=float, default=DEFAULT_TIMEOUT_S, metavar="SECONDS",
         help=f"limit of one call (default {DEFAULT_TIMEOUT_S:.0f}; a live call has {client.TIMEOUT_S:.0f})",
     )
@@ -223,8 +261,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.timeout <= 10:
         parser.error("--timeout must be more than 10 seconds")
 
+    if args.replace_fingerprints and not args.backfill_fingerprints:
+        parser.error("--replace-fingerprints needs --backfill-fingerprints")
     if args.backfill_fingerprints:
-        written, failed = backfill_fingerprints()
+        written, failed = backfill_fingerprints(replace=args.replace_fingerprints)
         print(f"{written} file(s) written, {failed} failed")
         return 1 if failed else 0
     key = client.api_key()

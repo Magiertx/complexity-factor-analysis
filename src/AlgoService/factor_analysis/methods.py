@@ -304,7 +304,8 @@ _TEXTS: dict[str, dict[str, str]] = {
         "kmo": ", and the overall Kaiser-Meyer-Olkin measure of sampling adequacy{cite} was {kmo}.",
         "singular": (
             "The correlation matrix is singular; eigenvalues near zero were clamped, so $\\chi^2$ reflects the "
-            "clamping more than the data."
+            "clamping more than the data. The MSA was computed from the pseudo-inverse of the correlation matrix, "
+            "with eigenvalues below $10^{{-10}}$ treated as zero."
         ),
         "measures_from": "Of the {m} measures that remained after cleaning, {u} entered the analysis ({parts}).",
         "excluded": "{e} excluded by hand",
@@ -383,7 +384,8 @@ _TEXTS: dict[str, dict[str, str]] = {
         "kmo": ", und das Kaiser-Meyer-Olkin-Maß der Stichprobeneignung insgesamt{cite} betrug {kmo}.",
         "singular": (
             "Die Korrelationsmatrix ist singulär; Eigenwerte nahe null wurden angehoben, daher spiegelt $\\chi^2$ "
-            "die Anhebung stärker als die Daten."
+            "die Anhebung stärker als die Daten. Der MSA wurde aus der Pseudoinversen der Korrelationsmatrix "
+            "berechnet, wobei Eigenwerte unter $10^{{-10}}$ als null behandelt wurden."
         ),
         "measures_from": "Von den {m} Maßen, die nach der Bereinigung blieben, gingen {u} in die Analyse ein ({parts}).",
         "excluded": "{e} von Hand ausgeschlossen",

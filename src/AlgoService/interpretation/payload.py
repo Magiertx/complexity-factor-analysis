@@ -177,22 +177,38 @@ def build_payload(
 
 def result_fingerprint(result: dict[str, Any]) -> str:
     """Short hash of what an interpretation describes in an analysis result: the measures kept
-    and those the MSA filter removed, the factor count and rotation, and which measures sit in
-    which factor, are cross-loaded or unassigned. Stored with an interpretation, which is served
-    only for a result with the same fingerprint, so a change of the computation that moves a
-    measure never shows an old reading for the new solution. Names and counts only, no
-    floating-point values: those differ in the last digits between BLAS builds."""
+    and those the MSA filter removed (with the step), the factor count and rotation, which
+    measures sit in which factor and with which sign of their loading (only with more than one
+    factor: factor_analyzer fixes the signs by the column sums of the loadings there, and a
+    single factor's sign is left to the solver), which are cross-loaded (with their factors) or
+    unassigned, whether Bartlett's test and the overall MSA passed, and the codes of the
+    warnings. Stored with an interpretation, which is served only for a result with the same
+    fingerprint, so a change of the computation that moves a measure never shows an old reading
+    for the new solution. Names, signs, counts and codes only, no floating-point values: those
+    differ in the last digits between BLAS builds; the texts of the warnings are left out too,
+    since some name platform-dependent groups."""
+    signed = int(result["n_factors"]) > 1
+
+    def sign(loading: float) -> str:
+        return ("+" if loading >= 0 else "-") if signed else ""
+
     material = {
         "used_measures": [str(m) for m in result["used_measures"]],
-        "removed_by_msa": [str(m["measure"]) for m in result["msa_filter"]["removed"]],
+        "removed_by_msa": sorted([int(m["step"]), str(m["measure"])] for m in result["msa_filter"]["removed"]),
         "n_factors": int(result["n_factors"]),
         "rotation": result["rotation"],
         "factors": {
-            _factor_label(f["index"]): sorted(str(m["measure"]) for m in f["measures"])
+            _factor_label(f["index"]): sorted([str(m["measure"]), sign(m["loading"])] for m in f["measures"])
             for f in result["factors"]
         },
-        "cross_loadings": sorted(str(c["measure"]) for c in result.get("cross_loadings") or []),
+        "cross_loadings": {
+            str(c["measure"]): sorted(_factor_label(i) for i in c["factors"])
+            for c in result.get("cross_loadings") or []
+        },
         "unassigned": sorted(str(m) for m in result["unassigned"]),
+        "kmo_passed": bool(result["kmo"]["passed"]),
+        "bartlett_passed": bool(result["bartlett"]["passed"]),
+        "warnings": sorted({str(w["code"]) for w in result.get("warning_details", [])}),
     }
     text = json.dumps(material, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
     return hashlib.sha256(text.encode()).hexdigest()[:32]

@@ -102,7 +102,8 @@ TIMEOUT_S = 170.0
 MIN_CALL_S = 30.0
 
 # Bounds on one request, so the daily cap also bounds the spending. The bundled log dataset
-# (122 measures, 15 factors) sends about 47,000 characters.
+# (measured with the earlier computation: 122 measures, 15 factors; the tool now keeps 125
+# measures and 16 factors) sends about 47,000 characters.
 MAX_MEASURES = 150
 MAX_FACTORS = 20
 MAX_NAME_LENGTH = 120

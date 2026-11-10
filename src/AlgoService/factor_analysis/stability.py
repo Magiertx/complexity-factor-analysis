@@ -66,7 +66,7 @@ class _GradientFactorAnalyzer(_StoppableFactorAnalyzer):
     which is the sum of the squared eigenvalues of the reduced correlation matrix beyond the
     first k; its derivative by the uniqueness of measure j is -2 sum_i lambda_i v_ij^2 over
     those. The optimum is the same; the last digits may differ from the fit of the analysis,
-    which keeps the numerical gradient. A bootstrap of 123 measures takes minutes, not an hour."""
+    which keeps the numerical gradient. A bootstrap of the log dataset's 125 measures takes minutes, not an hour."""
 
     def _fit_factor_analysis(self, corr_mtx):  # type: ignore[override]
         k = self.n_factors

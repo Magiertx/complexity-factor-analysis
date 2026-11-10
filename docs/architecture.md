@@ -212,10 +212,12 @@ matrix and the factor correlations as well. Heywood cases are flagged at a commu
 about 0.995, where minres stops (uniqueness bounded below by 0.005).
 
 A singular correlation matrix (common with log measures, e.g. `iqr = q3 - q1`) is reported as
-a warning. Its eigenvalues below `Constants.eigenvalue_floor` count as zero: Bartlett's
-chi-square clamps them (`bartlett.regularised`), and the MSA leaves them out of the inverse of
-the correlation matrix, so KMO and MSA do not depend on the units, the column order or the
-platform. Here the tool deviates from upstream on purpose: factor_analyzer's `calculate_kmo`
+a warning. Its eigenvalues below `Constants.eigenvalue_floor` are treated in opposite ways:
+Bartlett's chi-square clamps them up to the floor (`bartlett.regularised`, as ComFy does), and
+the MSA leaves them out of the pseudo-inverse of the correlation matrix, as if they were zero.
+KMO and MSA then do not depend on the units, the column order or the platform, as long as the
+spectrum has a clear gap around the floor; with an eigenvalue within a factor of 100 of it the
+values move with the floor and the analysis warns (`eigenvalue_near_floor`). Here the tool deviates from upstream on purpose: factor_analyzer's `calculate_kmo`
 pseudo-inverts the covariance matrix, which on the bundled log measures leaves the MSA filter
 to rounding and units (`datasets/PROVENANCE.md`). Fits are cached by data, factor
 count and rotation. After the start the API computes the analyses of the bundled datasets

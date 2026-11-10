@@ -1932,22 +1932,28 @@ class StabilityRequest(AnalyzeRequest):
 
 
 #: Changes with the method, so that a stability computed before is computed again.
-STABILITY_VERSION = 2
+#: 3: the MSA from the pseudo-inverse of the correlation matrix moved the measures a stability
+#: is about; its key names the result it was computed for (``result_fingerprint``).
+STABILITY_VERSION = 3
 STABILITY_PREFIX = "_stability:"
 #: Stabilities computed at once on the server, of all sessions.
 MAX_ACTIVE_STABILITY_JOBS = positive_int("MAX_ACTIVE_STABILITY_JOBS", 2)
 
 
 def _stability_key(
-    meta: dict[str, Any], data: pd.DataFrame, params: AnalysisParams, n_factors: int, samples: int
+    meta: dict[str, Any], data: pd.DataFrame, params: AnalysisParams, result: dict[str, Any], samples: int
 ) -> str:
     """The key of a stability: the rows of the analysis, its settings with the factor count it
-    used, the samples and the seed; a change of any of them is another stability."""
+    used, the result it is about (which measures were used and where they sit, so a change of
+    the computation that moves them is another stability), the samples and the seed; a change
+    of any of them is another stability."""
     material = json.dumps(
         {
             "kind": meta["kind"],
             "data": data_hash(data),
-            "params": effective_params(params, n_factors),
+            "params": effective_params(params, result["n_factors"]),
+            "result": result_fingerprint(result),
+            "used_measures": [str(m) for m in result["used_measures"]],
             "samples": samples,
             "seed": stability.SEED,
             "version": STABILITY_VERSION,
@@ -1988,7 +1994,7 @@ async def _stored_stability(
     if samples is None:
         return None
     key = await run_in_threadpool(
-        _stability_key, exported.meta, exported.data, exported.params, exported.result["n_factors"], samples
+        _stability_key, exported.meta, exported.data, exported.params, exported.result, samples
     )
     return await run_in_threadpool(storage.read_stability, session_id, exported.meta["id"], key)
 
@@ -2021,7 +2027,7 @@ async def run_stability_task(job_id: str, session_id: str, dataset_id: str, requ
             params = body.params(meta["kind"])
             data, params, _ = await run_in_threadpool(_select, meta, data, body.miner, params)
             reference = await _analyze(data, params)
-            key = await run_in_threadpool(_stability_key, meta, data, params, reference["n_factors"], body.samples)
+            key = await run_in_threadpool(_stability_key, meta, data, params, reference, body.samples)
             result = await asyncio.to_thread(
                 stability.bootstrap, data, params, reference, body.samples, stability.SEED, progress_cb, check_aborted
             )
@@ -2094,7 +2100,7 @@ async def dataset_stability(
         return e.response
     except Superseded:
         return _superseded()
-    key = await run_in_threadpool(_stability_key, meta, data, params, reference["n_factors"], body.samples)
+    key = await run_in_threadpool(_stability_key, meta, data, params, reference, body.samples)
     stored = await run_in_threadpool(storage.read_stability, session_id, meta["id"], key)
     if stored is not None:
         return {"status": "ready", "key": key, "stability": stored}

@@ -1,7 +1,7 @@
 """The analysis always gets the measures in the order the dataset stores them.
 
 Another column order changes the numbers only in their last bits (on the singular log
-measures the MSA by about 1e-8; tests/test_msa_invariance.py), but those bits would show in
+measures the MSA by up to 1e-7; tests/test_msa_invariance.py), but those bits would show in
 exports and break the round trip. So the analysis, the MSA filter and every export use the
 stored order. Sorting or grouping the measures in the UI changes only what is shown, and a
 dataset that leaves the tool as CSV and comes back gives the same numbers to the last bit.

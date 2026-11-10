@@ -400,18 +400,19 @@ def singular_measures(data: pd.DataFrame) -> list[list[str]]:
     return groups
 
 
-def kmo(data: pd.DataFrame) -> tuple[dict[str, float], float]:
-    """Kaiser-Meyer-Olkin measure of sampling adequacy, per measure and overall.
+#: An eigenvalue of the correlation matrix within this factor of ``Constants.eigenvalue_floor``
+#: (either way) makes the MSA depend on where the floor lies: the analysis warns.
+FLOOR_BAND = 100.0
 
-    The formula of factor_analyzer's ``calculate_kmo``, with the partial correlations taken
-    from the inverse of the correlation matrix instead of the covariance matrix. Both give the
-    same on regular data (the seven ComFy reports agree to 1e-11). On singular data
-    factor_analyzer falls back to ``pinv(cov)`` with a cutoff relative to the largest
-    variance, which also drops genuine directions of measures on a small scale and leaves the
-    MSA to rounding: it changes with the units, the column order and the platform. Here the
-    eigenvalues of the correlation matrix below ``Constants.eigenvalue_floor`` count as zero,
-    the same ones Bartlett's test clamps and ``singular_measures`` reports.
-    """
+
+def near_floor(values: np.ndarray) -> list[float]:
+    """The eigenvalues between floor / FLOOR_BAND and floor * FLOOR_BAND, smallest first."""
+    floor = _C.eigenvalue_floor
+    return sorted(float(v) for v in values if floor / FLOOR_BAND <= v <= floor * FLOOR_BAND)
+
+
+def _msa(data: pd.DataFrame) -> tuple[dict[str, float], float, list[float]]:
+    """``kmo`` and the eigenvalues of the correlation matrix that lie near the floor."""
     correlations = correlation_matrix(data)
     values, vectors = np.linalg.eigh(correlations)
     kept = values >= _C.eigenvalue_floor
@@ -422,11 +423,34 @@ def kmo(data: pd.DataFrame) -> tuple[dict[str, float], float]:
     np.fill_diagonal(partial, 0.0)
     np.fill_diagonal(correlations, 0.0)
     r2, p2 = correlations ** 2, partial ** 2
-    per_measure = r2.sum(axis=0) / (r2.sum(axis=0) + p2.sum(axis=0))
-    overall = r2.sum() / (r2.sum() + p2.sum())
+    with np.errstate(divide="ignore", invalid="ignore"):
+        per_measure = r2.sum(axis=0) / (r2.sum(axis=0) + p2.sum(axis=0))
+        overall = r2.sum() / (r2.sum() + p2.sum())
     if not np.all(np.isfinite(per_measure)) or not math.isfinite(overall):
-        raise AnalysisError("The MSA could not be computed; the correlation matrix is singular.", "msa_singular")
-    return {c: float(v) for c, v in zip(data.columns, per_measure)}, float(overall)
+        raise AnalysisError(
+            "The MSA is undefined: a measure is uncorrelated with all the others, or the "
+            "pseudo-inverse of the correlation matrix has no usable diagonal.",
+            "msa_singular",
+        )
+    return {c: float(v) for c, v in zip(data.columns, per_measure)}, float(overall), near_floor(values)
+
+
+def kmo(data: pd.DataFrame) -> tuple[dict[str, float], float]:
+    """Kaiser-Meyer-Olkin measure of sampling adequacy, per measure and overall.
+
+    The formula of factor_analyzer's ``calculate_kmo``, with the partial correlations taken
+    from the inverse of the correlation matrix instead of the covariance matrix. Both give the
+    same on regular data (the seven ComFy reports agree to 1e-11). On singular data
+    factor_analyzer falls back to ``pinv(cov)`` with a cutoff relative to the largest
+    variance, which also drops genuine directions of measures on a small scale and leaves the
+    MSA to rounding: it changes with the units, the column order and the platform. Here the
+    eigenvalues of the correlation matrix below ``Constants.eigenvalue_floor`` are left out of
+    the inverse (the MSA takes them as zero; Bartlett's test clamps the same ones up to the
+    floor instead), the ones ``singular_measures`` reports. The result is independent of units,
+    order and platform as long as no eigenvalue lies near the floor (``near_floor``).
+    """
+    per_measure, overall, _ = _msa(data)
+    return per_measure, overall
 
 
 @dataclass
@@ -438,6 +462,8 @@ class MsaFilterResult:
     per_measure: dict[str, float]
     overall: float
     removed: list[dict[str, Any]]
+    #: Eigenvalues near the floor of any matrix the filter computed the MSA of, smallest first.
+    near_floor: list[float] = field(default_factory=list)
 
 
 def msa_filter(data: pd.DataFrame, threshold: float = _C.msa_threshold) -> MsaFilterResult:
@@ -447,7 +473,7 @@ def msa_filter(data: pd.DataFrame, threshold: float = _C.msa_threshold) -> MsaFi
     is recomputed, until no measure is below it. Stops early when fewer than
     ``MIN_MEASURES`` measures are left.
     """
-    per_measure, overall = kmo(data)
+    per_measure, overall, near = _msa(data)
     removed: list[dict[str, Any]] = []
     step = 0
     while True:
@@ -459,8 +485,9 @@ def msa_filter(data: pd.DataFrame, threshold: float = _C.msa_threshold) -> MsaFi
         data = data.drop(columns=[c for _, c in low])
         if data.shape[1] < MIN_MEASURES:
             break
-        per_measure, overall = kmo(data)
-    return MsaFilterResult(data=data, per_measure=per_measure, overall=overall, removed=removed)
+        per_measure, overall, again = _msa(data)
+        near = sorted({*near, *again})
+    return MsaFilterResult(data=data, per_measure=per_measure, overall=overall, removed=removed, near_floor=near)
 
 
 def eigenvalues(data: pd.DataFrame) -> list[float]:
@@ -870,6 +897,24 @@ def _check_size(n: int, p: int) -> None:
         )
 
 
+def _check_values(data: pd.DataFrame) -> None:
+    """Every measure has finite values that are not all the same; ``clean_matrix`` takes care of
+    that for stored datasets. Otherwise the correlation matrix has NaN and the first
+    eigendecomposition fails with a ``LinAlgError`` instead of an error that says why."""
+    values = data.to_numpy(dtype=float)
+    bad = [str(c) for c, ok in zip(data.columns, np.isfinite(values).all(axis=0)) if not ok]
+    bad += [str(c) for c, v in data.items() if str(c) not in bad and _is_constant(v)]
+    if bad:
+        raise AnalysisError(
+            "These measures have missing, infinite or constant values, so their correlations "
+            f"are undefined: {', '.join(bad[:5])}{' ...' if len(bad) > 5 else ''}. Clean the matrix "
+            "or exclude them.",
+            "unusable_measures",
+            measures=", ".join(bad[:5]),
+            n=len(bad),
+        )
+
+
 def _check_rule(rule: str) -> None:
     if rule not in ASSIGNMENT_RULES:
         raise AnalysisError(f"Unknown assignment rule '{rule}'.", "unknown_assignment_rule", rule=rule)
@@ -891,9 +936,12 @@ def analyze(data: pd.DataFrame, params: AnalysisParams, should_stop: StopCheck |
 
     Bartlett's test runs on the measures before the MSA filter, as in ComFy; the KMO values
     and everything after describe the measures that are left. A singular correlation matrix
-    is analysed with its eigenvalues below ``Constants.eigenvalue_floor`` taken as zero
-    (clamped in Bartlett's test, left out of the inverse in the MSA) and reported as a
-    warning; it is an error only if the factor analysis then fails.
+    is analysed and reported as a warning; it is an error only if the factor analysis then
+    fails. Its eigenvalues below ``Constants.eigenvalue_floor`` are treated in opposite ways:
+    Bartlett's test clamps them up to the floor (as ComFy does), the MSA leaves them out of
+    the pseudo-inverse, as if they were zero. Both are independent of units, order and
+    platform only while the spectrum has a clear gap around the floor; with an eigenvalue
+    near it (``near_floor``) the analysis warns (``eigenvalue_near_floor``).
 
     The measures keep the order of ``data``, which callers take as stored: the results list
     them in this order, and the last bits of every number follow it, so nothing may sort the
@@ -909,6 +957,7 @@ def analyze(data: pd.DataFrame, params: AnalysisParams, should_stop: StopCheck |
     data = data.drop(columns=list(params.excluded))
     n, p = data.shape
     _check_size(n, p)
+    _check_values(data)
     out = _Warnings()
     bartlett = bartlett_sphericity(data)
     bartlett_passed = bartlett["p_value"] < params.bartlett_alpha
@@ -924,6 +973,7 @@ def analyze(data: pd.DataFrame, params: AnalysisParams, should_stop: StopCheck |
         filtered = msa_filter(data, params.msa_threshold)
         data = filtered.data
         per_measure, overall, removed = filtered.per_measure, filtered.overall, filtered.removed
+        near = filtered.near_floor
         if data.shape[1] < MIN_MEASURES:
             raise AnalysisError(
                 f"The MSA filter left {data.shape[1]} measure(s); at least {MIN_MEASURES} are "
@@ -933,8 +983,19 @@ def analyze(data: pd.DataFrame, params: AnalysisParams, should_stop: StopCheck |
                 min=MIN_MEASURES,
             )
     else:
-        per_measure, overall = kmo(data)
+        per_measure, overall, near = _msa(data)
         removed = []
+    if near:
+        out.add(
+            "eigenvalue_near_floor",
+            f"An eigenvalue of the correlation matrix ({near[0]:.2e}) lies near the floor of "
+            f"{_C.eigenvalue_floor:g} below which eigenvalues count as zero. The MSA and Bartlett's "
+            "test then depend on where that floor is, and may change with the units of the "
+            "measures, their order or the platform; the removal of measures by the MSA filter "
+            "too.",
+            smallest=f"{near[0]:.2e}",
+            floor=f"{_C.eigenvalue_floor:g}",
+        )
     dependent = singular_measures(data)
     if dependent:
         groups = "; ".join(", ".join(g) for g in dependent)

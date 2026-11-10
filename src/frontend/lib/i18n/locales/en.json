@@ -1037,7 +1037,8 @@
       "n_factors_range": "{requested} factors requested, but with {measures} measures at most {max} are possible. A further factor would stay empty.",
       "fit_failed": "The factor analysis failed: {error}",
       "not_converged": "The factor analysis did not converge. The correlation matrix is singular. Exclude measures that are linear combinations of others.",
-      "msa_singular": "The MSA could not be computed. The correlation matrix is singular.",
+      "msa_singular": "The MSA is undefined: a measure is uncorrelated with all the others, or the pseudo-inverse of the correlation matrix has no usable diagonal.",
+      "unusable_measures": "These measures have missing, infinite or constant values, so their correlations are undefined: {measures}. Clean the matrix or exclude them.",
       "unknown_excluded": "Unknown measures to exclude: {measures}.",
       "too_few_measures": "At least {min} measures are needed for a factor analysis; {left} are left.",
       "too_few_observations": "{n} observations are too few for {measures} measures. At least {needed} are needed. Exclude measures or add observations.",
@@ -1078,6 +1079,7 @@
     "warnings": {
       "bartlett_not_significant": "Bartlett's test is not significant (p = {p} ≥ {alpha}); the measures may be uncorrelated.",
       "singular": "The correlation matrix is singular. These measures are linearly dependent: {groups}. The results rely on clamped eigenvalues and pseudo-inverses. Consider excluding one measure from each group.",
+      "eigenvalue_near_floor": "An eigenvalue of the correlation matrix ({smallest}) lies near the floor of {floor}, below which eigenvalues count as zero. The MSA and Bartlett's test then depend on where that floor lies, and can change with the units of the measures, their order or the platform. So can the measures the MSA filter removes.",
       "kmo_low": "The overall KMO {overall} is below {threshold}; a factor analysis is not recommended.",
       "small_sample": "{n} observations for {measures} measures; at least 5 per measure ({recommended}) are recommended.",
       "not_identified": "{factors} factors for {measures} measures exceed the Ledermann bound. The solution is not identified and the loadings are not unique. Use fewer factors.",
