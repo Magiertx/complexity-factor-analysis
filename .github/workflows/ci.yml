@@ -131,6 +131,13 @@ jobs:
       - name: Build
         run: npx next build
 
+      # The static export for the desktop app (pages served together with the API by one
+      # process): every page, its .txt payload, the assets and the page headers.
+      - name: Build the static export
+        run: |
+          npm run build:export
+          npm run check:export
+
   # The UI in a browser against a backend without ProM, PostgreSQL or Redis: uvicorn on SQLite
   # with dataset jobs in-process, and the standalone Next.js server as in the frontend image.
   # Specs tagged @prom need ProM and run only against the Docker stack (README, "Tests").

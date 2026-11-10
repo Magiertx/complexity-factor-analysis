@@ -5,9 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:export": "node scripts/build-export.mjs",
     "start": "next start -p ${PORT:-3000}",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "check:export": "node scripts/check-export.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "check:i18n": "node scripts/check-i18n.mjs"
