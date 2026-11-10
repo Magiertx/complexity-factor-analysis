@@ -1,0 +1,72 @@
+{
+ "dataset_id": "comfy-paper-alpha-dollar-miner",
+ "kind": "model",
+ "data_hash": "53a729372bcd2e31fb15fd22f91dc5e4d85c7d53c7a2e6783de8ec908755ef14",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 3,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.0,
+  "assignment_rule": "largest"
+ },
+ "language": "de",
+ "settings": "standard",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "high",
+ "created_at": "2026-11-10T11:09:47+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Token split",
+     "Number of empty sequence flows",
+     "Control flow complexity",
+     "Size",
+     "Coefficient of network connectivity",
+     "Maximum connector degree",
+     "Connector Mismatch"
+    ],
+    "name": "Größe und Verzweigungsumfang",
+    "summary": "Sehr hohe Ladungen (0,90–0,97) von Size, Token split, Control flow complexity, Number of empty sequence flows und Coefficient of network connectivity zeigen, dass dieser Faktor den Umfang des Netzes und die absolute Menge an Verzweigungen bündelt. Maximum connector degree (0,76) und Connector Mismatch (0,55, Kommunalität nur 0,35) laden schwächer. Density lädt mit −0,46 negativ: Größere Netze sind hier dünner besetzt. Coefficient of network connectivity (0,35) und Maximum connector degree (0,32 bzw. 0,39) weisen zudem Nebenladungen auf Faktor 3 bzw. Faktor 2 auf.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Average connector degree",
+     "Density",
+     "Connector Heterogeneity"
+    ],
+    "name": "Konnektorgrad und Dichte",
+    "summary": "Average connector degree (0,89) und Density (0,84) laden hoch, Connector Heterogeneity negativ (−0,58). Der Faktor beschreibt damit größenunabhängig, wie viele Kanten an Konnektoren hängen und wie dicht das Netz ist. Netze mit hohem Wert verwenden eher einheitliche Konnektortypen. Density lädt zusätzlich mit −0,46 auf Faktor 1. Connector Heterogeneity hat nur eine Kommunalität von 0,35 und ist ohne Konnektoren undefiniert.",
+    "confidence": "medium"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "Sequentiality",
+     "Separability"
+    ],
+    "name": "Sequentialität und Separierbarkeit",
+    "summary": "Getragen wird der Faktor von Sequentiality (0,96) und Separability (0,69). Er beschreibt, wie linear bzw. kettenartig ein Netz aufgebaut ist: viele Kanten zwischen Nicht-Konnektoren und ein hoher Anteil an Knoten, die keine Artikulationspunkte sind. Da nur zwei Maße ihn tragen und Sequentiality einen möglichen Heywood-Fall zeigt, ist die Interpretation unsicher.",
+    "confidence": "low"
+   }
+  ],
+  "overall": "Die Daten eignen sich für eine Faktorenanalyse: Der Bartlett-Test ist signifikant, und der KMO-Wert von 0,83 liegt über der Schwelle von 0,6. Drei varimax-rotierte Faktoren erklären zusammen 82 % der Varianz. Faktor 1 (49 %) bündelt Größe und absolute Verzweigungsmaße. Faktor 2 (17 %) erfasst Konnektorgrad und Dichte, Faktor 3 (16 %) Sequentialität und Separierbarkeit. Alle Maße sind zugeordnet, die Regel meldet keine Querladungen. Einzelne Nebenladungen bestehen dennoch, vor allem Density mit −0,46 auf Faktor 1 sowie Maximum connector degree mit 0,39 auf Faktor 2.",
+  "caveats": [
+   "Sequentiality hat eine Kommunalität von 1,017 (möglicher Heywood-Fall), wodurch die Lösung für Faktor 3 unzuverlässig sein kann.",
+   "Der dritte Eigenwert liegt mit 1,2 nur knapp über 1, sodass die Faktorzahl 3 nicht eindeutig gesichert ist.",
+   "Connector Mismatch und Connector Heterogeneity haben niedrige Kommunalitäten (um 0,35) und werden durch die Faktoren nur schwach erklärt.",
+   "Number of duplicate tasks wurde als konstant entfernt und geht daher nicht in die Analyse ein.",
+   "Die Ergebnisse spiegeln gemeinsame Varianz in diesen 288 Netzen wider; sie hängen von den verwendeten Discovery-Algorithmen, der Rotation und der Faktorzahl ab und belegen keine Ursachen."
+  ]
+ }
+}

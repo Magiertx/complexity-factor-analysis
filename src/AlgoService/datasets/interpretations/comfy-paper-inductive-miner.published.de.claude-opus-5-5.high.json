@@ -1,0 +1,81 @@
+{
+ "dataset_id": "comfy-paper-inductive-miner",
+ "kind": "model",
+ "data_hash": "c397a6e506d816ba066dbc4a4780ccf0f9add1a5238a2aa7dc169366567f86bc",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 4,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.3,
+  "assignment_rule": "multi"
+ },
+ "language": "de",
+ "settings": "published",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "high",
+ "created_at": "2026-11-10T11:06:43+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Number of duplicate tasks",
+     "Size",
+     "Token split",
+     "Density",
+     "Average connector degree"
+    ],
+    "name": "Größe des Netzes",
+    "summary": "Size, Number of duplicate tasks und Token split laden sehr hoch (um 0,95–0,97) und beschreiben gemeinsam den Umfang des Netzes an Knoten, wiederholten bzw. stillen Transitionen und ausgehenden Kanten. Die negativen Ladungen von Density (−0,58) und Average connector degree (−0,48) passen dazu, dass größere Netze dünner besetzt sind. Beide Maße haben jedoch Querladungen auf Faktor 3 bzw. auf den Faktoren 2 und 3.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Maximum connector degree",
+     "Coefficient of network connectivity",
+     "Average connector degree"
+    ],
+    "name": "Konnektorgrad und Vernetzung",
+    "summary": "Der Faktor wird von Maximum connector degree (0,95) getragen. Coefficient of network connectivity (0,66) und Average connector degree (0,46) kommen hinzu, sodass er die Zahl der Kanten an Konnektoren und pro Knoten abbildet. Für Maximum connector degree liegt die Kommunalität an der Grenze der Schätzung (möglicher Heywood-Fall), und Average connector degree hat Querladungen. Das schwächt die Deutung.",
+    "confidence": "medium"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "Connector Heterogeneity",
+     "Density",
+     "Average connector degree"
+    ],
+    "name": "Homogene Konnektortypen und Dichte",
+    "summary": "Connector Heterogeneity lädt stark negativ (−0,93), Density (0,61) und Average connector degree (0,58) laden positiv. Höhere Werte stehen also für einheitlichere Konnektortypen bei dichteren Netzen mit höherem Konnektorgrad. Die beiden positiven Ladungen sind Querladungen (mit Faktor 1 bzw. den Faktoren 1 und 2), und der Eigenwert liegt mit 0,91 unter 1. Die Deutung ist daher unsicher.",
+    "confidence": "low"
+   },
+   {
+    "index": 4,
+    "driving_measures": [
+     "Separability"
+    ],
+    "name": "Separierbarkeit",
+    "summary": "Nur Separability ist zugeordnet (0,63, Kommunalität 0,52). Unterhalb der Zuordnung laden Coefficient of network connectivity (0,48), Average connector degree (0,41) und Density (0,40) moderat mit. Der Faktor erklärt nur 10,7 % der Varianz, sein Eigenwert liegt bei 0,71, und er ruht im Wesentlichen auf einem Maß. Er ist daher schwach.",
+    "confidence": "low"
+   }
+  ],
+  "overall": "Bartlett-Test (p < 0,05) und KMO (0,747 über der Schwelle 0,6) sprechen für die Eignung der Daten. Die vier varimax-rotierten Faktoren erklären zusammen 85 % der Varianz. Nach den Eigenwerten (5,46; 2,20; 0,91; 0,71) wurden jedoch nur zwei Faktoren vorgeschlagen. Klar belegt sind ein starker Größenfaktor und ein Faktor für Konnektorgrad und Vernetzung. Die Faktoren 3 und 4 haben Eigenwerte unter 1 und hängen an Querladungen bzw. an einem einzelnen Maß. Connector Mismatch bleibt wegen geringer Kommunalität (0,21) unzugeordnet. Sequentiality und Control flow complexity wurden vorab durch den MSA-Filter entfernt.",
+  "caveats": [
+   "Die Faktorzahl von 4 übersteigt die vorgeschlagene Faktorzahl von 2; die Faktoren 3 und 4 könnten Überextraktion sein.",
+   "Für Maximum connector degree liegt ein möglicher Heywood-Fall vor, was die Lösung, insbesondere Faktor 2, instabil machen kann.",
+   "Density und Average connector degree haben deutliche Querladungen und trennen die Faktoren 1 bis 3 nur unscharf.",
+   "Connector Mismatch ist mit einer Kommunalität von 0,21 durch die Faktoren kaum erklärt und bleibt unzugeordnet.",
+   "Die Freiheitsgrade des Bartlett-Tests (66) entsprechen 12 statt der 10 verwendeten Maße; der Test wurde vermutlich vor dem MSA-Filter berechnet.",
+   "Die Ergebnisse beschreiben gemeinsame Varianz in diesem Datensatz von 288 Netzen und hängen von Daten, Rotation und Faktorzahl ab; sie belegen keine Ursachen."
+  ]
+ }
+}

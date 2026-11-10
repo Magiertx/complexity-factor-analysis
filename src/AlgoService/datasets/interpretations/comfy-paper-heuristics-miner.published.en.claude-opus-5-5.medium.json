@@ -16,10 +16,11 @@
  "language": "en",
  "settings": "published",
  "model": "claude-opus-5-5",
- "prompt_version": "2",
- "prompt_digest": "5a0d8770fc9a3942",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
  "effort": "medium",
- "created_at": "2026-11-10T03:00:47+00:00",
+ "created_at": "2026-11-10T11:10:19+00:00",
  "interpretation": {
   "factors": [
    {
@@ -28,8 +29,8 @@
      "Token split",
      "Connector Heterogeneity"
     ],
-    "name": "Splitting and connector mix",
-    "summary": "Token split (0.88) and Connector Heterogeneity (0.81) load highly, so the factor reflects nets with more outgoing arcs at transitions and a more even mix of parallel and choice connectors, which suggests parallel splitting. Connector Heterogeneity also loads 0.57 on Factor 2 and Density loads 0.48 here, so the factor is not cleanly separated. It rests on two measures in a non-identified solution with a possible Heywood case for Connector Heterogeneity.",
+    "name": "Parallel branching and connector mix",
+    "summary": "Token split (0.88) and Connector Heterogeneity (0.81) load highly, so the factor reflects nets that create more parallel tokens and use a more even mix of parallel and choice connectors. Connector Heterogeneity also loads 0.57 on Factor 2 and Density loads 0.48 here, so the factor is not cleanly separated from Factor 2. Connector Heterogeneity is a possible Heywood case, which further weakens the loadings.",
     "confidence": "low"
    },
    {
@@ -38,26 +39,26 @@
      "Control flow complexity",
      "Density"
     ],
-    "name": "Density versus choice-split complexity",
-    "summary": "Density (0.78) and Control flow complexity (-0.82) load with opposite signs, so denser nets tend to have lower control flow complexity in this dataset. This likely reflects that small nets are dense while large nets with many split arcs are sparse, but the factor rests on only two measures. Connector Heterogeneity (0.57) also loads moderately here.",
+    "name": "Compactness vs. choice-driven complexity",
+    "summary": "Density (0.78) and Control flow complexity (-0.82) load with opposite signs. Higher scores therefore mean denser nets with fewer parallel splits and choice arcs, which plausibly reflects small, compact nets as opposed to larger branching ones; this is an inference, since size was not retained. Connector Heterogeneity (0.57) also loads moderately here.",
     "confidence": "low"
    },
    {
     "index": 3,
     "driving_measures": [],
-    "name": "Residual factor",
-    "summary": "No measure loads above 0.14 and the factor explains only about 1% of the variance (eigenvalue 0.20). It is an artefact of extracting more factors than the data support and should not be interpreted.",
+    "name": "Residual (no substantive factor)",
+    "summary": "No measure loads above 0.35, and the largest loading is 0.13 for Density. The factor explains only 1% of variance and has no interpretable content. It is an artefact of extracting too many factors.",
     "confidence": "low"
    }
   ],
-  "overall": "Bartlett's test is significant and the overall KMO of 0.72 is acceptable, but after the MSA filter only four measures remain. The eigenvalues (3.14, 0.59, 0.20, 0.08) point to a single factor, as suggested. Most of the shared variance is therefore one general dimension on which Token split, Connector Heterogeneity and Density load positively and Control flow complexity loads negatively. Extracting three factors exceeds the Ledermann bound, so the varimax split into Factors 1 and 2 is not unique, and Factor 3 is empty. A one-factor solution, or a re-run with more measures retained, would be more defensible.",
+  "overall": "Bartlett's test is significant and the overall KMO (0.72) exceeds 0.6, but the MSA filter left only four measures, and three factors for four measures exceed the Ledermann bound, so the solution is not identified and the loadings are not unique. The eigenvalues (3.14, 0.59, 0.20, 0.08) and the suggested factor count both point to a single general dimension on which all four measures share variance, with Control flow complexity running opposite to the others. The split into Factors 1 and 2 (44% and 42% of variance) and the empty Factor 3 should not be taken as substantive dimensions; a one-factor solution is the defensible reading.",
   "caveats": [
-   "Three factors for four measures exceed the Ledermann bound, so the solution is not identified and the loadings are not unique.",
-   "Connector Heterogeneity has a communality of 0.995, which suggests a possible Heywood case.",
-   "The eigenvalues support only one factor, so the separation of Factors 1 and 2 is likely arbitrary.",
-   "Eight measures, including Size, were removed by the MSA filter, which limits how broadly the result can be read.",
-   "Connector Heterogeneity is undefined for nets without connectors, which may affect the sample.",
-   "Factor 3 explains about 1% of the variance and has no assigned measures."
+   "Three factors for four measures exceed the Ledermann bound, so the loadings are not unique and the solution should be re-run with one factor.",
+   "Connector Heterogeneity has a communality of 0.995, a possible Heywood case that makes its loadings unreliable.",
+   "Eight of twelve measures, including Size, were removed by the MSA filter, so the analysis covers only a narrow slice of model complexity.",
+   "Bartlett's test reports 66 degrees of freedom, which matches twelve measures rather than the four used, so it may have been computed before filtering.",
+   "Factor 3 has no assigned measures and explains about 1% of variance.",
+   "Connector Heterogeneity is undefined for nets without connectors, which may affect how those nets were handled."
   ]
  }
 }

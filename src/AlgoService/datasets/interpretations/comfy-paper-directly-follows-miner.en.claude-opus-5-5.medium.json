@@ -16,10 +16,11 @@
  "language": "en",
  "settings": "standard",
  "model": "claude-opus-5-5",
- "prompt_version": "2",
- "prompt_digest": "5a0d8770fc9a3942",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
  "effort": "medium",
- "created_at": "2026-11-10T03:02:13+00:00",
+ "created_at": "2026-11-10T11:11:53+00:00",
  "interpretation": {
   "factors": [
    {
@@ -34,17 +35,17 @@
      "Density",
      "Separability"
     ],
-    "name": "General size and connectivity",
-    "summary": "A single general factor on which all eight measures load, explaining 76% of the variance. It is carried most strongly by Control flow complexity, Size and Number of duplicate tasks (about 0.99), followed by the connector degrees and Coefficient of network connectivity (0.86–0.96), so larger nets in this dataset also have more choices and parallelism, more duplicate labels and more arcs per node. Density loads negatively (-0.73), as expected because its denominator grows with size, while Separability loads only moderately (0.44, communality 0.19) and is poorly explained.",
+    "name": "General size and connectivity complexity",
+    "summary": "With a single unrotated factor, nearly all measures load on it. Size, Control flow complexity and Number of duplicate tasks load at about 0.99, and the connector degree and connectivity measures load at 0.86–0.96, so larger nets also have more and busier connectors and more arcs per node. Density loads negatively (-0.73), as expected because density falls as nets grow, while Separability loads only moderately (0.44, communality 0.19) and is poorly represented.",
     "confidence": "high"
    }
   ],
-  "overall": "The data are suitable for factor analysis (Bartlett p < 0.001, overall KMO 0.73). One factor was extracted, in line with the eigenvalues (6.25, then 0.82). It is a general factor: for these 288 nets, size, control-flow complexity, duplicate tasks and connectivity vary together, and density decreases as nets grow. This one-factor result does not separate size from connectivity or concurrency, but with one factor this is expected, so it should not be read as proof that these aspects cannot be told apart.",
+  "overall": "Bartlett's test is significant and the overall KMO of 0.73 exceeds the 0.6 threshold, so the 288 nets are suitable for factor analysis. The first eigenvalue (6.25) dominates and the second is below 1, so a single factor was retained; it explains 76% of the variance. It is a general complexity factor: model size, control-flow branching, duplicate or silent transitions and connector degrees vary together, and density varies in the opposite direction. Sequentiality and Connector Mismatch were removed for low MSA, and Connector Heterogeneity, Token split and Number of empty sequence flows were removed because they were constant. The data therefore give no information on concurrency-specific dimensions.",
   "caveats": [
-   "Sequentiality and Connector Mismatch were removed by the MSA filter, and Connector Heterogeneity, Token split and Number of empty sequence flows were constant, so aspects such as sequentiality and connector balance are not represented.",
-   "Separability has a low communality (0.19) and is largely unexplained by the factor.",
-   "Several loadings near 0.995 and very small trailing eigenvalues point to near-redundant measures in this dataset, likely tied to the discovery algorithms that produced the nets.",
-   "The result reflects shared variance in this particular set of nets and does not show causal relations among the measures."
+   "Several loadings near 1 and eigenvalues close to zero suggest near-redundant measures (e.g. Size, Control flow complexity and Number of duplicate tasks), possibly driven by how the discovery algorithms build the nets.",
+   "Separability is weakly explained by the factor (communality 0.19) and may reflect a distinct aspect not captured here.",
+   "Constant measures (Connector Heterogeneity, Token split, Number of empty sequence flows) suggest the nets contain no parallel connectors, which limits generalization to concurrent models.",
+   "The one-factor result depends on this dataset and on the measures retained after the MSA filter; it describes shared variance, not causal structure."
   ]
  }
 }

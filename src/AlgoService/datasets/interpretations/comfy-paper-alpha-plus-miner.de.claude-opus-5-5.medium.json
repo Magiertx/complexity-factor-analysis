@@ -16,10 +16,11 @@
  "language": "de",
  "settings": "standard",
  "model": "claude-opus-5-5",
- "prompt_version": "2",
- "prompt_digest": "5a0d8770fc9a3942",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
  "effort": "medium",
- "created_at": "2026-11-10T02:58:29+00:00",
+ "created_at": "2026-11-10T11:07:57+00:00",
  "interpretation": {
   "factors": [
    {
@@ -32,7 +33,7 @@
      "Control flow complexity"
     ],
     "name": "Größe und Parallelität",
-    "summary": "Dieser Faktor bündelt die Netzgröße (Size 0,86) mit Maßen der Parallelität und Verzweigung: leere Sequenzflüsse zwischen parallelen Splits und Joins (0,95), Token split (0,82), Connector Mismatch (0,75) und Control flow complexity (0,72). Größere Netze haben in diesem Datensatz also auch mehr parallele Strukturen und unausgeglichene Konnektoren. Control flow complexity lädt allerdings auch deutlich auf Faktor 2 (0,64), und Size zusätzlich mäßig auf Faktor 3 (0,45).",
+    "summary": "Der Faktor bündelt hohe Ladungen von Number of empty sequence flows (0,95), Size (0,86), Token split (0,82), Connector Mismatch (0,75) und Control flow complexity (0,72), also Maße für Umfang des Netzes und Ausmaß paralleler Verzweigungen. Control flow complexity hat eine Querladung auf Faktor 2 (0,64), und Size lädt zusätzlich mäßig auf Faktor 3 (0,45). Mit 39,8 % erklärter Varianz ist er der stärkste Faktor.",
     "confidence": "high"
    },
    {
@@ -43,8 +44,8 @@
      "Control flow complexity",
      "Token split"
     ],
-    "name": "Vernetzungsgrad der Konnektoren",
-    "summary": "Hoch laden Maximum connector degree (0,88) und Coefficient of network connectivity (0,83). Der Faktor beschreibt also, wie viele Kanten pro Knoten bzw. an einzelnen Konnektoren liegen, unabhängig von der Größe. Control flow complexity (0,64, Querladung) und Token split (0,48) tragen ergänzend bei.",
+    "name": "Konnektorgrad und Vernetzung",
+    "summary": "Maximum connector degree (0,88) und Coefficient of network connectivity (0,83) laden hoch. Beide beschreiben, wie viele Kanten an Knoten bzw. Konnektoren hängen. Control flow complexity (0,64) und Token split (0,48) laden zusätzlich, sind aber Faktor 1 zugeordnet. Da der Faktor im Kern auf nur zwei zugeordneten Maßen beruht, ist er schmal (23,5 % erklärte Varianz).",
     "confidence": "medium"
    },
    {
@@ -55,17 +56,17 @@
      "Sequentiality"
     ],
     "name": "Geringe Dichte und Separierbarkeit",
-    "summary": "Density lädt stark negativ (−0,78), Separability positiv (0,61). Hohe Werte stehen für dünn besetzte Netze mit wenigen Artikulationspunkten, was zur mäßigen Ladung von Size (0,45) passt, da Density mit wachsender Größe normalerweise abnimmt. Sequentiality (−0,35) ist schwach und lädt fast gleich stark auf alle drei Faktoren, daher trägt sie kaum zur Deutung bei.",
+    "summary": "Density lädt negativ (−0,78) und Separability positiv (0,61). Hohe Werte stehen also für dünn besetzte Netze mit vielen Knoten, die keine Artikulationspunkte sind; das passt zu größeren Netzen, da Density mit wachsender Netzgröße sinkt (Size lädt hier mit 0,45). Sequentiality ist nur schwach und negativ zugeordnet (−0,35), mit fast gleich hohen Ladungen auf Faktor 1 und 2 (0,31). Der Faktor ist mit 14,9 % erklärter Varianz der schwächste.",
     "confidence": "medium"
    }
   ],
-  "overall": "Die Daten sind für eine Faktorenanalyse geeignet: Bartlett-Test signifikant, KMO 0,82. Drei varimax-rotierte Faktoren erklären zusammen 78 % der Varianz. Faktor 1 (40 %) steht für Größe und Parallelität. Faktor 2 (23 %) steht für den Vernetzungsgrad an Knoten und Konnektoren. Faktor 3 (15 %) steht für geringe Dichte und Separierbarkeit. Die Faktoren beschreiben gemeinsame Varianz in diesen 288 Netzen, keine kausalen Zusammenhänge.",
+  "overall": "Bartlett-Test (p < 0,001) und KMO (0,82) sprechen für die Eignung der Daten. Drei varimax-rotierte Faktoren erklären zusammen 78,2 % der Varianz; das entspricht den drei Eigenwerten über 1. Faktor 1 erfasst Größe und parallele Verzweigung, Faktor 2 Konnektorgrad und Kantenzahl pro Knoten, Faktor 3 vor allem (geringe) Dichte und Separierbarkeit. Viele Maße laden auf mehreren Faktoren, die Struktur ist daher nicht sauber einfach.",
   "caveats": [
-   "Der dritte Eigenwert liegt mit 1,064 nur knapp über 1, Faktor 3 ist daher vergleichsweise schwach und weniger stabil.",
-   "Control flow complexity lädt ähnlich stark auf Faktor 1 und 2 und ist keinem Faktor eindeutig zuzuordnen.",
-   "Sequentiality hat eine geringe Kommunalität (0,32) und ähnlich große Ladungen auf allen Faktoren; ihre Zuordnung zu Faktor 3 ist kaum belastbar.",
+   "Control flow complexity hat eine deutliche Querladung auf Faktor 1 und 2 (0,72 vs. 0,64).",
+   "Sequentiality hat eine geringe Kommunalität (0,32) und ähnlich große Ladungen auf allen drei Faktoren; die Zuordnung zu Faktor 3 ist unsicher.",
    "Connector Heterogeneity und Average connector degree wurden wegen niedriger MSA entfernt, Number of duplicate tasks war konstant; diese Aspekte fehlen in der Lösung.",
-   "Varimax erzwingt unkorrelierte Faktoren; die Ergebnisse hängen von Datensatz, Rotation und Faktorzahl ab."
+   "Faktor 2 beruht im Kern auf nur zwei zugeordneten Maßen.",
+   "Die Ergebnisse gelten nur für diesen Datensatz von 288 Netzen und hängen von Rotation und Faktorzahl ab."
   ]
  }
 }

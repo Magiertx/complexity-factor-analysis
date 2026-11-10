@@ -1,0 +1,52 @@
+{
+ "dataset_id": "comfy-paper-directly-follows-miner",
+ "kind": "model",
+ "data_hash": "9536126aa582391ece15262c0c2a6c7f6dee5641f2691e40ee9f7102dbe98efc",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 1,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.0,
+  "assignment_rule": "largest"
+ },
+ "language": "en",
+ "settings": "standard",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "high",
+ "created_at": "2026-11-10T11:13:39+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Control flow complexity",
+     "Size",
+     "Number of duplicate tasks",
+     "Average connector degree",
+     "Coefficient of network connectivity",
+     "Maximum connector degree",
+     "Density",
+     "Separability"
+    ],
+    "name": "General size and connectivity",
+    "summary": "This is the single, unrotated factor, and all eight measures load on it, so it is a general factor rather than a specific dimension. Control flow complexity, Size and Number of duplicate tasks load almost perfectly (about 0.995), followed by the connector degrees and Coefficient of network connectivity (0.86 to 0.96); together they describe larger nets with more, and more heavily connected, connectors. Density loads negatively (-0.73), so larger nets are sparser, as expected from its quadratic denominator. Separability loads only moderately (0.44, communality 0.19) and is poorly explained by the factor.",
+    "confidence": "high"
+   }
+  ],
+  "overall": "Bartlett's test is significant and the overall KMO of 0.73 exceeds the 0.6 threshold, so the data are suitable for a factor analysis. The first eigenvalue (6.25) dominates and the next is 0.82, so one factor was retained; it explains 76% of the variance. In these 288 nets, the complexity measures essentially vary together along one general size and connectivity dimension. Separability is the only measure that keeps substantial unique variance. Sequentiality and Connector Mismatch were dropped for low MSA, and three measures were dropped as constant, so connector-type and token-split aspects are not represented.",
+  "caveats": [
+   "With one factor and no rotation, the factor is a general factor by construction and cannot separate sub-dimensions such as size versus density.",
+   "Several near-zero eigenvalues and loadings of about 0.995 for Size, Control flow complexity and Number of duplicate tasks indicate near-redundancy among these measures in this dataset.",
+   "Separability is weakly represented (communality 0.19), so its assignment to the factor is tentative.",
+   "Bartlett's df of 45 corresponds to ten measures, suggesting the test was computed before the MSA filter removed two of them.",
+   "The result reflects the shared variance in this particular set of discovered nets and does not imply causal relations between the measures."
+  ]
+ }
+}

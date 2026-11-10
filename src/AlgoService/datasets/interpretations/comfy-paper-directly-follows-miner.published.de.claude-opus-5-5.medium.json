@@ -16,10 +16,11 @@
  "language": "de",
  "settings": "published",
  "model": "claude-opus-5-5",
- "prompt_version": "2",
- "prompt_digest": "5a0d8770fc9a3942",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
  "effort": "medium",
- "created_at": "2026-11-10T03:02:05+00:00",
+ "created_at": "2026-11-10T11:11:45+00:00",
  "interpretation": {
   "factors": [
    {
@@ -33,7 +34,7 @@
      "Coefficient of network connectivity"
     ],
     "name": "Größe und Verzweigungskomplexität",
-    "summary": "Size, Control flow complexity, Number of duplicate tasks und Average connector degree laden alle hoch (ca. 0,80–0,82), d. h. größere Netze haben mehr Verzweigungen, mehr doppelte bzw. stille Transitionen und dichter verknüpfte Konnektoren. Maximum connector degree (0,60) und Coefficient of network connectivity (0,56) laden mäßig und zugleich auf Faktor 3 (Querladungen). Der Faktor ist zudem nahe an einem Generalfaktor, da fast alle Maße hier nennenswert laden.",
+    "summary": "Number of duplicate tasks, Average connector degree, Control flow complexity und Size laden hoch (0,80–0,82), Maximum connector degree und Coefficient of network connectivity moderat; der Faktor erfasst gemeinsam wachsende Netzgröße, Wiederholungen von Labels und Verzweigungsumfang. Er erklärt 43,7 % der Varianz und spiegelt weitgehend den einzigen dominanten Eigenwert (6,25) wider, ist also eher ein allgemeiner Komplexitätsfaktor. Maximum connector degree und Coefficient of network connectivity haben Querladungen auf Faktor 3.",
     "confidence": "high"
    },
    {
@@ -41,8 +42,8 @@
     "driving_measures": [
      "Density"
     ],
-    "name": "(Geringe) Dichte",
-    "summary": "Getragen fast nur von Density (−0,90); Size, Control flow complexity und Maximum connector degree laden mäßig positiv (0,42–0,45), bleiben aber unter der Zuordnungsregel. Der Faktor spiegelt vermutlich, dass die Dichte mit wachsender Netzgröße sinkt, und ist als Ein-Maß-Faktor nur schwach abgesichert.",
+    "name": "Dichte (invers)",
+    "summary": "Der Faktor wird praktisch nur von Density getragen (Ladung −0,90); höhere Faktorwerte bedeuten dünner besetzte Netze. Size, Control flow complexity und Number of duplicate tasks laden hier nur moderat positiv (0,40–0,45), was zur Abhängigkeit der Dichte von der Netzgröße passt. Als Ein-Maß-Faktor mit Eigenwert unter 1 ist er schwach abgesichert.",
     "confidence": "low"
    },
    {
@@ -51,9 +52,9 @@
      "Coefficient of network connectivity",
      "Maximum connector degree"
     ],
-    "name": "Vernetzungsgrad (Kanten pro Knoten)",
-    "summary": "Coefficient of network connectivity (0,71) und Maximum connector degree (0,48) laden hier, beide jedoch mit deutlichen Querladungen auf Faktor 1; Average connector degree lädt ebenfalls 0,44. Der Faktor beschreibt die Anzahl der Kanten je Knoten bzw. Konnektor unabhängig von der Größe, ist aber nicht klar von Faktor 1 getrennt.",
-    "confidence": "medium"
+    "name": "Vernetzungsgrad",
+    "summary": "Coefficient of network connectivity (0,71) und Maximum connector degree (0,48) laden auf diesem Faktor, beide mit deutlichen Querladungen auf Faktor 1. Er deutet auf Bögen pro Knoten bzw. stark vernetzte Konnektoren jenseits der reinen Größe hin. Mit nur zwei Maßen, Querladungen und Eigenwert 0,53 ist er schwach.",
+    "confidence": "low"
    },
    {
     "index": 4,
@@ -61,17 +62,17 @@
      "Separability"
     ],
     "name": "Separierbarkeit",
-    "summary": "Nur Separability lädt substanziell (0,69, Kommunalität 0,54); alle anderen Maße liegen unter 0,40. Es handelt sich um einen schwachen, spezifischen Faktor, der im Wesentlichen ein einzelnes Maß abbildet.",
+    "summary": "Nur Separability lädt substanziell (0,69); der Faktor beschreibt den Anteil der Knoten, die keine Artikulationspunkte sind. Die Kommunalität von Separability ist mit 0,54 mäßig, und der Eigenwert liegt bei nur 0,25, sodass der Faktor kaum mehr als ein einzelnes Maß abbildet.",
     "confidence": "low"
    }
   ],
-  "overall": "Bartlett-Test (p < 0,001) und KMO (0,73) zeigen, dass die Daten grundsätzlich für eine Faktorenanalyse geeignet sind. Die Eigenwerte (6,25; 0,82; 0,53; …) sprechen jedoch klar für eine einfaktorielle Lösung, wie auch vorgeschlagen; die extrahierten vier Faktoren erklären zwar 91 % der Varianz, aber Faktor 1 (Größe/Verzweigungskomplexität, 44 %) dominiert, während die Faktoren 2 bis 4 jeweils im Wesentlichen ein einzelnes Maß (Density, Coefficient of network connectivity, Separability) abbilden. Insgesamt variieren die meisten Komplexitätsmaße dieser 288 Netze gemeinsam mit der Netzgröße.",
+  "overall": "Die Daten sind für eine Faktorenanalyse geeignet (Bartlett signifikant, KMO 0,73 über der Schwelle 0,6), doch die Eigenwerte zeigen eine klar dominierende Dimension (6,25 gegenüber 0,82 und darunter), und die vorgeschlagene Faktorzahl ist 1. Mit vier extrahierten Faktoren entsteht ein starker Größen- und Verzweigungsfaktor sowie drei schwache Faktoren, die jeweils im Wesentlichen ein oder zwei Maße (Density, Coefficient of network connectivity, Separability) abbilden. Insgesamt werden 91,3 % der Varianz erklärt, wobei die Struktur eher auf eine gemeinsame Komplexitätsdimension mit einigen spezifischen Zusatzaspekten hindeutet.",
   "caveats": [
-   "Nur ein Eigenwert liegt über 1 und vorgeschlagen war ein Faktor, daher sind die Faktoren 2 bis 4 vermutlich überextrahiert und wenig stabil.",
-   "Kommunalitäten nahe 1 bei Size, Control flow complexity, Density und Number of duplicate tasks deuten auf einen möglichen Heywood-Fall hin.",
-   "Maximum connector degree und Coefficient of network connectivity laden kreuzweise auf Faktor 1 und 3, sodass diese Faktoren nicht sauber getrennt sind.",
-   "Sequentiality und Connector Mismatch wurden wegen niedriger MSA, drei weitere Maße wegen Konstanz ausgeschlossen, was die Aussagekraft auf acht Maße beschränkt.",
-   "Die Ergebnisse hängen von Datensatz, Varimax-Rotation und Faktorenzahl ab und zeigen gemeinsame Varianz, keine Ursachen."
+   "Die Faktorzahl 4 liegt deutlich über der vorgeschlagenen Faktorzahl 1, die Faktoren 2 bis 4 haben Eigenwerte unter 1 und sind daher möglicherweise überextrahiert.",
+   "Kommunalitäten nahe 1 bei Size, Control flow complexity, Density und Number of duplicate tasks deuten auf einen möglichen Heywood-Fall hin, was die Ladungen verzerren kann.",
+   "Maximum connector degree und Coefficient of network connectivity haben Querladungen auf Faktor 1 und Faktor 3 und trennen die Faktoren nicht sauber.",
+   "Sequentiality und Connector Mismatch wurden wegen niedriger MSA entfernt, drei weitere Maße waren konstant, sodass diese Aspekte in der Lösung fehlen.",
+   "Das Ergebnis beschreibt gemeinsame Varianz in diesen 288 Netzen und hängt von Daten, Varimax-Rotation und Faktorzahl ab; es erlaubt keine kausalen Aussagen."
   ]
  }
 }

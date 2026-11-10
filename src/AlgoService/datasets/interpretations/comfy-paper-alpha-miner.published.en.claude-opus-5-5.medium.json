@@ -16,10 +16,11 @@
  "language": "en",
  "settings": "published",
  "model": "claude-opus-5-5",
- "prompt_version": "2",
- "prompt_digest": "5a0d8770fc9a3942",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
  "effort": "medium",
- "created_at": "2026-11-10T02:58:13+00:00",
+ "created_at": "2026-11-10T11:07:44+00:00",
  "interpretation": {
   "factors": [
    {
@@ -33,8 +34,8 @@
      "Maximum connector degree",
      "Connector Mismatch"
     ],
-    "name": "Size and parallel/branching volume",
-    "summary": "Very high loadings (0.92–0.97) of Number of empty sequence flows, Token split, Control flow complexity, Size and Coefficient of network connectivity, plus Maximum connector degree (0.80) and a moderate Connector Mismatch (0.56), show that larger nets in this dataset also have more splits, more parallel structure and more arcs per node. Density loads negatively (-0.43, below the gap rule), in line with larger nets being sparser relative to 2·|T|·|P|. The factor explains about 50% of the variance.",
+    "name": "Size and branching volume",
+    "summary": "Very high loadings (0.92–0.97) of Size, Token split, Control flow complexity, Number of empty sequence flows and Coefficient of network connectivity, plus Maximum connector degree (0.80) and a moderate Connector Mismatch (0.56), describe larger nets with more splits, parallelism and arcs per node. Density loads moderately negatively (-0.43), consistent with density falling as nets grow. This factor explains about 50% of the variance.",
     "confidence": "high"
    },
    {
@@ -42,10 +43,11 @@
     "driving_measures": [
      "Average connector degree",
      "Density",
-     "Connector Heterogeneity"
+     "Connector Heterogeneity",
+     "Maximum connector degree"
     ],
     "name": "Connector degree and density",
-    "summary": "Average connector degree (0.90) and Density (0.81) load highly, with Maximum connector degree loading moderately (0.41) and Connector Heterogeneity negatively (-0.49). The factor reflects how many arcs meet at connectors and how dense the net is, independent of size, and it is associated with less mixing of connector types. It explains about 17% of the variance.",
+    "summary": "Average connector degree (0.90) and Density (0.81) load highly, so the factor captures nets whose connectors carry many arcs relative to net size. Connector Heterogeneity loads negatively (-0.49), suggesting such nets tend to use one connector type, and Maximum connector degree cross-loads moderately (0.41) beside its main loading on Factor 1.",
     "confidence": "medium"
    },
    {
@@ -55,7 +57,7 @@
      "Sequentiality"
     ],
     "name": "Sequential, separable structure",
-    "summary": "Separability (0.93) and Sequentiality (0.76) load highly, so nets with many articulation points and many arcs between non-connector nodes share variance here. This resembles a 'serial, chain-like structure' dimension, though it rests on only two measures. It explains about 15% of the variance.",
+    "summary": "Separability (0.93) and Sequentiality (0.76) load highly, describing nets with many non-connector arcs and many nodes that are not articulation points. The factor is clear but rests on only two measures (about 15% of the variance).",
     "confidence": "medium"
    },
    {
@@ -64,17 +66,18 @@
      "Connector Heterogeneity"
     ],
     "name": "Connector type mix (weak)",
-    "summary": "Only Connector Heterogeneity loads notably (0.62), and it cross-loads on Factor 2 (-0.49). The factor explains just 4% of the variance and its eigenvalue (0.68) is below 1, so it is essentially a measure-specific factor.",
+    "summary": "Only Connector Heterogeneity loads notably (0.62), and it cross-loads on Factor 2 (-0.49). The factor explains only 4.4% of the variance, has an eigenvalue of 0.68, which is below 1, and goes beyond the suggested three factors, so it is likely a specific factor rather than a shared dimension.",
     "confidence": "low"
    }
   ],
-  "overall": "The data are suitable for factor analysis (Bartlett p < 0.001, overall KMO 0.83), and four varimax factors explain 86% of the variance. A dominant size/branching factor accounts for half of it, followed by a connector degree/density factor and a sequentiality/separability factor. The fourth factor, retained beyond the three suggested by the eigenvalues, is carried by Connector Heterogeneity alone and adds little. All measures are assigned; Connector Mismatch has low communality (0.37) and only a moderate loading on Factor 1.",
+  "overall": "The data are suitable for a factor analysis: Bartlett's test is significant and the overall KMO is 0.83. The four varimax factors explain 86% of the variance. A dominant size and branching factor is accompanied by a connector degree and density factor and by a sequentiality and separability factor. The fourth factor is weak, being retained beyond the suggested three, and is carried only by Connector Heterogeneity. All measures are assigned, and the only formal cross-loading is Connector Heterogeneity.",
   "caveats": [
-   "Four factors were extracted although three were suggested, and three eigenvalues exceed 1, so Factor 4 is likely overextraction.",
-   "Connector Heterogeneity cross-loads on Factors 2 and 4, and its MSA (0.61) is close to the threshold, as are those of Average connector degree and Density.",
-   "Number of duplicate tasks was removed as constant, so this dimension is not represented.",
-   "Connector Mismatch is only moderately explained (communality 0.37).",
-   "Factors reflect shared variance across these 288 nets, mostly discovered models, and depend on the discovery algorithms, the rotation and the number of factors."
+   "Four factors were extracted although three were suggested, and the fourth factor (eigenvalue 0.68, 4.4% of the variance) is essentially a single-measure factor.",
+   "Connector Heterogeneity cross-loads on Factors 4 and 2, and Maximum connector degree and Density also load secondarily on other factors.",
+   "Connector Mismatch has a low communality (0.37), so it is only partly explained by the solution.",
+   "Connector Heterogeneity, Average connector degree and Density have MSA values just above 0.6.",
+   "Number of duplicate tasks was constant and removed, so it is not represented.",
+   "The results reflect shared variance in these 288 discovered nets and depend on the discovery algorithms, the rotation and the factor count, not on causal relations."
   ]
  }
 }

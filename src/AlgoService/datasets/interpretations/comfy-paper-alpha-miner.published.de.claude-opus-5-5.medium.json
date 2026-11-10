@@ -16,10 +16,11 @@
  "language": "de",
  "settings": "published",
  "model": "claude-opus-5-5",
- "prompt_version": "2",
- "prompt_digest": "5a0d8770fc9a3942",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
  "effort": "medium",
- "created_at": "2026-11-10T02:57:51+00:00",
+ "created_at": "2026-11-10T11:07:24+00:00",
  "interpretation": {
   "factors": [
    {
@@ -34,7 +35,7 @@
      "Connector Mismatch"
     ],
     "name": "Größe und Verzweigungsumfang",
-    "summary": "Sehr hohe Ladungen (0,92–0,97) von Number of empty sequence flows, Token split, Control flow complexity, Size und Coefficient of network connectivity zeigen, dass in diesen Netzen Größe, Anzahl paralleler und alternativer Verzweigungen und Kanten pro Knoten gemeinsam variieren. Maximum connector degree (0,80) und schwächer Connector Mismatch (0,56, Kommunalität nur 0,37) laden ebenfalls hier; Density lädt moderat negativ (-0,43), d. h. größere Netze sind tendenziell weniger dicht. Maximum connector degree lädt zusätzlich mit 0,41 auf Faktor 2.",
+    "summary": "Sehr hohe Ladungen (>0,92) von Number of empty sequence flows, Token split, Control flow complexity, Size und Coefficient of network connectivity zeigen eine gemeinsame Dimension aus Netzgröße und Umfang paralleler bzw. auswählender Verzweigungen. Maximum connector degree (0,80; zusätzlich 0,41 auf Faktor 2) und Connector Mismatch (0,56, Kommunalität nur 0,37) laden schwächer. Density lädt moderat negativ (-0,43), was zur Abnahme der Dichte bei größeren Netzen passt.",
     "confidence": "high"
    },
    {
@@ -45,7 +46,7 @@
      "Connector Heterogeneity"
     ],
     "name": "Konnektordichte",
-    "summary": "Average connector degree (0,90) und Density (0,81) laden hoch: Netze mit vielen Kanten je Konnektor sind relativ zu ihrer Größe dicht. Connector Heterogeneity lädt negativ (-0,49), d. h. dichte Netze mit stark vernetzten Konnektoren haben eher einheitliche Konnektortypen; diese Kennzahl lädt jedoch kreuzweise auf Faktor 4.",
+    "summary": "Average connector degree (0,90) und Density (0,81) laden hoch, d. h. Netze mit vielen Bögen je Konnektor bzw. relativ zur maximal möglichen Bogenzahl. Connector Heterogeneity lädt negativ (-0,49) als Querladung zu Faktor 4, und Maximum connector degree lädt moderat (0,41).",
     "confidence": "medium"
    },
    {
@@ -54,8 +55,8 @@
      "Separability",
      "Sequentiality"
     ],
-    "name": "Sequentielle, zerlegbare Struktur",
-    "summary": "Separability (0,93) und Sequentiality (0,76) laden hoch; beide beschreiben einen hohen Anteil einfacher, kettenartiger Abschnitte (Gelenkpunkte, Kanten zwischen Nicht-Konnektoren). Der Faktor wird nur von zwei Kennzahlen getragen, deren Bedeutung aber klar übereinstimmt.",
+    "name": "Sequentielle Struktur",
+    "summary": "Separability (0,93) und Sequentiality (0,76) bilden einen Faktor, der lineare, durch Artikulationspunkte zerlegbare Abschnitte mit wenigen Konnektoren beschreibt. Der Faktor beruht auf nur zwei Maßen, die aber inhaltlich klar zusammenpassen.",
     "confidence": "medium"
    },
    {
@@ -64,17 +65,17 @@
      "Connector Heterogeneity"
     ],
     "name": "Konnektor-Heterogenität (schwach)",
-    "summary": "Nur Connector Heterogeneity lädt nennenswert (0,62), mit Kreuzladung auf Faktor 2 (-0,49). Der Faktor erklärt nur 4,4 % der Varianz, und sein Eigenwert (0,68) liegt unter 1; er ist eher ein Einzelkennzahl-Faktor als ein gemeinsames Konstrukt.",
+    "summary": "Nur Connector Heterogeneity lädt nennenswert (0,62), mit Querladung -0,49 auf Faktor 2. Der Faktor erklärt nur 4,4 % der Varianz, sein Eigenwert liegt unter 1 und er geht über die vorgeschlagene Faktorzahl von 3 hinaus; er ist daher kaum als eigene Dimension zu deuten.",
     "confidence": "low"
    }
   ],
-  "overall": "Die Daten sind für eine Faktorenanalyse geeignet (Bartlett signifikant, KMO 0,83). Mit Varimax-Rotation und vier Faktoren werden 86 % der Varianz erklärt; dominierend ist ein Größen- und Verzweigungsfaktor (50 %), gefolgt von Konnektordichte (17 %) und sequentieller Struktur (15 %). Der vierte Faktor ist schwach und beruht nur auf Connector Heterogeneity; empfohlen waren drei Faktoren. Alle Kennzahlen sind zugeordnet, Connector Heterogeneity lädt kreuzweise auf Faktor 2 und 4.",
+  "overall": "Bartlett-Test (p < 0,001) und KMO (0,83 > Schwelle 0,6) sprechen für die Eignung der Daten. Die vier varimax-rotierten Faktoren erklären zusammen 86 % der Varianz, wobei Faktor 1 (Größe und Verzweigungsumfang, 50 %) klar dominiert, gefolgt von Konnektordichte (17 %) und sequentieller Struktur (15 %). Der vierte Faktor ist schwach und nur durch ein Maß getragen; eine Lösung mit drei Faktoren, wie vom Eigenwert-Kriterium vorgeschlagen, dürfte angemessener sein.",
   "caveats": [
-   "Es wurden vier statt der vorgeschlagenen drei Faktoren extrahiert; der vierte Faktor hat einen Eigenwert unter 1 und sollte zurückhaltend interpretiert werden.",
-   "Connector Heterogeneity lädt kreuzweise auf Faktor 2 und 4 und hat wie Average connector degree und Density nur eine mäßige MSA (ca. 0,61–0,63).",
+   "Die gewählte Faktorzahl 4 übersteigt die vorgeschlagene Faktorzahl 3; der vierte Eigenwert beträgt nur 0,68.",
+   "Connector Heterogeneity zeigt eine Querladung auf Faktor 4 und Faktor 2 und hat mit 0,61 eine niedrige MSA; zudem ist das Maß ohne Konnektoren undefiniert.",
    "Connector Mismatch hat eine niedrige Kommunalität (0,37) und wird durch die Faktoren nur schwach erklärt.",
-   "Number of duplicate tasks wurde als konstant entfernt und ist daher nicht in der Analyse enthalten.",
-   "Die Ergebnisse spiegeln gemeinsame Varianz in diesen 288 Netzen wider und hängen von Discovery-Algorithmen, Rotation und Faktorenzahl ab; sie belegen keine Ursachen."
+   "Number of duplicate tasks wurde als konstant entfernt und ist in der Analyse nicht vertreten.",
+   "Die Ergebnisse spiegeln gemeinsame Varianz in diesen 288 Netzen wider, die stark von den verwendeten Discovery-Algorithmen abhängen kann, und belegen keine Kausalität."
   ]
  }
 }

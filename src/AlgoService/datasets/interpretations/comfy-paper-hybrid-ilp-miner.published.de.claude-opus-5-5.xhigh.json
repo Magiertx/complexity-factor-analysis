@@ -1,0 +1,82 @@
+{
+ "dataset_id": "comfy-paper-hybrid-ilp-miner",
+ "kind": "model",
+ "data_hash": "32f927e14479f3a0e789e330c3db9e8108d4688ee2073e4ec275dc4e9ece9512",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 4,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.3,
+  "assignment_rule": "multi"
+ },
+ "language": "de",
+ "settings": "published",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "xhigh",
+ "created_at": "2026-11-10T11:15:21+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Average connector degree",
+     "Token split",
+     "Coefficient of network connectivity",
+     "Control flow complexity",
+     "Maximum connector degree",
+     "Number of empty sequence flows",
+     "Connector Mismatch"
+    ],
+    "name": "Vernetzung und Verzweigung an Konnektoren",
+    "summary": "Average connector degree, Token split, Coefficient of network connectivity und Control flow complexity laden sehr hoch (0,91–0,97), Maximum connector degree (0,86) und Number of empty sequence flows (0,75) hoch. Der Faktor erfasst also, wie viele Kanten pro Knoten und Konnektor auftreten und wie stark das Netz verzweigt. Connector Mismatch lädt nur moderat (0,56, Kommunalität 0,57), Size zeigt eine Nebenladung von 0,45; mit 50 % erklärter Varianz ist es der dominante Faktor.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Size",
+     "Separability"
+    ],
+    "name": "Größe und Separierbarkeit",
+    "summary": "Size (0,85) und Separability (0,82) laden hoch, Sequentiality mit 0,50 als Nebenladung. In diesem Datensatz gehen größere Netze also mit einem höheren Anteil an Knoten einher, die keine Artikulationspunkte sind. Der Faktor ruht auf nur zwei Maßen, und Separability liegt mit einer MSA von 0,61 knapp über der Schwelle.",
+    "confidence": "medium"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "Sequentiality",
+     "Connector Heterogeneity"
+    ],
+    "name": "Sequentialität und Konnektorheterogenität",
+    "summary": "Sequentiality (0,79) und Connector Heterogeneity (0,66) laden positiv, Number of empty sequence flows zeigt eine Nebenladung von 0,43. Eine gemeinsame inhaltliche Bedeutung ist nicht offensichtlich, da der Anteil sequenzieller Kanten und die Entropie der Konnektortypen sachlich wenig verbunden sind. Connector Heterogeneity hat nur eine Kommunalität von 0,46 und ist ohne Konnektoren undefiniert, und der zugehörige Eigenwert (0,96) liegt unter 1.",
+    "confidence": "low"
+   },
+   {
+    "index": 4,
+    "driving_measures": [
+     "Connector Mismatch",
+     "Maximum connector degree"
+    ],
+    "name": "Schwacher Restfaktor",
+    "summary": "Diesem Faktor ist kein Maß zugeordnet. Die höchste Ladung hat Connector Mismatch mit 0,38, deutlich unter seiner Hauptladung von 0,56 auf Faktor 1, gefolgt von Maximum connector degree (0,28). Mit 2,6 % erklärter Varianz und einem Eigenwert von 0,52 ist der Faktor nicht sinnvoll interpretierbar.",
+    "confidence": "low"
+   }
+  ],
+  "overall": "Der Bartlett-Test ist signifikant und das KMO von 0,81 liegt deutlich über der Schwelle von 0,6; die Daten sind also für eine Faktorenanalyse geeignet. Die vier Faktoren erklären zusammen 86 % der Varianz, obwohl die Eigenwerte (7,40; 1,47; 0,96; 0,52) nur zwei Faktoren nahelegen. Faktor 1 bündelt die kanten- und konnektorbezogenen Maße zu einer dominanten Dimension von Vernetzung und Verzweigung. Faktor 2 verbindet Size mit Separability, Faktor 3 ist eine schwächere Dimension aus Sequentiality und Connector Heterogeneity, und Faktor 4 bleibt ohne zugeordnete Maße. Nach der Zuordnungsregel gibt es keine Querladungen und keine unzugeordneten Maße, aber mehrere moderate Nebenladungen.",
+  "caveats": [
+   "Die gewählte Faktorzahl von 4 übersteigt die vorgeschlagenen 2, sodass die Faktoren 3 und 4 auf eine Überextraktion hindeuten können.",
+   "Für Coefficient of network connectivity liegt die Kommunalität (0,996) an der Grenze der Schätzung; das deutet auf einen möglichen Heywood-Fall hin.",
+   "Die sehr kleinen letzten Eigenwerte (bis 0,0026) zeigen, dass einige Maße nahezu redundant sind.",
+   "Density wurde durch den MSA-Filter entfernt und Number of duplicate tasks war konstant, sodass beide Maße in der Analyse fehlen.",
+   "Nebenladungen (Size 0,45 auf Faktor 1, Sequentiality 0,50 auf Faktor 2, Number of empty sequence flows 0,43 auf Faktor 3) zeigen, dass die Dimensionen nicht sauber getrennt sind.",
+   "Die Ergebnisse beschreiben gemeinsame Varianz in 288 meist automatisch entdeckten Netzen unter Varimax-Rotation und erlauben keine kausalen Aussagen."
+  ]
+ }
+}

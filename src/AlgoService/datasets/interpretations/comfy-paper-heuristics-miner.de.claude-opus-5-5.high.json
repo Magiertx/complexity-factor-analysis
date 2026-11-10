@@ -1,0 +1,49 @@
+{
+ "dataset_id": "comfy-paper-heuristics-miner",
+ "kind": "model",
+ "data_hash": "53669147e54cc2e6c7ced59c2c9483c1da9e4c3b51d387879753d629d2f7567e",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 1,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.0,
+  "assignment_rule": "largest"
+ },
+ "language": "de",
+ "settings": "standard",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "high",
+ "created_at": "2026-11-10T11:10:54+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Connector Heterogeneity",
+     "Density",
+     "Token split",
+     "Control flow complexity"
+    ],
+    "name": "Choice-dominierte, dünn vernetzte Konnektorstruktur",
+    "summary": "Als einziger, unrotierter Faktor ist dies der allgemeine Faktor der vier verbliebenen Maße. Er steigt mit Control flow complexity (0,72), während Connector Heterogeneity (−0,995), Density (−0,89) und Token split (−0,77) sinken. Netze mit hohem Wert haben also viele Verzweigungen, aber eine weniger gemischte Konnektorart, weniger parallele Splits und eine geringere Dichte, was vorsichtig als von Choice-Konnektoren dominierte, eher große und dünn vernetzte Struktur gelesen werden kann.",
+    "confidence": "medium"
+   }
+  ],
+  "overall": "Bartlett-Test (p < 0,05) und KMO (0,72 über der Schwelle 0,6) sprechen für eine Faktorenanalyse, allerdings erst nachdem der MSA-Filter acht der zwölf Maße entfernt hat. Eigenwerte (3,14; 0,59; 0,20; 0,08) und Vorschlag stützen eine Faktorzahl von 1. Der eine Faktor erklärt 72 % der Varianz, alle vier Maße laden klar (|Ladung| ≥ 0,72) und es gibt weder Querladungen noch nicht zugeordnete Maße. Die gemischten Vorzeichen deuten auf einen Gegensatz zwischen Verzweigungsumfang (Control flow complexity) einerseits und Konnektorvielfalt, Parallelität und Dichte andererseits hin. Das ist ein Muster gemeinsamer Varianz in diesen 288 Netzen, keine Ursache.",
+  "caveats": [
+   "Nur vier Maße bleiben übrig, sodass der Faktor eine schmale Basis hat und zentrale Maße wie Size oder Sequentiality nicht zur Deutung beitragen.",
+   "Die Freiheitsgrade des Bartlett-Tests (df = 66) passen zu zwölf Maßen; der Test wurde offenbar vor dem MSA-Filter berechnet.",
+   "Die Kommunalität von Connector Heterogeneity liegt bei 0,99, sodass der Faktor nahezu mit diesem einen Maß zusammenfällt.",
+   "Connector Heterogeneity ist für Netze ohne Konnektoren undefiniert; wie solche Fälle behandelt wurden, ist nicht angegeben.",
+   "Die Deutung als Größe oder Choice-Dominanz ist nur indirekt erschlossen, weil Size entfernt wurde und das Verhältnis von Choice- zu Parallel-Konnektoren nicht direkt gemessen ist.",
+   "Number of empty sequence flows war konstant und konnte nicht berücksichtigt werden."
+  ]
+ }
+}

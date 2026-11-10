@@ -1,0 +1,73 @@
+{
+ "dataset_id": "comfy-paper-alpha-plus-miner",
+ "kind": "model",
+ "data_hash": "02480599437e2de0fbae80efc62d13129a5a697878a388686fb38ed4cc4b0f20",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 3,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.0,
+  "assignment_rule": "largest"
+ },
+ "language": "de",
+ "settings": "standard",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "high",
+ "created_at": "2026-11-10T11:08:36+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Number of empty sequence flows",
+     "Size",
+     "Token split",
+     "Connector Mismatch",
+     "Control flow complexity"
+    ],
+    "name": "Größe und Parallelität",
+    "summary": "Sehr hohe Ladungen von Number of empty sequence flows (0,95), Size (0,86) und Token split (0,82) sowie hohe Ladungen von Connector Mismatch (0,75) und Control flow complexity (0,72) beschreiben große Netze mit vielen parallelen Verzweigungen und Konnektoren. Token split hat eine Nebenladung auf Faktor 2 (0,48), Size eine auf Faktor 3 (0,45), und Control flow complexity ist eine Querladung mit Faktor 2 (0,64). Mit 39,8 % erklärter Varianz ist dies der stärkste Faktor.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Maximum connector degree",
+     "Coefficient of network connectivity",
+     "Control flow complexity",
+     "Token split"
+    ],
+    "name": "Konnektorgrad und Vernetzung",
+    "summary": "Maximum connector degree (0,88) und Coefficient of network connectivity (0,83) laden hoch, beide messen, wie viele Kanten an Knoten bzw. Konnektoren hängen. Die Querladung von Control flow complexity (0,64) und die Nebenladung von Token split (0,48) passen zu dieser Deutung als Verzweigungsgrad. Der Faktor erklärt 23,5 % der Varianz, wird aber nur von zwei eindeutig zugeordneten Maßen getragen.",
+    "confidence": "medium"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "Density",
+     "Separability",
+     "Sequentiality"
+    ],
+    "name": "Geringe Dichte und Separierbarkeit",
+    "summary": "Density lädt negativ (−0,78) und Separability positiv (0,61): Der Faktor steht für dünn besetzte Netze mit wenigen Artikulationspunkten; die Nebenladung von Size (0,45) deutet an, dass die geringe Dichte teilweise mit der Größe zusammenhängt. Sequentiality lädt nur schwach (−0,35) mit ähnlich großen Ladungen auf Faktor 1 und 2 (0,31) und hat eine geringe Kommunalität (0,32), ist also kaum zuzuordnen. Mit einem Eigenwert von 1,06 und 14,9 % erklärter Varianz ist der Faktor schwach.",
+    "confidence": "medium"
+   }
+  ],
+  "overall": "Bartlett-Test (p < 0,001) und KMO (0,82 über der Schwelle 0,6) sprechen für die Eignung der Daten; zwei Maße wurden per MSA-Filter entfernt, eines war konstant. Drei Faktoren (varimax) erklären zusammen 78,2 % der Varianz: ein dominanter Faktor für Größe und Parallelität, ein Faktor für Konnektorgrad und Vernetzung sowie ein schwächerer Faktor für geringe Dichte und Separierbarkeit. Die Faktoren sind nicht scharf getrennt, wie die Querladung von Control flow complexity und mehrere Nebenladungen zeigen.",
+  "caveats": [
+   "Control flow complexity ist eine Querladung auf Faktor 1 (0,72) und Faktor 2 (0,64) und lässt sich keinem Faktor eindeutig zuordnen.",
+   "Sequentiality hat eine geringe Kommunalität (0,32) und Ladungen ähnlicher Größe auf allen drei Faktoren, ihre Zuordnung zu Faktor 3 ist unsicher.",
+   "Der Eigenwert des dritten Faktors liegt mit 1,06 nur knapp über 1, sodass die Faktorzahl grenzwertig ist.",
+   "Faktor 2 beruht im Kern nur auf zwei Maßen.",
+   "Die Freiheitsgrade des Bartlett-Tests (66) entsprechen 12 statt der 10 verwendeten Maße und wurden vermutlich vor dem MSA-Filter berechnet.",
+   "Die Ergebnisse spiegeln gemeinsame Varianz in diesen 288 Netzen wider und hängen von Daten, Rotation und Faktorzahl ab; Kausalaussagen sind nicht möglich."
+  ]
+ }
+}

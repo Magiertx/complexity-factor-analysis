@@ -1,0 +1,81 @@
+{
+ "dataset_id": "comfy-paper-alpha-dollar-miner",
+ "kind": "model",
+ "data_hash": "53a729372bcd2e31fb15fd22f91dc5e4d85c7d53c7a2e6783de8ec908755ef14",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 4,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.3,
+  "assignment_rule": "multi"
+ },
+ "language": "de",
+ "settings": "published",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "high",
+ "created_at": "2026-11-10T11:10:06+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Number of empty sequence flows",
+     "Token split",
+     "Control flow complexity",
+     "Size",
+     "Coefficient of network connectivity",
+     "Maximum connector degree",
+     "Connector Mismatch"
+    ],
+    "name": "Größe und Verzweigungsumfang",
+    "summary": "Sehr hohe Ladungen (0,92–0,97) von Number of empty sequence flows, Token split, Control flow complexity, Size und Coefficient of network connectivity sowie hohe bis mäßige Ladungen von Maximum connector degree (0,80) und Connector Mismatch (0,56) beschreiben den Umfang des Netzes und seiner Verzweigungen. In diesem Datensatz wachsen also Knotenzahl, Splits und Bögen pro Knoten gemeinsam. Density lädt mit −0,43 negativ, ist aber dem Faktor 2 zugeordnet; Maximum connector degree lädt zusätzlich mit 0,41 auf Faktor 2.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Average connector degree",
+     "Density",
+     "Connector Heterogeneity"
+    ],
+    "name": "Konnektorgrad und Dichte",
+    "summary": "Average connector degree (0,90) und Density (0,81) laden hoch, Connector Heterogeneity mit −0,49 negativ. Der Faktor beschreibt Netze mit vielen Bögen je Konnektor und hoher relativer Dichte, deren Konnektoren eher von einem einzigen Typ sind. Connector Heterogeneity hat eine Querladung mit Faktor 4.",
+    "confidence": "medium"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "Separability",
+     "Sequentiality"
+    ],
+    "name": "Sequentialität und Separierbarkeit",
+    "summary": "Separability (0,93) und Sequentiality (0,76) laden hoch. Der Faktor erfasst einen linearen, wenig verzweigten Aufbau, in dem viele Bögen Nicht-Konnektoren verbinden und wenige Knoten Artikulationspunkte sind. Er ruht nur auf zwei Maßen, deren Bedeutung aber gut zusammenpasst.",
+    "confidence": "medium"
+   },
+   {
+    "index": 4,
+    "driving_measures": [
+     "Connector Heterogeneity"
+    ],
+    "name": "Heterogenität der Konnektortypen (schwach)",
+    "summary": "Nur Connector Heterogeneity lädt nennenswert (0,62), mit einer Querladung von −0,49 auf Faktor 2. Der Faktor erklärt nur 4,4 % der Varianz, sein Eigenwert (0,68) liegt unter 1 und er wurde über die vorgeschlagene Faktorzahl von 3 hinaus extrahiert. Er sollte daher nicht als eigenständige Dimension gelten.",
+    "confidence": "low"
+   }
+  ],
+  "overall": "Bartlett-Test (p < 0,001) und KMO (0,83) bestätigen, dass sich die Daten für eine Faktorenanalyse eignen. Die vier varimax-rotierten Faktoren erklären zusammen 86 % der Varianz. Faktor 1 bündelt als dominante Dimension Größe und Verzweigungsumfang (50 %). Faktor 2 beschreibt Konnektorgrad und Dichte (17 %), Faktor 3 Sequentialität und Separierbarkeit (15 %). Faktor 4 ruht allein auf Connector Heterogeneity und ist schwach. Kein Maß bleibt unzugeordnet; die einzige Querladung betrifft Connector Heterogeneity zwischen Faktor 4 und Faktor 2.",
+  "caveats": [
+   "Die Faktorzahl 4 liegt über der vorgeschlagenen Faktorzahl von 3, und der vierte Eigenwert (0,68) liegt unter 1, daher ist Faktor 4 kaum belastbar.",
+   "Connector Heterogeneity ist ohne Konnektoren undefiniert, hat eine niedrige MSA (0,61) und eine Querladung, was ihre Zuordnung unsicher macht.",
+   "Connector Mismatch hat eine niedrige Kommunalität (0,37) und wird durch die Faktoren nur teilweise erklärt.",
+   "Number of duplicate tasks war konstant und wurde entfernt, sodass keine Aussage über dieses Maß möglich ist.",
+   "Die Faktoren zeigen nur gemeinsame Varianz in diesen 288 Netzen und hängen von den Discovery-Algorithmen, der Rotation und der Faktorzahl ab; sie belegen keine Ursachen."
+  ]
+ }
+}

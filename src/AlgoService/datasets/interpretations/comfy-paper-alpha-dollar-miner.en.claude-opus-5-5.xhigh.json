@@ -1,0 +1,75 @@
+{
+ "dataset_id": "comfy-paper-alpha-dollar-miner",
+ "kind": "model",
+ "data_hash": "53a729372bcd2e31fb15fd22f91dc5e4d85c7d53c7a2e6783de8ec908755ef14",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 3,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.0,
+  "assignment_rule": "largest"
+ },
+ "language": "en",
+ "settings": "standard",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "xhigh",
+ "created_at": "2026-11-10T11:12:09+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Token split",
+     "Number of empty sequence flows",
+     "Control flow complexity",
+     "Size",
+     "Coefficient of network connectivity",
+     "Maximum connector degree",
+     "Connector Mismatch"
+    ],
+    "name": "Size and branching volume",
+    "summary": "Five measures load very highly (0.90–0.97): size, token split, control flow complexity, empty sequence flows and arcs per node. In this dataset, larger nets also have more splits, parallel branches and arcs. Maximum connector degree (0.76) and Connector Mismatch (0.55, communality 0.35) join more weakly, and Density loads negatively (-0.46), which fits density shrinking as nets grow.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Average connector degree",
+     "Density",
+     "Connector Heterogeneity"
+    ],
+    "name": "Connector degree and density",
+    "summary": "Average connector degree (0.89) and Density (0.84) load positively, and Connector Heterogeneity loads negatively (-0.58). Nets with denser wiring and higher-degree connectors tend to have a less mixed set of connector types. Connector Heterogeneity has a low communality (0.35) and is undefined for nets without connectors, so its role here is less certain.",
+    "confidence": "medium"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "Sequentiality",
+     "Separability"
+    ],
+    "name": "Sequentiality and separability",
+    "summary": "This factor rests mainly on Sequentiality (0.96) and Separability (0.69, with a secondary loading of 0.31 on Factor 1). The two measures share variance in these nets, although a purely sequential chain would have many articulation points, so the common meaning is not obvious. The factor rests on only two measures, and Sequentiality is a possible Heywood case.",
+    "confidence": "medium"
+   }
+  ],
+  "overall": "The data are suitable for factor analysis: Bartlett's test is significant (chi-square 5582, df 66) and overall KMO is 0.83. The eigenvalues (6.81, 2.31, 1.20, then 0.68) support three factors, which after varimax rotation explain 82% of the variance. Factor 1 dominates (49%) and gathers size and branching-volume measures that are almost interchangeable here. Factor 2 (17%) captures connector degree and density. Factor 3 (16%) is a narrower sequentiality/separability dimension. No cross-loadings were flagged and no measure is unassigned, but several measures show notable secondary loadings.",
+  "caveats": [
+   "Sequentiality has a communality of 1.017, a possible Heywood case, so the Factor 3 loadings may be distorted.",
+   "Number of duplicate tasks was removed because it was constant, so this analysis says nothing about duplicate labels.",
+   "Maximum connector degree (0.76/0.39/0.32), Density (-0.46/0.84) and Separability (0.31/0.69) have secondary loadings, even though none crosses the 0.15 gap rule.",
+   "Connector Mismatch and Connector Heterogeneity have low communalities (about 0.35), so most of their variance is not explained by the factors.",
+   "Connector Heterogeneity, Average connector degree and Density have MSA values just above 0.6, which makes their placement less stable.",
+   "Connector Heterogeneity is undefined for nets without connectors, and it is not stated how such cases were handled.",
+   "The very high loadings on Factor 1 suggest near-redundant measures, which can inflate this factor's dominance.",
+   "The result reflects this sample of 288 discovered nets, the varimax rotation and the choice of three factors, and shows shared variance rather than causes."
+  ]
+ }
+}

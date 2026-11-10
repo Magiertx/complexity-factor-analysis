@@ -1,0 +1,64 @@
+{
+ "dataset_id": "comfy-paper-hybrid-ilp-miner",
+ "kind": "model",
+ "data_hash": "32f927e14479f3a0e789e330c3db9e8108d4688ee2073e4ec275dc4e9ece9512",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 2,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.0,
+  "assignment_rule": "largest"
+ },
+ "language": "en",
+ "settings": "standard",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "high",
+ "created_at": "2026-11-10T11:12:31+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Average connector degree",
+     "Token split",
+     "Coefficient of network connectivity",
+     "Control flow complexity",
+     "Maximum connector degree",
+     "Number of empty sequence flows",
+     "Connector Mismatch"
+    ],
+    "name": "Branching and arc density at connectors",
+    "summary": "Very high loadings (0.88–0.98) of Average connector degree, Token split, Coefficient of network connectivity, Control flow complexity and Maximum connector degree show that this factor captures how many arcs meet at splits and joins, that is, how strongly the net branches relative to its node count. Number of empty sequence flows (0.74) and Connector Mismatch (0.59) join it more moderately, and both also load on Factor 2 (0.52 and 0.36). It is the dominant factor, with 51% explained variance.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Separability",
+     "Sequentiality",
+     "Size",
+     "Connector Heterogeneity"
+    ],
+    "name": "Size and sequential structure",
+    "summary": "Separability (0.83) and Sequentiality (0.82) load highest, together with Size (0.66). Larger nets in this dataset therefore tend to have a higher share of arcs between non-connector nodes and fewer articulation points. Size also loads 0.47 on Factor 1, and Connector Heterogeneity contributes only weakly (0.41, communality 0.20), so the factor rests mainly on three measures and explains 26% of the variance.",
+    "confidence": "medium"
+   }
+  ],
+  "overall": "The data are suitable for factor analysis: Bartlett's test is significant and the overall KMO is 0.81. Two varimax-rotated factors explain 77% of the variance. The first and dominant factor bundles measures of arc density and branching at connectors. The second groups size with sequentiality and separability. All loadings are positive, and several measures load noticeably on both factors, so the two dimensions are related rather than sharply separated. Density was removed by the MSA filter, and Number of duplicate tasks was dropped because it was constant.",
+  "caveats": [
+   "The third eigenvalue (0.96) is close to 1, so a three-factor solution might also be defensible and could split the current factors differently.",
+   "Size (0.47/0.66), Number of empty sequence flows (0.74/0.52) and Connector Mismatch (0.59/0.36) have substantial loadings on both factors, although none falls within the cross-loading gap.",
+   "Connector Heterogeneity has a low communality (0.20) and is poorly explained by either factor.",
+   "Separability has an MSA of only 0.61, just above the threshold, which weakens the support for Factor 2.",
+   "Density and Number of duplicate tasks are not represented in the solution, so conclusions do not extend to them.",
+   "The factors describe shared variance in these 288 discovered nets and depend on the discovery algorithms, the rotation and the chosen number of factors."
+  ]
+ }
+}

@@ -1,0 +1,74 @@
+{
+ "dataset_id": "comfy-paper-alpha-miner",
+ "kind": "model",
+ "data_hash": "53a729372bcd2e31fb15fd22f91dc5e4d85c7d53c7a2e6783de8ec908755ef14",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 3,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.0,
+  "assignment_rule": "largest"
+ },
+ "language": "de",
+ "settings": "standard",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "xhigh",
+ "created_at": "2026-11-10T11:07:59+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Token split",
+     "Number of empty sequence flows",
+     "Control flow complexity",
+     "Size",
+     "Coefficient of network connectivity",
+     "Maximum connector degree",
+     "Connector Mismatch"
+    ],
+    "name": "Größe und Verzweigungsumfang",
+    "summary": "Mit sehr hohen Ladungen (0,90–0,97) bündelt dieser Faktor Größe, Anzahl der Splits bzw. Kontrollflusskomplexität, leere Sequenzflüsse und Kanten pro Knoten. Er beschreibt also, wie groß ein Netz ist und wie viel Verzweigung es enthält. Maximum connector degree (0,76, Nebenladung 0,39 auf Faktor 2) und Connector Mismatch (0,55, Kommunalität nur 0,35) laden schwächer, und Density lädt mit −0,46 negativ: Größere Netze sind hier dünner besetzt.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Average connector degree",
+     "Density",
+     "Connector Heterogeneity"
+    ],
+    "name": "Konnektorgrad und Dichte",
+    "summary": "Average connector degree (0,89) und Density (0,84) laden hoch, Connector Heterogeneity lädt negativ (−0,58). Der Faktor erfasst also Netze mit vielen Kanten je Konnektor, hoher relativer Dichte und eher einheitlichen Konnektortypen. Density hat zugleich eine deutliche negative Ladung auf Faktor 1 (−0,46), und die Kommunalität von Connector Heterogeneity ist mit 0,35 gering.",
+    "confidence": "medium"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "Sequentiality",
+     "Separability"
+    ],
+    "name": "Sequentialität und Separierbarkeit",
+    "summary": "Dieser Faktor wird nur von Sequentiality (0,96) und Separability (0,69) getragen, ergänzt durch kleinere Nebenladungen von Coefficient of network connectivity (0,35) und Maximum connector degree (0,32). Dass beide Maße gemeinsam positiv laden, lässt sich aus den Definitionen nicht unmittelbar erklären: Ein rein sequentielles Netz hätte viele Artikulationspunkte und damit eine geringe Separierbarkeit. Die Benennung bleibt deshalb vorläufig, zumal für Sequentiality ein möglicher Heywood-Fall vorliegt (Kommunalität 1,017).",
+    "confidence": "low"
+   }
+  ],
+  "overall": "Der Bartlett-Test ist signifikant und der KMO-Wert liegt mit 0,83 deutlich über der Schwelle von 0,6, die Daten (288 Netze) eignen sich also für eine Faktorenanalyse. Die Eigenwerte (6,81; 2,31; 1,20; danach 0,68) stützen die Faktorzahl von drei, wobei der dritte Eigenwert nur knapp über 1 liegt. Die drei varimax-rotierten Faktoren erklären zusammen 81,8 % der Varianz. Faktor 1 dominiert mit 48,8 % und steht für Größe und Verzweigungsumfang. Faktor 2 (17,1 %) bildet Konnektorgrad und Dichte ab, Faktor 3 (15,9 %) Sequentialität und Separierbarkeit. Nach der Regel des Analysewerkzeugs gibt es weder Querladungen noch nicht zugeordnete Maße, einige Maße weisen aber deutliche Nebenladungen auf.",
+  "caveats": [
+   "Für Sequentiality liegt die Kommunalität über 1 (möglicher Heywood-Fall), daher ist die Lösung für Faktor 3 nur eingeschränkt verlässlich.",
+   "Faktor 3 beruht auf nur zwei Maßen, und deren gemeinsame positive Ladung ist aus den Definitionen nicht offensichtlich erklärbar.",
+   "Connector Heterogeneity ist für Netze ohne Konnektoren nicht definiert; wie solche Fälle behandelt wurden, ist unbekannt, und das Maß hat eine niedrige MSA (0,61) sowie eine niedrige Kommunalität (0,35).",
+   "Auch Density (MSA 0,63) und Average connector degree (MSA 0,62) liegen nur knapp über der Schwelle.",
+   "Connector Mismatch wird mit einer Kommunalität von 0,35 nur schwach durch die Faktoren erklärt.",
+   "Number of duplicate tasks war in diesem Datensatz konstant und wurde entfernt, über dieses Maß sagt die Analyse daher nichts aus.",
+   "Die Faktoren beschreiben gemeinsame Varianz in diesem Datensatz und hängen von den Daten, der Varimax-Rotation und der gewählten Faktorzahl ab; Ursachen lassen sich daraus nicht ableiten."
+  ]
+ }
+}

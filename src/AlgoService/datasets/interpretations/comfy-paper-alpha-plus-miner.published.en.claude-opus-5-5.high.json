@@ -1,0 +1,81 @@
+{
+ "dataset_id": "comfy-paper-alpha-plus-miner",
+ "kind": "model",
+ "data_hash": "02480599437e2de0fbae80efc62d13129a5a697878a388686fb38ed4cc4b0f20",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 4,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.3,
+  "assignment_rule": "multi"
+ },
+ "language": "en",
+ "settings": "published",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "high",
+ "created_at": "2026-11-10T11:09:28+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Number of empty sequence flows",
+     "Token split",
+     "Size",
+     "Control flow complexity",
+     "Connector Mismatch"
+    ],
+    "name": "Size and parallel branching",
+    "summary": "Loads highly on Number of empty sequence flows (0.92), Token split (0.84), Size (0.82), Control flow complexity (0.72) and Connector Mismatch (0.71), so larger nets in this dataset also tend to have more parallel splits, more places inside parallel blocks and more unbalanced connectors. Size also loads 0.53 on Factor 3, Token split 0.46 on Factor 2, and Control flow complexity cross-loads on Factor 2 (0.60).",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Maximum connector degree",
+     "Coefficient of network connectivity",
+     "Control flow complexity"
+    ],
+    "name": "Connector degree and connectivity",
+    "summary": "Carried by Maximum connector degree (0.87), Coefficient of network connectivity (0.79) and Control flow complexity (0.60, a cross-loading with Factor 1), so it reflects how many arcs attach to nodes and connectors. Maximum connector degree has only a moderate MSA (0.66), and Coefficient of network connectivity also loads 0.44 on Factor 1.",
+    "confidence": "medium"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "Density",
+     "Separability",
+     "Size"
+    ],
+    "name": "Sparseness vs. density",
+    "summary": "Density loads negatively (-0.79) and Separability positively (0.64), with Size at 0.53 below the assignment threshold. Larger, sparser nets tend to score high on this factor, which fits the definition of Density as arcs divided by 2·|T|·|P|, a denominator that grows quadratically with size. With only two assigned measures, Separability's moderate loading (and 0.37 on Factor 1), and a communality of only 0.62, the factor is moderately defined.",
+    "confidence": "medium"
+   },
+   {
+    "index": 4,
+    "driving_measures": [
+     "Sequentiality"
+    ],
+    "name": "Sequentiality",
+    "summary": "A single-measure factor defined almost entirely by Sequentiality (0.95), whose communality of 0.995 signals a possible Heywood case. Its eigenvalue (0.53) is below 1, and it goes beyond the suggested three factors, so it is best read as Sequentiality's specific variance rather than as a shared dimension.",
+    "confidence": "low"
+   }
+  ],
+  "overall": "The data are suitable for factor analysis: Bartlett's test is significant and the overall KMO is 0.82. Four varimax-rotated factors explain 85% of the variance. A dominant size-and-parallelism factor (37%) is followed by a connector-degree/connectivity factor (21%) and a density-versus-separability factor (17%). A fourth factor (10%) holds only Sequentiality. Since the eigenvalues suggest three factors, the fourth is weakly justified, and the main structure is best seen in the first three. Control flow complexity is the only formal cross-loading. All measures are assigned.",
+  "caveats": [
+   "Four factors were extracted although three were suggested and the fourth eigenvalue is 0.53, so Factor 4 may be an over-extraction artifact.",
+   "Sequentiality has a communality at the bound of the fit (possible Heywood case), which makes Factor 4 and its loadings unreliable.",
+   "Control flow complexity cross-loads on Factors 1 and 2, and Size, Token split and Separability have notable secondary loadings, so the factors are not cleanly separated.",
+   "Connector Heterogeneity and Average connector degree were removed by the MSA filter, and Number of duplicate tasks was removed as constant, so these aspects are not represented.",
+   "Bartlett's df of 66 corresponds to 12 measures rather than the 10 used, so the test was apparently computed before the MSA filtering.",
+   "The factors describe shared variance among nets in this dataset, mostly discovered models, and depend on the discovery algorithms, the rotation and the number of factors."
+  ]
+ }
+}

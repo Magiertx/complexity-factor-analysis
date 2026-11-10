@@ -16,10 +16,11 @@
  "language": "de",
  "settings": "standard",
  "model": "claude-opus-5-5",
- "prompt_version": "2",
- "prompt_digest": "5a0d8770fc9a3942",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
  "effort": "medium",
- "created_at": "2026-11-10T03:00:12+00:00",
+ "created_at": "2026-11-10T11:09:39+00:00",
  "interpretation": {
   "factors": [
    {
@@ -30,19 +31,19 @@
      "Token split",
      "Control flow complexity"
     ],
-    "name": "Auswahldominierte, dünn vernetzte Struktur",
-    "summary": "Da nur ein unrotierter Faktor extrahiert wurde, ist er ein genereller Faktor, auf dem alle vier verbliebenen Maße hoch laden, allerdings mit gemischten Vorzeichen. Hohe Werte gehen mit geringer Connector Heterogeneity (-0,995), geringer Density (-0,886) und wenig Token split (-0,773), aber höherer Control flow complexity (0,723) einher. Das deutet tentativ auf Netze hin, deren Verzweigungen überwiegend aus einem Konnektortyp bestehen, vermutlich Auswahl, und die wenig Parallelität und eine geringe Kantendichte haben. Am anderen Pol stehen dichtere Netze mit gemischten Konnektortypen und mehr Parallelität.",
+    "name": "Auswahlgeprägte, dünn verbundene Netze vs. gemischte, parallele Netze",
+    "summary": "Bei hohen Werten des Faktors sinken Connector Heterogeneity (-0,995), Density (-0,886) und Token split (-0,773), während Control flow complexity (0,723) steigt. Der Faktor beschreibt damit einen Gegensatz: Auf der einen Seite stehen dünn verbundene Netze, deren Konnektoren überwiegend einem Typ angehören und deren Kontrollflusskomplexität vor allem aus Auswahl-Splits stammt. Auf der anderen Seite stehen dichtere Netze mit gemischten Konnektortypen und mehr parallelem Token-Splitting. Da es nur einen Faktor gibt, ist er zugleich der allgemeine Faktor aller vier Maße; die gemischten Vorzeichen machen die Benennung aber zu einer Deutung und nicht zu einer eindeutigen Dimension.",
     "confidence": "medium"
    }
   ],
-  "overall": "Bartlett-Test (p < 0,001) und KMO (0,718 > 0,6) sprechen für die Eignung der Daten. Allerdings blieben nach dem MSA-Filter nur 4 von 13 Maßen übrig: 8 wurden wegen zu niedriger MSA entfernt, Number of empty sequence flows war konstant. Ein Faktor erklärt 72 % der Varianz. Der zweite Eigenwert (0,586) liegt deutlich unter 1, was die einfaktorielle Lösung stützt. Der Faktor kontrastiert auswahldominierte, dünn vernetzte Netze mit dichteren Netzen, die gemischte Konnektortypen und mehr Parallelität aufweisen. Es gibt keine Kreuzladungen und keine nicht zugeordneten Maße.",
+  "overall": "Bartlett-Test (p < 0,05) und KMO (0,718 über der Schwelle 0,6) sprechen für die Eignung der Daten. Nach dem MSA-Filter bleiben nur vier Maße übrig. Ein Faktor mit Eigenwert 3,14 erklärt 72,4 % der Varianz; der nächste Eigenwert liegt bei 0,59. Alle vier Maße laden klar auf diesem Faktor. Querladungen oder nicht zugeordnete Maße gibt es nicht. Connector Heterogeneity hat mit 0,99 eine fast vollständige Kommunalität und prägt den Faktor stark. Control flow complexity und Token split teilen dagegen nur etwa 52–60 % ihrer Varianz mit ihm. Die Lösung ist sehr knapp, weil acht Maße entfernt wurden, darunter Size, Sequentiality und Separability. Sie beschreibt daher nur einen schmalen Ausschnitt der Modellkomplexität.",
   "caveats": [
-   "Die Lösung beruht auf nur vier Maßen; zentrale Aspekte wie Size, Sequentiality oder Separability wurden durch den MSA-Filter ausgeschlossen und sind nicht abgebildet.",
-   "Connector Heterogeneity dominiert den Faktor mit einer Kommunalität von 0,99, sodass der Faktor stark von diesem einen Maß geprägt ist.",
-   "Die gemischten Vorzeichen, insbesondere die gegenläufigen Ladungen von Token split und Control flow complexity, sind inhaltlich nur vorsichtig als Gegensatz von Auswahl und Parallelität deutbar.",
-   "Connector Heterogeneity ist ohne Konnektoren undefiniert; der Umgang mit solchen Netzen kann die Ergebnisse beeinflussen.",
-   "Die Freiheitsgrade des Bartlett-Tests (df = 66) entsprechen 12 Maßen; der Test bezieht sich offenbar auf den Datensatz vor dem MSA-Filter.",
-   "Die Ergebnisse spiegeln gemeinsame Varianz in diesen 288 Netzen wider, nicht kausale Zusammenhänge, und hängen von den verwendeten Discovery-Algorithmen ab."
+   "Acht Maße wurden durch den MSA-Filter entfernt, darunter Size; eine Deutung des Faktors als Größe oder Strukturiertheit ist deshalb nicht direkt gestützt.",
+   "Die Freiheitsgrade des Bartlett-Tests (df = 66) entsprechen zwölf Maßen; der Test wurde offenbar vor dem Filtern berechnet und gilt nicht unmittelbar für die vier verbliebenen Maße.",
+   "Mit nur vier Maßen und einem Faktor ist die Lösung kaum überbestimmt, und der Faktor wird fast allein von Connector Heterogeneity getragen.",
+   "Die gemischten Vorzeichen (Token split negativ, Control flow complexity positiv) sind nur tentativ als Gegensatz zwischen Auswahl und Parallelität deutbar.",
+   "Connector Heterogeneity ist für Netze ohne Konnektoren undefiniert; wie solche Fälle behandelt wurden, ist nicht angegeben und kann die Ladungen beeinflussen.",
+   "Die Ergebnisse zeigen gemeinsame Varianz in diesen 288 Netzen und hängen von den verwendeten Discovery-Algorithmen und Logs ab; Ursachen lassen sich daraus nicht ableiten."
   ]
  }
 }

@@ -16,10 +16,11 @@
  "language": "en",
  "settings": "standard",
  "model": "claude-opus-5-5",
- "prompt_version": "2",
- "prompt_digest": "5a0d8770fc9a3942",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
  "effort": "medium",
- "created_at": "2026-11-10T02:59:45+00:00",
+ "created_at": "2026-11-10T11:09:12+00:00",
  "interpretation": {
   "factors": [
    {
@@ -33,8 +34,8 @@
      "Maximum connector degree",
      "Connector Mismatch"
     ],
-    "name": "Size and branching volume",
-    "summary": "Very high loadings of Token split, Number of empty sequence flows, Control flow complexity, Size and Coefficient of network connectivity (0.90–0.97) show that larger nets in this dataset also have more splits, more parallel branches and more arcs per node. Maximum connector degree (0.76, with 0.39 on Factor 2) and Connector Mismatch (0.55, communality 0.35) join this factor more weakly. It is the dominant factor, explaining 48.8% of the variance.",
+    "name": "Size and parallel/choice branching",
+    "summary": "Very high loadings (0.90–0.97) of Token split, Number of empty sequence flows, Control flow complexity, Size and Coefficient of network connectivity show that larger nets in this dataset also have more splits, more parallel branches and more arcs per node. Maximum connector degree (0.76, with 0.39 on Factor 2) and Connector Mismatch (0.55, communality only 0.35) join more moderately. Density loads -0.46 here, consistent with larger nets being sparser.",
     "confidence": "high"
    },
    {
@@ -45,7 +46,7 @@
      "Connector Heterogeneity"
     ],
     "name": "Connector degree and density",
-    "summary": "Average connector degree (0.89) and Density (0.84) load positively, while Connector Heterogeneity loads negatively (-0.58, communality 0.35). The factor thus groups nets whose connectors have many arcs relative to net size, and whose connectors tend to be of a single type. Density also loads -0.46 on Factor 1, which fits the fact that density falls as nets grow. The factor explains 17.1% of the variance.",
+    "summary": "Average connector degree (0.89) and Density (0.84) load highly, so nets with high-degree connectors also tend to be dense, independent of size. Connector Heterogeneity loads negatively (-0.58, communality 0.35), so such nets tend to have less mixed connector types. Density also has a secondary loading of -0.46 on Factor 1.",
     "confidence": "medium"
    },
    {
@@ -54,19 +55,18 @@
      "Sequentiality",
      "Separability"
     ],
-    "name": "Sequential, separable structure",
-    "summary": "Sequentiality (0.96) and Separability (0.69) define this factor, capturing how much of the net consists of plain sequences and of articulation points. It rests on only two measures, and Sequentiality's communality exceeds 1, a possible Heywood case. The factor explains 15.9% of the variance.",
+    "name": "Sequentiality / structural simplicity",
+    "summary": "Sequentiality (0.96) and Separability (0.69) define this factor, so nets with many arcs between non-connector nodes also have many articulation points, i.e. chain-like, decomposable structure. The factor rests on only two measures, and the Sequentiality loading is affected by a possible Heywood case.",
     "confidence": "medium"
    }
   ],
-  "overall": "Bartlett's test is significant and the overall KMO of 0.83 is good, so the data are suitable for a factor analysis. Three varimax-rotated factors explain 81.8% of the variance, in line with three eigenvalues above 1. Factor 1 is a strong size and branching factor; the other two factors separate connector degree and density from sequential, separable structure. No measure was flagged as a cross-loading or left unassigned, although Maximum connector degree and Density load moderately on two factors.",
+  "overall": "The data are suitable for factor analysis: Bartlett's test is significant and the overall KMO is 0.83, with every per-measure MSA above 0.6. The three varimax factors match the three eigenvalues above 1 and explain 82% of the variance. Factor 1 (49%) is a dominant size and branching dimension. Factor 2 (17%) captures connector degree and density, and Factor 3 (16%) captures sequential, separable structure. All measures are assigned and no cross-loadings were flagged by the 0.15 gap rule, although Maximum connector degree and Density have notable secondary loadings.",
   "caveats": [
-   "Sequentiality has a communality above 1 (possible Heywood case), so the Factor 3 solution may be unstable.",
-   "Factor 3 rests on only two measures and should be read with caution.",
-   "Connector Mismatch and Connector Heterogeneity have low communalities (about 0.35), so they are only weakly explained by the factors.",
-   "Connector Heterogeneity is undefined for nets without connectors, which may affect its values and its MSA of 0.61.",
-   "Number of duplicate tasks was constant in this dataset and was removed.",
-   "The factors reflect shared variance among 288 discovered nets and depend on the discovery algorithms, the rotation and the number of factors chosen."
+   "The communality of Sequentiality is about 1.02, a possible Heywood case, so its loading and Factor 3 should be read with care.",
+   "Connector Mismatch and Connector Heterogeneity have low communalities (about 0.35) and are only weakly represented by the solution.",
+   "Connector Heterogeneity is undefined for nets without connectors, which may affect its correlations depending on how missing values were handled.",
+   "Number of duplicate tasks was removed as constant, so duplication is not represented in these factors.",
+   "The factors reflect shared variance in these 288 discovered nets and depend on the discovery algorithms, the rotation and the chosen number of factors."
   ]
  }
 }

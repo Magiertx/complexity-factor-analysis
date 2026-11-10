@@ -1,0 +1,53 @@
+{
+ "dataset_id": "comfy-paper-directly-follows-miner",
+ "kind": "model",
+ "data_hash": "9536126aa582391ece15262c0c2a6c7f6dee5641f2691e40ee9f7102dbe98efc",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 1,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.0,
+  "assignment_rule": "largest"
+ },
+ "language": "de",
+ "settings": "standard",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "high",
+ "created_at": "2026-11-10T11:13:01+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Control flow complexity",
+     "Size",
+     "Number of duplicate tasks",
+     "Average connector degree",
+     "Coefficient of network connectivity",
+     "Maximum connector degree",
+     "Density",
+     "Separability"
+    ],
+    "name": "Allgemeiner Faktor Größe und Verzweigung",
+    "summary": "Ohne Rotation und mit nur einem Faktor ist dies ein allgemeiner Faktor, auf dem alle Maße laden. Am höchsten laden Control flow complexity, Size und Number of duplicate tasks (je ca. 0,995) sowie die Konnektor- und Verbindungsmaße (0,86–0,96): Größere Netze haben mehr Verzweigungen, mehr doppelte bzw. stille Transitionen und stärker vernetzte Konnektoren. Density lädt negativ (−0,73), weil die Dichte bei wachsender Netzgröße sinkt; Separability lädt nur mäßig (0,44, Kommunalität 0,19) und wird vom Faktor kaum erfasst.",
+    "confidence": "high"
+   }
+  ],
+  "overall": "Bartlett-Test (p < 0,001) und KMO (0,73 über der Schwelle 0,6) sprechen für die Eignung der Daten. Das Eigenwertmuster (6,25 gegenüber 0,82 für den zweiten Eigenwert) stützt klar eine einfaktorielle Lösung, die 76 % der Varianz erklärt. Der Faktor bündelt Größe, Kontrollflusskomplexität und Konnektorvernetzung der 288 Netze zu einer gemeinsamen Dimension; Density verhält sich gegenläufig, Separability ist nur schwach angebunden. Querladungen gibt es bei einem einzigen Faktor nicht, alle Maße sind zugeordnet.",
+  "caveats": [
+   "Bei nur einem unrotierten Faktor ist eine Trennung verschiedener Dimensionen (etwa Größe vs. Vernetzung) nicht möglich; der Faktor ist ein Generalfaktor.",
+   "Ladungen nahe 1 und Eigenwerte nahe 0 deuten auf fast kollineare Maße (Size, Control flow complexity, Number of duplicate tasks) hin, die in diesem Datensatz weitgehend redundant sind.",
+   "Separability hat eine niedrige Kommunalität (0,19) und wird durch den Faktor nur unzureichend abgebildet.",
+   "Sequentiality und Connector Mismatch wurden wegen niedriger MSA entfernt, drei weitere Maße waren konstant; diese Aspekte fehlen in der Lösung.",
+   "Die Freiheitsgrade des Bartlett-Tests (df = 45) passen zu zehn statt zu den acht verwendeten Maßen und wurden vermutlich vor dem MSA-Filter berechnet.",
+   "Das Ergebnis beschreibt gemeinsame Varianz in diesen 288 meist algorithmisch entdeckten Netzen und keine kausalen Zusammenhänge; es kann von den verwendeten Discovery-Algorithmen abhängen."
+  ]
+ }
+}

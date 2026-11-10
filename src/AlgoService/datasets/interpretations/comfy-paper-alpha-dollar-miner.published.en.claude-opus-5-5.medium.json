@@ -16,10 +16,11 @@
  "language": "en",
  "settings": "published",
  "model": "claude-opus-5-5",
- "prompt_version": "2",
- "prompt_digest": "5a0d8770fc9a3942",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
  "effort": "medium",
- "created_at": "2026-11-10T02:59:56+00:00",
+ "created_at": "2026-11-10T11:09:23+00:00",
  "interpretation": {
   "factors": [
    {
@@ -33,8 +34,8 @@
      "Maximum connector degree",
      "Connector Mismatch"
     ],
-    "name": "Size and parallel/branching volume",
-    "summary": "Very high loadings (0.92–0.97) of Number of empty sequence flows, Token split, Control flow complexity, Size and Coefficient of network connectivity, plus Maximum connector degree (0.80) and Connector Mismatch (0.56), describe nets that are larger and contain more splits, parallel branches and arcs per node. It explains about 50% of the variance and is clearly the dominant size/branching dimension in this dataset; Density loads moderately negatively (-0.43, assigned to Factor 2), consistent with larger nets being sparser.",
+    "name": "Size and parallel branching",
+    "summary": "Very high loadings (0.92–0.97) of Size, Token split, Control flow complexity, Number of empty sequence flows and Coefficient of network connectivity, plus Maximum connector degree (0.80) and a moderate Connector Mismatch (0.56), describe nets that are larger and contain more splits, especially parallel ones, and more arcs per node. Density loads negatively (-0.43, not assigned), consistent with density falling as nets grow. With about 50% of the variance it is the dominant dimension.",
     "confidence": "high"
    },
    {
@@ -45,7 +46,7 @@
      "Connector Heterogeneity"
     ],
     "name": "Connector degree and density",
-    "summary": "Average connector degree (0.90) and Density (0.81) load highly, with Maximum connector degree at 0.41 as a secondary loading, so the factor captures how many arcs meet at connectors relative to net size. Connector Heterogeneity loads negatively (-0.49), suggesting nets with dense, high-degree connectors tend to use one connector type, though this measure cross-loads on Factor 4.",
+    "summary": "Average connector degree (0.90) and Density (0.81) load highly, so this factor captures how many arcs connectors have relative to net size, largely independent of absolute size. Connector Heterogeneity loads negatively (-0.49), so nets with denser, high-degree connectors tend to use mostly one connector type. Maximum connector degree also loads moderately (0.41) next to its main loading on Factor 1.",
     "confidence": "medium"
    },
    {
@@ -54,8 +55,8 @@
      "Separability",
      "Sequentiality"
     ],
-    "name": "Sequential structure",
-    "summary": "Separability (0.93) and Sequentiality (0.76) load highly, both reflecting how much of the net consists of simple chains of non-connector nodes and articulation points. It explains about 15% of the variance but rests on only two measures.",
+    "name": "Sequential, separable structure",
+    "summary": "Separability (0.93) and Sequentiality (0.76) load highly, describing nets with many articulation points and many arcs between non-connector nodes, i.e. chain-like, sequential structure. It rests on two measures, though both are clear and conceptually related.",
     "confidence": "medium"
    },
    {
@@ -64,16 +65,18 @@
      "Connector Heterogeneity"
     ],
     "name": "Connector type mix (weak)",
-    "summary": "Only Connector Heterogeneity loads notably (0.62), and it also loads -0.49 on Factor 2, so the factor is essentially a single-measure factor about the mix of parallel and choice connectors. It explains only 4.4% of the variance and its eigenvalue (0.68) is below 1, so it is likely over-extracted.",
+    "summary": "Only Connector Heterogeneity loads notably (0.62), and it cross-loads on Factor 2 (-0.49). The factor explains just 4.4% of the variance and its eigenvalue (0.68) is below 1, so it is essentially a single-measure factor.",
     "confidence": "low"
    }
   ],
-  "overall": "The data are suitable for factor analysis (Bartlett p < 0.001, overall KMO 0.83). Four varimax-rotated factors explain 86% of the variance, dominated by a size/branching factor (50%), followed by a connector degree/density factor and a sequentiality/separability factor; the fourth factor is weak and carried by Connector Heterogeneity alone. All measures are assigned, and Connector Mismatch has a modest communality (0.37).",
+  "overall": "The data are suitable for factor analysis (Bartlett p < 0.001, overall KMO 0.83). Four varimax factors explain 86% of the variance, dominated by a size and parallel branching factor (50%), followed by connector degree/density (17%) and sequential, separable structure (15%). A fourth, weak factor is carried by Connector Heterogeneity alone. Three factors were suggested and three eigenvalues exceed 1, so the four-factor solution likely over-extracts. All measures are assigned; Connector Mismatch has a low communality (0.37).",
   "caveats": [
-   "Four factors were extracted although the eigenvalue criterion suggests three, so Factor 4 (eigenvalue 0.68, 4.4% variance) may be an artefact of over-extraction.",
-   "Connector Heterogeneity cross-loads on Factor 4 (0.62) and Factor 2 (-0.49) and has the lowest MSA (0.61), so its placement is uncertain.",
-   "Number of duplicate tasks was removed as constant, so this dimension is not represented.",
-   "Results reflect shared variance in these 288 discovered nets and depend on the discovery algorithms, rotation and number of factors; they do not imply causal relations."
+   "Four factors were extracted although three were suggested, so Factor 4 rests on one measure with an eigenvalue below 1 and may not be a stable dimension.",
+   "Connector Heterogeneity cross-loads on Factors 4 and 2, and its MSA (0.61) is close to the threshold.",
+   "Average connector degree and Density, which define Factor 2, have MSA values only slightly above 0.6.",
+   "Connector Mismatch is only moderately explained (communality 0.37), so its assignment to Factor 1 is weak.",
+   "Number of duplicate tasks was removed as constant, so duplicate or silent labels play no role in this solution.",
+   "The factors reflect shared variance in these 288 discovered nets and depend on the discovery algorithms, the rotation and the number of factors."
   ]
  }
 }

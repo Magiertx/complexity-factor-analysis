@@ -1,0 +1,61 @@
+{
+ "dataset_id": "comfy-paper-inductive-miner",
+ "kind": "model",
+ "data_hash": "c397a6e506d816ba066dbc4a4780ccf0f9add1a5238a2aa7dc169366567f86bc",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 2,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.0,
+  "assignment_rule": "largest"
+ },
+ "language": "en",
+ "settings": "standard",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "xhigh",
+ "created_at": "2026-11-10T11:07:10+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Number of duplicate tasks",
+     "Size",
+     "Token split"
+    ],
+    "name": "Net size",
+    "summary": "Three measures that count nodes or arcs load almost perfectly on this factor (0.96–0.99): Size, Number of duplicate tasks (which includes silent transitions) and Token split. It captures the scale of the net. The near-identical loadings suggest that in these nets the growth in nodes largely coincides with more duplicate or silent transitions and more outgoing transition arcs. Density, Coefficient of network connectivity and Average connector degree load moderately negatively here (−0.46 to −0.53), so larger nets tend to be sparser.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Average connector degree",
+     "Density",
+     "Coefficient of network connectivity",
+     "Connector Heterogeneity",
+     "Maximum connector degree",
+     "Separability"
+    ],
+    "name": "Connectivity and density",
+    "summary": "Arc-per-node measures load highly and positively: Average connector degree (0.89), Density (0.81), Coefficient of network connectivity (0.80) and Maximum connector degree (0.62). The factor therefore describes how densely the net is wired around its connectors. Separability also loads positively (0.58), indicating fewer articulation points in denser nets. Connector Heterogeneity loads negatively (−0.72), so denser nets tend to be dominated by one connector type; this part of the interpretation is less obvious.",
+    "confidence": "medium"
+   }
+  ],
+  "overall": "Bartlett's test is significant and the overall KMO (0.75) is above the 0.6 threshold, so the data are suitable for factor analysis. Two eigenvalues exceed 1 (5.46 and 2.20, then 0.91), which supports the two-factor solution. Together the factors explain 72.7% of the variance (38.9% and 33.9%). After varimax rotation the measures separate into a size dimension and a connectivity/density dimension, with no cross-loadings flagged by the 0.15 gap rule. Connector Mismatch remains unassigned: its largest loading is 0.31 on Factor 1 and its communality is only 0.12, so the two factors explain little of it.",
+  "caveats": [
+   "Average connector degree and Number of duplicate tasks have communalities at the bound of the fit, so this may be a Heywood case and their loadings should be treated with caution.",
+   "The density-type measures also load moderately negatively on Factor 1, so the two factors are not cleanly separated for these measures, partly because Density's denominator grows with size by definition.",
+   "Sequentiality and Control flow complexity were removed by the MSA filter, and Number of empty sequence flows was removed as constant, so these aspects are not represented.",
+   "Connector Mismatch is poorly explained by the solution and should not be read as belonging to either factor.",
+   "The factors describe variance shared in this sample of discovered nets and depend on the discovery algorithms used, the varimax rotation and the chosen number of factors."
+  ]
+ }
+}

@@ -1,0 +1,66 @@
+{
+ "dataset_id": "comfy-paper-heuristics-miner",
+ "kind": "model",
+ "data_hash": "53669147e54cc2e6c7ced59c2c9483c1da9e4c3b51d387879753d629d2f7567e",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 3,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.3,
+  "assignment_rule": "multi"
+ },
+ "language": "de",
+ "settings": "published",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "xhigh",
+ "created_at": "2026-11-10T11:13:36+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Token split",
+     "Connector Heterogeneity"
+    ],
+    "name": "Parallele Aufspaltung und Konnektor-Mischung",
+    "summary": "Token split (0,88) und Connector Heterogeneity (0,81) laden hoch. Beide beschreiben Verzweigungen im Netz: zusätzliche ausgehende Kanten von Transitionen, also parallele Aufspaltung, und die Mischung von Parallel- und Auswahl-Konnektoren. Connector Heterogeneity lädt mit 0,57 auch deutlich auf Faktor 2 und Density mit 0,48 moderat auf diesen Faktor, daher ist die Abgrenzung zu Faktor 2 unscharf.",
+    "confidence": "low"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Control flow complexity",
+     "Density"
+    ],
+    "name": "Dichte vs. Kontrollflusskomplexität",
+    "summary": "Control flow complexity (−0,82) und Density (0,78) laden mit entgegengesetztem Vorzeichen: Netze mit hoher relativer Kantendichte haben in diesen Daten tendenziell eine geringere Kontrollflusskomplexität. Density ist auf die größtmögliche Kantenzahl normiert und deshalb bei kleinen Netzen meist hoch. Der Faktor könnte daher kompakte, dichte Netze Netzen mit vielen Splits gegenüberstellen; da Size entfernt wurde, lässt sich das hier nicht prüfen.",
+    "confidence": "low"
+   },
+   {
+    "index": 3,
+    "driving_measures": [],
+    "name": "Unbesetzter Restfaktor",
+    "summary": "Kein Maß überschreitet die Schwelle von 0,35. Die höchsten Ladungen liegen bei etwa |0,13| (Density, Connector Heterogeneity), und die erklärte Varianz beträgt nur rund 1 %. Der Faktor ist nicht interpretierbar und wahrscheinlich ein Artefakt der zu hohen Faktorzahl.",
+    "confidence": "low"
+   }
+  ],
+  "overall": "Formal sind die Daten geeignet: Bartlett ist signifikant, und der KMO liegt mit 0,72 über der Schwelle von 0,6. Nach dem MSA-Filter bleiben jedoch nur 4 von 13 Maßen übrig. Nur der erste Eigenwert (3,14) liegt deutlich über 1, und die Analyse schlägt selbst eine Faktorzahl von 1 nahe. Mit 3 Faktoren für 4 Maße ist die Lösung nicht identifiziert, und für Connector Heterogeneity liegt ein möglicher Heywood-Fall vor. Faktor 1 und Faktor 2 sind daher eher eine Varimax-Aufteilung einer gemeinsamen Dimension aus Verzweigung bzw. Konnektoren als zwei eigenständige Dimensionen, und Faktor 3 ist leer. Belastbarer wäre eine Ein-Faktor-Lösung, auf der alle vier Maße gemeinsam laden, Control flow complexity voraussichtlich mit umgekehrtem Vorzeichen.",
+  "caveats": [
+   "Drei Faktoren für vier Maße überschreiten die Ledermann-Schranke, daher ist die Lösung nicht identifiziert und die Ladungen sind nicht eindeutig.",
+   "Die Kommunalität von Connector Heterogeneity (0,995) liegt an der Grenze der Schätzung, was auf einen Heywood-Fall hindeutet.",
+   "Nur ein Eigenwert liegt über 1, und die vorgeschlagene Faktorzahl ist 1; Faktor 1 und Faktor 2 sind daher vermutlich eine Aufspaltung eines allgemeinen Faktors.",
+   "Connector Heterogeneity lädt mit 0,81 und 0,57 auf zwei Faktoren; nach der Regel ist das keine Querladung, die Trennung der Faktoren bleibt aber unscharf.",
+   "Acht Maße wurden vom MSA-Filter entfernt, darunter Size, und eines war konstant, sodass die Analyse nur einen schmalen Ausschnitt der Modellkomplexität abdeckt.",
+   "Die Freiheitsgrade des Bartlett-Tests (66) passen zu 12 Maßen statt zu 4, der Test wurde also vermutlich vor dem MSA-Filter berechnet.",
+   "Connector Heterogeneity ist für Netze ohne Konnektoren undefiniert, und wie solche Fälle behandelt wurden, ist nicht angegeben.",
+   "Das Ergebnis hängt von den 288 Netzen, den verwendeten Discovery-Algorithmen und der Varimax-Rotation ab und zeigt gemeinsame Varianz, keine Ursachen."
+  ]
+ }
+}

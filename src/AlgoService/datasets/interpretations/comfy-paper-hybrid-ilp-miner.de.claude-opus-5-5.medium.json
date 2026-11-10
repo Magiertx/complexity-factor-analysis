@@ -16,10 +16,11 @@
  "language": "de",
  "settings": "standard",
  "model": "claude-opus-5-5",
- "prompt_version": "2",
- "prompt_digest": "5a0d8770fc9a3942",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
  "effort": "medium",
- "created_at": "2026-11-10T03:01:01+00:00",
+ "created_at": "2026-11-10T11:10:33+00:00",
  "interpretation": {
   "factors": [
    {
@@ -33,8 +34,8 @@
      "Number of empty sequence flows",
      "Connector Mismatch"
     ],
-    "name": "Verzweigungs- und Vernetzungsgrad",
-    "summary": "Sehr hohe Ladungen (0,88–0,98) der Maße für Konnektorgrad, Token split, Kanten pro Knoten und Control flow complexity zeigen, dass dieser Faktor erfasst, wie stark die Netze verzweigt und mit Kanten vernetzt sind. Number of empty sequence flows (0,74) und Connector Mismatch (0,59) laden ebenfalls, aber schwächer und mit merklichen Nebenladungen auf Faktor 2 (0,52 bzw. 0,36); auch Maximum connector degree lädt dort mit 0,40.",
+    "name": "Verzweigungsgrad und Konnektivität",
+    "summary": "Sehr hohe Ladungen (0,88–0,98) von Average connector degree, Token split, Coefficient of network connectivity, Control flow complexity und Maximum connector degree zeigen, dass dieser Faktor erfasst, wie viele Kanten an Konnektoren hängen und wie stark das Netz verzweigt. Number of empty sequence flows (0,74 gegenüber 0,52) und Connector Mismatch (0,59 gegenüber 0,36, Kommunalität 0,47) laden ebenfalls hier, jedoch mit deutlichen Nebenladungen auf Faktor 2. Mit 51 % erklärter Varianz ist er die dominante Dimension.",
     "confidence": "high"
    },
    {
@@ -45,18 +46,19 @@
      "Size",
      "Connector Heterogeneity"
     ],
-    "name": "Sequentialität, Separabilität und Größe",
-    "summary": "Separability (0,83) und Sequentiality (0,82) laden hoch, zusammen mit Size (0,66); der Faktor beschreibt also gemeinsame Varianz von Netzgröße, Anteil von Kanten zwischen Nicht-Konnektoren und Anteil von Knoten, die keine Artikulationspunkte sind. Size lädt zugleich deutlich auf Faktor 1 (0,47), und Connector Heterogeneity trägt nur schwach bei (0,41, Kommunalität 0,20), sodass die inhaltliche Deutung weniger eindeutig ist als bei Faktor 1.",
+    "name": "Sequentialität und Größe",
+    "summary": "Separability (0,83) und Sequentiality (0,82) laden hoch und beschreiben gemeinsam einen linearen, in Abschnitte zerlegbaren Aufbau des Netzes. Size lädt mit 0,66 ebenfalls hier, aber mit einer beachtlichen Ladung von 0,47 auf Faktor 1, sodass größere Netze in diesem Datensatz eher sequentiell, aber auch etwas stärker verzweigt sind. Connector Heterogeneity trägt mit 0,41 und einer Kommunalität von nur 0,20 kaum bei.",
     "confidence": "medium"
    }
   ],
-  "overall": "Die Daten sind für eine Faktorenanalyse geeignet (Bartlett-Test signifikant, KMO = 0,81). Zwei varimax-rotierte Faktoren erklären zusammen 76,8 % der Varianz: Faktor 1 (51,1 %) bündelt Maße der Verzweigung und Kantendichte um Konnektoren, Faktor 2 (25,7 %) Sequentialität, Separabilität und Größe. Nach der Regel des größten Betrags ist jedes Maß zugeordnet, formale Kreuzladungen werden nicht gemeldet, doch Size, Number of empty sequence flows, Connector Mismatch und Maximum connector degree laden auf beiden Faktoren substanziell.",
+  "overall": "Die Daten sind für eine Faktorenanalyse geeignet (Bartlett-Test signifikant, KMO = 0,81). Zwei Faktoren mit Varimax-Rotation erklären zusammen 77 % der Varianz: ein starker Faktor für Verzweigungsgrad und Konnektivität an Konnektoren und ein schwächerer Faktor für Sequentialität, Separierbarkeit und Größe. Formal werden keine Querladungen gemeldet, doch Size, Number of empty sequence flows und Connector Mismatch laden substanziell auf beiden Faktoren, sodass die Trennung der Dimensionen nicht vollständig sauber ist.",
   "caveats": [
-   "Der dritte Eigenwert (0,96) liegt nahe 1, sodass eine Lösung mit drei Faktoren ebenfalls vertretbar sein könnte.",
-   "Connector Heterogeneity hat eine sehr niedrige Kommunalität (0,20) und wird durch die Lösung kaum erklärt.",
-   "Density wurde wegen niedrigem MSA (0,44) entfernt und Number of duplicate tasks war konstant; beide fließen nicht in die Deutung ein.",
-   "Separability hat mit 0,61 einen nur knapp ausreichenden MSA-Wert.",
-   "Die Faktoren beschreiben gemeinsame Varianz in diesen 288 Netzen und hängen von Daten, Rotation und Faktorzahl ab; sie belegen keine Ursachen."
+   "Der dritte Eigenwert liegt mit 0,96 nahe 1, sodass eine Lösung mit drei Faktoren nicht ausgeschlossen ist.",
+   "Size (0,47/0,66), Number of empty sequence flows (0,74/0,52) und Connector Mismatch (0,59/0,36) haben merkliche Nebenladungen, auch wenn sie die Querladungs-Schwelle von 0,15 knapp überschreiten.",
+   "Connector Heterogeneity hat eine sehr geringe Kommunalität (0,20) und wird durch die Lösung kaum erklärt.",
+   "Separability liegt mit einem MSA von 0,61 nur knapp über der Schwelle von 0,6.",
+   "Density wurde wegen zu geringem MSA entfernt und Number of duplicate tasks war konstant, sodass beide in der Interpretation fehlen.",
+   "Die Faktoren beschreiben gemeinsame Varianz in diesen 288 Netzen und hängen von den verwendeten Discovery-Algorithmen, der Rotation und der Faktorzahl ab; sie belegen keine Ursachen."
   ]
  }
 }

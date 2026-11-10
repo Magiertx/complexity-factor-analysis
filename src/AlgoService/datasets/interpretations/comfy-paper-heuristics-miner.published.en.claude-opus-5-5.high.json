@@ -1,0 +1,65 @@
+{
+ "dataset_id": "comfy-paper-heuristics-miner",
+ "kind": "model",
+ "data_hash": "53669147e54cc2e6c7ced59c2c9483c1da9e4c3b51d387879753d629d2f7567e",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 3,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.3,
+  "assignment_rule": "multi"
+ },
+ "language": "en",
+ "settings": "published",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "high",
+ "created_at": "2026-11-10T11:11:39+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Token split",
+     "Connector Heterogeneity"
+    ],
+    "name": "Parallel branching / connector mix",
+    "summary": "Token split (0.88) and Connector Heterogeneity (0.81) load highly, with a secondary loading of Density (0.48). Both main measures grow when transitions have more outgoing arcs and both parallel and choice connectors occur, so the factor tentatively reflects the amount and mix of branching. Connector Heterogeneity also loads 0.57 on Factor 2 and sits at a possible Heywood case, so this split from Factor 2 is not reliable.",
+    "confidence": "low"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Control flow complexity",
+     "Density"
+    ],
+    "name": "Density versus control-flow count",
+    "summary": "Control flow complexity loads negatively (-0.82) and Density positively (0.78), with Connector Heterogeneity at 0.57. Control flow complexity is an absolute count that tends to grow with net size, while Density shrinks with size, so this bipolar factor may be a contrast of small, dense nets against large nets with many split arcs. Size itself was removed, so this reading is speculative.",
+    "confidence": "low"
+   },
+   {
+    "index": 3,
+    "driving_measures": [],
+    "name": "Residual (no substantive factor)",
+    "summary": "No measure is assigned. The largest loading is 0.13 (Density), and the factor explains about 1% of variance (SS loadings 0.04). It has no interpretable content and arises from extracting more factors than the data support.",
+    "confidence": "low"
+   }
+  ],
+  "overall": "Bartlett's test is significant and the overall KMO (0.72) passes, but the MSA filter left only 4 of 12 measures. The eigenvalues (3.14, 0.59, 0.20, 0.08) and the suggested factor count of 1 point to a single general factor on which all four measures share variance, with Control flow complexity running opposite to the others. Extracting three factors from four measures exceeds the Ledermann bound, so the varimax solution is not identified. The split into Factors 1 and 2 is therefore not unique, and Factor 3 is empty. The results are best read as one dimension combining connector-based branching and density, not as three distinct dimensions.",
+  "caveats": [
+   "Three factors for four measures exceed the Ledermann bound, so the loadings are not unique and the factor structure should not be interpreted as stable.",
+   "Connector Heterogeneity has a communality of 0.995, a possible Heywood case that distorts its loadings.",
+   "Eight measures were removed by the MSA filter (including Size, Sequentiality and connectivity), so the solution describes only a narrow subset of model complexity.",
+   "The eigenvalues and the suggested factor count indicate a one-factor solution, so Factors 1 and 2 are likely a split of a single general factor.",
+   "Connector Heterogeneity loads substantially on both Factor 1 (0.81) and Factor 2 (0.57), even though the gap exceeds the 0.15 cross-loading rule.",
+   "Bartlett's test reports df = 66, which corresponds to 12 measures rather than the 4 retained, so it may have been computed before filtering.",
+   "Connector Heterogeneity is undefined for nets without connectors, which may affect how such nets were handled."
+  ]
+ }
+}

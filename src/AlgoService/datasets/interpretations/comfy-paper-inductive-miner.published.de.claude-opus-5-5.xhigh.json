@@ -1,0 +1,82 @@
+{
+ "dataset_id": "comfy-paper-inductive-miner",
+ "kind": "model",
+ "data_hash": "c397a6e506d816ba066dbc4a4780ccf0f9add1a5238a2aa7dc169366567f86bc",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 4,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.3,
+  "assignment_rule": "multi"
+ },
+ "language": "de",
+ "settings": "published",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "xhigh",
+ "created_at": "2026-11-10T11:06:51+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Number of duplicate tasks",
+     "Size",
+     "Token split",
+     "Density",
+     "Average connector degree"
+    ],
+    "name": "Größe des Netzes",
+    "summary": "Number of duplicate tasks, Size und Token split laden sehr hoch (≥ 0,95) auf diesem Faktor, der mit 37 % die meiste erklärte Varianz trägt. Größere Netze haben in diesen Daten also mehr Platzhalter und Transitionen, mehr wiederholte bzw. stille Transitionen und mehr Token-Splits. Die negativen Ladungen von Density (−0,58) und Average connector degree (−0,48) passen dazu, weil die Dichte schon per Definition mit der Netzgröße sinkt. Beide Maße sind jedoch Querladungen.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Maximum connector degree",
+     "Coefficient of network connectivity",
+     "Average connector degree"
+    ],
+    "name": "Konnektorgrad und Vernetzung",
+    "summary": "Dieser Faktor wird von Maximum connector degree (0,95) dominiert. Dazu kommen Coefficient of network connectivity (0,66) und, als Querladung, Average connector degree (0,46). Gemeinsam ist ihnen die Zahl der Kanten je Knoten bzw. je Konnektor. Für Maximum connector degree liegt die Kommunalität an der Grenze der Schätzung (möglicher Heywood-Fall), was die Ladung dieses Maßes unsicher macht.",
+    "confidence": "medium"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "Connector Heterogeneity",
+     "Density",
+     "Average connector degree"
+    ],
+    "name": "Konnektor-Homogenität und Dichte",
+    "summary": "Connector Heterogeneity lädt stark negativ (−0,93), Density (0,61) und Average connector degree (0,58) laden positiv. Netze mit einheitlicheren Konnektortypen sind in diesen Daten also dichter und haben Konnektoren mit mehr Kanten. Die beiden positiven Maße sind Querladungen mit Faktor 1 bzw. mit den Faktoren 1 und 2. Der zugehörige Eigenwert liegt unter 1 (0,91), und Connector Heterogeneity ist ohne Konnektoren undefiniert, daher ist die Deutung vorläufig.",
+    "confidence": "low"
+   },
+   {
+    "index": 4,
+    "driving_measures": [
+     "Separability"
+    ],
+    "name": "Separierbarkeit",
+    "summary": "Nur Separability ist diesem Faktor zugeordnet, mit mäßiger Ladung (0,63) und einer Kommunalität von 0,52. Coefficient of network connectivity (0,48), Average connector degree (0,41) und Density (0,40) laden ebenfalls mäßig, werden ihm aber nicht zugeordnet. Mit einem Eigenwert von 0,71 und 11 % erklärter Varianz ist der Faktor schwach und beruht im Wesentlichen auf einem einzigen Maß.",
+    "confidence": "low"
+   }
+  ],
+  "overall": "Bartlett-Test (p < 0,001) und KMO (0,75 über der Schwelle 0,6) zeigen, dass sich die Daten für eine Faktorenanalyse eignen. Die vier varimax-rotierten Faktoren erklären zusammen 85 % der Varianz. Nur zwei Eigenwerte liegen über 1 (5,46 und 2,20), und vorgeschlagen war eine Faktorzahl von 2. Die Faktoren 3 und 4 sind daher eher als Abspaltungen zu sehen und nicht als stabile eigene Dimensionen. Klar und robust ist die Dimension Größe (Faktor 1). Faktor 2 bündelt Maße zu Konnektorgrad und Vernetzung. Die dichte- und gradbezogenen Maße verteilen sich mit Querladungen über mehrere Faktoren. Connector Mismatch bleibt wegen geringer Kommunalität (0,21) unzugeordnet.",
+  "caveats": [
+   "Extrahiert wurden vier Faktoren, obwohl nur zwei Eigenwerte über 1 liegen und eine Faktorzahl von 2 vorgeschlagen war; die Faktoren 3 und 4 sind deshalb wenig belastbar.",
+   "Für Maximum connector degree deutet eine Kommunalität an der Grenze auf einen möglichen Heywood-Fall hin, was Faktor 2 unsicher macht.",
+   "Average connector degree und Density haben deutliche Querladungen auf mehreren Faktoren und trennen die Faktoren daher nicht sauber.",
+   "Connector Mismatch bleibt wegen zu geringer Kommunalität unzugeordnet.",
+   "Sequentiality und Control flow complexity wurden wegen zu niedriger MSA entfernt und Number of empty sequence flows als konstant; diese Aspekte fehlen in der Lösung.",
+   "Connector Heterogeneity ist ohne Konnektoren undefiniert; je nachdem, wie solche Netze behandelt wurden, kann das Faktor 3 beeinflussen.",
+   "Die Faktoren beschreiben gemeinsame Varianz in diesen 288 Netzen und keine Ursachen; sie hängen von den Discovery-Algorithmen, der Rotation und der Faktorzahl ab."
+  ]
+ }
+}

@@ -1,0 +1,62 @@
+{
+ "dataset_id": "comfy-paper-inductive-miner",
+ "kind": "model",
+ "data_hash": "c397a6e506d816ba066dbc4a4780ccf0f9add1a5238a2aa7dc169366567f86bc",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 2,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.0,
+  "assignment_rule": "largest"
+ },
+ "language": "de",
+ "settings": "standard",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "high",
+ "created_at": "2026-11-10T11:06:22+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Number of duplicate tasks",
+     "Size",
+     "Token split"
+    ],
+    "name": "Größe des Netzes",
+    "summary": "Drei Maße laden sehr hoch (0,96–0,99) auf diesem Faktor: Size, Number of duplicate tasks und Token split, die alle mit der Zahl der Knoten bzw. Transitionen wachsen. Der Faktor erfasst damit die Größe des Netzes, wobei duplizierte bzw. stille Transitionen in diesen Daten offenbar gemeinsam mit der Netzgröße zunehmen. Density, Coefficient of network connectivity und Average connector degree laden moderat negativ (−0,46 bis −0,53), d. h. größere Netze sind tendenziell weniger dicht.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Average connector degree",
+     "Density",
+     "Coefficient of network connectivity",
+     "Connector Heterogeneity",
+     "Maximum connector degree",
+     "Separability"
+    ],
+    "name": "Dichte und Konnektorgrad",
+    "summary": "Hohe Ladungen haben Average connector degree (0,89), Density (0,81) und Coefficient of network connectivity (0,80), ergänzt durch Maximum connector degree (0,62) und Separability (0,58); der Faktor beschreibt somit, wie stark Knoten untereinander verbunden sind. Connector Heterogeneity lädt negativ (−0,72): Netze mit hohem Konnektorgrad haben in diesen Daten eher einheitliche Konnektortypen. Die drei stärksten Maße laden zugleich moderat negativ auf Faktor 1, ohne nach der Abstandsregel als Querladung zu gelten.",
+    "confidence": "high"
+   }
+  ],
+  "overall": "Bartlett-Test (p < 0,001) und KMO (0,75 > Schwelle 0,6) sprechen für die Eignung der Daten. Zwei Faktoren mit Varimax-Rotation erklären zusammen 72,7 % der Varianz (38,9 % bzw. 33,9 %) und trennen klar eine Dimension der Netzgröße von einer Dimension der Dichte bzw. des Konnektorgrads. Die Eigenwerte (5,46; 2,20; dann 0,91) stützen die Faktorzahl 2, wobei der dritte Eigenwert nahe 1 liegt. Connector Mismatch bleibt mit niedrigen Ladungen (0,31 bzw. −0,16) und einer Kommunalität von 0,12 unzugeordnet.",
+  "caveats": [
+   "Für Average connector degree und Number of duplicate tasks liegt die Kommunalität an der Grenze der Schätzung (möglicher Heywood-Fall), sodass deren Ladungen überschätzt sein können.",
+   "Sequentiality und Control flow complexity wurden wegen zu niedriger MSA entfernt und Number of empty sequence flows war konstant, daher fehlen Aspekte wie Sequentialität und Nebenläufigkeit in der Lösung.",
+   "Connector Mismatch wird von keinem Faktor erfasst und bildet eine eigene, hier nicht abgebildete Varianzquelle.",
+   "Der dritte Eigenwert (0,91) liegt nahe 1, eine andere Faktorzahl könnte eine abweichende Struktur ergeben.",
+   "Die moderat negativen Ladungen der Dichtemaße auf Faktor 1 deuten an, dass die beiden Dimensionen unter einer obliquen Rotation korreliert sein könnten.",
+   "Die Faktoren beschreiben gemeinsame Varianz in diesen 288 Netzen und hängen von den verwendeten Discovery-Algorithmen ab; sie belegen keine Ursachen."
+  ]
+ }
+}

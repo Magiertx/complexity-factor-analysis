@@ -16,10 +16,11 @@
  "language": "de",
  "settings": "published",
  "model": "claude-opus-5-5",
- "prompt_version": "2",
- "prompt_digest": "5a0d8770fc9a3942",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
  "effort": "medium",
- "created_at": "2026-11-10T03:00:26+00:00",
+ "created_at": "2026-11-10T11:09:54+00:00",
  "interpretation": {
   "factors": [
    {
@@ -28,8 +29,8 @@
      "Token split",
      "Connector Heterogeneity"
     ],
-    "name": "Parallele Verzweigung und Konnektormischung",
-    "summary": "Token split (0,88) und Connector Heterogeneity (0,81) laden hoch; der Faktor beschreibt Netze mit vielen ausgehenden Kanten an Transitionen (parallele Splits) und gemischten Konnektortypen. Connector Heterogeneity lädt zugleich mit 0,57 auf Faktor 2, Density mit 0,48 auf diesem Faktor, sodass die Trennung unscharf ist. Wegen nicht identifizierter Lösung und möglichem Heywood-Fall nur vorläufig.",
+    "name": "Parallelität und Konnektormischung",
+    "summary": "Token split (0,88) und Connector Heterogeneity (0,81) laden hoch; beide steigen, wenn Netze mehr ausgehende Kanten an Transitionen haben, also mehr parallele Splits, und wenn sich parallele und Choice-Konnektoren mischen. Connector Heterogeneity lädt zudem mit 0,57 deutlich auf Faktor 2, und Density lädt hier mit 0,48. Nach der Regel gilt das nicht als Querladung, die Trennung von Faktor 2 ist aber unscharf.",
     "confidence": "low"
    },
    {
@@ -38,27 +39,26 @@
      "Control flow complexity",
      "Density"
     ],
-    "name": "Dichte vs. Kontrollflusskomplexität",
-    "summary": "Density lädt positiv (0,78), Control flow complexity negativ (-0,82); dichtere Netze gehen hier mit geringerer Kontrollflusskomplexität einher, was vermutlich daran liegt, dass Density bei großen Netzen klein und Control flow complexity groß wird (verdeckter Größeneffekt). Auch Connector Heterogeneity lädt mit 0,57 mit. Die Deutung ist spekulativ, da Size durch den MSA-Filter entfernt wurde.",
+    "name": "Dichte vs. Verzweigungsumfang",
+    "summary": "Density (0,78) und Control flow complexity (−0,82) laden mit entgegengesetztem Vorzeichen. Dichte Netze haben hier also eine geringe Kontrollflusskomplexität. Das deutet eher auf einen inversen Größeneffekt hin, kleine Netze sind dicht und haben wenige Splits; da Size entfernt wurde, bleibt das eine Vermutung.",
     "confidence": "low"
    },
    {
     "index": 3,
     "driving_measures": [],
     "name": "Kein interpretierbarer Faktor",
-    "summary": "Keine Ladung übersteigt |0,13|, der Faktor erklärt nur etwa 1 % der Varianz und hat keine zugeordneten Maße. Er ist ein Artefakt der Überextraktion und sollte nicht interpretiert werden.",
+    "summary": "Kein Maß lädt über der Schwelle (höchste Ladung |0,13|), und die erklärte Varianz beträgt nur 1 %. Der Faktor ist ein Artefakt der zu hohen Faktorzahl und sollte nicht interpretiert werden.",
     "confidence": "low"
    }
   ],
-  "overall": "Bartlett-Test (p < 0,001) und KMO (0,72) sind erfüllt, aber nach dem MSA-Filter bleiben nur vier Maße übrig. Der Eigenwertverlauf (3,14; 0,59; 0,20; 0,08) und die Empfehlung sprechen klar für einen einzigen allgemeinen Faktor, auf dem alle vier Maße gemeinsam variieren (Control flow complexity mit umgekehrtem Vorzeichen bzw. schwächer). Die extrahierten drei Faktoren überschreiten die Ledermann-Schranke, die Lösung ist nicht identifiziert und die Ladungen sind nicht eindeutig; die Aufteilung in Faktor 1 und 2 sollte daher nicht inhaltlich interpretiert werden, Faktor 3 ist leer. Insgesamt erklären die Faktoren 86,6 % der Varianz.",
+  "overall": "Bartlett-Test und KMO (0,72) sind formal bestanden, doch nach dem MSA-Filter bleiben nur vier Maße übrig. Der Eigenwertverlauf (3,14; 0,59; 0,20; 0,08) und die Empfehlung sprechen für einen einzigen Faktor. Drei Faktoren für vier Maße überschreiten die Ledermann-Grenze, die Lösung ist daher nicht identifiziert und die Ladungen sind nicht eindeutig. Inhaltlich lässt sich am ehesten eine gemeinsame Dimension der Konnektor- und Verzweigungsstruktur erkennen. Die Aufteilung auf Faktor 1 und 2 ist instabil, Faktor 3 ist leer.",
   "caveats": [
-   "Drei Faktoren für vier Maße überschreiten die Ledermann-Schranke, sodass die Lösung nicht identifiziert und die Ladungen nicht eindeutig sind.",
-   "Die Eigenwerte und die Empfehlung legen nur einen Faktor nahe; eine einfaktorielle Lösung wäre angemessener.",
-   "Für Connector Heterogeneity liegt mit einer Kommunalität von 0,995 ein möglicher Heywood-Fall vor.",
-   "Acht von dreizehn Maßen, darunter Size, wurden durch den MSA-Filter entfernt, sodass zentrale Dimensionen wie Größe fehlen.",
-   "Number of empty sequence flows war im Datensatz konstant und konnte nicht berücksichtigt werden.",
-   "Faktor 3 erklärt nur etwa 1 % der Varianz und hat keine Ladungen über dem Schwellenwert.",
-   "Die Ergebnisse beschreiben gemeinsame Varianz in diesem Datensatz von 288 Netzen und hängen von Rotation und Faktorzahl ab, nicht von kausalen Zusammenhängen."
+   "Die Lösung mit drei Faktoren für vier Maße ist nicht identifiziert; die Ladungen sind nicht eindeutig, eine Lösung mit einem Faktor wäre angemessen.",
+   "Connector Heterogeneity hat eine Kommunalität von 0,995, ein möglicher Heywood-Fall.",
+   "Die Freiheitsgrade des Bartlett-Tests (66) entsprechen 12 Maßen; der Test wurde offenbar vor dem MSA-Filter berechnet und gilt nicht direkt für die vier verwendeten Maße.",
+   "Acht Maße, darunter Size, wurden wegen niedriger MSA entfernt; dadurch fehlen zentrale Dimensionen wie die Größe.",
+   "Connector Heterogeneity lädt mit 0,81 und 0,57 auf zwei Faktoren, die Separierbarkeit der Faktoren 1 und 2 ist daher gering.",
+   "Die Ergebnisse beschreiben gemeinsame Varianz in diesen 288 Netzen und hängen von Daten, Rotation und Faktorzahl ab."
   ]
  }
 }

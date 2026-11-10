@@ -16,10 +16,11 @@
  "language": "en",
  "settings": "published",
  "model": "claude-opus-5-5",
- "prompt_version": "2",
- "prompt_digest": "5a0d8770fc9a3942",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
  "effort": "medium",
- "created_at": "2026-11-10T03:02:26+00:00",
+ "created_at": "2026-11-10T11:12:05+00:00",
  "interpretation": {
   "factors": [
    {
@@ -33,7 +34,7 @@
      "Coefficient of network connectivity"
     ],
     "name": "Size and branching complexity",
-    "summary": "Size, Number of duplicate tasks, Control flow complexity and Average connector degree load about 0.80–0.82, with weaker loadings of Maximum connector degree (0.60) and Coefficient of network connectivity (0.56). Larger nets in this dataset tend to have more duplicated labels, more branching and busier connectors. With a first eigenvalue of 6.25 against 0.82 for the next, this factor carries most of the shared variance and is close to a general complexity factor.",
+    "summary": "Number of duplicate tasks, Average connector degree, Control flow complexity and Size load about 0.80–0.82, with Maximum connector degree (0.60) and Coefficient of network connectivity (0.56) as cross-loading members. The factor groups larger nets with more choice/parallel branching and more repeated or silent transition labels. Given the single dominant eigenvalue (6.25), it also acts much like a general complexity factor.",
     "confidence": "high"
    },
    {
@@ -41,8 +42,8 @@
     "driving_measures": [
      "Density"
     ],
-    "name": "(Inverse) density",
-    "summary": "This factor is carried almost alone by Density, which loads -0.90; Size, Maximum connector degree and Control flow complexity load moderately positive (0.42–0.45). It captures the familiar pattern that larger nets are sparser relative to the possible 2·|T|·|P| arcs. It rests on a single measure, whose communality sits at the fit boundary.",
+    "name": "Density (inverse)",
+    "summary": "Only Density is assigned, with a strong negative loading (-0.90), so the factor increases as nets become sparser relative to 2·|T|·|P|. Size (0.45), Maximum connector degree (0.43) and Control flow complexity (0.42) load moderately below threshold, consistent with density shrinking as nets grow. Being carried by one measure with a possible Heywood case, it may be little more than a split-off of the size dimension.",
     "confidence": "low"
    },
    {
@@ -52,7 +53,7 @@
      "Maximum connector degree"
     ],
     "name": "Connectivity / arcs per node",
-    "summary": "Coefficient of network connectivity (0.71) and Maximum connector degree (0.48) define this factor, with Average connector degree at 0.44 just below the assignment rule. Both assigned measures cross-load on Factor 1 (0.56 and 0.60), so the factor separates only part of the connectivity variance from overall size. It is a weak factor (eigenvalue 0.53, about 15% of variance after rotation).",
+    "summary": "Coefficient of network connectivity (0.71) and Maximum connector degree (0.48) define this factor, and both also cross-load on Factor 1. Average connector degree loads 0.44 here but is assigned only to Factor 1. It captures arc richness per node beyond overall size, but rests on two cross-loading measures.",
     "confidence": "low"
    },
    {
@@ -61,18 +62,18 @@
      "Separability"
     ],
     "name": "Separability",
-    "summary": "Only Separability loads clearly here (0.69), and it has the lowest communality of all measures (0.54). The factor reflects the share of nodes that are not articulation points, which is largely independent of the other measures. Because it is a single-measure factor with an eigenvalue of about 0.25, it is better treated as a specific variance of Separability than as a substantive dimension.",
+    "summary": "Only Separability loads clearly (0.69). Its communality is moderate (0.54), and the factor explains the least variance (12%). It seems to reflect how far the net lacks articulation points, a structural aspect largely separate from size, but rests on a single measure.",
     "confidence": "low"
    }
   ],
-  "overall": "The data are suitable for factor analysis: Bartlett's test is significant (p ≈ 0) and the overall KMO of 0.73 exceeds 0.6. After two measures were dropped by the MSA filter and three constant ones were removed, eight measures remain, and four varimax factors explain 91% of the variance. However, the eigenvalues (6.25, 0.82, 0.53, 0.25, ...) and the suggested number of factors (one) point to a single dominant size/complexity dimension. Factors 2–4 are each carried by one or two measures and look like splits of measure-specific variance rather than independent dimensions. The near-zero last eigenvalues and possible Heywood cases indicate strong redundancy among Size, Control flow complexity, Number of duplicate tasks and Density.",
+  "overall": "Bartlett's test is significant and the overall KMO (0.73) exceeds 0.6, so the data are suitable for factor analysis. However, the eigenvalues (6.25, 0.82, 0.53, …) and the suggested factor count of 1 indicate one dominant complexity dimension. Four varimax factors were extracted, explaining 91% of the variance. Factor 1 captures size and branching complexity. Factors 2–4 are each driven mainly by one or two measures (Density, connectivity, Separability) and should be read as minor facets rather than robust dimensions.",
   "caveats": [
-   "Four factors were extracted although only one was suggested, so Factors 2–4 are probably over-extracted and weak.",
-   "Communalities near 1 for Size, Control flow complexity, Density and Number of duplicate tasks indicate a possible Heywood case and an unstable solution.",
-   "Maximum connector degree and Coefficient of network connectivity cross-load on Factors 1 and 3, which blurs the distinction between those factors.",
-   "Factors 2 and 4 each rest on a single measure (Density and Separability) and should not be read as general constructs.",
-   "Sequentiality and Connector Mismatch were removed for low MSA, and three measures were constant, so concurrency- and structure-related aspects are not represented.",
-   "The results reflect shared variance in this particular set of 288 discovered nets and depend on the discovery algorithms, the number of factors chosen and the varimax rotation."
+   "Four factors were retained although only one eigenvalue exceeds 1 and one factor was suggested, so Factors 2–4 are likely over-extracted.",
+   "Communalities at the bound for Size, Control flow complexity, Density and Number of duplicate tasks suggest a possible Heywood case, which makes the loadings less reliable.",
+   "Maximum connector degree and Coefficient of network connectivity cross-load on Factors 1 and 3, blurring the distinction between them.",
+   "Factors 2 and 4 each rest on a single measure.",
+   "Sequentiality and Connector Mismatch were removed by the MSA filter, and three measures were constant, so the factor structure does not cover these aspects.",
+   "The results depend on this dataset of 288 discovered nets, the varimax rotation and the chosen factor count, and do not imply causal relations."
   ]
  }
 }

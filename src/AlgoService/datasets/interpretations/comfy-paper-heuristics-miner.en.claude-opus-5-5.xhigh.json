@@ -1,0 +1,49 @@
+{
+ "dataset_id": "comfy-paper-heuristics-miner",
+ "kind": "model",
+ "data_hash": "53669147e54cc2e6c7ced59c2c9483c1da9e4c3b51d387879753d629d2f7567e",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 1,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.0,
+  "assignment_rule": "largest"
+ },
+ "language": "en",
+ "settings": "standard",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "xhigh",
+ "created_at": "2026-11-10T11:13:51+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Connector Heterogeneity",
+     "Density",
+     "Token split",
+     "Control flow complexity"
+    ],
+    "name": "Choice-driven branching vs. dense mixed-connector nets",
+    "summary": "The single factor separates nets with high Control flow complexity (0.72) from nets with high Connector Heterogeneity (-1.00), Density (-0.89) and Token split (-0.77). Going by the definitions, the positive pole describes nets whose branching comes from choice splits, with few parallel splits, a less even mix of connector types and low density (which typically falls as nets grow). The negative pole describes dense nets that mix parallel and choice connectors and split tokens in parallel. Because the factor covers all four retained measures and is the only one extracted, it is a general factor of this reduced set rather than one narrow dimension, and its sign is arbitrary.",
+    "confidence": "medium"
+   }
+  ],
+  "overall": "Bartlett's test is significant and the overall KMO of 0.72 exceeds the 0.6 threshold, so the data are suitable for factor analysis. One factor clearly dominates (eigenvalues 3.14 vs. 0.59) and explains 72% of the variance of the four retained measures. All four load strongly (|loading| ≥ 0.72), with no cross-loadings or unassigned measures. The factor contrasts choice-based control-flow branching with density, parallel token splitting and a mix of connector types. However, the MSA filter removed eight of the twelve candidate measures, including Size, Sequentiality and the connector-degree measures. The result therefore describes a narrow slice of model complexity, and the link to size can only be inferred from the definition of Density, not shown with Size itself.",
+  "caveats": [
+   "Eight measures, including Size and Separability, were removed by the MSA filter, so the factor rests on only four measures and cannot be read as a full complexity dimension.",
+   "Bartlett's df of 66 corresponds to twelve measures, so the test was apparently computed before MSA filtering rather than on the final four-measure set.",
+   "Connector Heterogeneity has a communality of 0.99, close to a Heywood case, so the factor is almost identical to this one measure.",
+   "Connector Heterogeneity is undefined for nets without connectors, and how such nets were handled may affect its loading.",
+   "The interpretation of the poles (choice vs. parallel branching, and size via Density) is inferred from the measure definitions and shows shared variance in this dataset of 288 discovered nets, not causal relations.",
+   "Number of empty sequence flows was constant and dropped, so parallel split–join structure is represented only indirectly through Token split."
+  ]
+ }
+}

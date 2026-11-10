@@ -1,0 +1,81 @@
+{
+ "dataset_id": "comfy-paper-alpha-plus-miner",
+ "kind": "model",
+ "data_hash": "02480599437e2de0fbae80efc62d13129a5a697878a388686fb38ed4cc4b0f20",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 4,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.3,
+  "assignment_rule": "multi"
+ },
+ "language": "de",
+ "settings": "published",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "xhigh",
+ "created_at": "2026-11-10T11:10:11+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Number of empty sequence flows",
+     "Token split",
+     "Size",
+     "Control flow complexity",
+     "Connector Mismatch"
+    ],
+    "name": "Größe und Nebenläufigkeit",
+    "summary": "Hohe Ladungen haben Number of empty sequence flows (0,92), Token split (0,84) und Size (0,82), deutlich auch Control flow complexity (0,72) und Connector Mismatch (0,71). Der Faktor bündelt also Netzgröße mit dem Ausmaß paralleler Verzweigungen (Plätze zwischen Parallel-Split und -Join, zusätzliche ausgehende Bögen von Transitionen). Mit 37 % erklärter Varianz ist er der stärkste Faktor. Size lädt zusätzlich mit 0,53 auf Faktor 3, Token split mit 0,46 auf Faktor 2.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Maximum connector degree",
+     "Coefficient of network connectivity",
+     "Control flow complexity"
+    ],
+    "name": "Konnektorgrad und Vernetzung",
+    "summary": "Maximum connector degree (0,87) und Coefficient of network connectivity (0,79) laden hoch; beide beschreiben, wie viele Bögen an Knoten bzw. Konnektoren hängen. Control flow complexity (0,60) hat eine Querladung mit Faktor 1 (0,72), und Token split lädt hier sekundär mit 0,46. Der Faktor erklärt 21 % der Varianz.",
+    "confidence": "medium"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "Density",
+     "Separability"
+    ],
+    "name": "Dünnbesetztheit und Separierbarkeit",
+    "summary": "Density lädt negativ (−0,79), Separability positiv (0,64), dazu Size mit einer nicht zugeordneten Nebenladung von 0,53. Der Faktor beschreibt damit Netze, die eher groß, dünn besetzt (Density ist durch 2·|T|·|P| normiert und sinkt mit der Größe) und arm an Artikulationspunkten sind. Der Faktor beruht nur auf zwei zugeordneten Maßen und erklärt 17 % der Varianz.",
+    "confidence": "medium"
+   },
+   {
+    "index": 4,
+    "driving_measures": [
+     "Sequentiality"
+    ],
+    "name": "Sequentialität",
+    "summary": "Nur Sequentiality lädt hoch (0,95); alle anderen Ladungen liegen unter 0,18. Der Faktor erklärt 10 % der Varianz, sein Eigenwert vor der Extraktion liegt bei nur 0,53. Für Sequentiality wird zudem ein möglicher Heywood-Fall gemeldet, daher ist er eher als Einzelmaß-Faktor denn als eigene Dimension zu lesen.",
+    "confidence": "low"
+   }
+  ],
+  "overall": "Die Daten sind für eine Faktorenanalyse geeignet (KMO 0,82 über der Schwelle 0,6, Bartlett-Test signifikant). Die vier varimax-rotierten Faktoren erklären zusammen 85,1 % der Varianz bei 288 Netzen. Inhaltlich tragen vor allem drei Dimensionen: Größe und Nebenläufigkeit (Faktor 1), Konnektorgrad bzw. Vernetzung (Faktor 2) sowie Dünnbesetztheit und Separierbarkeit (Faktor 3). Der vierte Faktor wird nur von Sequentiality getragen und geht über die vorgeschlagene Faktorzahl von 3 hinaus. Control flow complexity ist die einzige Querladung (Faktor 1 und 2); kein Maß bleibt unzugeordnet.",
+  "caveats": [
+   "Es wurden vier Faktoren extrahiert, obwohl nur drei Eigenwerte über 1 liegen und drei Faktoren vorgeschlagen wurden; Faktor 4 ist daher wenig belastbar.",
+   "Für Sequentiality liegt die Kommunalität an der Grenze (möglicher Heywood-Fall), was auf eine Überextraktion hindeuten kann.",
+   "Control flow complexity hat eine Querladung auf Faktor 1 (0,72) und Faktor 2 (0,60) und trennt die beiden Faktoren nicht sauber.",
+   "Size (0,53 auf Faktor 3) und Token split (0,46 auf Faktor 2) haben nennenswerte Nebenladungen, die nach der Zuordnungsregel nicht berücksichtigt werden.",
+   "Connector Heterogeneity und Average connector degree wurden wegen niedriger MSA entfernt, Number of duplicate tasks war konstant; diese Aspekte sind in den Faktoren nicht abgebildet.",
+   "Die Freiheitsgrade des Bartlett-Tests (66) entsprechen zwölf statt zehn Maßen, der Test wurde also offenbar vor dem MSA-Filter berechnet.",
+   "Die Faktoren beschreiben gemeinsame Varianz in diesem Datensatz entdeckter Netze und hängen von den Discovery-Algorithmen, der Varimax-Rotation und der Faktorzahl ab; sie belegen keine Ursachen."
+  ]
+ }
+}

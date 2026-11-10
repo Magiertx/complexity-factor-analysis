@@ -16,10 +16,11 @@
  "language": "en",
  "settings": "standard",
  "model": "claude-opus-5-5",
- "prompt_version": "2",
- "prompt_digest": "5a0d8770fc9a3942",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
  "effort": "medium",
- "created_at": "2026-11-10T03:01:28+00:00",
+ "created_at": "2026-11-10T11:11:02+00:00",
  "interpretation": {
   "factors": [
    {
@@ -34,7 +35,7 @@
      "Connector Mismatch"
     ],
     "name": "Branching and arc connectivity",
-    "summary": "Very high loadings of Average connector degree (0.98), Token split (0.96), Coefficient of network connectivity (0.95), Control flow complexity (0.91) and Maximum connector degree (0.88) show that this factor captures how many arcs attach to nodes, especially at splits and joins. Number of empty sequence flows (0.74) and Connector Mismatch (0.59) also load here but have notable secondary loadings on Factor 2 (0.52 and 0.36), and Connector Mismatch has a modest communality (0.47). With 51% of the variance, this is the dominant factor.",
+    "summary": "Measures of how many arcs meet at connectors and how much the net splits load very highly here (Average connector degree 0.98, Token split 0.96, Coefficient of network connectivity 0.95, Control flow complexity 0.91, Maximum connector degree 0.88). The factor captures how densely connected and branch-heavy a net is. It explains 51% of the variance. Number of empty sequence flows (0.74 vs 0.52) and Connector Mismatch (0.59 vs 0.36, communality 0.47) also load moderately on Factor 2.",
     "confidence": "high"
    },
    {
@@ -45,18 +46,20 @@
      "Size",
      "Connector Heterogeneity"
     ],
-    "name": "Size and sequential, separable structure",
-    "summary": "Separability (0.83) and Sequentiality (0.82) load highly, together with Size (0.66). In this dataset, larger nets therefore tend to have more arcs between non-connector nodes and more articulation-free nodes. Size also loads moderately on Factor 1 (0.47), and Connector Heterogeneity is only weakly represented (0.41, communality 0.20), so the factor rests mainly on two measures. It explains 26% of the variance.",
+    "name": "Sequential, separable size",
+    "summary": "Separability (0.83) and Sequentiality (0.82) load highly, with Size (0.66) and Connector Heterogeneity (0.41). The factor reflects larger nets made of chain-like, loosely coupled parts rather than heavily branched ones. It explains 26% of the variance. Size also loads 0.47 on Factor 1, and Connector Heterogeneity is weakly represented (communality 0.20).",
     "confidence": "medium"
    }
   ],
-  "overall": "The data are well suited for factor analysis: Bartlett's test is significant (p ≈ 0), the overall KMO is 0.81, and every measure has an MSA above 0.6. Two varimax-rotated factors explain 77% of the variance. The first factor reflects branching and arc connectivity around connectors. The second combines net size with sequential and separable structure. Several measures load positively on both factors, which suggests a common tendency for all measures to grow together with net complexity.",
+  "overall": "The data are suitable for a factor analysis: Bartlett's test is significant and the overall KMO is 0.81. Two varimax-rotated factors together explain 77% of the variance. Factor 1 is a strong dimension of connector-based branching and arc connectivity. Factor 2 groups sequentiality, separability and size. All loadings are positive on both factors, and several measures load moderately on both, which suggests the two dimensions are related rather than cleanly separate. No measure is flagged as a cross-loading or left unassigned under the 0.15 gap rule.",
   "caveats": [
-   "The third eigenvalue (0.96) is close to 1, so a three-factor solution might also be defensible and could split the factors differently.",
-   "Density was removed by the MSA filter and Number of duplicate tasks was constant, so neither is represented in the factors.",
-   "Connector Heterogeneity has a low communality (0.20) and is only weakly explained by the solution.",
-   "Size (0.47/0.66) and Number of empty sequence flows (0.74/0.52) load substantially on both factors, even though they were not formally flagged as cross-loadings.",
-   "The results reflect shared variance in these 288 nets, which were mostly produced by discovery algorithms, and may not generalize to other model collections."
+   "The first eigenvalue (7.40) dominates, and all measures load positively on both factors, so a general complexity component may underlie both factors despite the varimax rotation.",
+   "The third eigenvalue (0.96) is close to 1, so a three-factor solution might also be defensible and could split Factor 2 differently.",
+   "Size (0.47/0.66), Number of empty sequence flows (0.74/0.52) and Connector Mismatch (0.59/0.36) load substantially on both factors, even though they are not formally flagged as cross-loadings.",
+   "Connector Heterogeneity has a low communality (0.20), so the two factors represent it poorly.",
+   "Density was removed by the MSA filter and Number of duplicate tasks was constant, so neither is represented in the solution.",
+   "An orthogonal rotation forces the factors to be uncorrelated; an oblique rotation might show a substantial correlation between them.",
+   "The results reflect variance shared across these 288 discovered nets and may not generalise to other discovery algorithms or logs."
   ]
  }
 }

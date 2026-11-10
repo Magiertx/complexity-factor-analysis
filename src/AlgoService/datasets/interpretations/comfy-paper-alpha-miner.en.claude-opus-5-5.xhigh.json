@@ -1,0 +1,73 @@
+{
+ "dataset_id": "comfy-paper-alpha-miner",
+ "kind": "model",
+ "data_hash": "53a729372bcd2e31fb15fd22f91dc5e4d85c7d53c7a2e6783de8ec908755ef14",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 3,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.0,
+  "assignment_rule": "largest"
+ },
+ "language": "en",
+ "settings": "standard",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "xhigh",
+ "created_at": "2026-11-10T11:08:50+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Token split",
+     "Number of empty sequence flows",
+     "Control flow complexity",
+     "Size",
+     "Coefficient of network connectivity",
+     "Maximum connector degree",
+     "Connector Mismatch"
+    ],
+    "name": "Size and branching volume",
+    "summary": "Very high loadings (0.90–0.97) of Size, Token split, Number of empty sequence flows, Control flow complexity and Coefficient of network connectivity show that this factor captures how large the net is and how much splitting and parallel branching it contains. Maximum connector degree (0.76) and Connector Mismatch (0.55, communality only 0.35) load more moderately. Maximum connector degree also has secondary loadings on Factors 2 (0.39) and 3 (0.32), and Density loads negatively here (-0.46), consistent with density falling as nets grow.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Average connector degree",
+     "Density",
+     "Connector Heterogeneity"
+    ],
+    "name": "Connector degree and density",
+    "summary": "Average connector degree (0.89) and Density (0.84) load highly, so this factor reflects how many arcs meet at connectors and how densely nodes are connected, independent of overall size. Connector Heterogeneity loads negatively (-0.58, communality 0.35): nets with high connector degree tend to have less mixed connector types. Density's secondary loading of -0.46 on Factor 1 means its variance is not purely captured here.",
+    "confidence": "medium"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "Sequentiality",
+     "Separability"
+    ],
+    "name": "Sequential, separable structure",
+    "summary": "Sequentiality (0.96) and Separability (0.69) define this factor, which reflects how much of the net consists of plain sequential arcs and cut-vertex-separated parts rather than connector-rich regions. It rests on only two measures, its eigenvalue (1.20) is barely above 1, and Sequentiality shows a possible Heywood case, so the factor should be read cautiously.",
+    "confidence": "low"
+   }
+  ],
+  "overall": "Bartlett's test is significant and the overall KMO (0.83) is well above the 0.6 threshold, so the data are suitable for factor analysis. Three varimax-rotated factors explain 82% of the variance: a dominant size and branching-volume factor (49%), a connector degree and density factor (17%), and a weaker sequentiality/separability factor (16%). All measures are assigned and no formal cross-loadings are flagged, although Maximum connector degree, Coefficient of network connectivity and Density show secondary loadings of 0.35–0.46 on other factors.",
+  "caveats": [
+   "Sequentiality has a communality of 1.017, a possible Heywood case, which makes Factor 3's estimate unreliable.",
+   "Factor 3 rests on only two measures and an eigenvalue just above 1, so it may not replicate with other data or factor counts.",
+   "Several Factor 1 measures (Size, Token split, Control flow complexity, Number of empty sequence flows) are count-based and partly overlap by construction, which inflates their shared variance.",
+   "Connector Heterogeneity, Average connector degree and Density have MSA values only just above 0.6, and Connector Heterogeneity is undefined for nets without connectors.",
+   "Number of duplicate tasks was removed as constant, so this dataset says nothing about label duplication.",
+   "Varimax forces uncorrelated factors, and the results reflect this particular sample of 288 discovered nets, not causal structure."
+  ]
+ }
+}

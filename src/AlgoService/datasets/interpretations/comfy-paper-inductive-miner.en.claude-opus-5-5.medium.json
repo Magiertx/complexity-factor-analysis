@@ -16,10 +16,11 @@
  "language": "en",
  "settings": "standard",
  "model": "claude-opus-5-5",
- "prompt_version": "2",
- "prompt_digest": "5a0d8770fc9a3942",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
  "effort": "medium",
- "created_at": "2026-11-10T02:57:09+00:00",
+ "created_at": "2026-11-10T11:06:47+00:00",
  "interpretation": {
   "factors": [
    {
@@ -29,8 +30,8 @@
      "Size",
      "Token split"
     ],
-    "name": "Size and label duplication",
-    "summary": "Number of duplicate tasks (0.99), Size (0.99) and Token split (0.96) load almost perfectly, so this factor captures how large a net is, including its repeated and silent transitions and its outgoing arcs. Density (-0.53), Coefficient of network connectivity (-0.48) and Average connector degree (-0.46) have moderate negative secondary loadings, consistent with larger nets in this dataset being sparser.",
+    "name": "Size (nodes and duplicate labels)",
+    "summary": "Number of duplicate tasks (0.99), Size (0.99) and Token split (0.96) load almost perfectly here, so the factor captures how large a net is in nodes and outgoing transition arcs, including repeated and silent transitions. The density-type measures (Density -0.53, Coefficient of network connectivity -0.48, Average connector degree -0.46) load moderately negatively, so in this dataset larger nets tend to be sparser.",
     "confidence": "high"
    },
    {
@@ -43,18 +44,18 @@
      "Maximum connector degree",
      "Separability"
     ],
-    "name": "Connectivity and density",
-    "summary": "Average connector degree (0.89), Density (0.81), Coefficient of network connectivity (0.80) and Maximum connector degree (0.62) load positively, so the factor reflects how densely connected the net and its connectors are. Separability (0.58) also loads positively, and Connector Heterogeneity loads negatively (-0.72), meaning denser nets here tend to use a less mixed set of connector types. Density and connectivity also carry the moderate negative secondary loadings on Factor 1 noted there.",
+    "name": "Density and connector degree",
+    "summary": "Average connector degree (0.89), Density (0.81), Coefficient of network connectivity (0.80) and Maximum connector degree (0.62) load positively, so the factor reflects how many arcs meet at nodes and connectors. Connector Heterogeneity loads negatively (-0.72), meaning densely connected nets in this sample tend to use mainly one connector type, and Separability (0.58) also loads positively, which is less obviously tied to density. Density, Coefficient of network connectivity and Average connector degree also load moderately on Factor 1 (about -0.46 to -0.53), but the gaps are large enough that no cross-loading is flagged.",
     "confidence": "medium"
    }
   ],
-  "overall": "Bartlett's test is significant and the overall KMO (0.75) exceeds 0.6, so the data are suitable for factor analysis. Two varimax-rotated factors explain 73% of the variance: a size factor (39%) and a connectivity/density factor (34%). This matches the common separation of size from density in process model complexity. No cross-loadings are flagged by the 0.15 gap rule, although Density, Coefficient of network connectivity and Average connector degree have notable secondary negative loadings on Factor 1. Connector Mismatch stays unassigned because of low loadings (communality 0.12).",
+  "overall": "The data are suitable for a factor analysis (Bartlett's test significant, overall KMO 0.75). Two varimax-rotated factors explain 72.7% of the variance, in line with the two eigenvalues above 1 (5.46 and 2.20). Factor 1 is a clear size dimension. Factor 2 is a density and connector-degree dimension; the size and density measures are moderately inversely related across the two factors. Connector Mismatch stays unassigned because its loadings are low (communality 0.12). Sequentiality and Control flow complexity were removed by the MSA filter, and Number of empty sequence flows was removed because it is constant.",
   "caveats": [
-   "Communalities of Average connector degree and Number of duplicate tasks are at the bound (possible Heywood case), so their loadings may be inflated and the solution somewhat unstable.",
-   "Sequentiality and Control flow complexity were removed by the MSA filter, and Number of empty sequence flows was constant, so these aspects are not represented.",
-   "Connector Mismatch is unassigned with a communality of 0.12, so this analysis says little about it.",
-   "The structure reflects shared variance in these 288 nets, which depends on the discovery algorithms used, the rotation and the chosen number of factors.",
-   "The third eigenvalue (0.91) is close to 1, so a three-factor solution might show additional structure."
+   "Average connector degree and Number of duplicate tasks have communalities near 1 (possible Heywood case), so their loadings may be inflated and the solution may be unstable.",
+   "Connector Mismatch is not represented by either factor.",
+   "Sequentiality, Control flow complexity and Number of empty sequence flows were excluded, so the factors say nothing about them.",
+   "The strongly negative loading of Connector Heterogeneity and the positive loading of Separability on Factor 2 reflect co-variation in this sample of discovered nets and may not generalise.",
+   "The result depends on the 288 nets analysed, the varimax rotation and the choice of two factors."
   ]
  }
 }

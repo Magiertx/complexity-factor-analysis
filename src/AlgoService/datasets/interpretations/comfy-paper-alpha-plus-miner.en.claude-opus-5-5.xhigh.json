@@ -1,0 +1,74 @@
+{
+ "dataset_id": "comfy-paper-alpha-plus-miner",
+ "kind": "model",
+ "data_hash": "02480599437e2de0fbae80efc62d13129a5a697878a388686fb38ed4cc4b0f20",
+ "params": {
+  "excluded": [],
+  "auto_msa_filter": true,
+  "msa_threshold": 0.6,
+  "bartlett_alpha": 0.05,
+  "n_factors": 3,
+  "rotation": "varimax",
+  "loading_threshold": 0.35,
+  "communality_threshold": 0.0,
+  "assignment_rule": "largest"
+ },
+ "language": "en",
+ "settings": "standard",
+ "model": "claude-opus-5-5",
+ "requested_model": "claude-opus-5-5",
+ "prompt_version": "3",
+ "prompt_digest": "9158359519b49f0e",
+ "effort": "xhigh",
+ "created_at": "2026-11-10T11:10:31+00:00",
+ "interpretation": {
+  "factors": [
+   {
+    "index": 1,
+    "driving_measures": [
+     "Number of empty sequence flows",
+     "Size",
+     "Token split",
+     "Connector Mismatch",
+     "Control flow complexity"
+    ],
+    "name": "Size and parallel branching",
+    "summary": "Five measures load strongly (0.72–0.95): net size together with measures of parallel splits and joins and of connector imbalance, so larger nets in this dataset also tend to have more parallel branching. Control flow complexity cross-loads on Factor 2 (0.72 vs. 0.64), and Token split also loads 0.48 there. The factor explains about 40% of the variance.",
+    "confidence": "high"
+   },
+   {
+    "index": 2,
+    "driving_measures": [
+     "Maximum connector degree",
+     "Coefficient of network connectivity",
+     "Control flow complexity",
+     "Token split"
+    ],
+    "name": "Connectivity and connector degree",
+    "summary": "Maximum connector degree (0.88) and Coefficient of network connectivity (0.83) define this factor; both describe how many arcs attach to nodes or connectors. Control flow complexity (0.64, cross-loading) and Token split (0.48) add to it. It explains about 23% of the variance and is largely independent of size, since Maximum connector degree barely loads on Factor 1 (-0.02).",
+    "confidence": "medium"
+   },
+   {
+    "index": 3,
+    "driving_measures": [
+     "Density",
+     "Separability",
+     "Sequentiality"
+    ],
+    "name": "Sparseness and non-separability",
+    "summary": "Density loads negatively (-0.78) and Separability positively (0.61): nets scoring high are sparse and have few articulation points. Size also loads 0.45 here, which fits density shrinking by definition as nets grow. Sequentiality is assigned with only -0.35 and loads about equally on all three factors (communality 0.32), and the eigenvalue is barely above 1 (1.06, 15% of variance), so this is a weak factor.",
+    "confidence": "low"
+   }
+  ],
+  "overall": "Bartlett's test is significant and the overall KMO of 0.82 exceeds the 0.6 threshold, so the data are suitable for factor analysis. Three varimax-rotated factors explain 78% of the variance: a dominant size-and-parallelism factor, a connectivity/connector-degree factor, and a weaker factor contrasting density with separability. Control flow complexity is a clear cross-loading between Factors 1 and 2, Sequentiality is poorly explained overall, and no measure stays unassigned. The structure reflects shared variance among these 288 discovered nets and should not be read as causal dimensions.",
+  "caveats": [
+   "Control flow complexity loads similarly on Factors 1 and 2 (0.72 and 0.64), so it does not cleanly separate the two dimensions.",
+   "Sequentiality has a low communality (0.32) and near-equal loadings on all factors, so its assignment to Factor 3 is not meaningful.",
+   "Factor 3 rests on an eigenvalue of only 1.06 and mainly two measures, so it may not replicate with other data or factor counts.",
+   "Very small trailing eigenvalues and communalities near 0.99 for Size and Number of empty sequence flows indicate strong redundancy among some measures.",
+   "The reported Bartlett degrees of freedom (66) correspond to 12 measures rather than the 10 used, suggesting the test was computed before the MSA filter removed two measures.",
+   "Connector Heterogeneity and Average connector degree were removed for low MSA and Number of duplicate tasks for being constant, so those aspects are not represented.",
+   "Results depend on the varimax rotation, the choice of three factors, and the discovery algorithms that produced these nets."
+  ]
+ }
+}
