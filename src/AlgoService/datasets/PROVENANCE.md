@@ -13,8 +13,9 @@ unless noted.
   training logs of the Process Discovery Contest 2025, as analysed in the paper
   *Important Factors: Complexity Dimensions for Petri Nets* (ATAED 2026). Rows are named
   `(log,miner)`; the service shows them as `log / miner`.
-- **Licence:** the ComFy repository has no licence file. Permission of the author
-  (Patrizia Schalk) to redistribute the data is pending, as for `vendored/comfy/`.
+- **Licence:** MIT, copyright Patrizia Schalk (licence file added upstream in ComFy commit
+  `dfdd5d2`, 2026-11-10; copy in `vendored/comfy/LICENSE`). The underlying PDC 2025 logs are
+  CC0 at 4TU.ResearchData.
 
 ## `log/` — log measures of the PDC training logs
 

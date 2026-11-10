@@ -117,7 +117,7 @@ def test_catalog_model(client):
     assert len(bundled) == 7
     assert bundled["comfy-paper-inductive-miner"]["observations"] == 288
     assert bundled["comfy-paper-inductive-miner"]["measures"] == 13
-    assert "pending" in bundled["comfy-paper-inductive-miner"]["license"]
+    assert bundled["comfy-paper-inductive-miner"]["license"].startswith("MIT")
     # The seven paper datasets are grouped under their paper and carry a short label.
     assert [c["id"] for c in cat["collections"]] == ["comfy-paper"]
     assert {b["collection"] for b in bundled.values()} == {"comfy-paper"}

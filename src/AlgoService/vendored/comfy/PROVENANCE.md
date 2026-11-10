@@ -2,11 +2,10 @@
 
 - **Origin:** https://github.com/Pati-nets/ComFy, commit `1dd6ea6` (2026-04-14).
 - **Author:** Patrizia Schalk.
-- **Licence:** the ComFy repository has no licence file. Permission from the
-  author to publish this copy is still pending. Related measure code is MIT
-  licensed in https://github.com/Pati-nets/Complexity-Toolkit, but it is not
-  the same code (different entry points, and some definitions differ, e.g.
-  Depth).
+- **Licence:** MIT, copyright Patrizia Schalk (`LICENSE` here, copied from the licence file
+  the author added upstream in commit `dfdd5d2`, 2026-11-10). Related measure code is MIT
+  licensed in https://github.com/Pati-nets/Complexity-Toolkit, but it is not the same code
+  (different entry points, and some definitions differ, e.g. Depth).
 - The rest of `prom4py/` (`client/`, `model/`, `objects/`, `conformance.py`,
   `util.py`) is the ProM4Py Python client that ComFy's README asks users to
   copy in from the ProM4Py distribution (Zenodo record 13853660). The exact
