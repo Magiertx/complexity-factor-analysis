@@ -98,7 +98,7 @@ const DE: CatalogContent = {
     "comfy-paper": {
       description:
         "ComFy-Modellmaße der Netze, die jeder Miner aus den 288 Trainingslogs des Process Discovery Contest 2025 gefunden hat.",
-      license: "Keine Lizenzdatei im Original; die Erlaubnis der Autorin steht noch aus.",
+      license: "MIT (ComFy, Patrizia Schalk)",
     },
     "comfy-log-paper": {
       description: "feeed-Maße der 2.112 Trainingslogs der Process Discovery Contests 2020 bis 2025.",

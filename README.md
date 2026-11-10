@@ -414,4 +414,7 @@ permission.
 
 ## License
 
-To be decided.
+MIT, copyright Jonas Reichle and Patrizia Schalk (see `LICENSE`). The vendored ComFy code and
+the ComFy data are MIT licensed by Patrizia Schalk (`src/AlgoService/vendored/comfy/LICENSE`),
+ComFy for Log Measures likewise (`src/AlgoService/vendored/comfy_log/LICENSE`). Sources and
+licences of all bundled data: `src/AlgoService/datasets/PROVENANCE.md`.
