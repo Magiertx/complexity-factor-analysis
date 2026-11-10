@@ -30,3 +30,5 @@ slowapi>=0.1.9
 limits>=3
 # Interpretation of the factors by Claude; used only with ANTHROPIC_API_KEY set
 anthropic>=1.11,<2
+# Data, settings and log directories of the desktop app (src/desktop)
+platformdirs>=4
