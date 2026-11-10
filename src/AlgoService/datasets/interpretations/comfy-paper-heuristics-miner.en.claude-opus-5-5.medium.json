@@ -13,6 +13,7 @@
   "communality_threshold": 0.0,
   "assignment_rule": "largest"
  },
+ "result_fingerprint": "c45f0684efb98bdda627005edec7a995",
  "language": "en",
  "settings": "standard",
  "model": "claude-opus-5-5",
