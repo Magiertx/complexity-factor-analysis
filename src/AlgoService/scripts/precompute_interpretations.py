@@ -14,12 +14,19 @@ only datasets that have them), one file per variant. Variants are model:effort p
 default PRECOMPUTE_VARIANTS; choose others with --variant (repeatable), e.g.
 
     python scripts/precompute_interpretations.py --variant claude-sonnet-5-5:medium
+
+Every file stores ``result_fingerprint`` (payload.result_fingerprint), and is served only for an
+analysis with the same fingerprint. After a change of the computation that moves measures,
+``--backfill-fingerprints`` adds the key to files that lack it, from a local analysis; it makes
+no API call, needs no key and never changes a file whose data, parameters or fingerprint
+disagree with the current analysis (those need --force).
 """
 
 from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -40,6 +47,7 @@ from interpretation.payload import (  # noqa: E402
     default_params,
     effective_params,
     params_from_options,
+    result_fingerprint,
 )
 from interpretation.prompt import LANGUAGES, PROMPT_VERSION  # noqa: E402
 
@@ -75,6 +83,59 @@ def settings_of(entry: dict[str, Any], wanted: tuple[str, ...] | list[str]) -> l
     return [s for s in wanted if s == "standard" or entry.get(f"{s}_options")]
 
 
+def analysis_of(entry: dict[str, Any], settings: str) -> tuple[pd.DataFrame, list[dict[str, Any]], Any, dict[str, Any]]:
+    """The matrix, the cleaning drops, the parameters and the result of the analysis of a bundled
+    dataset with the default parameters or its published options."""
+    kind = entry["kind"]
+    data, dropped = bundled_matrix(entry)
+    params = default_params(kind) if settings == "standard" else params_from_options(kind, entry[f"{settings}_options"])
+    return data, dropped, params, analyze(data, params)
+
+
+def backfill_fingerprints(directory: Path | None = None) -> tuple[int, int]:
+    """Add ``result_fingerprint`` to the files that lack it, from a local analysis; no API call.
+    The key goes after ``params``, the rest of a file stays as it is. A file whose data hash,
+    parameters or fingerprint disagree with the current analysis is left alone and counted as
+    a failure. Returns (written, failed)."""
+    directory = store.PRECOMPUTED_DIR if directory is None else directory
+    analyses: dict[tuple[str, str], tuple[str, dict[str, Any], str]] = {}
+    written = failed = 0
+    for path in sorted(directory.glob("*.json")):
+        entry = json.loads(path.read_text(encoding="utf-8"))
+        bundled = cat.bundled_entry(entry.get("dataset_id") or "")
+        settings = entry.get("settings", "standard")
+        if bundled is None or (settings != "standard" and not bundled.get(f"{settings}_options")):
+            failed += 1
+            print(f"FAIL  {path.name}: no such dataset or settings", file=sys.stderr)
+            continue
+        if (bundled["id"], settings) not in analyses:
+            data, _, params, result = analysis_of(bundled, settings)
+            analyses[(bundled["id"], settings)] = (
+                data_hash(data), effective_params(params, result["n_factors"]), result_fingerprint(result)
+            )
+        digest, effective, fingerprint = analyses[(bundled["id"], settings)]
+        if entry.get("data_hash") != digest or entry.get("params") != effective:
+            failed += 1
+            print(f"FAIL  {path.name}: data or parameters differ from the current analysis; rerun with --force",
+                  file=sys.stderr)
+            continue
+        if "result_fingerprint" in entry:
+            if entry["result_fingerprint"] != fingerprint:
+                failed += 1
+                print(f"FAIL  {path.name}: fingerprint differs from the current analysis; rerun with --force",
+                      file=sys.stderr)
+            continue
+        updated: dict[str, Any] = {}
+        for key, value in entry.items():
+            updated[key] = value
+            if key == "params":
+                updated["result_fingerprint"] = fingerprint
+        store._write(path, updated)
+        written += 1
+        print(f"wrote {path.name} (result_fingerprint)")
+    return written, failed
+
+
 async def precompute(
     entry: dict[str, Any], language: str, key: str, settings: str = "standard",
     *, model: str | None = None, effort: str | None = None, timeout: float = DEFAULT_TIMEOUT_S,
@@ -83,9 +144,7 @@ async def precompute(
     model = client.MODEL if model is None else model
     effort = client.EFFORT if effort is None else effort
     kind = entry["kind"]
-    data, dropped = bundled_matrix(entry)
-    params = default_params(kind) if settings == "standard" else params_from_options(kind, entry[f"{settings}_options"])
-    result = analyze(data, params)
+    data, dropped, params, result = analysis_of(entry, settings)
     payload = build_payload(kind, result, params, dropped)
     client.check_size(payload, language)
     answer = await client.interpret(
@@ -96,6 +155,7 @@ async def precompute(
         "kind": kind,
         "data_hash": data_hash(data),
         "params": effective_params(params, result["n_factors"]),
+        "result_fingerprint": result_fingerprint(result),
         "language": language,
         "settings": settings,
         "model": answer.model,
@@ -152,6 +212,10 @@ def main(argv: list[str] | None = None) -> int:
              + ", ".join(f"{m}:{e}" for m, e in PRECOMPUTE_VARIANTS) + ")",
     )
     parser.add_argument(
+        "--backfill-fingerprints", action="store_true",
+        help="add result_fingerprint to existing files from a local analysis; no API call, no key needed",
+    )
+    parser.add_argument(
         "--timeout", type=float, default=DEFAULT_TIMEOUT_S, metavar="SECONDS",
         help=f"limit of one call (default {DEFAULT_TIMEOUT_S:.0f}; a live call has {client.TIMEOUT_S:.0f})",
     )
@@ -159,6 +223,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.timeout <= 10:
         parser.error("--timeout must be more than 10 seconds")
 
+    if args.backfill_fingerprints:
+        written, failed = backfill_fingerprints()
+        print(f"{written} file(s) written, {failed} failed")
+        return 1 if failed else 0
     key = client.api_key()
     if key is None:
         print("ANTHROPIC_API_KEY is not set.", file=sys.stderr)

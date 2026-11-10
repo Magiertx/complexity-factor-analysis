@@ -19,7 +19,7 @@ from env_config import rate_limit
 from factor_analysis.core import AnalysisError
 from interpretation import chat, client, quota, store
 from interpretation.client import InterpretationError
-from interpretation.payload import build_payload, data_hash, effective_params
+from interpretation.payload import build_payload, data_hash, effective_params, result_fingerprint
 from interpretation.prompt import PROMPT_VERSION
 from routes.factor_analysis import AnalyzeRequest, _AnalysisFailed, _analyze, _ready_matrix, _select
 
@@ -120,16 +120,18 @@ class _Prepared:
     kind: str
     params: dict[str, Any]
     selection: Any
-    result: dict[str, Any] | None
+    result: dict[str, Any]
     effective: dict[str, Any]
     digest: str
+    fingerprint: str
     model: str
     effort: str
 
 
-async def _prepare(
-    dataset_id: str, session_id: str, body: InterpretRequest, *, lookup_only: bool
-) -> _Prepared | JSONResponse:
+async def _prepare(dataset_id: str, session_id: str, body: InterpretRequest) -> _Prepared | JSONResponse:
+    """Runs the analysis in every case, lookups too: a stored interpretation is served only for
+    a result with the fingerprint it was made for, and that needs the result. The fits are cached
+    in the process, so a repeated request does not refit."""
     meta, data = await _ready_matrix(dataset_id, session_id)
     kind = meta["kind"]
     params = body.params(kind)
@@ -138,20 +140,14 @@ async def _prepare(
         data, params, selection = await run_in_threadpool(_select, meta, data, body.miner, params)
     except AnalysisError as e:
         return _AnalysisFailed(e).response
-    if lookup_only and body.n_factors is not None:
-        # A lookup needs only the data and the parameters; the analysis runs for a live call.
-        result = None
-        n_factors = body.n_factors
-    else:
-        try:
-            result = await _analyze(data, params)
-        except _AnalysisFailed as e:
-            return e.response
-        n_factors = result["n_factors"]
-    effective = effective_params(params, n_factors)
+    try:
+        result = await _analyze(data, params)
+    except _AnalysisFailed as e:
+        return e.response
+    effective = effective_params(params, result["n_factors"])
     digest = await run_in_threadpool(data_hash, data)
     return _Prepared(
-        meta, kind, params, selection, result, effective, digest,
+        meta, kind, params, selection, result, effective, digest, result_fingerprint(result),
         client.MODEL if body.model is None else body.model,
         client.EFFORT if body.effort is None else body.effort,
     )
@@ -168,11 +164,12 @@ async def interpretation_variants(
     """The models and efforts an interpretation of this analysis and language is stored for,
     so the UI can offer them without an API key. Never calls the API."""
     body = body or InterpretRequest()
-    prepared = await _prepare(dataset_id, session_id, body, lookup_only=True)
+    prepared = await _prepare(dataset_id, session_id, body)
     if isinstance(prepared, JSONResponse):
         return prepared
     found = await run_in_threadpool(
-        store.variants, session_id, prepared.meta, prepared.digest, prepared.effective, body.language
+        store.variants, session_id, prepared.meta, prepared.digest, prepared.effective, prepared.fingerprint,
+        body.language
     )
     return {"variants": found}
 
@@ -192,18 +189,18 @@ async def interpret_dataset(
     """
     started = time.monotonic()
     body = body or InterpretRequest()
-    prepared = await _prepare(dataset_id, session_id, body, lookup_only=body.cached_only)
+    prepared = await _prepare(dataset_id, session_id, body)
     if isinstance(prepared, JSONResponse):
         return prepared
-    meta, kind, params, selection, result, effective, digest, model, effort = (
+    meta, kind, params, selection, result, effective, digest, fingerprint, model, effort = (
         prepared.meta, prepared.kind, prepared.params, prepared.selection, prepared.result,
-        prepared.effective, prepared.digest, prepared.model, prepared.effort,
+        prepared.effective, prepared.digest, prepared.fingerprint, prepared.model, prepared.effort,
     )
 
     def variants() -> Any:
-        return run_in_threadpool(store.variants, session_id, meta, digest, effective, body.language)
+        return run_in_threadpool(store.variants, session_id, meta, digest, effective, fingerprint, body.language)
 
-    stored = store.lookup(session_id, meta, digest, effective, body.language, model, effort)
+    stored = store.lookup(session_id, meta, digest, effective, fingerprint, body.language, model, effort)
     if stored:
         entry, precomputed = stored
         return _response(entry, cached=True, precomputed=precomputed, variants=await variants())
@@ -230,7 +227,7 @@ async def interpret_dataset(
     try:
         async with _key_lock(key):
             cached = store.read_cached(session_id, meta, key)
-            if cached:
+            if cached and store.fits_result(cached, fingerprint):
                 return _response(cached, cached=True, precomputed=False, variants=await variants())
             # The analysis and the wait for the lock count against the time of the request.
             time_left = client.TIMEOUT_S - (time.monotonic() - started)
@@ -244,6 +241,7 @@ async def interpret_dataset(
                 "kind": kind,
                 "data_hash": digest,
                 "params": effective,
+                "result_fingerprint": fingerprint,
                 "language": body.language,
                 "model": answer.model,
                 "requested_model": model,
@@ -299,11 +297,12 @@ async def interpretation_chat(
     except InterpretationError as e:
         return _error(e)
 
-    prepared = await _prepare(dataset_id, session_id, body, lookup_only=False)
+    prepared = await _prepare(dataset_id, session_id, body)
     if isinstance(prepared, JSONResponse):
         return prepared
     stored = await run_in_threadpool(
-        store.lookup, session_id, prepared.meta, prepared.digest, prepared.effective, body.language, model, effort
+        store.lookup, session_id, prepared.meta, prepared.digest, prepared.effective, prepared.fingerprint,
+        body.language, model, effort
     )
     if not stored:
         return _error(chat.interpretation_required())

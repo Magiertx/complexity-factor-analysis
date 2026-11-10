@@ -175,6 +175,29 @@ def build_payload(
     return _num(payload)
 
 
+def result_fingerprint(result: dict[str, Any]) -> str:
+    """Short hash of what an interpretation describes in an analysis result: the measures kept
+    and those the MSA filter removed, the factor count and rotation, and which measures sit in
+    which factor, are cross-loaded or unassigned. Stored with an interpretation, which is served
+    only for a result with the same fingerprint, so a change of the computation that moves a
+    measure never shows an old reading for the new solution. Names and counts only, no
+    floating-point values: those differ in the last digits between BLAS builds."""
+    material = {
+        "used_measures": [str(m) for m in result["used_measures"]],
+        "removed_by_msa": [str(m["measure"]) for m in result["msa_filter"]["removed"]],
+        "n_factors": int(result["n_factors"]),
+        "rotation": result["rotation"],
+        "factors": {
+            _factor_label(f["index"]): sorted(str(m["measure"]) for m in f["measures"])
+            for f in result["factors"]
+        },
+        "cross_loadings": sorted(str(c["measure"]) for c in result.get("cross_loadings") or []),
+        "unassigned": sorted(str(m) for m in result["unassigned"]),
+    }
+    text = json.dumps(material, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(text.encode()).hexdigest()[:32]
+
+
 def data_hash(data: pd.DataFrame) -> str:
     """Hash of the measure names and values of a cleaned matrix; row labels do not count."""
     digest = hashlib.sha256(json.dumps(list(map(str, data.columns))).encode())

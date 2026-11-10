@@ -717,7 +717,7 @@ analysis. The errors of these exports are those of `analyze`.
 | `descriptives.csv` | `measure`, `n`, `mean`, `median`, `std`, `min`, `max` and `dropped` for every measure, as `descriptives` of the dataset. |
 | `inputs.csv` | Only for a computed dataset: one row per observation with `observation`, `input`, `miner`, `events`, `traces`, `variants`, `activities`, `places`, `transitions`, `arcs`, `read_s`, `discovery_s`, `discovery_run_s`, `measures_s` or `features_s`, and `error`. |
 | `stages.csv` | Only for a computed dataset: `observation`, `stage` (a measure or a feature group) and `seconds`. |
-| `interpretation.<language>.json` | Only if an interpretation of exactly these parameters is cached or precomputed in that language: the stored entry with its model, effort, prompt version and parameters, for the `model` and `effort` of the request (by default the server's). The export never asks for a new one. |
+| `interpretation.<language>.json` | Only if an interpretation of exactly these parameters and this result is cached or precomputed in that language: the stored entry with its model, effort, prompt version and parameters, for the `model` and `effort` of the request (by default the server's). The export never asks for a new one. |
 
 `dataset.provenance` says how the dataset was made, as recorded when it was created: `kind`
 and `source`; for a bundled dataset `bundled` (`id`, `file` in `datasets/` and `copied_from`
@@ -973,9 +973,12 @@ as they are. Observation labels, dataset and file names and measure values are n
 - With `cached_only: true` the server never calls Claude and answers 204 when nothing is
   stored; the UI uses it to show stored interpretations without spending anything. Model and
   effort are part of the lookup: an interpretation made at medium effort is not served for
-  `high`. Without a key any model and effort can be looked up, none is called. Given
-  `n_factors` as well (the UI sends the count of the analysis on screen), it skips the
-  analysis and only looks the parameters up.
+  `high`. Without a key any model and effort can be looked up, none is called. A stored
+  interpretation is served only for a result with the `result_fingerprint` it was made for
+  (the measures kept and removed by the MSA filter, the factor count, the rotation and the
+  assignment; no floating-point values), so the lookup runs the analysis, also when
+  `n_factors` is given. Entries without a fingerprint (from before it existed) are not
+  served; a live call replaces them.
 
 `POST /factor-analysis/datasets/{id}/interpret/variants` takes the same body (`model`,
 `effort` and `cached_only` are ignored, but a malformed `model` or `effort` is still a 422 of the
@@ -983,7 +986,7 @@ validation) and answers `{"variants": [...]}` as above. It never calls Claude, s
 learn what is stored where `interpret` answers 204 or `interpretation_unavailable`. A variant is
 listed only if `interpret` with `cached_only` serves it: a precomputed file is matched by its
 file name (`<dataset>[.published].<language>.<model>.<effort>.json`) and must hold an entry made
-for this data, these parameters, the current prompt and that model and effort.
+for this data, these parameters, this result, the current prompt and that model and effort.
 
 Errors carry `detail` and `code`. Analysis errors come first, as for `analyze`. Then: 503
 `interpretation_unavailable` (no key), 422 `interpretation_choice_not_allowed` (a live call

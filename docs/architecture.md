@@ -261,13 +261,18 @@ Optional, in `interpretation/` with the endpoints in `routes/interpretation.py`
 ([`API.md`](API.md#interpretation-by-claude)). `POST .../interpret` runs the analysis, then:
 
 1. A precomputed file in `datasets/interpretations/` for a bundled dataset is served if its
-   data hash, parameters and prompt digest match (no key needed). A lookup with
-   `cached_only` and `n_factors` skips the analysis for steps 1 and 2.
+   data hash, parameters, result fingerprint and prompt digest match (no key needed).
+   `payload.result_fingerprint` hashes the measures kept and those the MSA filter removed,
+   the factor count, the rotation and the assignment, without floating-point values; every
+   lookup therefore runs the analysis (the fits are cached in the process), and an entry
+   without a fingerprint is not served. `precompute_interpretations.py
+   --backfill-fingerprints` adds it to existing files locally, without an API call.
 2. The cache: `artifacts/interpretations/` for bundled datasets, shared by all sessions, or
    `interpretations/` in the dataset directory for own data. The key hashes the cleaned
    matrix (values and measure names, not row labels), the parameters with the factor count
    used, the language, the model, the effort and `client.PROMPT_DIGEST`, a hash of the
-   prompt, the output schema and the payload format.
+   prompt, the output schema and the payload format. A cached entry is served only if its
+   `result_fingerprint` is that of the current result.
 3. Otherwise, with `ANTHROPIC_API_KEY` set, `payload.build_payload` reduces the result to the
    measure names, their catalog definitions and aggregates, with the assignment rule as it was
    applied (the communality it needed, cross-loadings, why measures stayed unassigned), and
