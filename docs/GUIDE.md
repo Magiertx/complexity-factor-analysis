@@ -1,6 +1,6 @@
 # User guide
 
-Complexity Factor Analysis runs exploratory factor analyses of complexity measures in the
+XCom runs exploratory factor analyses of complexity measures in the
 browser: the model measures of [ComFy](https://github.com/Pati-nets/ComFy) on discovered Petri
 nets, and the log measures of [feeed](https://github.com/andreamalhera/feeed) as
 [ComFy for log measures](https://github.com/Pati-nets/ComFy-for-Log-Measures) groups them. This

@@ -20,7 +20,7 @@ machine that one person uses: see "Security" for what that means.
 | macOS | `<name>-<version>-macos-arm64.dmg` | Apple silicon (M1 or newer), macOS 14 or newer |
 | Linux | `<name>-<version>-linux-x64.tar.gz` | 64 bit, glibc 2.35 or newer (Ubuntu 22.04, Debian 12, Fedora 36 or newer) |
 
-`<name>` is `APP_NAME` as a slug (`complexity-factor-analysis`). The program opens the app in the
+`<name>` is `APP_NAME` as a slug (`xcom`). The program opens the app in the
 default browser; the small window it shows says where it runs and quits it. The first start takes
 a few seconds longer (the database is made, matplotlib indexes its fonts).
 
@@ -106,7 +106,7 @@ Starting it a second time while it runs opens the browser on the running app and
 
 The directories have a fixed name, `complexity-factor-analysis` (`DATA_DIR_NAME` in
 `desktop_app/paths.py`, the name of the repository), whatever the app is called on screen: the
-display name (`APP_NAME`) will change, and the data of an installation must stay where they are.
+display name (`APP_NAME`, XCom) differs from it, and the data of an installation must stay where they are.
 
 | | Data | Settings | Log |
 |---|---|---|---|

@@ -359,7 +359,7 @@ delivered; a mail that fails is logged as a warning and the message stays in the
 
 Compose passes them to `algoservice` only. The service logs at startup whether mail is on, not
 the host or the recipient, and a malformed port or mode stops the start. The subject reads
-`[CFA feedback] <kind>: <first 60 characters>`; line breaks in anything that goes into a header
+`[XCom feedback] <kind>: <first 60 characters>`; line breaks in anything that goes into a header
 are removed.
 
 Read the messages on the server, inside the container (from `src/AlgoService` without Docker):
