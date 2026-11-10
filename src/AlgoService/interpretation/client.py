@@ -25,7 +25,7 @@ import anthropic
 from pydantic import ValidationError
 
 from config import logger
-from env_config import choice, csv_list, positive_int, rate_limit_var, text
+from env_config import ConfigError, choice, csv_list, positive_int, rate_limit_var, text
 
 from .payload import PAYLOAD_FORMAT
 from .prompt import SYSTEM_PROMPT, user_message
@@ -33,13 +33,27 @@ from .schema import Interpretation, tidy
 
 EFFORTS = ("low", "medium", "high", "xhigh", "max")
 
+#: What a model id or an effort may look like in a request: it becomes part of a file name.
+CHOICE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+
+
+def _well_formed(var: str, *values: str) -> None:
+    """Refuse at startup a model or effort a request could never name: it would be offered and
+    stored under a name the endpoints reject."""
+    for value in values:
+        if not CHOICE_RE.fullmatch(value):
+            raise ConfigError(
+                f"{var}: {value!r} is not a valid model or effort (letters, digits, '.', '_' and '-', "
+                "at most 64 characters, starting with a letter or digit)."
+            )
+
+
 MODEL = text("INTERPRETATION_MODEL", "claude-opus-5-5")
+_well_formed("INTERPRETATION_MODEL", MODEL)
 # Claude Opus 5.5 thinks more per level than earlier models, and thinking counts towards
 # MAX_TOKENS; at high, an analysis with many factors can be cut off.
 EFFORT = choice("INTERPRETATION_EFFORT", "medium", EFFORTS)
-
-#: What a model id or an effort may look like in a request: it becomes part of a file name.
-CHOICE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+_well_formed("INTERPRETATION_EFFORT", EFFORT)
 
 
 def _with_default(kind: str, allowed: tuple[str, ...], default: str) -> tuple[str, ...]:
@@ -51,14 +65,12 @@ def _with_default(kind: str, allowed: tuple[str, ...], default: str) -> tuple[st
 
 #: Models and efforts the UI may choose from when the server calls the API. The default
 #: selection (``MODEL``, ``EFFORT``) is always part of them.
-ALLOWED_MODELS = _with_default(
-    "model", csv_list("INTERPRETATION_MODELS", ("claude-opus-5-5", "claude-sonnet-5-5")), MODEL
-)
-ALLOWED_EFFORTS = _with_default(
-    "effort",
-    csv_list("INTERPRETATION_EFFORTS", ("low", "medium", "high", "xhigh"), allowed=EFFORTS, lower=True),
-    EFFORT,
-)
+_models = csv_list("INTERPRETATION_MODELS", ("claude-opus-5-5", "claude-sonnet-5-5"))
+_efforts = csv_list("INTERPRETATION_EFFORTS", ("low", "medium", "high", "xhigh"), allowed=EFFORTS, lower=True)
+_well_formed("INTERPRETATION_MODELS", *_models)
+_well_formed("INTERPRETATION_EFFORTS", *_efforts)
+ALLOWED_MODELS = _with_default("model", _models, MODEL)
+ALLOWED_EFFORTS = _with_default("effort", _efforts, EFFORT)
 
 
 def allowed_models() -> tuple[str, ...]:
@@ -70,8 +82,14 @@ def allowed_efforts() -> tuple[str, ...]:
     return ALLOWED_EFFORTS if EFFORT in ALLOWED_EFFORTS else (*ALLOWED_EFFORTS, EFFORT)
 #: Live calls per session; served cache hits and precomputed results do not count.
 RATE_LIMIT = rate_limit_var("INTERPRETATION_RATE_LIMIT", "10/hour")
-#: Live calls per day over all sessions, a bound on the spending.
+#: Live calls per client address. Sessions are free (a request without a cookie starts one), so
+#: the session limit alone does not bound what one visitor can spend.
+IP_RATE_LIMIT = rate_limit_var("INTERPRETATION_IP_RATE_LIMIT", "30/hour")
+#: Live calls per day over all sessions, a bound on the spending. Follow-up questions count too.
 DAILY_CAP = positive_int("INTERPRETATION_DAILY_CAP", 200)
+#: Of the daily calls, at most this many may be follow-up questions, so that questions cannot
+#: use up the interpretations.
+CHAT_DAILY_CAP = positive_int("INTERPRETATION_CHAT_DAILY_CAP", 100)
 
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 # Thinking counts towards max_tokens, so leave room beyond the answer of a few hundred words;

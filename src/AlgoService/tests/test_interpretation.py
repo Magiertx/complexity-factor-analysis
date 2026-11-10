@@ -676,11 +676,16 @@ def test_script_default_variants_and_timeout(claude, no_precomputed):
 
 
 def test_script_rejects_a_bad_variant(claude, no_precomputed):
+    import argparse
+
     from scripts import precompute_interpretations as script
 
-    for bad in ("claude-opus-5-5", "claude-opus-5-5:fast", ":low", "../x:low"):
+    for bad in ("claude-opus-5-5", "claude-opus-5-5:fast", ":low", "../x:low", "claude-opus-5-5" + chr(10) + ":low"):
         with pytest.raises(SystemExit):
             script.main(["--variant", bad])
+    # A line break after the model is not part of a model id.
+    with pytest.raises(argparse.ArgumentTypeError):
+        script.parse_variant("claude-opus-5-5" + chr(10) + ":low")
 
 
 # --- model and effort ---------------------------------------------------------------------
@@ -714,6 +719,40 @@ def test_default_selection_joins_the_allowed_lists(monkeypatch, caplog):
     monkeypatch.setattr(claude_client, "EFFORT", "max")
     assert claude_client.allowed_models() == ("claude-opus-5-5", "claude-sonnet-5-5", "claude-other")
     assert claude_client.allowed_efforts() == ("low", "medium", "high", "xhigh", "max")
+
+
+@pytest.mark.parametrize("value", ["claude opus", "claude/opus", "../x", "-claude", "", "x" * 65, "claude-opus-5-5\n"])
+def test_a_model_or_effort_a_request_cannot_name_is_refused_at_startup(value):
+    from env_config import ConfigError
+    from interpretation import client as claude_client
+
+    with pytest.raises(ConfigError):
+        claude_client._well_formed("INTERPRETATION_MODELS", "claude-opus-5-5", value)
+    claude_client._well_formed("INTERPRETATION_MODELS", "claude-opus-5-5", "claude-opus-5.5_x")
+
+
+@pytest.mark.parametrize(
+    "var, value",
+    [
+        ("INTERPRETATION_MODEL", "claude opus"),
+        ("INTERPRETATION_MODELS", "claude-opus-5-5,bad/model"),
+        ("INTERPRETATION_EFFORT", "extreme"),
+        ("INTERPRETATION_EFFORTS", "low,not an effort"),
+        ("INTERPRETATION_IP_RATE_LIMIT", "lots"),
+        ("INTERPRETATION_CHAT_DAILY_CAP", "0"),
+    ],
+)
+def test_a_bad_setting_stops_the_server_from_starting(var, value):
+    import os
+    import subprocess
+    import sys
+
+    env = {**os.environ, "RATE_LIMIT_DISABLED": "1", var: value}
+    here = os.path.dirname(os.path.dirname(__file__))
+    done = subprocess.run(
+        [sys.executable, "-c", "import interpretation.client"], cwd=here, env=env, capture_output=True, text=True,
+    )
+    assert done.returncode != 0 and "ConfigError" in done.stderr and var in done.stderr
 
 
 def test_status_follows_the_allowed_lists(client, claude, monkeypatch):
@@ -905,6 +944,37 @@ def test_precomputed_matches_the_requested_model_not_the_answering_one(client, c
     assert body["requested_model"] == "claude-opus-5-5" and body["precomputed"] is True
     path.write_text(json.dumps({**old, "model": "claude-other"}), encoding="utf-8")
     assert _interpret(client, _bundled(client), cached_only=True).status_code == 204
+
+
+def test_a_listed_variant_is_always_served(client, claude, monkeypatch):
+    import asyncio
+    import shutil
+
+    from factor_analysis import catalog as cat
+    from interpretation import store
+    from scripts import precompute_interpretations as script
+
+    entry = cat.bundled_entry(BUNDLED)
+    for model, effort in (("claude-opus-5-5", "medium"), ("claude-sonnet-5-5", "low")):
+        store.write_precomputed(BUNDLED, "en", asyncio.run(script.precompute(entry, "en", KEY, model=model, effort=effort)))
+    # A file whose name says another model or effort than its content is not served by the
+    # lookup, so it must not be listed either.
+    path = store.precomputed_path(BUNDLED, "en", "standard", "claude-sonnet-5-5", "low")
+    shutil.copy(path, store.precomputed_path(BUNDLED, "en", "standard", "claude-sonnet-5-5", "high"))
+    shutil.copy(path, store.precomputed_path(BUNDLED, "en", "standard", "claude-other-9", "low"))
+    claude.calls.clear()
+    monkeypatch.delenv("ANTHROPIC_API_KEY")
+    dataset_id = _bundled(client)
+
+    listed = client.post(f"/factor-analysis/datasets/{dataset_id}/interpret/variants", json={}).json()["variants"]
+    assert [(v["model"], v["effort"]) for v in listed] == [
+        ("claude-opus-5-5", "medium"), ("claude-sonnet-5-5", "low"),
+    ]
+    for v in listed:
+        got = _interpret(client, dataset_id, cached_only=True, model=v["model"], effort=v["effort"])
+        assert got.status_code == 200 and got.json()["precomputed"] is True
+    for model, effort in (("claude-sonnet-5-5", "high"), ("claude-other-9", "low")):
+        assert _interpret(client, dataset_id, cached_only=True, model=model, effort=effort).status_code == 204
 
 
 def test_variants_need_the_current_prompt_and_the_same_data(client, claude, monkeypatch):

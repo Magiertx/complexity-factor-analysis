@@ -187,16 +187,7 @@ app.add_middleware(
 )
 
 # The session cookie separates users' jobs and uploads, so there is no default signing key.
-_session_secret = os.environ.get("SESSION_SECRET_KEY")
-if not _session_secret:
-    if os.environ.get("RATE_LIMIT_DISABLED") == "1":  # test harness, see tests/conftest.py
-        _session_secret = "testing-only-not-for-any-deployment"
-    else:
-        raise RuntimeError(
-            "SESSION_SECRET_KEY is not set. Generate one with "
-            "`python -c \"import secrets; print(secrets.token_urlsafe(48))\"` and pass it to "
-            "the algoservice and celery_worker services (see docs/DEPLOYMENT.md)."
-        )
+_session_secret = config.session_secret()
 
 app.add_middleware(
     SessionMiddleware,

@@ -5,6 +5,11 @@ server, and neither a question nor an answer is logged (only lengths and codes).
 rebuilds the analysis context itself (the payload of the interpretation and the stored
 interpretation), so the client cannot make it send other data to the model.
 
+The browser sends the answers back as part of the conversation, so the server signs every
+answer (HMAC over session, dataset, model, effort, language, the position of the turn and the
+text) and accepts an assistant turn only with its signature: nobody can put words into the
+mouth of the model, and the model is never shown text the server did not produce.
+
 The context goes first, in a block marked for prompt caching, so the questions that follow
 reuse it. The answer is free text, so the request carries no JSON schema.
 """
@@ -12,23 +17,30 @@ reuse it. The answer is free text, so the request carries no JSON schema.
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import hmac
 import json
 from dataclasses import dataclass
 from typing import Any
 
 import anthropic
 
+import config
 from config import logger
 
 from . import client
-from .client import FALLBACK_BETA, MAX_TOKENS_BY_EFFORT, TIMEOUT_S, InterpretationError, _sdk_error, timed_out
+from .client import FALLBACK_BETA, TIMEOUT_S, InterpretationError, _sdk_error, timed_out
 from .prompt import LANGUAGES
 
 MAX_MESSAGES = 20
 #: Per message of the user; a longer one is refused, not cut.
 MAX_QUESTION_CHARS = 2000
+#: Per answer of the model; the server cuts a longer one, and refuses a longer one it is sent.
+MAX_ANSWER_CHARS = 6000
 #: All messages together, the answers of the model included.
 MAX_TOTAL_CHARS = 40_000
+#: Answers are short (about 150 words), but thinking counts towards the limit.
+CHAT_MAX_TOKENS_BY_EFFORT = {"low": 8000, "medium": 8000, "high": 12000, "xhigh": 16000, "max": 16000}
 
 SYSTEM_PROMPT = """\
 You answer follow-up questions about the result of an exploratory factor analysis over \
@@ -69,7 +81,7 @@ def _invalid(code: str, detail: str, **params: Any) -> InterpretationError:
     return InterpretationError(422, code, detail, params or None)
 
 
-def check_messages(messages: list[dict[str, str]]) -> None:
+def check_messages(messages: list[dict[str, Any]]) -> None:
     """Refuse a conversation the endpoint does not take; this bounds what a question costs,
     so it runs before any quota is used."""
     n = len(messages)
@@ -92,12 +104,58 @@ def check_messages(messages: list[dict[str, str]]) -> None:
             f"A question can have at most {MAX_QUESTION_CHARS} characters.",
             max=MAX_QUESTION_CHARS,
         )
+    if any(m["role"] == "assistant" and len(m["content"]) > MAX_ANSWER_CHARS for m in messages):
+        raise _invalid(
+            "interpretation_chat_history_invalid",
+            "The conversation holds an answer that this server did not write. Clear it to start again.",
+        )
     if sum(len(m["content"]) for m in messages) > MAX_TOTAL_CHARS:
         raise _invalid(
             "interpretation_chat_too_long",
             f"The conversation is too long ({MAX_TOTAL_CHARS} characters at most). Clear it to start again.",
             max=MAX_TOTAL_CHARS,
         )
+
+
+_SIGNING_CONTEXT = b"interpretation-chat-signature-v1"
+
+
+def _signing_key() -> bytes:
+    """A key of its own, derived from the secret of the session cookie, so a cookie signature
+    cannot stand in for an answer signature."""
+    return hmac.new(config.session_secret().encode(), _SIGNING_CONTEXT, hashlib.sha256).digest()
+
+
+def sign(
+    answer: str, *, session_id: str, dataset_id: str, model: str, effort: str, language: str, position: int
+) -> str:
+    """The signature of the answer at ``position`` (the index it has in the conversation, which
+    ends with the question it answers, so an answer to a conversation of n messages has n)."""
+    material = json.dumps(
+        [session_id, dataset_id, model, effort, language, position, hashlib.sha256(answer.encode()).hexdigest()],
+        ensure_ascii=True, separators=(",", ":"),
+    )
+    return hmac.new(_signing_key(), material.encode(), hashlib.sha256).hexdigest()
+
+
+def check_history(
+    messages: list[dict[str, Any]], *, session_id: str, dataset_id: str, model: str, effort: str, language: str
+) -> None:
+    """Every assistant turn must carry the signature this server gave it for this session,
+    dataset, model, effort and language, at this position. Run after ``check_messages``."""
+    for position, m in enumerate(messages):
+        if m["role"] != "assistant":
+            continue
+        signature = m.get("signature")
+        expected = sign(
+            m["content"], session_id=session_id, dataset_id=dataset_id, model=model, effort=effort,
+            language=language, position=position,
+        )
+        if not isinstance(signature, str) or not hmac.compare_digest(signature, expected):
+            raise _invalid(
+                "interpretation_chat_history_invalid",
+                "The conversation holds an answer that this server did not write. Clear it to start again.",
+            )
 
 
 def interpretation_required() -> InterpretationError:
@@ -152,14 +210,14 @@ async def ask(
     timeout = TIMEOUT_S if timeout is None else timeout
     model = client.MODEL if model is None else model
     effort = client.EFFORT if effort is None else effort
-    if effort not in MAX_TOKENS_BY_EFFORT:
+    if effort not in CHAT_MAX_TOKENS_BY_EFFORT:
         raise ValueError(f"Unknown effort {effort!r}")
     try:
         async with client.client_factory(key) as api:
             response = await asyncio.wait_for(
                 api.beta.messages.create(
                     model=model,
-                    max_tokens=MAX_TOKENS_BY_EFFORT[effort],
+                    max_tokens=CHAT_MAX_TOKENS_BY_EFFORT[effort],
                     system=SYSTEM_PROMPT,
                     messages=build_messages(context_text(payload, interpretation, language), messages),
                     output_config={"effort": effort},
@@ -198,5 +256,11 @@ async def ask(
     if not answer:
         logger.warning("Chat answer was empty")
         raise InterpretationError(502, "interpretation_failed", "The model returned no usable answer.")
+    if len(answer) > MAX_ANSWER_CHARS:
+        # The answer comes back in the history, where it is capped; cut it at the end of a line
+        # or sentence rather than refuse an answer that is paid for.
+        cut = answer[:MAX_ANSWER_CHARS - 2]
+        end = max(cut.rfind("\n"), cut.rfind(". "))
+        answer = (cut[: end + 1] if end > MAX_ANSWER_CHARS // 2 else cut).rstrip() + " …"
     logger.info("Chat answered: %d messages, %d answer characters", len(messages), len(answer))
     return ChatAnswer(text=answer, model=response.model)

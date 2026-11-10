@@ -87,6 +87,23 @@ def validate_job_id(job_id: str) -> None:
 import uuid
 from fastapi import Request
 
+
+def session_secret() -> str:
+    """The key that signs the session cookie, and the root of every other key the server
+    derives (interpretation chat signatures). There is no default: the cookie separates users'
+    jobs and uploads. The test harness (RATE_LIMIT_DISABLED=1, see tests/conftest.py) gets a
+    fixed key."""
+    secret = os.environ.get("SESSION_SECRET_KEY")
+    if secret:
+        return secret
+    if os.environ.get("RATE_LIMIT_DISABLED") == "1":
+        return "testing-only-not-for-any-deployment"
+    raise RuntimeError(
+        "SESSION_SECRET_KEY is not set. Generate one with "
+        "`python -c \"import secrets; print(secrets.token_urlsafe(48))\"` and pass it to "
+        "the algoservice and celery_worker services (see docs/DEPLOYMENT.md)."
+    )
+
 def ensure_session_cookie(request: Request) -> str:
     """The caller's session id, guaranteed to be a well-formed UUID; starts a session if needed.
 

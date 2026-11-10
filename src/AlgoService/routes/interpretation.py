@@ -12,9 +12,9 @@ from typing import Any, AsyncIterator, Literal
 from fastapi import APIRouter, Depends, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
-from config import get_session_id, limiter, logger
+from config import get_session_id, limiter, logger, rate_limit_key
 from env_config import rate_limit
 from factor_analysis.core import AnalysisError
 from interpretation import chat, client, quota, store
@@ -57,9 +57,15 @@ class InterpretRequest(AnalyzeRequest):
 
 
 class ChatMessage(BaseModel):
+    # Nothing else is taken from the browser: no content blocks, no cache_control, no other key.
+    model_config = ConfigDict(extra="forbid")
+
     #: Checked by ``chat.check_messages``, so a mistake gets a code the UI can say.
     role: str
-    content: str
+    #: Bounded here so that a huge body fails at validation, before anything is read.
+    content: str = Field(max_length=chat.MAX_ANSWER_CHARS)
+    #: Of an assistant turn: the signature the server gave the answer.
+    signature: str | None = Field(default=None, max_length=128)
 
 
 class ChatRequest(InterpretRequest):
@@ -230,7 +236,7 @@ async def interpret_dataset(
             time_left = client.TIMEOUT_S - (time.monotonic() - started)
             if time_left < client.MIN_CALL_S:
                 raise client.timed_out()
-            await run_in_threadpool(quota.claim, session_id)
+            await run_in_threadpool(quota.claim, session_id, rate_limit_key(request))
             answer = await client.interpret(
                 payload, body.language, api_key, timeout=time_left, model=model, effort=effort
             )
@@ -267,7 +273,8 @@ async def interpretation_chat(
 ) -> Any:
     """Answer a follow-up question about the stored interpretation of this analysis, language,
     model and effort. The server rebuilds the context itself; every question is one live call
-    and counts like a live interpretation. Nothing is stored."""
+    and counts like a live interpretation, and against a smaller daily cap of its own. Nothing
+    is stored; the answer is signed, and the browser sends it back with the signature."""
     started = time.monotonic()
     messages = [m.model_dump() for m in body.messages]
     try:
@@ -281,6 +288,14 @@ async def interpretation_chat(
     effort = client.EFFORT if body.effort is None else body.effort
     try:
         client.check_choice(model, effort)
+    except InterpretationError as e:
+        return _error(e)
+
+    try:
+        chat.check_history(
+            messages, session_id=session_id, dataset_id=dataset_id, model=model, effort=effort,
+            language=body.language,
+        )
     except InterpretationError as e:
         return _error(e)
 
@@ -302,11 +317,18 @@ async def interpretation_chat(
         time_left = client.TIMEOUT_S - (time.monotonic() - started)
         if time_left < client.MIN_CALL_S:
             raise client.timed_out()
-        await run_in_threadpool(quota.claim, session_id)
+        await run_in_threadpool(quota.claim, session_id, rate_limit_key(request), chat=True)
         answer = await chat.ask(
             payload, entry["interpretation"], messages, body.language,
             api_key, timeout=time_left, model=model, effort=effort,
         )
     except InterpretationError as e:
         return _error(e)
-    return {"answer": answer.text, "model": answer.model, "requested_model": model, "effort": effort}
+    signature = chat.sign(
+        answer.text, session_id=session_id, dataset_id=dataset_id, model=model, effort=effort,
+        language=body.language, position=len(messages),
+    )
+    return {
+        "answer": answer.text, "signature": signature, "model": answer.model, "requested_model": model,
+        "effort": effort,
+    }

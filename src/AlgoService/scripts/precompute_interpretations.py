@@ -56,7 +56,7 @@ DEFAULT_TIMEOUT_S = 600.0
 
 def parse_variant(text: str) -> tuple[str, str]:
     model, _, effort = text.partition(":")
-    if not client.CHOICE_RE.match(model) or effort not in client.MAX_TOKENS_BY_EFFORT:
+    if not client.CHOICE_RE.fullmatch(model) or effort not in client.MAX_TOKENS_BY_EFFORT:
         raise argparse.ArgumentTypeError(
             f"{text!r} is not model:effort; effort is one of {', '.join(client.EFFORTS)}"
         )

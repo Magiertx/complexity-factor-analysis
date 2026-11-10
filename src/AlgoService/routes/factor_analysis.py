@@ -58,6 +58,7 @@ from factor_analysis.export import (
     measurement_rows,
 )
 from factor_analysis.report import report_tex
+from interpretation import client as claude_client
 from interpretation import store
 from interpretation.payload import data_hash, effective_params
 from routes.algorithms import (
@@ -1558,6 +1559,10 @@ async def export_loadings(
 class ArchiveRequest(AnalyzeRequest):
     #: Language of the stored interpretation to include.
     language: Literal["en", "de"] = "en"
+    #: The model and effort of the stored interpretation to include; null is the server default.
+    #: Any stored one can be named, since this never calls the API.
+    model: str | None = Field(default=None, pattern=claude_client.CHOICE_RE.pattern)
+    effort: str | None = Field(default=None, pattern=claude_client.CHOICE_RE.pattern)
     #: Name the measures of the report and the figures by the short codes of the papers.
     short_codes: bool = False
     #: The rows of the loadings heatmap in the ZIP: grouped by factor as the UI shows them, or as
@@ -1708,11 +1713,15 @@ async def _exported(request: Request, dataset_id: str, body: AnalyzeRequest, ses
     return _Exported(meta, data, params, result, selection, names)
 
 
-async def _interpretation(exported: _Exported, session_id: str, language: str) -> dict[str, Any] | None:
-    """The interpretation stored for exactly this analysis, if any; never calls the API."""
+async def _interpretation(
+    exported: _Exported, session_id: str, language: str, model: str | None = None, effort: str | None = None
+) -> dict[str, Any] | None:
+    """The interpretation stored for exactly this analysis, in this language, made with this
+    model and effort (by default the server's), if any; never calls the API."""
     digest = await run_in_threadpool(data_hash, exported.data)
     stored = store.lookup(
-        session_id, exported.meta, digest, effective_params(exported.params, exported.result["n_factors"]), language
+        session_id, exported.meta, digest, effective_params(exported.params, exported.result["n_factors"]),
+        language, model, effort,
     )
     return stored[0] if stored else None
 
@@ -1879,14 +1888,14 @@ async def export_archive(
     the correlations of the measures (``correlations.csv`` in the ``correlation_order``, also
     kept in the manifest), the descriptive statistics, the run times of a computed dataset,
     parameters and library versions, with an interpretation of exactly this analysis if one is
-    stored. Never calls the
+    stored for the ``model`` and ``effort`` of the request (by default the server's). Never calls the
     API for an interpretation. With ``miner`` the matrix holds the rows of that miner and the
     manifest names it; ``factor_names`` name the factors of the tables, figures and report."""
     body = body or ArchiveRequest()
     exported = await _exported(request, dataset_id, body, session_id)
     if isinstance(exported, Response):
         return exported
-    interpretation = await _interpretation(exported, session_id, body.language)
+    interpretation = await _interpretation(exported, session_id, body.language, body.model, body.effort)
     stored = await _stored_stability(exported, session_id, body.stability_samples)
     meta = exported.meta
 

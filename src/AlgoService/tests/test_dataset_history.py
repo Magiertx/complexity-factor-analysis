@@ -559,6 +559,47 @@ def test_zip_includes_a_stored_interpretation_only(client):
     assert not any(n.startswith("interpretation") for n in other)
 
 
+def test_zip_includes_the_chosen_variant(client):
+    from factor_analysis import storage
+    from interpretation import store
+    from interpretation.payload import data_hash, effective_params
+    from routes.factor_analysis import AnalyzeRequest
+
+    dataset_id = _csv(client)
+    body = {"n_factors": 2, "auto_msa_filter": False}
+    session_id = _session_of(dataset_id)
+    meta = storage.read_meta(session_id, dataset_id)
+    digest = data_hash(storage.load_matrix(session_id, dataset_id))
+    params = effective_params(AnalyzeRequest(**body).params("model"), 2)
+
+    def stored(model: str, effort: str) -> dict:
+        entry = {
+            "kind": "model", "data_hash": digest, "params": params, "language": "en", "model": model,
+            "requested_model": model, "effort": effort, "prompt_version": "2",
+            "created_at": "2026-10-06T10:00:00+00:00",
+            "interpretation": {"factors": [], "overall": f"{model} at {effort}.", "caveats": []},
+        }
+        store.write_cached(session_id, meta, store.key_for(meta, digest, params, "en", model, effort), entry)
+        return entry
+
+    default = stored("claude-opus-5-5", "medium")
+    high = stored("claude-opus-5-5", "high")
+    sonnet = stored("claude-sonnet-5-5", "low")
+
+    def included(**choice) -> dict | None:
+        archive = _zip(client, dataset_id, **body, **choice)
+        return json.loads(archive.read("interpretation.en.json")) if "interpretation.en.json" in archive.namelist() else None
+
+    assert included() == default
+    assert included(effort="high") == high
+    assert included(model="claude-sonnet-5-5", effort="low") == sonnet
+    # A model alone is combined with the default effort, which is not stored for it.
+    assert included(model="claude-sonnet-5-5") is None
+    assert included(effort="xhigh") is None
+    r = client.post(f"/factor-analysis/datasets/{dataset_id}/export/zip", json={**body, "effort": "../x"})
+    assert r.status_code == 422
+
+
 def test_zip_includes_a_precomputed_interpretation(client, monkeypatch, tmp_path):
     from factor_analysis import storage
     from interpretation import client as claude_client

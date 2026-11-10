@@ -119,11 +119,18 @@ def requested_model(entry: dict[str, Any]) -> str | None:
     return entry.get("requested_model") or entry.get("model")
 
 
-def _precomputed_entries(bundled_id: str, language: str, settings: str) -> list[tuple[Path, dict[str, Any]]]:
-    """All precomputed files of one dataset, settings and language, whatever model and effort."""
+def _precomputed_choices(bundled_id: str, language: str, settings: str) -> list[tuple[str, str]]:
+    """The model and effort of every precomputed file of one dataset, settings and language,
+    read from the file name like ``precomputed_path`` builds it. Model ids can contain dots;
+    an effort cannot, so the last dot separates them."""
     middle = "" if settings == "standard" else f".{settings}"
-    paths = sorted(PRECOMPUTED_DIR.glob(f"{glob.escape(bundled_id)}{middle}.{language}.*.json"))
-    return [(p, e) for p in paths if (e := _read(p))]
+    prefix = f"{bundled_id}{middle}.{language}."
+    found = []
+    for path in sorted(PRECOMPUTED_DIR.glob(f"{glob.escape(prefix)}*.json")):
+        model, dot, effort = path.name[len(prefix):-len(".json")].rpartition(".")
+        if dot and model and effort:
+            found.append((model, effort))
+    return found
 
 
 def _fits(entry: dict[str, Any], data_hash: str, params: dict[str, Any]) -> bool:
@@ -199,14 +206,16 @@ def variants(
     """The model and effort combinations stored for exactly this analysis and the current
     prompt: ``{"model", "effort", "precomputed"}``, models and efforts in the order the server
     offers them. Cached entries are found by their key, for the offered models and efforts
-    (and the models of precomputed files), so this never scans a directory."""
+    (and the models of precomputed files), so this never scans a directory of cached entries. A
+    precomputed file is listed by its file name and the test ``lookup`` makes."""
     found: dict[tuple[str, str], bool] = {}
     bundled_id = meta.get("bundled_id")
     if bundled_id:
         for settings in SETTINGS:
-            for _, entry in _precomputed_entries(bundled_id, language, settings):
-                if _fits(entry, data_hash, params) and entry.get("prompt_digest") == client.PROMPT_DIGEST:
-                    found[(requested_model(entry) or "", entry.get("effort") or "")] = True
+            for model, effort in _precomputed_choices(bundled_id, language, settings):
+                # The same test as ``lookup``, so a listed variant is always served.
+                if read_precomputed(bundled_id, language, data_hash, params, client.PROMPT_DIGEST, model, effort):
+                    found[(model, effort)] = True
     models = list(client.allowed_models())
     models += [m for m, _ in found if m not in models]
     efforts = list(dict.fromkeys([*client.EFFORTS, *client.allowed_efforts()]))
