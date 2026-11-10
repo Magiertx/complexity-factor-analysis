@@ -53,10 +53,13 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         help="a session per browser as on a server, instead of one for everybody (end-to-end tests)",
     )
     parser.add_argument(
-        "--no-rate-limits",
+        "--rate-limits",
         action="store_true",
-        help="switch the request rate limits off, which all requests share here (end-to-end tests)",
+        help="switch the request rate limits on, as on a server; here all requests share them, "
+        "since they count per address (the daily caps of Claude calls always apply)",
     )
+    # The default since the limits count per address, and one installation has one user.
+    parser.add_argument("--no-rate-limits", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--access-log", action="store_true", help="log every request")
     args = parser.parse_args(argv)
     if args.port is not None and not 0 <= args.port <= 65535:
@@ -144,8 +147,8 @@ def _log_settings(settings: dict[str, str], env: dict[str, str], args: argparse.
     )
     if args.separate_sessions:
         logger.info("Separate sessions per browser (--separate-sessions).")
-    if args.no_rate_limits:
-        logger.warning("Request rate limits are off (--no-rate-limits).")
+    if args.rate_limits:
+        logger.info("Request rate limits are on (--rate-limits).")
 
 
 def _install_signal_handlers(stop: threading.Event) -> None:
@@ -181,7 +184,7 @@ def _serve(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> in
             settings,
             resources.build_info(),
             shared_session=not args.separate_sessions,
-            rate_limits=not args.no_rate_limits,
+            rate_limits=args.rate_limits and not args.no_rate_limits,
         )
         environment.apply(env)
         _log_settings(settings, env, args)

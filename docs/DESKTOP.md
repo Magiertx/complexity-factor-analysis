@@ -55,7 +55,7 @@ Starting it a second time while it runs opens the browser on the running app and
 | `--data-dir PATH` | Keep data, settings and logs (`PATH/logs`) in PATH instead of the user's directories. |
 | `--frontend-dir PATH` | Serve another static export. |
 | `--separate-sessions` | A session per browser, as on a server, instead of the one shared session. For the end-to-end tests, whose specs compare sessions. |
-| `--no-rate-limits` | Switch the request rate limits off (`RATE_LIMIT_DISABLED=1`), as the end-to-end job of the CI does. For the end-to-end tests, which create more than 60 datasets an hour. |
+| `--rate-limits` | Switch the request rate limits on, as on a server. They are off by default (`RATE_LIMIT_DISABLED=1`): they count per address, and here every request comes from 127.0.0.1, so one user would share them with everything else (e.g. 60 new datasets an hour). The daily caps of Claude calls apply either way. |
 | `--access-log` | Log every request. |
 
 ## Where it keeps its files
@@ -163,7 +163,7 @@ Against the running app, from the root of the repository, with the port from a f
 
 ```bash
 (cd src/desktop && python -m desktop_app --headless --port 0 --port-file /tmp/cfa-port \
-    --data-dir /tmp/cfa-data --separate-sessions --no-rate-limits) &
+    --data-dir /tmp/cfa-data --separate-sessions) &
 
 python scripts/smoke.py --port-file /tmp/cfa-port --no-prom
 
@@ -172,7 +172,7 @@ BASE_URL=http://127.0.0.1:$(cat /tmp/cfa-port) npx playwright test
 ```
 
 `--separate-sessions` gives each Playwright browser context a session of its own, as the specs
-expect of a server. `--no-rate-limits` is needed because the specs create far more than 60
+expect of a server. The request limits are off by default, which the specs need: they create far more than 60
 datasets within the hour, all from 127.0.0.1. On Windows without Playwright's own Chromium, add
 `PW_CHANNEL=msedge`.
 
