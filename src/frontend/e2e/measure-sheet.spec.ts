@@ -219,9 +219,9 @@ test("the sheet of a log measure names its feeed group and function, with a link
     "href",
     "https://github.com/andreamalhera/feeed/blob/b28fb49/feeed/simple_stats.py",
   );
-  // Fifteen factors: a bar for each.
+  // Sixteen factors (the Kaiser count of the MSA from the correlation matrix): a bar for each.
   const loadings = dialog.getByRole("heading", { name: text("factor.sheet.loadings") }).locator("xpath=following-sibling::ul[1]/li");
-  await expect(loadings).toHaveCount(15);
+  await expect(loadings).toHaveCount(16);
   // The closest measures come from the same map.
   await expect(dialog.getByRole("region", { name: text("factor.sheet.closest") }).getByRole("list").getByRole("button")).toHaveCount(5);
 });
