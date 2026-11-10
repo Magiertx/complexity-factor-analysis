@@ -543,7 +543,7 @@
         "logs_model": "Each log is mined with each selected miner, and the selected measures are computed on every discovered Petri net. Every log × miner pair becomes one observation.",
         "logs_log": "The selected feature groups are computed for every log with feeed. Every log becomes one observation.",
         "pnml": "The selected measures are computed on Petri nets you already have. Every net becomes one observation.",
-        "mine": "Datasets you loaded or computed in this session, each with the settings of its last analysis. The server keeps up to 30 per session and removes them after 7 days without use."
+        "mine": "Datasets you loaded or computed in this session, each with the settings of its last analysis. Where the tool runs on a server, the server limits how many it keeps and for how long, and removes older ones."
       },
       "bundled_empty": "No bundled datasets are available on this server.",
       "all_bundled": "All datasets",
@@ -637,7 +637,7 @@
       "delete_with_run": "Delete dataset and the run that computed it",
       "delete_confirm_run": "Delete dataset and run",
       "delete_failed": "The dataset could not be deleted.",
-      "gone": "The dataset you had open is no longer available. It was deleted, replaced by newer datasets, or removed after 7 days without use.",
+      "gone": "The dataset you had open is no longer available. It was deleted, replaced by newer datasets, or removed by the server to stay within its storage limits.",
       "inputs_aria": "What the dataset was built from",
       "preset_label": "Open with",
       "preset": {
@@ -1596,7 +1596,8 @@
     "compute_failed": "The dataset could not be computed. The details name the technical cause.",
     "job_timeout": "The computation did not finish in time, probably because the server restarted. Start it again.",
     "job_deleted": "The run that computed this dataset was deleted. Choose other data or compute it again.",
-    "aborted": "You stopped the computation."
+    "aborted": "You stopped the computation.",
+    "interrupted": "The application was closed while this was being computed. Start it again."
   },
   "print": {
     "heading": "Print view",

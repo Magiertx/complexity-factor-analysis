@@ -543,7 +543,7 @@
         "logs_model": "Jedes Log wird mit jedem gewählten Miner verarbeitet, und die gewählten Maße werden auf jedem gefundenen Petri-Netz berechnet. Jedes Paar aus Log und Miner ergibt eine Beobachtung.",
         "logs_log": "Die gewählten Feature-Gruppen werden mit feeed für jedes Log berechnet. Jedes Log ergibt eine Beobachtung.",
         "pnml": "Die gewählten Maße werden auf Petri-Netzen berechnet, die du schon hast. Jedes Netz ergibt eine Beobachtung.",
-        "mine": "Datensätze, die du in dieser Sitzung geladen oder berechnet hast, jeweils mit den Einstellungen ihrer letzten Analyse. Der Server behält bis zu 30 pro Sitzung und löscht sie nach 7 Tagen ohne Nutzung."
+        "mine": "Datensätze, die du in dieser Sitzung geladen oder berechnet hast, jeweils mit den Einstellungen ihrer letzten Analyse. Läuft das Werkzeug auf einem Server, begrenzt dieser, wie viele er behält und wie lange, und entfernt ältere."
       },
       "bundled_empty": "Auf diesem Server sind keine mitgelieferten Datensätze verfügbar.",
       "all_bundled": "Alle Datensätze",
@@ -637,7 +637,7 @@
       "delete_with_run": "Datensatz und den Run löschen, der ihn berechnet hat",
       "delete_confirm_run": "Datensatz und Run löschen",
       "delete_failed": "Der Datensatz konnte nicht gelöscht werden.",
-      "gone": "Der Datensatz, den du geöffnet hattest, ist nicht mehr verfügbar. Er wurde gelöscht, durch neuere ersetzt oder nach 7 Tagen ohne Nutzung entfernt.",
+      "gone": "Der Datensatz, den du geöffnet hattest, ist nicht mehr verfügbar. Er wurde gelöscht, durch neuere ersetzt oder vom Server entfernt, damit er innerhalb seiner Speichergrenzen bleibt.",
       "inputs_aria": "Woraus der Datensatz besteht",
       "preset_label": "Öffnen mit",
       "preset": {
@@ -1596,7 +1596,8 @@
     "compute_failed": "Der Datensatz ließ sich nicht berechnen. Die Details nennen die technische Ursache.",
     "job_timeout": "Die Berechnung wurde nicht rechtzeitig fertig, vermutlich weil der Server neu gestartet ist. Starte sie noch einmal.",
     "job_deleted": "Der Run, der diesen Datensatz berechnet hat, wurde gelöscht. Wähle andere Daten oder berechne ihn noch einmal.",
-    "aborted": "Du hast die Berechnung abgebrochen."
+    "aborted": "Du hast die Berechnung abgebrochen.",
+    "interrupted": "Die Anwendung wurde geschlossen, während dies berechnet wurde. Starte es noch einmal."
   },
   "print": {
     "heading": "Druckansicht",
