@@ -38,7 +38,6 @@ import { PageHeader } from "@/components/page-header";
 import { buttonClass } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Notice } from "@/components/ui/notice";
-import { PAGE_COLUMN } from "@/components/ui/page-column";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 
 type Icon = ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
@@ -317,7 +316,9 @@ export function GuideView() {
     <p key={`${id}-p${n}`}>{t(`guide.${id}.p${n}`, { app: APP_NAME })}</p>
   );
   return (
-    <div className={`space-y-6 ${PAGE_COLUMN}`}>
+    // As wide as the header (logo to settings), like the pages of the tabs; the running text keeps
+    // a line length that reads well.
+    <div className="space-y-6">
       <PageHeader title={t("guide.title")} subtitle={t("guide.subtitle", { app: APP_NAME })} back={back} />
 
       <div className="space-y-6 lg:grid lg:grid-cols-[12.5rem_minmax(0,1fr)] lg:items-start lg:gap-8 lg:space-y-0">
@@ -348,13 +349,13 @@ export function GuideView() {
                     <CardTitle id={`guide-${s.id}-title`}>{t(`guide.${s.id}.title`)}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-5">
-                    {s.before > 0 && <p className="text-base leading-relaxed">{t(`guide.${s.id}.p1`, { app: APP_NAME })}</p>}
+                    {s.before > 0 && <p className="max-w-[80ch] text-base leading-relaxed">{t(`guide.${s.id}.p1`, { app: APP_NAME })}</p>}
                     {s.items && s.layout === "stepper" && <Stepper items={s.items} term={term} text={text} />}
                     {s.items && s.layout === "results" && <Results items={s.items} term={term} text={text} />}
                     {s.items && s.layout === "tiles" && <Tiles items={s.items} term={term} text={text} />}
                     {rest.length > 0 && (
                       <Notice title={t("guide.note")}>
-                        <div className="space-y-2 leading-relaxed">{rest.map((n) => paragraph(s.id, n))}</div>
+                        <div className="max-w-[80ch] space-y-2 leading-relaxed">{rest.map((n) => paragraph(s.id, n))}</div>
                       </Notice>
                     )}
                   </CardContent>
