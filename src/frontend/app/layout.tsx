@@ -21,7 +21,9 @@ const LANG_SCRIPT =
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    // translate="no": the app has its own languages; Edge and Chrome offered to translate every page
+    // (and a translated page shows measure names and codes that do not exist).
+    <html lang="en" translate="no" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: LANG_SCRIPT }} />
       </head>
