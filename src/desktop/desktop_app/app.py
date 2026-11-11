@@ -19,7 +19,11 @@ into the private data directory (mode 0600) and opens that file; the page forwar
 ``/?token=<code>``, with a one-time code that is valid for :data:`CODE_TTL_S` seconds. The file
 is deleted when the code is redeemed, or at the latest when the app quits. The page server
 redeems the code (on GET only) for a fresh random session value, sets it as an ``HttpOnly``,
-``SameSite=Strict`` session cookie and redirects to the same address without the code. Every
+``SameSite=Lax`` session cookie and redirects to the same address without the code. Not
+``Strict``: the browser comes from the login file (``file://``), so it counts the whole redirect
+as cross-site and leaves a strict cookie off the redirected request, and Chrome and Edge showed
+the landing page instead of the app. ``Lax`` sends it on top-level ``GET`` navigations only, and
+every other method is checked for its origin anyway. Every
 request to the API and every page needs that cookie, or ``Authorization: Bearer <token>`` with
 the launch's master token for scripts. The master token also asks for a login file
 (``/_desktop/login``, for the second start). The instance check (``/_desktop/instance``) proves
@@ -425,7 +429,7 @@ class Router:
         """303 to the same page without the code, with the session cookie (no ``Max-Age``: it
         goes with the browser session)."""
         location = local_location(scope["path"], rest)
-        cookie = f"{self.cookie_name}={session}; HttpOnly; SameSite=Strict; Path=/"
+        cookie = f"{self.cookie_name}={session}; HttpOnly; SameSite=Lax; Path=/"  # why Lax: module docstring
         await _refuse(send, 303, "Signed in.", [(b"location", location), (b"set-cookie", cookie.encode("ascii"))])
 
     async def _landing(self, send: Send) -> None:

@@ -201,8 +201,10 @@ Therefore:
   browser" makes a new one, and the file is deleted when the code is redeemed, when it has expired
   (at the next one), when the app quits, and at the next start if it was killed. The page server
   redeems a code on `GET` only (a `HEAD` request does not use it up) for a fresh random session
-  value, sets that as the cookie `desktop_access_<port>` (`HttpOnly`, `SameSite=Strict`, `Path=/`,
+  value, sets that as the cookie `desktop_access_<port>` (`HttpOnly`, `SameSite=Lax`, `Path=/`,
   no expiry: it goes with the browser session) and redirects to the same address without the code.
+  `Lax`, because the redirect starts at a `file://` page: browsers count it as cross-site and leave
+  a `Strict` cookie off the redirected request, so the app would show its note instead of itself.
   If several cookies of that name arrive (another server on 127.0.0.1 can set one for its own
   path; cookies are not bound to a port), any valid one is enough. Every page, every file and
   every API request, the progress stream included, needs that cookie or the bearer header. Without

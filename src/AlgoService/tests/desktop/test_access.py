@@ -79,7 +79,8 @@ def test_a_one_time_code_is_traded_for_a_session_cookie_and_dropped(anonymous_cl
     # A session value of its own, not the master token, and no lifetime beyond the browser session.
     assert cookie.startswith(f"{COOKIE}=") and TOKEN not in cookie
     assert "max-age" not in cookie.lower() and "expires" not in cookie.lower()
-    assert {"httponly", "samesite=strict", "path=/"} <= {part.strip().lower() for part in cookie.split(";")}
+    # Lax, not Strict: a strict cookie stays off the redirect that starts at the login file (file://).
+    assert {"httponly", "samesite=lax", "path=/"} <= {part.strip().lower() for part in cookie.split(";")}
     assert response.headers["cache-control"] == "no-store"
     assert TOKEN not in response.text and access.is_session(cookie.split(";")[0].split("=", 1)[1])
 

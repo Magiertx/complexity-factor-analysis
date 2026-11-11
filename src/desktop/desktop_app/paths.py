@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import functools
 import importlib.util
 import logging
 import os
@@ -144,20 +145,32 @@ def _refuse_shared(directory: Path) -> None:
         )
 
 
+#: Windows: the console programs below get no window of their own. The windowed program has no
+#: console to lend them, so each call flashed one up (six on a first start).
+NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+
+@functools.lru_cache(maxsize=1)
+def _user_sid() -> str:
+    user = subprocess.run(
+        ["whoami", "/user", "/fo", "csv", "/nh"],
+        capture_output=True, text=True, timeout=15, check=True, creationflags=NO_WINDOW,
+    ).stdout.strip().split(",")[-1].strip().strip('"')
+    if not user.startswith("S-1-"):
+        raise ValueError("no SID")
+    return user
+
+
 def _restrict_to_user(directory: Path) -> None:
     """Windows: only the current user (and the system) get access to a new directory, and what
     is created in it. A directory inherits the permissions of its parent otherwise, which for a
     folder outside the user's profile may include other users. Best effort; the log says if it
     did not work."""
     try:
-        user = subprocess.run(
-            ["whoami", "/user", "/fo", "csv", "/nh"], capture_output=True, text=True, timeout=15, check=True
-        ).stdout.strip().split(",")[-1].strip().strip('"')
-        if not user.startswith("S-1-"):
-            raise ValueError("no SID")
+        user = _user_sid()
         subprocess.run(
             ["icacls", str(directory), "/inheritance:r", "/grant:r", f"*{user}:(OI)(CI)F", "/grant:r", "*S-1-5-18:(OI)(CI)F"],
-            capture_output=True, text=True, timeout=30, check=True,
+            capture_output=True, text=True, timeout=30, check=True, creationflags=NO_WINDOW,
         )
     except (OSError, ValueError, subprocess.SubprocessError) as exc:
         logger.warning("Could not restrict %s to the current user (%s); it has the permissions of its parent.", directory, exc)

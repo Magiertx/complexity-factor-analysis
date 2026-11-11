@@ -25,7 +25,7 @@ export default async function globalSetup(): Promise<(() => Promise<void>) | voi
     file,
     JSON.stringify({
       cookies: [
-        { name, value, domain: url.hostname, path: "/", expires: -1, httpOnly: true, secure: false, sameSite: "Strict" },
+        { name, value, domain: url.hostname, path: "/", expires: -1, httpOnly: true, secure: false, sameSite: "Lax" },
       ],
       origins: [],
     }),

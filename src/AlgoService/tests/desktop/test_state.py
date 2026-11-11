@@ -71,6 +71,29 @@ def test_a_new_directory_is_restricted_to_the_user_on_windows(tmp_path):
     assert (fresh / "artifacts").is_dir()
 
 
+def test_the_acl_programs_run_without_a_console_window(tmp_path, monkeypatch):
+    """The windowed program flashed a console up for each whoami and icacls (six on a first start)."""
+    from desktop_app import paths as paths_module
+
+    calls = []
+
+    def fake_run(args, **kwargs):
+        calls.append((args[0], kwargs.get("creationflags")))
+        out = '"me","S-1-5-21-1-2-3-1001"\n' if args[0] == "whoami" else ""
+        return subprocess.CompletedProcess(args, 0, stdout=out, stderr="")
+
+    monkeypatch.setattr(paths_module.subprocess, "run", fake_run)
+    monkeypatch.setattr(paths_module, "NO_WINDOW", 0x08000000)
+    paths_module._user_sid.cache_clear()
+    try:
+        for name in ("a", "b", "c"):
+            paths_module._restrict_to_user(tmp_path / name)
+    finally:
+        paths_module._user_sid.cache_clear()
+    assert [program for program, _ in calls] == ["whoami", "icacls", "icacls", "icacls"]  # the SID once
+    assert all(flags == 0x08000000 for _, flags in calls)
+
+
 def test_a_data_dir_holds_everything(tmp_path):
     paths = AppPaths.under(tmp_path / "d")
     assert paths.data == paths.config == (tmp_path / "d").resolve()
