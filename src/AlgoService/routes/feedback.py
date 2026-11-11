@@ -52,6 +52,16 @@ def _context(sent: dict[str, Any] | None) -> dict[str, str] | None:
     return {"version": tool["version"], "commit": tool["commit"], **context}
 
 
+@router.get("/feedback")
+async def feedback_channel() -> dict[str, Any]:
+    """How the form delivers. By mail where it is set up; elsewhere (the desktop app, a server
+    without mail) a message kept here would reach nobody, so the form opens an issue on GitHub
+    instead. The tool's version and commit go into the issue's details, as the server adds them
+    to a mail."""
+    tool = provenance.tool()
+    return {"mail": feedback_mail.settings() is not None, "version": tool["version"], "commit": tool["commit"]}
+
+
 @router.post("/feedback")
 @limiter.limit(rate_limit("feedback", "5/hour"))
 async def send_feedback(request: Request, body: FeedbackIn, background: BackgroundTasks) -> dict[str, bool]:

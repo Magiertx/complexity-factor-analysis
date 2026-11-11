@@ -1549,6 +1549,19 @@ export async function askAboutInterpretation(
 
 export type FeedbackKind = "bug" | "idea" | "other";
 
+/** How the form delivers: by mail where the server has it set up, else as an issue on GitHub. */
+export interface FeedbackChannel {
+  mail: boolean;
+  version: string;
+  commit: string;
+}
+
+export async function fetchFeedbackChannel(): Promise<FeedbackChannel> {
+  const r = await fetch(`${BASE}/feedback`, { cache: "no-store" });
+  if (!r.ok) throw await httpError(r, "Could not reach the feedback form", false);
+  return r.json();
+}
+
 export interface FeedbackInput {
   kind: FeedbackKind;
   message: string;

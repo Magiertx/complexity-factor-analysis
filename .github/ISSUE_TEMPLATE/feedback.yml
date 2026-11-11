@@ -1,0 +1,23 @@
+name: Feedback
+description: A bug, an idea or anything else about XCom. The feedback form of the app fills this in.
+labels: ["feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for writing. Please do not paste data you may not share: issues are public.
+  - type: textarea
+    id: message
+    attributes:
+      label: Message
+      description: What happened, what you expected, or what you would like.
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Technical details
+      description: >-
+        Filled in by the app when "Send technical details" is on: version and commit of the tool,
+        page and step, language, browser and the code of the last error. Nothing from your datasets.
+      render: text

@@ -9,10 +9,17 @@ import { expect, stepSection, test, text } from "./fixtures";
 
 type Sent = Record<string, unknown> & { context: Record<string, string> | null };
 
-/** Answers POST /api/feedback itself and collects what was sent. */
-async function fakeFeedback(page: Page, answer: { status: number; json: unknown } = { status: 200, json: { ok: true } }) {
+const MAIL = { mail: true, version: "1.0.0", commit: "abcdef1234567" };
+
+/** Answers /api/feedback itself (GET: whether mail is set up; POST: a send) and collects what was sent. */
+async function fakeFeedback(
+  page: Page,
+  answer: { status: number; json: unknown } = { status: 200, json: { ok: true } },
+  channel: typeof MAIL = MAIL,
+) {
   const sent: Sent[] = [];
   await page.route("**/api/feedback", async (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ status: 200, json: channel });
     sent.push(route.request().postDataJSON());
     await route.fulfill(answer);
   });
@@ -78,6 +85,33 @@ test("a message is sent with the technical details, the toast thanks and the dia
   await headerButton(page).click();
   await expect(message(page)).toHaveValue("");
   await expect(kind(page, "idea")).toBeChecked();
+});
+
+test("without mail on the server the form opens a filled-in issue on GitHub", async ({ page, context }) => {
+  const sent = await fakeFeedback(page, undefined, { ...MAIL, mail: false });
+  await context.route("https://github.com/**", (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>GitHub</title>" }));
+  await open(page, "/log?step=suitability");
+  await expect(dialog(page)).toContainText(text("feedback.github_note"));
+  // The GitHub account answers for the contact.
+  await expect(dialog(page).getByRole("textbox", { name: text("feedback.contact_label") })).toHaveCount(0);
+  await kind(page, "idea").click();
+  await message(page).fill("Please add a dark map\nand a legend");
+
+  const opened = context.waitForEvent("page");
+  await dialog(page).getByRole("button", { name: text("feedback.github_send"), exact: true }).click();
+  const issue = await opened;
+  await issue.waitForLoadState();
+  const url = new URL(issue.url());
+  expect(`${url.origin}${url.pathname}`).toBe("https://github.com/Magiertx/complexity-factor-analysis/issues/new");
+  expect(url.searchParams.get("template")).toBe("feedback.yml");
+  expect(url.searchParams.get("title")).toBe("Idea: Please add a dark map");
+  expect(url.searchParams.get("message")).toBe("Please add a dark map\nand a legend");
+  const details = url.searchParams.get("details")!.split("\n");
+  expect(details).toEqual(expect.arrayContaining(["version: 1.0.0", "commit: abcdef1234567", "route: /log", "step: suitability"]));
+
+  await expect(page.getByRole("status").getByText(text("feedback.github_opened"))).toBeVisible();
+  await expect(dialog(page)).toBeHidden();
+  expect(sent).toHaveLength(0); // nothing kept on a server where nobody would read it
 });
 
 test("the technical details can be turned off, and the dialog lists what goes along", async ({ page }) => {

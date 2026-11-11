@@ -13,5 +13,6 @@ export const APP_INITIALS = APP_NAME.split(/\s+/)
 export const APP_DESCRIPTION =
   "XCom, a tool for the exploration of event log and process model complexity: factor analysis of complexity measures, in your browser.";
 
-/** Public source repository. Leave empty to hide the link in the settings. */
-export const REPO_URL = "";
+/** Public source repository: the link in the settings, and where feedback goes as an issue
+ * when the server has no mail set up (the desktop app). Leave empty to hide both. */
+export const REPO_URL: string = "https://github.com/Magiertx/complexity-factor-analysis";

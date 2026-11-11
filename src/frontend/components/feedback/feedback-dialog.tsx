@@ -1,10 +1,11 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Loader2, X } from "lucide-react";
-import { HttpError, sendFeedback, type FeedbackKind } from "@/lib/api";
-import { MAX_CONTACT, MAX_MESSAGE, technicalDetails } from "@/lib/feedback";
+import { HttpError, fetchFeedbackChannel, sendFeedback, type FeedbackChannel, type FeedbackKind } from "@/lib/api";
+import { REPO_URL } from "@/lib/app-config";
+import { MAX_CONTACT, MAX_MESSAGE, issueUrl, technicalDetails } from "@/lib/feedback";
 import { plainFailure } from "@/lib/factor-analysis";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { lastErrorCode } from "@/lib/last-error";
@@ -87,6 +88,19 @@ function FeedbackForm({
   const [website, setWebsite] = useState("");
   const [sending, setSending] = useState(false);
   const [failure, setFailure] = useState<{ text: string; details: string | null } | null>(null);
+  // Without mail on the server (the desktop app) a kept message reaches nobody: the form opens an
+  // issue on GitHub instead. Until the answer is in, and where the question fails, it sends as before.
+  const [channel, setChannel] = useState<FeedbackChannel | null>(null);
+  useEffect(() => {
+    let live = true;
+    fetchFeedbackChannel()
+      .then((answer) => live && setChannel(answer))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+  const github = channel !== null && !channel.mail && REPO_URL !== "";
 
   // Read while the dialog is open, so the list shows what a send would carry now.
   const details = technicalDetails({
@@ -102,6 +116,15 @@ function FeedbackForm({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message || sending) return;
+    if (github) {
+      // Opened at once, in the click: a window opened after an await counts as a popup.
+      const context = draft.technical ? { version: channel.version, commit: channel.commit, ...details } : null;
+      window.open(issueUrl(REPO_URL, { kind: draft.kind, message, details: context }), "_blank", "noopener,noreferrer");
+      notify({ key: "feedback-github", tone: "success", message: t("feedback.github_opened") });
+      onSent();
+      onClose();
+      return;
+    }
     setSending(true);
     setFailure(null);
     try {
@@ -165,17 +188,20 @@ function FeedbackForm({
           />
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor={contactId}>{t("feedback.contact_label")}</Label>
-          <Input
-            id={contactId}
-            value={draft.contact}
-            onChange={(e) => set({ contact: e.target.value })}
-            maxLength={MAX_CONTACT}
-            placeholder={t("feedback.contact_placeholder")}
-            autoComplete="off"
-          />
-        </div>
+        {/* On GitHub the account answers for the contact. */}
+        {!github && (
+          <div className="space-y-1.5">
+            <Label htmlFor={contactId}>{t("feedback.contact_label")}</Label>
+            <Input
+              id={contactId}
+              value={draft.contact}
+              onChange={(e) => set({ contact: e.target.value })}
+              maxLength={MAX_CONTACT}
+              placeholder={t("feedback.contact_placeholder")}
+              autoComplete="off"
+            />
+          </div>
+        )}
 
         <div className="flex min-h-6 items-center gap-1.5">
           <label className="flex min-h-6 cursor-pointer items-center gap-2 rounded-md text-sm has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent">
@@ -191,7 +217,10 @@ function FeedbackForm({
           <InfoTip topic={t("feedback.technical_topic")} text={t("feedback.technical_info")} width={340}>
             <p>{t("feedback.technical_info")}</p>
             <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1">
-              <Row name={t("feedback.technical_version")} value={t("feedback.technical_version_value")} />
+              <Row
+                name={t("feedback.technical_version")}
+                value={github ? `${channel.version} (${channel.commit.slice(0, 7)})` : t("feedback.technical_version_value")}
+              />
               <Row name={t("feedback.technical_page")} value={details.route} />
               <Row name={t("feedback.technical_step")} value={details.step} none={t("feedback.technical_none")} />
               <Row name={t("feedback.technical_language")} value={details.language} />
@@ -224,10 +253,10 @@ function FeedbackForm({
       </form>
 
       <div className="shrink-0 flex items-center justify-between gap-3 border-t border-border px-5 py-3">
-        <p className="min-w-0 text-xs text-muted">{t("feedback.anonymous")}</p>
+        <p className="min-w-0 text-xs text-muted">{t(github ? "feedback.github_note" : "feedback.anonymous")}</p>
         <Button type="submit" form={formId} disabled={!message || sending}>
           {sending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-          {sending ? t("feedback.sending") : t("feedback.send")}
+          {github ? t("feedback.github_send") : sending ? t("feedback.sending") : t("feedback.send")}
         </Button>
       </div>
     </>

@@ -87,8 +87,9 @@ Schalk do it, but interactively in the browser.
   names one representative measure per dimension, the one assigned to it with the highest
   purity, ready to copy; a representative with a low stability should be read with care.
   A computed stability goes into the ZIP.
-- **Feedback.** A form in the header reports a bug, suggests something or says anything else,
-  without an account.
+- **Feedback.** A form in the header reports a bug, suggests something or says anything else.
+  On a server with mail set up it is mailed, without an account; elsewhere (the desktop app) it
+  opens a filled-in issue on GitHub with the label `feedback`.
 - **Come back to a dataset.** The datasets of a session are listed on the data step, reopen
   with the parameters of their last analysis and can be deleted one by one or all at once.
   "History" lists every dataset and every run of a single log of the session, newest first, with

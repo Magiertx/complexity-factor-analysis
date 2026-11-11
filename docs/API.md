@@ -156,6 +156,7 @@ the connection is `PROM4PY_START_WAIT` seconds (default 180).
 |--------|------|-------------|
 | GET | `/health` | Readiness probe — 200 when the DB is reachable. |
 | GET | `/session` | 204. Starts the session (`Set-Cookie: session_id`) if the request has no cookie or one the server cannot read. |
+| GET | `/feedback` | How the form delivers: `{mail, version, commit}`. `mail` is true where mail is set up; elsewhere (the desktop app) the form opens an issue on GitHub (`.github/ISSUE_TEMPLATE/feedback.yml`) with the version and commit in its details. |
 | POST | `/feedback` | The feedback form: `{kind: bug\|idea\|other, message, contact?, context?}`. Stored without IP address or session, and mailed to the owner if mail is set up (see DEPLOYMENT.md). Answers `{"ok": true}`; a bad kind or length answers 422 with `code` `feedback_kind`, `feedback_empty`, `feedback_too_long` or `feedback_contact_too_long`. |
 
 ## Notes & limits

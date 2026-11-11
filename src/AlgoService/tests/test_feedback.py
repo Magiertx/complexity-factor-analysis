@@ -167,6 +167,16 @@ def test_no_mail_without_settings(client, inbox, smtp, monkeypatch):
     assert smtp.connections == []
 
 
+def test_the_form_learns_whether_mail_is_set_up(client, monkeypatch):
+    """Without mail the form opens a GitHub issue instead (a kept message would reach nobody)."""
+    answer = client.get("/feedback").json()
+    assert answer["mail"] is False and answer["version"] and answer["commit"]
+    monkeypatch.setenv("FEEDBACK_SMTP_HOST", "mail.example.org")
+    assert client.get("/feedback").json()["mail"] is False  # a host without a recipient is no setup
+    monkeypatch.setenv("FEEDBACK_TO", "owner@example.org")
+    assert client.get("/feedback").json()["mail"] is True
+
+
 def test_a_failed_mail_keeps_the_row(client, inbox, smtp, mail, caplog):
     smtp.fail = smtplib.SMTPException("relay denied")
     with caplog.at_level("WARNING", logger="algoservice"):
