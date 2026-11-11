@@ -31,6 +31,8 @@ SRC = Path(SPECPATH).resolve().parent  # noqa: F821 (SPECPATH is provided by PyI
 BACKEND = SRC / "AlgoService"
 FRONTEND_OUT = SRC / "frontend" / "out"
 STAGE = Path(os.environ["CFA_STAGE"]).resolve()
+#: The app's icon (the favicon, see assets/make_icons.py): program file, window, taskbar, Dock.
+ASSETS = SRC / "desktop" / "assets"
 META = json.loads((STAGE / "meta.json").read_text(encoding="utf-8"))
 
 NAME = META["name"]  # APP_NAME, the display name
@@ -97,6 +99,9 @@ datas = [
     (str(BACKEND / "alembic"), "alembic"),
     (str(FRONTEND_OUT), "frontend"),
     (str(STAGE / "build_info.json"), "."),
+    # The status window's icon: the .ico on Windows (sharp in the taskbar), the .png elsewhere.
+    (str(ASSETS / "icon.ico"), "."),
+    (str(ASSETS / "icon.png"), "."),
     (str(STAGE / "LICENSE"), "licenses"),
     (str(STAGE / "THIRD-PARTY-LICENSES.txt"), "licenses"),
 ]
@@ -162,6 +167,7 @@ common = dict(
     strip=False,
     upx=False,
     version=version_file,
+    icon=str(ASSETS / "icon.ico") if IS_WINDOWS else None,
 )
 
 # The program: no console window on Windows and macOS. Linux starts from a terminal or a file
@@ -183,7 +189,7 @@ if IS_MACOS:
     app = BUNDLE(  # noqa: F821
         coll,
         name=f"{NAME}.app",
-        icon=None,
+        icon=str(ASSETS / "icon.icns"),
         bundle_identifier=f"io.github.magiertx.{SLUG}",
         version=VERSION,
         info_plist={

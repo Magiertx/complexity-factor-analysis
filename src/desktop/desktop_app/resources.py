@@ -36,6 +36,12 @@ def frontend_dir() -> Path:
     return bundle_root() / "frontend" if is_frozen() else bundle_root() / "frontend" / "out"
 
 
+def icon_path(suffix: str) -> Path:
+    """The app's icon, ``.ico`` or ``.png`` (``src/desktop/assets``, made by ``make_icons.py``)."""
+    name = f"icon{suffix}"
+    return bundle_root() / name if is_frozen() else bundle_root() / "desktop" / "assets" / name
+
+
 def build_info_path() -> Path:
     return bundle_root() / "build_info.json" if is_frozen() else bundle_root() / "desktop" / "build_info.json"
 
