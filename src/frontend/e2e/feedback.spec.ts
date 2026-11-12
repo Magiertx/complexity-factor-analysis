@@ -28,6 +28,7 @@ async function fakeFeedback(
 
 const headerButton = (page: Page) => page.getByRole("banner").getByRole("button", { name: text("header.feedback_label") });
 const dialog = (page: Page) => page.getByRole("dialog", { name: text("feedback.title"), exact: true });
+const title = (page: Page) => dialog(page).getByRole("textbox", { name: text("feedback.title_label") });
 const message = (page: Page) => dialog(page).getByRole("textbox", { name: text("feedback.message_label") });
 const send = (page: Page) => dialog(page).getByRole("button", { name: text("feedback.send"), exact: true });
 const kind = (page: Page, which: "bug" | "idea" | "other") =>
@@ -63,6 +64,8 @@ test("a message is sent with the technical details, the toast thanks and the dia
   await expect(kind(page, "bug")).toBeChecked();
   await expect(send(page)).toBeDisabled();
   await expect(dialog(page)).toContainText(text("feedback.anonymous"));
+  // A mail takes its subject from the message: no title field.
+  await expect(title(page)).toHaveCount(0);
 
   await kind(page, "idea").click();
   await message(page).fill("Please add a dark map");
@@ -95,6 +98,8 @@ test("without mail on the server the form opens a filled-in issue on GitHub", as
   // The GitHub account answers for the contact.
   await expect(dialog(page).getByRole("textbox", { name: text("feedback.contact_label") })).toHaveCount(0);
   await kind(page, "idea").click();
+  // Without a typed title the title is a short summary of the message; the message stays whole.
+  await expect(title(page)).toBeVisible();
   await message(page).fill("Please add a dark map\nand a legend");
 
   const opened = context.waitForEvent("page");
@@ -112,6 +117,22 @@ test("without mail on the server the form opens a filled-in issue on GitHub", as
   await expect(page.getByRole("status").getByText(text("feedback.github_opened"))).toBeVisible();
   await expect(dialog(page)).toBeHidden();
   expect(sent).toHaveLength(0); // nothing kept on a server where nobody would read it
+});
+
+test("a typed title becomes the title of the GitHub issue", async ({ page, context }) => {
+  await fakeFeedback(page, undefined, { ...MAIL, mail: false });
+  await context.route("https://github.com/**", (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>GitHub</title>" }));
+  await open(page, "/settings");
+  await title(page).fill("Dark map");
+  await message(page).fill("Please add a dark map. It would help at night.");
+
+  const opened = context.waitForEvent("page");
+  await dialog(page).getByRole("button", { name: text("feedback.github_send"), exact: true }).click();
+  const issue = await opened;
+  await issue.waitForLoadState();
+  const url = new URL(issue.url());
+  expect(url.searchParams.get("title")).toBe("Bug: Dark map");
+  expect(url.searchParams.get("message")).toBe("Please add a dark map. It would help at night.");
 });
 
 test("the technical details can be turned off, and the dialog lists what goes along", async ({ page }) => {

@@ -1,13 +1,13 @@
 "use client";
 
-// The feedback form: kind, message, contact and the technical details that go along.
+// The feedback form: kind, title (GitHub only), message, contact and the technical details that go along.
 
 import { useEffect, useId, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Loader2, X } from "lucide-react";
 import { HttpError, fetchFeedbackChannel, sendFeedback, type FeedbackChannel, type FeedbackKind } from "@/lib/api";
 import { REPO_URL } from "@/lib/app-config";
-import { MAX_CONTACT, MAX_MESSAGE, issueUrl, technicalDetails } from "@/lib/feedback";
+import { MAX_CONTACT, MAX_MESSAGE, MAX_TITLE, issueUrl, technicalDetails } from "@/lib/feedback";
 import { plainFailure } from "@/lib/factor-analysis";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { lastErrorCode } from "@/lib/last-error";
@@ -25,6 +25,8 @@ import { useToasts } from "@/components/ui/toasts";
 /** What has been typed; kept by `FeedbackProvider` while the dialog is closed. */
 export interface Draft {
   kind: FeedbackKind;
+  /** The title of the GitHub issue; empty lets the title come from the message. */
+  title: string;
   message: string;
   contact: string;
   /** Whether the technical details go along. On unless the sender turns it off. */
@@ -87,6 +89,7 @@ function FeedbackForm({
   const { notify } = useToasts();
   const pathname = usePathname();
   const formId = useId();
+  const titleFieldId = useId();
   const messageId = useId();
   const contactId = useId();
   const counterId = useId();
@@ -124,7 +127,7 @@ function FeedbackForm({
     if (github) {
       // Opened at once, in the click: a window opened after an await counts as a popup.
       const context = draft.technical ? { version: channel.version, commit: channel.commit, ...details } : null;
-      window.open(issueUrl(REPO_URL, { kind: draft.kind, message, details: context }), "_blank", "noopener,noreferrer");
+      window.open(issueUrl(REPO_URL, { kind: draft.kind, title: draft.title, message, details: context }), "_blank", "noopener,noreferrer");
       notify({ key: "feedback-github", tone: "success", message: t("feedback.github_opened") });
       onSent();
       onClose();
@@ -172,6 +175,21 @@ function FeedbackForm({
           onChange={(kind) => set({ kind })}
           options={KINDS.map((kind) => ({ value: kind, label: t(`feedback.kind.${kind}`) }))}
         />
+
+        {/* Only an issue has a title; a mail takes its subject from the message. */}
+        {github && (
+          <div className="space-y-1.5">
+            <Label htmlFor={titleFieldId}>{t("feedback.title_label")}</Label>
+            <Input
+              id={titleFieldId}
+              value={draft.title}
+              onChange={(e) => set({ title: e.target.value })}
+              maxLength={MAX_TITLE}
+              placeholder={t("feedback.title_placeholder")}
+              autoComplete="off"
+            />
+          </div>
+        )}
 
         <div className="space-y-1.5">
           <div className="flex items-center justify-between gap-2">
