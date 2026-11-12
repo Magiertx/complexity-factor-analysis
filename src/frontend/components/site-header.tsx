@@ -10,7 +10,8 @@ import { HEADER_HREFS, activeHeaderLink, type HeaderLinkId } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { useFeedback } from "./feedback/feedback-provider";
 import { useTip } from "./ui/tip";
-import { APP_INITIALS, APP_NAME } from "@/lib/app-config";
+import { APP_NAME } from "@/lib/app-config";
+import { AppLogo } from "./app-logo";
 import { LocaleToggle } from "./locale-toggle";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -96,9 +97,7 @@ export function SiteHeader() {
             aria-label={APP_NAME}
             className="flex items-center gap-3 min-w-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
-            <span className="h-7 w-7 rounded-md bg-accent grid place-items-center text-accent-fg text-xs font-semibold shrink-0" aria-hidden>
-              {APP_INITIALS}
-            </span>
+            <AppLogo className="h-7 w-7 shrink-0" />
             <span className="hidden min-[400px]:block font-semibold tracking-tight leading-tight whitespace-nowrap truncate" aria-hidden>
               {APP_NAME}
             </span>
