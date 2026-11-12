@@ -50,6 +50,7 @@ def write_private_text(path: Path, text: str) -> None:
 
 
 def write_private_json(path: Path, data: dict[str, Any]) -> None:
+    """Write ``data`` as JSON to ``path`` through ``write_private_text`` (owner-readable where the system has modes)."""
     write_private_text(path, json.dumps(data, indent=2) + "\n")
 
 
@@ -172,6 +173,7 @@ def remembered_port(path: Path) -> int | None:
 
 
 def remember_port(path: Path, port: int) -> None:
+    """Store the port of this start for the next one."""
     write_private_text(path, json.dumps({"port": port}) + "\n")
 
 
@@ -186,6 +188,7 @@ _LINE = re.compile(r"^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$")
 
 
 def is_allowed_setting(name: str) -> bool:
+    """Whether ``settings.env`` may set ``name``."""
     return name in ALLOWED_NAMES or name.startswith(ALLOWED_PREFIXES)
 
 

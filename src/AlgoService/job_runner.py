@@ -69,6 +69,7 @@ def request_stop() -> None:
 
 
 def is_stopping() -> bool:
+    """Whether ``stop_local_jobs`` has been called; the status checks of local jobs answer "aborted" then."""
     return _stopping.is_set()
 
 

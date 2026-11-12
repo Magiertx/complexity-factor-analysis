@@ -45,6 +45,7 @@ class InstanceLock:
         self._file: IO[bytes] | None = None
 
     def acquire(self) -> bool:
+        """Try to take the lock; ``False`` when another process holds it."""
         f = open(self.path, "a+b")
         try:
             if os.name == "nt":
@@ -63,6 +64,7 @@ class InstanceLock:
         return True
 
     def release(self) -> None:
+        """Give the lock back; a no-op when it is not held."""
         if self._file is None:
             return
         try:
@@ -127,10 +129,12 @@ def bind_preferred(port: int, *, fall_back: bool) -> socket.socket:
 
 
 def write_info(path: Path, *, port: int, token: str) -> None:
+    """Write ``instance.json`` (pid, port and master token; owner-readable where the system has modes) for later starts and scripts."""
     write_private_json(path, {"pid": os.getpid(), "port": port, "token": token})
 
 
 def read_info(path: Path) -> dict[str, Any] | None:
+    """The content of ``instance.json``, or ``None`` when it is missing, unreadable, or lacks an integer ``port`` or a string ``token``."""
     try:
         info = json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, ValueError):

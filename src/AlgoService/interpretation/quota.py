@@ -55,6 +55,12 @@ def claim(session_id: str, client_ip: str, *, chat: bool = False) -> None:
 
 
 def _claim(session_id: str, client_ip: str, chat: bool) -> None:
+    """Count one live call against the session, address and daily limits.
+
+    Raises ``InterpretationError`` with status 429 for the first limit that is used up. The
+    session and address limits apply only when ``session_limit_enabled`` is set; the daily
+    chat cap applies to follow-up questions only.
+    """
     if session_limit_enabled:
         if not _limiter.hit(SESSION_LIMIT, "interpretation", session_id):
             raise InterpretationError(

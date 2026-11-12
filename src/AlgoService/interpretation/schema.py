@@ -12,6 +12,11 @@ MAX_OVERALL = 3000
 MAX_CAVEATS = 10
 
 
+# No docstrings on these models: pydantic puts them into the JSON schema sent to the model, which
+# would change the prompt digest and outdate every shipped interpretation. Comments only.
+
+
+# The model's reading of one factor.
 class FactorInterpretation(BaseModel):
     index: int = Field(description="Number of the factor, starting at 1 as in 'Factor 1'.")
     # Before the name, so the evidence is written before the label.
@@ -23,6 +28,7 @@ class FactorInterpretation(BaseModel):
     confidence: Literal["low", "medium", "high"]
 
 
+# The structured answer asked of the model; ``OUTPUT_SCHEMA`` in ``client`` is derived from it.
 class Interpretation(BaseModel):
     factors: list[FactorInterpretation]
     overall: str = Field(description="One short paragraph on the analysis as a whole.")

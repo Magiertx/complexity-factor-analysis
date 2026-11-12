@@ -53,6 +53,7 @@ def cache_key(
 
 
 def shared_dir() -> Path:
+    """Directory of the interpretations shared by all sessions (bundled datasets)."""
     # Read at call time: tests point jobs_db.ARTIFACTS_DIR at a temp directory.
     return Path(jobs_db.ARTIFACTS_DIR) / "interpretations"
 
@@ -79,6 +80,7 @@ def _write(path: Path, data: dict[str, Any]) -> None:
 
 
 def read_cached(session_id: str, meta: dict[str, Any], key: str) -> dict[str, Any] | None:
+    """The stored interpretation entry for ``key``, or ``None`` when absent or not valid JSON."""
     return _read(_cache_dir(session_id, meta) / f"{key}.json")
 
 
@@ -107,6 +109,7 @@ SETTINGS = ("standard", "published")
 def precomputed_path(
     bundled_id: str, language: str, settings: str = "standard", model: str | None = None, effort: str | None = None
 ) -> Path:
+    """File of the precomputed interpretation for a bundled dataset, settings, language, model and effort."""
     model = client.MODEL if model is None else model
     effort = client.EFFORT if effort is None else effort
     middle = "" if settings == "standard" else f".{settings}"
@@ -174,6 +177,7 @@ def write_precomputed(bundled_id: str, language: str, entry: dict[str, Any], set
 
 
 def has_precomputed() -> bool:
+    """Whether any precomputed interpretation file exists."""
     return any(PRECOMPUTED_DIR.glob("*.json"))
 
 

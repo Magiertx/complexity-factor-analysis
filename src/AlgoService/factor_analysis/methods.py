@@ -48,6 +48,7 @@ class Methods:
 def _article(
     author: str, title: str, journal: str, volume: str, number: str, pages: str, year: str, doi: str
 ) -> list[tuple[str, str]]:
+    """The fields of a journal article reference, in BibTeX order."""
     return [
         ("author", author), ("title", title), ("journal", journal), ("volume", volume), ("number", number),
         ("pages", pages), ("year", year), ("doi", doi),
@@ -192,6 +193,7 @@ _FACTOR_ANALYZER = {
 
 
 def _tool_reference(tool: dict[str, Any], year: int) -> dict[str, Any]:
+    """The reference entry for the tool itself, with the version and commit of the running service and ``year`` as the year of the export."""
     version = tool.get("version")
     commit = tool.get("commit")
     note = ", ".join(
@@ -211,6 +213,7 @@ def _tool_reference(tool: dict[str, Any], year: int) -> dict[str, Any]:
 
 
 def _library_reference(libraries: dict[str, str | None]) -> dict[str, Any]:
+    """The reference entry for factor_analyzer, with the installed version where known."""
     version = libraries.get("factor_analyzer")
     return {
         **_FACTOR_ANALYZER,
@@ -272,10 +275,12 @@ def _p_value(value: float, language: str, *, math: bool = False) -> str:
 
 
 def _percent(share: float, language: str) -> str:
+    """A share as a percentage in LaTeX; German sets a tie before the percent sign."""
     return _number(share * 100, 1, language) + ("~\\%" if language == "de" else "\\%")
 
 
 def _rounds(n: int, language: str) -> str:
+    """``n`` rounds, singular for 1, in the language."""
     if language == "de":
         return "1 Runde" if n == 1 else f"{n} Runden"
     return "1 round" if n == 1 else f"{n} rounds"
@@ -477,12 +482,14 @@ def methods(
     keys: list[str] = []
 
     def cite(*names: str, tie: bool = True) -> str:
+        """The LaTeX cite command for ``names``, which are also recorded in ``keys`` in the order of first citation; ``tie`` puts a tie before it."""
         for name in names:
             if name not in keys:
                 keys.append(name)
         return ("~" if tie else "") + "\\cite{" + ",".join(names) + "}"
 
     def fill(template: str, /, **values: Any) -> str:
+        """The text template ``template`` of the language, filled with ``values``."""
         return t[template].format(**values)
 
     kind = dataset["kind"]
@@ -616,6 +623,7 @@ def methods(
 
 
 def _stability_sentence(stability: dict[str, Any], fill: Any, cite: Any, language: str) -> str:
+    """The sentence on the bootstrap stability of the factors: how many samples, how many were left out or hit a Heywood case, how many measures were stable, and the range of Tucker's congruence (phi); a different sentence if no sample was valid."""
     bootstrap = cite("efron1993", "zhang2010bootstrap")
     if not stability["valid"]:
         return fill("stability_none", samples=stability["samples"], cite_bootstrap=bootstrap)

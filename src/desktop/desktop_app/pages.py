@@ -55,11 +55,13 @@ SessionCookies = Callable[[Scope], Awaitable[list[bytes]]]
 
 
 def register_mime_types() -> None:
+    """Register ``MIME_TYPES`` with ``mimetypes``."""
     for extension, media_type in MIME_TYPES.items():
         mimetypes.add_type(media_type, extension)
 
 
 def media_type(path: Path) -> str:
+    """Content type of a file, by its extension."""
     # The table first: another library may call mimetypes.init() again, which rereads the registry.
     return MIME_TYPES.get(path.suffix.lower()) or mimetypes.guess_type(path.name)[0] or "application/octet-stream"
 
@@ -120,6 +122,7 @@ class PageServer:
 
     @classmethod
     def from_export(cls, root: Path, session_cookies: SessionCookies | None = None) -> "PageServer":
+        """Open the static export in ``root``; raises ``LauncherError`` when its ``index.html`` or ``_headers.json`` is missing or the headers are not an object of strings (invalid JSON raises ``ValueError``)."""
         root = Path(root)
         headers_file = root / "_headers.json"
         if not (root / "index.html").is_file() or not headers_file.is_file():

@@ -62,5 +62,6 @@ separability = Separierbarkeit, threshold = Schwelle, dimension = Dimension.
 
 
 def user_message(payload: dict[str, Any], language: str) -> str:
+    """The user turn: the requested output language and the analysis payload as compact JSON."""
     data = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     return f"Write the interpretation in {LANGUAGES[language]}.\n\nResult of the factor analysis:\n{data}"

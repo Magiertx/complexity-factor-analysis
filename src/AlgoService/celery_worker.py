@@ -1,3 +1,11 @@
+"""Celery app and tasks: the worker processes that run analyses, dataset builds and stability
+bootstraps off the API process.
+
+Started as ``celery -A celery_worker.celery_app worker`` (see docker-compose.yml);
+``job_runner`` and the routes dispatch to the task names registered here. Each task drives
+the matching async routine on one event loop per worker process.
+"""
+
 import os
 import sys
 import asyncio

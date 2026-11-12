@@ -25,6 +25,7 @@ MAX_CONTEXT_VALUE = 300
 
 
 class FeedbackIn(BaseModel):
+    """Body of ``POST /feedback``. ``website`` is the honeypot field of the form."""
     kind: str = ""
     message: str = ""
     contact: str | None = None

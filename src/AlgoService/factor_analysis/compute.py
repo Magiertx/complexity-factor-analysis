@@ -22,6 +22,7 @@ ProgressFn = Callable[[float, str], None]
 
 @dataclass
 class Input:
+    """One input file to compute from: its ``path`` on disk and the ``label`` the row is shown with."""
     path: str
     label: str
 
@@ -43,6 +44,7 @@ class Measurement:
     total_s: float = 0.0
 
     def to_dict(self) -> dict[str, Any]:
+        """The measurement as plain JSON, with the unit and clock named."""
         return {
             "kind": self.kind,
             "source": self.source,
@@ -56,6 +58,7 @@ class Measurement:
 
 @dataclass
 class ComputeResult:
+    """Outcome of one computation: the measure table (one row per observation), the failures as pairs of row label and message, the measurement, and the log feature groups that had to be skipped."""
     table: pd.DataFrame
     failures: list[tuple[str, str]] = field(default_factory=list)
     measurement: Measurement | None = None
@@ -69,12 +72,14 @@ class DatasetError(RuntimeError):
     says it in its own language. The message stays the English text of the dataset's ``error``."""
 
     def __init__(self, message: str, code: str, **params: Any) -> None:
+        """Keep ``code`` and ``params`` next to the English ``message``."""
         super().__init__(message)
         self.code = code
         self.params = params
 
 
 def _number(value: Any) -> float:
+    """``value`` as a finite float; ``nan`` for ``None``, booleans, non-numbers, infinities and ``nan``."""
     if value is None or isinstance(value, bool):
         return math.nan
     try:
@@ -85,14 +90,17 @@ def _number(value: Any) -> float:
 
 
 def _short(e: Exception) -> str:
+    """``ExceptionType: message`` cut to 300 characters, for the failure list."""
     return f"{type(e).__name__}: {e}"[:300]
 
 
 def _table(rows: dict[str, dict[str, float]], columns: list[str]) -> pd.DataFrame:
+    """The measure table: one row per observation label, one float column per measure."""
     return pd.DataFrame.from_dict(rows, orient="index", columns=columns, dtype=float)
 
 
 def _seconds(started: float) -> float:
+    """Wall seconds since ``started`` (a ``time.perf_counter`` value), rounded to microseconds."""
     return round(time.perf_counter() - started, 6)
 
 

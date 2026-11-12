@@ -30,6 +30,7 @@ _LINE_BREAKS = re.compile(r"[\r\n]+")
 
 @dataclass(frozen=True)
 class MailSettings:
+    """SMTP connection and addressing settings for feedback mail, read from ``FEEDBACK_*`` variables."""
     host: str
     port: int
     user: str
@@ -67,6 +68,7 @@ def one_line(value: object) -> str:
 
 
 def subject(kind: str, message: str) -> str:
+    """Mail subject: product name, feedback kind and the first ``SUBJECT_CHARS`` characters of the message."""
     return f"[{APP_NAME} feedback] {one_line(kind)}: {one_line(message)[:SUBJECT_CHARS]}"
 
 
@@ -80,6 +82,7 @@ def compose(
     context: dict[str, Any] | None,
     created_at: datetime,
 ) -> EmailMessage:
+    """Build the mail for one stored feedback row; visitor-typed text goes through ``one_line`` where it lands in a header or a body line."""
     msg = EmailMessage()
     msg["Subject"] = subject(kind, message)
     msg["From"] = one_line(mail.sender)

@@ -17,6 +17,7 @@ logger = logging.getLogger("desktop")
 
 
 def open_browser(url: str) -> None:
+    """Open ``url`` in the default browser, without blocking."""
     # In a thread: on some Linux desktops webbrowser waits for the browser it starts.
     threading.Thread(target=webbrowser.open, args=(url,), kwargs={"new": 2}, daemon=True).start()
 
@@ -119,6 +120,7 @@ def run_window(
     scale = max(1.0, root.winfo_fpixels("1i") / 96)
 
     def px(value: float) -> int:
+        """``value`` scaled to the screen's DPI."""
         return round(value * scale)
 
     frame = ttk.Frame(root, padding=px(16))
@@ -143,6 +145,7 @@ def run_window(
     stopped = threading.Event()
 
     def stop() -> None:
+        """Disable the buttons and quit the app in a thread; repeated calls do nothing."""
         if stopping.is_set():
             return
         stopping.set()

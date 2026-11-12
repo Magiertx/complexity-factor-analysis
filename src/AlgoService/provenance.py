@@ -83,6 +83,7 @@ def tool() -> dict[str, Any]:
 
 
 def package_version(name: str) -> str | None:
+    """Installed version of the distribution ``name``, or ``None`` when it is not installed."""
     try:
         return version(name)
     except PackageNotFoundError:

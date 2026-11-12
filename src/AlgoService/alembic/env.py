@@ -1,3 +1,9 @@
+"""Alembic environment: runs the migrations of ``alembic/versions`` against the metadata of
+``models``, offline (SQL script) or online through an async engine.
+
+Used by ``alembic upgrade head`` (``entrypoint.sh``) and by ``db_migrate.upgrade_to_head``.
+"""
+
 import asyncio
 import os
 import sys
@@ -59,6 +65,7 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection) -> None:
+    """Configure the migration context on ``connection`` and run the migrations; called through ``run_sync``."""
     context.configure(
         connection=connection,
         target_metadata=target_metadata,

@@ -103,6 +103,7 @@ PARALLEL_ANALYSIS_PERCENTILE = 95
 
 
 def _check_array_compat(x, force_all_finite=None, **kwargs):
+    """``check_array`` for factor_analyzer, which passes ``force_all_finite``: forwards it under whichever name the installed scikit-learn accepts."""
     # scikit-learn 1.6 renamed force_all_finite to ensure_all_finite and 1.8 removed the old
     # name; factor_analyzer 0.5.1 still passes it. Same patch as in ComFy for log measures.
     if force_all_finite is not None:
@@ -164,6 +165,7 @@ StopCheck = Callable[[], bool]
 
 
 def _check_stop(should_stop: StopCheck | None) -> None:
+    """Raise ``Superseded`` if ``should_stop`` says nobody waits for the result any more."""
     if should_stop is not None and should_stop():
         raise Superseded()
 
@@ -268,6 +270,7 @@ class CleanResult:
 
 
 def _is_missing_marker(value: Any) -> bool:
+    """Whether a raw table value stands for a missing value: ``None``, ``nan`` or a string from ``MISSING_MARKERS``."""
     if value is None:
         return True
     if isinstance(value, float) and math.isnan(value):
@@ -276,6 +279,7 @@ def _is_missing_marker(value: Any) -> bool:
 
 
 def _is_constant(values: pd.Series) -> bool:
+    """Whether a measure has no variation, judged relative to its magnitude."""
     # Relative to the magnitude, so a measure on a tiny scale is not taken for a constant.
     return len(values) == 0 or values.std(ddof=0) <= 1e-12 * max(1.0, abs(values.mean()))
 
@@ -544,6 +548,7 @@ def random_eigenvalues(n: int, p: int, should_stop: StopCheck | None = None) -> 
     """
 
     def compute(stop: StopCheck) -> list[float]:
+        """Percentile eigenvalues of ``PARALLEL_ANALYSIS_SIMULATIONS`` random samples; also records how long this took for the (n, p) shape."""
         started = time.perf_counter()
         rng = np.random.default_rng(PARALLEL_ANALYSIS_SEED)
         samples = np.empty((PARALLEL_ANALYSIS_SIMULATIONS, p))
@@ -618,6 +623,7 @@ _FIT_CACHE_LOCK = threading.Lock()
 
 
 def _fit_key(data: pd.DataFrame, n_factors: int, rotation: str) -> tuple:
+    """Cache key of a fit: a hash of the data values and the measure names, the factor count and the rotation."""
     digest = hashlib.sha1(np.ascontiguousarray(data.to_numpy(dtype=float)).tobytes())
     digest.update(repr(list(data.columns)).encode())
     return digest.hexdigest(), n_factors, rotation
@@ -669,6 +675,7 @@ class _StoppableFactorAnalyzer(FactorAnalyzer):
     should_stop: StopCheck | None = None
 
     def _fit_uls_objective(self, psi, corr_mtx, n_factors):  # type: ignore[override]
+        """The minres objective of factor_analyzer, after the stop check."""
         _check_stop(self.should_stop)
         return FactorAnalyzer._fit_uls_objective(psi, corr_mtx, n_factors)
 
@@ -743,6 +750,7 @@ def _fit_factors(
 
 
 def _factor_count_error(n_factors: int, p: int) -> AnalysisError:
+    """The error for a factor count outside 1 to ``max_factors(p)``."""
     return AnalysisError(
         f"{n_factors} factors requested, but with {p} measures at most {max_factors(p)} are possible; "
         "a further factor would stay empty.",
@@ -795,6 +803,7 @@ def assign(
     min_communality = max(communality_threshold, spec.min_communality)
 
     def counts(value: float) -> bool:
+        """Whether a loading passes the threshold; ``spec.strict`` makes the comparison strict."""
         return value > threshold if spec.strict else value >= threshold
 
     groups: list[list[tuple[str, float]]] = [[] for _ in loadings.columns]
@@ -866,6 +875,7 @@ class AnalysisParams:
 
 
 def _finite(value: float) -> float | None:
+    """``value``, or ``None`` if it is infinite or ``nan`` (JSON has no such numbers)."""
     return value if math.isfinite(value) else None
 
 
@@ -876,6 +886,7 @@ class _Warnings:
         self.items: list[dict[str, Any]] = []
 
     def add(self, code: str, message: str, **params: Any) -> None:
+        """Record a warning: a ``code`` and ``params`` for the UI to translate, and the English ``message``."""
         self.items.append({"code": code, "message": message, "params": params})
 
 
@@ -938,6 +949,7 @@ def _check_values(data: pd.DataFrame) -> None:
 
 
 def _check_rule(rule: str) -> None:
+    """Raise ``AnalysisError`` for an unknown assignment rule."""
     if rule not in ASSIGNMENT_RULES:
         raise AnalysisError(f"Unknown assignment rule '{rule}'.", "unknown_assignment_rule", rule=rule)
 
@@ -1097,6 +1109,7 @@ def analyze(data: pd.DataFrame, params: AnalysisParams, should_stop: StopCheck |
     rule = ASSIGNMENT_RULES[params.assignment_rule]
 
     def by_measure(frame: pd.DataFrame) -> dict[str, list[float]]:
+        """Rows of a frame as lists of floats per measure."""
         return {m: [float(v) for v in row] for m, row in zip(frame.index, frame.to_numpy())}
 
     return {

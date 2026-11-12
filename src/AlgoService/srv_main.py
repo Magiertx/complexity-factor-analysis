@@ -51,6 +51,7 @@ _fastapi_root_path = os.environ.get("FASTAPI_ROOT_PATH", "")
 
 
 async def redis_listener():
+    """Forward the ``jobs_updates`` Redis messages to this process's SSE clients; reconnects after errors and returns when cancelled."""
     import config
     import redis.exceptions
     if not config.redis_client:
@@ -80,6 +81,7 @@ async def redis_listener():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Startup: logging, a report of changed limits, database setup, interrupted-job cleanup, the Redis listener and the bundled-dataset precompute task. Shutdown stops local jobs and cancels those tasks."""
     # Startup
     handler = logging.StreamHandler()
     handler.setFormatter(JSONFormatter())

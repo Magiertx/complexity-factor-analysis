@@ -25,6 +25,7 @@ def _utcnow_naive() -> datetime:
 
 
 class User(Base):
+    """Account table. Nothing in the service creates or reads users; runs belong to sessions."""
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -39,6 +40,7 @@ class User(Base):
 
 
 class Session(Base):
+    """An anonymous browser session that owns runs; ``last_seen`` is refreshed on use."""
     __tablename__ = "sessions"
 
     id: Mapped[str] = mapped_column(String(255), primary_key=True)
@@ -53,6 +55,7 @@ class Session(Base):
 
 
 class Run(Base):
+    """One analysis job: its parameters, status, progress, timing and artifacts. ``status`` is one of pending, running, completed, failed, aborted."""
     __tablename__ = "runs"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -82,6 +85,7 @@ class Run(Base):
 
 
 class Artifact(Base):
+    """One output of a run (``kind`` as in ``algorithms.base.ArtifactKind``): inline in ``payload_json`` or as a file at ``file_path``; ``order_index`` keeps the adapter's order."""
     __tablename__ = "artifacts"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -100,6 +104,7 @@ class Artifact(Base):
 
 
 class Preset(Base):
+    """A saved parameter set per user and algorithm. Not used by the service yet."""
     __tablename__ = "presets"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

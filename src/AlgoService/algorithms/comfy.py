@@ -109,6 +109,7 @@ def measure_value(measure: Any, net: Any, im: Any = None, fm: Any = None) -> Any
 
 
 class ComFyAlgorithm(AlgorithmBase):
+    """Adapter for ComFy: mines a Petri net per chosen miner and computes the chosen complexity measures on each net."""
     id = "comfy"
     name = "ComFy — Petri-net complexity"
     description = (
@@ -135,6 +136,7 @@ class ComFyAlgorithm(AlgorithmBase):
     parameters_schema: list[ParameterSpec] = []
 
     def __init__(self) -> None:
+        """Build the parameter schema from the vendored measure and miner lists."""
         self._measures_by_name = MEASURES_BY_NAME
         self._miners_by_name = MINERS_BY_NAME
 
@@ -163,6 +165,10 @@ class ComFyAlgorithm(AlgorithmBase):
         ]
 
     def analyze(self, file_path: str, params: dict[str, Any], ctx: RunContext | None = None) -> AnalysisResult:
+        """Discover a net with each selected miner and compute the selected measures on it.
+
+        Raises ``ValueError`` when no miner or no measure is selected.
+        """
         if ctx is None:
             ctx = RunContext()
         ctx.check_aborted()

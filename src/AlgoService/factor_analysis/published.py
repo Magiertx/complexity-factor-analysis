@@ -57,6 +57,7 @@ _OPTION_FIELDS = (
 
 
 def _close(actual: float | None, expected: float) -> bool:
+    """Whether ``actual`` is within ``TOLERANCE`` of ``expected``, relative above 1 and absolute below."""
     return actual is not None and abs(actual - expected) <= TOLERANCE * max(1.0, abs(expected))
 
 
@@ -77,12 +78,16 @@ def uses_published_options(options: dict[str, Any], params: dict[str, Any]) -> b
 
 
 def _differences(numbers: dict[str, Any], result: dict[str, Any]) -> tuple[list[str], list[dict[str, Any]]]:
+    """Compare the analysis ``result`` with the published ``numbers``, for the parts the report verifies.
+    Returns the parts compared (from ``COMPARED``) and one entry per difference with its expected and actual value.
+    """
     verified = set(numbers["verified"])
     compared: list[str] = []
     out: list[dict[str, Any]] = []
 
     # ``code`` names the value for a client that words it itself; ``what`` says it in English.
     def check(key: str, code: str, what: str, actual: float | None, expected: float, **where: Any) -> None:
+        """Add a difference unless ``actual`` is close to ``expected``."""
         if not _close(actual, expected):
             out.append({"key": key, "code": code, "what": what, **where, "expected": expected, "actual": actual})
 

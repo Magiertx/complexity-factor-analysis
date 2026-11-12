@@ -44,6 +44,7 @@ def upgrade_to_head(database_url: str | None = None) -> None:
     errors: list[BaseException] = []
 
     def work() -> None:
+        """Run the upgrade in a plain thread, because Alembic's async env cannot start inside a running loop."""
         try:
             command.upgrade(cfg, "head")
         except BaseException as exc:  # re-raised in the caller

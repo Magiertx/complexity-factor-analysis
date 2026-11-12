@@ -32,6 +32,7 @@ _LATEX_SPECIAL = {
 
 
 def latex_escape(text: str) -> str:
+    """``text`` with the characters LaTeX treats specially escaped."""
     return "".join(_LATEX_SPECIAL.get(ch, ch) for ch in text)
 
 
@@ -46,10 +47,12 @@ def factor_labels(result: dict[str, Any], names: Names = None) -> list[str]:
 
 
 def _factor_names(result: dict[str, Any], names: Names = None) -> list[str]:
+    """Alias of ``factor_labels``."""
     return factor_labels(result, names)
 
 
 def _csv_line(cells: list[Any]) -> str:
+    """One CSV line, its cells escaped by ``csv_cell``."""
     return ",".join(csv_cell(c) for c in cells) + "\n"
 
 
@@ -124,10 +127,12 @@ def loadings_latex(result: dict[str, Any], factor_names: Names = None) -> str:
     assigned = {(m["measure"], f["index"]) for f in result.get("factors", []) for m in f["measures"]}
 
     def cell(value: float, bold: bool = False) -> str:
+        """A loading as a LaTeX math cell, bold if ``bold``."""
         number = f"{value:.{decimals}f}"
         return f"$\\mathbf{{{number}}}$" if bold else f"${number}$"
 
     def counts(value: float) -> bool:
+        """Whether a loading passes the threshold, by absolute value; strict if the rule is."""
         return abs(value) > threshold if strict else abs(value) >= threshold
 
     criterion = f"|loading| {'>' if strict else '>='} {threshold}" + (
@@ -268,6 +273,7 @@ def measurement_rows(measurement: dict[str, Any]) -> list[list[Any]]:
 
 
 def measurement_csv(measurement: dict[str, Any]) -> str:
+    """The measurement as CSV, one row per observation or input, with the columns of ``MEASUREMENT_COLUMNS``."""
     return "".join(_csv_line(row) for row in [list(MEASUREMENT_COLUMNS), *measurement_rows(measurement)])
 
 
@@ -286,6 +292,7 @@ LIBRARIES = ("factor_analyzer", "numpy", "pandas", "scipy", "scikit-learn")
 
 
 def library_versions() -> dict[str, str | None]:
+    """Installed version of each library in ``LIBRARIES``, or ``None`` where it is not found."""
     return {name: provenance.package_version(name) for name in LIBRARIES}
 
 
@@ -421,6 +428,7 @@ def _readme(
     created_at: str,
     tool: dict[str, Any],
 ) -> str:
+    """The README.txt of the analysis ZIP: the files, and how to reproduce the analysis in the tool and in Python with factor_analyzer."""
     width = max(len(f["name"]) for f in files) + 2
     rotation = None if result["rotation"] == "none" else result["rotation"]
     lines = [

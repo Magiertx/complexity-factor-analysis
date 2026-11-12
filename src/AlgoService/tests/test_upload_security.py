@@ -1,3 +1,6 @@
+"""Hostile uploads, session ids, rate limits, quotas, cleanup of scratch files, security headers
+and the operator-tunable limits."""
+
 from __future__ import annotations
 
 import os

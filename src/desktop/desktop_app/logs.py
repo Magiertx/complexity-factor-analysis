@@ -35,6 +35,7 @@ class RotatingFile:
         return open(self.path, "a", encoding="utf-8", errors="backslashreplace", newline="")
 
     def write(self, text: str) -> None:
+        """Append ``text`` and rotate the file when it has grown past ``max_bytes``."""
         with self._lock:
             if self._file is None:
                 return
@@ -44,6 +45,7 @@ class RotatingFile:
                 self._rotate()
 
     def _rotate(self) -> None:
+        """Shift ``app.log.N`` to ``.N+1`` (the oldest goes), move the file to ``.1`` and reopen it."""
         self._file.close()
         try:
             for n in range(self.backups - 1, 0, -1):
@@ -56,6 +58,7 @@ class RotatingFile:
         self._file = self._open()
 
     def close(self) -> None:
+        """Close the file; later writes are dropped."""
         with self._lock:
             if self._file is not None:
                 self._file.close()
@@ -77,6 +80,7 @@ def hide(*values: str) -> None:
 
 
 def redact(text: str) -> str:
+    """``text`` with access tokens in addresses and the values given to ``hide`` replaced by ``***``."""
     text = _TOKEN.sub(lambda m: m.group(1) + "***", text)
     for value in _HIDDEN:
         if value in text:
@@ -103,6 +107,7 @@ class Tee(io.TextIOBase):
         return False
 
     def write(self, text: str) -> int:
+        """Write the redacted ``text`` to the console (errors ignored) and the log file."""
         text = redact(text)
         if self.console is not None:
             try:

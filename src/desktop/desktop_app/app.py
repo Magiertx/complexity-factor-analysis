@@ -116,10 +116,12 @@ SESSION_TIMEOUT_S = 2.0
 
 
 def own_hosts(port: int) -> frozenset[str]:
+    """The ``Host`` header values that name this server."""
     return frozenset({f"127.0.0.1:{port}", f"localhost:{port}"})
 
 
 def own_origins(port: int) -> frozenset[str]:
+    """The ``Origin`` values of this server's own pages."""
     return frozenset(f"http://{host}" for host in own_hosts(port))
 
 
@@ -139,6 +141,8 @@ LANDING_PAGE = (
 
 
 def access_cookie_name(port: int) -> str:
+    """Name of the access cookie that carries the desktop session value (not the API's own session
+    cookie); per port, because cookies are not bound to a port."""
     return f"{ACCESS_COOKIE}_{port}"
 
 
@@ -197,6 +201,7 @@ class SameOriginCheck:
         self.origins = own_origins(port)
 
     def allowed(self, scope: Scope) -> bool:
+        """Whether the ``Origin`` (else ``Referer``) of the request is the app's own; true when neither is sent."""
         origin = _header(scope, b"origin")
         if origin is not None:
             return origin.lower() in self.origins
@@ -264,14 +269,17 @@ class Shutdown:
 
     @property
     def requested(self) -> bool:
+        """Whether quitting has been requested."""
         return self._event is not None and self._event.is_set()
 
     def request(self) -> None:
+        """Ask the open streams to end; a no-op before ``bind`` or after the loop has closed."""
         loop, event = self._loop, self._event
         if loop is not None and event is not None and not loop.is_closed():
             loop.call_soon_threadsafe(event.set)
 
     async def wait(self) -> None:
+        """Wait until ``request`` is called; without ``bind`` this never returns."""
         if self._event is not None:
             await self._event.wait()
         else:
@@ -279,6 +287,7 @@ class Shutdown:
 
 
 def is_event_stream(scope: Scope) -> bool:
+    """Whether the request is a ``GET`` that accepts ``text/event-stream``."""
     return scope["method"] == "GET" and "text/event-stream" in (_header(scope, b"accept") or "")
 
 
@@ -319,9 +328,11 @@ class Access:
         return secrets.compare_digest(raw, expected.encode("utf-8"))
 
     def is_master(self, given: str | bytes | None) -> bool:
+        """Whether ``given`` is the master token."""
         return self._same(given, self.token)
 
     def new_code(self) -> str:
+        """A new one-time code, valid for ``CODE_TTL_S`` seconds; also drops expired codes and their login files."""
         code = secrets.token_urlsafe(32)
         now = time.monotonic()
         expired: list[Path] = []
@@ -377,6 +388,7 @@ class Access:
         return session
 
     def is_session(self, given: str | None) -> bool:
+        """Whether ``given`` is one of the last ``MAX_SESSIONS`` session values issued by ``redeem``."""
         with self._lock:
             sessions = list(self._sessions)
         found = False
@@ -492,6 +504,7 @@ class Router:
         started = complete = False
 
         async def receive_or_quit() -> Message:
+            """The next client message, or ``http.disconnect`` as soon as the app quits."""
             if self.shutdown.requested:
                 return {"type": "http.disconnect"}
             get = asyncio.ensure_future(receive())

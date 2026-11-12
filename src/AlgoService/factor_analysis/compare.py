@@ -210,6 +210,9 @@ def _same(a: dict[str, Any], b: dict[str, Any]) -> bool:
 
 
 def _column_header(spec: dict[str, Any], result: dict[str, Any] | None) -> dict[str, Any]:
+    """The header of a column in the API result: where its data come from and which settings it used.
+    If the analysis ran (``result`` is not ``None``) it also carries what the fit gave: observations, assignment, KMO, factor count, rotation, variance, warnings and timings.
+    """
     entry = spec["entry"]
     dataset = spec.get("dataset")
     header: dict[str, Any] = {
@@ -450,6 +453,7 @@ def build(specs: list[dict[str, Any]], rule: str) -> dict[str, Any]:
 
 
 def _csv_line(cells: list[Any]) -> str:
+    """One CSV line, its cells escaped by ``zip_export.csv_cell``."""
     from zip_export import csv_cell
 
     return ",".join(csv_cell(c) for c in cells) + "\n"
@@ -575,6 +579,7 @@ def dimensions_latex(comparison: dict[str, Any], short: bool = True) -> str:
 
 
 def _readme(comparison: dict[str, Any], files: list[dict[str, str]], created_at: str) -> str:
+    """The README.txt of the comparison ZIP: the files, how to reproduce the comparison, and the alignment method."""
     width = max(len(f["name"]) for f in files) + 2
     labels = ", ".join(c["label"] for c in comparison["columns"])
     return "\n".join([

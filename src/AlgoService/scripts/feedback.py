@@ -43,6 +43,7 @@ def parse_since(value: str) -> datetime:
 
 
 def render(row: models.Feedback, brief: bool) -> str:
+    """Text of one stored message: a header line, then (unless ``brief``) message, contact and context."""
     state = "sent" if row.delivered else "NOT SENT"
     head = f"#{row.id}  {row.created_at:%Y-%m-%d %H:%M}  {row.kind:<5}  {state}"
     if brief:
@@ -56,6 +57,7 @@ def render(row: models.Feedback, brief: bool) -> str:
 
 
 async def list_command(args: argparse.Namespace) -> int:
+    """``list``: print the stored messages, oldest first."""
     rows = await feedback_store.listing(since=args.since, undelivered=args.undelivered)
     for row in rows:
         print(render(row, args.brief))
@@ -64,6 +66,7 @@ async def list_command(args: argparse.Namespace) -> int:
 
 
 async def resend_command(args: argparse.Namespace) -> int:
+    """``resend``: mail the undelivered messages again; exit 1 if mail is not set up or one failed."""
     if feedback_mail.settings() is None:
         print("Mail is not set up: FEEDBACK_SMTP_HOST and FEEDBACK_TO are empty.", file=sys.stderr)
         return 1
@@ -80,6 +83,7 @@ async def resend_command(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Command line entry point; returns the exit code."""
     parser = argparse.ArgumentParser(prog="python -m scripts.feedback", description=__doc__.split("\n\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
     show = commands.add_parser("list", help="print the messages, oldest first")

@@ -17,6 +17,7 @@ from zip_export import download_job_artifacts as _download_job_artifacts
 
 
 class NotesUpdate(BaseModel):
+    """Body of the note update (at most 2000 characters)."""
     notes: str | None = Field(default=None, max_length=2000)
 
 router = APIRouter()
@@ -33,6 +34,7 @@ async def list_jobs(session_id: str = Depends(get_session_id)) -> dict[str, Any]
 async def jobs_events_endpoint() -> StreamingResponse:
     """Server-Sent Events (SSE) endpoint broadcasting job status updates in real-time."""
     async def event_generator():
+        """Yield an SSE ``data`` line for every broadcast until the client disconnects."""
         queue = sse_manager.connect()
         try:
             # Send initial keep-alive comment

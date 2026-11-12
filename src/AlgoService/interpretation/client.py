@@ -79,6 +79,7 @@ def allowed_models() -> tuple[str, ...]:
 
 
 def allowed_efforts() -> tuple[str, ...]:
+    """Efforts the UI may choose from; the default effort is always included."""
     return ALLOWED_EFFORTS if EFFORT in ALLOWED_EFFORTS else (*ALLOWED_EFFORTS, EFFORT)
 #: Live calls per session; served cache hits and precomputed results do not count.
 RATE_LIMIT = rate_limit_var("INTERPRETATION_RATE_LIMIT", "10/hour")
@@ -113,6 +114,7 @@ OUTPUT_SCHEMA = anthropic.transform_schema(Interpretation)
 
 
 def prompt_digest(system: str, schema: dict[str, Any], payload_format: int) -> str:
+    """Short hash of the instructions, output schema and payload format."""
     return hashlib.sha256(json.dumps([system, schema, payload_format], sort_keys=True).encode()).hexdigest()[:16]
 
 
@@ -149,6 +151,7 @@ class InterpretationError(Exception):
 
 
 def unavailable() -> InterpretationError:
+    """The 503 error for a server without an Anthropic API key."""
     return InterpretationError(
         503,
         "interpretation_unavailable",
@@ -158,6 +161,7 @@ def unavailable() -> InterpretationError:
 
 
 def choice_not_allowed(model: str, effort: str) -> InterpretationError:
+    """The 422 error for a model or effort the operator does not offer, listing the allowed ones."""
     return InterpretationError(
         422, "interpretation_choice_not_allowed",
         "This model or effort is not offered by the server.",
@@ -190,6 +194,7 @@ def check_size(payload: dict[str, Any], language: str) -> None:
 
 
 def timed_out() -> InterpretationError:
+    """The 504 error for a call that ran out of time."""
     return InterpretationError(504, "interpretation_timeout", "The Anthropic API did not answer in time. Try again later.")
 
 
@@ -227,6 +232,7 @@ def _sdk_error(e: anthropic.AnthropicError) -> InterpretationError:
 
 @dataclass
 class Answer:
+    """A tidied interpretation and the model that wrote it."""
     #: Tidied: one entry per factor, only measures of the analysis.
     interpretation: Interpretation
     #: The model that wrote the answer; a fallback model if the requested one declined.

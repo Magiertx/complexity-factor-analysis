@@ -100,6 +100,12 @@ def _msa_rounds(data: pd.DataFrame, threshold: float) -> dict[str, int]:
 
 
 def model_report(dataset_id: str, path: Path, commit: str) -> dict[str, Any]:
+    """Published numbers of one model-measure dataset, parsed from its upstream LaTeX report.
+
+    Returns the content of ``datasets/published/<id>.json``: Bartlett, KMO, MSA filter,
+    explained variance, loadings, communalities and descriptives. Exits when the removed
+    measures do not match the order of ComFy's MSA rounds, which are reconstructed here.
+    """
     lines = [line.strip() for line in path.read_text(encoding="utf-8").splitlines()]
     entry = cat.bundled_entry(dataset_id)
     raw = pd.read_csv(cat.DATASETS_DIR / entry["file"], index_col=0)
@@ -202,6 +208,11 @@ def _feeed_name(item: str) -> str:
 
 
 def log_report(path: Path, commit: str) -> dict[str, Any]:
+    """Published numbers of the log-measure dataset, parsed from its upstream LaTeX report.
+
+    Only the observation count, the cleaning steps and Bartlett's test are marked verified; KMO
+    and MSA depend on the platform (see the notes in the result).
+    """
     lines = [line.strip() for line in path.read_text(encoding="utf-8").splitlines()]
     entry = cat.bundled_entry(LOG_DATASET)
     header = list(pd.read_csv(cat.DATASETS_DIR / entry["file"], index_col=0, nrows=0).columns)
@@ -211,6 +222,7 @@ def log_report(path: Path, commit: str) -> dict[str, Any]:
     by_macro = {_macro(item): _feeed_name(item) for item in all_items}
 
     def names(text: str) -> list[str]:
+        """Measure names listed after ``text`` in the report; exits if one is not a CSV column."""
         items, _ = _items(lines, _after(lines, text))
         out = [_feeed_name(item) for item in items]
         unknown = [m for m in out if m not in header]
@@ -219,6 +231,7 @@ def log_report(path: Path, commit: str) -> dict[str, Any]:
         return out
 
     def msa(item: str) -> tuple[str, float]:
+        """Measure name and MSA value of one list item."""
         return by_macro[_macro(item)], float(item.rpartition(": $")[2].rstrip("$"))
 
     measures = names("following complexity measures")
@@ -274,6 +287,7 @@ def _macro(item: str) -> str:
 
 
 def main() -> None:
+    """Command line entry point: check the upstream checkouts against the manifest commits and write the JSON files."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("comfy", type=Path, help="checkout of https://github.com/Pati-nets/ComFy")
     parser.add_argument("comfy_log", type=Path, help="checkout of https://github.com/Pati-nets/ComFy-for-Log-Measures")

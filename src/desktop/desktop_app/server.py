@@ -62,10 +62,12 @@ class BackgroundServer:
                 logger.exception("The server stopped with an error.")
 
     def start(self) -> None:
+        """Start serving in the background thread."""
         self.thread.start()
 
     @property
     def running(self) -> bool:
+        """Whether the server thread is alive."""
         return self.thread.is_alive()
 
     def wait_started(self, timeout: float) -> bool:

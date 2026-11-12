@@ -79,6 +79,7 @@ def _make_status_cache(job_id: str, loop: asyncio.AbstractEventLoop, *, max_age_
     state = {"last_check": 0.0, "cached": False}
 
     def is_aborted() -> bool:
+        """True when the app is stopping, the job is gone or it is marked aborted (cached)."""
         if job_runner.is_stopping():  # the app is quitting: stop now, not after the cached answer
             return True
         now = time.time()
@@ -112,6 +113,7 @@ class _LoopCalls:
         self.futures: list[Any] = []
 
     def submit(self, coro: Any) -> None:
+        """Schedule ``coro`` on the task's loop from a worker thread and remember its future."""
         self.futures.append(asyncio.run_coroutine_threadsafe(coro, self.loop))
 
     async def settle(self) -> None:
@@ -135,6 +137,7 @@ class _ProgressThrottle:
         self._last_time = 0.0
 
     def should_persist(self, pct: float) -> bool:
+        """Whether this progress tick should be written to the database and broadcast."""
         now = time.time()
         if abs(pct - self._last_pct) >= self.min_pct_delta or (now - self._last_time) >= self.min_interval:
             self._last_pct = pct
@@ -640,6 +643,7 @@ async def analyze(
     secondary_tmp_paths: list[str] = []
 
     async def _fail_secondary(status_code: int, detail: str):
+        """Remove the temp files and the just-created job, then raise an HTTP error with ``status_code``."""
         for p in secondary_tmp_paths + [tmp_path]:
             if os.path.exists(p):
                 try:

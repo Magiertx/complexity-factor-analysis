@@ -16,7 +16,9 @@ APP_NAME = "XCom"
 
 # Logger initialization
 class JSONFormatter(logging.Formatter):
+    """Log formatter that emits one JSON object per record."""
     def format(self, record):
+        """One JSON line with timestamp, level, message, logger and, if present, the exception text."""
         log_entry = {
             "timestamp": self.formatTime(record, self.datefmt),
             "level": record.levelname,
@@ -43,19 +45,23 @@ class CodedHTTPException(HTTPException):
 
 # SSE Connection Management
 class SSEConnectionManager:
+    """Fan-out of "jobs changed" notifications to the open server-sent-event streams of this process."""
     def __init__(self):
         self.active_queues: Set[asyncio.Queue] = set()
 
     def connect(self) -> asyncio.Queue:
+        """Register and return a queue for one new SSE client."""
         queue = asyncio.Queue()
         self.active_queues.add(queue)
         return queue
 
     def disconnect(self, queue: asyncio.Queue):
+        """Drop the queue of a client that went away."""
         if queue in self.active_queues:
             self.active_queues.remove(queue)
 
     async def broadcast(self, message: str):
+        """Put ``message`` on every client queue; a failing queue is skipped."""
         for queue in list(self.active_queues):
             try:
                 await queue.put(message)
@@ -70,6 +76,7 @@ REDIS_URL = os.environ.get("REDIS_URL")
 redis_client = aioredis.from_url(REDIS_URL) if REDIS_URL else None
 
 async def broadcast_jobs_update():
+    """Tell the local SSE clients, and through Redis the other processes, that the job list changed."""
     await sse_manager.broadcast("update")
     if redis_client:
         try:
@@ -80,6 +87,7 @@ async def broadcast_jobs_update():
 
 # Common validation helpers
 def validate_job_id(job_id: str) -> None:
+    """Raise HTTP 400 unless ``job_id`` looks like a UUID (36 lowercase hex-or-dash characters)."""
     if not re.match(r"^[a-f0-9-]{36}$", job_id):
         raise HTTPException(status_code=400, detail="Invalid job ID format.")
 

@@ -80,14 +80,17 @@ class AppPaths:
     # Data
     @property
     def database(self) -> Path:
+        """SQLite file of the backend."""
         return self.data / "app.db"
 
     @property
     def artifacts(self) -> Path:
+        """Directory of the artifact files of runs."""
         return self.data / "artifacts"
 
     @property
     def uploads(self) -> Path:
+        """Directory of the uploaded logs kept per session."""
         return self.data / "uploaded_logs"
 
     @property
@@ -97,24 +100,29 @@ class AppPaths:
 
     @property
     def instance(self) -> Path:
+        """``instance.json`` of the running instance."""
         return self.data / "instance.json"
 
     @property
     def lock(self) -> Path:
+        """The file the instance lock is taken on."""
         return self.data / "instance.lock"
 
     # Settings
     @property
     def settings_env(self) -> Path:
+        """``settings.env``, the user's settings file."""
         return self.config / "settings.env"
 
     @property
     def launcher_state(self) -> Path:
+        """``launcher.json``: what the launcher remembers between starts (the port)."""
         return self.config / "launcher.json"
 
     # Logs
     @property
     def log_file(self) -> Path:
+        """The current log file."""
         return self.logs / "app.log"
 
     def create(self) -> None:
@@ -134,6 +142,7 @@ class AppPaths:
 
 
 def _refuse_shared(directory: Path) -> None:
+    """Raise ``LauncherError`` for an existing directory that group or others can write to (POSIX only)."""
     if os.name == "nt" or not directory.is_dir():
         return
     mode = stat.S_IMODE(directory.stat().st_mode)

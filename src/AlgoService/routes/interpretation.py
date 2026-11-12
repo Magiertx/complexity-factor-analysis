@@ -40,6 +40,7 @@ _LOCKS: dict[str, tuple[asyncio.Lock, int]] = {}
 
 @asynccontextmanager
 async def _key_lock(key: str) -> AsyncIterator[None]:
+    """Hold the lock of one cache key for the duration of a live call."""
     lock, users = _LOCKS.get(key, (asyncio.Lock(), 0))
     _LOCKS[key] = (lock, users + 1)
     try:
@@ -54,6 +55,7 @@ async def _key_lock(key: str) -> AsyncIterator[None]:
 
 
 class InterpretRequest(AnalyzeRequest):
+    """Request body of an interpretation: the analysis settings plus language, model and effort."""
     language: Literal["en", "de"] = "en"
     #: Only look up a cached or precomputed interpretation; never calls the API.
     cached_only: bool = False
@@ -65,6 +67,7 @@ class InterpretRequest(AnalyzeRequest):
 
 
 class ChatMessage(BaseModel):
+    """One turn of a follow-up conversation as the browser sends it back."""
     # Nothing else is taken from the browser: no content blocks, no cache_control, no other key.
     model_config = ConfigDict(extra="forbid")
 
@@ -77,6 +80,7 @@ class ChatMessage(BaseModel):
 
 
 class ChatRequest(InterpretRequest):
+    """Request body of a follow-up question: the interpretation settings plus the conversation."""
     #: The conversation so far, kept by the browser, ending with the new question.
     messages: list[ChatMessage] = Field(default_factory=list)
 
@@ -91,6 +95,7 @@ def _error(e: InterpretationError) -> JSONResponse:
 def _response(
     entry: dict[str, Any], *, cached: bool, precomputed: bool, variants: list[dict[str, Any]]
 ) -> dict[str, Any]:
+    """JSON body for a stored interpretation entry, with where it came from and the other stored variants."""
     return {
         **entry["interpretation"],
         "model": entry["model"],
@@ -124,6 +129,7 @@ def interpretation_status() -> dict[str, Any]:
 
 @dataclass
 class _Prepared:
+    """What ``_prepare`` resolved for a request: dataset, settings, the analysis result and the cache identifiers."""
     meta: dict[str, Any]
     kind: str
     params: dict[str, Any]
@@ -211,6 +217,7 @@ async def interpret_dataset(
     )
 
     def variants() -> Any:
+        """Look up the other stored model and effort variants off the event loop."""
         return run_in_threadpool(store.variants, session_id, meta, digest, effective, fingerprint, body.language)
 
     stored = store.lookup(session_id, meta, digest, effective, fingerprint, body.language, model, effort)

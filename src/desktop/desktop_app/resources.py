@@ -16,6 +16,7 @@ from pathlib import Path
 
 
 def is_frozen() -> bool:
+    """Whether this runs from a PyInstaller-style bundle rather than a checkout."""
     return bool(getattr(sys, "frozen", False))
 
 
@@ -43,6 +44,7 @@ def icon_path(suffix: str) -> Path:
 
 
 def build_info_path() -> Path:
+    """The ``build_info.json`` written at build time (version and commit)."""
     return bundle_root() / "build_info.json" if is_frozen() else bundle_root() / "desktop" / "build_info.json"
 
 

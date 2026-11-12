@@ -69,12 +69,14 @@ class _GradientFactorAnalyzer(_StoppableFactorAnalyzer):
     which keeps the numerical gradient. A bootstrap of the log dataset's 125 measures takes minutes, not an hour."""
 
     def _fit_factor_analysis(self, corr_mtx):  # type: ignore[override]
+        """minres with the analytic gradient of the objective; stores ``converged`` and returns the normalised loadings, like factor_analyzer's own method."""
         k = self.n_factors
         start = (np.diag(corr_mtx) - _smc(corr_mtx).T).squeeze()
         bounds = [self.bounds for _ in range(corr_mtx.shape[0])]
         reduced = corr_mtx.copy()
 
         def objective(psi: np.ndarray) -> tuple[float, np.ndarray]:
+            """The sum of the squared residual eigenvalues for the uniquenesses ``psi``, and its gradient."""
             _check_stop(self.should_stop)
             np.fill_diagonal(reduced, 1 - psi)
             values, vectors = eigh(reduced)
@@ -129,12 +131,14 @@ def _membership(factors: list[dict[str, Any]], measures: list[str], k: int) -> n
 
 
 def _failure(error: AnalysisError) -> str:
+    """The cause of a failed sample as counted in the result: ``singular`` or ``fit_failed``."""
     # core._fit_factors says "not_converged" for loadings that are not finite, which a singular
     # correlation matrix gives.
     return "singular" if error.code == "not_converged" else "fit_failed"
 
 
 def _share(count: np.ndarray | float, valid: int) -> Any:
+    """``count`` as a share of ``valid`` samples, rounded to 6 places; ``None`` if no sample was valid."""
     if valid == 0:
         return None
     return np.round(np.asarray(count, dtype=float) / valid, 6)

@@ -70,6 +70,7 @@ DEFAULT_TIMEOUT_S = 600.0
 
 
 def parse_variant(text: str) -> tuple[str, str]:
+    """Parse ``model:effort`` from the command line."""
     model, _, effort = text.partition(":")
     if not client.CHOICE_RE.fullmatch(model) or effort not in client.MAX_TOKENS_BY_EFFORT:
         raise argparse.ArgumentTypeError(
@@ -207,6 +208,11 @@ async def run(
     variants: tuple[tuple[str, str], ...] | list[tuple[str, str]] | None = None,
     timeout: float = DEFAULT_TIMEOUT_S,
 ) -> int:
+    """Write a precomputed file for every dataset, settings, language and variant, one call at a time.
+
+    Existing files are skipped unless ``force``. A failed call is reported and the run goes on;
+    returns the number of failures.
+    """
     failed = 0
     for entry in datasets:
         for which in settings_of(entry, settings):
@@ -234,6 +240,7 @@ async def run(
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Command line entry point; returns the exit code (2 for a missing key or unknown dataset)."""
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--force", action="store_true", help="replace existing files")
     parser.add_argument("--dataset", nargs="+", metavar="ID", help="only these bundled datasets")

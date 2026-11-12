@@ -161,6 +161,7 @@ def check_history(
 
 
 def interpretation_required() -> InterpretationError:
+    """The 409 error for a follow-up question when no matching interpretation is stored."""
     return InterpretationError(
         409, "interpretation_required",
         "Follow-up questions refer to an interpretation of this analysis, and none is stored for "
@@ -199,6 +200,7 @@ def build_messages(context: str, messages: list[dict[str, str]]) -> list[dict[st
 
 @dataclass
 class ChatAnswer:
+    """A follow-up answer and the model that wrote it."""
     text: str
     #: The model that wrote the answer; a fallback model if the requested one declined.
     model: str

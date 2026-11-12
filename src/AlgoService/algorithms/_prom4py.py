@@ -113,6 +113,7 @@ def prom4py_turn(on_wait: WaitFn | None = None) -> Iterator[None]:
 
 
 def _wait_for_restart(on_wait: WaitFn | None) -> None:
+    """Block until ProM has restarted after a timed-out call, or raise ``ProMNotRestarted``."""
     # The whole time, also when an earlier wait was in vain: a restart is known to be coming.
     back = _wait(on_wait, "waiting for ProM to restart", RESTART_WAIT_S)
     # Back, or it had all the time a restart takes; either way later turns stop waiting for it

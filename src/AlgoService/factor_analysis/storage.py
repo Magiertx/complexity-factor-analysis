@@ -59,16 +59,19 @@ _cache: dict[str, tuple[float, pd.DataFrame]] = {}
 
 
 def root() -> Path:
+    """The directory that holds the datasets of all sessions."""
     # Read at call time: tests point jobs_db.ARTIFACTS_DIR at a temp directory.
     return Path(jobs_db.ARTIFACTS_DIR) / "datasets"
 
 
 def _check_ids(session_id: str, dataset_id: str) -> None:
+    """Raise ``ValueError`` unless both ids are UUIDs."""
     uuid.UUID(session_id)
     uuid.UUID(dataset_id)
 
 
 def dataset_dir(session_id: str, dataset_id: str) -> Path:
+    """The directory of a dataset; ``ValueError`` for ids that are not UUIDs."""
     _check_ids(session_id, dataset_id)
     return root() / session_id / dataset_id
 
@@ -79,6 +82,7 @@ def exists(session_id: str, dataset_id: str) -> bool:
 
 
 def _write_json(path: Path, data: dict[str, Any]) -> None:
+    """Write JSON through a temporary file and replace the target, so that a reader never sees half a file."""
     tmp = path.with_suffix(".tmp")
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
@@ -133,6 +137,7 @@ def create(
 
 
 def read_meta(session_id: str, dataset_id: str) -> dict[str, Any] | None:
+    """The metadata of a dataset, or ``None`` if the ids are invalid, the dataset is gone or its ``meta.json`` is not valid JSON."""
     try:
         path = dataset_dir(session_id, dataset_id) / "meta.json"
     except ValueError:
@@ -145,6 +150,7 @@ def read_meta(session_id: str, dataset_id: str) -> dict[str, Any] | None:
 
 
 def update_meta(session_id: str, dataset_id: str, **changes: Any) -> dict[str, Any]:
+    """Merge ``changes`` into the metadata of a dataset and return it; ``FileNotFoundError`` if there is none."""
     meta = read_meta(session_id, dataset_id)
     if meta is None:
         raise FileNotFoundError(dataset_id)
@@ -185,6 +191,7 @@ class TooFewMeasures(ValueError):
     """Fewer measures gave values than a dataset needs."""
 
     def __init__(self, have: int, need: int) -> None:
+        """Keep how many measures there are (``have``) and how many are needed (``need``)."""
         super().__init__(f"Only {have} measure(s) gave values for every kept input; at least {need} are needed.")
         self.have = have
         self.need = need
@@ -256,6 +263,7 @@ def load_matrix(session_id: str, dataset_id: str) -> pd.DataFrame:
 
 
 def _read_extra(session_id: str, dataset_id: str, name: str) -> dict[str, Any] | None:
+    """A JSON file kept in the directory of a dataset, or ``None`` if it is missing or not valid JSON."""
     try:
         with open(dataset_dir(session_id, dataset_id) / name, encoding="utf-8") as f:
             return json.load(f)
@@ -297,6 +305,7 @@ def write_stability(session_id: str, dataset_id: str, key: str, result: dict[str
 
 
 def _read_matrix(source: Any) -> pd.DataFrame:
+    """A matrix CSV as floats, with the first column as the index; pandas' default missing-value strings are not converted."""
     return pd.read_csv(source, index_col=0, keep_default_na=False).astype(float)
 
 
@@ -312,16 +321,19 @@ def as_stored(data: pd.DataFrame) -> pd.DataFrame:
 
 
 def inputs_dir(session_id: str, dataset_id: str) -> Path:
+    """The directory of the uploads waiting for the job, created if needed."""
     path = dataset_dir(session_id, dataset_id) / "inputs"
     path.mkdir(parents=True, exist_ok=True)
     return path
 
 
 def remove_inputs(session_id: str, dataset_id: str) -> None:
+    """Delete the uploads of a dataset."""
     shutil.rmtree(dataset_dir(session_id, dataset_id) / "inputs", ignore_errors=True)
 
 
 def _meta_file(path: Path) -> dict[str, Any]:
+    """The JSON at ``path``, or an empty dict if it cannot be read."""
     try:
         with open(path, encoding="utf-8") as f:
             return json.load(f)

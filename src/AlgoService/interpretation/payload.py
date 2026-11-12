@@ -190,6 +190,7 @@ def result_fingerprint(result: dict[str, Any]) -> str:
     signed = int(result["n_factors"]) > 1
 
     def sign(loading: float) -> str:
+        """"+" or "-" by the loading's sign for solutions with more than one factor, else empty."""
         return ("+" if loading >= 0 else "-") if signed else ""
 
     material = {

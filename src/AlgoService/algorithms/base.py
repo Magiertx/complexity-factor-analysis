@@ -55,6 +55,7 @@ class ParameterSpec:
     recommended: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
+        """The spec as the frontend form reads it; unset optional fields are left out."""
         d: dict[str, Any] = {
             "name": self.name,
             "label": self.label,
@@ -87,6 +88,7 @@ class SecondaryFile:
     help: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
+        """The declaration as served in the algorithm manifest."""
         return {
             "name": self.name,
             "label": self.label,
@@ -104,6 +106,7 @@ class Artifact:
     payload: dict[str, Any]
 
     def to_dict(self) -> dict[str, Any]:
+        """Flat dict of ``kind``, ``label`` and the payload fields."""
         return {"kind": self.kind, "label": self.label, **self.payload}
 
 
@@ -117,22 +120,27 @@ def stat(
     pct: bool = False,
     accent: Literal["default", "success", "warn", "danger"] = "default",
 ) -> Artifact:
+    """Build a single-number ``stat`` artifact; ``pct`` marks the value as a percentage and ``accent`` picks the tile colour."""
     return Artifact("stat", label, {"value": value, "unit": unit, "pct": pct, "accent": accent})
 
 
 def table(label: str, columns: list[str], rows: list[list[Any]]) -> Artifact:
+    """Build a ``table`` artifact from column headers and row lists."""
     return Artifact("table", label, {"columns": columns, "rows": rows})
 
 
 def image(label: str, data_base64: str, *, mime: str = "image/png", caption: Optional[str] = None) -> Artifact:
+    """Build an ``image`` artifact from base64-encoded image data."""
     return Artifact("image", label, {"data_base64": data_base64, "mime": mime, "caption": caption})
 
 
 def log_file(label: str, data_base64: str, filename: str, *, mime: str = "application/xml") -> Artifact:
+    """Build a downloadable ``log`` artifact (an event log file) from base64-encoded data."""
     return Artifact("log", label, {"data_base64": data_base64, "filename": filename, "mime": mime})
 
 
 def text(label: str, markdown: str) -> Artifact:
+    """Build a free-form ``text`` artifact rendered as Markdown."""
     return Artifact("text", label, {"markdown": markdown})
 
 
@@ -169,10 +177,12 @@ class RunContext:
 
 @dataclass
 class AnalysisResult:
+    """What ``AlgorithmBase.analyze`` returns: the artifacts to render and an optional one-line summary."""
     artifacts: list[Artifact]
     summary: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
+        """The result as stored and returned: summary and serialised artifacts."""
         return {
             "summary": self.summary,
             "artifacts": [a.to_dict() for a in self.artifacts],
@@ -188,12 +198,16 @@ class CodedRunError(RuntimeError):
 
 
 class ParameterValidationError(ValueError):
+    """Raised by ``coerce_params``; ``errors`` maps each offending parameter name to a message."""
+
     def __init__(self, errors: dict[str, str]) -> None:
         self.errors = errors
         super().__init__("; ".join(f"{k}: {v}" for k, v in errors.items()))
 
 
 class AlgorithmBase:
+    """Base class of every adapter. Subclasses set the class attributes and implement ``analyze``."""
+
     id: str = ""
     name: str = ""
     description: str = ""
@@ -206,9 +220,11 @@ class AlgorithmBase:
     formatted_citation: Optional[str] = None
 
     def analyze(self, file_path: str, params: dict[str, Any], ctx: Optional[RunContext] = None) -> AnalysisResult:
+        """Run the tool on the event log at ``file_path`` with already coerced ``params``."""
         raise NotImplementedError
 
     def manifest(self) -> dict[str, Any]:
+        """JSON-serialisable description of the algorithm, served by ``/algorithms``."""
         return {
             "id": self.id,
             "name": self.name,
@@ -223,6 +239,12 @@ class AlgorithmBase:
         }
 
     def coerce_params(self, raw: dict[str, Any]) -> dict[str, Any]:
+        """Validate ``raw`` against ``parameters_schema`` and return typed values.
+
+        Missing or empty values fall back to the spec default. Raises
+        ``ParameterValidationError`` with one message per bad parameter, including
+        unknown keys.
+        """
         out: dict[str, Any] = {}
         errors: dict[str, str] = {}
 

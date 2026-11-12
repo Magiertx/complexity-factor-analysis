@@ -115,6 +115,7 @@ _STYLE = {
 
 
 def _save(fig: Any, fmt: str) -> bytes:
+    """Render a figure to SVG or PNG bytes. The creation date (SVG) and software (PNG) metadata are left out so that the same figure gives the same bytes."""
     buffer = io.BytesIO()
     metadata = {"Date": None} if fmt == "svg" else {"Software": None}
     fig.savefig(buffer, format=fmt, dpi=DPI, bbox_inches="tight", pad_inches=0.04, metadata=metadata)
@@ -139,6 +140,7 @@ def _label(kind: str, measure: str, short: bool) -> str:
 
 
 def _labels(kind: str, measures: list[str], short: bool) -> list[str]:
+    """``_label`` of each measure."""
     return [_label(kind, m, short) for m in measures]
 
 
@@ -246,6 +248,7 @@ def loadings(
     oblique = result.get("structure_loadings") is not None
 
     def counts(value: float) -> bool:
+        """Whether a loading passes the threshold, by absolute value; strict if the rule is."""
         return abs(value) > threshold if strict else abs(value) >= threshold
 
     cell_w, cell_h = 0.42, 0.17
@@ -300,6 +303,7 @@ def loadings(
 
 
 def _truncated(text: str, limit: int) -> str:
+    """``text`` cut to ``limit`` characters, ending in an ellipsis if it was longer."""
     return text if len(text) <= limit else text[: limit - 1] + "…"
 
 
@@ -407,6 +411,7 @@ def correlation_map(
 
 
 def _rect(x: float, y: int, color: Any, width: float = 1.0) -> Any:
+    """A one-cell-high rectangle at (``x``, ``y``) with a white edge: a cell of the loadings heatmap."""
     from matplotlib.patches import Rectangle
 
     return Rectangle((x, y), width, 1, facecolor=color, edgecolor="white", linewidth=0.8)
@@ -421,12 +426,14 @@ _LOADINGS_PARTS = (
 
 
 def _fingerprint(result: dict[str, Any], parts: tuple[str, ...]) -> str:
+    """A hash of the parts of ``result`` a figure shows (``_SCREE_PARTS`` or ``_LOADINGS_PARTS``) and whether the rotation is oblique; part of the cache key of a drawn figure."""
     shown = {part: result.get(part) for part in parts}
     shown["oblique"] = result.get("structure_loadings") is not None
     return hashlib.sha1(json.dumps(shown, sort_keys=True, default=repr).encode()).hexdigest()
 
 
 def _correlation_fingerprint(corr: dict[str, Any]) -> str:
+    """A hash of the parts of the correlation map a figure shows; part of the cache key of a drawn correlation map."""
     shown = {part: corr.get(part) for part in ("order", "measures", "r", "groups")}
     return hashlib.sha1(json.dumps(shown, sort_keys=True, default=repr).encode()).hexdigest()
 

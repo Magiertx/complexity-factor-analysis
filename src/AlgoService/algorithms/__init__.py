@@ -11,10 +11,12 @@ REGISTRY: dict[str, AlgorithmBase] = {
 
 
 def get(algorithm_id: str) -> AlgorithmBase | None:
+    """Return the algorithm registered under ``algorithm_id``, or ``None``."""
     return REGISTRY.get(algorithm_id)
 
 
 def all_algorithms() -> list[AlgorithmBase]:
+    """Return every registered algorithm in registration order."""
     return list(REGISTRY.values())
 
 

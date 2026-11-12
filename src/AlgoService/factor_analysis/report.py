@@ -90,6 +90,7 @@ _CLOSING_QUOTE = re.compile(r'"')
 
 
 def number(value: float | None, decimals: int = DECIMALS) -> str:
+    """A number to ``decimals`` places, ``--`` for ``None``; a value that rounds to zero has no minus sign."""
     if value is None:
         return "--"
     text = f"{value:.{decimals}f}"
@@ -98,6 +99,7 @@ def number(value: float | None, decimals: int = DECIMALS) -> str:
 
 
 def p_value(value: float | None) -> str:
+    """A p-value as LaTeX math: ``--`` for ``None``, ``0`` for exactly zero, scientific notation below the printed precision, else as ``number``."""
     if value is None:
         return "--"
     if value == 0:
@@ -113,13 +115,16 @@ class _Labels:
     of measures. Log measures are written as the paper writes them, C with the code as index."""
 
     def __init__(self, kind: str, short: bool) -> None:
+        """``short`` names measures by their short codes where they have one."""
         self.kind = kind
         self.short = short
 
     def code(self, measure: str) -> str | None:
+        """The short code of a measure, or ``None`` if the report does not use short codes or the measure has none."""
         return short_code(self.kind, measure) if self.short else None
 
     def __call__(self, measure: str) -> str:
+        """The measure as it is written in a table: its name, or its code (a log code as C with the code as index)."""
         code = self.code(measure)
         if code is None:
             return tex(measure)
@@ -152,6 +157,7 @@ def _factor_heading(j: int, names: dict[int, str] | None) -> str:
 
 
 def _items(lines: list[str], env: str = "compactitem") -> list[str]:
+    """The lines as a LaTeX list in the environment ``env``, followed by an empty line."""
     return [f"\\begin{{{env}}}", *(f"\\item {line}" for line in lines), f"\\end{{{env}}}", ""]
 
 
@@ -193,6 +199,7 @@ def _measures(dataset: dict[str, Any], descriptives: dict[str, Any] | None) -> l
 
 
 def _miners(dataset: dict[str, Any]) -> list[str]:
+    """The names of the miners behind a dataset: those of its inputs, else the label of a bundled ComFy-paper dataset, else none."""
     miners = (dataset.get("inputs") or {}).get("miners")
     if miners:
         return list(miners)
@@ -221,6 +228,7 @@ def _miner_lines(miner: dict[str, Any], dataset: dict[str, Any], label: _Labels)
 def _data_section(
     dataset: dict[str, Any], names: list[str], label: _Labels, miner: dict[str, Any] | None = None
 ) -> list[str]:
+    """The section on where the data come from: the miners and the nets they discovered, or the source of the values. Then the measures analysed and those left out before the analysis."""
     miners = _miners(dataset)
     out: list[str] = []
     if miners:
@@ -263,6 +271,7 @@ def _data_section(
 def _validity_section(
     result: dict[str, Any], params: dict[str, Any], names: list[str], label: _Labels
 ) -> list[str]:
+    """The section on the validity of the analysis: sample size against the 5 per measure rule of thumb, measures excluded by hand, Bartlett's test, the MSA of each measure and the measures the MSA filter removed."""
     n = result["n_observations"]
     # Within a miner, those of its measures that vary there.
     p = result["miner"]["n_measures"] if result.get("miner") else len(names)
@@ -323,6 +332,7 @@ def _validity_section(
 
 
 def _factor_count_section(result: dict[str, Any]) -> list[str]:
+    """The section on the factor count: the scree plot with the Kaiser line and, where available, parallel analysis; the table behind it; and the factor count used."""
     values = result["eigenvalues"]
     p = len(values)
     counts = result.get("factor_count") or {}
@@ -331,6 +341,7 @@ def _factor_count_section(result: dict[str, Any]) -> list[str]:
     shown = min(p, max(MIN_SCREE, 2 * k, counts.get("kaiser", 1), counts.get("parallel_analysis", 1)))
 
     def coordinates(series: list[float]) -> str:
+        """The (rank, value) pairs of a series, for the first ``shown`` eigenvalues, as pgfplots coordinates."""
         return " ".join(f"({i + 1},{number(v)})" for i, v in enumerate(series[:shown]))
 
     # Thirty labels would run together: from 20 eigenvalues on, every fifth one is labelled.
@@ -389,6 +400,7 @@ def _factor_count_section(result: dict[str, Any]) -> list[str]:
 
 
 def _descriptives_section(descriptives: dict[str, Any] | None, label: _Labels) -> list[str]:
+    """The descriptive statistics of the measures; a smaller font where the numbers are wide. Empty without descriptives."""
     if not descriptives:
         return []
     header = " & Mean & Median & Std & Min & Max \\\\"
@@ -417,6 +429,7 @@ def _descriptives_section(descriptives: dict[str, Any] | None, label: _Labels) -
 
 
 def _loadings_section(result: dict[str, Any], label: _Labels, names: dict[int, str] | None = None) -> list[str]:
+    """The loadings tables, split into blocks of a few factors each: assigned loadings in bold, those that do not count in grey, with communalities and the variance rows."""
     k = result["n_factors"]
     assignment = result.get("assignment") or {
         "rule": "largest", "loading_threshold": result["loading_threshold"], "loading_strict": False,
@@ -427,9 +440,11 @@ def _loadings_section(result: dict[str, Any], label: _Labels, names: dict[int, s
     assigned = {(m["measure"], f["index"]) for f in result["factors"] for m in f["measures"]}
 
     def counts(value: float) -> bool:
+        """Whether a loading counts, by absolute value; strict if the assignment rule is."""
         return abs(value) > threshold if strict else abs(value) >= threshold
 
     def cell(measure: str, j: int, value: float) -> str:
+        """A loading as a LaTeX cell: bold if the rule assigned it, grey if it does not count."""
         text = f"${number(value)}$"
         if (measure, j) in assigned:
             return f"$\\mathbf{{{number(value)}}}$"
@@ -478,6 +493,7 @@ def _loadings_section(result: dict[str, Any], label: _Labels, names: dict[int, s
 
 
 def _communalities_section(result: dict[str, Any], label: _Labels) -> list[str]:
+    """The bar chart of the communalities, with the communality threshold as a dashed line; beyond ``MAX_BARS`` measures only a pointer to the loadings table."""
     communalities = result["communalities"]
     measures = list(result["loadings"])
     threshold = (result.get("assignment") or {}).get("communality_threshold", result.get("communality_threshold", 0))
@@ -506,6 +522,7 @@ def _communalities_section(result: dict[str, Any], label: _Labels) -> list[str]:
 
 
 def _correlations_section(result: dict[str, Any], names: dict[int, str] | None = None) -> list[str]:
+    """The correlations of the factors; empty unless the rotation is oblique."""
     correlations = result.get("factor_correlations")
     if not correlations:
         return []
@@ -527,6 +544,7 @@ def _correlations_section(result: dict[str, Any], names: dict[int, str] | None =
 def _dimensions_section(
     result: dict[str, Any], label: _Labels, factor_names: dict[int, str] | None
 ) -> list[str]:
+    """The dimensions the assignment rule forms: the measures of each factor with their loadings, the measures in no factor with the reason, and the cross-loadings."""
     rule = result.get("assignment_rule", "largest")
     rows = []
     for factor in result["factors"]:
@@ -583,6 +601,7 @@ def _settings_section(
     published: dict[str, Any] | None,
     short: bool,
 ) -> list[str]:
+    """The table of settings and provenance: parameters, method, where the data and measures come from, the comparison with published numbers, software and citation."""
     assignment = result.get("assignment") or {}
     counts = result.get("factor_count") or {}
     origin = dataset.get("provenance") or {}
@@ -679,6 +698,7 @@ _READINGS = {"equal": "equal", "fair": "fairly similar", "different": "not simil
 
 
 def _share(value: float) -> str:
+    """A share of samples as a percentage in LaTeX math."""
     return f"${round(value * 100)}\\,\\%$"
 
 

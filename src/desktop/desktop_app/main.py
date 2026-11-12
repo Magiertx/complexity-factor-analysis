@@ -42,6 +42,7 @@ _held: list[instance.InstanceLock] = []
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
+    """Parse the command line (``argv`` of ``None`` means ``sys.argv``)."""
     parser = argparse.ArgumentParser(
         prog="python -m desktop_app",
         description="Run the tool as one local process on 127.0.0.1 and open it in the browser.",
@@ -83,6 +84,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
 
 
 def write_port_file(path: Path, port: int) -> None:
+    """Write the port to ``path`` for scripts, owner-readable where the system has modes."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     state.write_private_text(path, f"{port}\n")
@@ -103,6 +105,11 @@ def access_url(port: int, code: str) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Launcher entry point; returns the exit code.
+
+    Resolves the directories, installs the log file, then runs the app. Errors are shown in a
+    dialog unless ``--headless``.
+    """
     args = parse_args(argv)
     resources.prepare_import_path()
     try:
@@ -136,6 +143,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _run(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> int:
+    """Take the instance lock and serve; if another instance is running, show it instead."""
     logger.info("Starting %s. Data: %s; log: %s", name, app_paths.data, app_paths.log_file)
     lock = instance.InstanceLock(app_paths.lock)
     # The lock is taken again and again while another process holds it: that one may be quitting
@@ -241,6 +249,7 @@ def finish(code: int) -> int:
 
 
 def _log_settings(settings: dict[str, str], env: dict[str, str], args: argparse.Namespace) -> None:
+    """Log which settings and options shape this start; names only, never the values."""
     if settings:
         logger.info("settings.env sets %s.", ", ".join(sorted(settings)))
     key = env.get("ANTHROPIC_API_KEY", "").strip()
@@ -264,6 +273,12 @@ def _install_signal_handlers(stop: threading.Event) -> None:
 
 
 def _serve(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> int:
+    """Start the backend and show the app until it is closed; returns the exit code.
+
+    Order matters: bind the port, set the backend's environment, migrate the database, and only
+    then import the backend, which reads its settings at import. The instance info and the port
+    file are written once the server answers, and the info is removed when the app stops.
+    """
     frontend = Path(args.frontend_dir) if args.frontend_dir else resources.frontend_dir()
     PageServer.from_export(frontend)  # fails now, not after the imports, if the export is missing
 

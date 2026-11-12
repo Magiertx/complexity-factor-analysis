@@ -82,4 +82,5 @@ AsyncSessionLocal = async_sessionmaker(
 
 
 class Base(DeclarativeBase):
+    """Declarative base of all ORM models."""
     pass

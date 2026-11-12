@@ -27,6 +27,7 @@ BINS = 12
 
 
 def _number(value: Any) -> float | None:
+    """``value`` as a float; ``None`` if it is not finite."""
     value = float(value)
     return value if math.isfinite(value) else None
 

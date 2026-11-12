@@ -35,6 +35,7 @@ PAPER = "paper"
 
 @dataclass(frozen=True)
 class Job:
+    """One analysis to precompute: a bundled dataset with a set of settings (``STANDARD`` or ``PAPER``) and the parameters that go with them."""
     dataset_id: str
     kind: str
     settings: str

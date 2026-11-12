@@ -20,6 +20,7 @@ logger = logging.getLogger("algoservice")
 
 
 async def add(kind: str, message: str, contact: str | None, context: dict[str, Any] | None) -> int:
+    """Store one feedback message and return its id."""
     async with AsyncSessionLocal() as session:
         row = models.Feedback(kind=kind, message=message, contact=contact, context=context)
         session.add(row)

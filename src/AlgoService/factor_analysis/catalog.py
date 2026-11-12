@@ -71,6 +71,7 @@ def log_features(groups: list[str]) -> list[str]:
 
 
 def log_group_of(feature: str) -> str | None:
+    """The feeed group (key of ``LOG_GROUPS``) a log feature belongs to, or ``None``."""
     for group, names in _LogConstants.all_measures.items():
         if feature in names:
             return group
@@ -133,11 +134,15 @@ def feeed_functions() -> dict[str, tuple[str, str]]:
 
 
 def log_measure_source(feature: str) -> dict[str, Any] | None:
+    """Where feeed implements a log feature, or ``None`` if it is not found in the installed package."""
     found = feeed_functions().get(feature)
     return _source(provenance.FEEED, found[0], found[1]) if found else None
 
 
 def _model_parts() -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[str]]:
+    """Measure entries, miner entries and the default measure keys for the model catalog.
+    Slow measures and miners are flagged and left out of the defaults.
+    """
     from algorithms.comfy import MEASURES_BY_NAME, MINERS_BY_NAME, SLOW_MEASURES, SLOW_MINERS
 
     measures = []
@@ -164,12 +169,14 @@ def _model_parts() -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[str
 
 
 def model_measure_keys() -> list[str]:
+    """Keys of all ComFy model measures, in ComFy's order."""
     from algorithms.comfy import MEASURES_BY_NAME
 
     return list(MEASURES_BY_NAME)
 
 
 def model_miner_keys() -> list[str]:
+    """Keys of all ComFy process miners."""
     from algorithms.comfy import MINERS_BY_NAME
 
     return list(MINERS_BY_NAME)
@@ -179,6 +186,7 @@ DEFAULT_MINERS = ["Inductive miner"]
 
 
 def default_log_groups() -> list[str]:
+    """Log groups selected by default: all except the slow ones."""
     return [g for g in _LogConstants.all_measures if g not in SLOW_LOG_GROUPS]
 
 
@@ -187,24 +195,29 @@ def default_log_groups() -> list[str]:
 
 @lru_cache(maxsize=1)
 def manifest() -> dict[str, Any]:
+    """The manifest of the bundled datasets and samples, read once from ``datasets/manifest.json``."""
     with open(DATASETS_DIR / "manifest.json", encoding="utf-8") as f:
         return json.load(f)
 
 
 def bundled_entry(dataset_id: str) -> dict[str, Any] | None:
+    """The manifest entry of a bundled dataset, or ``None``."""
     return next((d for d in manifest()["datasets"] if d["id"] == dataset_id), None)
 
 
 def sample_entry(sample_id: str) -> dict[str, Any] | None:
+    """The manifest entry of a bundled sample, or ``None``."""
     return next((s for s in manifest()["samples"] if s["id"] == sample_id), None)
 
 
 def sample_paths(sample: dict[str, Any]) -> list[Path]:
+    """Paths of the files of a bundled sample."""
     return [DATASETS_DIR / f for f in sample["files"]]
 
 
 @lru_cache(maxsize=None)
 def _csv_shape(file: str) -> tuple[int, int]:
+    """Number of data rows and of measure columns of a bundled CSV (the first column holds row labels)."""
     with open(DATASETS_DIR / file, encoding="utf-8", newline="") as f:
         reader = csv.reader(f)
         header = next(reader)
@@ -255,6 +268,9 @@ def paper_tables_note(tables: dict[str, Any]) -> str | None:
 
 
 def _public(entry: dict[str, Any], **extra: Any) -> dict[str, Any]:
+    """The fields of a manifest entry that the API exposes, plus ``extra``.
+    Optional fields are copied only when set; ``paper_tables`` gets its rendered note.
+    """
     out = {"id": entry["id"], "name": entry["name"], "description": entry["description"], **extra}
     for key in (
         "citation", "license", "label", "collection", "venue", "note", "source_url",
@@ -280,6 +296,7 @@ def collections(kind: str) -> list[dict[str, Any]]:
 
 
 def catalog(kind: str) -> dict[str, Any]:
+    """The catalog of a kind (``"model"`` or ``"log"``): measures, miners or groups, defaults, bundled datasets, collections, samples and the allowed input sources."""
     bundled = []
     for entry in manifest()["datasets"]:
         if entry["kind"] != kind:

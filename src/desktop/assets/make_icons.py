@@ -13,6 +13,7 @@ PNG = HERE / "png"
 
 
 def load(name: str) -> Image.Image:
+    """Open one of the generated PNGs as RGBA."""
     return Image.open(PNG / name).convert("RGBA")
 
 
