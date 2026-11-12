@@ -131,6 +131,7 @@ const DATASET_NOTES: Record<string, string> = {
   "comfy-paper-alpha-dollar-miner": "alpha_dollar",
 };
 
+/** The short note on a published dataset, or null if it has none. */
 export function datasetNote(id: string, t: Translate): string | null {
   const key = DATASET_NOTES[id];
   return key ? t(`factor.paper_notes.datasets.${key}`) : null;

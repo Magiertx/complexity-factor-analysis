@@ -1,5 +1,7 @@
 "use client";
 
+// Remembers which analysis page was open last and offers the way back to it from the header pages.
+
 import { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { activeTab, lastAnalysis, rememberAnalysis } from "@/lib/nav";

@@ -1,7 +1,11 @@
 "use client";
 
+// Named parameter presets per algorithm, kept in the browser's localStorage, with export and import as a JSON file.
+
+/** localStorage key prefix; one key per algorithm id. */
 const PREFIX = "app.presets-";
 
+/** One saved set of parameter values. */
 export type Preset = {
   name: string;
   params: Record<string, unknown>;
@@ -12,6 +16,7 @@ function key(algorithmId: string): string {
   return `${PREFIX}${algorithmId}`;
 }
 
+/** The valid presets of an algorithm; empty without a browser or on unreadable data. */
 function read(algorithmId: string): Preset[] {
   if (typeof window === "undefined") return [];
   try {
@@ -52,10 +57,12 @@ export class PresetError extends Error {
   }
 }
 
+/** The presets of an algorithm, sorted by name. */
 export function listPresets(algorithmId: string): Preset[] {
   return read(algorithmId).sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** Saves `params` under `name` (trimmed), replacing a preset of the same name; throws `PresetError` for an empty name. */
 export function savePreset(algorithmId: string, name: string, params: Record<string, unknown>): Preset {
   const trimmed = name.trim();
   if (!trimmed) {
@@ -68,11 +75,13 @@ export function savePreset(algorithmId: string, name: string, params: Record<str
   return preset;
 }
 
+/** Removes the preset of that name, if there is one. */
 export function deletePreset(algorithmId: string, name: string): void {
   const presets = read(algorithmId).filter((p) => p.name !== name);
   write(algorithmId, presets);
 }
 
+/** The presets of every algorithm, grouped by algorithm id and sorted by it; algorithms without presets are left out. */
 export function listAllPresets(): { algorithmId: string; presets: Preset[] }[] {
   if (typeof window === "undefined") return [];
   const out: { algorithmId: string; presets: Preset[] }[] = [];
@@ -86,6 +95,7 @@ export function listAllPresets(): { algorithmId: string; presets: Preset[] }[] {
   return out.sort((a, b) => a.algorithmId.localeCompare(b.algorithmId));
 }
 
+/** Removes the presets of every algorithm; returns how many algorithms had any. */
 export function clearAllPresets(): number {
   if (typeof window === "undefined") return 0;
   const keys: string[] = [];
@@ -97,12 +107,14 @@ export function clearAllPresets(): number {
   return keys.length;
 }
 
+/** The JSON file written by the export: `version` 1, the time, and the presets by algorithm. */
 export type PresetExportFile = {
   version: 1;
   exportedAt: number;
   groups: { algorithmId: string; presets: Preset[] }[];
 };
 
+/** The export file for all presets stored now. */
 export function buildExportPayload(): PresetExportFile {
   return {
     version: 1,
@@ -111,6 +123,7 @@ export function buildExportPayload(): PresetExportFile {
   };
 }
 
+/** Counts of an import: presets added, how many of them had to be renamed, and algorithms touched. */
 export type ImportResult = {
   added: number;
   renamed: number;

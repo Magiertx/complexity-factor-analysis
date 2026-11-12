@@ -1,11 +1,16 @@
 "use client";
 
+// A small histogram of the values of one measure, for its fact sheet.
+
 import type { Histogram as HistogramData } from "@/lib/api";
 import { formatStatistic } from "@/lib/format";
 import { useLocale, useT } from "@/lib/i18n";
 
+/** Width of the drawing, in SVG units. */
 const WIDTH = 320;
+/** Height of the area of the bars, in SVG units. */
 const BARS = 56;
+/** Height of the strip under the bars that holds the smallest and the largest value, in SVG units. */
 const AXIS = 16;
 
 /**

@@ -24,6 +24,7 @@ export const TABLE_17: readonly string[] = [
   "comfy-paper-inductive-miner",
   "comfy-paper-hybrid-ilp-miner",
 ];
+/** The assignment rule of Tab. 17. */
 export const TABLE_17_RULE: AssignmentRule = "hair";
 
 /**
@@ -56,6 +57,7 @@ export function isOwnId(id: string): boolean {
   return UUID.test(id);
 }
 
+/** The key of a column of a bundled dataset, with `k` factors where it asks for a count. */
 export function columnKey(id: string, k: number | null = null): string {
   return k === null ? id : `${id}~k${k}`;
 }
@@ -106,6 +108,7 @@ function parseOwnKey([id, ...rest]: string[]): ColumnChoice | null {
   return choice;
 }
 
+/** What a comparison is: its columns, the rule and the kind of measures. */
 export interface CompareState {
   /** The columns as keys (`columnKey`), in their order; the first one keeps its factor numbers. */
   columns: string[];
@@ -114,6 +117,7 @@ export interface CompareState {
   kind?: FactorKind;
 }
 
+/** The comparison of Tab. 17, the page's default. */
 export const TABLE_17_STATE: CompareState = { columns: [...TABLE_17], rule: TABLE_17_RULE };
 
 /** The query of the link to a comparison, e.g. "cols=comfy-paper-alpha-miner,…&rule=hair". */
@@ -139,8 +143,10 @@ export const COMPARE_K4_K6_STATE: CompareState = {
   columns: [columnKey("comfy-paper-inductive-miner"), columnKey("comfy-paper-inductive-miner", 6)],
   rule: "multi",
 };
+/** The link to that comparison. */
 export const COMPARE_K4_K6_HREF = `/compare?${compareQuery(COMPARE_K4_K6_STATE)}`;
 
+/** A comparison link read back into its state. */
 export interface ParsedCompare {
   state: CompareState;
   /** Some part of the link could not be used; the rest, or Tab. 17, is shown instead. */
@@ -224,6 +230,7 @@ export function compareRequest(
   };
 }
 
+/** Whether two comparisons have the same kind, rule and columns in the same order. */
 export function sameState(a: CompareState, b: CompareState): boolean {
   return (
     (a.kind ?? "model") === (b.kind ?? "model") &&
@@ -291,6 +298,7 @@ export interface Pins {
 
 const PINS_KEY = "app.compare-pins-";
 
+/** No pins, with the default rule. */
 export const NO_PINS: Pins = { columns: [], rule: DEFAULT_RULE };
 
 /** The pins of a kind kept in the browser; none where it keeps nothing. */
@@ -308,6 +316,7 @@ export function loadPins(kind: FactorKind): Pins {
   }
 }
 
+/** Keeps the pins of a kind in the browser; no pins removes the entry. */
 export function savePins(kind: FactorKind, pins: Pins) {
   try {
     if (pins.columns.length === 0) localStorage.removeItem(PINS_KEY + kind);

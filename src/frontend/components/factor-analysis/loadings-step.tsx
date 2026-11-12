@@ -1,5 +1,7 @@
 "use client";
 
+// The loadings step: the loadings of the solution as a matrix or as cards by dimension, with the assignment rule, the names of the factors, pinning for a comparison and the stability.
+
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Columns3, Grid3x3, LayoutGrid, Pin, PinOff, Tags, X } from "lucide-react";
 import { ASSIGNMENT_RULES, type AssignmentRule, type FactorAnalysis } from "@/lib/api";
@@ -87,6 +89,7 @@ export interface LoadingsFilter {
   showOther: boolean;
 }
 
+/** No search, no narrowing, the other measures folded. */
 export const DEFAULT_LOADINGS_FILTER: LoadingsFilter = { query: "", onlyNotable: false, showOther: false };
 
 /** How a long list of loadings is narrowed and folded, worked out once for the matrix and the cards. */
@@ -103,6 +106,7 @@ interface LoadingsList {
   fold: Fold | undefined;
 }
 
+/** The props of `LoadingsView`. */
 interface Props {
   analysis: FactorAnalysis;
   options: AnalysisOptions;
@@ -140,6 +144,7 @@ function topName(rows: Iterable<{ measure: string; loading: number }>, name: (ke
 type LoadingsLook = "matrix" | "dimensions";
 /** The address names the matrix (?view=matrix); the dimensions, the default, need no parameter. */
 const VIEW_PARAM = "view";
+/** The order of the measures: by the factor they load on, or as in the dataset. */
 type MeasureOrder = "factor" | "original";
 
 /** How the loadings are shown: as a matrix or as cards, and in which order. */
@@ -148,6 +153,7 @@ export interface LoadingsLookState {
   order: MeasureOrder;
 }
 
+/** Where the look chosen last is kept in the browser. */
 const LOOK_KEY = "app.factor-loadings-look";
 
 /** The look and order chosen last, remembered in the browser. */
@@ -184,6 +190,7 @@ export function useLoadingsLook(): [LoadingsLookState, (patch: Partial<LoadingsL
   return [state, update];
 }
 
+/** The loadings step. */
 export function LoadingsView({
   analysis,
   options,
@@ -370,6 +377,7 @@ export function LoadingsView({
   );
 }
 
+/** The loadings as a matrix with a row per measure and a column per factor. */
 function LoadingsMatrix({
   analysis,
   options,

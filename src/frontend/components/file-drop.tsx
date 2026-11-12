@@ -1,11 +1,14 @@
 "use client";
 
+// Drop area for one event log in the single-run workbench; shows the chosen file once there is one.
+
 import { Upload, FileCheck2, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/lib/i18n";
 import { formatFileSize } from "@/lib/format";
 
+/** `file` is the controlled selection; `onChange(null)` clears it. `accept` is the file picker's filter. */
 interface Props {
   file: File | null;
   onChange: (f: File | null) => void;
@@ -14,8 +17,10 @@ interface Props {
 
 // What POST /algorithms/{id}/analyze accepts; ".gz" stands for ".xes.gz", which a file picker cannot match.
 export const LOG_ACCEPT = ".xes,.gz,.xml,.json";
+/** The same formats as full extensions, for checks on file names. */
 export const LOG_EXTENSIONS = [".xes", ".xes.gz", ".xml", ".json"];
 
+/** Drop area or button that picks one file, and a chip with name and size once a file is chosen. */
 export function FileDrop({ file, onChange, accept = LOG_ACCEPT }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState(false);

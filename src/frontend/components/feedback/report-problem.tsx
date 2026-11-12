@@ -1,5 +1,7 @@
 "use client";
 
+// The "Report problem" link shown beside error notices.
+
 import { Flag } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useTip } from "@/components/ui/tip";

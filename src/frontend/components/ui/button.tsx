@@ -1,3 +1,5 @@
+// The button of the app: four looks in three sizes, and `buttonClass` for a link that looks like one.
+
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +19,7 @@ const sizes: Record<Size, string> = {
   lg: "h-11 px-6 text-base",
 };
 
+/** The props of a native button, with a look and a size. */
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
@@ -31,6 +34,7 @@ export const buttonClass = (variant: Variant = "primary", size: Size = "md", cla
     className,
   );
 
+/** The button of the app. */
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", ...props }, ref) => (
     <button ref={ref} className={buttonClass(variant, size, className)} {...props} />

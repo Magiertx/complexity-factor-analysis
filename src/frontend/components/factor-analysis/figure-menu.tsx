@@ -1,5 +1,7 @@
 "use client";
 
+// The download menu of a figure of the analysis.
+
 import { FileCode2, ImageDown, ImageIcon } from "lucide-react";
 import type { FigureFormat } from "@/lib/api";
 import { useT } from "@/lib/i18n";

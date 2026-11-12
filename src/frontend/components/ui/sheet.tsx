@@ -1,5 +1,7 @@
 "use client";
 
+// A modal panel at the right edge of the window, e.g. the fact sheet of a measure and the feedback form.
+
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";

@@ -1,5 +1,8 @@
 "use client";
 
+// Context that keeps the session's job list current for every page, and derives from it the History tab's
+// activity marker and the "dataset is ready" notice.
+
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { fetchJobs, type Job } from "@/lib/api";
@@ -17,6 +20,7 @@ import { useLocale } from "@/lib/i18n";
 import { TAB_HREFS } from "@/lib/nav";
 import { useToasts } from "./ui/toasts";
 
+/** What `useJobs` returns. */
 interface JobsContextValue {
   /** The jobs of the session, newest first. */
   jobs: Job[];
@@ -28,8 +32,10 @@ interface JobsContextValue {
   refresh: () => Promise<void>;
 }
 
+// null outside the provider, so `useJobs` can fail loudly.
 const JobsContext = createContext<JobsContextValue | null>(null);
 
+/** The shared job list; throws when used outside `JobsProvider`. */
 export function useJobs(): JobsContextValue {
   const ctx = useContext(JobsContext);
   if (!ctx) throw new Error("useJobs must be used inside <JobsProvider>");
@@ -51,16 +57,19 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
   const [activity, setActivity] = useState<JobActivity>(NO_ACTIVITY);
   const { notify } = useToasts();
   const { t } = useLocale();
+  // The latest `t` for the notice below, so a language change does not rerun that effect.
   const tRef = useRef(t);
   useEffect(() => {
     tRef.current = t;
   }, [t]);
+  // Status of every job in the previous list, to tell which jobs have finished since.
   const statuses = useRef<Map<string, Job["status"]> | null>(null);
   // The jobs of the first list, and those already reported by the notice.
   const initialJobs = useRef<Set<string> | null>(null);
   const reportedJobs = useRef<Set<string>>(new Set());
   const seenFailures = useRef<Set<string> | null>(null);
 
+  // A failed read is ignored; the list stays as it was.
   const load = useCallback(async () => {
     try {
       const list = await fetchJobs();
@@ -71,6 +80,7 @@ export function JobsProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Loads the list at once, then on each server event and every 10 s, and again when the tab becomes visible.
   useEffect(() => {
     let active = true;
     let es: EventSource | null = null;

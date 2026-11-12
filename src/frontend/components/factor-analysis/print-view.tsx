@@ -1,5 +1,7 @@
 "use client";
 
+// The print view: the whole analysis on one page, laid out for A4 paper, to print or save as PDF.
+
 import { Children, Fragment, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AlertCircle, Loader2, Printer } from "lucide-react";
@@ -42,6 +44,7 @@ import { localizeCatalog, useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { MeasureName, MeasureScope } from "@/components/ui/table";
 
+/** What the page loads before it can show the sheet. */
 interface Loaded {
   catalog: FactorCatalog;
   dataset: FactorDataset;
@@ -537,6 +540,7 @@ function LoadingsTable({
   );
 }
 
+/** The measurement of a computed dataset (input sizes and run times) in the sheet. */
 function MeasurementSummary({ dataset }: { dataset: FactorDataset }) {
   const t = useT();
   const { locale } = useLocale();
@@ -583,6 +587,7 @@ function MeasurementSummary({ dataset }: { dataset: FactorDataset }) {
   );
 }
 
+/** A message in the width of the sheet: an error, or that the page is still loading. */
 function Notice({ tone, children }: { tone: "error" | "busy"; children: React.ReactNode }) {
   return (
     <div

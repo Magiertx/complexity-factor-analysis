@@ -51,6 +51,7 @@ const SWALLOW_MS = 400;
 
 const MODIFIERS = new Set(["Shift", "Control", "Alt", "Meta", "AltGraph", "CapsLock"]);
 
+/** What a tooltip says; see the list at the top of this file. */
 export interface TipArgs {
   name?: string;
   more?: string;
@@ -82,6 +83,7 @@ export interface TipEntry<E = unknown> {
   swallowTimer: ReturnType<typeof setTimeout> | undefined;
 }
 
+/** A tooltip entry for the element `el`, with its arguments cleaned by `cleanTip`. */
 export function tipEntry<E>(el: E, args: TipArgs | null | undefined, control: boolean): TipEntry<E> {
   return {
     el,
@@ -116,6 +118,7 @@ export interface TipView<E = unknown> {
 
 type TimerKey = "name" | "more" | "close" | "warm" | "touch";
 
+/** The state machine of the one tooltip: takes the events of the elements and keeps the timers and the `view` to draw. */
 export class TipController<E = unknown> {
   private shown: TipEntry<E> | null = null;
   private pending: TipEntry<E> | null = null;

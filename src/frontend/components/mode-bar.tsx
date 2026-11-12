@@ -1,5 +1,7 @@
 "use client";
 
+// The tab bar under the site header (analyses on the left, comparison and History on the right).
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -13,6 +15,7 @@ import { useLocale, useT } from "@/lib/i18n";
 import { useJobs } from "./jobs-provider";
 import { useTip } from "./ui/tip";
 
+/** Icon of each tab. */
 const ICONS: Record<TabId, React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>> = {
   model: Network,
   log: ScrollText,
@@ -38,6 +41,7 @@ const toolClass = (active: boolean) =>
     active ? "border-accent text-fg" : "border-transparent text-muted hover:text-fg hover:bg-surface/40",
   );
 
+/** The icon takes the accent colour on the active entry. */
 const iconClass = (active: boolean) =>
   cn("h-4 w-4 shrink-0", active ? "text-accent-ink" : "text-muted group-hover:text-fg");
 
@@ -55,8 +59,11 @@ function NavEntry({
 }: {
   id: TabId;
   active: boolean;
+  /** A tool of the app (comparison, History) rather than an analysis tab. */
   tool?: boolean;
+  /** Drawn over the icon, e.g. a status dot. */
   extra?: React.ReactNode;
+  /** A second line under the label, e.g. what runs. */
   line?: React.ReactNode;
   /** What runs, for the accessible name of an entry whose line is hidden. */
   hint?: string | null;

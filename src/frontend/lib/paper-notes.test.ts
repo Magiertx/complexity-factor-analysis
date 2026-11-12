@@ -1,3 +1,5 @@
+// Unit tests for paper-notes.ts.
+
 import { describe, expect, it } from "vitest";
 import { orderCollection, paperTablesText, ruleNote, settingsSourceText } from "./paper-notes";
 

@@ -1,5 +1,7 @@
 "use client";
 
+// Modal with the explanation of one algorithm of the workbench.
+
 import { useEffect } from "react";
 import { X, ExternalLink, HelpCircle, BookOpen, Compass, Wrench } from "lucide-react";
 import type { AlgorithmManifest } from "@/lib/api";
@@ -11,6 +13,7 @@ import { useLocale, localizedAlgoDescription, localizedAlgoName } from "@/lib/i1
 // algorithm-explanations.tsx; for an algorithm without an entry there we
 // fall back to the manifest's `description`.
 
+/** The explanation dialog for `algo`; renders nothing while `algo` is null. Escape or a click on the backdrop calls `onClose`. */
 export function AlgorithmExplainerModal({
   algo,
   onClose,
@@ -20,6 +23,7 @@ export function AlgorithmExplainerModal({
 }) {
   const { locale, t } = useLocale();
 
+  // Escape closes the dialog while it is open.
   useEffect(() => {
     if (!algo) return;
     const onKey = (e: KeyboardEvent) => {
@@ -33,6 +37,7 @@ export function AlgorithmExplainerModal({
 
   const explanation = getExplanation(algo.id, locale);
   const name = localizedAlgoName(algo, locale);
+  // The part of the name before the dash is the title; the full name goes below it.
   const shortName = name.split(" — ")[0];
 
   return (
@@ -116,6 +121,7 @@ export function AlgorithmExplainerModal({
   );
 }
 
+/** A headed block of the dialog. */
 function Section({
   icon,
   title,

@@ -1,3 +1,5 @@
+// Unit tests for analysis-link.ts.
+
 import { describe, expect, it } from "vitest";
 import { analysisLinkQuery, parseAnalysisLink, parsePrintLink, printHref } from "./analysis-link";
 import { defaultOptions, type AnalysisOptions } from "./factor-analysis";

@@ -1,5 +1,7 @@
 "use client";
 
+// The factor analysis workflow of the model and log tabs: it holds the state and makes the requests, the step views render it.
+
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AlertCircle, Loader2, RotateCcw } from "lucide-react";
@@ -128,11 +130,15 @@ import type { FigureDownload } from "./figure-menu";
 import { EmptyStep, StepSection, stepAnchor, type StepId, type StepState } from "./step-section";
 import { StepBar, StepFooter, StepNavBar, StepRail, useStepNavigation, type StepLocks } from "./step-nav";
 
+/** How often a dataset that is being computed is polled, in ms. */
 const POLL_MS = 1500;
 // Polling slows down while the browser tab is hidden.
 const HIDDEN_POLL_MS = 15000;
+/** How long after a change of the settings the analysis is requested, in ms. */
 const ANALYZE_DEBOUNCE_MS = 300;
+/** How long after a new analysis its options are saved with the dataset, in ms. */
 const SAVE_OPTIONS_DEBOUNCE_MS = 1000;
+/** A shared empty list of variants. */
 const NO_VARIANTS: StoredVariant[] = [];
 
 /** What an interpretation was requested for; a change of any part makes it stale. */
@@ -149,6 +155,7 @@ interface Naming {
   names: FactorNames;
 }
 
+/** No names yet. */
 const NO_NAMES: Naming = { key: null, names: [] };
 
 /** The options as saved with a dataset, with the names of the factors where there are. */
@@ -156,6 +163,7 @@ function savedForm(options: AnalysisOptions, names: FactorNames | null, factors:
   return JSON.stringify([names && names.length > 0 ? { ...options, factor_names: names } : options, factors]);
 }
 
+/** The message of an error, or `fallback` where it has none. */
 function messageOf(e: unknown, fallback: string) {
   return e instanceof Error && e.message ? e.message : fallback;
 }
@@ -1974,6 +1982,7 @@ function UrlReader({
 /** What one row of a dataset is, for the error of too few observations. */
 type ObservationUnit = "log" | "log_miner" | "net" | "row";
 
+/** The unit of one row of the dataset. */
 function observationUnit(dataset: FactorDataset): ObservationUnit {
   if (dataset.source === "pnml") return "net";
   if (dataset.source === "logs") return dataset.kind === "model" ? "log_miner" : "log";
@@ -1983,6 +1992,7 @@ function observationUnit(dataset: FactorDataset): ObservationUnit {
 /** Errors of the size of the data, which the measures or other data put right rather than a setting. */
 const SIZE_ERRORS = ["too_few_observations", "too_few_measures", "msa_filter_left"];
 
+/** The error of the analysis, with the ways out its code allows, such as choosing other measures or other data. */
 function AnalysisError({
   kind,
   message,

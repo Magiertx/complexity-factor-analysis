@@ -1,5 +1,7 @@
 "use client";
 
+// Saves, loads and deletes named parameter presets of the selected algorithm in the single-run workbench.
+
 import { useEffect, useRef, useState } from "react";
 import { Bookmark, BookmarkPlus, Check, ChevronDown, RotateCcw, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -8,15 +10,21 @@ import { Input } from "./ui/input";
 import { Preset, PresetError, deletePreset, listPresets, savePreset } from "@/lib/presets";
 import { useT } from "@/lib/i18n";
 
+// Presets live in the browser (`@/lib/presets`), one list per algorithm.
 type Props = {
+  /** The presets listed and saved belong to this algorithm. */
   algorithmId: string;
+  /** The parameter values that "Save" stores. */
   currentParams: Record<string, unknown>;
+  /** Receives the values of a chosen preset, or a copy of `defaults` on reset. */
   onLoad: (params: Record<string, unknown>) => void;
   /** When provided, a "Reset to defaults" button is shown that fires this. */
   defaults?: Record<string, unknown>;
+  /** Disables the buttons. */
   disabled?: boolean;
 };
 
+/** The preset menu with its save and reset buttons and a short confirmation message. */
 export function PresetBar({ algorithmId, currentParams, onLoad, defaults, disabled }: Props) {
   const t = useT();
   const [presets, setPresets] = useState<Preset[]>([]);
@@ -28,11 +36,13 @@ export function PresetBar({ algorithmId, currentParams, onLoad, defaults, disabl
   const wrapperRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
+  // A different algorithm has its own presets; none of them is active yet.
   useEffect(() => {
     setPresets(listPresets(algorithmId));
     setActiveName(null);
   }, [algorithmId]);
 
+  // While the menu or the name field is open, a click outside both closes it.
   useEffect(() => {
     if (!open && !saving) return;
     const handle = (e: MouseEvent) => {
@@ -46,6 +56,7 @@ export function PresetBar({ algorithmId, currentParams, onLoad, defaults, disabl
     return () => document.removeEventListener("mousedown", handle);
   }, [open, saving]);
 
+  // The confirmation next to the buttons disappears by itself.
   const showToast = (msg: string) => {
     setToast(msg);
     window.setTimeout(() => setToast(null), 1600);

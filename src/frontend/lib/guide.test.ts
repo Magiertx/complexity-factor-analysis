@@ -1,3 +1,5 @@
+// Unit tests for guide.ts.
+
 import { describe, expect, it } from "vitest";
 import de from "./i18n/locales/de.json";
 import en from "./i18n/locales/en.json";

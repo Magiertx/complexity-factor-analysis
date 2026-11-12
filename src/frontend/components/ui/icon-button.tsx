@@ -1,11 +1,14 @@
 "use client";
 
+// Buttons and links that show only an icon and are named by their tooltip.
+
 import { useMemo, type ComponentType, type ButtonHTMLAttributes, type Ref } from "react";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { mergeRefs, useTip } from "./tip";
 
+/** The props of `IconButton`: a native button's, with an icon and the arguments of its tooltip. */
 export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children" | "name"> {
   icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
   /** What the button is, in one to three words: its accessible name and stage 1 of its tooltip. */

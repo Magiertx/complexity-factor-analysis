@@ -1,10 +1,13 @@
 "use client";
 
+// A dropdown that replaces the browser's native select, with a floating list.
+
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/** One option of a `Select`. */
 export interface SelectOption {
   value: string;
   label: string;
@@ -15,6 +18,7 @@ export interface SelectOption {
   disabled?: boolean;
 }
 
+/** The props of `Select`. */
 interface SelectProps {
   value: string;
   onValueChange: (value: string) => void;
@@ -30,6 +34,7 @@ interface SelectProps {
   "aria-describedby"?: string;
 }
 
+/** The tallest the list gets, in px; a longer list scrolls. */
 const MENU_MAX_HEIGHT = 288;
 
 /**

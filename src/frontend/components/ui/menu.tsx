@@ -1,10 +1,13 @@
 "use client";
 
+// A menu behind an icon button, e.g. the downloads of an analysis.
+
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ComponentType } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { IconButton } from "./icon-button";
 
+/** One entry of a `Menu`: an action or a link, with an optional second line. */
 export interface MenuItem {
   id: string;
   label: string;
@@ -22,6 +25,7 @@ export interface MenuItem {
   separated?: boolean;
 }
 
+/** What Tab reaches, used to hand the focus on past the list. */
 const TABBABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]';
 
 /**

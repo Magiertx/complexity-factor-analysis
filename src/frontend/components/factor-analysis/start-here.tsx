@@ -1,3 +1,5 @@
+// The entries of Get started: shortcuts into the tool with a bundled dataset or the comparison.
+
 import type { FactorKind } from "@/lib/api";
 import { COMPARE_HREF, COMPARE_K4_K6_HREF } from "@/lib/compare";
 

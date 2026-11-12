@@ -1,3 +1,5 @@
+// Public entry of the i18n module: language provider and hooks, the locale overlays for backend content.
+
 export {
   LocaleProvider,
   useLocale,

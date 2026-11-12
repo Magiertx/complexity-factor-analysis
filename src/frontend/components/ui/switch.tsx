@@ -1,8 +1,11 @@
 "use client";
 
+// An on/off switch.
+
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+/** The props of `Switch`; its label is another element, named by `aria-labelledby`. */
 interface SwitchProps {
   checked: boolean;
   onCheckedChange: (v: boolean) => void;
@@ -12,6 +15,7 @@ interface SwitchProps {
   "aria-describedby"?: string;
 }
 
+/** An on/off switch with `role="switch"`. */
 export function Switch({
   checked,
   onCheckedChange,

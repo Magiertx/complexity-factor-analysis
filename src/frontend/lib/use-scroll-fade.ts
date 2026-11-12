@@ -1,3 +1,5 @@
+// The `useScrollFade` hook for containers that scroll sideways.
+
 import { useEffect, type RefObject } from "react";
 
 /**

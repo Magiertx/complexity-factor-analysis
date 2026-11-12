@@ -1,3 +1,5 @@
+// Unit tests for job-status.ts.
+
 import { describe, expect, it } from "vitest";
 import type { Job } from "./api";
 import { NO_ACTIVITY, finishedDatasets, jobActivity, statusesOf } from "./job-status";

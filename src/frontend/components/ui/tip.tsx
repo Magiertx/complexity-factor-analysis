@@ -1,5 +1,7 @@
 "use client";
 
+// The tooltip of the app: hooks that hang it on elements, and the layer that draws it.
+
 import {
   Children,
   cloneElement,

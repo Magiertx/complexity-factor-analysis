@@ -1,3 +1,5 @@
+// Unit tests for short-codes.ts.
+
 import { describe, expect, it } from "vitest";
 import { codeIndexes, codesOf, hasCodes, measureLabels } from "./short-codes";
 

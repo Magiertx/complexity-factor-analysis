@@ -1,3 +1,5 @@
+// Unit tests for tip.ts.
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   TIP_GRACE_MS,

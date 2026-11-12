@@ -1,3 +1,5 @@
+// Next.js configuration: standalone server with the /api rewrite for the Docker image, or the static export for the desktop app.
+
 import { buildSecurityHeaders } from "./security-headers.mjs";
 
 // NEXT_OUTPUT=export builds the static export (out/) that a single process serves together with

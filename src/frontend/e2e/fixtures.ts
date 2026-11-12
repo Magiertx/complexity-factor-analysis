@@ -1,3 +1,6 @@
+// Shared fixtures and helpers of the Playwright specs: UI texts by key, the page with the welcome tour off and the language fixed,
+// navigation of the steps, downloads, ZIP reading and cleanup of the session's datasets.
+
 import { desktopAccess } from "./desktop-access";
 import { readFileSync } from "node:fs";
 import { inflateRawSync } from "node:zlib";
@@ -6,6 +9,7 @@ import de from "../lib/i18n/locales/de.json";
 import en from "../lib/i18n/locales/en.json";
 
 type Messages = typeof en;
+/** The UI texts of both languages, the same files the app uses. */
 export const messages: Record<"en" | "de", Messages> = { en, de: de as Messages };
 
 /** A UI text by its i18n key, with {placeholders} filled in, so the specs follow rewording. */
@@ -45,6 +49,7 @@ async function preparePage(page: Page, language: "en" | "de") {
   await seedStorage(page, language);
 }
 
+/** Playwright `test` whose `page` has the tour off and the UI language set (option `language`, default English). */
 export const test = base.extend<{ language: "en" | "de" }>({
   // The UI language; "locale" is the browser's, which Playwright already names so.
   language: ["en", { option: true }],
@@ -227,6 +232,7 @@ export function unzip(path: string): Map<string, Buffer> {
   return files;
 }
 
+/** The local path of a finished download; throws if it failed. */
 export async function downloaded(download: Download): Promise<string> {
   const path = await download.path();
   if (!path) throw new Error(`download ${download.suggestedFilename()} failed`);

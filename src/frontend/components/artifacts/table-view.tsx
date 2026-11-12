@@ -1,5 +1,7 @@
 "use client";
 
+// A table artifact with a CSV download.
+
 import { FileSpreadsheet } from "lucide-react";
 import type { Artifact } from "@/lib/api";
 import { localizedAlgoText, useLocale } from "@/lib/i18n";
@@ -9,6 +11,7 @@ import { Button } from "@/components/ui/button";
 
 type T = Extract<Artifact, { kind: "table" }>;
 
+/** A table artifact in the style of the analysis tables; `runId` prefixes the name of the CSV file. */
 export function TableView({ artifact, runId }: { artifact: T; runId?: string | null }) {
   const { t, locale } = useLocale();
   // One CSV cell, quoted where needed.

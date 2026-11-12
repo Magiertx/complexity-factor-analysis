@@ -1,5 +1,7 @@
 "use client";
 
+// Form generated from an algorithm's parameter schema (bool, enum, multi_enum, string, int/float); used by the single-run workbench.
+
 import { useState } from "react";
 import { AlertCircle, Hourglass, RotateCcw, Search } from "lucide-react";
 import type { ParameterSpec } from "@/lib/api";
@@ -15,11 +17,14 @@ import { cn } from "@/lib/utils";
 /** What the UI knows about an option of a multiple choice: its definition, and whether it is slow. */
 export type OptionInfo = Record<string, { description?: string; slow?: boolean }>;
 
+// `schema` says which fields exist; `values` and `onChange` make the form controlled.
 interface Props {
   schema: ParameterSpec[];
   values: Record<string, unknown>;
   onChange: (name: string, value: unknown) => void;
+  /** Read-only form, e.g. for a past run. */
   disabled?: boolean;
+  /** Error message per parameter name, shown under its field. */
   errors?: Record<string, string>;
   /**
    * When true, only render parameters whose current value differs from
@@ -33,6 +38,7 @@ interface Props {
   optionInfo?: OptionInfo;
 }
 
+/** One field per parameter of `schema`; with `diffOnly` only the ones that differ from their default. */
 export function ParameterForm({
   schema,
   values,
@@ -74,6 +80,7 @@ export function ParameterForm({
   );
 }
 
+/** Whether two parameter values count as equal; lists compare without order, numbers and their string forms compare equal. */
 function valuesEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (a == null || b == null) return false;
@@ -103,6 +110,7 @@ export function choiceList(value: unknown): string[] {
   return [];
 }
 
+/** The input for one parameter, chosen by `spec.type`. */
 function Field({
   spec,
   algorithmId,
@@ -126,6 +134,7 @@ function Field({
   const label = localizedParamLabel(algorithmId, spec, locale);
   const id = `p-${spec.name}`;
   const labelId = `${id}-label`;
+  // The help text and the recommendation are linked to the input as its description.
   const hintId = help || spec.recommended ? `${id}-hint` : undefined;
 
   const hint = help || spec.recommended ? (

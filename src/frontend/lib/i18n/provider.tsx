@@ -1,5 +1,7 @@
 "use client";
 
+// The language of the UI: provider, hooks and the lookup of texts in lib/i18n/locales/{en,de}.json.
+
 import {
   createContext,
   useCallback,
@@ -12,8 +14,11 @@ import { formatNumber } from "../format";
 import en from "./locales/en.json";
 import de from "./locales/de.json";
 
+/** The languages of the UI. */
 export type Locale = "en" | "de";
+/** All languages, in the order the language switch lists them. */
 export const LOCALES: Locale[] = ["en", "de"];
+/** The language used before the person's choice is known, and for a text the other language lacks. */
 export const DEFAULT_LOCALE: Locale = "en";
 const STORAGE_KEY = "app.locale";
 
@@ -70,6 +75,7 @@ export function detectLocale(): Locale {
   return typeof navigator !== "undefined" && /^de(-|$)/i.test(navigator.language) ? "de" : DEFAULT_LOCALE;
 }
 
+/** Holds the language (detected after hydration, stored when the person switches it) and provides `t` and `tMaybe`. A missing text falls back to English, then to the key itself. */
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
 
@@ -122,16 +128,19 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }
 
+/** The language, its setter and the lookup functions; throws outside `LocaleProvider`. */
 export function useLocale(): LocaleContextValue {
   const ctx = useContext(LocaleContext);
   if (!ctx) throw new Error("useLocale must be used within LocaleProvider");
   return ctx;
 }
 
+/** The text lookup `t(key, params)`; a number in `params` is formatted in the UI language. */
 export function useT() {
   return useLocale().t;
 }
 
+/** Like `useT`, but returns undefined for a key that has no text in either language. */
 export function useTMaybe() {
   return useLocale().tMaybe;
 }

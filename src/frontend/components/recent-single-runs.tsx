@@ -1,5 +1,7 @@
 "use client";
 
+// List of the latest single-log runs beside the single-run workbench.
+
 import Link from "next/link";
 import { ArrowRight, Check, CircleSlash, Loader2, XCircle } from "lucide-react";
 import type { Job } from "@/lib/api";
@@ -10,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { useJobs } from "./jobs-provider";
 import { useTip } from "./ui/tip";
 
+/** How many runs the list shows. */
 const SHOWN = 5;
 
 /**
@@ -44,6 +47,7 @@ export function RecentSingleRuns({ activeId }: { activeId: string | null }) {
   );
 }
 
+/** One run: file name, miners and age; links to the run in the workbench. */
 function RunItem({ job, active }: { job: Job; active: boolean }) {
   const { t, locale } = useLocale();
   const time = job.created_at * 1000;

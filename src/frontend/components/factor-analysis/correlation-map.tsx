@@ -1,5 +1,7 @@
 "use client";
 
+// The correlation map of the measures: a heatmap drawn in SVG for few measures and on a canvas for many, with a table as its text alternative.
+
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Loader2, RotateCcw } from "lucide-react";
 import type { Correlations, FactorAnalysis } from "@/lib/api";
@@ -39,6 +41,7 @@ export interface CorrelationsState {
   retry: () => void;
 }
 
+/** Where the order of the map is kept in the browser. */
 const ORDER_KEY = "app.factor-correlation-order";
 
 /** The order of the map chosen last, remembered in the browser; the figure and the ZIP follow it. */
@@ -138,6 +141,7 @@ export function CorrelationMap(props: CorrelationMapProps) {
   );
 }
 
+/** The map once its correlations are loaded. */
 function MapBody({
   data,
   analysis,
@@ -254,6 +258,7 @@ function useThemeTick(): number {
   return tick;
 }
 
+/** A cell of the map by row and column, the one the pointer or the keyboard is on. */
 interface Pointed {
   i: number;
   j: number;

@@ -1,12 +1,16 @@
 "use client";
 
+// The notice of the app: a tinted box with an icon for an info, a warning, an error or a confirmation.
+
 import { AlertCircle, AlertTriangle, Check, Info, X } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { IconButton } from "./icon-button";
 
+/** The kind of a notice; it sets the colour and the icon. */
 export type NoticeTone = "info" | "warn" | "error" | "success";
 
+/** Box, icon and ink colour of each tone. */
 const TONE: Record<NoticeTone, { box: string; icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>; ink: string }> = {
   info: { box: "bg-tile/70", icon: Info, ink: "text-muted" },
   warn: { box: "bg-warn/10 border-l-[3px] border-warn", icon: AlertTriangle, ink: "text-warn-ink" },

@@ -1,5 +1,7 @@
 "use client";
 
+// Top bar of every page: app name, language and theme toggles, and the entries for guide, feedback and settings.
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BookOpen, MessageSquare, Settings as SettingsIcon } from "lucide-react";
@@ -12,6 +14,7 @@ import { APP_INITIALS, APP_NAME } from "@/lib/app-config";
 import { LocaleToggle } from "./locale-toggle";
 import { ThemeToggle } from "./theme-toggle";
 
+/** Icon of each header link. */
 const ICONS: Record<HeaderLinkId, React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>> = {
   guide: BookOpen,
   settings: SettingsIcon,

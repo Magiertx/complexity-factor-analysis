@@ -5,6 +5,7 @@
 // Content-Security-Policy for the frontend. The App Router emits inline scripts, and
 // statically rendered pages cannot use nonces, so script-src needs 'unsafe-inline'.
 // Everything is still restricted to the own origin; the API is same-origin via /api.
+/** The list of security headers (`key`/`value`) for every page; `nodeEnv` only decides whether development may use `eval` in scripts. */
 export function buildSecurityHeaders(nodeEnv = process.env.NODE_ENV) {
   const csp = [
     "default-src 'self'",

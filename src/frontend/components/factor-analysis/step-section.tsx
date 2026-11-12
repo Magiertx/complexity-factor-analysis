@@ -1,5 +1,7 @@
 "use client";
 
+// The card of a step, and the small building blocks the steps share: tiles, number fields and notice lists.
+
 import { useState } from "react";
 import { AlertTriangle, Check } from "lucide-react";
 import { stepAnchor, type StepId } from "@/lib/steps";
@@ -16,6 +18,7 @@ import { STEP_ICONS } from "./step-nav";
 export type { StepId, StepState } from "@/lib/steps";
 export { stepAnchor } from "@/lib/steps";
 
+/** The props of `StepSection`. */
 interface SectionProps {
   id: StepId;
   title: string;
@@ -115,6 +118,7 @@ export function PassBadge({ passed }: { passed: boolean }) {
   );
 }
 
+/** A label with a figure in a tile; `hint` is its tooltip. */
 export function StatTile({ label, value, hint }: { label: string; value: React.ReactNode; hint?: string }) {
   const tip = useTip<HTMLDivElement>(hint ? { more: hint } : null);
   return (

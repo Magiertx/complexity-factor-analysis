@@ -1,5 +1,7 @@
 "use client";
 
+// The floating notices at the bottom of the window, and the slot that holds the undo notice.
+
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
@@ -10,8 +12,10 @@ import { Tip, tipTookEscape } from "./tip";
 
 /** At most this many notices are on screen, and the undo of a change above them; older ones fold into "+n more · History". */
 export const MAX_TOASTS = 2;
+/** How long a notice stays, in ms, unless the pointer or the focus is on it. */
 const SHOW_MS = 10_000;
 
+/** What is passed to `notify`. */
 export interface ToastInput {
   /** Notices with the same key are one notice with a count, e.g. the same error twice. */
   key: string;
@@ -21,12 +25,14 @@ export interface ToastInput {
   action?: { label: string; href: string };
 }
 
+/** A notice as it is held: the input, a count of repeats and an id that changes with each repeat. */
 interface Toast extends ToastInput {
   /** Changes with every repeat, so the timer starts again. */
   id: number;
   count: number;
 }
 
+/** What `useToasts` provides. */
 interface ToastContextValue {
   notify: (toast: ToastInput) => void;
   /** The place of a notice that brings its own controls, such as the undo of a reset. */
@@ -35,6 +41,7 @@ interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
+/** `notify` for a floating notice, and the slot for one with controls of its own; inside `ToastProvider` only. */
 export function useToasts(): ToastContextValue {
   const ctx = useContext(ToastContext);
   if (!ctx) throw new Error("useToasts must be used inside <ToastProvider>");
@@ -101,12 +108,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** The icon of each tone of a notice. */
 const TONE_ICON = {
   success: <CheckCircle2 className="h-4 w-4 shrink-0 text-success-ink" aria-hidden />,
   info: <Info className="h-4 w-4 shrink-0 text-muted" aria-hidden />,
   error: <AlertCircle className="h-4 w-4 shrink-0 text-danger-ink" aria-hidden />,
 };
 
+/** One notice with its timer. */
 function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   const t = useT();
   const [held, setHeld] = useState(false);

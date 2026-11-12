@@ -1,5 +1,7 @@
 "use client";
 
+// The title of a factor, which can be renamed in place.
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pencil } from "lucide-react";
 import { FACTOR_NAME_MAX } from "@/lib/factor-analysis";

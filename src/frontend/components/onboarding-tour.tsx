@@ -1,5 +1,7 @@
 "use client";
 
+// The welcome dialog of the first visit (language choice and a short walk through the tabs), opened from the factor-analysis view.
+
 import { useEffect, useMemo, useState } from "react";
 import {
   Sparkles,
@@ -19,7 +21,9 @@ import { LocaleSegmented } from "./locale-toggle";
 import { useT } from "@/lib/i18n";
 import { APP_NAME } from "@/lib/app-config";
 
+/** localStorage key set once the onboarding has been finished or skipped. */
 export const ONBOARDING_KEY = "app.onboarding-completed";
+// Set by the settings page to show the onboarding again once.
 const REPLAY_KEY = "app.onboarding-replay";
 
 /**
@@ -28,6 +32,7 @@ const REPLAY_KEY = "app.onboarding-replay";
  */
 export function useOnboarding() {
   const [open, setOpen] = useState(false);
+  // Each opening starts at the first step.
   useEffect(() => {
     try {
       if (localStorage.getItem(REPLAY_KEY)) {
@@ -43,12 +48,14 @@ export function useOnboarding() {
   return { open, close: () => setOpen(false) };
 }
 
+// One page of the dialog.
 interface Step {
   icon: React.ReactNode;
   title: string;
   body: React.ReactNode;
 }
 
+/** The dialog itself: steps with Back, Next and Skip, arrow keys to move, Escape to close; closing marks it as done. */
 export function OnboardingTour({
   open,
   onClose,
@@ -59,6 +66,7 @@ export function OnboardingTour({
   const t = useT();
   const [step, setStep] = useState(0);
 
+  // Rebuilt when the language changes.
   const STEPS: Step[] = useMemo(
     () => [
       {
@@ -115,6 +123,7 @@ export function OnboardingTour({
     [t],
   );
 
+  // Keyboard: Escape closes, the arrow keys move between steps.
   useEffect(() => {
     if (open) setStep(0);
   }, [open]);

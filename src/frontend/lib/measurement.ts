@@ -3,6 +3,7 @@
 
 import type { Measurement, NetSize } from "./api";
 
+/** One row of the run-time table: an observation with the size of its input and the seconds of each stage. */
 export interface MeasurementRow {
   observation: string;
   input: string;
@@ -21,6 +22,7 @@ export interface MeasurementRow {
   error?: string;
 }
 
+/** The rows of the table: each observation joined with the size of its input file, then a row for each input that has no observation (it could not be read). */
 export function measurementRows(m: Measurement): MeasurementRow[] {
   const inputs = new Map(m.inputs.map((i) => [i.input, i]));
   const rows: MeasurementRow[] = m.observations.map((o) => {

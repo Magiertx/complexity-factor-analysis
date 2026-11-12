@@ -1,5 +1,7 @@
 "use client";
 
+// The row of settings chips above the steps: the current settings at a glance, each leading to its control.
+
 import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import { AlertTriangle, BookOpen, Check, RotateCcw } from "lucide-react";
 import type { FactorAnalysis, PublishedDifference, PublishedMatch } from "@/lib/api";
@@ -74,6 +76,7 @@ function useStickyOffset(ref: RefObject<HTMLElement | null>) {
   }, [ref]);
 }
 
+/** The props of `SettingsRow`. */
 interface Props {
   options: AnalysisOptions;
   standard: AnalysisOptions;

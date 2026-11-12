@@ -1,5 +1,7 @@
 "use client";
 
+// The settings page (/settings): theme and language, parameter presets, what the browser and the server keep, about.
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
@@ -50,18 +52,23 @@ import { useBackToAnalysis } from "./back-link";
 import { PageHeader } from "./page-header";
 import { PAGE_COLUMN } from "./ui/page-column";
 
+// localStorage key prefix of the last parameters the workbench remembers per algorithm (`app.params-<id>`).
 const ALGO_PARAMS_PREFIX = "app.params-";
 
+// The three choices of the theme switch; "system" follows the OS.
 type ThemeChoice = "system" | "light" | "dark";
 
+/** The settings page. Counts and lists are read from the server and the browser's localStorage; the confirmed delete buttons act at once. */
 export function SettingsView() {
   const { theme, setTheme } = useTheme();
   const { t, locale } = useLocale();
   const back = useBackToAnalysis();
   const [mounted, setMounted] = useState(false);
+  // The algorithm list only gives the presets' groups readable names.
   const [algorithms, setAlgorithms] = useState<AlgorithmManifest[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [cachedParamCount, setCachedParamCount] = useState(0);
+  // Rows that take the focus back when their delete button is gone or disabled (see `ConfirmButton`).
   const datasetsRowRef = useRef<HTMLDivElement>(null);
   const paramsRowRef = useRef<HTMLDivElement>(null);
   const presetsRowRef = useRef<HTMLDivElement>(null);
@@ -72,6 +79,7 @@ export function SettingsView() {
   const [presetImportError, setPresetImportError] = useState<string | null>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
+  // The theme is only known in the browser; the switch shows "system" until then.
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
@@ -80,6 +88,7 @@ export function SettingsView() {
       .catch((e: Error) => setLoadError(e.message));
   }, []);
 
+  // The number of datasets on the server; null while it is unknown or could not be read.
   const refreshDatasetCount = useCallback(() => {
     listDatasets()
       .then((list) => setDatasetCount(list.length))
@@ -116,6 +125,7 @@ export function SettingsView() {
     showToast(t("settings.toast_theme_updated"));
   };
 
+  // Forgets the remembered parameters of every algorithm. Returns true so the confirmation closes.
   const handleClearParamCache = () => {
     const keys: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -145,6 +155,7 @@ export function SettingsView() {
     return true;
   };
 
+  // Downloads all presets as `presets-YYYY-MM-DD.json`.
   const handleExportPresets = () => {
     if (typeof window === "undefined") return;
     const payload = buildExportPayload();
@@ -446,6 +457,7 @@ export function SettingsView() {
               variant="outline"
               onClick={() => {
                 try {
+                  // The tour reads this key when the model page opens and shows itself once (see `useOnboarding`).
                   localStorage.setItem("app.onboarding-replay", "1");
                 } catch {
                   /* ignore */
@@ -544,6 +556,7 @@ export function SettingsView() {
   );
 }
 
+/** A setting: label and hint on the left, the control on the right. */
 function SettingRow({
   label,
   hint,
@@ -604,6 +617,7 @@ function ConfirmButton({
   const [busy, setBusy] = useState(false);
   const askRef = useRef<HTMLButtonElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
+  // Set when the focus has to be put somewhere after the next render.
   const refocus = useRef(false);
 
   useEffect(() => {

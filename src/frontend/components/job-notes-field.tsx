@@ -1,5 +1,7 @@
 "use client";
 
+// Free-text note on a job: a compact inline editor for the run-history rows and a card for the single-run page.
+
 import { useEffect, useRef, useState } from "react";
 import { AlertCircle, StickyNote, Edit2, Check, X } from "lucide-react";
 import { updateJobNotes } from "@/lib/api";
@@ -9,6 +11,7 @@ import { useT } from "@/lib/i18n";
 
 type Props = {
   jobId: string;
+  /** The saved note; empty when there is none. A new value replaces the text and closes the editor. */
   initialNotes: string | null | undefined;
   /** Compact display variant for tight spaces (Run history rows). */
   variant?: "panel" | "inline";
@@ -16,10 +19,13 @@ type Props = {
   onSaved?: (notes: string | null) => void;
 };
 
+/** Longest note the field accepts; typing stops there. */
 const MAX_NOTES = 2000;
 
+/** Shows and edits the note of one job and saves it with `updateJobNotes`; an empty text is saved as no note. */
 export function JobNotesField({ jobId, initialNotes, variant = "panel", onSaved }: Props) {
   const t = useT();
+  // `notes` is the text being edited, `savedNotes` what the server has; Cancel goes back to the latter.
   const [notes, setNotes] = useState<string>(initialNotes ?? "");
   const [savedNotes, setSavedNotes] = useState<string>(initialNotes ?? "");
   const [editing, setEditing] = useState(false);
@@ -27,12 +33,14 @@ export function JobNotesField({ jobId, initialNotes, variant = "panel", onSaved 
   const [error, setError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Takes over the saved note again whenever another job or a new value arrives.
   useEffect(() => {
     setNotes(initialNotes ?? "");
     setSavedNotes(initialNotes ?? "");
     setEditing(false);
   }, [jobId, initialNotes]);
 
+  // Puts the cursor into the field when editing starts.
   useEffect(() => {
     if (editing) {
       textareaRef.current?.focus();

@@ -1,5 +1,7 @@
 "use client";
 
+// The user guide page (/guide): sections with items and links into the tool; the texts are in the locales under `guide.*`.
+
 import { useEffect, useState, type ComponentType } from "react";
 import Link from "next/link";
 import {
@@ -42,6 +44,7 @@ import { ScrollFade } from "@/components/ui/scroll-fade";
 
 type Icon = ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
 
+// One entry of a section; its text is under `guide.<section>.items.<id>`.
 interface GuideItem {
   id: string;
   /** In the list of results: the item is a step of the analysis, with the sign of the step rail. */
@@ -151,6 +154,7 @@ const SECTIONS: GuideSection[] = [
   },
 ];
 
+// The section ids in page order; used for the table of contents and the scroll tracking.
 const IDS = SECTIONS.map((s) => s.id);
 
 /**

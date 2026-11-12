@@ -1,6 +1,6 @@
-// What the "Recent runs" tab says about the jobs of the session without opening the list: how many
+// What the History tab says about the jobs of the session without opening the list: how many
 // run and how far they are, whether one failed that nobody has looked at yet, and which dataset jobs
-// have just finished. The drawer fetches the jobs; this turns the list into those three things.
+// have just finished. `JobsProvider` fetches the jobs; this turns the list into those three things.
 
 import type { Job } from "./api";
 
@@ -14,6 +14,7 @@ export interface JobActivity {
   failed: number;
 }
 
+/** The activity of an empty list of jobs. */
 export const NO_ACTIVITY: JobActivity = { active: 0, percent: null, failed: 0 };
 
 const ACTIVE: readonly Job["status"][] = ["pending", "running"];
@@ -70,6 +71,7 @@ export function loadSeenFailures(): Set<string> {
   }
 }
 
+/** Remembers which failed jobs the reader has looked at; only the most recent ones are kept. */
 export function saveSeenFailures(seen: ReadonlySet<string>): void {
   try {
     localStorage.setItem(SEEN_KEY, JSON.stringify([...seen].slice(-SEEN_LIMIT)));

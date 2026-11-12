@@ -1,3 +1,5 @@
+// Unit tests for security-headers.mjs, the security headers of every page.
+
 import { describe, expect, it } from "vitest";
 import { buildSecurityHeaders } from "../security-headers.mjs";
 

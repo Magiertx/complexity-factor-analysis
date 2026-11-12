@@ -37,6 +37,7 @@ export const LOW_STABILITY = 0.7;
 /** The number of samples last chosen, so that a kept stability reopens with it. */
 const SAMPLES_KEY = "app.stability-samples";
 
+/** What `useStability` returns: the samples chosen, the phase of the job and the result. */
 export interface StabilityView {
   samples: StabilitySamples;
   setSamples: (samples: StabilitySamples) => void;
@@ -234,6 +235,7 @@ export function StabilityBar({ view }: { view: StabilityView }) {
   );
 }
 
+/** The summary of a stability result: samples, failures and what is stable. */
 function StabilitySummary({ result }: { result: Stability }) {
   const t = useT();
   const { locale } = useLocale();
@@ -331,10 +333,12 @@ export function RepresentativeBadge({ entry }: { entry: ShortSetEntry }) {
   );
 }
 
+/** Escapes the characters LaTeX treats specially. */
 function latexEscape(text: string): string {
   return text.replace(/[\\&%$#_{}~^]/g, (c) => (c === "\\" ? "\\textbackslash{}" : c === "~" ? "\\textasciitilde{}" : c === "^" ? "\\textasciicircum{}" : `\\${c}`));
 }
 
+/** One CSV cell, quoted where it holds a comma, a quote or a line break. */
 function csvCell(text: string): string {
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }

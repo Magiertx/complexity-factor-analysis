@@ -1,10 +1,14 @@
+// Small helpers used across components.
+
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+/** Joins class names and resolves conflicting Tailwind classes (the later one wins). */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/** Saves base64 data as a file download named `filename`, with MIME type `mime`. */
 export function downloadBase64(base64: string, filename: string, mime = "application/xml") {
   const bin = atob(base64);
   const bytes = new Uint8Array(bin.length);

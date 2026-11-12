@@ -15,8 +15,10 @@ type Translate = (key: string, params?: Record<string, string | number>) => stri
 
 /** What a row is: a dataset of either tab, or a run of a single log. */
 export type HistoryType = FactorKind | "single";
+/** The state of a row: running, finished, failed or stopped by the user. */
 export type HistoryStatus = "active" | "completed" | "failed" | "aborted";
 
+/** One row of the History page. */
 export interface HistoryRow {
   key: string;
   type: HistoryType;
@@ -119,6 +121,7 @@ export function historyHref(row: HistoryRow): string {
 /** The type filter of the page as its address names it (?type=single), or "all". */
 export type TypeFilter = HistoryType | "all";
 
+/** Reads the `type` parameter of the address; anything unknown is "all". */
 export function parseTypeFilter(value: string | null): TypeFilter {
   return value === "model" || value === "log" || value === "single" ? value : "all";
 }

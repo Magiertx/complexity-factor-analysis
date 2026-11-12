@@ -1,5 +1,7 @@
 "use client";
 
+// Language switch (EN/DE): a button for the site header and a segmented control for the settings.
+
 import { Languages } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocale, type Locale } from "@/lib/i18n";
@@ -7,8 +9,10 @@ import { cn } from "@/lib/utils";
 import { Segmented } from "./ui/segmented";
 import { useTip } from "./ui/tip";
 
+/** Header button that switches between English and German; its label names the language it switches to. */
 export function LocaleToggle({ className }: { className?: string }) {
   const { locale, setLocale, t } = useLocale();
+  // The stored language is only known in the browser; until mounted the label shows EN.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 

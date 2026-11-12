@@ -1,5 +1,7 @@
 "use client";
 
+// The interpretation step: a language model's reading of the factors, with the choice of model and effort and the follow-up questions.
+
 import { useEffect, useId, useRef, useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 import type { AnalyzeOptions, FactorInterpretation, InterpretationLanguage, InterpretationStatus } from "@/lib/api";
@@ -24,6 +26,7 @@ import { MeasureListScope, MeasureName } from "@/components/ui/table";
 import { useTip, useTipZone } from "@/components/ui/tip";
 import { InterpretationChat } from "./interpretation-chat";
 
+/** The props of `InterpretationView`. */
 interface Props {
   status: InterpretationStatus | null;
   statusFailed: boolean;
@@ -56,6 +59,7 @@ const CONFIDENCE_INK = {
   low: "text-warn-ink",
 } as const;
 
+/** The interpretation step. */
 export function InterpretationView({
   status,
   statusFailed,
@@ -251,6 +255,7 @@ export function InterpretationView({
     );
   }
 
+/** The props of `ChoiceControls`. */
 interface ChoiceControlsProps {
   status: InterpretationStatus;
   choice: InterpretationChoice;

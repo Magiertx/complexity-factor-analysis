@@ -1,5 +1,7 @@
 "use client";
 
+// Wrapper around react-joyride shared by all guided tours: theme, language, Escape key, close callback.
+
 import dynamic from "next/dynamic";
 import { useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
@@ -7,11 +9,13 @@ import type { Controls, Step, EventData } from "react-joyride";
 import { getJoyrideOptions, getJoyrideStyles, getJoyrideLocale } from "@/lib/joyride-theme";
 import { useT } from "@/lib/i18n";
 
+// Loaded on the client only: react-joyride needs the DOM.
 const Joyride = dynamic(
   () => import("react-joyride").then((m) => ({ default: m.Joyride })),
   { ssr: false },
 );
 
+/** Runs a joyride tour with the given `steps` while `run` is true; `onClose` fires when it ends or is skipped. */
 export function Tour({
   run,
   steps,

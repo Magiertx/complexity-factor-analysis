@@ -1,3 +1,5 @@
+// Tailwind theme: colour names bound to the CSS variables of app/globals.css (so one name serves light and dark mode), and the font families.
+
 import type { Config } from "tailwindcss";
 
 const config: Config = {

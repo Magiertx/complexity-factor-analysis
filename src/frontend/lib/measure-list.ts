@@ -12,6 +12,7 @@ export type MeasureStatus = "used" | "removed" | "dependent" | "below" | "exclud
 /** Statuses worth a look: the list shows these measures first. */
 export const NOTABLE: readonly MeasureStatus[] = ["removed", "dependent", "below", "miner"];
 
+/** What became of one measure in the analysis. */
 export interface MeasureInfo {
   status: MeasureStatus;
   /** The MSA of the analysis, or the one at which the filter removed the measure. */
@@ -68,6 +69,7 @@ export function measureInfo(
   return out;
 }
 
+/** Whether the measure's status is one of `NOTABLE`. */
 export function isNotable(info: MeasureInfo | undefined): boolean {
   return !!info && NOTABLE.includes(info.status);
 }
@@ -106,9 +108,12 @@ export function matchesQuery(query: string, name: string, key: string): boolean 
     .every((w) => text.includes(w));
 }
 
+/** How the list is sorted: as in the dataset, by name, or by MSA. */
 export type MeasureSort = "dataset" | "name" | "msa";
+/** Whether the list is grouped by the measures' group. */
 export type MeasureGrouping = "none" | "group";
 
+/** The inputs of the list arrangement: the measures, what became of them, how to name and group them, the sort and grouping, and the search and filter. */
 export interface ArrangeInput {
   /** The dataset's measures, in the order of its columns. */
   measures: readonly string[];

@@ -24,6 +24,7 @@ import {
 type Translate = (key: string, params?: Record<string, string | number>) => string;
 type TranslateMaybe = (key: string, params?: Record<string, string | number>) => string | undefined;
 
+/** The settings of an analysis as the UI holds them, every field set; `AnalyzeOptions` of api.ts is the optional form the server takes. */
 export interface AnalysisOptions {
   excluded: string[];
   auto_msa_filter: boolean;
@@ -103,6 +104,7 @@ export function differingOptions(a: AnalysisOptions, b: AnalysisOptions): Set<ke
   return out;
 }
 
+/** Whether two sets of options differ in no setting. */
 export function sameOptions(a: AnalysisOptions, b: AnalysisOptions): boolean {
   return differingOptions(a, b).size === 0;
 }
@@ -153,6 +155,7 @@ export function effectiveCommunality(options: Pick<AnalysisOptions, "communality
   return Math.max(options.communality_threshold, ruleCommunality(options.assignment_rule));
 }
 
+/** A measure without a factor and why. */
 export interface UnassignedMeasure {
   measure: string;
   /** null from a server before the assignment rules, which named no reason. */
@@ -413,6 +416,7 @@ export function tooFewKind(rows: number): "any" | "some" {
 /** Rows of a dataset the browser loads and shows as a preview. */
 export const PREVIEW_ROWS = 8;
 
+/** The orthogonal rotations, which keep the factors uncorrelated; `none` is not listed and is checked on its own. */
 export const ORTHOGONAL: Rotation[] = ["varimax", "quartimax"];
 
 // Params of analysis notices that the backend sends as text with digits of its choosing.
@@ -456,6 +460,7 @@ const SOLUTION_NOTICES = ["not_identified", "heywood", "fit_not_converged", "sin
 // Only says what happened; the solution itself is fine.
 const INFO_NOTICES = ["single_factor_no_rotation"];
 
+/** Whether the notice concerns the factor solution (shown in step 4 with the factor count and rotation) rather than the data. */
 export function isSolutionNotice(notice: AnalysisNotice): boolean {
   return SOLUTION_NOTICES.includes(notice.code);
 }
@@ -478,6 +483,7 @@ export function solutionNeedsAttention(analysis: FactorAnalysis): boolean {
   return solutionProblems(analysis).length > 0;
 }
 
+/** Kaiser's verbal grades of a KMO or MSA value, best first. */
 export type KmoGrade =
   | "marvelous"
   | "meritorious"
@@ -578,6 +584,7 @@ export function progressPercent(progress: number | undefined): number | null {
 /** The loadings table as CSV or LaTeX, the whole analysis as a ZIP, or its LaTeX report. */
 export type ExportFormat = "csv" | "latex" | "zip" | "report" | "methods" | "bibtex";
 
+/** Saves a blob as a file download named `filename`. */
 export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

@@ -1,6 +1,7 @@
 // Product name and links, defined once for the whole frontend. The backend
 // has its own copy of the name in src/AlgoService/config.py.
 
+/** The product name shown in the UI and in page titles. */
 export const APP_NAME = "XCom";
 
 /** Short mark for the header logo, derived from the name (the initials of its words; the first letter of a one-word name). */
@@ -10,6 +11,7 @@ export const APP_INITIALS = APP_NAME.split(/\s+/)
   .slice(0, 3)
   .toUpperCase();
 
+/** Default meta description of the pages. */
 export const APP_DESCRIPTION =
   "XCom, a tool for the exploration of event log and process model complexity: factor analysis of complexity measures, in your browser.";
 

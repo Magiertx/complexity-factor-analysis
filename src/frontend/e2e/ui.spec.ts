@@ -1,3 +1,5 @@
+// General UI behaviour: German number format, the theme switch, accessibility checks (axe) of the main views and a coded error of a single run.
+
 import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import {

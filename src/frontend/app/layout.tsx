@@ -1,3 +1,5 @@
+// Root layout of every page: the document shell, the providers and the chrome (header, mode bar, footer) around `main`.
+
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import "./globals.css";
@@ -9,6 +11,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SkipLink } from "@/components/skip-link";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/app-config";
 
+/** Default title and description; each route names its own page. */
 export const metadata: Metadata = {
   // Each route names its page in English; PageHeader renames the tab in the language of the UI.
   title: { default: APP_NAME, template: `%s · ${APP_NAME}` },
@@ -19,6 +22,7 @@ export const metadata: Metadata = {
 const LANG_SCRIPT =
   'try{var l=localStorage.getItem("app.locale");if(l!=="en"&&l!=="de")l=/^de(-|$)/i.test(navigator.language)?"de":"en";document.documentElement.lang=l}catch(e){}';
 
+/** Wraps every route in the providers and the shared page chrome. */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     // translate="no": the app has its own languages; Edge and Chrome offered to translate every page

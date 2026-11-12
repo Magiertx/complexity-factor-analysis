@@ -1,5 +1,7 @@
 "use client";
 
+// Moving between the steps: the hook that keeps the step in the address, the rail of a wide screen, the bar of a phone and the Back and Next footer.
+
 import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
 import { usePathname } from "next/navigation";
 import {
@@ -22,6 +24,7 @@ import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { useTip } from "@/components/ui/tip";
 
+/** An icon component. */
 type Icon = ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
 
 /** The sign of each step, in the rail, the bar on a phone and the heading of the step. */
@@ -86,6 +89,7 @@ export function useStepNavigation() {
   return { step, visit, goTo, fromUrl, takeFocus, getStep };
 }
 
+/** What the rail and the bar share. */
 interface NavProps {
   current: StepId;
   states: Record<StepId, StepState>;
@@ -177,6 +181,7 @@ function StepLink({
 /** How long a finished step waits after the one before it as the steps fill in. */
 const FILL_MS = 120;
 
+/** Whether a step counts as finished. */
 const finishedState = (state: StepState) => state === "done" || state === "warn";
 
 /**

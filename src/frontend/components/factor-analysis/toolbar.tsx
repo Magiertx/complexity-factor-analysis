@@ -1,5 +1,7 @@
 "use client";
 
+// The toolbars above the analysis and the comparison: downloads, print view, short codes and the guide.
+
 import {
   BookOpen,
   ClipboardCopy,
@@ -24,6 +26,7 @@ import { CopyLink } from "./copy-link";
 /** Where the user guide lives in the app. */
 export const GUIDE_HREF = "/guide";
 
+/** What the download menu needs to know: which downloads are possible now, and why not where they are not. */
 export interface ExportState {
   /** Why nothing can be downloaded yet, e.g. no dataset; null when the dataset can. */
   datasetReason: string | null;

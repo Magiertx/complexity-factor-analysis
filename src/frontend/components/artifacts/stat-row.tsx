@@ -1,5 +1,7 @@
 "use client";
 
+// A row of key figures: a label above a value.
+
 import type { Artifact } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { localizedAlgoText, useLocale, type Locale } from "@/lib/i18n";
@@ -18,6 +20,7 @@ const ACCENT: Record<NonNullable<Stat["accent"]>, string> = {
   danger: "text-danger-ink",
 };
 
+/** The figures of consecutive `stat` artifacts as one grid. */
 export function StatRow({ stats }: Props) {
   const { t, locale } = useLocale();
   return (
@@ -36,6 +39,7 @@ export function StatRow({ stats }: Props) {
   );
 }
 
+/** A text as it is, a share as a percentage, a number with its unit, in the UI language. */
 function formatValue(s: Stat, locale: Locale): string {
   if (typeof s.value === "string") return s.value;
   if (s.pct) return formatPercent(s.value, locale, 1);

@@ -1,5 +1,7 @@
 "use client";
 
+// Table building blocks: the frame in the one table style, and measure names that open the fact sheet.
+
 import { Fragment, createContext, useContext, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useScrollFade } from "@/lib/use-scroll-fade";

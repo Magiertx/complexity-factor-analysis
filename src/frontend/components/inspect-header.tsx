@@ -1,8 +1,11 @@
 "use client";
 
+// Heading of the log inspection page (app/inspect).
+
 import { useT } from "@/lib/i18n";
 import { PageHeader } from "./page-header";
 
+/** Title and subtitle of the inspect page. */
 export function InspectHeader() {
   const t = useT();
   return (

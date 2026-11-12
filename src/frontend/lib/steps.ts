@@ -1,9 +1,12 @@
 // The steps of the factor analysis tabs and their place in the address: one step per view,
 // ?step=suitability, with the data step as the default that needs no parameter.
 
+/** The steps of an analysis, in order. */
 export type StepId = "data" | "dataset" | "suitability" | "factors" | "loadings" | "interpretation";
+/** The states a step can be in. */
 export type StepState = "locked" | "active" | "done" | "warn" | "busy";
 
+/** All steps, in order. */
 export const STEP_IDS: StepId[] = ["data", "dataset", "suitability", "factors", "loadings", "interpretation"];
 
 /** The id of a step's section, also the anchor of the one-page layout before (#fa-step-loadings). */

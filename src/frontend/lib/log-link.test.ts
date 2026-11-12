@@ -1,3 +1,5 @@
+// Unit tests for log-link.ts.
+
 import { describe, expect, it } from "vitest";
 import { inspectHref, logOfRow, recentName } from "./log-link";
 

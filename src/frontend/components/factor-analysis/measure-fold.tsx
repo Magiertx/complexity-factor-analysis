@@ -1,5 +1,7 @@
 "use client";
 
+// The fold and unfold control for the unremarkable measures below the notable ones in a long list.
+
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";

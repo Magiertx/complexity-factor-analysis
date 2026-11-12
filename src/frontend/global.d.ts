@@ -1,3 +1,3 @@
-// Typdeklaration für CSS-Dateien, damit Editoren wie VS Code
-// Importe wie `import "./globals.css"` fehlerfrei auflösen können.
+// Type declaration for CSS files, so that editors such as VS Code resolve
+// imports like `import "./globals.css"` without errors.
 declare module "*.css";

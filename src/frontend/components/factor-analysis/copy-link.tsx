@@ -1,11 +1,14 @@
 "use client";
 
+// The button that copies a link to the analysis on screen.
+
 import { useEffect, useId, useRef, useState } from "react";
 import { Check, Link2 } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { IconButton } from "@/components/ui/icon-button";
 import { Popover } from "@/components/ui/popover";
 
+/** How long "Copied" stays on the button, in ms. */
 const COPIED_MS = 2000;
 
 /**

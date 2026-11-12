@@ -1,3 +1,5 @@
+// Unit tests for correlation.ts.
+
 import { describe, expect, it } from "vitest";
 import type { Correlations, FactorAnalysis } from "./api";
 import {

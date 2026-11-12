@@ -1,5 +1,7 @@
 "use client";
 
+// The choice of log measures to compute, by feature group, in the data step.
+
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ChevronDown, Hourglass, RotateCcw, Search } from "lucide-react";
 import { matchesQuery } from "@/lib/measure-list";
@@ -9,6 +11,7 @@ import { ChoiceMark, choiceTile } from "@/components/ui/choice";
 import { InfoTip } from "@/components/ui/info-tip";
 import { useTip } from "@/components/ui/tip";
 
+/** A group of measures of the catalog; `slow` marks a group that takes long to compute. */
 export interface FeatureGroup {
   key: string;
   name: string;
@@ -16,6 +19,7 @@ export interface FeatureGroup {
   slow?: boolean;
 }
 
+/** A log measure of the catalog, with the key of its group. */
 export interface FeatureMeasure {
   key: string;
   name: string;
@@ -147,6 +151,7 @@ export function FeatureChecklist({
   );
 }
 
+/** The tile of a group: its box, which is half filled while only some measures are chosen, its name, and its measures (`children`) when unfolded. */
 function GroupTile({
   group,
   total,
@@ -211,6 +216,7 @@ function GroupTile({
   );
 }
 
+/** One measure of a group as a checkbox row; its description is its tooltip. */
 function MeasureCheck({ measure, on, onToggle }: { measure: FeatureMeasure; on: boolean; onToggle: () => void }) {
   const tip = useTip<HTMLLabelElement>(measure.description ? { more: measure.description } : null);
   return (

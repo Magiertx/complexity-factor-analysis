@@ -1,5 +1,7 @@
 "use client";
 
+// A horizontally scrolling strip with a fade at the edge that has more behind it.
+
 import { useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useScrollFade } from "@/lib/use-scroll-fade";

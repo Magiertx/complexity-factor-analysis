@@ -1,5 +1,7 @@
 "use client";
 
+// The guided tour of a factor analysis tab.
+
 import type { Step } from "react-joyride";
 import { useMemo } from "react";
 import { Tour } from "@/components/tour";

@@ -1,3 +1,5 @@
+// The check mark and the tile look shared by the selectable controls (cards, list rows).
+
 import { Check, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 

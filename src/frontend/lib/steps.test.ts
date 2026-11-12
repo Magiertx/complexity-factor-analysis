@@ -1,3 +1,5 @@
+// Unit tests for steps.ts.
+
 import { describe, expect, it } from "vitest";
 import { neighbours, parseStep, stepFromHash, stepHref } from "./steps";
 

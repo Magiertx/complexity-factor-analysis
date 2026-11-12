@@ -1,3 +1,5 @@
+// Unit tests for format.ts.
+
 import { describe, expect, it } from "vitest";
 import {
   NO_VALUE,

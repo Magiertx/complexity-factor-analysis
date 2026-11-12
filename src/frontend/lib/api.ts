@@ -6,6 +6,7 @@ import { noteError } from "./last-error";
 import type { WireMessage } from "./interpretation-chat";
 import type { InterpretationChoice, StoredVariant } from "./interpretation-choice";
 
+/** The type of an algorithm parameter, which decides the form control (`enum` and `multi_enum` take `options`). */
 export type ParameterType = "int" | "float" | "bool" | "enum" | "multi_enum" | "string";
 // Open string; the backend's `/algorithms` response carries the authoritative
 // `categories` list (id + label), and the frontend renders whichever ids show
@@ -14,6 +15,7 @@ export type ParameterType = "int" | "float" | "bool" | "enum" | "multi_enum" | "
 // label (algorithm_list.category.*), unknown ids fall back to the backend label.
 export type ToolType = string;
 
+/** One parameter of an algorithm as the manifest describes it; the form is built from these. */
 export interface ParameterSpec {
   name: string;
   label: string;
@@ -28,6 +30,7 @@ export interface ParameterSpec {
   recommended?: string;
 }
 
+/** An extra input file an algorithm accepts besides the log (`accept` is the file filter of the picker). */
 export interface SecondaryFileSpec {
   name: string;
   label: string;
@@ -36,6 +39,7 @@ export interface SecondaryFileSpec {
   help?: string | null;
 }
 
+/** One algorithm as listed by GET /algorithms: texts, citation, parameters and extra files. */
 export interface AlgorithmManifest {
   id: string;
   name: string;
@@ -49,6 +53,7 @@ export interface AlgorithmManifest {
   formatted_citation?: string | null;
 }
 
+/** A log bundled with the server, selectable by `id` instead of an upload. */
 export interface SampleLog {
   id: string;
   name: string;
@@ -57,6 +62,7 @@ export interface SampleLog {
   size_bytes: number;
 }
 
+/** A log uploaded earlier in the session, selectable by `id`; `mtime` is its modification time. */
 export interface RecentLog {
   id: string;
   name: string;
@@ -65,6 +71,7 @@ export interface RecentLog {
   mtime: number;
 }
 
+/** One output of an algorithm run, told apart by `kind`: a statistic, table, image, downloadable log or Markdown text. */
 export type Artifact =
   | { kind: "stat"; label: string; value: number | string; unit?: string | null; pct?: boolean; accent?: "default" | "success" | "warn" | "danger" }
   | { kind: "table"; label: string; columns: string[]; rows: (string | number | boolean | null)[][] }
@@ -72,6 +79,7 @@ export type Artifact =
   | { kind: "log"; label: string; data_base64: string; filename: string; mime?: string }
   | { kind: "text"; label: string; markdown: string };
 
+/** The result of a finished algorithm run: a summary and its artifacts. */
 export interface AnalysisResult {
   algorithm: string;
   tool_type: ToolType;
@@ -91,29 +99,34 @@ export const API_BASE = typeof window === "undefined"
 
 const BASE = API_BASE;
 
+/** Answer of GET /algorithms: the algorithms and the categories they are grouped by. */
 export interface FetchAlgorithmsResponse {
   algorithms: AlgorithmManifest[];
   categories: { id: string; label: string }[];
 }
 
+/** Loads the algorithm manifests and categories. */
 export async function fetchAlgorithms(): Promise<FetchAlgorithmsResponse> {
   const r = await fetch(`${BASE}/algorithms`, { cache: "no-store" });
   if (!r.ok) throw new Error(`Failed to load algorithms (${r.status})`);
   return r.json();
 }
 
+/** Loads the logs bundled with the server. */
 export async function fetchSampleLogs(): Promise<SampleLog[]> {
   const r = await fetch(`${BASE}/sample-logs`, { cache: "no-store" });
   if (!r.ok) throw new Error(`Failed to load sample logs (${r.status})`);
   return r.json();
 }
 
+/** Loads the logs uploaded in this session. */
 export async function fetchRecentLogs(): Promise<RecentLog[]> {
   const r = await fetch(`${BASE}/recent-logs`, { cache: "no-store" });
   if (!r.ok) throw new Error(`Failed to load recent logs (${r.status})`);
   return r.json();
 }
 
+/** Basic statistics of an event log (POST /log-stats); the time range is null for a log without timestamps. */
 export interface LogStats {
   num_traces: number;
   num_events: number;
@@ -133,6 +146,7 @@ export interface LogStatsResponse {
   stats: LogStats;
 }
 
+/** Statistics of a log given as an upload, a sample log id or a recent log id; throws an `Error` with the server's message on failure. */
 export async function fetchLogStats(
   file: File | null,
   sampleLogId: string | null,
@@ -155,6 +169,7 @@ export async function fetchLogStats(
   return r.json();
 }
 
+/** Answer of starting an algorithm run: the job to follow. */
 export interface AnalyzeResponse {
   algorithm: string;
   tool_type: ToolType;
@@ -163,6 +178,7 @@ export interface AnalyzeResponse {
   status: string;
 }
 
+/** The server rejected parameter values; `errors` maps parameter names to messages. */
 export class ValidationError extends Error {
   errors: Record<string, string>;
 
@@ -173,6 +189,7 @@ export class ValidationError extends Error {
   }
 }
 
+/** Starts a run of an algorithm on one log (upload, sample or recent) with `params` and optional `secondaryFiles`. Throws `ValidationError` for bad parameters and `HttpError` for other refusals. */
 export async function analyze(
   algorithmId: string,
   file: File | null,
@@ -244,6 +261,7 @@ export async function abortTask(taskId: string): Promise<boolean> {
   }
 }
 
+/** A background job of the session, as listed by GET /jobs; `result` comes only with GET /jobs/{id} (`fetchJobDetail`), once the job has completed. */
 export interface Job {
   id: string;
   algorithm_id: string;
@@ -261,6 +279,7 @@ export interface Job {
   result?: AnalysisResult | null;
 }
 
+/** The jobs of the session. */
 export async function fetchJobs(): Promise<Job[]> {
   const r = await fetch(`${BASE}/jobs`, { cache: "no-store" });
   if (!r.ok) throw new Error(`Failed to load jobs`);
@@ -268,20 +287,24 @@ export async function fetchJobs(): Promise<Job[]> {
   return data.jobs;
 }
 
+/** One job with its result. */
 export async function fetchJobDetail(jobId: string): Promise<Job> {
   const r = await fetch(`${BASE}/jobs/${jobId}`, { cache: "no-store" });
   if (!r.ok) throw new Error(`Failed to load job details`);
   return r.json();
 }
 
+/** Deletes a job. */
 export async function deleteJob(jobId: string): Promise<void> {
   await fetch(`${BASE}/jobs/${jobId}`, { method: "DELETE" });
 }
 
+/** Deletes every job of the session. */
 export async function deleteAllJobs(): Promise<void> {
   await fetch(`${BASE}/jobs`, { method: "DELETE" });
 }
 
+/** Sets the notes of a job; blank text clears them. */
 export async function updateJobNotes(jobId: string, notes: string | null): Promise<void> {
   const r = await fetch(`${BASE}/jobs/${jobId}/notes`, {
     method: "PATCH",
@@ -294,9 +317,13 @@ export async function updateJobNotes(jobId: string, notes: string | null): Promi
 // ----------------------- Factor analysis -----------------------
 // Mirrors the /factor-analysis endpoints of the AlgoService.
 
+/** What the factor analysis works on: process models or event logs. */
 export type FactorKind = "model" | "log";
+/** Where a dataset comes from: a bundled one, an uploaded CSV, uploaded logs or uploaded Petri nets (PNML). */
 export type DatasetSource = "bundled" | "csv" | "logs" | "pnml";
+/** The factor rotations the backend offers; `none` leaves the loadings unrotated. */
 export type Rotation = "varimax" | "promax" | "oblimin" | "quartimax" | "none";
+/** All rotations, in the order the UI lists them. */
 export const ROTATIONS: Rotation[] = ["varimax", "promax", "oblimin", "quartimax", "none"];
 
 /**
@@ -305,6 +332,7 @@ export const ROTATIONS: Rotation[] = ["varimax", "promax", "oblimin", "quartimax
  * Tab. 6-16), "hair" without the measures that load on more than one factor (Tab. 17).
  */
 export type AssignmentRule = "largest" | "multi" | "hair";
+/** All assignment rules, in the order the UI lists them. */
 export const ASSIGNMENT_RULES: AssignmentRule[] = ["largest", "multi", "hair"];
 
 /**
@@ -340,6 +368,7 @@ export interface MeasureSource {
   url: string;
 }
 
+/** One measure of the catalog, with its description, group, short code and source. */
 export interface FactorMeasure {
   key: string;
   name: string;
@@ -378,6 +407,7 @@ export interface DescriptiveRow {
   histogram?: Histogram | null;
 }
 
+/** The statistics of a dataset's measures and the basis they were computed on. */
 export interface Descriptives {
   /**
    * "input": the table before cleaning, as ComFy describes it; "cleaned": only the matrix was
@@ -389,6 +419,7 @@ export interface Descriptives {
   measures: DescriptiveRow[];
 }
 
+/** Size of a Petri net. */
 export interface NetSize {
   places: number;
   transitions: number;
@@ -443,6 +474,7 @@ export interface AnalysisTimings {
   total_s: number;
 }
 
+/** A dataset bundled with the server, with the paper it comes from and the settings that paper used. */
 export interface BundledDataset {
   id: string;
   name: string;
@@ -466,6 +498,7 @@ export interface BundledDataset {
   published_scope?: PublishedScope | string;
 }
 
+/** The values of `BundledDataset.published_scope`. */
 export type PublishedScope = "paper" | "report";
 
 /** A paper whose bundled datasets the data step lists together. */
@@ -492,6 +525,7 @@ export interface SampleInput {
   citation?: string;
 }
 
+/** Answer of GET /factor-analysis/catalog: what can be measured and the bundled datasets, for one `kind`. */
 export interface FactorCatalog {
   kind: FactorKind;
   measures: FactorMeasure[];
@@ -505,8 +539,10 @@ export interface FactorCatalog {
   limits?: UploadLimits;
 }
 
+/** Why cleaning left a measure out of the matrix. */
 export type DropReason = "non_numeric" | "constant" | "missing" | "non_finite" | "duplicate";
 
+/** A dataset of the session with its matrix (the first rows only), what cleaning dropped and its state. */
 export interface FactorDataset {
   id: string;
   kind: FactorKind;
@@ -608,6 +644,7 @@ export interface DatasetSummary {
   options?: AnalyzeOptions | null;
 }
 
+/** What the data step sends to create a dataset: the source, and for the computed sources the measures, miners or groups and the files. */
 export interface CreateDatasetInput {
   kind: FactorKind;
   source: DatasetSource;
@@ -619,11 +656,13 @@ export interface CreateDatasetInput {
   files?: File[];
 }
 
+/** Answer of creating a dataset: ready at once, or computing under a job. */
 export type CreateDatasetResponse =
   /** `reused`: the session had a ready copy of the bundled dataset, and this is it. */
   | { dataset_id: string; status: "ready"; reused?: boolean }
   | { dataset_id: string; status: "computing"; job_id: string };
 
+/** The settings of one factor analysis; omitted fields take the server's defaults. */
 export interface AnalyzeOptions {
   excluded?: string[];
   auto_msa_filter?: boolean;
@@ -713,6 +752,7 @@ export interface AnalysisNotice {
   params: Record<string, string | number>;
 }
 
+/** The result of a factor analysis: suitability tests, factor count, loadings, communalities, variance and the assignment of measures to factors. */
 export interface FactorAnalysis {
   n_observations: number;
   used_measures: string[];
@@ -826,6 +866,7 @@ async function httpError(r: Response, fallback: string, remember = true): Promis
   return error;
 }
 
+/** Turns an error response into an `HttpError`: the server's `detail` (text, FastAPI validation list or other JSON) with its `code` and `params`, else `fallback` with the status. */
 async function readHttpError(r: Response, fallback: string): Promise<HttpError> {
   try {
     const j = await r.json();
@@ -844,12 +885,14 @@ async function readHttpError(r: Response, fallback: string): Promise<HttpError> 
   return new HttpError(`${fallback} (${r.status})`, r.status, r.status === 429 ? "rate_limited" : undefined);
 }
 
+/** Loads the catalog for `kind`. */
 export async function fetchFactorCatalog(kind: FactorKind, signal?: AbortSignal): Promise<FactorCatalog> {
   const r = await fetch(`${BASE}/factor-analysis/catalog?kind=${kind}`, { cache: "no-store", signal });
   if (!r.ok) throw await httpError(r, "Failed to load the catalog");
   return r.json();
 }
 
+/** Creates a dataset from the input; for logs and nets the response carries a job that computes it. */
 export async function createDataset(input: CreateDatasetInput): Promise<CreateDatasetResponse> {
   const form = new FormData();
   form.append("kind", input.kind);
@@ -865,6 +908,7 @@ export async function createDataset(input: CreateDatasetInput): Promise<CreateDa
   return r.json();
 }
 
+/** Loads a dataset; `rows` limits how many matrix rows come back. */
 export async function fetchDataset(id: string, signal?: AbortSignal, rows?: number): Promise<FactorDataset> {
   const query = rows === undefined ? "" : `?rows=${rows}`;
   const r = await fetch(`${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}${query}`, {
@@ -917,6 +961,7 @@ export async function deleteAllDatasets(kind?: FactorKind): Promise<number> {
   return (await r.json()).deleted;
 }
 
+/** Address that downloads the dataset, for use as a link. */
 export function datasetDownloadUrl(id: string): string {
   return `${BASE}/factor-analysis/datasets/${encodeURIComponent(id)}/download`;
 }
@@ -954,7 +999,9 @@ export interface ShortSetEntry {
 
 /** The numbers of bootstrap samples one can choose for the stability. */
 export const STABILITY_SAMPLES = [100, 200, 500] as const;
+/** One of `STABILITY_SAMPLES`. */
 export type StabilitySamples = (typeof STABILITY_SAMPLES)[number];
+/** The number of samples preselected for the stability. */
 export const DEFAULT_STABILITY_SAMPLES: StabilitySamples = 200;
 /** Why a sample was left out. */
 export type StabilityFailure = "constant" | "singular" | "fit_failed" | "not_converged";
@@ -986,6 +1033,7 @@ export interface Stability {
   seconds: number;
 }
 
+/** The state of a stability computation under one `key`: done, running under a job, or not started. */
 export type StabilityState =
   | { status: "ready"; key: string; stability: Stability }
   | { status: "computing"; key: string; job_id: string; percentage: number }
@@ -1073,6 +1121,7 @@ export async function fetchCorrelations(
   return r.json();
 }
 
+/** The loadings table as CSV or LaTeX, with the file name the server gives it. */
 export async function exportLoadings(
   id: string,
   options: AnalyzeOptions,
@@ -1190,7 +1239,9 @@ export async function exportBibtex(
   return attachment(r, "references.bib");
 }
 
+/** The figures that can be exported. */
 export type FigureName = "scree" | "loadings" | "correlations";
+/** The file formats of an exported figure. */
 export type FigureFormat = "svg" | "png";
 /** The rows of the loadings heatmap: grouped by factor as the UI shows them, or as in the dataset. */
 export type FigureOrder = "factor" | "dataset";
@@ -1254,11 +1305,13 @@ export interface CompareColumnRequest {
   label?: string;
 }
 
+/** The columns of a comparison and the assignment rule applied to all of them. */
 export interface CompareRequest {
   columns: CompareColumnRequest[];
   assignment_rule: AssignmentRule;
 }
 
+/** The formats of a comparison export. */
 export type CompareExportFormat = "csv" | "latex" | "zip";
 
 /** The header of a column; without `error` it has every field of an analysis. */
@@ -1333,6 +1386,7 @@ export type CompareCell =
   | { status: "dropped"; reason: DropReason | string }
   | { status: "excluded" | "absent" | "failed" };
 
+/** One measure of a comparison: its dimension, how many columns agree on it, and one cell per column. */
 export interface CompareRow {
   measure: string;
   short: string | null;
@@ -1354,6 +1408,7 @@ export interface CoAssignment {
   both_analysed: number[][];
 }
 
+/** The result of a comparison: columns, measures grouped by dimension, the co-assignment matrices and the factors of each dimension. */
 export interface Comparison {
   kind: FactorKind;
   assignment_rule: AssignmentRule;
@@ -1407,6 +1462,7 @@ export async function exportComparison(
   return attachment(r, `factor-structures.${format === "latex" ? "tex" : format}`);
 }
 
+/** The body of a response with the file name from its `Content-Disposition`, else `fallback`. */
 async function attachment(r: Response, fallback: string): Promise<{ blob: Blob; filename: string }> {
   const disposition = r.headers.get("Content-Disposition") ?? "";
   const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition);
@@ -1415,6 +1471,7 @@ async function attachment(r: Response, fallback: string): Promise<{ blob: Blob; 
 
 // ----------------------- Interpretation by Claude -----------------------
 
+/** What the server offers for interpretations: whether a live call is possible, the default and the allowed models and efforts. */
 export interface InterpretationStatus {
   /** A key is configured on the server, so factors can be interpreted live. */
   available: boolean;
@@ -1431,9 +1488,11 @@ export interface InterpretationStatus {
   chat: boolean;
 }
 
+/** The languages an interpretation is written in. */
 export type InterpretationLanguage = "en" | "de";
 export type { StoredVariant };
 
+/** An interpretation of an analysis: a name and summary per factor, an overall reading and caveats, with what produced it. */
 export interface FactorInterpretation {
   /** Counts from 1, as in "Factor 1"; `factors[].index` of the analysis counts from 0. */
   factors: {
@@ -1460,6 +1519,7 @@ export interface FactorInterpretation {
   variants: StoredVariant[];
 }
 
+/** Asks what the server offers for interpretations. */
 export async function fetchInterpretationStatus(signal?: AbortSignal): Promise<InterpretationStatus> {
   const r = await fetch(`${BASE}/factor-analysis/interpretation/status`, { cache: "no-store", signal });
   if (!r.ok) throw await httpError(r, "Failed to check the interpretation");
@@ -1514,6 +1574,7 @@ export async function fetchInterpretationVariants(
   return (await r.json()).variants;
 }
 
+/** The answer to a follow-up question about an interpretation. */
 export interface ChatAnswer {
   answer: string;
   /** The server's signature of the answer; the answer goes back with it in the next question. */
@@ -1547,6 +1608,7 @@ export async function askAboutInterpretation(
   return r.json();
 }
 
+/** The kinds of feedback the form offers. */
 export type FeedbackKind = "bug" | "idea" | "other";
 
 /** How the form delivers: by mail where the server has it set up, else as an issue on GitHub. */
@@ -1556,12 +1618,14 @@ export interface FeedbackChannel {
   commit: string;
 }
 
+/** Asks how the server delivers feedback. */
 export async function fetchFeedbackChannel(): Promise<FeedbackChannel> {
   const r = await fetch(`${BASE}/feedback`, { cache: "no-store" });
   if (!r.ok) throw await httpError(r, "Could not reach the feedback form", false);
   return r.json();
 }
 
+/** The body of a feedback message. */
 export interface FeedbackInput {
   kind: FeedbackKind;
   message: string;
@@ -1572,6 +1636,7 @@ export interface FeedbackInput {
   website: string;
 }
 
+/** Sends feedback; throws `HttpError` if the server refuses it. */
 export async function sendFeedback(input: FeedbackInput): Promise<void> {
   const r = await fetch(`${BASE}/feedback`, {
     method: "POST",

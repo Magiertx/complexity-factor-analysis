@@ -1,5 +1,7 @@
 "use client";
 
+// The single-log page (/inspect): pick a log, set the ComFy parameters, run, and look at past runs (`?job=<id>`).
+
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -70,19 +72,23 @@ import { ChoiceMark, choiceTile } from "./ui/choice";
 import { cn } from "@/lib/utils";
 import { formatDateTime, formatFileSize, formatPercent } from "@/lib/format";
 
+/** The page for analysing one event log with the ComFy miners and measures, and for viewing the runs of earlier analyses. */
 export function Workbench() {
   const t = useT();
   const { locale, tMaybe } = useLocale();
   const [algorithms, setAlgorithms] = useState<AlgorithmManifest[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // The log comes from one of three places: a file just chosen (`file`), an earlier upload
+  // (`selectedRecentId`) or a bundled sample (`selectedSampleId`); `activeSourceTab` says which source is shown.
   const [file, setFile] = useState<File | null>(null);
+  // The values of the parameter form. They are remembered per algorithm in localStorage (`app.params-<id>`).
   const [params, setParams] = useState<Record<string, unknown>>({});
   // Adapter-declared auxiliary uploads (e.g. a reference PNML), keyed by the
   // manifest's secondary_files[].name.
   const [secondaryFiles, setSecondaryFiles] = useState<Record<string, File>>({});
   
-  // Sample Log, Recent Log & Citation States
+  // The log sources: bundled samples, earlier uploads, and which of the two source tabs is shown.
   const [sampleLogs, setSampleLogs] = useState<SampleLog[]>([]);
   const [selectedSampleId, setSelectedSampleId] = useState<string | null>(null);
   const [recentLogs, setRecentLogs] = useState<RecentLog[]>([]);
@@ -153,6 +159,7 @@ export function Workbench() {
       e.preventDefault();
       void run();
     };
+    // Registered again on every render, so that `run` sees the current state.
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   });
@@ -194,8 +201,8 @@ export function Workbench() {
 
   // Honor a `?job=<id>` query param so deep links from the run-history view
   // (or anywhere else) open the past job directly. Depends on searchParams so
-  // it also fires on client-side navigation, e.g. clicking a job in the
-  // drawer while already on this page.
+  // it also fires on client-side navigation, e.g. clicking a run in the
+  // list of recent runs while already on this page.
   const router = useRouter();
   const searchParams = useSearchParams();
   useEffect(() => {
@@ -204,7 +211,7 @@ export function Workbench() {
   }, [searchParams]);
 
   // Strip a stale ?job= from the URL whenever the past-job view is left.
-  // Without this, re-clicking the same job in the drawer is a same-URL
+  // Without this, re-clicking the same run in the list of recent runs is a same-URL
   // navigation and the effect above never fires again.
   const clearJobParam = useCallback(() => {
     if (searchParams.get("job")) router.replace("/inspect", { scroll: false });
@@ -351,10 +358,10 @@ export function Workbench() {
     }
   }, [selectedJobId, jobs]);
 
-  // Load defaults or cached params when switching algorithms (only when configuring a new run)
+  // The algorithm on screen.
   const selected = useMemo(() => {
-    // When viewing a past job, show that job's algorithm rather than the one selected in
-    // the sidebar. Fall back to the job summary while the detail is still loading.
+    // When viewing a past job, show that job's algorithm rather than the default one.
+    // Fall back to the job summary while the detail is still loading.
     const viewedAlgoId =
       selectedJobDetail?.algorithm_id ??
       (selectedJobId ? jobs.find((j) => j.id === selectedJobId)?.algorithm_id : undefined);
@@ -378,6 +385,7 @@ export function Workbench() {
       : null;
 
   useEffect(() => {
+    // Load defaults or cached params when switching algorithms (only when configuring a new run)
     if (!selected || selectedJobId) return;
 
     const saved = localStorage.getItem(`app.params-${selected.id}`);
@@ -550,7 +558,7 @@ export function Workbench() {
       );
 
       // Switch view immediately to the newly spawned job; keep the URL in
-      // sync so the drawer highlights it.
+      // sync so that a reload or a shared link opens it.
       setSelectedJobId(response.job_id);
       router.replace(`/inspect?job=${response.job_id}`, { scroll: false });
 
@@ -728,6 +736,7 @@ export function Workbench() {
                               setSelectedRecentId(null);
                               return;
                             }
+                            // The server refuses files above 100 MB (`MAX_FILE_SIZE`); saying so here saves the upload.
                             if (f.size > 100 * 1024 * 1024) {
                               setError(t("workbench.errors.file_too_large"));
                               setFile(null);
@@ -1195,7 +1204,9 @@ function InspectSection({
 }: {
   title: string;
   hint: string;
+  /** Value of `data-tour`, the anchor of the page tour. */
   tour: string;
+  /** Shown at the right of the heading, e.g. the status of the run on screen. */
   aside?: React.ReactNode;
   children: React.ReactNode;
 }) {

@@ -1,8 +1,11 @@
 "use client";
 
+// A segmented control: a radio group of options as buttons on a tile, with a sliding pill under the chosen one.
+
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
+/** One segment: the value it sets and what is shown for it. */
 interface Option<T extends string> {
   value: T;
   label: ReactNode;
@@ -22,6 +25,7 @@ interface Props<T extends string> {
   "aria-label"?: string;
 }
 
+/** A radio group of a few short options, one of them chosen. */
 export function Segmented<T extends string>({
   options,
   value,

@@ -1,5 +1,7 @@
 "use client";
 
+// Panel with the artifacts of a finished single run and the download of the whole run as an archive.
+
 import { BarChart3, FileArchive } from "lucide-react";
 import type { AnalysisResult } from "@/lib/api";
 import { API_BASE } from "@/lib/api";
@@ -7,11 +9,13 @@ import { Artifacts } from "./artifacts/artifacts";
 import { Button } from "./ui/button";
 import { localizedAlgoText, useT } from "@/lib/i18n";
 
+/** `runId` is the job whose artifacts and archive download are shown; without it the download button is hidden. */
 interface Props {
   result: AnalysisResult;
   runId?: string | null;
 }
 
+/** Result of one analysis: its artifacts and, for a stored run, the download of all of them. */
 export function ResultPanel({ result, runId }: Props) {
   const t = useT();
   return (

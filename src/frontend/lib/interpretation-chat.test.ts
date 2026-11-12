@@ -1,3 +1,5 @@
+// Unit tests for interpretation-chat.ts.
+
 import { describe, expect, it } from "vitest";
 import {
   MAX_MESSAGES,

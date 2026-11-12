@@ -1,5 +1,7 @@
 "use client";
 
+// The follow-up questions about the interpretation of an analysis: a short conversation with the model.
+
 import { useEffect, useId, useRef, useState } from "react";
 import { Loader2, Send } from "lucide-react";
 import { askAboutInterpretation, type AnalyzeOptions, type InterpretationLanguage } from "@/lib/api";
@@ -20,6 +22,7 @@ import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/notice";
 
+/** The props of `InterpretationChat`. */
 interface Props {
   datasetId: string;
   /** The analysis on screen, with its factor count: what the stored interpretation is for. */

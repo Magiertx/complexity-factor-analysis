@@ -3,7 +3,9 @@
 import { activeTab } from "./nav";
 import { parseStep } from "./steps";
 
+/** Longest feedback message, in characters; the server applies the same limit. */
 export const MAX_MESSAGE = 4000;
+/** Longest contact text, in characters; the server applies the same limit. */
 export const MAX_CONTACT = 200;
 
 /** GitHub refuses longer addresses; the message is shortened to fit (the sender sees the result). */

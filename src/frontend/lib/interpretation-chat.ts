@@ -5,6 +5,7 @@
 
 import type { InterpretationChoice } from "./interpretation-choice";
 
+/** One message of the conversation about an interpretation, as the browser keeps it. */
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -21,8 +22,11 @@ export interface WireMessage {
   signature?: string;
 }
 
+/** Longest question, in characters (the server's limit). */
 export const MAX_QUESTION_CHARS = 2000;
+/** Most messages in one conversation (the server's limit). */
 export const MAX_MESSAGES = 20;
+/** Most characters over the whole conversation (the server's limit). */
 export const MAX_TOTAL_CHARS = 40_000;
 /** From this length on the counter is shown. */
 export const COUNTER_FROM = Math.floor(MAX_QUESTION_CHARS * 0.8);
@@ -41,6 +45,7 @@ export function chatKey(
   return JSON.stringify([datasetId, options, language, choice.model, choice.effort]);
 }
 
+/** Why a question cannot be sent. */
 export type ChatProblem = "empty" | "question_too_long" | "count" | "too_long";
 
 /**
@@ -88,6 +93,7 @@ export function toWire(history: ChatMessage[]): WireMessage[] {
   );
 }
 
+/** A paragraph or a list of an answer. */
 export type AnswerBlock = { kind: "p"; text: string } | { kind: "list"; items: string[] };
 
 /**

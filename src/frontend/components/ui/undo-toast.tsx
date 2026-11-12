@@ -1,5 +1,7 @@
 "use client";
 
+// The floating "Undo" notice shown after a change that can be taken back.
+
 import { useEffect, useRef, useState } from "react";
 import { Undo2, X } from "lucide-react";
 import { useT } from "@/lib/i18n";
@@ -7,8 +9,10 @@ import { Button } from "./button";
 import { Tip } from "./tip";
 import { ToastSlot } from "./toasts";
 
+/** How long the notice stays, in ms, unless it is held. */
 const SHOW_MS = 10_000;
 
+/** The notice to show. */
 export interface UndoNotice {
   /** Changes with every notice, so a second one restarts the timer. */
   id: number;

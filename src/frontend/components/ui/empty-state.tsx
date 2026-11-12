@@ -1,3 +1,5 @@
+// The empty state of a view: what is missing and how to fill it.
+
 import { cn } from "@/lib/utils";
 
 /**

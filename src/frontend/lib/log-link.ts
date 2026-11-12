@@ -9,6 +9,7 @@ import type { FactorKind } from "./api";
 /** The separator between the log and the miner in the name of a row. */
 const SEPARATOR = " / ";
 
+/** A row of a dataset, split into its log and miner. */
 export interface LogRow {
   /** The log as the recent uploads name it. */
   log: string;

@@ -17,6 +17,7 @@ export function hasCodes(codes: ReadonlyMap<string, string>, measures: readonly 
   return measures.some((m) => codes.has(m));
 }
 
+/** How to name a measure and what its tooltip says. */
 export interface MeasureLabels {
   /** What a list or table shows for the measure. */
   name: (key: string) => string;
@@ -71,6 +72,7 @@ export function loadShortCodes(): boolean {
   }
 }
 
+/** Remembers the short-codes switch in the browser. */
 export function saveShortCodes(on: boolean) {
   try {
     localStorage.setItem(STORAGE_KEY, on ? "1" : "0");

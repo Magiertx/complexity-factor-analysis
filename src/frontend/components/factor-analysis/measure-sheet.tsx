@@ -1,5 +1,7 @@
 "use client";
 
+// The fact sheet of a measure: what it measures, its distribution, what became of it in the analysis, and the measures closest to it.
+
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Ban, ChevronLeft, ChevronRight, ExternalLink, Loader2, Plus, X } from "lucide-react";
 import { fetchDescriptives, type Descriptives, type FactorAnalysis, type FactorDataset, type FactorMeasure } from "@/lib/api";
@@ -17,6 +19,7 @@ import { Notice } from "@/components/ui/notice";
 import type { CorrelationsState } from "./correlation-map";
 import { Histogram } from "./histogram";
 
+/** The props of `MeasureSheet`. */
 export interface MeasureSheetProps {
   /** The measure shown; null while the sheet is closed. */
   measure: string | null;
@@ -125,6 +128,7 @@ export function MeasureSheet(props: MeasureSheetProps) {
   );
 }
 
+/** The content of the sheet for the measure shown. */
 function SheetBody({
   measure,
   descriptives,
@@ -341,10 +345,12 @@ function SheetBody({
   );
 }
 
+/** A statistic in the UI language, or a dash where there is none. */
 function statistic(value: number | null, locale: string): string {
   return value === null ? NO_VALUE : formatStatistic(value, locale);
 }
 
+/** A label with a value in a small tile. */
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-md bg-tile/60 px-2.5 py-1.5 min-w-0">
@@ -606,6 +612,7 @@ function Closest({
   );
 }
 
+/** Excludes the measure from the analysis or takes it back; blocked while only `MIN_MEASURES` measures remain. */
 function ExcludeButton({ excluded, locked, onClick }: { excluded: boolean; locked: boolean; onClick: () => void }) {
   const t = useT();
   const label = t(excluded ? "factor.sheet.include" : "factor.sheet.exclude");

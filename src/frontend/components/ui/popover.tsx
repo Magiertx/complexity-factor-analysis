@@ -1,11 +1,14 @@
 "use client";
 
+// A small non-modal dialog under a trigger; InfoTip opens its explanation in one.
+
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { Tip } from "./tip";
 
+/** What Tab reaches inside the popover. */
 const TABBABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]';
 
 /** The elements in `root` that Tab reaches, in document order. */

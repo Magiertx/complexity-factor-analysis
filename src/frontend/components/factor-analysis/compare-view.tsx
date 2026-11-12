@@ -1,5 +1,7 @@
 "use client";
 
+// The comparison page (Compare): the factor structures of several datasets side by side, as a matrix by measure, a table by dimension or a matrix of measure pairs.
+
 import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertTriangle, ChevronDown, Combine, Grid3x3, Info, LayoutGrid, Loader2, RotateCcw } from "lucide-react";
@@ -56,17 +58,21 @@ import { InfoTip } from "@/components/ui/info-tip";
 import { RuleChoice } from "./loadings-step";
 import { CompareToolbar } from "./toolbar";
 
+/** A translation function, as `useT` returns it. */
 type Translate = (key: string, params?: Record<string, string | number>) => string;
 
 /** The collection whose datasets the page offers per kind: the miners of Important Factors, the logs of the PDC. */
 const COLLECTIONS: Record<FactorKind, string> = { model: "comfy-paper", log: "comfy-log-paper" };
+/** Where the look chosen last is kept in the browser. */
 const LOOK_KEY = "app.compare-look";
 /** Changes in quick succession (several tiles) are compared once. */
 const COMPARE_DEBOUNCE_MS = 150;
 
+/** How the result is laid out: by measure, by dimension, or as pairs of measures. */
 type Look = "matrix" | "dimensions" | "pairs";
 const LOOKS: readonly Look[] = ["matrix", "dimensions", "pairs"];
 
+/** The look of the result, remembered in the browser. */
 function useLook(): [Look, (look: Look) => void] {
   const [look, setLook] = useState<Look>("matrix");
   useEffect(() => {
@@ -461,6 +467,7 @@ export function CompareView() {
   );
 }
 
+/** How a measure is named and described on screen. */
 interface Labels {
   name: (key: string) => string;
   description: (key: string) => string | undefined;
@@ -802,6 +809,7 @@ function FactorNameList({ names, count }: { names: (string | null)[] | null | un
   );
 }
 
+/** The key to the cell styles of the matrix by measure. */
 function MatrixLegend() {
   const t = useT();
   return (
@@ -828,6 +836,7 @@ function dimensionsText(dimensions: number[]): string {
   return dimensions.map(dimensionLabel).join(" · ");
 }
 
+/** One cell of the matrix by measure: what became of the measure in one dataset, i.e. its dimension, why the rule leaves it out, or that the MSA filter or the cleaning removed it. */
 function MatrixCell({
   cell,
   inRow,
@@ -1172,6 +1181,7 @@ function PairsMatrix({
   );
 }
 
+/** One cell of the matrix of measure pairs: in how many of the `analysed` columns the two measures share a dimension (`together`), shaded by that share. */
 function PairCell({
   together,
   assigned,
@@ -1276,6 +1286,7 @@ function splitSentence(text: string): [string, string] {
   return m ? [m[1], text.slice(m[0].length)] : [text, ""];
 }
 
+/** The icon of a note: a warning or an info. */
 function NoteIcon({ warn }: { warn: boolean }) {
   return warn ? (
     <AlertTriangle className="h-3.5 w-3.5 mt-px shrink-0 text-warn-ink" aria-hidden />

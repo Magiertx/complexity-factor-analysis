@@ -6,10 +6,14 @@
  * and the History), set apart at the end.
  */
 export const ANALYSIS_TABS = ["model", "log", "inspect"] as const;
+/** The tabs that are tools around the analyses. */
 export const TOOL_TABS = ["compare", "history"] as const;
+/** All tabs, in the order of the mode bar. */
 export const TABS = [...ANALYSIS_TABS, ...TOOL_TABS] as const;
+/** The id of a tab. */
 export type TabId = (typeof TABS)[number];
 
+/** The address of each tab's page. */
 export const TAB_HREFS: Record<TabId, string> = {
   model: "/",
   log: "/log",
@@ -20,8 +24,10 @@ export const TAB_HREFS: Record<TabId, string> = {
 
 /** The pages of the header, which belong to no tab. */
 export const HEADER_LINKS = ["guide", "settings"] as const;
+/** The id of a header link. */
 export type HeaderLinkId = (typeof HEADER_LINKS)[number];
 
+/** The address of each header link's page. */
 export const HEADER_HREFS: Record<HeaderLinkId, string> = {
   guide: "/guide",
   settings: "/settings",

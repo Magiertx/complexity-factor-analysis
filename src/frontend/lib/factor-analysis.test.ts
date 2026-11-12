@@ -1,3 +1,5 @@
+// Unit tests for factor-analysis.ts.
+
 import { describe, expect, it } from "vitest";
 import type { FactorAnalysis, Job, Stability } from "./api";
 import {

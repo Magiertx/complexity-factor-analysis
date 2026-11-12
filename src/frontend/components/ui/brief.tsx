@@ -1,5 +1,7 @@
 "use client";
 
+// A hint shown as its first sentence, with the rest behind an (i).
+
 import { splitSentence } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { InfoTip } from "./info-tip";

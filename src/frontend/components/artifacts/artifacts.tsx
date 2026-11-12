@@ -1,5 +1,7 @@
 "use client";
 
+// The artifacts of a result, in the order the server sends them: statistics, images, tables, texts and files.
+
 import { useState } from "react";
 import { LayoutGrid, List } from "lucide-react";
 import type { Artifact } from "@/lib/api";
@@ -11,9 +13,11 @@ import { LogDownload } from "./log-download";
 import { TextView } from "./text-view";
 import { localizedAlgoText, useT } from "@/lib/i18n";
 
+/** The artifact kinds that are grouped. */
 type Stat = Extract<Artifact, { kind: "stat" }>;
 type Img = Extract<Artifact, { kind: "image" }>;
 
+/** `runId` is the run the artifacts belong to; table downloads use it in their file name. */
 interface Props {
   artifacts: Artifact[];
   runId?: string | null;

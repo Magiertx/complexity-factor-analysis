@@ -1,5 +1,7 @@
 "use client";
 
+// The data step: where a dataset comes from (bundled, own CSV, event logs or Petri nets), and the summary of the dataset once it is loaded.
+
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -70,6 +72,7 @@ import { UploadZone } from "@/components/upload-zone";
 import { FeatureChecklist } from "./feature-checklist";
 import { EXAMPLE_CSV, COMFY_LOG_URL, IMPORTANT_FACTORS_URL, startEntries, startEntryHref, type OpenPreset, type StartEntry } from "./start-here";
 
+/** The icon of each source of a dataset. */
 const SOURCE_ICON: Record<DatasetSource, React.ComponentType<{ className?: string }>> = {
   bundled: Database,
   csv: FileSpreadsheet,
@@ -77,6 +80,7 @@ const SOURCE_ICON: Record<DatasetSource, React.ComponentType<{ className?: strin
   pnml: Network,
 };
 
+/** What each upload source accepts: the `accept` value of the file picker, a test on the file name, and the extension shown. */
 const ACCEPT: Record<Exclude<DatasetSource, "bundled">, { accept: string; test: (name: string) => boolean; ext: string }> = {
   csv: { accept: ".csv", test: (n) => n.endsWith(".csv"), ext: ".csv" },
   logs: { accept: ".xes,.gz", test: (n) => n.endsWith(".xes") || n.endsWith(".xes.gz"), ext: ".xes / .xes.gz" },
@@ -91,6 +95,7 @@ export type LeadTo = "result" | "next";
 /** The value of a card of Get started among the bundled cards. */
 const START = "start:";
 
+/** The props of `DataForm`. */
 interface Props {
   kind: FactorKind;
   catalog: FactorCatalog;
@@ -112,6 +117,7 @@ interface Props {
   onCancel?: () => void;
 }
 
+/** The form that loads a dataset: the sources as tiles with their inputs, the datasets of the session, and Get started. */
 export function DataForm({
   kind,
   catalog,
@@ -613,6 +619,7 @@ function BundledList({
   );
 }
 
+/** The look of the small badges on the tiles. */
 const BADGE = "inline-flex items-center gap-1 rounded-full bg-tile px-2 py-0.5 text-xs font-medium text-muted";
 
 /** A way in of Get started: its name, one short line, and a badge of what it opens. */
@@ -900,7 +907,7 @@ function DatasetPicker({
   // The newest dataset that is not open already; opening the open one only closes the form.
   const fallback = (datasets.find((d) => d.id !== openId) ?? datasets[0])?.id ?? null;
   const [selected, setSelected] = useState(fallback);
-  // The chosen one can go, deleted here or with its job in the drawer; then the default again.
+  // The chosen one can go, deleted here or with its job on the History page; then the default again.
   const chosen = datasets.some((d) => d.id === selected) ? selected : fallback;
   const listRef = useRef<HTMLDivElement>(null);
   const refocus = useRef(false);
@@ -1023,6 +1030,7 @@ function DatasetPicker({
   );
 }
 
+/** A dataset of the session as a tile to open or, for a comparison, to pick; deleting asks for confirmation. */
 function DatasetTile({
   name,
   dataset,
@@ -1229,6 +1237,7 @@ function SampleTile({ sample, chosen, onToggle }: { sample: SampleInput; chosen:
   );
 }
 
+/** The files chosen for an upload, with a way to remove one or all of them. */
 function FileList({
   files,
   onRemove,
@@ -1279,6 +1288,7 @@ function FileList({
   );
 }
 
+/** One entry of a `Checklist`. */
 interface ChecklistItem {
   key: string;
   name: string;
@@ -1287,6 +1297,7 @@ interface ChecklistItem {
   slow?: boolean;
 }
 
+/** A heading, a hint and tiles to switch on and off; the choice stays in the order of the catalog. */
 function Checklist({
   heading,
   hint,
@@ -1350,6 +1361,7 @@ function Checklist({
   );
 }
 
+/** One tile of a `Checklist`. */
 function ChecklistTile({
   item,
   on,
@@ -1393,6 +1405,7 @@ function SlowMark() {
   );
 }
 
+/** The props of `Estimate`. */
 interface EstimateProps {
   /** What one row is: a log, a log with one miner, or a net. */
   unit: "logs" | "log_miners" | "nets";
@@ -1655,6 +1668,7 @@ function SkippedLine({ dataset, catalog }: { dataset: FactorDataset; catalog: Fa
   );
 }
 
+/** The button that goes on from a loaded dataset; inactive, with its reason, while it waits. */
 function NextFromData({ next }: { next: DataNext }) {
   const tip = useTip<HTMLButtonElement>(next.reason ? { name: next.label, reason: next.reason } : null);
   return (
@@ -1671,6 +1685,7 @@ function NextFromData({ next }: { next: DataNext }) {
   );
 }
 
+/** The sources a dataset can have. */
 const SOURCES: DatasetSource[] = ["bundled", "csv", "logs", "pnml"];
 
 /** What a dataset was built from, as one line of text: source, inputs, miners or feature groups, size. */

@@ -1,3 +1,5 @@
+// Unit tests for feedback.ts.
+
 import { describe, expect, it } from "vitest";
 import { MAX_ISSUE_URL, issueUrl, technicalDetails } from "./feedback";
 

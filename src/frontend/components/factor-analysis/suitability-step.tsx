@@ -1,5 +1,7 @@
 "use client";
 
+// The suitability step: the Bartlett and KMO tests, the correlation map and the list of measures with their MSA, to keep or exclude.
+
 import { Fragment, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import type { FactorAnalysis, FactorDataset } from "@/lib/api";
@@ -49,6 +51,7 @@ export interface MeasureView {
   showOther: boolean;
 }
 
+/** The list as it starts: in dataset order, ungrouped, nothing narrowed. */
 export const DEFAULT_MEASURE_VIEW: MeasureView = {
   query: "",
   sort: "dataset",
@@ -63,6 +66,7 @@ export interface MeasureGroups {
   of: (measure: string) => string | null;
 }
 
+/** The props of `SuitabilityView`. */
 interface Props {
   dataset: FactorDataset;
   analysis: FactorAnalysis | null;
@@ -78,6 +82,7 @@ interface Props {
   map?: CorrelationMapProps | null;
 }
 
+/** The suitability step. */
 export function SuitabilityView(props: Props) {
   const { analysis, options, onOptions } = props;
   const t = useT();
@@ -168,6 +173,7 @@ export function SuitabilityView(props: Props) {
   );
 }
 
+/** The result of Bartlett's test of sphericity, against `alpha`. */
 function BartlettCard({ analysis, alpha }: { analysis: FactorAnalysis | null; alpha: number }) {
   const t = useT();
   const { locale } = useLocale();
@@ -208,6 +214,7 @@ function BartlettCard({ analysis, alpha }: { analysis: FactorAnalysis | null; al
   );
 }
 
+/** The overall KMO value against its `threshold`. */
 function KmoCard({ analysis, threshold }: { analysis: FactorAnalysis | null; threshold: number }) {
   const t = useT();
   const { locale } = useLocale();
@@ -249,6 +256,7 @@ function Scale({ value, threshold }: { value: number | null; threshold: number }
   );
 }
 
+/** A labelled figure of a card, with an optional (i). */
 function Value({ label, value, more }: { label: string; value: string; more?: string }) {
   return (
     <div className="rounded-md bg-bg/60 px-2.5 py-1.5 min-w-0">

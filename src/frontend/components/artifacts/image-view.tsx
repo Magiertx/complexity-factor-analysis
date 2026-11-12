@@ -1,13 +1,17 @@
 "use client";
 
+// An image artifact (e.g. a process model) with a lightbox to zoom and pan, and a download.
+
 import { useState, useEffect } from "react";
 import { ZoomIn, ZoomOut, Download, X, RotateCcw, Maximize2, SunMoon } from "lucide-react";
 import type { Artifact } from "@/lib/api";
 import { localizedAlgoText, useLocale } from "@/lib/i18n";
 import { formatPercent } from "@/lib/format";
 
+/** The image artifact. */
 type I = Extract<Artifact, { kind: "image" }>;
 
+/** An image in a frame that opens a lightbox. `fixedHeight` puts it into a box of fixed height, for a grid of images. */
 export function ImageView({ artifact, runId, fixedHeight = false }: { artifact: I; runId?: string | null; fixedHeight?: boolean }) {
   const { t, locale } = useLocale();
   const [isOpen, setIsOpen] = useState(false);

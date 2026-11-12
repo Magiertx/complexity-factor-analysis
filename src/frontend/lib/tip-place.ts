@@ -18,6 +18,7 @@ export const TIP_GAP = 8;
 /** The nearest the box comes to the window's edge. */
 export const TIP_EDGE = 8;
 
+/** A rectangle in window pixels. */
 export interface TipRect {
   left: number;
   top: number;
@@ -25,6 +26,7 @@ export interface TipRect {
   bottom: number;
 }
 
+/** Where the box goes: its left edge and one of top and bottom. */
 export interface TipPlace {
   left: number;
   /** Set for exactly one of the two: under the element (`top`) or over it (`bottom`, from the window's bottom edge). */

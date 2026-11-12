@@ -1,5 +1,7 @@
 "use client";
 
+// The search field and the notable-only switch above a long list of measures.
+
 import { useEffect, useMemo, useRef } from "react";
 import { Search } from "lucide-react";
 import { useT } from "@/lib/i18n";

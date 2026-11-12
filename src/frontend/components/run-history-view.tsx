@@ -1,5 +1,7 @@
 "use client";
 
+// The History page (/runs): datasets and single runs of the session in one list, with filters, delete and abort.
+
 import { InfoTip } from "@/components/ui/info-tip";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -64,14 +66,17 @@ import { ScrollFade } from "./ui/scroll-fade";
 import { Segmented } from "./ui/segmented";
 import { useTip } from "./ui/tip";
 
+// The status filter of the list: everything or one status of a row.
 type StatusFilter = "all" | HistoryStatus;
 
+/** Icon of each row type. */
 const TYPE_ICON: Record<HistoryType, React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>> = {
   model: Network,
   log: ScrollText,
   single: Microscope,
 };
 
+// The dataset sources that have a label in the locales (`factor.data.source.*`).
 const SOURCES: DatasetSource[] = ["bundled", "csv", "logs", "pnml"];
 
 /** The datasets are read again this often while the page is open; jobs come with their events. */
@@ -172,12 +177,14 @@ export function RunHistoryView() {
     [t, catalogs],
   );
 
+  // First the type filter; the status counts on the filter buttons are taken from this list.
   const ofType = useMemo(() => rows.filter((r) => type === "all" || r.type === type), [rows, type]);
   const counts = useMemo(() => {
     const out: Record<StatusFilter, number> = { all: ofType.length, active: 0, completed: 0, failed: 0, aborted: 0 };
     for (const r of ofType) out[r.status]++;
     return out;
   }, [ofType]);
+  // Then the status filter and the search, which looks at the title, the file name and the ids.
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return ofType.filter((r) => {
@@ -209,17 +216,20 @@ export function RunHistoryView() {
   }, [filtered, t, locale]);
 
   useEffect(() => {
+    // Moves the focus as `refocus` says, once the confirmation or the list has changed.
     const key = refocus.current;
     if (key === null) return;
     refocus.current = null;
     (deleteButtons.current.get(key) ?? listRef.current)?.focus();
   }, [confirming, rows]);
 
+  // The confirmation in the page header disappears by itself.
   const showToast = (msg: string) => {
     setToast(msg);
     window.setTimeout(() => setToast(null), 1800);
   };
 
+  // Deletes the row's dataset or job, moves the focus to a neighbouring row and reads the lists again.
   const remove = async (row: HistoryRow) => {
     try {
       if (row.dataset) await deleteDataset(row.dataset.id);
@@ -239,6 +249,7 @@ export function RunHistoryView() {
     if (row.job && (await abortTask(row.job.id))) await refresh();
   };
 
+  // Nothing is shown as empty before the first datasets and the first job list have arrived.
   const loading = datasets === null || !jobsLoaded;
 
   return (
@@ -371,6 +382,7 @@ export function RunHistoryView() {
   );
 }
 
+/** One row of the list: what it is, when, its settings, a failure text, the note, and the open, abort and delete controls. */
 function HistoryItem({
   row,
   title,
@@ -387,12 +399,15 @@ function HistoryItem({
   row: HistoryRow;
   title: string;
   catalog: FactorCatalog | undefined;
+  /** The delete button is replaced by the confirmation. */
   confirming: boolean;
   onAsk: () => void;
   onCancel: () => void;
   onDelete: () => Promise<void>;
   onAbort: () => void;
+  /** The note of the job was saved. */
   onNotes: () => void;
+  /** Gives the page the delete button, so that it can take back the focus. */
   deleteRef: (el: HTMLButtonElement | null) => void;
   errorText: string | undefined;
 }) {

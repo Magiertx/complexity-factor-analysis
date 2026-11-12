@@ -1,5 +1,7 @@
 "use client";
 
+// A card that is chosen like a radio button or a checkbox; its look comes from `./choice`.
+
 import { cn } from "@/lib/utils";
 import { ChoiceMark, choiceTile } from "./choice";
 import { useTip } from "./tip";

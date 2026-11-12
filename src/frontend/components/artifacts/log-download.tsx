@@ -1,5 +1,7 @@
 "use client";
 
+// A file artifact (an event log) as a name, a size and a download button.
+
 import { Download, FileCode2 } from "lucide-react";
 import type { Artifact } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -9,6 +11,7 @@ import { formatFileSize } from "@/lib/format";
 
 type L = Extract<Artifact, { kind: "log" }>;
 
+/** The download of a log artifact; the size is estimated from the length of its base64 data. */
 export function LogDownload({ artifact }: { artifact: L }) {
   const { t, locale } = useLocale();
   return (

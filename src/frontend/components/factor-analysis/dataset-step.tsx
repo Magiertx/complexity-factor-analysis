@@ -1,5 +1,7 @@
 "use client";
 
+// The dataset step: the cleaning of the data, a preview of its values, the statistics of its measures and, for a dataset with several miners, the choice among them.
+
 import { useEffect, useId, useState } from "react";
 import { AlertCircle, AlertTriangle, Ban, Columns3, FileSearch } from "lucide-react";
 import {
@@ -38,6 +40,7 @@ export interface MinerChoiceProps {
   compareReason: string | null;
 }
 
+/** The dataset step. */
 export function DatasetView({
   dataset,
   measureName,
@@ -277,6 +280,7 @@ function MinerChoice({
   );
 }
 
+/** One tile of the miner choice: the name, the size (n and p) and whether it can be analysed. */
 function MinerTile({
   title,
   choice,
@@ -460,6 +464,7 @@ function secondsText(value: number | undefined, locale: string): React.ReactNode
   return formatNumber(value, locale, value < 0.1 ? 3 : 2);
 }
 
+/** A count, or a dash where there is none. */
 function countCell(value: number | undefined, locale: string): React.ReactNode {
   return value === undefined ? <span className="text-muted">{NO_VALUE}</span> : formatNumber(value, locale);
 }

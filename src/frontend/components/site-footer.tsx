@@ -1,7 +1,10 @@
 "use client";
 
+// Footer line with the credit, at the bottom of every page.
+
 import { useT } from "@/lib/i18n";
 
+/** The credit line; hidden when printing. */
 export function SiteFooter() {
   const t = useT();
   return (

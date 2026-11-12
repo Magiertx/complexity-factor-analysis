@@ -1,3 +1,5 @@
+// Unit tests for measure-list.ts.
+
 import { describe, expect, it } from "vitest";
 import type { FactorAnalysis } from "./api";
 import { defaultOptions } from "./factor-analysis";

@@ -1,5 +1,7 @@
 "use client";
 
+// Compact drop area for one or several files, used in the data step of the factor analysis.
+
 import { Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";

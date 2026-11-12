@@ -1,10 +1,13 @@
 "use client";
 
+// Guided tour of the single-run workbench: log source, parameters and the run button.
+
 import type { Step } from "react-joyride";
 import { useMemo } from "react";
 import { Tour } from "./tour";
 import { useT } from "@/lib/i18n";
 
+/** Steps of the workbench tour, anchored on the `data-tour` markers of `Workbench`; `run` starts it. */
 export function SingleRunTour({ run, onClose }: { run: boolean; onClose: () => void }) {
   const t = useT();
   const steps: Step[] = useMemo(

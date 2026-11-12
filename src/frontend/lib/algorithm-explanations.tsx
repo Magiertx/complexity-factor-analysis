@@ -7,6 +7,7 @@
 import type { ReactNode } from "react";
 import type { Locale } from "@/lib/i18n";
 
+/** The explainer text of one algorithm; `paramNotes` is optional. */
 export interface AlgorithmExplanation {
   what: ReactNode;
   how: ReactNode;
@@ -75,6 +76,7 @@ const EXPLANATIONS_EN: Record<string, AlgorithmExplanation> = {
   },
 };
 
+/** The explanation for an algorithm in `locale`, else the one in the other language; undefined when there is none. */
 export function getExplanation(
   algorithmId: string,
   locale: Locale,

@@ -1,3 +1,5 @@
+// Unit tests for measurement.ts.
+
 import { describe, expect, it } from "vitest";
 import type { Measurement } from "./api";
 import { measurementRows, measurementTotals } from "./measurement";

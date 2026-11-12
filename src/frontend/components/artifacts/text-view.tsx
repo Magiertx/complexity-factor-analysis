@@ -1,5 +1,7 @@
 "use client";
 
+// A text artifact: sanitised Markdown, with a long list of notes folded.
+
 import { useState } from "react";
 import type { Artifact } from "@/lib/api";
 import { useT } from "@/lib/i18n";
@@ -12,6 +14,7 @@ type T = Extract<Artifact, { kind: "text" }>;
 /** Paragraphs a long list of notes shows before it folds the rest. */
 const SHOWN_PARAGRAPHS = 3;
 
+/** Renders the Markdown of a text artifact. */
 export function TextView({ artifact }: { artifact: T }) {
   const t = useT();
   const [all, setAll] = useState(false);

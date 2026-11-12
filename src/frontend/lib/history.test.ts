@@ -1,3 +1,5 @@
+// Unit tests for history.ts.
+
 import { describe, expect, it } from "vitest";
 import type { DatasetSummary, Job } from "./api";
 import { dayKey, historyHref, isSingleRun, historyRows, parseTypeFilter, savedSettingsText } from "./history";

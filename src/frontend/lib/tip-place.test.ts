@@ -1,3 +1,5 @@
+// Unit tests for tip-place.ts.
+
 import { describe, expect, it } from "vitest";
 import { TIP_EDGE, TIP_GAP, placeTip, unfoldLeft } from "./tip-place";
 

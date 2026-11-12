@@ -1,5 +1,7 @@
 "use client";
 
+// The factors step: how many factors to keep, with the criteria that suggest a count and the scree plot, and the rotation.
+
 import { Minus, Plus, Sparkles } from "lucide-react";
 import { ROTATIONS, type FactorAnalysis, type Rotation } from "@/lib/api";
 import {
@@ -23,6 +25,7 @@ import { FigureMenu, type FigureDownload } from "./figure-menu";
 import { HelpLabel, NoticeList } from "./step-section";
 import { ScreePlot } from "./scree-plot";
 
+/** The props of `FactorsView`. */
 interface Props {
   analysis: FactorAnalysis;
   options: AnalysisOptions;
@@ -40,8 +43,10 @@ interface Props {
   measureName?: (key: string) => string;
 }
 
+/** The criteria that suggest a factor count. */
 type Criterion = "kaiser" | "parallel" | "paper" | "report";
 
+/** The factors step. */
 export function FactorsView({ analysis, options, onOptions, paperFactors, paperScope, figure, measureName }: Props) {
   const t = useT();
   const tMaybe = useTMaybe();

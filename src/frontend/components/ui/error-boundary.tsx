@@ -1,5 +1,7 @@
 "use client";
 
+// A React error boundary: a render error in a page shows a card with a retry button instead of a blank page.
+
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { AlertCircle } from "lucide-react";
 import { useT } from "@/lib/i18n";
@@ -15,6 +17,7 @@ interface State {
   error: Error | null;
 }
 
+/** The card shown in place of the part that failed to render. */
 function ErrorFallback({ error, onRetry }: { error: Error | null; onRetry: () => void }) {
   const t = useT();
   return (
@@ -42,6 +45,7 @@ function ErrorFallback({ error, onRetry }: { error: Error | null; onRetry: () =>
   );
 }
 
+/** Catches render errors below it and shows `ErrorFallback`; "Try again" renders the children anew. */
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,

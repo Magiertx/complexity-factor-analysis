@@ -1,3 +1,5 @@
+// Unit tests for interpretation-choice.ts.
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   CHOICE_KEY,

@@ -4,6 +4,7 @@
 import { ASSIGNMENT_RULES, ROTATIONS, type AssignmentRule, type Rotation } from "./api";
 import { FACTOR_NAME_MAX, cleanFactorName, namesForApi, sameOptions, type AnalysisOptions, type FactorNames } from "./factor-analysis";
 
+/** A preset a link names instead of spelling the settings out: the paper's settings or the tool standard. */
 export type LinkPreset = "published" | "standard";
 
 /** The parameters a link may carry besides `bundled`; any other one is left alone. */
@@ -46,6 +47,7 @@ function writeOptions(q: URLSearchParams, options: AnalysisOptions, standard: An
   if (options.miner !== null) q.set("miner", options.miner);
 }
 
+/** A link read back into the bundled dataset it opens and the settings to apply. */
 export interface ParsedLink {
   bundledId: string;
   /** A preset to apply, or null when `options` spells the settings out. */

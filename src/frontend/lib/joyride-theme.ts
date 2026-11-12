@@ -32,6 +32,7 @@ const DARK = {
   mutedSoft: "rgb(161 161 170)",
 };
 
+/** Joyride options (buttons, colours) for the light or dark theme. */
 export function getJoyrideOptions(isDark: boolean): Partial<Options> {
   const t = isDark ? DARK : LIGHT;
   return {
@@ -61,8 +62,10 @@ export function getJoyrideOptions(isDark: boolean): Partial<Options> {
   };
 }
 
+/** The text lookup the tours pass in. */
 export type TFn = (key: string) => string;
 
+/** The button labels of a tour in the UI language. */
 export function getJoyrideLocale(t: TFn) {
   return {
     back: t("common.back"),
@@ -76,6 +79,7 @@ export function getJoyrideLocale(t: TFn) {
   };
 }
 
+/** Joyride styles for the light or dark theme. */
 export function getJoyrideStyles(isDark: boolean): Partial<Styles> {
   const t = isDark ? DARK : LIGHT;
 

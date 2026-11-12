@@ -1,11 +1,14 @@
 "use client";
 
+// Light/dark switch for the site header.
+
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { useTip } from "./ui/tip";
 
+/** Icon button that toggles the colour theme; it announces the state only after mount. */
 export function ThemeToggle() {
   const { setTheme, resolvedTheme } = useTheme();
   const t = useT();

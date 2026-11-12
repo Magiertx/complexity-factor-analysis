@@ -1,22 +1,28 @@
 "use client";
 
+// The scree plot of the eigenvalues, with the criteria for the factor count and a table of its values.
+
 import { useEffect, useId, useRef, useState } from "react";
 import { Table2 } from "lucide-react";
 import { formatNumber, formatPercent } from "@/lib/format";
 import { TableFrame } from "@/components/ui/table";
 import { useLocale, useT } from "@/lib/i18n";
 
+/** Height of the plot, in px. */
 const HEIGHT = 260;
+/** The margins around the plot area, in px. */
 const M = { l: 44, r: 44, t: 28, b: 40 };
 // Without "Show all", the plot ends after this many factors or twice the largest suggestion,
 // whichever is more: past the elbow the eigenvalues of a hundred measures only crowd the axis.
 const MIN_SHOWN = 20;
 
+/** The smallest round step for an axis that is at least `raw`. */
 function niceStep(raw: number) {
   for (const s of [0.25, 0.5, 1, 2, 5, 10, 20, 50]) if (s >= raw) return s;
   return Math.ceil(raw / 100) * 100;
 }
 
+/** The props of `ScreePlot`. */
 interface Props {
   eigenvalues: number[];
   /** Parallel analysis: the percentile of the eigenvalues of random data, one per eigenvalue. */

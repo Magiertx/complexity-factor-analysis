@@ -1,5 +1,7 @@
 "use client";
 
+// The (i) that explains something: a tooltip on hover or focus, a popover on click.
+
 import { useId, useMemo, useRef, useState } from "react";
 import { Info } from "lucide-react";
 import { useT } from "@/lib/i18n";

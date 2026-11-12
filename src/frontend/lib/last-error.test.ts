@@ -1,3 +1,5 @@
+// Unit tests for last-error.ts.
+
 import { beforeEach, describe, expect, it } from "vitest";
 import { forgetLastError, lastErrorCode, noteError } from "./last-error";
 

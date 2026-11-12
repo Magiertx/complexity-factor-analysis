@@ -1,6 +1,9 @@
+// The text input of the app.
+
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+/** A text input. */
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   ({ className, ...props }, ref) => (
     <input

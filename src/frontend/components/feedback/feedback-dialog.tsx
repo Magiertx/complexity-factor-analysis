@@ -1,5 +1,7 @@
 "use client";
 
+// The feedback form: kind, message, contact and the technical details that go along.
+
 import { useEffect, useId, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Loader2, X } from "lucide-react";
@@ -20,6 +22,7 @@ import { Segmented } from "@/components/ui/segmented";
 import { Sheet } from "@/components/ui/sheet";
 import { useToasts } from "@/components/ui/toasts";
 
+/** What has been typed; kept by `FeedbackProvider` while the dialog is closed. */
 export interface Draft {
   kind: FeedbackKind;
   message: string;
@@ -28,6 +31,7 @@ export interface Draft {
   technical: boolean;
 }
 
+/** The kinds of feedback, in the order of the control. */
 const KINDS: FeedbackKind[] = ["bug", "idea", "other"];
 
 /** The feedback form as a panel at the right edge: a modal dialog like the fact sheet of a measure. */
@@ -61,6 +65,7 @@ export function FeedbackDialog({
   );
 }
 
+/** The form inside the sheet. Where the server has no mail it opens an issue on GitHub (`issueUrl`) instead of sending. */
 function FeedbackForm({
   titleId,
   errorCode,

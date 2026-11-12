@@ -1,3 +1,5 @@
+// Unit tests for compare.ts.
+
 import { describe, expect, it } from "vitest";
 import {
   COMPARE_HREF,

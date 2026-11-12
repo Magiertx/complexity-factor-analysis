@@ -1,5 +1,7 @@
 "use client";
 
+// Keyboard shortcut past the header to the main content.
+
 import { useT } from "@/lib/i18n";
 
 /**

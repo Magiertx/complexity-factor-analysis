@@ -1,3 +1,5 @@
+// Unit tests for session-cookie.ts.
+
 import { describe, expect, it, vi } from "vitest";
 import { isPageRequest, sessionCookies } from "./session-cookie";
 

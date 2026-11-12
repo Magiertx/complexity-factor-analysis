@@ -8,6 +8,7 @@
 import type { Locale } from "./provider";
 import { ALGO_CONTENT_DE, SAMPLE_LOGS_DE } from "./algo-content.de";
 
+/** The German texts of one algorithm; each field is optional and falls back to the English one. */
 export interface AlgoContentOverride {
   /** German name of the algorithm. */
   name?: string;
@@ -19,14 +20,17 @@ export interface AlgoContentOverride {
   labels?: Record<string, string>;
 }
 
+/** German overrides by algorithm id. */
 export type AlgoContentMap = Record<string, AlgoContentOverride>;
 
 type Translate = (key: string, params?: Record<string, string | number>) => string;
 
+/** The algorithm's name in `locale`. */
 export function localizedAlgoName(algo: { id: string; name: string }, locale: Locale): string {
   return (locale === "de" && ALGO_CONTENT_DE[algo.id]?.name) || algo.name;
 }
 
+/** The algorithm's description in `locale`; empty if it has none. */
 export function localizedAlgoDescription(
   algo: { id: string; description?: string | null },
   locale: Locale,
@@ -38,6 +42,7 @@ export function localizedAlgoDescription(
   return algo.description ?? "";
 }
 
+/** The label of a parameter in `locale`. */
 export function localizedParamLabel(
   algorithmId: string | undefined,
   spec: { name: string; label: string },
@@ -46,6 +51,7 @@ export function localizedParamLabel(
   return (locale === "de" && algorithmId && ALGO_CONTENT_DE[algorithmId]?.labels?.[spec.name]) || spec.label;
 }
 
+/** The help text of a parameter in `locale`; undefined if it has none. */
 export function localizedParamHelp(
   algorithmId: string | undefined,
   spec: { name: string; help?: string | null },

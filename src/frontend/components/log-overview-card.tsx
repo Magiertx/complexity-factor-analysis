@@ -1,5 +1,7 @@
 "use client";
 
+// Tile with the key statistics of an uploaded log (traces, events, activities, variants, trace length, time span).
+
 import { LogStats } from "@/lib/api";
 import {
   FileBarChart,
@@ -15,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { useLocale, type Locale } from "@/lib/i18n";
 import { formatDate, formatNumber, formatPercent } from "@/lib/format";
 
+// `stats` is the summary computed by the backend; `filename` is shown beside the heading.
 type Props = {
   stats: LogStats;
   filename?: string | null;
@@ -22,6 +25,7 @@ type Props = {
 
 type Translate = (key: string, params?: Record<string, string | number>) => string;
 
+/** "start → end", or one date when both fall on the same day; null when either end is missing. */
 function formatDateRange(start: string | null, end: string | null, locale: Locale): string | null {
   if (!start || !end) return null;
   const s = formatDate(start, locale);
@@ -30,6 +34,7 @@ function formatDateRange(start: string | null, end: string | null, locale: Local
   return s === e ? s : `${s} → ${e}`;
 }
 
+/** The time span in the largest fitting unit (years of 365 days, months of 30, days, hours, else seconds); null when missing or not positive. */
 function formatDuration(start: string | null, end: string | null, t: Translate, locale: Locale): string | null {
   if (!start || !end) return null;
   const ms = new Date(end).getTime() - new Date(start).getTime();
@@ -44,11 +49,13 @@ function formatDuration(start: string | null, end: string | null, t: Translate, 
   return t("log_overview.duration_seconds", { n: n(ms / 1000, 0) });
 }
 
+/** Heading line with the file name, a row of figures and the most frequent activities. */
 export function LogOverviewCard({ stats, filename }: Props) {
   const { t, locale } = useLocale();
   const dateRange = formatDateRange(stats.time_range_start, stats.time_range_end, locale);
   const duration = formatDuration(stats.time_range_start, stats.time_range_end, t, locale);
   const variantPct = formatPercent(stats.variant_to_trace_ratio, locale, 0);
+  // More than half as many variants as traces: the variants figure turns to the warning colour.
   const noisyVariants = stats.variant_to_trace_ratio > 0.5;
   const count = (n: number) => formatNumber(n, locale, 0);
 
@@ -135,6 +142,7 @@ export function LogOverviewCard({ stats, filename }: Props) {
   );
 }
 
+/** One figure with icon, label and an optional hint; `accent="warn"` colours it as a warning. */
 function Stat({
   icon,
   value,

@@ -1,9 +1,12 @@
+// Next.js middleware: starts the session before the first request of a page (see lib/session-cookie.ts).
+
 import { NextResponse, type NextRequest } from "next/server";
 import { isPageRequest, sessionCookies } from "@/lib/session-cookie";
 
 // The same address as the /api rewrite of next.config.mjs.
 const API_BASE = process.env.INTERNAL_API_URL || "http://algoservice:8000";
 
+/** For a page request, asks the API for the session cookies and passes them on in the response. */
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
   if (!isPageRequest(request.method, request.headers)) return response;

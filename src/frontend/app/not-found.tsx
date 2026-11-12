@@ -9,6 +9,7 @@ import { buttonClass } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useT } from "@/lib/i18n";
 
+/** The 404 page, in the language of the UI. */
 export default function NotFound() {
   const t = useT();
   return (

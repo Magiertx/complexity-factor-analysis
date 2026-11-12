@@ -1,5 +1,7 @@
 "use client";
 
+// A text link with an icon that can be blocked with a reason, like IconButton.
+
 import type { ComponentType } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";

@@ -1,9 +1,12 @@
 "use client";
 
+// The context that opens the one feedback dialog from anywhere in the app.
+
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { FeedbackKind } from "@/lib/api";
 import { FeedbackDialog, type Draft } from "./feedback-dialog";
 
+/** The options of `open`. */
 export interface OpenFeedback {
   /** The kind to start with; the one chosen last otherwise. */
   kind?: FeedbackKind;
@@ -11,20 +14,24 @@ export interface OpenFeedback {
   errorCode?: string | null;
 }
 
+/** An open dialog. */
 interface Request {
   errorCode: string | null;
   /** The element the dialog was opened from, to give the focus back to. */
   from: HTMLElement | null;
 }
 
+/** The `open` function of the dialog. */
 const FeedbackContext = createContext<{ open: (options?: OpenFeedback) => void } | null>(null);
 
+/** `open` for the feedback dialog; inside `FeedbackProvider` only. */
 export function useFeedback() {
   const ctx = useContext(FeedbackContext);
   if (!ctx) throw new Error("useFeedback must be used inside <FeedbackProvider>");
   return ctx;
 }
 
+/** A fresh draft. */
 const EMPTY: Draft = { kind: "bug", message: "", contact: "", technical: true };
 
 /**

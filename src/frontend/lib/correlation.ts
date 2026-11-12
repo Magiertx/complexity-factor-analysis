@@ -21,6 +21,7 @@ export interface MapBlock {
   to: number;
 }
 
+/** The measures of the map in the order shown, with what is needed to draw it. */
 export interface MapLayout {
   /** The measures shown, as the rows and the columns of the map. */
   measures: string[];

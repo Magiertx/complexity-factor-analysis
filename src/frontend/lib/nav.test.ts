@@ -1,3 +1,5 @@
+// Unit tests for nav.ts.
+
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { activeHeaderLink, activeTab, lastAnalysis, rememberAnalysis, TAB_HREFS, TABS } from "./nav";
 

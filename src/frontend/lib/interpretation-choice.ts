@@ -4,6 +4,7 @@
  * (it is served without a call); without a key only what is stored can be shown.
  */
 
+/** A model and an effort. */
 export interface InterpretationChoice {
   model: string;
   effort: string;
@@ -23,6 +24,7 @@ export interface ChoiceStatus {
   efforts?: string[];
 }
 
+/** localStorage key of the remembered choice. */
 export const CHOICE_KEY = "app.interpretation-choice";
 
 /** Order efforts are listed in, whatever order the server sends them. */
@@ -38,10 +40,12 @@ export function modelLabel(id: string): string {
   return MODEL_NAMES[id] ?? id;
 }
 
+/** The choice as one string, empty for none; for comparing and as a key. */
 export function choiceKey(choice: InterpretationChoice | null): string {
   return choice ? `${choice.model}|${choice.effort}` : "";
 }
 
+/** Whether an interpretation is stored for this choice. */
 export function isStored(variants: StoredVariant[], choice: InterpretationChoice): boolean {
   return variants.some((v) => v.model === choice.model && v.effort === choice.effort);
 }
@@ -124,6 +128,7 @@ export function withModel(
   return { model, effort };
 }
 
+/** The choice remembered in the browser, or null. */
 export function readChoice(): InterpretationChoice | null {
   try {
     const raw = JSON.parse(localStorage.getItem(CHOICE_KEY) ?? "null");
@@ -135,6 +140,7 @@ export function readChoice(): InterpretationChoice | null {
   }
 }
 
+/** Remembers the choice in the browser. */
 export function saveChoice(choice: InterpretationChoice): void {
   try {
     localStorage.setItem(CHOICE_KEY, JSON.stringify(choice));
