@@ -5,6 +5,10 @@ import { parseStep } from "./steps";
 
 /** Longest feedback message, in characters; the server applies the same limit. */
 export const MAX_MESSAGE = 4000;
+/** Longest issue title the sender may type, in characters. */
+export const MAX_TITLE = 80;
+/** Longest automatic summary in an issue title, in characters. */
+const MAX_SUMMARY = 50;
 /** Longest contact text, in characters; the server applies the same limit. */
 export const MAX_CONTACT = 200;
 
@@ -12,20 +16,34 @@ export const MAX_CONTACT = 200;
 export const MAX_ISSUE_URL = 7500;
 const ISSUE_KIND: Record<string, string> = { bug: "Bug", idea: "Idea", other: "Feedback" };
 
+/** The first sentence of a message (ends at . ! ? or a line break), cut at a word boundary with "…". */
+function summary(message: string): string {
+  const first = message.trim().split(/(?<=[.!?])\s|\n/, 1)[0].trim().replace(/[.!?]+$/, "");
+  if (first.length <= MAX_SUMMARY) return first;
+  const cut = first.slice(0, MAX_SUMMARY - 1);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > 0 ? cut.slice(0, space) : cut).trimEnd()}…`;
+}
+
+/** The title of the issue: the kind, then the sender's title, or a short summary of the message. */
+export function issueTitle(kind: string, message: string, title = ""): string {
+  const text = title.trim().slice(0, MAX_TITLE) || summary(message);
+  return `${ISSUE_KIND[kind] ?? "Feedback"}: ${text}`;
+}
+
 /**
  * The address of a new issue on GitHub, filled in from the form: the issue form
- * `.github/ISSUE_TEMPLATE/feedback.yml` (which sets the label `feedback`), a title from the kind
- * and the first line of the message, the message and the technical details. For a server without
- * mail, the desktop app above all, where a message kept on the server would reach nobody.
+ * `.github/ISSUE_TEMPLATE/feedback.yml` (which sets the label `feedback`), a title (typed, or
+ * the kind and a short summary of the message), the message and the technical details. For a
+ * server without mail, the desktop app above all, where a message kept on the server would reach nobody.
  */
 export function issueUrl(
   repo: string,
-  input: { kind: string; message: string; details: Record<string, string> | null },
+  input: { kind: string; title?: string; message: string; details: Record<string, string> | null },
 ): string {
   const lines = input.details ? Object.entries(input.details).map(([key, value]) => `${key}: ${value}`).join("\n") : "";
   const build = (message: string) => {
-    const first = message.split("\n", 1)[0].trim();
-    const title = `${ISSUE_KIND[input.kind] ?? "Feedback"}: ${first.length > 60 ? `${first.slice(0, 59)}…` : first}`;
+    const title = issueTitle(input.kind, input.message, input.title);
     const query = new URLSearchParams({ template: "feedback.yml", title, message });
     if (lines) query.set("details", lines);
     return `${repo.replace(/\/+$/, "")}/issues/new?${query.toString()}`;

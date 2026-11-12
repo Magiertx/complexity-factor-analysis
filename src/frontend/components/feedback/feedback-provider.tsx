@@ -32,7 +32,7 @@ export function useFeedback() {
 }
 
 /** A fresh draft. */
-const EMPTY: Draft = { kind: "bug", message: "", contact: "", technical: true };
+const EMPTY: Draft = { kind: "bug", title: "", message: "", contact: "", technical: true };
 
 /**
  * The one feedback dialog of the app, opened from the header and from the error notices. What was

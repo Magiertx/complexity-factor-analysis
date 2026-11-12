@@ -1868,6 +1868,8 @@
       "idea": "Suggestion",
       "other": "Other"
     },
+    "title_label": "Title (optional)",
+    "title_placeholder": "Short summary; otherwise made from your message",
     "message_label": "Message",
     "message_placeholder": {
       "bug": "What happened, and what did you expect?",

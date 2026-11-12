@@ -1868,6 +1868,8 @@
       "idea": "Vorschlag",
       "other": "Sonstiges"
     },
+    "title_label": "Titel (optional)",
+    "title_placeholder": "Kurze Zusammenfassung; sonst aus deiner Nachricht",
     "message_label": "Nachricht",
     "message_placeholder": {
       "bug": "Was ist passiert, und was hast du erwartet?",
