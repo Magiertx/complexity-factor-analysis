@@ -98,7 +98,7 @@ def test_the_redirect_keeps_the_path_and_the_other_parameters(anonymous_client, 
     assert followed.status_code == 200 and "log page" in followed.text and str(followed.url).endswith("/log")
 
 
-@pytest.mark.parametrize("path", ["//evil.example/", "/\evil.example/", "///evil.example", "/%2F/"])
+@pytest.mark.parametrize("path", ["//evil.example/", "/\\evil.example/", "///evil.example", "/%2F/"])
 def test_the_token_redirect_cannot_leave_the_origin(desktop_app, access, path):
     status, headers = asgi_get(desktop_app, path.replace("%2F", "/"), f"token={access.new_code()}")
     assert status == 303

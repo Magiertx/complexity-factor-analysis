@@ -78,11 +78,11 @@ def test_a_trailing_slash_redirects_like_nextjs(desktop_client):
     "path, location",
     [
         ("//evil.example/", "/evil.example"),
-        ("/\evil.example/", "/evil.example"),
+        ("/\\evil.example/", "/evil.example"),
         ("/%2F%2Fevil.example/", "/evil.example"),  # as the server has it, decoded
         ("///evil.example/", "/evil.example"),
         ("//", "/"),
-        ("/\/", "/"),
+        ("/\\/", "/"),
         ("/a//", "/a"),
     ],
 )
@@ -102,7 +102,7 @@ def test_the_encoded_forms_through_a_real_client(desktop_client, path):
     assert not response.headers.get("location", "/").startswith(("//", "/\\"))
 
 
-@pytest.mark.parametrize("path", ["//evil.example/", "/api//evil.example/", "/api/\evil/"])
+@pytest.mark.parametrize("path", ["//evil.example/", "/api//evil.example/", "/api/\\evil/"])
 def test_the_api_redirect_stays_on_the_origin_too(desktop_app, path):
     status, headers = asgi_get(desktop_app, path, "", BEARER)
     assert status in (308, 404)

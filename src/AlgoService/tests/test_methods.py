@@ -177,13 +177,13 @@ def test_uploaded_logs_are_described_as_measured_with_feeed():
         language="en", dataset=_dataset(kind="log", source="logs"), result=_result(), requested_factors=None, excluded=[],
         tool=TOOL, libraries=LIBRARIES, entry=None,
     )
-    assert ", whose measures were extracted with feeed, as in \cite{schalk_comfy_log}" in built.text
+    assert r", whose measures were extracted with feeed, as in \cite{schalk_comfy_log}" in built.text
     assert "computed with" not in built.text
     german = methods.methods(
         language="de", dataset=_dataset(kind="log", source="logs"), result=_result(), requested_factors=None, excluded=[],
         tool=TOOL, libraries=LIBRARIES, entry=None,
     )
-    assert ", deren Maße wie in \cite{schalk_comfy_log} mit feeed berechnet wurden" in german.text
+    assert r", deren Maße wie in \cite{schalk_comfy_log} mit feeed berechnet wurden" in german.text
 
 
 def test_a_communality_threshold_of_zero_is_not_stated():
