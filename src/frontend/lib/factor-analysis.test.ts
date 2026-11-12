@@ -11,6 +11,7 @@ import {
   datasetJobSubtitle,
   datasetName,
   defaultOptions,
+  failureCode,
   heatmapHeightIn,
   initialOptions,
   isSolutionNotice,
@@ -249,6 +250,24 @@ describe("jobs", () => {
     expect(jobErrorText(few, tMaybe, { have: 1, need: 2 })).toBe(
       en.errors.dataset_too_few_measures.replace("{have}", "1").replace("{need}", "2"),
     );
+  });
+
+  it("say it is the desktop program that has no ProM, where ProM is known to be missing", () => {
+    const failed = job({ status: "failed", error: "ProM4Py could not be reached ...", error_code: "prom_unavailable" });
+    expect(jobErrorText(failed, tMaybe, undefined, false)).toBe(en.errors.prom_unavailable_desktop);
+    expect(jobErrorText(failed, translator("de").tMaybe, undefined, false)).toBe(de.errors.prom_unavailable_desktop);
+    expect(jobErrorText(failed, tMaybe, undefined, true)).toBe(en.errors.prom_unavailable);
+    // Other causes are not touched.
+    expect(jobErrorText({ error: "x", error_code: "rate_limited" }, tMaybe, undefined, false)).toBe(en.errors.rate_limited);
+  });
+});
+
+describe("failureCode", () => {
+  it("changes only a missing ProM, and only where ProM is known to be missing", () => {
+    expect(failureCode("prom_unavailable", false)).toBe("prom_unavailable_desktop");
+    expect(failureCode("prom_unavailable", true)).toBe("prom_unavailable");
+    expect(failureCode("xes_invalid", false)).toBe("xes_invalid");
+    expect(failureCode(null, false)).toBeNull();
   });
 });
 

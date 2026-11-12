@@ -64,16 +64,22 @@ test("the tools of the header: what ComFy does, its paper and citation, and the 
   await expect(tour).toContainText("three sections");
 });
 
-test("an example log shows its overview, the presets stay, and Ctrl+Enter starts the run", async ({ page }) => {
+test("an example log shows its overview and the presets stay", async ({ page }) => {
+  await page.goto("/inspect");
+  await expect(page.getByRole("button", { name: text("common.run_analysis") })).toBeDisabled();
+  await chooseExample(page);
+  await expect(page.getByRole("button", { name: pattern(text("preset_bar.save_preset")) })).toBeVisible();
+  // The overview of the log: its traces and events.
+  await expect(page.getByText(/^6\s*traces$/)).toBeVisible();
+  await expect(page.getByText(/^30\s*events$/)).toBeVisible();
+});
+
+test("an example log enables the run, and Ctrl+Enter starts it", { tag: "@prom" }, async ({ page }) => {
   await page.goto("/inspect");
   const run = page.getByRole("button", { name: text("common.run_analysis") });
   await expect(run).toBeDisabled();
   await chooseExample(page);
   await expect(run).toBeEnabled();
-  await expect(page.getByRole("button", { name: pattern(text("preset_bar.save_preset")) })).toBeVisible();
-  // The overview of the log: its traces and events.
-  await expect(page.getByText(/^6\s*traces$/)).toBeVisible();
-  await expect(page.getByText(/^30\s*events$/)).toBeVisible();
 
   // Ctrl+Enter anywhere on the page starts the run, which then has its address.
   await page.locator("h1").click();

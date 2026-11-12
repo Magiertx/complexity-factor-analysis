@@ -608,13 +608,26 @@ export function stabilityJobKind(job: Job): FactorKind | null {
   return job.algorithm_id.slice("_stability:".length) === "log" ? "log" : "model";
 }
 
-/** Why a job failed: in the UI language where the server names a known cause, else its message. */
+/**
+ * The code to say a failure with. Where ProM is known to be missing (the desktop app), a failed
+ * connection to it gets its own sentence: "start the service on the server" is no advice there.
+ */
+export function failureCode(code: string | null | undefined, prom: boolean): string | null | undefined {
+  return code === "prom_unavailable" && !prom ? "prom_unavailable_desktop" : code;
+}
+
+/**
+ * Why a job failed: in the UI language where the server names a known cause, else its message.
+ * `prom` is false where ProM is known to be missing.
+ */
 export function jobErrorText(
   job: Pick<Job, "error" | "error_code">,
   tMaybe: TranslateMaybe,
   params?: Record<string, string | number> | null,
+  prom = true,
 ): string | undefined {
-  return (job.error_code && tMaybe(`errors.${job.error_code}`, params ?? undefined)) || job.error || undefined;
+  const code = failureCode(job.error_code, prom);
+  return (code && tMaybe(`errors.${code}`, params ?? undefined)) || job.error || undefined;
 }
 
 /**

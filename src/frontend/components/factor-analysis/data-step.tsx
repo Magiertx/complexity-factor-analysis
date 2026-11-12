@@ -48,6 +48,7 @@ import {
   countText,
   datasetEnded,
   datasetName,
+  failureCode,
   plainFailure,
   progressPercent,
   publishedOptions,
@@ -55,6 +56,7 @@ import {
 import { formatDateTime, formatFileSize, formatNumber, formatPercent, formatRelative, splitSentence } from "@/lib/format";
 import { datasetNote, orderCollection, settingsSourceText } from "@/lib/paper-notes";
 import { cn } from "@/lib/utils";
+import { useProm } from "@/lib/use-capabilities";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
@@ -132,6 +134,7 @@ export function DataForm({
 }: Props) {
   const t = useT();
   const router = useRouter();
+  const prom = useProm();
   const sources = catalog.sources.filter((s) => kind === "model" || s !== "pnml");
   const [source, setSource] = useState<DatasetSource>(sources[0] ?? "bundled");
   // The own datasets come first when there are any; the tab goes away with the last of them.
@@ -237,6 +240,9 @@ export function DataForm({
   }, [source, kind, nInputs, miners.length, measures.length, maxFiles]);
   // Computed anyway, but too few rows for the measures: the analysis will not run.
   const tooFew = !!estimate && estimate.rows > 0 && estimate.cols > 0 && estimate.rows <= estimate.cols;
+
+  // Mining event logs into Petri nets needs ProM; the desktop app has none yet.
+  const noProm = !prom && source === "logs" && kind === "model";
 
   const blocker: string | null = (() => {
     if (source === "bundled") return choice ? null : t("factor.data.need_bundled");
@@ -375,6 +381,12 @@ export function DataForm({
     // Anything the keyboard or a scroll brings into view stays clear of the button bar at the bottom.
     <div className="space-y-5 [&_:is(input,button,a)]:scroll-mb-32 lg:[&_:is(input,button,a)]:scroll-mb-20">
       {tabs}
+
+      {noProm && (
+        <Notice tone="warn" size="sm" role="status">
+          {t("common.prom_missing")}
+        </Notice>
+      )}
 
       {source === "bundled" && (
         <BundledList kind={kind} catalog={catalog} entries={entries} selected={choice} onSelect={setChoice} />
@@ -533,7 +545,7 @@ export function DataForm({
             {t("common.cancel")}
           </Button>
         )}
-        <Button onClick={submit} disabled={!!blocker || submitting}>
+        <Button onClick={submit} disabled={!!blocker || noProm || submitting}>
           {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
           {!submitting && entry?.to === "compare" && <Columns3 className="h-4 w-4" aria-hidden />}
           {submitting ? t("factor.data.submitting") : submitLabel}
@@ -1488,6 +1500,7 @@ export function DataSummary({
   const t = useT();
   const { locale } = useLocale();
   const tMaybe = useTMaybe();
+  const prom = useProm();
   const name = datasetName(dataset, t, catalog);
   const withRun = !!dataset.job_id;
   // Only a focus target for screen readers after a load: no ring around plain text.
@@ -1573,7 +1586,7 @@ export function DataSummary({
   if (dataset.status === "failed") {
     const failure = plainFailure(
       tMaybe,
-      { code: dataset.error_code, params: dataset.error_params, message: dataset.error },
+      { code: failureCode(dataset.error_code, prom), params: dataset.error_params, message: dataset.error },
       t("errors.compute_failed"),
     );
     return (

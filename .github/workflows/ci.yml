@@ -197,8 +197,9 @@ jobs:
         working-directory: src/frontend
         run: npx playwright install --with-deps chromium
 
-      # PROM4PY_URL keeps its default, where nothing listens, so ComFy finds no ProM; it waits
-      # 2 s for one instead of 3 minutes.
+      # PROM4PY_URL stays unset, so the server reports no ProM (GET /capabilities) and the UI
+      # refuses to mine a log (the @no-prom specs); a ComFy run that did start would wait only
+      # 2 s for ProM instead of 3 minutes.
       - name: Start the backend
         working-directory: src/AlgoService
         env:

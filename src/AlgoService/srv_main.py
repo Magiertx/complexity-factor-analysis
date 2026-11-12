@@ -35,7 +35,7 @@ import feedback_mail
 import job_runner
 import jobs_db
 from config import APP_NAME, CodedHTTPException, JSONFormatter, limiter
-from routes import health, algorithms, jobs, factor_analysis, interpretation, session, feedback
+from routes import health, algorithms, jobs, factor_analysis, interpretation, session, feedback, capabilities
 from version import VERSION
 
 from starlette.middleware.sessions import SessionMiddleware
@@ -248,3 +248,4 @@ app.include_router(factor_analysis.router)
 app.include_router(interpretation.router)
 app.include_router(session.router)
 app.include_router(feedback.router)
+app.include_router(capabilities.router)

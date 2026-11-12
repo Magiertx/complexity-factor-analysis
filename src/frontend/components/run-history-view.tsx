@@ -53,6 +53,7 @@ import {
 import { formatDate, formatDateTime, formatNumber, formatPercent, formatRelative } from "@/lib/format";
 import { localizeCatalog, useLocale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { useProm } from "@/lib/use-capabilities";
 import { useJobs } from "./jobs-provider";
 import { JobNotesField } from "./job-notes-field";
 import { PageHeader } from "./page-header";
@@ -90,6 +91,7 @@ const DATASETS_POLL_MS = 15_000;
  */
 export function RunHistoryView() {
   const { t, tMaybe, locale } = useLocale();
+  const prom = useProm();
   const params = useSearchParams();
   const { jobs, loaded: jobsLoaded, refresh } = useJobs();
   const [datasets, setDatasets] = useState<Awaited<ReturnType<typeof listDatasets>> | null>(null);
@@ -368,6 +370,7 @@ export function RunHistoryView() {
                             { ...row.job, error_code: row.dataset?.error_code ?? row.job.error_code },
                             tMaybe,
                             row.dataset?.error_params,
+                            prom,
                           ) : undefined}
                       />
                     ))}

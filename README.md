@@ -319,8 +319,8 @@ npx next build
 Playwright drives the UI in a browser (`src/frontend/e2e/`): a paper dataset through all six
 steps with its ZIP, a CSV upload reopened from "My datasets" with its excluded measure, the
 PNML and log samples, deleting a dataset, the comparison of the four miners of Tab. 17 with its
-pairs of measures, its factor counts per column and its downloads, decimal commas in German, the theme switch, axe on every route in light and dark, and a single run without ProM, which has to fail with the
-coded error. They check text, roles and downloads, no pixels.
+pairs of measures, its factor counts per column and its downloads, decimal commas in German, the theme switch, axe on every route in light and dark, and a single run without ProM, which the page has to refuse up front
+with the reason. They check text, roles and downloads, no pixels.
 
 Against the Docker stack, with a browser installed on the machine (here Microsoft Edge;
 Playwright's own browsers are not needed):

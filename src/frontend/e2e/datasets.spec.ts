@@ -133,6 +133,22 @@ test("the log sample mined with the default miner gives a model dataset", { tag:
   await expect(stepSection(page, "dataset")).toContainText("Inductive miner");
 });
 
+test("mining logs says up front that ProM is missing, while log measures stay usable", { tag: "@no-prom" }, async ({ page }) => {
+  await page.goto("/");
+  await chooseSource(page, "logs");
+  const data = stepSection(page, "data");
+  await data.getByRole("checkbox", { name: new RegExp(text("factor.data.sample_label")) }).check({ force: true });
+  await expect(data.getByText(text("common.prom_missing"))).toBeVisible();
+  await expect(data.getByRole("button", { name: text("factor.data.submit_compute") })).toBeDisabled();
+  // Petri nets need no ProM.
+  await chooseSource(page, "pnml");
+  await expect(data.getByText(text("common.prom_missing"))).toHaveCount(0);
+  // Nor do the measures of the logs themselves.
+  await page.goto("/log");
+  await chooseSource(page, "logs");
+  await expect(stepSection(page, "data").getByText(text("common.prom_missing"))).toHaveCount(0);
+});
+
 test("the number of files per dataset is the one the server reports", async ({ page }) => {
   // The operator sets it (MAX_LOG_FILES), so the page must not assume the default of 50.
   const limits = { max_log_files: 3, max_pnml_files: 5, max_file_bytes: 100 * 1024 * 1024, max_total_bytes: 500 * 1024 * 1024 };

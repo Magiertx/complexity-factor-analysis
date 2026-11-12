@@ -135,20 +135,18 @@ test("axe finds no serious problem in the long lists of the log tab", async ({ p
   await deleteSessionDatasets(page);
 });
 
-test("a single run without ProM fails with the coded error", { tag: "@no-prom" }, async ({ page }) => {
-  test.slow();
+test("a single run without ProM is refused up front, with the reason", { tag: "@no-prom" }, async ({ page }) => {
   await page.goto("/inspect");
   await page
     .getByRole("radiogroup", { name: text("workbench.log_source.aria") })
     .getByRole("radio", { name: text("workbench.log_source.use_sample") })
     .click();
   await page.getByRole("radiogroup", { name: text("workbench.samples.label") }).getByRole("radio").first().check({ force: true });
-  const run = page.getByRole("button", { name: text("common.run_analysis") });
-  await expect(run).toBeEnabled();
-  await run.click();
-  // ComFy waits PROM4PY_START_WAIT seconds for ProM, then the run fails with prom_unavailable,
-  // which the UI shows in its own words instead of the server's message.
-  await expect(page.getByText(text("errors.prom_unavailable"))).toBeVisible({ timeout: 60_000 });
-
-  expect((await page.request.delete("/api/jobs")).ok()).toBeTruthy();
+  // The server says it has no ProM (PROM4PY_URL is unset): the page says so and does not start the run.
+  await expect(page.getByText(text("common.prom_missing"))).toBeVisible();
+  await expect(page.getByRole("button", { name: text("common.run_analysis") })).toBeDisabled();
+  await page.locator("h1").click();
+  await page.keyboard.press("Control+Enter");
+  await expect(page).not.toHaveURL(/job=/);
+  expect((await (await page.request.get("/api/jobs")).json()).jobs).toHaveLength(0);
 });

@@ -60,7 +60,7 @@ app shows the precomputed interpretations only, and it makes no other network ca
 | Jobs | Celery worker | in the process, at most `LOCAL_JOB_SLOTS` (2) at once, without a time limit (the Docker stack's Celery kills a task after an hour); jobs that are running when the app quits are stopped and marked "interrupted" (see "Port and single instance") |
 | Sessions | one per browser, 14 days | one for the installation (`SHARED_SESSION_ID`), kept for good |
 | Clean-up | idle datasets after 7 days, more than 30 datasets, runs on a full disk, a dataset that has been computing for more than 70 minutes is failed | none of these: the data are the user's own, and a long job is not taken for a dead one (a job that died with the process is marked at the next start). Still applying: the 10 most recent uploads of single runs are kept, older scratch files are dropped |
-| ProM | ProM4Py container | not yet: everything that mines a log fails after 2 s with the "ProM unavailable" error |
+| ProM | ProM4Py container | not yet: the app says so up front (`GET /api/capabilities` reports `prom: false` while `PROM4PY_URL` is unset), shows a notice where a log would be mined and disables the run; a mining run that still fails shows a desktop message instead of "start prom4py on the server" |
 
 Without ProM the app runs fully offline with the bundled datasets, Petri nets (PNML), log
 measures (feeed), factor analysis, stability, comparison, the exports and the precomputed
@@ -172,6 +172,7 @@ Before it imports the backend, which reads its settings at import time:
 | `OPENBLAS_NUM_THREADS`, `VECLIB_MAXIMUM_THREADS` | `1`, as in the Docker image |
 | `FASTAPI_ROOT_PATH` | `/api` |
 | `PROM4PY_START_WAIT` | `2` unless set |
+| `PROM4PY_URL` | not set: no ProM. Set in `settings.env`, the app counts ProM as available (`GET /api/capabilities`) |
 | `APP_VERSION`, `APP_COMMIT` | from `build_info.json` of a packaged build, unless set; from a checkout git answers |
 | `RATE_LIMIT_DISABLED` | `1`, unless `--rate-limits` |
 | removed | `REDIS_URL`, `TESTING`, `TEST_DATABASE_URL` |

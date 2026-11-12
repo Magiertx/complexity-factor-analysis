@@ -50,6 +50,7 @@ import {
 } from "@/lib/api";
 import { downloadBlob, jobErrorText } from "@/lib/factor-analysis";
 import { isSingleRun } from "@/lib/history";
+import { useProm } from "@/lib/use-capabilities";
 import { FileDrop, LOG_EXTENSIONS } from "./file-drop";
 import { ParameterForm, choiceList, type OptionInfo } from "./parameter-form";
 import { SingleRunTour } from "./single-run-tour";
@@ -76,6 +77,8 @@ import { formatDateTime, formatFileSize, formatPercent } from "@/lib/format";
 export function Workbench() {
   const t = useT();
   const { locale, tMaybe } = useLocale();
+  // Every run on this page mines the log with ProM; the desktop app has none yet.
+  const prom = useProm();
   const [algorithms, setAlgorithms] = useState<AlgorithmManifest[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -155,7 +158,7 @@ export function Workbench() {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== "Enter" || !(e.metaKey || e.ctrlKey)) return;
       if (selectedJobDetail) return;
-      if (!selected) return;
+      if (!selected || !prom) return;
       e.preventDefault();
       void run();
     };
@@ -339,7 +342,7 @@ export function Workbench() {
     } else if (jobSummary.status === "failed") {
       setSelectedJobDetail(jobSummary);
       setResult(null);
-      setError(jobErrorText(jobSummary, tMaybe) || t("workbench.errors.analysis_failed"));
+      setError(jobErrorText(jobSummary, tMaybe, undefined, prom) || t("workbench.errors.analysis_failed"));
       setProgress(null);
     } else if (jobSummary.status === "aborted") {
       setSelectedJobDetail(jobSummary);
@@ -356,7 +359,7 @@ export function Workbench() {
         status: jobSummary.progress_status,
       });
     }
-  }, [selectedJobId, jobs]);
+  }, [selectedJobId, jobs, prom]);
 
   // The algorithm on screen.
   const selected = useMemo(() => {
@@ -496,7 +499,7 @@ export function Workbench() {
 
   // Run new job in background
   async function run() {
-    if (!selected) return;
+    if (!selected || !prom) return;
 
     const isSample = activeSourceTab === "sample";
     const isRecent = activeSourceTab === "upload" && !!selectedRecentId;
@@ -629,6 +632,11 @@ export function Workbench() {
       {/* The last runs beside the page on a wide screen, after it on a smaller one. */}
       <div className={cn("space-y-6", hasRuns && "xl:grid xl:grid-cols-[minmax(0,1fr)_17rem] xl:gap-6 xl:items-start xl:space-y-0")}>
       <div className="space-y-4 min-w-0">
+        {!prom && !selectedJobDetail && (
+          <Notice tone="warn" role="status">
+            {t("common.prom_missing")}
+          </Notice>
+        )}
         {selected && (
           <>
             {/* 1. The event log: where it comes from, and what is in it. */}
@@ -1168,7 +1176,7 @@ export function Workbench() {
                       </Button>
                     )
                   ) : (
-                    <RunButton disabled={!hasLog} onClick={run} />
+                    <RunButton disabled={!hasLog || !prom} onClick={run} />
                   )}
                 </div>
               </div>

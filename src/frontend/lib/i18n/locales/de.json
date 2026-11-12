@@ -1,5 +1,6 @@
 {
   "common": {
+    "prom_missing": "Petri-Netze aus einem Event-Log zu entdecken braucht ProM, das im Desktop-Programm noch nicht enthalten ist. Petri-Netze (PNML), Log-Komplexität, CSV-Dateien und die mitgelieferten Datensätze funktionieren; zum Mining von Logs nutzt du die Docker-Version (siehe README).",
     "skip_to_content": "Zum Inhalt springen",
     "back": "Zurück",
     "next": "Weiter",
@@ -1579,6 +1580,7 @@
     "job_quota": "Du hast schon {active} wartende oder laufende Runs, dazu kämen {requested}. Erlaubt sind höchstens {limit}. Warte, bis sie fertig sind, oder brich einige im Verlauf ab.",
     "dataset_jobs_busy": "Der Server berechnet schon {active} Datensätze gleichzeitig, mehr geht nicht. Versuche es in ein paar Minuten noch einmal.",
     "prom_unavailable": "ProM, das die Miner ausführt, ist gerade nicht erreichbar, daher konnte kein Petri-Netz gefunden werden. Versuche es in ein paar Minuten noch einmal. Hilft das nicht, muss der Dienst prom4py auf dem Server gestartet werden.",
+    "prom_unavailable_desktop": "ProM, das die Miner ausführt, ist im Desktop-Programm noch nicht enthalten, daher konnte kein Petri-Netz gefunden werden. Petri-Netze (PNML), Log-Komplexität, CSV-Dateien und die mitgelieferten Datensätze funktionieren; zum Mining von Logs nutzt du die Docker-Version (siehe README).",
     "empty_file": "Die Datei ist leer. Wähle eine Datei mit Inhalt.",
     "csv_unparseable": "Die CSV-Datei lässt sich nicht lesen. Prüfe, ob sie eine Kopfzeile hat und Komma, Semikolon oder Tabulator als Trenner nutzt.",
     "csv_too_few_rows": "Die CSV-Datei hat zu wenige Datenzeilen ({rows} von mindestens {minimum}). Füge Zeilen hinzu oder wähle andere Daten.",

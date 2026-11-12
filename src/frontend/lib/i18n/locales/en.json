@@ -1,5 +1,6 @@
 {
   "common": {
+    "prom_missing": "Discovering Petri nets from an event log needs ProM, which the desktop program does not include yet. Petri nets (PNML), log complexity, CSV files and the bundled datasets work; for mining logs use the Docker version (see the README).",
     "skip_to_content": "Skip to content",
     "back": "Back",
     "next": "Next",
@@ -1579,6 +1580,7 @@
     "job_quota": "You already have {active} runs queued or running, and this would add {requested}. At most {limit} are allowed. Wait for them to finish or abort some in the History.",
     "dataset_jobs_busy": "The server is already computing {active} datasets, the most it runs at once. Try again in a few minutes.",
     "prom_unavailable": "ProM, which runs the miners, cannot be reached right now, so no Petri net could be discovered. Try again in a few minutes. If that does not help, the prom4py service has to be started on the server.",
+    "prom_unavailable_desktop": "ProM, which runs the miners, is not part of the desktop program yet, so no Petri net could be discovered. Petri nets (PNML), log complexity, CSV files and the bundled datasets work; for mining logs use the Docker version (see the README).",
     "empty_file": "The file is empty. Choose a file with content.",
     "csv_unparseable": "The CSV file cannot be read. Check that it has a header row and uses a comma, semicolon or tab as separator.",
     "csv_too_few_rows": "The CSV file has too few data rows ({rows} of at least {minimum}). Add rows or choose other data.",

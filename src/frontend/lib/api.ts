@@ -1625,6 +1625,19 @@ export async function fetchFeedbackChannel(): Promise<FeedbackChannel> {
   return r.json();
 }
 
+/** What this installation can do. */
+export interface Capabilities {
+  /** Event logs can be mined into Petri nets (ProM is there); the desktop app has none yet. */
+  prom: boolean;
+}
+
+/** Asks what this installation can do. */
+export async function fetchCapabilities(): Promise<Capabilities> {
+  const r = await fetch(`${BASE}/capabilities`, { cache: "no-store" });
+  if (!r.ok) throw await httpError(r, "Could not read what the server can do", false);
+  return r.json();
+}
+
 /** The body of a feedback message. */
 export interface FeedbackInput {
   kind: FeedbackKind;
