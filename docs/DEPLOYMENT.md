@@ -422,6 +422,10 @@ docker compose logs -f algoservice
 
 ### Prebuilt images
 
+> **Not available yet.** The images of release 1.0.0 are not on ghcr.io yet, so a pull ends with
+> `unauthorized` or `manifest unknown`; build from the sources until then
+> (`docker compose up -d --build` builds and starts).
+
 Instead of building, the stack can run from images on ghcr.io. `docker-compose.release.yml` has the
 same services, environment, volumes and healthchecks as `docker-compose.yml`, with `image:` in
 place of `build:`; `scripts/check_release_compose.py` compares the two and runs in CI, so change

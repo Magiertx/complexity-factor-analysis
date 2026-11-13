@@ -196,6 +196,10 @@ on the model tab. For a demo without network, see [`docs/OFFLINE-DEMO.md`](docs/
 
 ### Quick start without building
 
+> **Not available yet.** The images of release 1.0.0 are not on ghcr.io yet, so a pull ends with
+> `unauthorized` or `manifest unknown`. Until they are, use the Quick start above, which builds
+> the images.
+
 No checkout and no build: two files and the prebuilt images from ghcr.io.
 
 1. Download `docker-compose.release.yml` and `env.example` from the
