@@ -48,7 +48,9 @@ RUN apt-get update \
 
 WORKDIR /opt/prom4py
 
-RUN curl -sL -o /tmp/prom4py.zip "$PROM4PY_ZIP_URL" \
+# Zenodo limits the requests per address and then answers with an error page: -f makes that fail
+# here (and not as a broken archive in unzip), and the retries wait as the server asks.
+RUN curl -fsSL --retry 8 --retry-all-errors -o /tmp/prom4py.zip "$PROM4PY_ZIP_URL" \
     && unzip -q /tmp/prom4py.zip -d /tmp/prom4py-extracted \
     && mv /tmp/prom4py-extracted/ProM4Py/* . \
     && rm -rf /tmp/prom4py.zip /tmp/prom4py-extracted
