@@ -40,6 +40,7 @@ RUN curl -fsSL --retry 5 --retry-all-errors -o lpsolve-java.zip "$LPSOLVE_JAVA_U
 FROM eclipse-temurin:8-jre-jammy
 
 ARG PROM4PY_ZIP_URL=https://zenodo.org/records/13853660/files/prom4py.zip?download=1
+ARG PROM4PY_ZIP_API_URL=https://zenodo.org/api/records/13853660/files/prom4py.zip/content
 
 # unzip + curl for fetching the bundle.
 RUN apt-get update \
@@ -48,9 +49,11 @@ RUN apt-get update \
 
 WORKDIR /opt/prom4py
 
-# Zenodo limits the requests per address and then answers with an error page: -f makes that fail
-# here (and not as a broken archive in unzip), and the retries wait as the server asks.
-RUN curl -fsSL --retry 8 --retry-all-errors -o /tmp/prom4py.zip "$PROM4PY_ZIP_URL" \
+# Zenodo refuses the download page for some networks (403 on the hosted CI runners) and limits
+# the requests per address. -f makes an error answer fail here and not as a broken archive in
+# unzip; the same file is then asked for through Zenodo's API, with retries.
+RUN ( curl -fsSL --retry 3 --retry-all-errors -o /tmp/prom4py.zip "$PROM4PY_ZIP_URL" \
+      || curl -fsSL --retry 8 --retry-all-errors -o /tmp/prom4py.zip "$PROM4PY_ZIP_API_URL" ) \
     && unzip -q /tmp/prom4py.zip -d /tmp/prom4py-extracted \
     && mv /tmp/prom4py-extracted/ProM4Py/* . \
     && rm -rf /tmp/prom4py.zip /tmp/prom4py-extracted
