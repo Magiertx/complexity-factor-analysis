@@ -253,7 +253,8 @@ jobs:
       # (THIRD-PARTY-LICENSES.txt, docs/DEPLOYMENT.md for the Docker images).
       - name: Download the sources of the copyleft packages
         run: |
-          cat copyleft/*/copyleft.txt | sort -u > copyleft-all.txt
+          # The list from Windows has CRLF line ends; without tr every package would be there twice.
+          cat copyleft/*/copyleft.txt | tr -d '\r' | sort -u > copyleft-all.txt
           cat copyleft-all.txt
           test -s copyleft-all.txt
           python -m pip download --no-binary :all: --no-deps -r copyleft-all.txt -d sources
