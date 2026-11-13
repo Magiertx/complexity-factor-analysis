@@ -277,7 +277,7 @@ function FeedbackForm({
 
       <div className="shrink-0 flex items-center justify-between gap-3 border-t border-border px-5 py-3">
         <p className="min-w-0 text-xs text-muted">{t(github ? "feedback.github_note" : "feedback.anonymous")}</p>
-        <Button type="submit" form={formId} disabled={!message || sending}>
+        <Button type="submit" form={formId} disabled={!message || sending} className="shrink-0 whitespace-nowrap">
           {sending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           {github ? t("feedback.github_send") : sending ? t("feedback.sending") : t("feedback.send")}
         </Button>
