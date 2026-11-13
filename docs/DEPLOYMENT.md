@@ -405,7 +405,7 @@ sudo chown -R 10001:10001 /path/to/host/artifacts
 Use the following commands to build and run the services in production mode:
 
 ```bash
-# 1. Build the images. The version (1.0.0-dev until the freeze) is part of the image; the commit
+# 1. Build the images. The version (1.0.0) is part of the image; the commit
 #    is not, so pass it, and it goes into the manifest of every export. Without it the manifest says
 #    "unknown". `docker compose up -d --build` takes it the same way.
 APP_COMMIT=$(git rev-parse HEAD) docker compose build

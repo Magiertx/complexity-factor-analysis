@@ -258,7 +258,7 @@ def test_the_version_is_one_constant_for_the_backend_and_the_frontend():
     from version import REPOSITORY_URL, VERSION
 
     package = Path(__file__).resolve().parents[2] / "frontend" / "package.json"
-    assert json.loads(package.read_text(encoding="utf-8"))["version"] == VERSION == "1.0.0-dev"
+    assert json.loads(package.read_text(encoding="utf-8"))["version"] == VERSION == "1.0.0"
     assert REPOSITORY_URL == "https://github.com/Magiertx/complexity-factor-analysis"
 
 

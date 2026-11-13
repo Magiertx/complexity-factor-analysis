@@ -179,7 +179,7 @@ beforehand is not needed. On Linux, Docker needs root rights or your user in the
 commands fail with a permission error.
 
 `APP_COMMIT` is optional: it puts the commit into the manifest of every export, which says
-"unknown" without it. The version (`1.0.0-dev` until the freeze) is part of the image.
+"unknown" without it. The version (`1.0.0`) is part of the image.
 
 Everything is reached through the frontend on <http://localhost:3000>: the model tab at `/`,
 the log tab at `/log`. The API is not published on the host, and the OpenAPI UI lives at
