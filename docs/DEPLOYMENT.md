@@ -555,3 +555,30 @@ gunzip -c /opt/complexity/backups/complexity_db_2026xxxx_xxxxxx.sql.gz | \
 # 4. Start the application services again
 docker compose start
 ```
+
+## 7. Operating it
+
+The values below are set in `docker-compose.yml`.
+
+- **Worker concurrency.** `celery_worker` runs with `--concurrency=4`. Each job is a separate
+  process holding its own copy of the log, so this multiplies memory.
+- **Java heap.** `prom4py` gets `JAVA_HEAP=2G`. Raise it if discovery fails on large logs; the
+  symptom is an out-of-memory error from the Java side.
+- **Limits.** 100 MB per uploaded file; per factor-analysis dataset 50 logs or 200 PNML
+  files and 500 MB in total; a per-session cap on queued jobs. Request rate limits, the job
+  cap and the number of files per dataset (`MAX_LOG_FILES`, `MAX_PNML_FILES`, default 50 and
+  200) are tunable in `.env` (see `.env.example`). The data step shows the
+  values in force, and `GET /api/factor-analysis/limits` reports them.
+- **Analysis cost.** A factor fit over about a hundred measures takes a few seconds of CPU
+  in the API process. At most two run at once per process; recent fits are cached, and after the
+  start the API computes those of the bundled datasets in the background
+  (`PRECOMPUTE_BUNDLED`, on in docker-compose), so that opening one for the first time is
+  instant. BLAS runs single-threaded (`OPENBLAS_NUM_THREADS=1`), which is many times faster for
+  these matrices.
+- **Slow miners.** Alpha++ and Alpha Robust are marked slow; Alpha++ can run for many
+  minutes on a mid-sized log and ProM4Py cannot interrupt it. Such a discovery fails for its
+  input after `PROM4PY_CALL_TIMEOUT` (default 300 s), and the `prom4py` container restarts
+  the stuck ProM by itself (see [`docs/OFFLINE-DEMO.md`](OFFLINE-DEMO.md#when-a-miner-hangs)).
+  The Hybrid ILP miner needs the
+  native lp_solve 5.5 libraries, which the `prom4py` image builds in (see
+  [`src/prom4py/README.md`](../src/prom4py/README.md#lp_solve)).

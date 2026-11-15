@@ -140,7 +140,7 @@ jobs:
 
   # The UI in a browser against a backend without ProM, PostgreSQL or Redis: uvicorn on SQLite
   # with dataset jobs in-process, and the standalone Next.js server as in the frontend image.
-  # Specs tagged @prom need ProM and run only against the Docker stack (README, "Tests").
+  # Specs tagged @prom need ProM and run only against the Docker stack (docs/DEVELOPMENT.md, "End-to-end tests").
   e2e:
     runs-on: ubuntu-24.04
     timeout-minutes: 15

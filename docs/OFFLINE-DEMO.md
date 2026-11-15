@@ -163,7 +163,7 @@ Measured on Docker Desktop on Windows 11 (12 virtual CPUs), with the images alre
 | Sample logs, log tab: 4 logs, simple statistics only | 3 s |
 
 Alpha++ did not finish within 15 minutes on the largest sample log; leave the miners marked
-"slow" out of a live demo (see [README](../README.md#operating-it)). If one is chosen anyway,
+"slow" out of a live demo (see [Operating it](DEPLOYMENT.md#7-operating-it)). If one is chosen anyway,
 that input fails after `PROM4PY_CALL_TIMEOUT` instead of blocking, see below.
 
 ## When a miner hangs

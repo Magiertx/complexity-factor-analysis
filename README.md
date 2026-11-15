@@ -2,138 +2,61 @@
 
 [![CI](https://github.com/Magiertx/complexity-factor-analysis/actions/workflows/ci.yml/badge.svg)](https://github.com/Magiertx/complexity-factor-analysis/actions/workflows/ci.yml)
 
-XCom, a tool for the exploration of event log and process model complexity, is a web tool for finding out which complexity measures of process models and event logs
-describe the same underlying dimension. It collects measures over many models or logs, checks
-whether a factor analysis is meaningful, and groups the measures into a few factors, the way
+XCom is a web tool for the exploration of event log and process model complexity. It finds out
+which complexity measures of process models and event logs describe the same underlying
+dimension: it collects measures over many models or logs, checks whether a factor analysis is
+meaningful, and groups the measures into a few factors, the way
 [ComFy](https://github.com/Pati-nets/ComFy) and
 [ComFy for log measures](https://github.com/Pati-nets/ComFy-for-Log-Measures) by Patrizia
 Schalk do it, but interactively in the browser.
 
 > **For reviewers**
 >
-> - **Needs:** Docker with Compose and about 8 GB of RAM for Docker. On Linux, `sudo` or membership in the `docker` group. No ProM install: the bundled datasets need none.
-> - **Start** (the first build takes a few minutes; details in the [Quick start](#quick-start)):
+> - **Watch:** the [screencast](https://github.com/Magiertx/complexity-factor-analysis/releases/download/v1.0.0/xcom-1.0.0-screencast.mp4) (3 minutes; the link downloads the video).
+> - **Try it without installing anything:** take the desktop program for Windows, macOS or Linux from the [release](https://github.com/Magiertx/complexity-factor-analysis/releases/tag/v1.0.0) and start it. The first start needs one extra step per system, which the release page lists. The desktop program has everything except the ProM miners.
+> - **Full version with the miners:** Docker with Compose and about 8 GB of RAM for Docker (on Linux, `sudo` or membership in the `docker` group). The first build takes a few minutes; details in the [Quick start](#quick-start).
 >   1. `git clone https://github.com/Magiertx/complexity-factor-analysis.git && cd complexity-factor-analysis`
 >   2. `cp .env.example .env`, then fill in `POSTGRES_PASSWORD` and `SESSION_SECRET_KEY`
 >   3. `docker compose up -d --build`, then open <http://localhost:3000>
 > - **Five-minute tour:**
 >   1. On the start page, **Get started**, then **Important Factors: Inductive miner** (opens with the paper settings). Walk through the six steps: Data, Dataset, Suitability, Factors, Loadings, Interpretation.
 >   2. In Loadings, note the chip **Numbers = ComFy report** and try **Check stability**.
->   3. Open **Compare** with the four miners of Tab. 17 (the card **Important Factors: four miners compared**).
+>   3. Open **Compare** with the four miners of Tab. 17 of Important Factors (the card **Important Factors: four miners compared**).
 >   4. Open the **Download** menu: **Analysis (ZIP)** and **LaTeX report**.
 
 ## Features
 
-- **Two tabs, one workflow.** *Model complexity* works on ComFy's Petri-net measures (size,
-  density, control-flow complexity, separability, ...); *Log complexity* on the event-log
-  measures of [feeed](https://github.com/andreamalhera/feeed), grouped as in ComFy for log
-  measures. Both walk through the same six steps: data, dataset, suitability, factors,
-  loadings and an optional interpretation. One step is on screen at a time, with its
-  own address (`?step=loadings`), a step list that shows what each step found, and Back and Next;
-  the toolbar of the analysis holds the short codes, the link, the downloads and the tour. The
-  tabs are the same on every page (the two analyses, Compare, Single log and History), and the
-  guide and the settings are in the header.
-- **Data from anywhere.** Bundled datasets (the scores of the ComFy paper for seven miners,
-  and the measures of 2112 Process Discovery Contest logs), an own CSV, up to 50 event logs
-  (`.xes`, `.xes.gz`; `MAX_LOG_FILES`) that are mined with any of ComFy's nine ProM miners, or
-  up to 200 PNML models (`MAX_PNML_FILES`). Sample logs and nets are bundled, so the demo works without own files and offline.
-- **Suitability first.** Data cleaning with reasons, Bartlett's test of sphericity (the
-  numerically stable variant), KMO with ComFy's iterative MSA filter, and a per-measure MSA
-  list with manual exclusion that shows the measures worth a look first and keeps the others
-  folded below them in a long list; it can be searched, sorted and grouped by feature group.
-- **Factors and loadings.** Scree plot with the Kaiser line, a parallel analysis with a fixed
-  seed and the cumulative share of the eigenvalues; tiles for the factor count of each criterion
-  (Kaiser, parallel analysis, and the paper's count chosen a priori, or the ComFy report's for
-  the datasets the paper does not analyse); rotation (varimax, promax, oblimin, quartimax, none);
-  a loading heatmap with communalities and explained variance; factor groups by one of three
-  assignment rules: the largest loading (default; ComFy's report only greys the loadings below its threshold), multiple membership as in
-  Important Factors (Tab. 6-16) or without cross-loadings (Tab. 17), with cross-loadings reported under
-  each and a note where a table of the paper differs from the rule it states. The loadings show as
-  a matrix or as one card per dimension. A long list (from 20 measures) can be searched and
-  narrowed to the cross-loaded and unassigned measures; from 30 measures on both looks start
-  with those and keep the others folded below them, like the MSA list, until a search or the
-  dataset's own order asks for the whole list. A settings row above every step sums up every choice and
-  marks those that differ from the standard. Every change re-runs the analysis; a newer change
-  replaces the analysis still running for the one before.
+- **Two tabs, one workflow.** *Model complexity* works on ComFy's Petri-net measures, *Log
+  complexity* on the event-log measures of [feeed](https://github.com/andreamalhera/feeed).
+  Both walk through the same six steps: data, dataset, suitability, factors, loadings and an
+  optional interpretation.
+- **Data from anywhere.** Bundled datasets (the scores of the ComFy paper for seven miners, and
+  the measures of 2112 Process Discovery Contest logs), an own CSV, event logs that are mined
+  with any of ComFy's nine ProM miners, or PNML models.
+- **Suitability first.** Data cleaning with reasons, Bartlett's test of sphericity, KMO with
+  ComFy's iterative MSA filter, and a per-measure MSA list with manual exclusion.
+- **Factors and loadings.** Scree plot with the Kaiser line and a parallel analysis, five
+  choices of rotation, a loading matrix with communalities, and factor groups by one of three
+  assignment rules. Every change re-runs the analysis.
 - **Same numbers as upstream.** On the bundled paper scores of all seven miners the analysis
   equals ComFy's own reports to the four decimals they print; tests check every published
-  number. Oblique rotations report correct communalities, the structure matrix and the factor
-  correlations.
-- **Published analyses in one click.** The Important Factors datasets open with the tool
-  standard or with the paper's settings, and with the paper's settings every analysis checks
-  itself against the ComFy report: a chip says whether the numbers are equal, what was compared
-  and how the paper's own tables relate to it. "Get started" on the data step loads such an
-  analysis in one click and leads to its loadings, and "Copy link" shares an analysis of any bundled dataset
-  with its settings and the step on screen.
+  number, and a chip in the app says whether an analysis matches its report.
 - **Compare miners.** A page puts the factor structures of up to eight bundled datasets side by
-  side, like Tab. 17 of Important Factors: per miner n, the measures after the MSA filter, KMO,
-  factors and explained variance, every measure with its dimension under one shared assignment
-  rule, and the dimensions per miner as in Tab. 17. The factors are matched across the miners by
-  the measures they share, and a third look counts for every pair of measures in how many
-  datasets both are in one dimension, which needs no matching. A link can ask for a dataset with
-  a factor count of its own, such as the Inductive miner with 4 and with 6 factors. Columns of
-  your own datasets carry the names you gave the factors of exactly that solution. Downloads as
-  CSV, as a LaTeX table and as a ZIP with a manifest.
-- **Look at the measures.** In the suitability step a folded correlation map shows the correlation of
-  every pair of measures, ordered by factor or clustered, with the pairs at |r| of 0.95 or more
-  outlined, a pair and its r read with the pointer or the arrow keys, a table as its text and the
-  figure for a paper. The name of a measure anywhere opens its fact sheet: what it is (the function
-  of ComFy or feeed behind it, with a link to its source), a histogram of its values, its MSA and
-  the round of the filter that removed it, communality, uniqueness and loadings, the five measures
-  it correlates with most, and the choice to exclude or include it.
-- **Stability and a short set.** In the loadings step, "Check stability" draws bootstrap samples
-  of the rows (100, 200 or 500), refits each with the same measures, factor count and rotation
-  and shows for every measure the share of samples in which it keeps its factors. The short set
-  names one representative measure per dimension, the one assigned to it with the highest
-  purity, ready to copy; a representative with a low stability should be read with care.
-  A computed stability goes into the ZIP.
-- **Feedback.** A form in the header reports a bug, suggests something or says anything else.
-  On a server with mail set up it is mailed, without an account; elsewhere (the desktop app) it
-  opens a filled-in issue on GitHub with the label `feedback`.
-- **Come back to a dataset.** The datasets of a session are listed on the data step, reopen
-  with the parameters of their last analysis and can be deleted one by one or all at once.
-  "History" lists every dataset and every run of a single log of the session, newest first, with
-  the settings of each dataset's last analysis; deleting a dataset deletes the job that computed
-  it, and the other way round. Its tab says what runs and how far and marks a failed run with a
-  red dot, and a dataset that has been computed raises a notice with a link to it.
-- **Into the paper.** A LaTeX report built like ComFy's (`report.tex`: validity, MSA with the
-  rounds of the filter, scree plot, descriptive statistics, loadings with the assigned ones in
-  bold, communalities, dimensions, settings and provenance; compiles with latexmk or pdflatex run
-  twice, and prints the published numbers under the paper settings), the scree plot and the
-  loadings heatmap as SVG or PNG (300 dpi, light, at the text width of a CEUR page), a print
-  view of the whole analysis for A4 or PDF, and a switch to the short codes of the papers (CNC,
-  dens, C_mag) for lists, figures and report. The dataset step shows the descriptive statistics of every measure
-  as ComFy prints them and, for a computed dataset, the run time and input size of every stage.
-  "Copy methods text" in the download menu puts a short, neutral methods paragraph on the
-  clipboard (English, or German with the UI), read strictly from the settings and results on screen,
-  with LaTeX citation keys; "Download BibTeX" gives the entries of exactly those keys, and says in
-  a comment what a source does not record.
-- **Export.** Loadings as CSV or as a LaTeX `tabular` for the paper, the cleaned matrix as CSV,
-  or the whole analysis as a ZIP: result, matrix, tables, the assignment of each measure, the
-  report and the figures, the descriptive statistics, the run times of a computed dataset,
-  parameters, provenance (tool version and commit, upstream commits, feeed, pm4py and ProM,
-  miners with their parameters, assignment rule, the seed of parallel analysis, the published
-  settings if used) and a README on how to reproduce it.
-- **Interpretation by Claude (optional).** A button after the loadings asks Claude (Anthropic)
-  for a name and a short interpretation of each factor, with the measures it rests on, a
-  confidence and caveats such as cross-loadings or a failed Bartlett or KMO test. Only the
-  measure (column) names, their definitions and aggregated results are sent, never measure
-  values, row labels or file names. Model (Opus 5.5 or Sonnet 5.5) and effort are chosen in the
-  step. It needs `ANTHROPIC_API_KEY` on the server, is limited per session and per
-  day, and caches every answer. Without a key the step is marked as unavailable, unless an
-  interpretation was precomputed for the settings: the repository holds them for the bundled
-  datasets with the default and the paper settings, at several efforts (`scripts/precompute_interpretations.py`),
-  and the step offers those. With a key, follow-up questions about a shown interpretation can be
-  asked in a small chat; each question is one live call. Details in [`docs/API.md`](docs/API.md#interpretation-by-claude)
-  and [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#interpretation-by-claude).
-- **Single-log inspection.** "Inspect a single log" (a log, the miners and measures, the run, in
-  three sections) runs the chosen miners on one log and shows the measures next to the rendered
-  nets. A row of a dataset computed from logs links to it with the log and the miner of the row
-  chosen, while the log is among the newest uploads of the session.
-- **Scriptable.** Everything the UI does goes through an HTTP API; for scripting it is documented in
-  [`docs/API.md`](docs/API.md#factor-analysis) and interactively at `/api/docs`. English and German UI.
+  side, with the factors matched across the miners by the measures they share.
+- **Stability and a short set.** Bootstrap samples show in how many of them a measure keeps
+  its factors; the short set names one representative measure per dimension.
+- **Into the paper.** A LaTeX report built like ComFy's, figures as SVG or PNG at the text
+  width of a CEUR page, a methods paragraph with its BibTeX entries, tables as CSV or LaTeX,
+  and a ZIP of the whole analysis with its provenance.
+- **Interpretation by Claude (optional).** Names and short interpretations of the factors. Only
+  measure names, their definitions and aggregated results are sent. For the bundled datasets
+  the interpretations are precomputed, so they need no API key.
+- **And more.** A fact sheet and a correlation map for the measures, the inspection of a single
+  log, the history of a session, a feedback form, an HTTP API, and an English and a German UI.
 
-Discovery runs through [ProM4Py](https://doi.org/10.5281/zenodo.13853660), a bridge to the
+Every feature in detail: [`docs/FEATURES.md`](docs/FEATURES.md). How to use the tool: the user
+guide [`docs/GUIDE.md`](docs/GUIDE.md), which the app has behind the Guide link of its header as
+well. Discovery runs through [ProM4Py](https://doi.org/10.5281/zenodo.13853660), a bridge to the
 ProM plugins.
 
 ## Architecture
@@ -153,9 +76,7 @@ ProM plugins.
 ```
 
 Six services. `prom4py` is the Java bridge to ProM that all miners go through. Details in
-[`docs/architecture.md`](docs/architecture.md), the HTTP API in [`docs/API.md`](docs/API.md),
-and how to use the tool in the user guide [`docs/GUIDE.md`](docs/GUIDE.md), which the app has
-behind the Guide link of its header as well.
+[`docs/architecture.md`](docs/architecture.md), the HTTP API in [`docs/API.md`](docs/API.md).
 
 ## Quick start
 
@@ -204,8 +125,7 @@ No checkout and no build: two files and the prebuilt images from ghcr.io.
 
 1. Download `docker-compose.release.yml` and `env.example` from the
    [latest release](https://github.com/Magiertx/complexity-factor-analysis/releases/latest).
-   Save `env.example` as `.env` (it is the `.env.example` of the repository: GitHub removes the
-   leading dot of an asset name, so the release file has none).
+   Save `env.example` as `.env`.
 2. Fill in `POSTGRES_PASSWORD` and `SESSION_SECRET_KEY` in `.env`, as above.
 3. Start it:
 
@@ -217,10 +137,6 @@ Open <http://localhost:3000>. `CFA_TAG=v1.0.0` pins a release instead of `latest
 keep the `v` of the git tag (`v1.0.0`, not `1.0.0`). The images
 are `linux/amd64`; on Apple silicon they run under emulation (build from the sources for native
 ones). See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#prebuilt-images).
-
-The images have to be public for this to work without a login. GitHub makes new packages
-private, and the API cannot change that, so the owner sets it once per package (`-prom4py`,
-`-algoservice`, `-frontend`) under Packages, Package settings, Change visibility.
 
 ### Desktop app (without Docker)
 
@@ -253,155 +169,26 @@ See [`docs/DESKTOP.md`](docs/DESKTOP.md) for the options, where it keeps its dat
   [post-install steps](https://docs.docker.com/engine/install/linux-postinstall/).
 - `docker compose up -d --build` is enough; a `build` or `pull` beforehand is not needed.
 
-## Local development
-
-Backend, from `src/AlgoService`:
+## Development and tests
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -r requirements-dev.txt -c constraints.txt
-SESSION_SECRET_KEY=dev-only-not-a-deployment uvicorn srv_main:app --reload --port 8000
+cd src/AlgoService && python -m pytest          # backend
+cd src/frontend && npm run lint && npm test     # frontend
 ```
 
-`constraints.txt` pins every package to the version of the Docker image and CI, so the local
-environment matches them (how to update it: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#pinned-dependency-versions)).
-
-The service refuses to start without `SESSION_SECRET_KEY`. On PowerShell, set it first with
-`$env:SESSION_SECRET_KEY = "dev-only-not-a-deployment"`. Postgres and Redis are needed as
-well; `docker compose up -d postgres redis prom4py` starts them together with the Java bridge.
-
-Frontend, from `src/frontend`:
-
-```bash
-npm install && npm run dev
-```
-
-`npm run start` does not work on Windows because the script expands `${PORT:-3000}`; use
-`npx next build && npx next start -p 3000` instead.
-
-## Tests
-
-```bash
-cd src/AlgoService
-python -m pytest
-```
-
-Tests that need the ProM4Py service skip when it is not reachable; start it with
-`docker compose up -d prom4py` to include them. The Petri-net rendering test skips without
-Graphviz. The factor-analysis tests run offline: model datasets from logs use a stand-in
-miner, PNML and log datasets run for real (feeed 2.2 needs no Java). The HTTP layer is tested
-with a small stub tool registered by `tests/conftest.py`, so those tests need neither Java nor
-a database server.
-
-`tests/test_published_numbers.py` checks the bundled datasets against the numbers they were
-published with, extracted once into `datasets/published/` by
-`scripts/extract_published.py`: all seven ComFy reports (Bartlett, KMO, every MSA with its
-filter round, eigenvalues, loadings, communalities and descriptive statistics) and, for the
-log measures, the cleaning and Bartlett's chi-square. `tests/test_column_order.py` checks that
-the analysis, the MSA filter and the exports keep the stored column order, on which the last
-bits of every number depend. `tests/test_assignment_rules.py` checks the three assignment rules
-against the dimension tables of Important Factors (Tab. 6, 9 and 12 with the two documented
-deviations, and two rows of Tab. 17), `tests/test_compare.py` the comparison of the miners
-against all four rows of Tab. 17 with its documented deviations, `tests/test_published_match.py` the published settings
-and the check against the reports at runtime, `tests/test_parallel_analysis.py` the values of
-parallel analysis with its seed, and `tests/test_analysis_load.py` the measure cap and how a
-newer request replaces an analysis, with a stand-in fit.
-
-Frontend checks, from `src/frontend`:
-
-```bash
-npm run lint
-npx tsc --noEmit
-npm test               # Vitest: lib/format.ts and lib/factor-analysis.ts
-npm run check:i18n     # en.json and de.json alike, every key in the code exists
-npx next build
-```
-
-### End-to-end tests
-
-Playwright drives the UI in a browser (`src/frontend/e2e/`): a paper dataset through all six
-steps with its ZIP, a CSV upload reopened from "My datasets" with its excluded measure, the
-PNML and log samples, deleting a dataset, the comparison of the four miners of Tab. 17 with its
-pairs of measures, its factor counts per column and its downloads, decimal commas in German, the theme switch, axe on every route in light and dark, and a single run without ProM, which the page has to refuse up front
-with the reason. They check text, roles and downloads, no pixels.
-
-Against the Docker stack, with a browser installed on the machine (here Microsoft Edge;
-Playwright's own browsers are not needed):
-
-```bash
-cd src/frontend
-BASE_URL=http://localhost:3000 PW_CHANNEL=msedge E2E_PROM=1 npx playwright test
-```
-
-The suite opens many sessions from one address, so a stack with the default request limits
-answers some of them with 429. For a local run, start the stack with the e2e override, which
-sets `RATE_LIMIT_DISABLED=1` for the backend and nothing else, and go back to the default file
-afterwards:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build   # limits off
-docker compose up -d                                                           # limits on again
-```
-
-`docker-compose.yml` keeps the limits; the override is for a machine you test on, never for a
-deployment.
-
-`E2E_PROM=1` says that the stack has ProM: it adds the specs tagged `@prom` (the sample logs
-mined with the default miner) and skips those tagged `@no-prom`. The `e2e` job in CI runs the
-suite without ProM, against `uvicorn` on SQLite (`TESTING=1`, `RATE_LIMIT_DISABLED=1`,
-`ARTIFACTS_DIR`, `UPLOADED_LOGS_DIR`, `PROM4PY_START_WAIT=2`) and the standalone Next.js
-server; see `.github/workflows/ci.yml` to do the same locally. The data directories need short
-paths on Windows, whose paths may not exceed 260 characters.
-
-### Smoke test of a running stack
-
-`scripts/smoke.py` works through every dataset source (the sample logs with the default miner,
-the sample nets, the sample logs with feeed), analyses a paper dataset with its published
-settings and compares the numbers, also by the server's own check against the report, opens
-the same paper dataset again to see the session's copy come back, downloads its ZIP and LaTeX
-table, and deletes everything it created. It needs only the standard library and prints a table of the steps with their
-times; a failed step makes it exit with 1.
-
-```bash
-python scripts/smoke.py --base-url http://localhost:3000
-```
-
-Against the desktop app, which has no ProM: `--port-file <file> --token-file <file> --no-prom` (see
-[`docs/DESKTOP.md`](docs/DESKTOP.md#tests)).
+How to run the services from a checkout, what the tests cover, the end-to-end tests with
+Playwright and the smoke test of a running stack: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 
 ## Operating it
 
-All of this is set in `docker-compose.yml`; reverse proxy, TLS, volumes and backups are in
-[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
-
-- **Worker concurrency.** `celery_worker` runs with `--concurrency=4`. Each job is a separate
-  process holding its own copy of the log, so this multiplies memory.
-- **Java heap.** `prom4py` gets `JAVA_HEAP=2G`. Raise it if discovery fails on large logs; the
-  symptom is an out-of-memory error from the Java side.
-- **Limits.** 100 MB per uploaded file; per factor-analysis dataset 50 logs or 200 PNML
-  files and 500 MB in total; a per-session cap on queued jobs. Request rate limits, the job
-  cap and the number of files per dataset (`MAX_LOG_FILES`, `MAX_PNML_FILES`, default 50 and
-  200) are tunable in `.env` (see `.env.example`). The data step shows the
-  values in force, and `GET /api/factor-analysis/limits` reports them.
-- **Analysis cost.** A factor fit over about a hundred measures takes a few seconds of CPU
-  in the API process. At most two run at once per process; recent fits are cached, and after the
-  start the API computes those of the bundled datasets in the background
-  (`PRECOMPUTE_BUNDLED`, on in docker-compose), so that opening one for the first time is
-  instant. BLAS runs single-threaded (`OPENBLAS_NUM_THREADS=1`), which is many times faster for
-  these matrices.
-- **Slow miners.** Alpha++ and Alpha Robust are marked slow; Alpha++ can run for many
-  minutes on a mid-sized log and ProM4Py cannot interrupt it. Such a discovery fails for its
-  input after `PROM4PY_CALL_TIMEOUT` (default 300 s), and the `prom4py` container restarts
-  the stuck ProM by itself (see [`docs/OFFLINE-DEMO.md`](docs/OFFLINE-DEMO.md#when-a-miner-hangs)).
-  The Hybrid ILP miner needs the
-  native lp_solve 5.5 libraries, which the `prom4py` image builds in (see
-  [`src/prom4py/README.md`](src/prom4py/README.md#lp_solve)).
+Worker concurrency, the Java heap, the upload limits, the cost of an analysis and the slow
+miners are described in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#7-operating-it), next to
+reverse proxy, TLS, volumes and backups.
 
 ## Project structure
 
 ```
-├── docs/                      # architecture, API, deployment, desktop app
+├── docs/                      # features, guide, architecture, API, deployment, desktop app, development
 ├── scripts/smoke.py           # smoke test of a running stack
 ├── docker-compose.yml
 └── src/
@@ -436,8 +223,7 @@ The bundled sample log `src/AlgoService/sample_logs/small_example.xes` is a smal
 (six traces over the activities a to e) made for testing. The factor-analysis data in
 `src/AlgoService/datasets/` (ComFy paper scores, PDC log measures, four Process Discovery
 Contest logs and nets mined from them) is listed with sources and licences in
-`datasets/PROVENANCE.md`; redistribution of the ComFy paper scores awaits the author's
-permission.
+`datasets/PROVENANCE.md`.
 
 ## License
 
