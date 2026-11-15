@@ -230,6 +230,11 @@ for the installation, no ProM yet. Packaged builds for Windows (`.zip`), macOS o
 (`.dmg`) and Linux (`.tar.gz`) are attached to the
 [releases](https://github.com/Magiertx/complexity-factor-analysis/releases); nothing to install,
 the first-start warnings are in [`docs/DESKTOP.md`](docs/DESKTOP.md#download-and-first-start).
+
+> **macOS: "XCom is damaged and can't be opened".** The download is fine; the app is not
+> registered with Apple. Run `xattr -dr com.apple.quarantine /Applications/XCom.app` once in the
+> Terminal and start the app again.
+
 From a checkout:
 
 ```bash

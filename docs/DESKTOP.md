@@ -32,11 +32,13 @@ The builds are not signed with a certificate the systems know, so each of them w
   Properties, tick "Unblock") avoids the warning. The folder also has `<name>-console.exe`,
   which shows a console with the log and quits on Ctrl+C; use it if the normal one does not open.
 - **macOS.** Open the `.dmg` and drag the app to Applications. The app is signed ad hoc, not by
-  a registered developer, so macOS says it cannot verify it. Right click the app, choose "Open",
-  and "Open" again in the dialog; or open System Settings, Privacy & Security, scroll to the
-  message about the app and click "Open Anyway" (it asks for your password). Once per downloaded
-  version. If macOS says the app "is damaged", run
-  `xattr -dr com.apple.quarantine "/Applications/<APP_NAME>.app"` in a terminal and start it again.
+  a registered developer, so macOS refuses it once per downloaded version. If it says the app
+  "is damaged and can't be opened" (seen with release 1.0.0), the download is fine: run
+  `xattr -dr com.apple.quarantine /Applications/XCom.app` in the Terminal and start the app
+  again (`XCom` is `APP_NAME`). If it says instead that it cannot verify the app, right click
+  the app, choose "Open", and "Open" again in the dialog; or open System Settings, Privacy &
+  Security, scroll to the message about the app and click "Open Anyway" (it asks for your
+  password).
 - **Linux.** `tar xzf <name>-<version>-linux-x64.tar.gz`, then `./<name>/<name>`; if the file
   manager says it is not executable, `chmod +x <name>/<name>`. Without a display (a server) the
   window is skipped and the log says the address; the app listens on `127.0.0.1` only, so reach
