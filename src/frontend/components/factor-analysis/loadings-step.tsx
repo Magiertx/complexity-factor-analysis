@@ -263,6 +263,9 @@ export function LoadingsView({
             max={1}
             step={0.05}
             onChange={(v) => onOptions({ communality_threshold: v })}
+            // The rule asks for more than the value set: the value in effect is said, and the
+            // one set, which does not count now, is muted.
+            overridden={effectiveCommunality(options) > options.communality_threshold}
             note={
               effectiveCommunality(options) > options.communality_threshold
                 ? t("factor.loadings.communality_raised", {

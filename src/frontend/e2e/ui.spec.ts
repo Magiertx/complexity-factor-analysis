@@ -58,6 +58,20 @@ test.describe("German", () => {
     await alpha.fill("0,1");
     await expect(suitability.getByText(pattern(text("factor.field.range", { min: "0,0001", max: "0,5" }, "de")))).toHaveCount(0);
   });
+
+  test("the communality in effect is said where the rule asks for more than the field", async ({ page }) => {
+    await page.goto("/");
+    await openBundled(page, "Inductive miner", "de");
+    await goToStep(page, "loadings", "de");
+    const loadings = stepSection(page, "loadings");
+    const field = loadings.getByRole("spinbutton", { name: text("factor.loadings.communality_threshold_label", {}, "de") });
+    await field.fill("0,3");
+    await loadings.getByRole("radio", { name: text("factor.loadings.rule.hair.title", {}, "de") }).check({ force: true });
+    const note = text("factor.loadings.communality_raised", { value: "0,5" }, "de");
+    await expect(loadings.getByText(note)).toBeVisible();
+    await expect(field).toHaveAccessibleDescription(pattern(note));
+    await expect(field).toHaveValue("0,3");
+  });
 });
 
 test("the theme switch toggles dark mode and keeps it", async ({ page }) => {

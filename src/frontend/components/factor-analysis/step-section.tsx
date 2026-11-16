@@ -237,6 +237,7 @@ export function ThresholdField({
   label,
   help,
   note,
+  overridden = false,
   ...field
 }: {
   id: string;
@@ -249,6 +250,8 @@ export function ThresholdField({
   step: number;
   /** A short note below the field, e.g. that another setting overrides its value. */
   note?: string | null;
+  /** Another setting overrides the value (the note says which value is in effect): it is muted. */
+  overridden?: boolean;
 }) {
   const t = useT();
   const { locale } = useLocale();
@@ -257,9 +260,15 @@ export function ThresholdField({
   return (
     <div className="space-y-1.5">
       <HelpLabel htmlFor={id} label={label} help={help} />
-      <NumberField id={id} {...field} describedBy={described || undefined} onProblem={setProblem} />
+      <NumberField
+        id={id}
+        {...field}
+        describedBy={described || undefined}
+        onProblem={setProblem}
+        className={overridden ? "text-muted" : undefined}
+      />
       {note && (
-        <p id={`${id}-note`} className="max-w-[11rem] text-xs text-muted">
+        <p id={`${id}-note`} className={cn("max-w-[11rem] text-xs", overridden ? "text-fg" : "text-muted")}>
           {note}
         </p>
       )}
