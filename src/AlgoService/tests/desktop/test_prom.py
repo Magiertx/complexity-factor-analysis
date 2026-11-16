@@ -3,6 +3,12 @@
 A stand-in plays Java: a Python process that serves ``/isRunning`` behind the token on the port
 it is given, as LocalProM.java does, and exits when its input closes. What it does besides is
 set by ``FAKE_PROM_MODE``. The real ProM is tested by the CI's smoke test of the built program.
+
+The stand-in answers on a plain socket, not with ``http.server``: ``HTTPServer`` looks up the
+name of its address (``socket.getfqdn`` in ``server_bind``), and on the macOS runner the stand-in
+started (its exit codes came back at once) but never got past that point, so it neither answered
+nor ended with its input. It watches its input from the start, as LocalProM does, and prints
+when it is up, which the app's log shows (``[prom] ...``).
 """
 
 from __future__ import annotations
@@ -21,36 +27,56 @@ from desktop_app.state import LauncherError
 
 FAKE = textwrap.dedent(
     """
-    import os, sys, threading, time
-    from http.server import BaseHTTPRequestHandler, HTTPServer
+    import os, socket, sys, threading, time
 
+    born = time.monotonic()
     port = int(sys.argv[sys.argv.index("-p") + 1])
     mode = os.environ.get("FAKE_PROM_MODE", "")
-    token = os.environ["PROM4PY_TOKEN"]
+    token = os.environ["PROM4PY_TOKEN"].encode()
     log = os.environ.get("FAKE_PROM_LOG")
     if log:
         with open(log, "a") as fh:
             fh.write(f"start {os.getpid()}\\n")
-    if mode == "exit-once" and log and open(log).read().count("start") == 1:
+    starts = open(log).read().count("start") if log else 1
+    if mode == "exit-once" and starts == 1:
         sys.exit(3)
     if mode == "exit-always":
         sys.exit(3)
 
-    class Handler(BaseHTTPRequestHandler):
-        def do_GET(self):
-            if self.headers.get("X-ProM4Py-Token") != token:
-                self.send_response(403); self.end_headers(); return
-            if mode == "stuck" and open(log).read().count("start") == 1:
-                time.sleep(3600)
-            self.send_response(200); self.end_headers(); self.wfile.write(b"ProM is running")
-        def log_message(self, *a):
-            pass
+    def watch_input():
+        sys.stdin.buffer.read()  # until the app closes it or is gone
+        os._exit(0)
 
-    server = HTTPServer(("127.0.0.1", port), Handler)
-    threading.Thread(target=server.serve_forever, daemon=True).start()
-    print("Server listening on port", port, flush=True)
-    sys.stdin.read()  # until the app closes it or is gone
-    os._exit(0)
+    threading.Thread(target=watch_input, daemon=True).start()
+
+    def answer(conn):
+        with conn:
+            head = b""
+            while b"\\r\\n\\r\\n" not in head:
+                chunk = conn.recv(4096)
+                if not chunk:
+                    return
+                head += chunk
+            given = None
+            for line in head.split(b"\\r\\n")[1:]:
+                name, _, value = line.partition(b":")
+                if name.strip().lower() == b"x-prom4py-token":
+                    given = value.strip()
+            if given != token:
+                conn.sendall(b"HTTP/1.1 403 Forbidden\\r\\nContent-Length: 0\\r\\nConnection: close\\r\\n\\r\\n")
+                return
+            if mode == "stuck" and starts == 1:
+                time.sleep(3600)
+            body = b"ProM is running"
+            conn.sendall(b"HTTP/1.1 200 OK\\r\\nContent-Length: %d\\r\\nConnection: close\\r\\n\\r\\n%s" % (len(body), body))
+
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind(("127.0.0.1", port))
+    server.listen(16)
+    print(f"Server listening on port {port} ({time.monotonic() - born:.2f} s after the start)", flush=True)
+    while True:
+        conn, _ = server.accept()
+        threading.Thread(target=answer, args=(conn,), daemon=True).start()
     """
 )
 
