@@ -6,8 +6,9 @@ name: Desktop
 # Each system also builds the edition with ProM (Java 8, ProM4Py and lp_solve next to the
 # program) and runs ProM in it: a miner run with the Inductive and the Hybrid ILP miner, the
 # Playwright specs tagged @prom, and no ProM left behind after the program was killed.
-# A v* tag attaches the three archives without ProM to the release; those with ProM stay
-# artifacts of the run until they are released on purpose.
+# A v* tag attaches the three archives without ProM to the release. Those with ProM, and the
+# archive of the source code their licences ask for, only when the repository variable
+# RELEASE_WITH_PROM is "true"; otherwise they stay artifacts of the run.
 on:
   push:
     branches: [main, "desktop*"]
@@ -284,24 +285,75 @@ jobs:
           retention-days: 3
           if-no-files-found: error
 
+  # The source code that the licences of the ProM part ask to be offered with the editions with
+  # ProM (src/desktop/prom/THIRD-PARTY.md), one archive for all systems, each file pinned by its
+  # SHA-256 in scripts/desktop_prom.py (about 270 MB, cached). It may fail without holding up the
+  # release of the editions without ProM.
+  prom-sources:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - uses: actions/cache@v6
+        with:
+          path: build/desktop/downloads
+          key: prom-sources-${{ hashFiles('scripts/desktop_prom.py') }}
+
+      # The GitHub API gives the vcpkg port files (patches) of Graphviz's LGPL libraries.
+      - name: The source archive of the editions with ProM
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/build_desktop.py prom-sources
+          ls -l build/desktop/release
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: prom-sources
+          path: build/desktop/release/*-with-prom-sources.zip
+          retention-days: 3
+          if-no-files-found: error
+
   # A draft, so the notes and the assets can be checked before the release goes out (images.yml
   # drafts the same release; whichever comes first creates it).
   release:
     if: github.ref_type == 'tag'
-    needs: build
+    needs: [build, prom-sources]
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v7
 
-      # The editions without ProM only; one with ProM is released by hand when it is meant to be.
       - uses: actions/download-artifact@v7
         with:
           pattern: desktop-*-plain
           path: archives
           merge-multiple: true
+
+      # The editions with ProM only when the repository variable RELEASE_WITH_PROM is "true" (set
+      # it in the repository's settings when they are to be released), and then with the source
+      # archive their licences ask for, as a file of its own (src/desktop/prom/THIRD-PARTY.md).
+      - name: The editions with ProM and their source code
+        if: vars.RELEASE_WITH_PROM == 'true'
+        uses: actions/download-artifact@v7
+        with:
+          pattern: desktop-*-with-prom
+          path: archives
+          merge-multiple: true
+
+      - if: vars.RELEASE_WITH_PROM == 'true'
+        uses: actions/download-artifact@v7
+        with:
+          name: prom-sources
+          path: archives
 
       - uses: actions/download-artifact@v7
         with:
