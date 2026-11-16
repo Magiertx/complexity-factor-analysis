@@ -22,8 +22,9 @@ machine that one person uses: see "Security" for what that means.
 
 Each also comes as the edition with ProM, `<name>-<version>-<system>-<arch>-with-prom.<ext>`,
 which mines logs offline with the nine ComFy miners: it carries Java 8, ProM4Py and lp_solve
-(see "The edition with ProM"). Windows: 605 MiB to download, 859 MiB unpacked, Graphviz
-included (measured on 1.0.0); Linux and macOS not measured yet.
+(see "The edition with ProM"). Windows: 507 MiB to download, 748 MiB unpacked, Graphviz
+included (measured on 1.0.0); Linux and macOS not measured yet. Its source code, which the
+licences of the ProM part ask for, is one archive for all systems (310 MB).
 
 `<name>` is `APP_NAME` as a slug (`xcom`). The program opens the app in the
 default browser; the small window it shows says where it runs and quits it. The first start takes
@@ -304,12 +305,13 @@ signature does not pass `codesign --verify --strict` with it in Resources) it ha
 
 | Part | What | Licence |
 |---|---|---|
-| `jre/` | Java 8 runtime: Eclipse Temurin 8u512 (Windows x64, Linux x64), Azul Zulu 8u512 (macOS arm64, where Temurin has no Java 8) | GPL-2.0 with the Classpath Exception |
-| `ProM4Py/` | the folder `ProM4Py/` of `prom4py.zip` (Zenodo 13853660), jar signatures removed as in the Docker image; the class folder `Packages/Workshop/Trunk/out/production/prom` is moved to `classes/` (shorter paths, see below) | CC BY 4.0; the ProM packages their own (`ProM4Py/LICENSE.txt`) |
+| `jre/` | Java 8 runtime: Eclipse Temurin 8u512 (Windows x64, Linux x64), BellSoft Liberica 8u512 (macOS arm64, where Temurin has no Java 8; BellSoft publishes its source, which the GPL asks to be offered) | GPL-2.0 with the Classpath Exception |
+| `ProM4Py/` | the folder `ProM4Py/` of `prom4py.zip` (Zenodo 13853660), jar signatures removed as in the Docker image; the class folder `Packages/Workshop/Trunk/out/production/prom` is moved to `classes/` (shorter paths, see below); left out, none on ProM's class path: `OpenXES/`, `UITopia/`, `Packages/*/Trunk/tests/`, and the proprietary Java APIs of Gurobi and IBM CPLEX (`gurobi-6.5.jar`, `oplall-6.3.jar`) | CC BY 4.0 for the record; ProM framework GPL-2.0-or-later; packages and libraries their own |
 | `lpsolve/` | lp_solve 5.5.2.11 and the JNI wrapper of `lp_solve_5.5.2.5_java.zip`, for the Hybrid ILP miner; prebuilt for Windows and Linux, compiled from source for macOS arm64 | LGPL-2.1 |
 | `launcher/prom-launcher.jar` | `src/desktop/prom/LocalProM.java`, compiled for Java 8 | MIT (the tool's) |
-| `graphviz/` | Windows only: Graphviz 16.1.1 (`bin/` of graphviz.org's zip), which draws the nets of a single run | EPL-2.0 (`graphviz/LICENSE.txt`); the libraries in `bin/` their own (cairo, pango, glib, fribidi, gts, iconv, intl: LGPL; the Microsoft Visual C++ runtime) |
-| `SOURCES.txt` | each part with its download address and SHA-256 | |
+| `graphviz/` | Windows only: of Graphviz 16.1.1 (graphviz.org's zip) the 35 files that `dot -Tpng` loads, which draw the nets of a single run; `config8` written by `dot -c` | EPL-2.0; the libraries their own (cairo, Pango, GLib, FriBidi, libiconv, libintl: LGPL; the Microsoft Visual C++ runtime) |
+| `THIRD-PARTY.md`, `licenses/` | every part with its licence, what the licence asks and how it is met; the licence texts; `licenses/class-path-jars.tsv`, what each jar on ProM's class path says of its licence | |
+| `SOURCES.txt` | each part with its download address and SHA-256, and what was changed | |
 
 **How it runs.** With the folder there, the launcher (`desktop_app/prom.py`) starts ProM as a
 child process when the app starts and ends it when the app quits; `PROM4PY_URL` points the
@@ -381,6 +383,36 @@ program listens on port 8080, that program sees these requests.
 Java's `-Xmx` (default `4G`), `PROM4PY_START_WAIT`. `PROM4PY_URL` names another ProM; the app
 then starts none of its own. From a checkout, `--prom-dir build/desktop/prom` starts ProM from
 the folder that `python scripts/build_desktop.py prom` makes.
+
+**Licences and source code.** `src/desktop/prom/THIRD-PARTY.md` (in the program as
+`prom/THIRD-PARTY.md`) lists every part of the folder with its licence, what that licence asks
+of this distribution and how it is met, and what is not settled. In short:
+
+- Licence texts go with the program (`prom/licenses/`, the JRE's own, `lpsolve/LGPL.txt`,
+  `graphviz/LICENSE.txt` and `graphviz/licenses/`, and those inside the jars).
+- The source code that the GPL, LGPL and AGPL ask to be offered from the same place, and that
+  MPL, CDDL and EPL ask to be available, is one archive next to the editions with ProM:
+  `<name>-<version>-with-prom-sources.zip` (`python scripts/build_desktop.py prom-sources`; job
+  `prom-sources` of `desktop.yml`). It holds the sources of both JREs, lp_solve, Graphviz and
+  its LGPL libraries with the vcpkg ports (patches) of its Windows build, and of the copyleft jars
+  on ProM's class path, each checked against its SHA-256. A tag attaches it, with the editions
+  with ProM, only when the repository variable `RELEASE_WITH_PROM` is `true`.
+- Not settled (THIRD-PARTY.md, "Not settled"): the exact sources of ProM's own `*-latest.jar`
+  (ProM4Py does not record their revisions), a few copyleft jars without a published source
+  archive, and the licences of the class-path jars that say nothing about it.
+
+ProM4Py is under CC BY 4.0, which asks for credit. **Text for the release** of the editions with
+ProM (and wherever they are offered):
+
+```text
+The editions "with ProM" contain ProM4Py, from "Resources for ProM4Py's ICPM demo submission"
+by Eduardo Goulart Rocha, https://doi.org/10.5281/zenodo.13853660, licensed under CC BY 4.0
+(https://creativecommons.org/licenses/by/4.0/); changed as listed in prom/SOURCES.txt. They also
+contain a Java 8 runtime (GPL-2.0 with the Classpath Exception), the ProM framework
+(GPL-2.0-or-later) with ProM packages and libraries under their own licences, lp_solve (LGPL-2.1)
+and on Windows Graphviz (EPL-2.0) with its libraries; prom/THIRD-PARTY.md in the program lists
+them. Their source code: <name>-<version>-with-prom-sources.zip in this release.
+```
 
 **Windows: letters outside the code page.** Java 8 reads its command line, and opens its own
 runtime, in the system's ANSI code page (cp1252 on a German or English Windows). The app hands
