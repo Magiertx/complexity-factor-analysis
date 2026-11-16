@@ -173,20 +173,35 @@ def _given_up() -> bool:
     return _gave_up_after is not None and last_answer() == _gave_up_after
 
 
+def prom4py_down() -> str:
+    """Why ProM is gone for good, or "". The desktop app sets ``PROM4PY_DOWN`` when the ProM it
+    starts itself cannot be started; nobody waits for it then."""
+    return os.environ.get("PROM4PY_DOWN", "").strip()
+
+
 def wait_for_prom4py(on_wait: WaitFn | None = None, what: str = "waiting for ProM to start") -> None:
     """Wait until ProM4Py answers; raise :class:`ProMUnavailable` if it does not in time."""
+    down = prom4py_down()
+    if down:
+        raise ProMUnavailable(f"ProM is not available: {down}")
     budget = 5.0 if _given_up() else START_WAIT_S
     if not _wait(on_wait, what, budget):
+        down = prom4py_down()
+        if down:
+            raise ProMUnavailable(f"ProM is not available: {down}")
         raise ProMUnavailable(
             f"ProM4Py is not reachable at {prom4py_url()} and did not answer within {budget:g} s"
         )
 
 
 def _wait(on_wait: WaitFn | None, what: str, budget: float) -> bool:
-    """Probe ProM4Py about once a second for up to ``budget`` seconds; whether it answered."""
+    """Probe ProM4Py about once a second for up to ``budget`` seconds; whether it answered. Ends at
+    once, without an answer, when ProM is gone for good (``prom4py_down``)."""
     global _gave_up_after
     end = time.monotonic() + budget
     while True:
+        if prom4py_down():
+            return False
         if is_responsive(timeout=max(0.5, min(5.0, end - time.monotonic()))):
             _gave_up_after = None
             return True

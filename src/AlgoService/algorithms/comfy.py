@@ -52,6 +52,14 @@ SLOW_MINERS = {"Alpha Plus Plus miner", "Alpha Robust miner"}
 # Measures that need the initial and final marking.
 _MARKING_MEASURES = {"Depth", "Diameter"}
 
+# Where a net was discovered but could not be drawn. Graphviz (``dot``) draws the nets; the
+# Docker image and the Windows edition with ProM carry it, the desktop app on Linux and macOS uses
+# one that is installed (docs/DESKTOP.md).
+UNDRAWN_NOTE = (
+    "no image of the net: Graphviz (dot) could not draw it, most likely because it is not "
+    "installed; the measures do not depend on it"
+)
+
 # ProM4Py now and then fails a plugin call with "AcceptingPetriNetImpl cannot be cast to
 # ProMFuture" (about one call in seven in our runs); the same call works when repeated. A
 # discovery is also repeated when ProM went away during it, e.g. restarted by its watchdog.
@@ -198,6 +206,8 @@ class ComFyAlgorithm(AlgorithmBase):
         pn_images: list[Any] = []
         # Miners whose discovery failed because ProM4Py could not be reached.
         unreachable = 0
+        # Miners whose net could not be drawn (Graphviz missing or failing).
+        undrawn: list[str] = []
 
         for idx, miner in enumerate(miners):
             ctx.check_aborted()
@@ -214,6 +224,8 @@ class ComFyAlgorithm(AlgorithmBase):
                 # Render Petri Net visualization if available
                 if net is not None:
                     img_base64 = render_petri_net_to_base64_png(net, im, fm)
+                    if not img_base64:
+                        undrawn.append(str(miner))
                     if img_base64:
                         pn_images.append(image(f"Petri net ({miner})", img_base64, caption=f"Discovered by {miner}"))
                     # 300 dpi download for print, next to the inline image.
@@ -242,6 +254,8 @@ class ComFyAlgorithm(AlgorithmBase):
             rows.append(row)
 
         notes = [_failure_note(message, where) for message, where in failures.items()]
+        if undrawn:
+            notes.append(_failure_note(UNDRAWN_NOTE, undrawn))
 
         # Single failures become ERR cells; if nothing computed at all (usually ProM4Py
         # being down), fail the job instead of returning a table of errors.

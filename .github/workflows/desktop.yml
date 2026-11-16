@@ -3,7 +3,12 @@ name: Desktop
 # Builds the desktop app (docs/DESKTOP.md) with PyInstaller for Windows, Linux and macOS and tests
 # the frozen program: the backend tests that guard the numbers, then the built program started
 # headless with the smoke test, the checks of scripts/check_desktop.py and Playwright.
-# A v* tag attaches the three archives to the release.
+# Each system also builds the edition with ProM (Java 8, ProM4Py and lp_solve next to the
+# program) and runs ProM in it: a miner run with the Inductive and the Hybrid ILP miner, the
+# Playwright specs tagged @prom, and no ProM left behind after the program was killed.
+# A v* tag attaches the three archives without ProM to the release. Those with ProM, and the
+# archive of the source code their licences ask for, only when the repository variable
+# RELEASE_WITH_PROM is "true"; otherwise they stay artifacts of the run.
 on:
   push:
     branches: [main, "desktop*"]
@@ -13,6 +18,7 @@ on:
       - "src/AlgoService/**"
       - "src/frontend/**"
       - "scripts/build_desktop.py"
+      - "scripts/desktop_prom.py"
       - "scripts/check_desktop.py"
       - "scripts/run_frozen.py"
       - "scripts/smoke.py"
@@ -71,20 +77,33 @@ jobs:
 
   build:
     needs: frontend-export
-    name: build (${{ matrix.os }})
+    name: build (${{ matrix.os }}${{ matrix.prom && ', with ProM' || '' }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 75
+    timeout-minutes: 100
+    # A failing row of the edition with ProM shows red but does not fail the run, so the release
+    # job (needs: build) still attaches the archives without ProM; those rows must pass for it.
+    continue-on-error: ${{ matrix.prom }}
     strategy:
       fail-fast: false
       matrix:
         # ubuntu-22.04 for the glibc of the binary: it runs on everything newer.
         os: [ubuntu-22.04, windows-2022, macos-15]
+        # The edition with ProM (docs/DESKTOP.md, "The edition with ProM").
+        prom: [false, true]
     defaults:
       run:
         shell: bash
     env:
-      # Playwright: the full suite without ProM on Linux and Windows, the specs for a missing ProM on macOS.
-      PLAYWRIGHT_ARGS: ${{ matrix.os == 'macos-15' && '--grep @no-prom' || '' }}
+      # Playwright: without ProM the full suite on Linux and Windows, the specs for a missing ProM
+      # on macOS; with ProM the specs that need it (the rest is the same program). The one that
+      # expects the images of the nets runs on Windows only: Graphviz draws them, and only the
+      # Windows edition carries it (Linux and macOS use an installed one, docs/DESKTOP.md).
+      PLAYWRIGHT_ARGS: ${{ matrix.prom && (matrix.os == 'windows-2022' && '--grep @prom' || '--grep @prom --grep-invert lightbox') || (matrix.os == 'macos-15' && '--grep @no-prom' || '') }}
+      E2E_PROM: ${{ matrix.prom && '1' || '0' }}
+      EDITION: ${{ matrix.prom && 'with-prom' || 'plain' }}
+      BUILD_FLAGS: ${{ matrix.prom && '--with-prom' || '' }}
+      # The smoke test's ProM step: the Inductive miner, and the Hybrid ILP miner for lp_solve.
+      SMOKE_PROM: ${{ matrix.prom && '--prom-miners "Inductive miner,Hybrid ILP miner"' || '--no-prom' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -117,8 +136,10 @@ jobs:
 
       # The numbers of the paper, the invariance of the MSA, the core of the factor analysis and the
       # launcher. Linux runs the whole suite (ProM, Graphviz and TeX tests skip), which also shows
-      # that PM4Py works without cvxopt for everything the app does.
+      # that PM4Py works without cvxopt for everything the app does. Once per system: the edition
+      # with ProM has the same code.
       - name: Backend tests
+        if: ${{ !matrix.prom }}
         working-directory: src/AlgoService
         run: |
           if [ "$RUNNER_OS" = Linux ]; then
@@ -138,12 +159,29 @@ jobs:
           mv frontend-export/out src/frontend/out
           mv frontend-export/npm-licenses.txt src/frontend/npm-licenses.txt
 
+      # The ProM folder's downloads (about 470 MB, pinned by SHA-256 in scripts/desktop_prom.py).
+      - name: Cache the downloads of the ProM folder
+        if: matrix.prom
+        uses: actions/cache@v6
+        with:
+          path: build/desktop/downloads
+          key: prom-downloads-${{ runner.os }}-${{ hashFiles('scripts/desktop_prom.py') }}
+
+      # javac of a JDK of the runner compiles the launcher (and its JNI headers lp_solve on macOS).
+      - name: The ProM folder
+        if: matrix.prom
+        run: |
+          start=$(date +%s)
+          python scripts/build_desktop.py prom
+          echo "prom took $(( $(date +%s) - start )) s"
+          cat build/desktop/prom/SOURCES.txt
+
       - name: Build
         env:
           APP_COMMIT: ${{ github.sha }}
         run: |
           start=$(date +%s)
-          python scripts/build_desktop.py bundle
+          python scripts/build_desktop.py bundle $BUILD_FLAGS
           echo "bundle took $(( $(date +%s) - start )) s"
 
       # No binary of the bundle may need a newer macOS than the one the release states.
@@ -167,7 +205,7 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: copyleft-${{ matrix.os }}
+          name: copyleft-${{ matrix.os }}-${{ env.EDITION }}
           path: build/desktop/copyleft.txt
           retention-days: 3
           if-no-files-found: error
@@ -183,18 +221,28 @@ jobs:
           fi
 
       # Start the built program headless, as a user's machine would, and run everything against it.
+      # With ProM also: LocalProM refuses requests without the token and listens on loopback only
+      # (scripts/check_prom.py guard). On Linux the edition with ProM runs under LC_ALL=C, where a
+      # JVM without -Dfile.encoding=UTF-8 would mangle every name outside ASCII; the smoke test's
+      # step "names outside ASCII through ProM" checks that it does not.
       - name: Smoke test, checks and Playwright against the built program
         env:
           APP_COMMIT_EXPECTED: ${{ github.sha }}
+          LC_ALL: ${{ (matrix.prom && runner.os == 'Linux') && 'C' || '' }}
         run: |
           exe=$(python scripts/build_desktop.py exe)
           version=$(python -c "import json; print(json.load(open('build/desktop/stage/meta.json'))['version'])")
+          guard=()
+          if [ "$EDITION" = with-prom ]; then
+            guard=(--run "python scripts/check_prom.py guard --log $RUNNER_TEMP/cfa-data/logs/app.log")
+          fi
           start=$(date +%s)
           python scripts/run_frozen.py --exe "$exe" --data-dir "$RUNNER_TEMP/cfa-data" \
-            --run "python scripts/smoke.py --port-file {port_file} --token-file {token_file} --no-prom" \
+            "${guard[@]}" \
+            --run "python scripts/smoke.py --port-file {port_file} --token-file {token_file} $SMOKE_PROM" \
             --run "python scripts/check_desktop.py --port-file {port_file} --token-file {token_file} --commit $APP_COMMIT_EXPECTED --version $version" \
             --run "cd src/frontend && npx playwright test $PLAYWRIGHT_ARGS"
-          echo "the three took $(( $(date +%s) - start )) s"
+          echo "the checks took $(( $(date +%s) - start )) s"
 
       # The program without a console, as a user starts it: it must come up and answer.
       - name: Start the program without a console
@@ -203,11 +251,27 @@ jobs:
           python scripts/run_frozen.py --quit kill --exe "$(python scripts/build_desktop.py exe --windowed)" \
             --data-dir "$RUNNER_TEMP/cfa-data-windowed"
 
+      # The program killed while its ProM runs (no quit): ProM must end with it. That it ran is
+      # checked first, so that the check after the kill cannot pass because ProM never started.
+      - name: No ProM left after the program was killed
+        if: matrix.prom
+        run: |
+          python scripts/check_prom.py count --at-most 0
+          python scripts/run_frozen.py --quit kill --exe "$(python scripts/build_desktop.py exe)" \
+            --data-dir "$RUNNER_TEMP/cfa-data-killed" \
+            --run "python scripts/check_prom.py count --at-least 1" \
+            --run "python -c \"import time; time.sleep(15)\""
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            python scripts/check_prom.py count --at-most 0 && exit 0
+            sleep 2
+          done
+          exit 1
+
       - name: Playwright report
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report-${{ matrix.os }}
+          name: playwright-report-${{ matrix.os }}-${{ env.EDITION }}
           path: |
             src/frontend/playwright-report
             src/frontend/test-results
@@ -216,8 +280,43 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: desktop-${{ matrix.os }}
+          name: desktop-${{ matrix.os }}-${{ env.EDITION }}
           path: build/desktop/release/*
+          retention-days: 3
+          if-no-files-found: error
+
+  # The source code that the licences of the ProM part ask to be offered with the editions with
+  # ProM (src/desktop/prom/THIRD-PARTY.md), one archive for all systems, each file pinned by its
+  # SHA-256 in scripts/desktop_prom.py (about 270 MB, cached). It may fail without holding up the
+  # release of the editions without ProM.
+  prom-sources:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - uses: actions/cache@v6
+        with:
+          path: build/desktop/downloads
+          key: prom-sources-${{ hashFiles('scripts/desktop_prom.py') }}
+
+      # The GitHub API gives the vcpkg port files (patches) of Graphviz's LGPL libraries.
+      - name: The source archive of the editions with ProM
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/build_desktop.py prom-sources
+          ls -l build/desktop/release
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: prom-sources
+          path: build/desktop/release/*-with-prom-sources.zip
           retention-days: 3
           if-no-files-found: error
 
@@ -225,9 +324,9 @@ jobs:
   # drafts the same release; whichever comes first creates it).
   release:
     if: github.ref_type == 'tag'
-    needs: build
+    needs: [build, prom-sources]
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:
@@ -235,13 +334,30 @@ jobs:
 
       - uses: actions/download-artifact@v7
         with:
-          pattern: desktop-*
+          pattern: desktop-*-plain
           path: archives
           merge-multiple: true
 
+      # The editions with ProM only when the repository variable RELEASE_WITH_PROM is "true" (set
+      # it in the repository's settings when they are to be released), and then with the source
+      # archive their licences ask for, as a file of its own (src/desktop/prom/THIRD-PARTY.md).
+      - name: The editions with ProM and their source code
+        if: vars.RELEASE_WITH_PROM == 'true'
+        uses: actions/download-artifact@v7
+        with:
+          pattern: desktop-*-with-prom
+          path: archives
+          merge-multiple: true
+
+      - if: vars.RELEASE_WITH_PROM == 'true'
+        uses: actions/download-artifact@v7
+        with:
+          name: prom-sources
+          path: archives
+
       - uses: actions/download-artifact@v7
         with:
-          pattern: copyleft-*
+          pattern: copyleft-*-plain
           path: copyleft
 
       - uses: actions/setup-python@v7
