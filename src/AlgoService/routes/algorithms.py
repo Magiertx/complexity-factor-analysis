@@ -8,6 +8,7 @@ import uuid
 import tempfile
 import asyncio
 import shutil
+import weakref
 from pathlib import Path
 from typing import Any
 
@@ -24,8 +25,27 @@ from algorithms.base import ParameterValidationError, TOOL_CATEGORIES
 
 router = APIRouter()
 
+# Checking a job limit and creating the job are one step: requests that all counted before any of
+# them created its job would all be let in. The API runs in one process (the Docker image starts
+# uvicorn without workers, the desktop app runs it in a thread), so a lock of its event loop is
+# enough; several API processes would need the lock in the database. One lock per loop (the
+# server's; a fresh one per test), because a lock waits on the loop of its first contended use.
+_admission: "weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Lock]" = weakref.WeakKeyDictionary()
+
+
+def job_admission() -> asyncio.Lock:
+    """Hold it from the check of the job limits (``_enforce_job_quota``, the caps of the dataset
+    and stability jobs) until the job is created."""
+    loop = asyncio.get_running_loop()
+    lock = _admission.get(loop)
+    if lock is None:
+        lock = _admission[loop] = asyncio.Lock()
+    return lock
+
+
 async def _enforce_job_quota(session_id: str, requested: int = 1) -> None:
-    """Refuse the request when this session already has too many jobs queued or running."""
+    """Refuse the request when this session already has too many jobs queued or running.
+    Call it under ``job_admission()`` and create the job before releasing it."""
     active = await jobs_db.count_active_jobs(session_id)
     limit = jobs_db.MAX_ACTIVE_JOBS_PER_SESSION
     if active + requested > limit:
@@ -506,12 +526,11 @@ async def analyze(
                 detail="Invalid file extension. Allowed formats: .xes, .xes.gz, .xml, .json"
             )
 
-    await _enforce_job_quota(session_id)
-
     task_id = str(uuid.uuid4())
-    
-    # Initialize the job in jobs_store
-    await jobs_db.create_job(task_id, algorithm_id, algorithm.name, filename or "uploaded_file", raw_params, session_id=session_id)
+    async with job_admission():
+        await _enforce_job_quota(session_id)
+        # Initialize the job in jobs_store
+        await jobs_db.create_job(task_id, algorithm_id, algorithm.name, filename or "uploaded_file", raw_params, session_id=session_id)
     await broadcast_jobs_update()
         
     try:

@@ -65,6 +65,7 @@ from interpretation import store
 from interpretation.payload import data_hash, effective_params, result_fingerprint
 from routes.algorithms import (
     _enforce_job_quota,
+    job_admission,
     _LoopCalls,
     _make_status_cache,
     _ProgressThrottle,
@@ -714,19 +715,6 @@ async def _create_dataset(
     elif not uploads:
         raise _bad("Upload at least one file or choose a sample.")
 
-    await _enforce_job_quota(session_id)
-    active = await jobs_db.count_active_jobs_by_prefix("_dataset:")
-    if active >= MAX_ACTIVE_DATASET_JOBS:
-        raise CodedHTTPException(
-            429,
-            (
-                f"The server is computing {active} datasets already, the most it runs at once. "
-                "Try again in a few minutes."
-            ),
-            "dataset_jobs_busy",
-            active=active,
-        )
-
     n_inputs = len(sample["files"]) if sample else len(uploads)
     noun = "log(s)" if source == "logs" else "net(s)"
     # Without a name of its own a dataset is called after its sample or its inputs; the name is
@@ -737,40 +725,62 @@ async def _create_dataset(
         [_sanitize_filename(f.filename or "") for f in uploads]
     )
     origin = provenance.dataset(kind, source, inputs=names, miners=spec.get("miners"))
-    meta = storage.create(
-        session_id, kind=kind, name=display, source=source, status="computing",
-        inputs={"files": n_inputs, **chosen, **({"sample_id": sample["id"]} if sample else {})},
-        params=chosen, name_auto=name is None, provenance=origin,
-    )
-    dataset_id = meta["id"]
+    job_id = str(uuid.uuid4())
+
+    # The job is created right after the limits are checked, under the same lock, and before the
+    # uploads are stored, which can take a while; a refused upload takes it along.
+    async with job_admission():
+        await _enforce_job_quota(session_id)
+        active = await jobs_db.count_active_jobs_by_prefix("_dataset:")
+        if active >= MAX_ACTIVE_DATASET_JOBS:
+            raise CodedHTTPException(
+                429,
+                (
+                    f"The server is computing {active} datasets already, the most it runs at once. "
+                    "Try again in a few minutes."
+                ),
+                "dataset_jobs_busy",
+                active=active,
+            )
+        meta = storage.create(
+            session_id, kind=kind, name=display, source=source, status="computing",
+            inputs={"files": n_inputs, **chosen, **({"sample_id": sample["id"]} if sample else {})},
+            params=chosen, name_auto=name is None, provenance=origin,
+        )
+        dataset_id = meta["id"]
+        job_params = {"dataset_id": dataset_id, "source": source, **chosen}
+        if sample:
+            job_params["sample_id"] = sample["id"]
+        if name:
+            # Without one, the UI names the job like the dataset, in its own language.
+            job_params["dataset_name"] = name
+        try:
+            await jobs_db.create_job(
+                job_id=job_id,
+                algorithm_id=f"_dataset:{kind}",
+                algorithm_name=f"Factor analysis dataset ({kind} measures)",
+                filename=f"{n_inputs} {noun}",
+                params=job_params,
+                session_id=session_id,
+            )
+        except BaseException:
+            shutil.rmtree(storage.dataset_dir(session_id, dataset_id), ignore_errors=True)
+            raise
+
     try:
+        storage.update_meta(session_id, dataset_id, job_id=job_id)
         if sample:
             spec["inputs"] = [{"path": str(p), "label": p.name} for p in cat.sample_paths(sample)]
         else:
             spec["inputs"] = await _store_inputs(uploads, source, storage.inputs_dir(session_id, dataset_id))
-    except Exception:
+    except BaseException:
         shutil.rmtree(storage.dataset_dir(session_id, dataset_id), ignore_errors=True)
+        await jobs_db.delete_job_file(job_id, session_id)
         raise
 
     if source == "logs":
         await run_in_threadpool(_keep_as_recent_logs, session_id, spec["inputs"])
 
-    job_params = {"dataset_id": dataset_id, "source": source, **chosen}
-    if sample:
-        job_params["sample_id"] = sample["id"]
-    if name:
-        # Without one, the UI names the job like the dataset, in its own language.
-        job_params["dataset_name"] = name
-    job_id = str(uuid.uuid4())
-    await jobs_db.create_job(
-        job_id=job_id,
-        algorithm_id=f"_dataset:{kind}",
-        algorithm_name=f"Factor analysis dataset ({kind} measures)",
-        filename=f"{n_inputs} {noun}",
-        params=job_params,
-        session_id=session_id,
-    )
-    storage.update_meta(session_id, dataset_id, job_id=job_id)
     await broadcast_jobs_update()
 
     enqueue(
@@ -2133,31 +2143,36 @@ async def dataset_stability(
     if not start:
         return {"status": "none", "key": key}
 
-    await _enforce_job_quota(session_id)
-    active = await jobs_db.count_active_jobs_by_prefix(STABILITY_PREFIX)
-    if active >= MAX_ACTIVE_STABILITY_JOBS:
-        raise CodedHTTPException(
-            429,
-            f"The server is computing {active} stabilities already, the most it runs at once. "
-            "Try again in a few minutes.",
-            "stability_jobs_busy",
-            active=active,
-        )
     job_id = str(uuid.uuid4())
-    await jobs_db.create_job(
-        job_id=job_id,
-        algorithm_id=f"{STABILITY_PREFIX}{meta['kind']}",
-        algorithm_name=f"Stability of a factor analysis ({meta['kind']} measures)",
-        filename=f"{body.samples} samples",
-        params={
-            "dataset_id": meta["id"],
-            "dataset_name": meta["name"],
-            "key": key,
-            "samples": body.samples,
-            "n_factors": reference["n_factors"],
-        },
-        session_id=session_id,
-    )
+    async with job_admission():
+        # The same stability asked for twice at once is one job.
+        running = await _stability_job(session_id, meta["id"], key)
+        if running is not None:
+            return {"status": "computing", "key": key, "job_id": running["id"], "percentage": running.get("percentage", 0.0)}
+        await _enforce_job_quota(session_id)
+        active = await jobs_db.count_active_jobs_by_prefix(STABILITY_PREFIX)
+        if active >= MAX_ACTIVE_STABILITY_JOBS:
+            raise CodedHTTPException(
+                429,
+                f"The server is computing {active} stabilities already, the most it runs at once. "
+                "Try again in a few minutes.",
+                "stability_jobs_busy",
+                active=active,
+            )
+        await jobs_db.create_job(
+            job_id=job_id,
+            algorithm_id=f"{STABILITY_PREFIX}{meta['kind']}",
+            algorithm_name=f"Stability of a factor analysis ({meta['kind']} measures)",
+            filename=f"{body.samples} samples",
+            params={
+                "dataset_id": meta["id"],
+                "dataset_name": meta["name"],
+                "key": key,
+                "samples": body.samples,
+                "n_factors": reference["n_factors"],
+            },
+            session_id=session_id,
+        )
     await broadcast_jobs_update()
     values = body.model_dump()
 

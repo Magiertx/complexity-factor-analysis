@@ -546,6 +546,8 @@ A malformed value in any of these stops the service at startup instead of fallin
 
 Stability computations are bounded separately: `MAX_ACTIVE_STABILITY_JOBS` (default 2) caps the stability jobs queued or running over all sessions, because each one refits the factor analysis on many bootstrap samples (100, 200 or 500). A request over the limit is answered 429 with the code `stability_jobs_busy`.
 
+A request checks these limits and creates its job in one step, under one lock (`job_admission` in `routes/algorithms.py`); requests that come in at the same time would otherwise all count before any of them creates its job, and all be let in. The lock belongs to the process: the API runs in one (the image starts uvicorn without `--workers`, the desktop app runs it in a thread). Several API processes would need the lock in the database.
+
 **Behind the reverse proxy, forwarding the client IP is only half of it.** nginx sets `X-Forwarded-For` and Next.js passes it through, but uvicorn's `ProxyHeadersMiddleware` only honours the header from peers listed in `forwarded_allow_ips`, whose default is `127.0.0.1`. Requests arrive from the frontend container, so without configuration every user would share one counter. `docker-compose.yml` sets `FORWARDED_ALLOW_IPS` to the compose subnet (both come from `COMPOSE_SUBNET`). Because a wrong value fails as silently as a missing one, `rate_limit_key` also detects the situation by its effect (an `X-Forwarded-For` present but not reflected in the resolved address) and logs one warning per process.
 
 ## Folder layout
