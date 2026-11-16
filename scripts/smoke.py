@@ -77,9 +77,11 @@ class Client:
 
 
 class Smoke:
-    def __init__(self, client: Client, dataset_timeout: float) -> None:
+    def __init__(self, client: Client, dataset_timeout: float, prom_miners: list[str] | None = None) -> None:
         self.client = client
         self.dataset_timeout = dataset_timeout
+        #: The miners of the ProM step; the catalog's default ones when not given.
+        self.prom_miners = prom_miners
         self.rows: list[tuple[str, float, bool, str]] = []
         self.created: list[str] = []
         # Datasets of the session from before the test (the desktop app's one session).
@@ -150,10 +152,11 @@ class Smoke:
         return "; ".join(out)
 
     def model_from_logs(self) -> str:
-        default_miners = self.client.request("GET", "/factor-analysis/catalog?kind=model")["defaults"]["miners"]
-        return self.computed(
-            {"kind": "model", "source": "logs", "bundled_id": "pdc-sample-logs"}, 4 * len(default_miners)
-        ) + f", miners {', '.join(default_miners)}"
+        miners = self.prom_miners or self.client.request("GET", "/factor-analysis/catalog?kind=model")["defaults"]["miners"]
+        form = {"kind": "model", "source": "logs", "bundled_id": "pdc-sample-logs"}
+        if self.prom_miners:
+            form["miners"] = json.dumps(self.prom_miners)
+        return self.computed(form, 4 * len(miners)) + f", miners {', '.join(miners)}"
 
     def model_from_pnml(self) -> str:
         return self.computed({"kind": "model", "source": "pnml", "bundled_id": "pdc-sample-models"}, 32)
@@ -250,7 +253,8 @@ class Smoke:
             return False
         self.step("catalog", self.catalog)
         if prom:
-            self.step("4 sample logs x default miner (ProM)", self.model_from_logs)
+            which = "chosen miners" if self.prom_miners else "default miner"
+            self.step(f"4 sample logs x {which} (ProM)", self.model_from_logs)
         self.step("sample Petri nets", self.model_from_pnml)
         self.step("sample logs with feeed", self.log_from_logs)
         if self.step("paper dataset as published", self.paper):
@@ -280,6 +284,11 @@ def main() -> int:
         help="the file the desktop app wrote its access token to (--token-file there); sent as a bearer token",
     )
     parser.add_argument("--no-prom", action="store_true", help="skip the step that needs ProM (no ProM in the stack)")
+    parser.add_argument(
+        "--prom-miners",
+        help="comma-separated miners of the ProM step (default: the catalog's default ones), e.g. "
+        "'Inductive miner,Hybrid ILP miner' to include lp_solve",
+    )
     parser.add_argument("--dataset-timeout", type=float, default=900, help="seconds a dataset may take (default 900)")
     parser.add_argument("--request-timeout", type=float, default=300, help="seconds per request (default 300)")
     args = parser.parse_args()
@@ -289,7 +298,8 @@ def main() -> int:
         base_url = f"http://127.0.0.1:{int(args.port_file.read_text(encoding='utf-8').strip())}"
     token = args.token_file.read_text(encoding="utf-8").strip() if args.token_file else None
     api = args.api_url or base_url.rstrip("/") + "/api"
-    smoke = Smoke(Client(api, args.request_timeout, token), args.dataset_timeout)
+    miners = [m.strip() for m in args.prom_miners.split(",") if m.strip()] if args.prom_miners else None
+    smoke = Smoke(Client(api, args.request_timeout, token), args.dataset_timeout, miners)
     print(f"Smoke test of {api}" + (" without the ProM step" if args.no_prom else ""), flush=True)
     passed = smoke.run(prom=not args.no_prom)
     print()

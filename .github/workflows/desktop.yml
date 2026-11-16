@@ -3,7 +3,11 @@ name: Desktop
 # Builds the desktop app (docs/DESKTOP.md) with PyInstaller for Windows, Linux and macOS and tests
 # the frozen program: the backend tests that guard the numbers, then the built program started
 # headless with the smoke test, the checks of scripts/check_desktop.py and Playwright.
-# A v* tag attaches the three archives to the release.
+# Each system also builds the edition with ProM (Java 8, ProM4Py and lp_solve next to the
+# program) and runs ProM in it: a miner run with the Inductive and the Hybrid ILP miner, the
+# Playwright specs tagged @prom, and no ProM left behind after the program was killed.
+# A v* tag attaches the three archives without ProM to the release; those with ProM stay
+# artifacts of the run until they are released on purpose.
 on:
   push:
     branches: [main, "desktop*"]
@@ -13,6 +17,7 @@ on:
       - "src/AlgoService/**"
       - "src/frontend/**"
       - "scripts/build_desktop.py"
+      - "scripts/desktop_prom.py"
       - "scripts/check_desktop.py"
       - "scripts/run_frozen.py"
       - "scripts/smoke.py"
@@ -71,20 +76,28 @@ jobs:
 
   build:
     needs: frontend-export
-    name: build (${{ matrix.os }})
+    name: build (${{ matrix.os }}${{ matrix.prom && ', with ProM' || '' }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 75
+    timeout-minutes: 100
     strategy:
       fail-fast: false
       matrix:
         # ubuntu-22.04 for the glibc of the binary: it runs on everything newer.
         os: [ubuntu-22.04, windows-2022, macos-15]
+        # The edition with ProM (docs/DESKTOP.md, "The edition with ProM").
+        prom: [false, true]
     defaults:
       run:
         shell: bash
     env:
-      # Playwright: the full suite without ProM on Linux and Windows, the specs for a missing ProM on macOS.
-      PLAYWRIGHT_ARGS: ${{ matrix.os == 'macos-15' && '--grep @no-prom' || '' }}
+      # Playwright: without ProM the full suite on Linux and Windows, the specs for a missing ProM
+      # on macOS; with ProM the specs that need it (the rest is the same program).
+      PLAYWRIGHT_ARGS: ${{ matrix.prom && '--grep @prom' || (matrix.os == 'macos-15' && '--grep @no-prom' || '') }}
+      E2E_PROM: ${{ matrix.prom && '1' || '0' }}
+      EDITION: ${{ matrix.prom && 'with-prom' || 'plain' }}
+      BUILD_FLAGS: ${{ matrix.prom && '--with-prom' || '' }}
+      # The smoke test's ProM step: the Inductive miner, and the Hybrid ILP miner for lp_solve.
+      SMOKE_PROM: ${{ matrix.prom && '--prom-miners "Inductive miner,Hybrid ILP miner"' || '--no-prom' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -117,8 +130,10 @@ jobs:
 
       # The numbers of the paper, the invariance of the MSA, the core of the factor analysis and the
       # launcher. Linux runs the whole suite (ProM, Graphviz and TeX tests skip), which also shows
-      # that PM4Py works without cvxopt for everything the app does.
+      # that PM4Py works without cvxopt for everything the app does. Once per system: the edition
+      # with ProM has the same code.
       - name: Backend tests
+        if: ${{ !matrix.prom }}
         working-directory: src/AlgoService
         run: |
           if [ "$RUNNER_OS" = Linux ]; then
@@ -138,12 +153,29 @@ jobs:
           mv frontend-export/out src/frontend/out
           mv frontend-export/npm-licenses.txt src/frontend/npm-licenses.txt
 
+      # The ProM folder's downloads (about 470 MB, pinned by SHA-256 in scripts/desktop_prom.py).
+      - name: Cache the downloads of the ProM folder
+        if: matrix.prom
+        uses: actions/cache@v6
+        with:
+          path: build/desktop/downloads
+          key: prom-downloads-${{ runner.os }}-${{ hashFiles('scripts/desktop_prom.py') }}
+
+      # javac of a JDK of the runner compiles the launcher (and its JNI headers lp_solve on macOS).
+      - name: The ProM folder
+        if: matrix.prom
+        run: |
+          start=$(date +%s)
+          python scripts/build_desktop.py prom
+          echo "prom took $(( $(date +%s) - start )) s"
+          cat build/desktop/prom/SOURCES.txt
+
       - name: Build
         env:
           APP_COMMIT: ${{ github.sha }}
         run: |
           start=$(date +%s)
-          python scripts/build_desktop.py bundle
+          python scripts/build_desktop.py bundle $BUILD_FLAGS
           echo "bundle took $(( $(date +%s) - start )) s"
 
       # No binary of the bundle may need a newer macOS than the one the release states.
@@ -167,7 +199,7 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: copyleft-${{ matrix.os }}
+          name: copyleft-${{ matrix.os }}-${{ env.EDITION }}
           path: build/desktop/copyleft.txt
           retention-days: 3
           if-no-files-found: error
@@ -191,7 +223,7 @@ jobs:
           version=$(python -c "import json; print(json.load(open('build/desktop/stage/meta.json'))['version'])")
           start=$(date +%s)
           python scripts/run_frozen.py --exe "$exe" --data-dir "$RUNNER_TEMP/cfa-data" \
-            --run "python scripts/smoke.py --port-file {port_file} --token-file {token_file} --no-prom" \
+            --run "python scripts/smoke.py --port-file {port_file} --token-file {token_file} $SMOKE_PROM" \
             --run "python scripts/check_desktop.py --port-file {port_file} --token-file {token_file} --commit $APP_COMMIT_EXPECTED --version $version" \
             --run "cd src/frontend && npx playwright test $PLAYWRIGHT_ARGS"
           echo "the three took $(( $(date +%s) - start )) s"
@@ -203,11 +235,26 @@ jobs:
           python scripts/run_frozen.py --quit kill --exe "$(python scripts/build_desktop.py exe --windowed)" \
             --data-dir "$RUNNER_TEMP/cfa-data-windowed"
 
+      # The program killed while its ProM runs (no quit): ProM must end with it.
+      - name: No ProM left after the program was killed
+        if: matrix.prom
+        run: |
+          python scripts/run_frozen.py --quit kill --exe "$(python scripts/build_desktop.py exe)" \
+            --data-dir "$RUNNER_TEMP/cfa-data-killed" --run "python -c \"import time; time.sleep(20)\""
+          sleep 10
+          if [ "$RUNNER_OS" = Windows ]; then
+            left=$(powershell -NoProfile -Command "@(Get-CimInstance Win32_Process -Filter \"Name='java.exe'\" | Where-Object { \$_.CommandLine -match 'LocalProM' }).Count" | tr -d '\r')
+          else
+            left=$(pgrep -f LocalProM | wc -l | tr -d ' ')
+          fi
+          echo "ProM processes left: $left"
+          test "$left" = 0
+
       - name: Playwright report
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report-${{ matrix.os }}
+          name: playwright-report-${{ matrix.os }}-${{ env.EDITION }}
           path: |
             src/frontend/playwright-report
             src/frontend/test-results
@@ -216,7 +263,7 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: desktop-${{ matrix.os }}
+          name: desktop-${{ matrix.os }}-${{ env.EDITION }}
           path: build/desktop/release/*
           retention-days: 3
           if-no-files-found: error
@@ -233,15 +280,16 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # The editions without ProM only; one with ProM is released by hand when it is meant to be.
       - uses: actions/download-artifact@v7
         with:
-          pattern: desktop-*
+          pattern: desktop-*-plain
           path: archives
           merge-multiple: true
 
       - uses: actions/download-artifact@v7
         with:
-          pattern: copyleft-*
+          pattern: copyleft-*-plain
           path: copyleft
 
       - uses: actions/setup-python@v7
