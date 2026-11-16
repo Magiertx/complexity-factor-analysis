@@ -388,4 +388,27 @@ jobs:
             gh release create "$GITHUB_REF_NAME" --draft $pre --title "$GITHUB_REF_NAME" --generate-notes \
               || gh release view "$GITHUB_REF_NAME" > /dev/null
           fi
-          gh release upload "$GITHUB_REF_NAME" archives/* sources/* --clobber
+          # The copyleft sources as one archive with a list, so the release page stays short.
+          ver="${GITHUB_REF_NAME#v}"
+          ( cd sources \
+            && { echo "Sources of the copyleft Python packages inside the XCom $ver desktop programs,"; \
+                 echo "unchanged from PyPI, at the versions in the programs:"; echo; ls -1; } > README.txt \
+            && zip -q -r "../archives/xcom-$ver-copyleft-sources.zip" . )
+          # Each file with a label the release page shows instead of its name.
+          label() {
+            case "$1" in
+              *-with-prom-sources.zip) echo "Source code of the parts in the editions with ProM (licence compliance)" ;;
+              *-copyleft-sources.zip) echo "Sources of the copyleft Python packages in the desktop programs (licence compliance)" ;;
+              *windows*with-prom*) echo "XCom for Windows 10/11 (64 bit) with ProM, desktop program" ;;
+              *windows*) echo "XCom for Windows 10/11 (64 bit), desktop program" ;;
+              *macos*with-prom*) echo "XCom for macOS 14+ (Apple silicon) with ProM, desktop program" ;;
+              *macos*) echo "XCom for macOS 14+ (Apple silicon), desktop program" ;;
+              *linux*with-prom*) echo "XCom for Linux (64 bit) with ProM, desktop program" ;;
+              *linux*) echo "XCom for Linux (64 bit), desktop program" ;;
+            esac
+          }
+          for f in archives/*; do
+            l="$(label "$(basename "$f")")"
+            if [ -n "$l" ]; then gh release upload "$GITHUB_REF_NAME" "$f#$l" --clobber
+            else gh release upload "$GITHUB_REF_NAME" "$f" --clobber; fi
+          done
