@@ -770,6 +770,10 @@
       "renamed_columns": "Duplicate column names renamed: {names}",
       "renamed": "renamed: {from} → {to}"
     },
+    "field": {
+      "range": "Allowed: {min} to {max}",
+      "discarded": "Not applied; allowed: {min} to {max}"
+    },
     "suitability": {
       "passed": "passed",
       "failed": "not passed",

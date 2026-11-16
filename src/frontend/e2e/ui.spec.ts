@@ -40,6 +40,24 @@ test.describe("German", () => {
     await expect(suitability).toContainText("6.822,4");
     await expect(suitability).not.toContainText("0.75");
   });
+
+  test("a threshold out of range says what is allowed, and that it was not applied", async ({ page }) => {
+    await page.goto("/");
+    await openBundled(page, "Inductive miner", "de");
+    await goToStep(page, "suitability", "de");
+    const suitability = stepSection(page, "suitability");
+    const alpha = suitability.getByRole("spinbutton", { name: text("factor.suitability.bartlett_alpha", {}, "de") });
+    await alpha.fill("0,7");
+    const hint = suitability.getByText(text("factor.field.range", { min: "0,0001", max: "0,5" }, "de"));
+    await expect(hint).toBeVisible();
+    await expect(alpha).toHaveAttribute("aria-invalid", "true");
+    // Left so, the value stays as it was, and the field says so.
+    await alpha.blur();
+    await expect(alpha).toHaveValue("0,05");
+    await expect(suitability.getByText(text("factor.field.discarded", { min: "0,0001", max: "0,5" }, "de"))).toBeVisible();
+    await alpha.fill("0,1");
+    await expect(suitability.getByText(pattern(text("factor.field.range", { min: "0,0001", max: "0,5" }, "de")))).toHaveCount(0);
+  });
 });
 
 test("the theme switch toggles dark mode and keeps it", async ({ page }) => {

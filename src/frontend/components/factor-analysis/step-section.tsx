@@ -2,8 +2,8 @@
 
 // The card of a step, and the small building blocks the steps share: tiles, number fields and notice lists.
 
-import { useState } from "react";
-import { AlertTriangle, Check } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertCircle, AlertTriangle, Check } from "lucide-react";
 import { stepAnchor, type StepId } from "@/lib/steps";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -129,10 +129,14 @@ export function StatTile({ label, value, hint }: { label: string; value: React.R
   );
 }
 
+/** What is wrong with the text in a NumberField: it is no number in the range, or it was left so and dropped. */
+export type NumberProblem = "invalid" | "discarded" | null;
+
 /**
  * Number field in the format of the UI language ("0,35" in German), whatever the browser's
  * locale. A text input, since type="number" formats by the browser; the arrow keys step like
- * a spin button. Only valid values within the range are reported.
+ * a spin button. Only valid values within the range are reported; `onProblem` hears when the
+ * text is not one, and when such a text was dropped on leaving the field.
  */
 export function NumberField({
   id,
@@ -143,6 +147,7 @@ export function NumberField({
   step,
   className,
   describedBy,
+  onProblem,
 }: {
   id: string;
   value: number;
@@ -153,19 +158,26 @@ export function NumberField({
   className?: string;
   /** Id of a note on the value, read out with the field. */
   describedBy?: string;
+  onProblem?: (problem: NumberProblem) => void;
 }) {
   const { locale } = useLocale();
   const shown = formatInputNumber(value, locale);
   const [draft, setDraft] = useState(shown);
+  const [discarded, setDiscarded] = useState(false);
   // The value the draft stands for. A value from outside or a language switch replaces the
   // draft; a value just typed does not, so "0," on the way to "0,4" is not cut to "0".
   const [synced, setSynced] = useState({ value, locale });
   if (value !== synced.value || locale !== synced.locale) {
     setSynced({ value, locale });
     setDraft(shown);
+    setDiscarded(false);
   }
   const parsed = parseInputNumber(draft);
   const invalid = parsed === null || parsed < min || parsed > max;
+  const problem: NumberProblem = invalid ? "invalid" : discarded ? "discarded" : null;
+  useEffect(() => {
+    onProblem?.(problem);
+  }, [problem, onProblem]);
   const report = (v: number) => {
     setSynced({ value: v, locale });
     // "0,30" after "0,3" is no change, and would only run the analysis again.
@@ -196,6 +208,7 @@ export function NumberField({
       aria-describedby={describedBy}
       onChange={(e) => {
         setDraft(e.target.value);
+        setDiscarded(false);
         const v = parseInputNumber(e.target.value);
         if (v !== null && v >= min && v <= max) report(v);
       }}
@@ -204,7 +217,11 @@ export function NumberField({
         e.preventDefault();
         stepBy(e.key === "ArrowUp" ? 1 : -1);
       }}
-      onBlur={() => setDraft(shown)}
+      onBlur={() => {
+        // What is not a value in the range is dropped, and the field says so (onProblem).
+        if (invalid) setDiscarded(true);
+        setDraft(shown);
+      }}
       className={cn(
         "h-8 w-20 rounded-md bg-bg px-2 text-sm font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-accent/50 transition",
         invalid && "ring-2 ring-danger/60",
@@ -233,13 +250,27 @@ export function ThresholdField({
   /** A short note below the field, e.g. that another setting overrides its value. */
   note?: string | null;
 }) {
+  const t = useT();
+  const { locale } = useLocale();
+  const [problem, setProblem] = useState<NumberProblem>(null);
+  const described = [note ? `${id}-note` : null, problem ? `${id}-range` : null].filter(Boolean).join(" ");
   return (
     <div className="space-y-1.5">
       <HelpLabel htmlFor={id} label={label} help={help} />
-      <NumberField id={id} {...field} describedBy={note ? `${id}-note` : undefined} />
+      <NumberField id={id} {...field} describedBy={described || undefined} onProblem={setProblem} />
       {note && (
         <p id={`${id}-note`} className="max-w-[11rem] text-xs text-muted">
           {note}
+        </p>
+      )}
+      {/* What the field takes, once something else was typed: nothing is dropped unsaid. */}
+      {problem && (
+        <p id={`${id}-range`} role="status" className="flex items-start gap-1 max-w-[11rem] text-xs text-danger-ink">
+          <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-px" aria-hidden />
+          {t(problem === "invalid" ? "factor.field.range" : "factor.field.discarded", {
+            min: formatInputNumber(field.min, locale),
+            max: formatInputNumber(field.max, locale),
+          })}
         </p>
       )}
     </div>

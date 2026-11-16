@@ -770,6 +770,10 @@
       "renamed_columns": "Doppelte Spaltennamen umbenannt: {names}",
       "renamed": "umbenannt: {from} → {to}"
     },
+    "field": {
+      "range": "Erlaubt: {min} bis {max}",
+      "discarded": "Nicht übernommen, erlaubt: {min} bis {max}"
+    },
     "suitability": {
       "passed": "bestanden",
       "failed": "nicht bestanden",
