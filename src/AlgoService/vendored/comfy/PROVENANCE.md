@@ -55,3 +55,8 @@
    header `X-ProM4Py-Token` with every request; the ProM that the desktop app starts itself
    refuses requests without it (`src/desktop/prom/LocalProM.java`). Covered by
    `tests/test_prom4py_limits.py`.
+8. **Answers read as UTF-8.** ProM4Py's answers have no `Content-Type`, so `requests` guessed
+   their charset; `_shared_prom4py.py` reads them as UTF-8, the charset ProM4Py writes them in
+   (the JVM's default, UTF-8 in the Docker image and in the desktop app). The shared client is
+   also made anew when `PROM4PY_URL` changes (the desktop app moves its ProM to another port when
+   a start could not take its port). Covered by `tests/test_prom4py_limits.py`.

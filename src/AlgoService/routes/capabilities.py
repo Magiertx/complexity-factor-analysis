@@ -10,8 +10,12 @@ router = APIRouter(tags=["capabilities"])
 
 
 def prom_available() -> bool:
-    """ProM is there exactly when ``PROM4PY_URL`` is set. The Docker stack sets it; the desktop app
-    does not, unless its settings file names a ProM4Py server."""
+    """ProM is there when ``PROM4PY_URL`` is set, unless ``PROM4PY_DOWN`` says it is gone for good.
+    The Docker stack sets the URL; the desktop app sets it when it starts its own ProM (the edition
+    with ProM) or its settings file names a ProM4Py server, and sets ``PROM4PY_DOWN`` when its own
+    ProM cannot be started."""
+    if os.environ.get("PROM4PY_DOWN", "").strip():
+        return False
     return bool(os.environ.get("PROM4PY_URL", "").strip())
 
 

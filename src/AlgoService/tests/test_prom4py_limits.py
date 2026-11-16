@@ -36,7 +36,7 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _slow_reply(self):
         time.sleep(self.server.delay)
-        self._reply(KEY.encode())
+        self._reply(self.server.body or KEY.encode())
 
     def _reply(self, body: bytes):
         try:
@@ -61,6 +61,8 @@ class _FakeProM(ThreadingHTTPServer):
         self.url = f"http://127.0.0.1:{self.server_port}"
         #: The X-ProM4Py-Token header of each request (None where there was none).
         self.tokens: list[str | None] = []
+        #: The answer to everything but /isRunning, sent without a Content-Type as ProM4Py does.
+        self.body: bytes | None = None
 
 
 @pytest.fixture
@@ -182,6 +184,47 @@ def test_without_a_token_no_header_is_sent(fake_prom, monkeypatch):
     assert is_responsive(timeout=2)
     new_client(fake_prom.url).client.call_executor("return 1;")
     assert fake_prom.tokens == [None, None]
+
+
+def test_answers_without_a_charset_are_read_as_utf8(fake_prom):
+    # ProM4Py sends no Content-Type; requests would guess the charset of a net's PNML (it guesses
+    # right for these bytes, but a guess is no promise).
+    from vendored.comfy._shared_prom4py import _BoundedHTTP, new_client
+
+    pnml = '<?xml version="1.0" encoding="UTF-8"?><pnml><text>Áx Ðx Ýx Нx Ёx Νx ρx</text></pnml>'
+    fake_prom.body = pnml.encode("utf-8")
+    assert new_client(fake_prom.url).client.extract(KEY) == pnml
+    response = _BoundedHTTP().get(f"{fake_prom.url}/cache?key={KEY}")
+    assert "Content-Type" not in response.headers
+    assert response.encoding == "utf-8"
+
+
+def test_the_shared_client_follows_a_new_address(fake_prom, monkeypatch):
+    # The desktop app moves its ProM to another port when a start could not take its port.
+    from vendored.comfy import _shared_prom4py as shared
+
+    monkeypatch.setattr(shared, "_client", None)
+    monkeypatch.setattr(shared, "_client_url", None)
+    monkeypatch.setenv("PROM4PY_URL", _closed_port_url())
+    first = shared.get_shared_prom4py()
+    assert shared.get_shared_prom4py() is first
+    monkeypatch.setenv("PROM4PY_URL", fake_prom.url)
+    second = shared.get_shared_prom4py()
+    assert second is not first
+    assert second.client.call_executor("return 1;") == KEY
+
+
+def test_no_wait_for_a_prom_that_is_down_for_good(monkeypatch):
+    # The desktop app could not start its own ProM: jobs fail at once, with the reason.
+    from algorithms import _prom4py
+
+    monkeypatch.setenv("PROM4PY_URL", _closed_port_url())
+    monkeypatch.setenv("PROM4PY_DOWN", "Java cannot be started (no such file)")
+    monkeypatch.setattr(_prom4py, "START_WAIT_S", 600.0)
+    start = time.monotonic()
+    with pytest.raises(_prom4py.ProMUnavailable, match="Java cannot be started"):
+        _prom4py.wait_for_prom4py()
+    assert time.monotonic() - start < 2.0
 
 
 def test_the_client_can_be_made_in_a_job_thread_and_leaves_the_signal_handlers(fake_prom):
@@ -471,6 +514,24 @@ def test_a_timeout_is_an_error_cell_of_a_single_log_run(client, hanging_miner):
     assert isinstance(rows["Fake miner"][0], int)
     notes = next(a for a in artifacts if a["label"] == "Notes")["markdown"]
     assert "ProM took longer than 1 s for Hanging miner on small_example.xes" in notes
+
+
+@pytest.mark.parametrize("drawn", [True, False])
+def test_a_net_that_cannot_be_drawn_is_named_in_the_notes(client, hanging_miner, monkeypatch, drawn):
+    # Without Graphviz the run has its measures but no images; it says so instead of nothing.
+    from algorithms import comfy
+
+    monkeypatch.setattr(comfy, "render_petri_net_to_base64_png", lambda *a, **k: "iVBORw0KGgo=" if drawn else None)
+    job = _run_comfy(client, ["Fake miner"])
+    assert job["status"] == "completed", job.get("error")
+    artifacts = job["result"]["artifacts"]
+    notes = next((a["markdown"] for a in artifacts if a["label"] == "Notes"), "")
+    images = [a for a in artifacts if a["kind"] == "image"]
+    if drawn:
+        assert images and "Graphviz" not in notes
+    else:
+        assert not images
+        assert "Fake miner: no image of the net: Graphviz (dot) could not draw it" in notes
 
 
 def test_a_run_whose_only_miner_times_out_fails_with_the_reason(client, hanging_miner):
