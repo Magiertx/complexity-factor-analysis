@@ -9,6 +9,7 @@
     python scripts/build_desktop.py exe          # print the program in the bundle (for the CI)
     python scripts/build_desktop.py copyleft     # name==version of the bundled copyleft packages
     python scripts/build_desktop.py prom         # the ProM folder (Java 8, ProM4Py, lp_solve): build/desktop/prom
+    python scripts/build_desktop.py prom-sources # the source code its licences ask for: release/<...>-with-prom-sources.zip
 
 ``--with-prom`` (with ``bundle`` or ``all``) makes the edition with ProM: the ProM folder next to
 the program (inside the app on macOS) and ``-with-prom`` in the archive's name. ``prom`` alone
@@ -273,15 +274,22 @@ PROM_NOTE = """
 ProM (the edition with ProM)
 {rule}
 
-The folder prom/ next to the program (inside the app on macOS) holds a Java 8 runtime
-(GPL-2.0 with the Classpath Exception; its licence files are in prom/jre/), the ProM4Py bundle
-of Zenodo record 13853660 (CC BY 4.0; the ProM packages in it carry their own licences, see
-prom/ProM4Py/LICENSE.txt) and lp_solve 5.5 with its Java wrapper (LGPL-2.1, prom/lpsolve/LGPL.txt).
-On Windows it also holds Graphviz 16.1.1 (EPL-2.0, prom/graphviz/LICENSE.txt; source at
-https://gitlab.com/graphviz/graphviz/-/releases/16.1.1), whose folder bin/ brings libraries under
-their own licences, among them cairo, pango, glib, fribidi, gts, iconv and intl (LGPL) and the
-Microsoft Visual C++ runtime. prom/SOURCES.txt names each part, where it was downloaded and its
-SHA-256. These parts are separate programs that the app starts; they are not linked into it.
+The folder prom/ next to the program (inside the app on macOS) holds separate programs that the
+app starts and does not link: a Java 8 runtime (GPL-2.0 with the Classpath Exception), ProM4Py
+with the ProM framework (GPL-2.0-or-later), ProM packages and the libraries they use (each under
+its own licence, among them GPL, LGPL, AGPL, MPL, CDDL and EPL), lp_solve 5.5 (LGPL-2.1) and, on
+Windows, Graphviz 16.1.1 (EPL-2.0) with its libraries (among them cairo, Pango, GLib, FriBidi,
+libiconv and libintl under the LGPL). prom/THIRD-PARTY.md lists every part with its licence, what
+the licence asks and how it is met, and where the source code is; prom/licenses/ has the licence
+texts, prom/SOURCES.txt where each part was downloaded and its SHA-256.
+
+ProM4Py is "Resources for ProM4Py's ICPM demo submission" by Eduardo Goulart Rocha,
+https://doi.org/10.5281/zenodo.13853660, licensed under CC BY 4.0
+(https://creativecommons.org/licenses/by/4.0/); changes are listed in prom/SOURCES.txt.
+
+The source code that these licences ask to be offered is in {name}-<version>-with-prom-sources.zip,
+next to the archives of the edition with ProM in the release on
+https://github.com/Magiertx/complexity-factor-analysis/releases.
 """
 
 
@@ -299,7 +307,7 @@ def third_party_text(
     for row in copyleft:
         lines.append(f"  - {row['Name']} {row['Version']}: {row['License']}")
     copyleft_block = "\n".join(lines) if lines else "  (the list is made when the bundle is built)"
-    prom_note = PROM_NOTE.format(rule="=" * 78) if with_prom else ""
+    prom_note = PROM_NOTE.format(rule="=" * 78, name=slug(name)) if with_prom else ""
     header = f"""Third-party software in {name} {version}
 {'=' * 78}
 
@@ -391,6 +399,18 @@ def write_stage(with_prom: bool = False) -> dict:
 def cmd_prom(args: argparse.Namespace) -> None:
     """The ProM folder for this system (scripts/desktop_prom.py)."""
     desktop_prom.assemble(system(), machine(), BUILD, Path(args.downloads).resolve() if args.downloads else DOWNLOADS)
+
+
+def prom_sources_name() -> str:
+    """``<slug>-<version>-with-prom-sources.zip``: one archive for the editions with ProM of all systems."""
+    return f"{slug(app_name())}-{tool_version()}{PROM_SUFFIX}-sources.zip"
+
+
+def cmd_prom_sources(args: argparse.Namespace) -> None:
+    """The source code that the licences of the ProM part ask to be offered with it, in one zip in
+    release/ (desktop_prom.SOURCE_ARCHIVES, VCPKG_PORTS; THIRD-PARTY.md, "Source code")."""
+    cache = Path(args.downloads).resolve() if args.downloads else DOWNLOADS
+    desktop_prom.assemble_sources(BUILD, cache, RELEASE / prom_sources_name())
 
 
 #: Where the app on macOS may keep the ProM folder, in the order tried: Resources, unless the
@@ -625,6 +645,7 @@ COMMANDS = {
     "pack": cmd_pack,
     "verify-macos": cmd_verify_macos,
     "prom": cmd_prom,
+    "prom-sources": cmd_prom_sources,
 }
 
 
