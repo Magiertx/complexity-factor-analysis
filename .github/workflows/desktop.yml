@@ -256,7 +256,13 @@ jobs:
       - name: No ProM left after the program was killed
         if: matrix.prom
         run: |
-          python scripts/check_prom.py count --at-most 0
+          # The ProM of the step before ends a few seconds after its program (it stops when its
+          # input closes); wait for that, but no ProM may outlive its program for a minute.
+          for i in $(seq 1 30); do
+            python scripts/check_prom.py count --at-most 0 && break
+            [ "$i" = 30 ] && { echo "a ProM of the step before is still running after 60 s"; exit 1; }
+            sleep 2
+          done
           python scripts/run_frozen.py --quit kill --exe "$(python scripts/build_desktop.py exe)" \
             --data-dir "$RUNNER_TEMP/cfa-data-killed" \
             --run "python scripts/check_prom.py count --at-least 1" \
