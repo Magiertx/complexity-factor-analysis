@@ -296,12 +296,12 @@ def unsign_jars(folder: Path) -> int:
 # --- the parts ----------------------------------------------------------------------------------
 
 
-def find_jdk() -> Path:
-    """The folder of a JDK 9 or newer (``javac --release 8``, and on macOS the JNI headers in
-    ``include/``): JAVA_HOME, the JDKs of the GitHub runners (``JAVA_HOME_<n>_<arch>``, newest
-    first), on macOS ``/usr/libexec/java_home``, then the ``javac`` on PATH with its links
-    followed. On macOS ``/usr/bin/javac`` is only a stub that hands over to a JDK, so its folder
-    has no headers; it is never taken for the JDK itself."""
+def _jdk_candidates() -> list[tuple[Path, Path | None]]:
+    """``(javac, JDK folder or None)`` in the order tried: JAVA_HOME, the JDKs of the GitHub
+    runners (``JAVA_HOME_<n>_<arch>``, newest first), on macOS ``/usr/libexec/java_home``, then
+    the ``javac`` on PATH. That last one can be a link (Oracle's ``javapath`` on Windows) whose
+    folder is no JDK, so it has no folder here; ``/usr/bin/javac`` of macOS is only a stub that
+    hands over to a JDK, and is left out."""
     exe = "javac.exe" if sys.platform == "win32" else "javac"
     homes: list[Path] = []
     if os.environ.get("JAVA_HOME"):
@@ -316,25 +316,36 @@ def find_jdk() -> Path:
         out = subprocess.run(["/usr/libexec/java_home", "-v", "9+"], capture_output=True, text=True)
         if out.returncode == 0 and out.stdout.strip():
             homes.append(Path(out.stdout.strip()))
+    candidates: list[tuple[Path, Path | None]] = [(home / "bin" / exe, home) for home in homes]
     on_path = shutil.which("javac")
     if on_path and not (sys.platform == "darwin" and Path(on_path).resolve() == Path("/usr/bin/javac")):
-        homes.append(Path(os.path.realpath(on_path)).parent.parent)
-    for home in homes:
-        javac = home / "bin" / exe
-        if not javac.is_file():
-            continue
-        if sys.platform == "darwin" and not (home / "include" / "jni.h").is_file():
-            continue
-        out = subprocess.run([str(javac), "-version"], capture_output=True, text=True)
-        match = re.search(r"javac (\d+)", out.stdout + out.stderr)
-        if match and int(match.group(1)) >= 9:
-            return home
-    raise SystemExit("No JDK 9 or newer found (JAVA_HOME, JAVA_HOME_<n>_<arch>, java_home on macOS, PATH).")
+        candidates.append((Path(on_path), None))
+    return candidates
+
+
+def _javac_version(javac: Path) -> int:
+    if not javac.is_file():
+        return 0
+    out = subprocess.run([str(javac), "-version"], capture_output=True, text=True)
+    match = re.search(r"javac (\d+)", out.stdout + out.stderr)
+    return int(match.group(1)) if match else 0
 
 
 def find_javac() -> Path:
-    exe = "javac.exe" if sys.platform == "win32" else "javac"
-    return find_jdk() / "bin" / exe
+    """``javac`` of a JDK 9 or newer, for ``--release 8``."""
+    for javac, _ in _jdk_candidates():
+        if _javac_version(javac) >= 9:
+            return javac
+    raise SystemExit("No javac of a JDK 9 or newer found (JAVA_HOME, JAVA_HOME_<n>_<arch>, java_home on macOS, PATH).")
+
+
+def find_jdk() -> Path:
+    """The folder of a JDK 9 or newer with the JNI headers (``include/jni.h``), for lp_solve's
+    wrapper on macOS."""
+    for javac, home in _jdk_candidates():
+        if home is not None and (home / "include" / "jni.h").is_file() and _javac_version(javac) >= 9:
+            return home
+    raise SystemExit("No JDK 9 or newer with include/jni.h found (JAVA_HOME, JAVA_HOME_<n>_<arch>, java_home on macOS).")
 
 
 def build_launcher(target: Path, work: Path) -> None:
