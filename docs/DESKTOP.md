@@ -22,8 +22,8 @@ machine that one person uses: see "Security" for what that means.
 
 Each also comes as the edition with ProM, `<name>-<version>-<system>-<arch>-with-prom.<ext>`,
 which mines logs offline with the nine ComFy miners: it carries Java 8, ProM4Py and lp_solve
-(see "The edition with ProM"). Windows: 596 MiB to download, 840 MiB unpacked (measured on
-1.0.0); Linux and macOS not measured yet.
+(see "The edition with ProM"). Windows: 605 MiB to download, 859 MiB unpacked, Graphviz
+included (measured on 1.0.0); Linux and macOS not measured yet.
 
 `<name>` is `APP_NAME` as a slug (`xcom`). The program opens the app in the
 default browser; the small window it shows says where it runs and quits it. The first start takes
