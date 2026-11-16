@@ -20,6 +20,11 @@ machine that one person uses: see "Security" for what that means.
 | macOS | `<name>-<version>-macos-arm64.dmg` | Apple silicon (M1 or newer), macOS 14 or newer |
 | Linux | `<name>-<version>-linux-x64.tar.gz` | 64 bit, glibc 2.35 or newer (Ubuntu 22.04, Debian 12, Fedora 36 or newer) |
 
+Each also comes as the edition with ProM, `<name>-<version>-<system>-<arch>-with-prom.<ext>`,
+which mines logs offline with the nine ComFy miners: it carries Java 8, ProM4Py and lp_solve
+(see "The edition with ProM"). Windows: 596 MiB to download, 840 MiB unpacked (measured on
+1.0.0); Linux and macOS not measured yet.
+
 `<name>` is `APP_NAME` as a slug (`xcom`). The program opens the app in the
 default browser; the small window it shows says where it runs and quits it. The first start takes
 a few seconds longer (the database is made, matplotlib indexes its fonts).
@@ -62,7 +67,7 @@ app shows the precomputed interpretations only, and it makes no other network ca
 | Jobs | Celery worker | in the process, at most `LOCAL_JOB_SLOTS` (2) at once, without a time limit (the Docker stack's Celery kills a task after an hour); jobs that are running when the app quits are stopped and marked "interrupted" (see "Port and single instance") |
 | Sessions | one per browser, 14 days | one for the installation (`SHARED_SESSION_ID`), kept for good |
 | Clean-up | idle datasets after 7 days, more than 30 datasets, runs on a full disk, a dataset that has been computing for more than 70 minutes is failed | none of these: the data are the user's own, and a long job is not taken for a dead one (a job that died with the process is marked at the next start). Still applying: the 10 most recent uploads of single runs are kept, older scratch files are dropped |
-| ProM | ProM4Py container | not yet: the app says so up front (`GET /api/capabilities` reports `prom: false` while `PROM4PY_URL` is unset), shows a notice where a log would be mined and disables the run; a mining run that still fails shows a desktop message instead of "start prom4py on the server" |
+| ProM | ProM4Py container | only in the edition with ProM, which starts its own ProM (see "The edition with ProM"). Without it the app says so up front (`GET /api/capabilities` reports `prom: false` while `PROM4PY_URL` is unset), shows a notice where a log would be mined and disables the run; a mining run that still fails shows a desktop message instead of "start prom4py on the server" |
 
 Without ProM the app runs fully offline with the bundled datasets, Petri nets (PNML), log
 measures (feeed), factor analysis, stability, comparison, the exports and the precomputed
@@ -100,6 +105,7 @@ Starting it a second time while it runs opens the browser on the running app and
 | `--port-file PATH` | Write the port to PATH once the server answers (also when a second start found a running app). |
 | `--data-dir PATH` | Keep data, settings and logs (`PATH/logs`) in PATH instead of the user's directories. |
 | `--frontend-dir PATH` | Serve another static export. |
+| `--prom-dir PATH` | Start ProM from this folder (`python scripts/build_desktop.py prom` makes one in `build/desktop/prom`), as the edition with ProM does from its own; see "The edition with ProM". |
 | `--separate-sessions` | A session per browser, as on a server, instead of the one shared session. For the end-to-end tests, whose specs compare sessions. |
 | `--rate-limits` | Switch the request rate limits on, as on a server. They are off by default (`RATE_LIMIT_DISABLED=1` is set): they count per address, and here every request comes from 127.0.0.1, so one user would share them with everything else (e.g. 60 new datasets an hour). The daily caps of Claude calls apply either way (they are counted in memory and start again at zero with every start of the app). |
 | `--access-log` | Log every request. |
@@ -127,7 +133,8 @@ other users.
 
 - Data: `app.db` (with `-wal` and `-shm`), `artifacts/` (datasets, runs, interpretations),
   `uploaded_logs/`, `identity.json` (the key that signs the session cookie and the id of the one
-  session; mode 0600), `instance.json` and `instance.lock` (the running instance).
+  session; mode 0600), `instance.json` and `instance.lock` (the running instance), and in the
+  edition with ProM `prom/` (ProM's own files, see "The edition with ProM").
 - Settings: `launcher.json` (the port), and `settings.env` if you create it.
 - Log: `app.log`, everything the process writes, rotated at 2 MB with five old files.
 
@@ -173,8 +180,8 @@ Before it imports the backend, which reads its settings at import time:
 | `SESSION_MAX_AGE`, `DATA_MAX_IDLE_DAYS`, `MAX_DATASETS_PER_SESSION`, `LOW_DISK_CLEANUP_FREE_PCT` | `never` |
 | `OPENBLAS_NUM_THREADS`, `VECLIB_MAXIMUM_THREADS` | `1`, as in the Docker image |
 | `FASTAPI_ROOT_PATH` | `/api` |
-| `PROM4PY_START_WAIT` | `2` unless set |
-| `PROM4PY_URL` | not set: no ProM. Set in `settings.env`, the app counts ProM as available (`GET /api/capabilities`) |
+| `PROM4PY_START_WAIT` | `2` unless set; `600` in the edition with ProM (as long as a start of its ProM may take) |
+| `PROM4PY_URL`, `PROM4PY_TOKEN` | the edition with ProM: the address and the token of its own ProM. Otherwise not set: no ProM. `PROM4PY_URL` set in `settings.env` names another ProM; the app then counts ProM as available (`GET /api/capabilities`) and starts none of its own |
 | `APP_VERSION`, `APP_COMMIT` | from `build_info.json` of a packaged build, unless set; from a checkout git answers |
 | `RATE_LIMIT_DISABLED` | `1`, unless `--rate-limits` |
 | removed | `REDIS_URL`, `TESTING`, `TEST_DATABASE_URL` |
@@ -287,6 +294,78 @@ expect of a server. The request limits are off by default, which the specs need:
 datasets within the hour, all from 127.0.0.1. On Windows without Playwright's own Chromium, add
 `PW_CHANNEL=msedge`.
 
+## The edition with ProM
+
+A second build of the same program carries ProM, so that logs can be mined offline with the
+nine ComFy miners: `<name>-<version>-<system>-<arch>-with-prom.<ext>`. Next to the program
+(inside the app on macOS, `Contents/Resources/prom`) it has a folder `prom` that
+`scripts/build_desktop.py prom` puts together (`scripts/desktop_prom.py`):
+
+| Part | What | Licence |
+|---|---|---|
+| `jre/` | Java 8 runtime: Eclipse Temurin 8u512 (Windows x64, Linux x64), Azul Zulu 8u512 (macOS arm64, where Temurin has no Java 8) | GPL-2.0 with the Classpath Exception |
+| `ProM4Py/` | the folder `ProM4Py/` of `prom4py.zip` (Zenodo 13853660), jar signatures removed as in the Docker image; the class folder `Packages/Workshop/Trunk/out/production/prom` is moved to `classes/` (shorter paths, see below) | CC BY 4.0; the ProM packages their own (`ProM4Py/LICENSE.txt`) |
+| `lpsolve/` | lp_solve 5.5.2.11 and the JNI wrapper of `lp_solve_5.5.2.5_java.zip`, for the Hybrid ILP miner; prebuilt for Windows and Linux, compiled from source for macOS arm64 | LGPL-2.1 |
+| `launcher/prom-launcher.jar` | `src/desktop/prom/LocalProM.java`, compiled for Java 8 | MIT (the tool's) |
+| `SOURCES.txt` | each part with its download address and SHA-256 | |
+
+**How it runs.** With the folder there, the launcher (`desktop_app/prom.py`) starts ProM as a
+child process when the app starts and ends it when the app quits; `PROM4PY_URL` points the
+backend at it and `/api/capabilities` reports `prom: true`. It runs ProM as
+`src/prom4py/launch.sh` does in the Docker stack: the same Java options (`-Xmx4G`,
+`-XX:ActiveProcessorCount=1`, headless, ProM's class loader), and the same watchdog: ProM is
+started again 2 s after it exits (later and later, up to 60 s, while it keeps exiting before it
+ever answered), restarted when `/isRunning` has not answered for `PROM4PY_CALL_TIMEOUT` + 30 s
+(a stuck call, see [`src/prom4py/README.md`](../src/prom4py/README.md#watchdog)), and when a
+start does not answer within 600 s. The log has each of these with `ProM:`, and ProM's own output
+with `[prom]` (without the line per jar it prints at every start). The first start on a machine
+builds ProM's plugin cache (measured on Windows: 104 s); later starts took 5 to 41 s.
+Jobs started meanwhile wait for it (`PROM4PY_START_WAIT`, 600 s here).
+
+**What differs from the container**, because ProM runs on the user's machine and not in a
+compose network:
+
+- ProM4Py's server listens on every network interface and runs whatever `/executor` is sent,
+  without asking who sends it; any web page could send it a form post to `127.0.0.1`. Java's
+  main class is therefore `LocalProM`, which makes every HTTP server of the JVM listen on
+  loopback only and refuse, with 403, every request without the header `X-ProM4Py-Token`: a
+  random token of each start, which Java and the backend get in their environment (never on a
+  command line; the log hides it). A web page cannot set that header on a request to another
+  origin without a preflight, which is refused as well. ProM's own code is unchanged; the
+  server comes from the JVM's `HttpServerProvider`, which `LocalProM` replaces.
+- Java ends when its standard input closes. The app holds the other end, and the system closes it
+  when the app's process ends, also after a crash or a kill: no ProM is left running. On quit
+  the app closes it itself, and kills Java if it is still there 5 s later.
+- Java gets the app's environment without its secrets (`ANTHROPIC_API_KEY`, the session key)
+  and without `JAVA_TOOL_OPTIONS`, `_JAVA_OPTIONS`, `JDK_JAVA_OPTIONS` and `CLASSPATH`, which
+  another Java program may have set for itself.
+- ProM's files go to `prom/` in the data directory (Java's `user.home` and working directory):
+  its `.ProM` folder and, on Linux, the Java preferences with its plugin cache. Nothing is
+  written into the program's folder. Java keeps preferences in the registry on Windows
+  (`HKEY_CURRENT_USER\Software\JavaSoft\Prefs\org\processmining`, about 350 keys) and in
+  `~/Library/Preferences` on macOS; delete them to remove every trace of ProM.
+
+Graphviz is not part of either edition, so a single run shows the table of measures but no
+images of the nets (the Docker image has Graphviz); the Playwright spec that checks those images
+is left out of the CI run of this edition.
+
+ProM's packages include the YAWL editor, which asks `http://localhost:8080/yawl/ia` and
+`/resourceService/gateway` every few seconds with `HEAD` requests for a local YAWL engine; it
+sends no data, and in the Docker container nothing answers there. On a machine where another
+program listens on port 8080, that program sees these requests.
+
+**Settings** (`settings.env` or the environment): `PROM4PY_CALL_TIMEOUT` as in the Docker stack
+(seconds per discovery, at least 10; the watchdog restarts 30 s later), `PROM4PY_HEAP` for
+Java's `-Xmx` (default `4G`), `PROM4PY_START_WAIT`. `PROM4PY_URL` names another ProM; the app
+then starts none of its own. From a checkout, `--prom-dir build/desktop/prom` starts ProM from
+the folder that `python scripts/build_desktop.py prom` makes.
+
+**Windows paths.** In `prom4py.zip` the files of the class folder have paths of up to 173
+characters below `ProM4Py/`; unpacked by Explorer into
+`C:\Users\<name>\Downloads\<archive>\<name>\prom\ProM4Py\` they would pass Windows' 260 characters
+for user names of about eight letters. Moved to `classes/`, the longest path below `ProM4Py/` has
+149 characters.
+
 ## Packaging
 
 `scripts/build_desktop.py` builds what a release contains. The CI (`.github/workflows/desktop.yml`)
@@ -308,6 +387,12 @@ python scripts/build_desktop.py all     # frontend, bundle, pack; output in buil
 | `verify-macos` | no binary of the bundle needs a newer macOS than the stated minimum |
 | `exe` | prints the program inside the bundle (for the CI) |
 | `copyleft` | prints `name==version` of the bundled packages under a copyleft licence (for the release job) |
+| `prom` | writes `build/desktop/prom`, the ProM folder of the edition with ProM (see there). Downloads are pinned by SHA-256 in `scripts/desktop_prom.py` and cached in `build/desktop/downloads` (`--downloads DIR`); `javac` of a JDK 9 or newer compiles the launcher, and on macOS `cc` compiles lp_solve |
+
+`--with-prom` with `bundle` or `all` builds the edition with ProM: `bundle` makes the ProM folder
+if it is missing, copies it next to the program (into the app on macOS, which it then signs again
+ad hoc) and notes it in `THIRD-PARTY-LICENSES.txt`; `pack` adds `-with-prom` to the archive's
+name. On Windows set `CFA_BUILD_DIR` to a short folder for it as well.
 
 A tag build checks that the tag names the version of `version.py` (`v1.0.0` for `1.0.0`). On
 Windows a checkout in a deep directory exceeds the 260 characters of a path; set `CFA_BUILD_DIR`
@@ -330,7 +415,7 @@ layout, `src/desktop/desktop.spec` writes it):
   next to the program in the archive).
 - Left out: Celery, Kombu, Billiard, amqp, asyncpg, uvloop (the Docker stack's), pytest, cvxopt.
   Redis stays, `config.py` imports it. Graphviz is not shipped; it is optional and draws the
-  Petri-net images of a ProM run, which the desktop app does not have yet.
+  Petri-net images of a ProM run, which only the edition with ProM has (it shows no images).
 - Windows has two programs that share one set of files: `<name>.exe` without a console window,
   and `<name>-console.exe`, which prints the log and quits on Ctrl+C and Ctrl+Break (a program
   without a console cannot receive that signal).
@@ -353,6 +438,12 @@ must end with exit code 0:
 The backend tests that guard the numbers (`test_published_numbers`, `test_msa_invariance`,
 `test_factor_analysis_core`, `tests/desktop`) run first on each system, without cvxopt; Linux runs
 the whole suite. On Windows the program without a console is started as well and must answer.
+
+The edition with ProM is built in a second row of the matrix on each system, with the downloads
+of its ProM folder cached, and tested with its ProM running: the smoke test's ProM step mines the
+four sample logs with the Inductive and the Hybrid ILP miner (lp_solve), Playwright runs the
+specs tagged `@prom` (`E2E_PROM=1`) except the one about the images of the nets (no Graphviz),
+and after the program was killed (no quit) no ProM process may be left. A `v*` tag attaches only the archives without ProM to the release.
 
 ### cvxopt
 
