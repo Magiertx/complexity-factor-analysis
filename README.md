@@ -12,7 +12,7 @@ Schalk do it, but interactively in the browser.
 
 > **For reviewers**
 >
-> - **Watch:** the [screencast](https://github.com/Magiertx/complexity-factor-analysis/releases/download/v1.0.0/xcom-1.0.0-screencast.mp4) (3 minutes; the link downloads the video).
+> - **Watch:** the [screencast on YouTube](https://youtu.be/apDWKewD5gg) (3 minutes; also attached to the [release](https://github.com/Magiertx/complexity-factor-analysis/releases/tag/v1.0.0) as a download).
 > - **Try it without installing anything:** take the desktop program for Windows, macOS or Linux from the [release](https://github.com/Magiertx/complexity-factor-analysis/releases/tag/v1.0.0) and start it. The first start needs one extra step per system, which the release page lists. The desktop program has everything except the ProM miners.
 > - **Full version with the miners:** Docker with Compose and about 8 GB of RAM for Docker (on Linux, `sudo` or membership in the `docker` group). The first build takes a few minutes; details in the [Quick start](#quick-start).
 >   1. `git clone https://github.com/Magiertx/complexity-factor-analysis.git && cd complexity-factor-analysis`
