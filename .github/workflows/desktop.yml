@@ -79,6 +79,9 @@ jobs:
     name: build (${{ matrix.os }}${{ matrix.prom && ', with ProM' || '' }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 100
+    # A failing row of the edition with ProM shows red but does not fail the run, so the release
+    # job (needs: build) still attaches the archives without ProM; those rows must pass for it.
+    continue-on-error: ${{ matrix.prom }}
     strategy:
       fail-fast: false
       matrix:
@@ -91,9 +94,10 @@ jobs:
         shell: bash
     env:
       # Playwright: without ProM the full suite on Linux and Windows, the specs for a missing ProM
-      # on macOS; with ProM the specs that need it (the rest is the same program), except the one
-      # that expects the images of the nets: Graphviz draws them, and no edition carries it.
-      PLAYWRIGHT_ARGS: ${{ matrix.prom && '--grep @prom --grep-invert lightbox' || (matrix.os == 'macos-15' && '--grep @no-prom' || '') }}
+      # on macOS; with ProM the specs that need it (the rest is the same program). The one that
+      # expects the images of the nets runs on Windows only: Graphviz draws them, and only the
+      # Windows edition carries it (Linux and macOS use an installed one, docs/DESKTOP.md).
+      PLAYWRIGHT_ARGS: ${{ matrix.prom && (matrix.os == 'windows-2022' && '--grep @prom' || '--grep @prom --grep-invert lightbox') || (matrix.os == 'macos-15' && '--grep @no-prom' || '') }}
       E2E_PROM: ${{ matrix.prom && '1' || '0' }}
       EDITION: ${{ matrix.prom && 'with-prom' || 'plain' }}
       BUILD_FLAGS: ${{ matrix.prom && '--with-prom' || '' }}
@@ -216,18 +220,28 @@ jobs:
           fi
 
       # Start the built program headless, as a user's machine would, and run everything against it.
+      # With ProM also: LocalProM refuses requests without the token and listens on loopback only
+      # (scripts/check_prom.py guard). On Linux the edition with ProM runs under LC_ALL=C, where a
+      # JVM without -Dfile.encoding=UTF-8 would mangle every name outside ASCII; the smoke test's
+      # step "names outside ASCII through ProM" checks that it does not.
       - name: Smoke test, checks and Playwright against the built program
         env:
           APP_COMMIT_EXPECTED: ${{ github.sha }}
+          LC_ALL: ${{ (matrix.prom && runner.os == 'Linux') && 'C' || '' }}
         run: |
           exe=$(python scripts/build_desktop.py exe)
           version=$(python -c "import json; print(json.load(open('build/desktop/stage/meta.json'))['version'])")
+          guard=()
+          if [ "$EDITION" = with-prom ]; then
+            guard=(--run "python scripts/check_prom.py guard --log $RUNNER_TEMP/cfa-data/logs/app.log")
+          fi
           start=$(date +%s)
           python scripts/run_frozen.py --exe "$exe" --data-dir "$RUNNER_TEMP/cfa-data" \
+            "${guard[@]}" \
             --run "python scripts/smoke.py --port-file {port_file} --token-file {token_file} $SMOKE_PROM" \
             --run "python scripts/check_desktop.py --port-file {port_file} --token-file {token_file} --commit $APP_COMMIT_EXPECTED --version $version" \
             --run "cd src/frontend && npx playwright test $PLAYWRIGHT_ARGS"
-          echo "the three took $(( $(date +%s) - start )) s"
+          echo "the checks took $(( $(date +%s) - start )) s"
 
       # The program without a console, as a user starts it: it must come up and answer.
       - name: Start the program without a console
@@ -236,20 +250,21 @@ jobs:
           python scripts/run_frozen.py --quit kill --exe "$(python scripts/build_desktop.py exe --windowed)" \
             --data-dir "$RUNNER_TEMP/cfa-data-windowed"
 
-      # The program killed while its ProM runs (no quit): ProM must end with it.
+      # The program killed while its ProM runs (no quit): ProM must end with it. That it ran is
+      # checked first, so that the check after the kill cannot pass because ProM never started.
       - name: No ProM left after the program was killed
         if: matrix.prom
         run: |
+          python scripts/check_prom.py count --at-most 0
           python scripts/run_frozen.py --quit kill --exe "$(python scripts/build_desktop.py exe)" \
-            --data-dir "$RUNNER_TEMP/cfa-data-killed" --run "python -c \"import time; time.sleep(20)\""
-          sleep 10
-          if [ "$RUNNER_OS" = Windows ]; then
-            left=$(powershell -NoProfile -Command "@(Get-CimInstance Win32_Process -Filter \"Name='java.exe'\" | Where-Object { \$_.CommandLine -match 'LocalProM' }).Count" | tr -d '\r')
-          else
-            left=$(pgrep -f LocalProM | wc -l | tr -d ' ')
-          fi
-          echo "ProM processes left: $left"
-          test "$left" = 0
+            --data-dir "$RUNNER_TEMP/cfa-data-killed" \
+            --run "python scripts/check_prom.py count --at-least 1" \
+            --run "python -c \"import time; time.sleep(15)\""
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            python scripts/check_prom.py count --at-most 0 && exit 0
+            sleep 2
+          done
+          exit 1
 
       - name: Playwright report
         if: failure()

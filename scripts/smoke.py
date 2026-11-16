@@ -37,6 +37,28 @@ from typing import Any, Callable
 PUBLISHED = Path(__file__).resolve().parent.parent / "src" / "AlgoService" / "datasets" / "published"
 PAPER_DATASET = "comfy-paper-inductive-miner"
 
+#: Activities that differ only in a letter outside ASCII whose UTF-8 bytes cp1252 does not have
+#: (0x81, 0x8D, 0x90, 0x9D: Á Ð Ý, Cyrillic Н Ё, Greek Ν ρ): read or written in cp1252 or ASCII
+#: instead of UTF-8, several of them come out as the same name.
+NON_ASCII_ACTIVITIES = ["Áx", "Ðx", "Ýx", "Нx", "Ёx", "Νx", "ρx"]
+
+
+def xes_log(activities: list[str], traces: int) -> bytes:
+    """An XES log (UTF-8) of ``traces`` identical traces that run through ``activities`` in order."""
+    from xml.sax.saxutils import quoteattr
+
+    lines = ['<?xml version="1.0" encoding="UTF-8"?>', '<log xes.version="1.0" xmlns="http://www.xes-standard.org/">']
+    for t in range(traces):
+        lines.append(f'  <trace><string key="concept:name" value="case-{t}"/>')
+        for i, activity in enumerate(activities):
+            lines.append(
+                f'    <event><string key="concept:name" value={quoteattr(activity)}/>'
+                f'<date key="time:timestamp" value="2024-01-01T10:{i:02d}:{t:02d}.000+00:00"/></event>'
+            )
+        lines.append("  </trace>")
+    lines.append("</log>")
+    return ("\n".join(lines) + "\n").encode("utf-8")
+
 
 class StepFailed(Exception):
     pass
@@ -75,6 +97,33 @@ class Client:
             return content
         return json.loads(content) if content else None
 
+    def multipart(self, path: str, fields: dict[str, str | list[str]], file: tuple[str, str, bytes]) -> Any:
+        """POST ``fields`` and one file as multipart/form-data; the JSON answer."""
+        boundary = f"----smoke{time.time_ns()}"
+        parts: list[bytes] = []
+        for name, value in fields.items():
+            for item in value if isinstance(value, list) else [value]:
+                parts.append(
+                    f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{item}\r\n'.encode("utf-8")
+                )
+        field, filename, data = file
+        parts.append(
+            f'--{boundary}\r\nContent-Disposition: form-data; name="{field}"; filename="{filename}"\r\n'
+            "Content-Type: application/xml\r\n\r\n".encode("utf-8") + data + b"\r\n"
+        )
+        parts.append(f"--{boundary}--\r\n".encode("utf-8"))
+        headers = {"Accept": "application/json", "Content-Type": f"multipart/form-data; boundary={boundary}"}
+        if self.token:
+            headers["Authorization"] = f"Bearer {self.token}"
+        req = urllib.request.Request(self.api + path, data=b"".join(parts), headers=headers, method="POST")
+        try:
+            with self.opener.open(req, timeout=self.timeout) as response:
+                return json.loads(response.read())
+        except urllib.error.HTTPError as e:
+            raise StepFailed(f"POST {path}: HTTP {e.code} {e.read().decode(errors='replace')[:300]}") from None
+        except urllib.error.URLError as e:
+            raise StepFailed(f"POST {path}: {e.reason}") from None
+
 
 class Smoke:
     def __init__(self, client: Client, dataset_timeout: float, prom_miners: list[str] | None = None) -> None:
@@ -84,6 +133,8 @@ class Smoke:
         self.prom_miners = prom_miners
         self.rows: list[tuple[str, float, bool, str]] = []
         self.created: list[str] = []
+        #: Single runs the test started, deleted at the end.
+        self.jobs: list[str] = []
         # Datasets of the session from before the test (the desktop app's one session).
         self.existing: set[str] = set()
 
@@ -157,6 +208,42 @@ class Smoke:
         if self.prom_miners:
             form["miners"] = json.dumps(self.prom_miners)
         return self.computed(form, 4 * len(miners)) + f", miners {', '.join(miners)}"
+
+    def names_outside_ascii(self) -> str:
+        """A single run of the Inductive miner on a log whose activities differ only in letters
+        outside ASCII, which ProM must hand back unchanged. A JVM that reads or writes them in
+        another charset than UTF-8 (cp1252 on Windows, ASCII under LANG=C) turns several of them
+        into the same name, and the net then has duplicate tasks."""
+        log = xes_log(NON_ASCII_ACTIVITIES, traces=5)
+        fields = {
+            "discovery_algorithms": "Inductive miner",
+            "complexity_measures": ["Size", "Number of duplicate tasks"],
+        }
+        started = self.client.multipart("/algorithms/comfy/analyze", fields, ("file", "names-outside-ascii.xes", log))
+        job_id = started["job_id"]
+        self.jobs.append(job_id)
+        deadline = time.monotonic() + self.dataset_timeout
+        while True:
+            job = self.client.request("GET", f"/jobs/{job_id}")
+            if job.get("status") == "completed":
+                break
+            if job.get("status") in ("failed", "aborted"):
+                raise StepFailed(f"the run {job.get('status')}: {job.get('error')}")
+            if time.monotonic() > deadline:
+                raise StepFailed(f"still running after {self.dataset_timeout:.0f} s")
+            time.sleep(2)
+        artifacts = (job.get("result") or {}).get("artifacts") or []
+        scores = next((a for a in artifacts if a.get("kind") == "table"), None)
+        if not scores:
+            raise StepFailed("the run has no table of scores")
+        row = dict(zip(scores["columns"], scores["rows"][0]))
+        size, dup = row.get("Size"), row.get("Number of duplicate tasks")
+        if dup != 0:
+            raise StepFailed(
+                f"{dup} duplicate tasks in the net of {len(NON_ASCII_ACTIVITIES)} different activities "
+                f"({', '.join(NON_ASCII_ACTIVITIES)}): ProM changed their names (size {size})"
+            )
+        return f"{len(NON_ASCII_ACTIVITIES)} activities ({' '.join(NON_ASCII_ACTIVITIES)}) back as {len(NON_ASCII_ACTIVITIES)} different tasks, size {size}"
 
     def model_from_pnml(self) -> str:
         return self.computed({"kind": "model", "source": "pnml", "bundled_id": "pdc-sample-models"}, 32)
@@ -233,6 +320,12 @@ class Smoke:
         )
 
     def cleanup(self) -> str:
+        for job_id in self.jobs:
+            try:
+                self.client.request("DELETE", f"/jobs/{job_id}")
+            except StepFailed as e:
+                if "HTTP 404" not in str(e):
+                    raise
         for dataset_id in self.created:
             try:
                 self.client.request("DELETE", f"/factor-analysis/datasets/{dataset_id}")
@@ -255,6 +348,7 @@ class Smoke:
         if prom:
             which = "chosen miners" if self.prom_miners else "default miner"
             self.step(f"4 sample logs x {which} (ProM)", self.model_from_logs)
+            self.step("names outside ASCII through ProM", self.names_outside_ascii)
         self.step("sample Petri nets", self.model_from_pnml)
         self.step("sample logs with feeed", self.log_from_logs)
         if self.step("paper dataset as published", self.paper):
@@ -271,7 +365,16 @@ class Smoke:
         return "\n".join(lines)
 
 
+def printable_output() -> None:
+    """Names outside ASCII print as escapes where the console's charset does not have them
+    (cp1252 on Windows), instead of ending the test with UnicodeEncodeError."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(errors="backslashreplace")
+
+
 def main() -> int:
+    printable_output()
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--base-url", default="http://localhost:3000", help="the frontend; the API is <base-url>/api")
     parser.add_argument("--api-url", help="the backend itself, instead of <base-url>/api")

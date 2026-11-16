@@ -55,6 +55,10 @@ def print_log(data_dir: Path) -> None:
 
 
 def main() -> int:
+    # The app's log can hold names outside the console's charset (cp1252 on Windows).
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(errors="backslashreplace")
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--exe", required=True, type=Path)
     parser.add_argument("--data-dir", required=True, type=Path)
