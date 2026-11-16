@@ -83,13 +83,21 @@ class Download:
 SOURCEFORGE = "https://downloads.sourceforge.net/project/lpsolve/lpsolve"
 TEMURIN = "https://github.com/adoptium/temurin8-binaries/releases/download/jdk8u512-b09"
 
+#: The cleaned copy in this repository's release (scripts/clean_prom4py.py: the original without
+#: PROM4PY_LEFT_OUT, every other entry unchanged), tried first as in src/prom4py/Dockerfile.
+PROM4PY_CLEANED = Download(
+    "prom4py-cleaned.zip",
+    ("https://github.com/Magiertx/complexity-factor-analysis/releases/download/prom4py-mirror/prom4py-cleaned.zip",),
+    "b6da8155913771ca8a1629bf31ef9d804c7555cd9f08d116778dcd07bdc73e6e",
+    "ProM4Py, Zenodo record 13853660 (https://zenodo.org/records/13853660), cleaned by "
+    "scripts/clean_prom4py.py; the folder ProM4Py/ of prom4py-cleaned.zip",
+    "CC BY 4.0 for the record; the ProM packages in it have their own licences (ProM4Py/LICENSE.txt: "
+    "https://promtools.org/prom-6-framework-license/ and https://promtools.org/prom-6-package-license/)",
+)
+#: The original on Zenodo, if the cleaned copy cannot be had; PROM4PY_LEFT_OUT is left out of it here.
 PROM4PY = Download(
     "prom4py.zip",
-    (
-        # The unchanged copy in this repository's release, then Zenodo (src/prom4py/Dockerfile).
-        "https://github.com/Magiertx/complexity-factor-analysis/releases/download/prom4py-mirror/prom4py.zip",
-        "https://zenodo.org/api/records/13853660/files/prom4py.zip/content",
-    ),
+    ("https://zenodo.org/api/records/13853660/files/prom4py.zip/content",),
     "7f871b1b8583ac2dbd05af789f3287e0158891342090e8f1f0a8f35888e74c20",
     "ProM4Py, Zenodo record 13853660 (https://zenodo.org/records/13853660); the folder ProM4Py/ of prom4py.zip",
     "CC BY 4.0 for the record; the ProM packages in it have their own licences (ProM4Py/LICENSE.txt: "
@@ -829,14 +837,25 @@ def assemble(system: str, machine: str, build: Path, cache: Path) -> Path:
 
     # ProM4Py: the folder ProM4Py/ of the zip, without signatures and without PROM4PY_LEFT_OUT.
     left_out = [re.compile(pattern) for pattern, _ in PROM4PY_LEFT_OUT]
-    with zipfile.ZipFile(fetch(PROM4PY, cache)) as zf:
+    # The cleaned copy first; the original only where it cannot be had (fetch ends with SystemExit).
+    try:
+        bundle, original = fetch(PROM4PY_CLEANED, cache), False
+    except SystemExit as exc:
+        log(f"{PROM4PY_CLEANED.name}: {exc}; taking the original from Zenodo")
+        bundle, original = fetch(PROM4PY, cache), True
+    with zipfile.ZipFile(bundle) as zf:
         members = [i for i in zf.infolist() if i.filename.startswith("ProM4Py/")]
         if not members:
-            raise SystemExit("prom4py.zip has no folder ProM4Py/.")
+            raise SystemExit(f"{bundle.name} has no folder ProM4Py/.")
         kept = [i for i in members if not any(p.match(i.filename) for p in left_out)]
         for pattern in left_out:
-            if not any(pattern.match(i.filename) for i in members):
-                raise SystemExit(f"prom4py.zip has nothing that matches {pattern.pattern}: PROM4PY_LEFT_OUT is out of date.")
+            found = any(pattern.match(i.filename) for i in members)
+            # The original has every part that is left out, the cleaned copy none of them.
+            if found != original:
+                raise SystemExit(
+                    f"{bundle.name}: {'nothing' if original else 'an entry'} matches {pattern.pattern}; "
+                    "PROM4PY_LEFT_OUT and scripts/clean_prom4py.py are out of step."
+                )
         for info in kept:
             zf.extract(info, out)
     log(f"ProM4Py: {len(members) - len(kept)} of {len(members)} entries left out (PROM4PY_LEFT_OUT)")
@@ -853,7 +872,12 @@ def assemble(system: str, machine: str, build: Path, cache: Path) -> Path:
     lpsolve = build_lpsolve(system, cache, out / "lpsolve", work)
     build_launcher(out / "launcher", work)
 
-    parts = [("jre/", pins["jre"]), ("ProM4Py/", PROM4PY), ("lpsolve/", lpsolve[1]), ("lpsolve/ (Java wrapper)", lpsolve[0])]
+    parts = [
+        ("jre/", pins["jre"]),
+        ("ProM4Py/", PROM4PY if original else PROM4PY_CLEANED),
+        ("lpsolve/", lpsolve[1]),
+        ("lpsolve/ (Java wrapper)", lpsolve[0]),
+    ]
     graphviz = GRAPHVIZ.get((system, machine))
     if graphviz:
         archive, licence = graphviz
