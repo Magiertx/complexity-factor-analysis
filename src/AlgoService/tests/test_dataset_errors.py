@@ -73,6 +73,21 @@ def test_unreadable_xml_is_refused_with_the_code_of_its_type(client, source, nam
     assert "Security validation failed" in body["detail"] and body["params"]["details"]
 
 
+def test_upload_failures_name_the_file_as_the_user_named_it(client):
+    import gzip
+
+    for name, content, code in (
+        ("mine.xes.gz", b"not gzip at all", "gzip_invalid"),
+        ("mine.xes.gz", gzip.compress(b"<log><trace></log>"), "xes_invalid"),
+        ("mine.xes", b"<log><trace></log>", "xes_invalid"),
+    ):
+        r = _post(client, kind="log", source="logs", files=[("files", (name, content, "application/octet-stream"))])
+        body = r.json()
+        assert r.status_code == 400 and body["code"] == code and body["params"]["file"] == name, body
+        # Not the name the file is stored under, nor where.
+        assert "000.xes" not in r.text and "datasets" not in r.text and "inputs" not in r.text, body
+
+
 def test_an_empty_log_file_is_refused_as_empty(client):
     r = _post(client, kind="log", source="logs", files=[("files", ("x.xes", b"", "application/xml"))])
     assert r.status_code == 400 and r.json()["code"] == "empty_file"

@@ -1586,6 +1586,9 @@
     "progress_starting": "Starting the analysis…",
     "progress_reading": "Reading the event log…",
     "progress_miner": "Computing the complexity for the {miner} ({i}/{n})…",
+    "progress_wait_busy": "{miner}: waiting for ProM, another run is using it…",
+    "progress_wait_restart": "{miner}: waiting for ProM to restart…",
+    "progress_wait_start": "{miner}: waiting for ProM to start…",
     "progress_done": "Analysis complete",
     "progress_aborted": "Aborted by the user",
     "progress_pending": "Pending…"

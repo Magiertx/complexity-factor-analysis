@@ -91,6 +91,10 @@ const TEXTS: [RegExp, string, string[]][] = [
   [/^Starting analysis\.\.\.$/, "progress_starting", []],
   [/^Reading event log\.\.\.$/, "progress_reading", []],
   [/^Analyzing complexity for (.+) \((\d+)\/(\d+)\)\.\.\.$/, "progress_miner", ["miner", "i", "n"]],
+  // Waits for ProM (algorithms/_prom4py.py), with the miner that waits in front.
+  [/^(.+): waiting for ProM, another job is using it$/, "progress_wait_busy", ["miner"]],
+  [/^(.+): waiting for ProM to restart$/, "progress_wait_restart", ["miner"]],
+  [/^(.+): waiting for ProM to start$/, "progress_wait_start", ["miner"]],
   [/^Analysis complete!$/, "progress_done", []],
   [/^Aborted by user$/, "progress_aborted", []],
   [/^Pending\.\.\.$/, "progress_pending", []],

@@ -71,6 +71,7 @@ from routes.algorithms import (
     _ProgressThrottle,
     _sanitize_filename,
     cleanup_old_jobs,
+    xml_problem,
 )
 
 router = APIRouter(prefix="/factor-analysis", tags=["factor analysis"])
@@ -180,7 +181,8 @@ async def _save_upload(upload: UploadFile, target: Path) -> int:
     return copied
 
 
-def _gunzip(source: Path, target: Path, limit: int) -> int:
+def _gunzip(source: Path, target: Path, limit: int, label: str) -> int:
+    """Decompress ``source`` to ``target``; ``label`` is the name the user gave the file."""
     written = 0
     try:
         with gzip.open(source, "rb") as src, open(target, "wb") as out:
@@ -191,13 +193,13 @@ def _gunzip(source: Path, target: Path, limit: int) -> int:
                 written += len(chunk)
                 if written > limit:
                     raise _bad(
-                        f"'{source.name}' is too large once decompressed; at most "
+                        f"'{label}' is too large once decompressed; at most "
                         f"{limit // (1024 * 1024)} MB are left for it.",
-                        "file_too_large", file=source.name, limit_mb=limit // (1024 * 1024),
+                        "file_too_large", file=label, limit_mb=limit // (1024 * 1024),
                     )
                 out.write(chunk)
     except (OSError, EOFError) as e:
-        raise _bad(f"'{source.name}' is not a valid gzip file: {e}", "gzip_invalid", file=source.name, details=str(e))
+        raise _bad(f"'{label}' is not a valid gzip file: {e}", "gzip_invalid", file=label, details=str(e))
     source.unlink()
     return written
 
@@ -214,7 +216,9 @@ def _check_xml(path: Path, label: str, source: str = "logs") -> None:
     try:
         tree = etree.parse(str(path), parser=parser)
     except Exception as e:
-        raise _bad(f"Security validation failed or invalid XML in '{label}': {e}", code, file=label, details=str(e))
+        # Without the path the file is stored under ("000.xes" in the directory of the dataset).
+        problem = xml_problem(e)
+        raise _bad(f"Security validation failed or invalid XML in '{label}': {problem}", code, file=label, details=problem)
     if tree.docinfo.doctype:
         raise _bad(
             f"'{label}': XML files containing DOCTYPE declarations are not allowed.",
@@ -254,7 +258,7 @@ async def _store_inputs(files: list[UploadFile], source: str, target_dir: Path) 
             await _save_upload(upload, packed)
             path = target_dir / f"{i:03d}.xes"
             limit = min(MAX_DECOMPRESSED_BYTES, MAX_TOTAL_BYTES - total)
-            total += await run_in_threadpool(_gunzip, packed, path, limit)
+            total += await run_in_threadpool(_gunzip, packed, path, limit, name)
         else:
             path = target_dir / f"{i:03d}{'.xes' if source == 'logs' else '.pnml'}"
             total += await _save_upload(upload, path)

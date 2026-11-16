@@ -73,6 +73,12 @@ if not UPLOADED_LOGS_DIR.exists():
         logger.exception(f"Failed to create uploaded logs directory: {e}")
 
 
+def xml_problem(error: Exception) -> str:
+    """What is wrong with an uploaded XML file, as lxml says it, without the path the server stored
+    the file under (lxml appends it to the message)."""
+    return getattr(error, "msg", None) or str(error)
+
+
 def _sanitize_filename(name: str) -> str:
     """Reduce a user-supplied filename to a safe basename for joining with a
     directory path. Strips any directory components (both POSIX and Windows
@@ -521,9 +527,12 @@ async def analyze(
         allowed_extensions = {".xes", ".xes.gz", ".xml", ".json"}
         has_valid_ext = any(filename.lower().endswith(ext) for ext in allowed_extensions)
         if not has_valid_ext:
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid file extension. Allowed formats: .xes, .xes.gz, .xml, .json"
+            raise CodedHTTPException(
+                400,
+                "Invalid file extension. Allowed formats: .xes, .xes.gz, .xml, .json",
+                "wrong_file_type",
+                file=filename,
+                allowed=".xes, .xes.gz, .xml, .json",
             )
 
     task_id = str(uuid.uuid4())
@@ -602,19 +611,9 @@ async def analyze(
             await broadcast_jobs_update()
             raise HTTPException(status_code=500, detail=f"Failed to copy recent log: {e}")
     else:
-        # 2. Upload size limit enforced during stream copying
-        try:
-            copied = 0
-            while True:
-                chunk = await file.read(8192)
-                if not chunk:
-                    break
-                copied += len(chunk)
-                if copied > MAX_FILE_SIZE:
-                    raise ValueError("File size exceeds the 100 MB limit.")
-                tmp.write(chunk)
-            tmp.close()
-        except Exception as e:
+        async def refuse(detail: str, code: str, **params: Any) -> None:
+            """Remove the upload and the job just created, then refuse the request with ``code``,
+            naming the file as the user named it."""
             tmp.close()
             if os.path.exists(tmp_path):
                 try:
@@ -623,29 +622,45 @@ async def analyze(
                     logger.exception(f"Failed to remove temp file: {ex}")
             await jobs_db.delete_job_file(task_id)
             await broadcast_jobs_update()
-            raise HTTPException(status_code=400, detail=str(e))
+            raise CodedHTTPException(400, detail, code, file=filename, **params)
 
-        # 3. XML External Entity (XXE) and DTD injection prevention
+        # 2. Upload size limit enforced during stream copying
+        limit_mb = MAX_FILE_SIZE // (1024 * 1024)
+        copied = 0
+        while True:
+            chunk = await file.read(8192)
+            if not chunk:
+                break
+            copied += len(chunk)
+            if copied > MAX_FILE_SIZE:
+                await refuse(f"File size exceeds the {limit_mb} MB limit.", "file_too_large", limit_mb=limit_mb)
+            tmp.write(chunk)
+        tmp.close()
+        if copied == 0:
+            await refuse(f"'{filename}' is empty.", "empty_file")
+
+        # 3. A packed log has to be gzip; its content is checked when it is read.
+        if filename.lower().endswith(".xes.gz"):
+            with open(tmp_path, "rb") as packed:
+                if packed.read(2) != b"\x1f\x8b":
+                    await refuse(
+                        f"'{filename}' is not a valid gzip file.", "gzip_invalid", details="Not a gzipped file"
+                    )
+
+        # 4. XML External Entity (XXE) and DTD injection prevention
         if filename.lower().endswith(".xes") or filename.lower().endswith(".xml"):
+            problem = None
             try:
                 from lxml import etree
                 # Secure parser configuration
                 parser = etree.XMLParser(resolve_entities=False, no_network=True, dtd_validation=False, collect_ids=False)
                 tree = etree.parse(tmp_path, parser=parser)
                 if tree.docinfo.doctype:
-                    raise ValueError("XML files containing DOCTYPE declarations are not allowed.")
+                    problem = "XML files containing DOCTYPE declarations are not allowed."
             except Exception as e:
-                if os.path.exists(tmp_path):
-                    try:
-                        os.remove(tmp_path)
-                    except Exception as ex:
-                        logger.exception(f"Failed to remove temp file: {ex}")
-                await jobs_db.delete_job_file(task_id)
-                await broadcast_jobs_update()
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Security validation failed or invalid XML: {e}"
-                )
+                problem = xml_problem(e)
+            if problem:
+                await refuse(f"Security validation failed or invalid XML: {problem}", "xes_invalid", details=problem)
 
         # Save copy of the valid uploaded file to user-specific UPLOADED_LOGS_DIR
         try:

@@ -1586,6 +1586,9 @@
     "progress_starting": "Analyse wird gestartet…",
     "progress_reading": "Event-Log wird gelesen…",
     "progress_miner": "Komplexität für den {miner} wird berechnet ({i}/{n})…",
+    "progress_wait_busy": "{miner}: wartet auf ProM, ein anderer Run nutzt es gerade…",
+    "progress_wait_restart": "{miner}: wartet, bis ProM neu gestartet ist…",
+    "progress_wait_start": "{miner}: wartet, bis ProM bereit ist…",
     "progress_done": "Analyse abgeschlossen",
     "progress_aborted": "Vom Nutzer abgebrochen",
     "progress_pending": "Ausstehend…"

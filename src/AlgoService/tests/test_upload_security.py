@@ -82,6 +82,34 @@ def test_upload_safe_xml_accepted(client, stub_algorithm):
     assert "integer" in detail["errors"]["top_k"]
 
 
+@pytest.mark.parametrize("name, content, code", [
+    ("log.txt", b"a", "wrong_file_type"),
+    ("log.xes", b"", "empty_file"),
+    ("log.xes", b"<log><trace></log>", "xes_invalid"),
+    ("log.xml", b'<?xml version="1.0"?><!DOCTYPE log [<!ENTITY x "y">]><log/>', "xes_invalid"),
+    ("log.xes.gz", b"not gzip at all", "gzip_invalid"),
+])
+def test_refused_uploads_have_a_code_and_the_name_the_user_gave(client, stub_algorithm, name, content, code):
+    r = client.post(f"/algorithms/{stub_algorithm}/analyze", files={"file": (name, content, "application/octet-stream")})
+    assert r.status_code == 400
+    body = r.json()
+    assert body["code"] == code and body["params"]["file"] == name
+    # Nothing of where the server keeps the upload.
+    assert "tmp" not in r.text.lower() and "uploaded_logs" not in r.text
+    assert client.get("/jobs").json()["jobs"] == []
+
+
+def test_a_too_large_upload_has_a_code_with_the_limit(client, stub_algorithm):
+    with patch("routes.algorithms.MAX_FILE_SIZE", 2 * 1024 * 1024):
+        r = client.post(
+            f"/algorithms/{stub_algorithm}/analyze",
+            files={"file": ("big.xes", b"x" * (2 * 1024 * 1024 + 1), "application/xml")},
+        )
+    assert r.status_code == 400
+    assert r.json()["code"] == "file_too_large" and r.json()["params"] == {"file": "big.xes", "limit_mb": 2}
+    assert "exceeds the 2 MB limit" in r.json()["detail"]
+
+
 # --- hostile uploads and session ids -----------------------------------------------------
 
 
