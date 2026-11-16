@@ -277,8 +277,11 @@ The folder prom/ next to the program (inside the app on macOS) holds a Java 8 ru
 (GPL-2.0 with the Classpath Exception; its licence files are in prom/jre/), the ProM4Py bundle
 of Zenodo record 13853660 (CC BY 4.0; the ProM packages in it carry their own licences, see
 prom/ProM4Py/LICENSE.txt) and lp_solve 5.5 with its Java wrapper (LGPL-2.1, prom/lpsolve/LGPL.txt).
-prom/SOURCES.txt names each part, where it was downloaded and its SHA-256. These parts are
-separate programs that the app starts; they are not linked into it.
+On Windows it also holds Graphviz 16.1.1 (EPL-2.0, prom/graphviz/LICENSE.txt; source at
+https://gitlab.com/graphviz/graphviz/-/releases/16.1.1), whose folder bin/ brings libraries under
+their own licences, among them cairo, pango, glib, fribidi, gts, iconv and intl (LGPL) and the
+Microsoft Visual C++ runtime. prom/SOURCES.txt names each part, where it was downloaded and its
+SHA-256. These parts are separate programs that the app starts; they are not linked into it.
 """
 
 
@@ -390,31 +393,70 @@ def cmd_prom(args: argparse.Namespace) -> None:
     desktop_prom.assemble(system(), machine(), BUILD, Path(args.downloads).resolve() if args.downloads else DOWNLOADS)
 
 
-def prom_target(meta: dict) -> Path:
-    """Where the bundle keeps the ProM folder (desktop_app/resources.py, ``prom_dir``)."""
-    if system() == "macos":
-        return bundle_dir(meta) / "Contents" / "Resources" / "prom"
-    return bundle_dir(meta) / "prom"
+#: Where the app on macOS may keep the ProM folder, in the order tried: Resources, unless the
+#: signature of the app does not pass ``codesign --verify --strict`` with Java and lp_solve there
+#: (code is expected in Frameworks, not in Resources); desktop_app/resources.py looks in both.
+MACOS_PROM_PLACES = ("Resources", "Frameworks")
+
+
+def summary(line: str) -> None:
+    """A line in the summary of a GitHub Actions run, if there is one."""
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if path:
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write(line + "\n")
 
 
 def place_prom(meta: dict) -> None:
-    """Copy the ProM folder into the bundle; on macOS sign the app again (ad hoc, as PyInstaller
-    did), since its contents changed."""
-    target = prom_target(meta)
+    """Copy the ProM folder next to the program (desktop_app/resources.py, ``prom_dir``)."""
+    if system() == "macos":
+        place_prom_macos(meta)
+        return
+    target = bundle_dir(meta) / "prom"
     if target.exists():
         shutil.rmtree(target)
     shutil.copytree(PROM, target, symlinks=True)
-    if system() == "macos":
-        run(["codesign", "--force", "--deep", "--sign", "-", str(bundle_dir(meta))])
-        run(["codesign", "--verify", "--deep", "--strict", "--verbose=2", str(bundle_dir(meta))])
     print(f"ProM folder: {target} ({human(tree_size(target))})")
+
+
+def place_prom_macos(meta: dict) -> None:
+    """Into the app, signed again ad hoc (as PyInstaller did) since its contents changed, in the
+    first place of :data:`MACOS_PROM_PLACES` where ``codesign --verify --deep --strict`` passes.
+    Every attempt is printed and noted in the run's summary."""
+    app = bundle_dir(meta)
+    for place in MACOS_PROM_PLACES:
+        for other in MACOS_PROM_PLACES:
+            shutil.rmtree(app / "Contents" / other / "prom", ignore_errors=True)
+        target = app / "Contents" / place / "prom"
+        shutil.copytree(PROM, target, symlinks=True)
+        results = []
+        for cmd in (
+            ["codesign", "--force", "--deep", "--sign", "-", str(app)],
+            ["codesign", "--verify", "--deep", "--strict", "--verbose=2", str(app)],
+        ):
+            print("+", " ".join(cmd), flush=True)
+            out = subprocess.run(cmd, capture_output=True, text=True)
+            print(out.stdout + out.stderr, flush=True)
+            results.append(out.returncode)
+            if out.returncode != 0:
+                break
+        ok = all(code == 0 for code in results)
+        verdict = "passes" if ok else "fails"
+        print(f"ProM folder in Contents/{place}: signing and codesign --verify --strict {verdict}", flush=True)
+        summary(f"macOS: ProM folder in `Contents/{place}`: codesign --verify --deep --strict {verdict}")
+        if ok:
+            print(f"ProM folder: {target} ({human(tree_size(target))})")
+            return
+    raise SystemExit("The app does not pass codesign --verify --strict with the ProM folder in any of "
+                     + ", ".join(f"Contents/{p}" for p in MACOS_PROM_PLACES) + ".")
 
 
 def cmd_bundle(args: argparse.Namespace) -> None:
     if not (FRONTEND / "out" / "index.html").is_file():
         raise SystemExit("src/frontend/out is missing: run `python scripts/build_desktop.py frontend` first.")
     with_prom = bool(getattr(args, "with_prom", False))
-    if with_prom and not (PROM / "SOURCES.txt").is_file():
+    if with_prom and not desktop_prom.is_current(PROM, system(), machine()):
+        # Missing, or made from another version of scripts/desktop_prom.py or the launcher.
         cmd_prom(args)
     meta = write_stage(with_prom)
     print(f"Bundling {meta['name']} {meta['version']} ({meta['commit'][:12]}) for {system()}-{machine()}"

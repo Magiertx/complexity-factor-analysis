@@ -8,6 +8,8 @@
                                   as src/prom4py/Dockerfile does
       lpsolve/                    lp_solve 5.5 and its Java wrapper, for the Hybrid ILP miner (LGPL)
       launcher/prom-launcher.jar  src/desktop/prom/LocalProM.java, compiled for Java 8
+      graphviz/                   Windows only: Graphviz (bin/ of graphviz.org's zip) for the
+                                  images of the nets, with its licence (EPL-2.0)
       SOURCES.txt                 what each part is, where it comes from, its SHA-256 and licence
 
 ``build_desktop.py bundle --with-prom`` puts it next to the program (inside the app on macOS),
@@ -22,6 +24,7 @@ or newer compiles the launcher, and on macOS ``cc`` and ``c++`` compile lp_solve
 from __future__ import annotations
 
 import hashlib
+import http.client
 import os
 import re
 import shutil
@@ -40,6 +43,28 @@ LAUNCHER_SOURCE = ROOT / "src" / "desktop" / "prom" / "LocalProM.java"
 
 #: The oldest macOS the bundle runs on (build_desktop.MACOS_MIN); lp_solve is compiled for it.
 MACOS_MIN = "14.0"
+#: Downloads per source before the next one is tried.
+ATTEMPTS = 3
+#: What the folder is made from besides the pinned downloads; a change makes ``build_key`` differ,
+#: and build_desktop.py makes the folder anew instead of taking the one that is there.
+INPUTS = (Path(__file__).resolve(), LAUNCHER_SOURCE)
+#: The file in the folder that holds the key it was made with.
+KEY_FILE = ".build-key"
+
+
+def build_key(system: str, machine: str) -> str:
+    """What the folder for ``system``-``machine`` is made from: this script (with its pins) and the
+    launcher's source."""
+    digest = hashlib.sha256(f"{system}-{machine}\n".encode())
+    for path in INPUTS:
+        digest.update(path.name.encode() + b"\n" + path.read_bytes().replace(b"\r\n", b"\n"))
+    return digest.hexdigest()
+
+
+def is_current(folder: Path, system: str, machine: str) -> bool:
+    """Whether ``folder`` was made by this script, from these inputs, for this system."""
+    stamp = folder / KEY_FILE
+    return stamp.is_file() and stamp.read_text(encoding="utf-8").strip() == build_key(system, machine)
 
 
 @dataclass(frozen=True)
@@ -73,6 +98,33 @@ LPSOLVE_JAVA = Download(
     "lp_solve 5.5 Java wrapper (JNI), the same file src/prom4py/Dockerfile uses",
     "LGPL-2.1 (lpsolve/LGPL.txt)",
 )
+
+GRAPHVIZ_RELEASE = "https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/16.1.1"
+
+#: Graphviz draws the nets of a single run (``dot`` on PATH). Only for Windows: graphviz.org has
+#: no portable build for Linux (packages of distributions, linked to their libraries) or macOS
+#: (its Darwin zip loads some twenty libraries from /opt/homebrew). There the app uses a ``dot``
+#: that is installed (docs/DESKTOP.md).
+GRAPHVIZ: dict[tuple[str, str], list[Download]] = {
+    ("windows", "x64"): [
+        Download(
+            "windows_10_cmake_Release_Graphviz-16.1.1-win64.zip",
+            (f"{GRAPHVIZ_RELEASE}/windows_10_cmake_Release_Graphviz-16.1.1-win64.zip",),
+            "72b1f3a9a1fd3f6e726478c1e044a95483a8fbddec13ba2fb395438d75d001b4",
+            "Graphviz 16.1.1, Windows x64 (graphviz.org: GitLab release 16.1.1); its folder bin/. Source: "
+            "https://gitlab.com/graphviz/graphviz/-/releases/16.1.1 (graphviz-16.1.1.tar.gz)",
+            "EPL-2.0 (graphviz/LICENSE.txt); the libraries in bin/ have their own licences (among them "
+            "cairo, pango, glib, fribidi, gts, iconv and intl under the LGPL, and the Microsoft Visual C++ runtime)",
+        ),
+        Download(
+            "graphviz-16.1.1-LICENSE",
+            ("https://gitlab.com/graphviz/graphviz/-/raw/16.1.1/LICENSE",),
+            "0becf16567beb77fa252b7664631dd177c8f9a1889e48995b45379c7130e5303",
+            "the licence of Graphviz 16.1.1 (its repository, tag 16.1.1)",
+            "EPL-2.0",
+        ),
+    ],
+}
 
 #: Per system: the Java runtime and lp_solve.
 SYSTEMS: dict[tuple[str, str], dict[str, Download]] = {
@@ -149,16 +201,18 @@ def fetch(item: Download, cache: Path) -> Path:
             return target
         log(f"{item.name}: the cached file has another SHA-256; downloading it again")
         target.unlink()
+    part = target.with_name(target.name + ".part")
     for url in item.urls:
-        for attempt in range(1, 4):
-            part = target.with_name(target.name + ".part")
+        # A broken connection or a wrong file (a truncated download, an error page of a mirror)
+        # is tried again a few times before the next source.
+        for attempt in range(1, ATTEMPTS + 1):
             try:
-                log(f"{item.name}: downloading {url} (attempt {attempt})")
+                log(f"{item.name}: downloading {url} (attempt {attempt} of {ATTEMPTS})")
                 request = urllib.request.Request(url, headers={"User-Agent": "cfa-desktop-build"})
                 with urllib.request.urlopen(request, timeout=120) as response, open(part, "wb") as out:
                     shutil.copyfileobj(response, out, 1 << 20)
-            except OSError as exc:
-                log(f"{item.name}: {exc}")
+            except (OSError, http.client.HTTPException) as exc:
+                log(f"{item.name}: {type(exc).__name__}: {exc}")
                 part.unlink(missing_ok=True)
                 time.sleep(5 * attempt)
                 continue
@@ -166,9 +220,9 @@ def fetch(item: Download, cache: Path) -> Path:
             if found == item.sha256:
                 part.replace(target)
                 return target
-            log(f"{item.name}: SHA-256 {found} instead of {item.sha256}; trying the next source")
+            log(f"{item.name}: SHA-256 {found} instead of {item.sha256}")
             part.unlink(missing_ok=True)
-            break
+            time.sleep(5 * attempt)
     raise SystemExit(f"{item.name} could not be downloaded with SHA-256 {item.sha256}.")
 
 
@@ -242,30 +296,45 @@ def unsign_jars(folder: Path) -> int:
 # --- the parts ----------------------------------------------------------------------------------
 
 
-def find_javac() -> Path:
-    """``javac`` of a JDK 9 or newer (for ``--release 8``): JAVA_HOME, PATH, then the JDKs of the
-    GitHub runners (``JAVA_HOME_<n>_<arch>``)."""
+def find_jdk() -> Path:
+    """The folder of a JDK 9 or newer (``javac --release 8``, and on macOS the JNI headers in
+    ``include/``): JAVA_HOME, the JDKs of the GitHub runners (``JAVA_HOME_<n>_<arch>``, newest
+    first), on macOS ``/usr/libexec/java_home``, then the ``javac`` on PATH with its links
+    followed. On macOS ``/usr/bin/javac`` is only a stub that hands over to a JDK, so its folder
+    has no headers; it is never taken for the JDK itself."""
     exe = "javac.exe" if sys.platform == "win32" else "javac"
-    candidates: list[Path] = []
+    homes: list[Path] = []
     if os.environ.get("JAVA_HOME"):
-        candidates.append(Path(os.environ["JAVA_HOME"]) / "bin" / exe)
-    on_path = shutil.which("javac")
-    if on_path:
-        candidates.append(Path(on_path))
+        homes.append(Path(os.environ["JAVA_HOME"]))
     runners = sorted(
         (k for k in os.environ if re.fullmatch(r"JAVA_HOME_\d+_\w+", k)),
         key=lambda k: int(k.split("_")[2]),
         reverse=True,
     )
-    candidates += [Path(os.environ[k]) / "bin" / exe for k in runners]
-    for javac in candidates:
+    homes += [Path(os.environ[k]) for k in runners]
+    if sys.platform == "darwin" and Path("/usr/libexec/java_home").exists():
+        out = subprocess.run(["/usr/libexec/java_home", "-v", "9+"], capture_output=True, text=True)
+        if out.returncode == 0 and out.stdout.strip():
+            homes.append(Path(out.stdout.strip()))
+    on_path = shutil.which("javac")
+    if on_path and not (sys.platform == "darwin" and Path(on_path).resolve() == Path("/usr/bin/javac")):
+        homes.append(Path(os.path.realpath(on_path)).parent.parent)
+    for home in homes:
+        javac = home / "bin" / exe
         if not javac.is_file():
             continue
+        if sys.platform == "darwin" and not (home / "include" / "jni.h").is_file():
+            continue
         out = subprocess.run([str(javac), "-version"], capture_output=True, text=True)
-        match = re.search(r"javac (\d+)(?:\.(\d+))?", out.stdout + out.stderr)
-        if match and (int(match.group(1)) >= 9):
-            return javac
-    raise SystemExit("No javac of a JDK 9 or newer found (JAVA_HOME, PATH, JAVA_HOME_<n>_<arch>).")
+        match = re.search(r"javac (\d+)", out.stdout + out.stderr)
+        if match and int(match.group(1)) >= 9:
+            return home
+    raise SystemExit("No JDK 9 or newer found (JAVA_HOME, JAVA_HOME_<n>_<arch>, java_home on macOS, PATH).")
+
+
+def find_javac() -> Path:
+    exe = "javac.exe" if sys.platform == "win32" else "javac"
+    return find_jdk() / "bin" / exe
 
 
 def build_launcher(target: Path, work: Path) -> None:
@@ -314,7 +383,7 @@ def build_lpsolve_macos(source_tar: Path, java_zip_dir: Path, target: Path, work
          "-Wno-int-conversion", *includes, *(str(base / f) for f in files), "-o", str(solver)],
         check=True, env=env,
     )
-    java_home = find_javac().parent.parent
+    java_home = find_jdk()
     wrapper_src = java_zip_dir / "lp_solve_5.5_java" / "src" / "c"
     subprocess.run(
         ["c++", "-O2", "-fPIC", "-arch", "arm64", "-dynamiclib", "-install_name", "@rpath/liblpsolve55j.dylib",
@@ -429,7 +498,19 @@ def assemble(system: str, machine: str, build: Path, cache: Path) -> Path:
     build_launcher(out / "launcher", work)
 
     parts = [("jre/", pins["jre"]), ("ProM4Py/", PROM4PY), ("lpsolve/", lpsolve[1]), ("lpsolve/ (Java wrapper)", lpsolve[0])]
+    graphviz = GRAPHVIZ.get((system, machine))
+    if graphviz:
+        archive, licence = graphviz
+        unpacked = work / "graphviz"
+        extract(fetch(archive, cache), unpacked)
+        bins = [p.parent for p in unpacked.rglob("dot.exe" if system == "windows" else "dot") if p.parent.name == "bin"]
+        if not bins:
+            raise SystemExit(f"{archive.name} has no bin/dot.")
+        shutil.copytree(bins[0], out / "graphviz" / "bin")
+        shutil.copy2(fetch(licence, cache), out / "graphviz" / "LICENSE.txt")
+        parts += [("graphviz/", archive), ("graphviz/LICENSE.txt", licence)]
     (out / "SOURCES.txt").write_text(sources_text(parts, unsigned), encoding="utf-8")
+    (out / KEY_FILE).write_text(build_key(system, machine) + "\n", encoding="utf-8")
     shutil.rmtree(work, ignore_errors=True)
     size = sum(f.stat().st_size for f in out.rglob("*") if f.is_file() and not f.is_symlink())
     log(f"{out}: {size / 1024 / 1024:.1f} MiB")
