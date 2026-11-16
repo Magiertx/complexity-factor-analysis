@@ -47,6 +47,19 @@ def test_a_csv_with_too_few_rows_names_the_count(client):
     assert r.json()["params"] == {"rows": 1, "minimum": 2}
 
 
+def test_a_csv_with_one_column_of_numbers_names_the_count(client):
+    r = _csv(client, b"name,a,note\nx,1,foo\ny,2,bar\nz,3,baz\n")
+    assert r.status_code == 400
+    assert r.json()["code"] == "csv_too_few_columns" and r.json()["params"] == {"numeric": 1, "minimum": 2}
+    assert "fewer than 2 numeric columns" in r.json()["detail"]
+    assert client.get("/factor-analysis/datasets").json()["datasets"] == []
+
+
+def test_a_request_without_files_has_a_code(client):
+    r = _post(client, kind="log", source="logs")
+    assert r.status_code == 400 and r.json()["code"] == "no_files"
+
+
 @pytest.mark.parametrize("source, name, code", [
     ("logs", "x.xes", "xes_invalid"),
     ("pnml", "x.pnml", "pnml_invalid"),

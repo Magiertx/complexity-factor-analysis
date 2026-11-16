@@ -86,6 +86,8 @@ MAX_TOTAL_BYTES = 500 * 1024 * 1024
 MAX_CSV_ROWS = 100_000
 #: A factor analysis has no use for fewer observations than two; the UI says how many it needs.
 MIN_CSV_ROWS = 2
+#: Columns of numbers a CSV needs; the first column may name the rows.
+MIN_CSV_NUMERIC_COLUMNS = 2
 MAX_CSV_COLUMNS = 1_000
 PREVIEW_ROWS = 2000
 
@@ -681,9 +683,12 @@ async def _create_dataset(
             shutil.rmtree(storage.dataset_dir(session_id, meta["id"]), ignore_errors=True)
             raise
         numeric = len(meta["measures"]) + sum(1 for d in meta["dropped"] if d["reason"] != "non_numeric")
-        if numeric < 2:
+        if numeric < MIN_CSV_NUMERIC_COLUMNS:
             shutil.rmtree(storage.dataset_dir(session_id, meta["id"]), ignore_errors=True)
-            raise _bad("The CSV file has fewer than 2 numeric columns.")
+            raise _bad(
+                f"The CSV file has fewer than {MIN_CSV_NUMERIC_COLUMNS} numeric columns.",
+                "csv_too_few_columns", numeric=numeric, minimum=MIN_CSV_NUMERIC_COLUMNS,
+            )
         return {"dataset_id": meta["id"], "status": "ready", "reused": False}
 
     # logs or pnml: validate the selection, then hand the files to a job.
@@ -713,7 +718,7 @@ async def _create_dataset(
         if sample is None or sample["source"] != source or kind not in sample["kinds"]:
             raise _bad(f"Unknown sample '{bundled_id}' for source '{source}'.")
     elif not uploads:
-        raise _bad("Upload at least one file or choose a sample.")
+        raise _bad("Upload at least one file or choose a sample.", "no_files")
 
     n_inputs = len(sample["files"]) if sample else len(uploads)
     noun = "log(s)" if source == "logs" else "net(s)"
