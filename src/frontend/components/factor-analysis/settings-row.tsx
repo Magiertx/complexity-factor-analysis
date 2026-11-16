@@ -2,7 +2,7 @@
 
 // The row of settings chips above the steps: the current settings at a glance, each leading to its control.
 
-import { useEffect, useId, useRef, useState, type RefObject } from "react";
+import { Fragment, useEffect, useId, useRef, useState, type RefObject } from "react";
 import { AlertTriangle, BookOpen, Check, RotateCcw } from "lucide-react";
 import type { FactorAnalysis, PublishedDifference, PublishedMatch } from "@/lib/api";
 import { sameOptions, settingsSummary, type AnalysisOptions, type SettingChip } from "@/lib/factor-analysis";
@@ -14,7 +14,6 @@ import { IconButton } from "@/components/ui/icon-button";
 import { Popover } from "@/components/ui/popover";
 import { TableFrame } from "@/components/ui/table";
 import { useTip } from "@/components/ui/tip";
-import { useScrollFade } from "@/lib/use-scroll-fade";
 
 /** The control each chip of the row leads to; see the ids in the steps. */
 export const SETTING_CONTROLS: Record<SettingChip["id"], string> = {
@@ -47,6 +46,19 @@ export function focusControl(id: string) {
   target?.focus({ preventScroll: true });
 }
 
+/** The cells of the row that belong together, by step: the miner and measures (3), the solution (4), the assignment (5). */
+const GROUP: Record<SettingChip["id"], number> = {
+  miner: 0,
+  measures: 0,
+  msa: 0,
+  alpha: 0,
+  factors: 1,
+  rotation: 1,
+  loading: 2,
+  communality: 2,
+  rule: 2,
+};
+
 /** The top offset of the sticky row (lg:top-3) and some room below it, in pixels. */
 const STICKY_TOP = 12;
 const STICKY_GAP = 8;
@@ -76,6 +88,36 @@ function useStickyOffset(ref: RefObject<HTMLElement | null>) {
   }, [ref]);
 }
 
+/**
+ * Whether the row sticks to the top of the window right now (a wide screen, scrolled up to it), so
+ * it can cast a light shadow then and lie flat on the page otherwise.
+ */
+function useStuck(ref: RefObject<HTMLElement | null>): boolean {
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const wide = window.matchMedia("(min-width: 1024px)");
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      setStuck(wide.matches && el.getBoundingClientRect().top <= STICKY_TOP + 0.5);
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [ref]);
+  return stuck;
+}
+
 /** The props of `SettingsRow`. */
 interface Props {
   options: AnalysisOptions;
@@ -100,12 +142,15 @@ interface Props {
 }
 
 /**
- * The settings of steps 3 to 5 in one line, with the chips that differ from the tool standard
- * tinted, the buttons to go back to the standard or to the paper's settings, and whether the
- * numbers equal the published report. Sticky on a wide screen, where the buttons move to a second
- * line when the first is full (German with the match chip is wider than 1400 px allow). On a
- * phone the chips scroll sideways, with a fade where more follow, and the buttons sit on a line
- * of their own below them, where no swipe is needed to find them.
+ * The settings of steps 3 to 5 as cells, each a caption over its value: the miner, measures, MSA
+ * and a changed α (step 3), then the factors and the rotation (step 4), then the loading, the
+ * communality and the assignment (step 5), the groups set apart by room, the cells by a fine line.
+ * A cell that differs from the tool standard stands on a neutral tile. Beside them: the buttons to
+ * go back to the standard or to the paper's settings, and whether the numbers equal the published
+ * report. A flat box like the cards; on a wide screen it sticks to the top and then casts a light
+ * shadow, and its buttons move to a second line when the first is full (German with the match chip
+ * is wider than 1400 px allow). On a phone the cells wrap, and the buttons sit on a line of their
+ * own below them.
  */
 export function SettingsRow({
   options,
@@ -122,10 +167,16 @@ export function SettingsRow({
 }: Props) {
   const t = useT();
   const rowRef = useRef<HTMLElement>(null);
-  const chipsRef = useRef<HTMLDivElement>(null);
   useStickyOffset(rowRef);
-  useScrollFade(chipsRef);
+  const stuck = useStuck(rowRef);
   const chips = settingsSummary(options, standard, analysis, measureCount, t, published?.n_factors ?? null);
+  // The cells by step: the line goes between these, not between the cells of one.
+  const groups = chips.reduce<SettingChip[][]>((acc, chip) => {
+    const last = acc[acc.length - 1];
+    if (last && GROUP[last[0].id] === GROUP[chip.id]) last.push(chip);
+    else acc.push([chip]);
+    return acc;
+  }, []);
   const source = settingsSourceText(publishedSource, publishedScope, t);
   const isStandard = sameOptions(options, standard);
   const isPublished = !!published && sameOptions(options, published);
@@ -136,27 +187,31 @@ export function SettingsRow({
     <section
       ref={rowRef}
       aria-label={t("factor.settings.aria")}
-      className="lg:sticky lg:top-3 z-20 rounded-lg bg-surface/95 backdrop-blur shadow-sm ring-1 ring-border/60"
+      className={cn(
+        "lg:sticky lg:top-3 z-20 rounded-lg bg-surface transition-shadow motion-reduce:transition-none",
+        stuck && "shadow-md",
+      )}
     >
       {/* relative: screen-reader texts in the row stay inside it instead of widening the page. */}
       <div className="relative flex flex-col gap-1 px-2 py-1.5 lg:flex-row lg:flex-wrap lg:items-center lg:gap-x-2 lg:gap-y-1">
-        <div
-          ref={chipsRef}
-          className="scroll-fade relative min-w-0 overflow-x-auto no-scrollbar lg:overflow-x-visible lg:[mask-image:none] lg:[-webkit-mask-image:none]"
-        >
-          <ul className="flex flex-wrap items-center gap-y-0.5 text-xs">
-            {chips.map((chip, i) => (
-              <li key={chip.id} className="flex items-center">
-                {i > 0 && (
-                  <span aria-hidden className="px-0.5 text-muted">
-                    ·
-                  </span>
-                )}
-                <SettingChipButton chip={chip} onGo={() => onGoToSetting(chip.id)} />
+        <ul className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 lg:gap-x-0">
+          {groups.map((group, g) => (
+            <Fragment key={group[0].id}>
+              {/* One fine line between the groups, with room on both sides; none on a phone, where
+                  the groups wrap and a line could end up at the start or the end of a row. */}
+              {g > 0 && <li aria-hidden role="presentation" className="mx-2 hidden h-5 w-px bg-[rgb(var(--line))] lg:block" />}
+              <li>
+                <ul className="flex flex-wrap items-center gap-1">
+                  {group.map((chip) => (
+                    <li key={chip.id}>
+                      <SettingChipButton chip={chip} onGo={() => onGoToSetting(chip.id)} />
+                    </li>
+                  ))}
+                </ul>
               </li>
-            ))}
-          </ul>
-        </div>
+            </Fragment>
+          ))}
+        </ul>
         <span className="flex items-center gap-2 shrink-0 lg:ml-auto">
           {match && <MatchChip match={match} settingsSource={source} bundledId={bundledId} />}
           <span className="flex items-center gap-1.5">
@@ -186,8 +241,8 @@ export function SettingsRow({
 }
 
 /**
- * One setting of the row: a press goes to its control. Settings that differ from the tool standard
- * stand out on a neutral tile, the others are muted text.
+ * One setting of the row: its caption over its value, and a press goes to its control. Settings that
+ * differ from the tool standard stand out on a neutral tile with a heavier value, the others lie flat.
  */
 function SettingChipButton({ chip, onGo }: { chip: SettingChip; onGo: () => void }) {
   const t = useT();
@@ -199,15 +254,21 @@ function SettingChipButton({ chip, onGo }: { chip: SettingChip; onGo: () => void
       ref={tip}
       type="button"
       onClick={onGo}
+      // "Label: value" as one name; the two lines of the cell would read as "Label value".
+      aria-label={`${chip.label}: ${chip.value}${chip.differs ? ` (${t("factor.settings.changed")})` : ""}`}
       className={cn(
-        "rounded px-1.5 py-1 whitespace-nowrap transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+        "flex flex-col items-start rounded-md px-2 py-0.5 text-left lg:py-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
         chip.differs
-          ? "bg-tile text-fg font-medium hover:bg-accent/[0.08] hover:ring-1 hover:ring-inset hover:ring-accent/40"
-          : "text-muted hover:text-fg hover:bg-tile hover:ring-1 hover:ring-inset hover:ring-border",
+          ? "bg-tile hover:bg-accent/[0.08] hover:ring-1 hover:ring-inset hover:ring-accent/40"
+          : "hover:bg-tile hover:ring-1 hover:ring-inset hover:ring-border",
       )}
     >
-      {chip.text}
-      {chip.differs && <span className="sr-only"> ({t("factor.settings.changed")})</span>}
+      <span aria-hidden className="text-xs leading-4 text-muted">
+        {chip.label}
+      </span>
+      <span aria-hidden className={cn("text-[13px] leading-[1.125rem] text-fg whitespace-nowrap", chip.differs && "font-medium")}>
+        {chip.value}
+      </span>
     </button>
   );
 }

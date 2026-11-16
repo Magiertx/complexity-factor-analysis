@@ -1183,6 +1183,26 @@
         "multi": "Mehrfachzuordnung",
         "hair": "ohne Querladungen"
       },
+      "label": {
+        "miner": "Miner",
+        "measures": "Maße",
+        "msa": "MSA",
+        "alpha": "Bartlett-α",
+        "factors": "Faktoren",
+        "rotation": "Rotation",
+        "loading": "Ladung",
+        "communality": "Kommunalität",
+        "rule": "Zuordnung"
+      },
+      "value": {
+        "measures": "{used} von {total}",
+        "msa": "≥ {value}",
+        "msa_off": "aus",
+        "alpha": "{value}",
+        "factors": "{n} (Kaiser {kaiser})",
+        "factors_paper": "{n} (Paper; Kaiser {kaiser})",
+        "factors_kaiser": "{n} (Kaiser)"
+      },
       "aria": "Einstellungen der Analyse",
       "chip_title": "Zu dieser Einstellung",
       "chip_changed_title": "Weicht vom Standard des Tools ab. Zur Einstellung springen.",

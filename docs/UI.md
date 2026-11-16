@@ -38,7 +38,7 @@ phone.
   `--border-strong` (3:1) the boundary of anything that is a control on its own (the dashed drop
   zone), `--chart-grid` the grid of a chart. A tour or a chart takes the same tokens.
 - A disabled button is a tile with muted text, not the accent colour at half strength, and shows
-  `not-allowed`. A notice has a 3 px edge in its tone (warning, error, success) besides the tint.
+  `not-allowed`. A notice has no edge: its tint and its glyph carry the tone (warning, error, success), like the info.
 
 ## Help
 
@@ -88,7 +88,7 @@ phone.
   Where the result of a view can change height (the comparison), it keeps the height it had, so
   nothing below it shifts. Header and toolbar icons are 8 px apart.
 - A text that is cut off with an ellipsis (a summary in the step list) shows all of it in the
-  two-stage tooltip. The row of settings chips wraps instead of scrolling.
+  two-stage tooltip. The settings row (a caption over each value, the groups of the steps set apart) wraps instead of scrolling; it is flat like a card and casts a light shadow only while it sticks.
 - Headings are never empty, a dialog has a name (`aria-labelledby`), a region that scrolls sideways
   (a code block) takes the focus (`tabIndex=0`, `role="region"`, `aria-label`), and every page
   has an `h1`. The first stop of the keyboard on every page is the "Zum Inhalt springen" link.

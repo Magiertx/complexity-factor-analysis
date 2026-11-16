@@ -319,7 +319,12 @@ export function suggestedNames(interpretation: FactorInterpretation, k: number):
 /** One part of the settings row above steps 3 to 5, e.g. "MSA ≥ 0.6". */
 export interface SettingChip {
   id: "miner" | "measures" | "msa" | "alpha" | "factors" | "rotation" | "loading" | "communality" | "rule";
+  /** The whole setting in one line, e.g. "MSA ≥ 0.6"; the print view and the history use it. */
   text: string;
+  /** What the setting is, e.g. "MSA": the caption of its cell in the settings row. */
+  label: string;
+  /** The setting alone, e.g. "≥ 0.6": the value of its cell in the settings row. */
+  value: string;
   /** Differs from the tool standard. */
   differs: boolean;
 }
@@ -344,12 +349,22 @@ export function settingsSummary(
   // Following Kaiser, the count is Kaiser's even while the analysis on screen still has another
   // count, e.g. that of the paper settings just left.
   const n = options.n_factors ?? kaiser;
+  // Already short, and the symbol (|λ|, h²) says what it is: the cell's text is the line's.
+  const loadingText = t(ruleStrict(options.assignment_rule) ? "factor.settings.loading_strict" : "factor.settings.loading", {
+    value: options.loading_threshold,
+  });
+  const communalityText = t("factor.settings.communality", { value: effectiveCommunality(options) });
+  const label = (id: SettingChip["id"]) => t(`factor.settings.label.${id}`);
   const chips: SettingChip[] = [
     // The rows of one miner, first: everything after it is of these rows.
-    ...(options.miner !== null ? [{ id: "miner" as const, text: options.miner, differs: true }] : []),
+    ...(options.miner !== null
+      ? [{ id: "miner" as const, text: options.miner, label: label("miner"), value: options.miner, differs: true }]
+      : []),
     {
       id: "measures",
       text: t("factor.settings.measures", { used, total: measureCount }),
+      label: label("measures"),
+      value: t("factor.settings.value.measures", { used, total: measureCount }),
       differs: changed.has("excluded"),
     },
     {
@@ -357,11 +372,21 @@ export function settingsSummary(
       text: options.auto_msa_filter
         ? t("factor.settings.msa", { value: options.msa_threshold })
         : t("factor.settings.msa_off"),
+      label: label("msa"),
+      value: options.auto_msa_filter
+        ? t("factor.settings.value.msa", { value: options.msa_threshold })
+        : t("factor.settings.value.msa_off"),
       differs: changed.has("auto_msa_filter") || (options.auto_msa_filter && changed.has("msa_threshold")),
     },
   ];
   if (changed.has("bartlett_alpha")) {
-    chips.push({ id: "alpha", text: t("factor.settings.alpha", { value: options.bartlett_alpha }), differs: true });
+    chips.push({
+      id: "alpha",
+      text: t("factor.settings.alpha", { value: options.bartlett_alpha }),
+      label: label("alpha"),
+      value: t("factor.settings.value.alpha", { value: options.bartlett_alpha }),
+      differs: true,
+    });
   }
   if (n !== null) {
     // "4 factors (Kaiser 2)" for a count of one's own, "4 factors (paper; Kaiser 2)" when it is the
@@ -371,27 +396,43 @@ export function settingsSummary(
     chips.push({
       id: "factors",
       text: countText(t, `factor.settings.${key}`, n, own ? { kaiser } : {}),
+      label: label("factors"),
+      value: t(`factor.settings.value.${key}`, own ? { n, kaiser } : { n }),
       differs: changed.has("n_factors"),
     });
   }
   chips.push(
-    { id: "rotation", text: t(`factor.settings.rotation.${options.rotation}`), differs: changed.has("rotation") },
+    {
+      id: "rotation",
+      text: t(`factor.settings.rotation.${options.rotation}`),
+      label: label("rotation"),
+      value: t(`factor.settings.rotation.${options.rotation}`),
+      differs: changed.has("rotation"),
+    },
     {
       id: "loading",
       // "multiple membership" and "Hair" count a loading above the threshold, not at it.
-      text: t(ruleStrict(options.assignment_rule) ? "factor.settings.loading_strict" : "factor.settings.loading", {
-        value: options.loading_threshold,
-      }),
+      text: loadingText,
+      label: label("loading"),
+      value: loadingText,
       differs: changed.has("loading_threshold"),
     },
     {
       id: "communality",
       // What applies: "multiple membership" with a threshold of 0 still asks for h² ≥ 0.3, which
       // differs from the standard's 0 as much as a threshold set by hand.
-      text: t("factor.settings.communality", { value: effectiveCommunality(options) }),
+      text: communalityText,
+      label: label("communality"),
+      value: communalityText,
       differs: effectiveCommunality(options) !== effectiveCommunality(standard),
     },
-    { id: "rule", text: t(`factor.settings.rule.${options.assignment_rule}`), differs: changed.has("assignment_rule") },
+    {
+      id: "rule",
+      text: t(`factor.settings.rule.${options.assignment_rule}`),
+      label: label("rule"),
+      value: t(`factor.settings.rule.${options.assignment_rule}`),
+      differs: changed.has("assignment_rule"),
+    },
   );
   return chips;
 }

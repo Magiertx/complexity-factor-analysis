@@ -1183,6 +1183,26 @@
         "multi": "multiple membership",
         "hair": "without cross-loadings"
       },
+      "label": {
+        "miner": "Miner",
+        "measures": "Measures",
+        "msa": "MSA",
+        "alpha": "Bartlett α",
+        "factors": "Factors",
+        "rotation": "Rotation",
+        "loading": "Loading",
+        "communality": "Communality",
+        "rule": "Assignment"
+      },
+      "value": {
+        "measures": "{used} of {total}",
+        "msa": "≥ {value}",
+        "msa_off": "off",
+        "alpha": "{value}",
+        "factors": "{n} (Kaiser {kaiser})",
+        "factors_paper": "{n} (paper; Kaiser {kaiser})",
+        "factors_kaiser": "{n} (Kaiser)"
+      },
       "aria": "Settings of the analysis",
       "chip_title": "Go to this setting",
       "chip_changed_title": "Differs from the tool standard. Go to this setting.",

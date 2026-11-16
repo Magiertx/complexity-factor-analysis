@@ -90,7 +90,7 @@ test("a dataset of three miners is analysed per miner and the miners are compare
   // One miner: the settings row names it, the analysis has its 50 rows.
   await tiles.getByRole("radio", { name: "Inductive miner" }).check({ force: true });
   const settings = page.getByRole("region", { name: text("factor.settings.aria") });
-  await expect(settings.getByRole("button", { name: /^Inductive miner/ })).toBeVisible();
+  await expect(settings.getByRole("button", { name: /^Miner: Inductive miner/ })).toBeVisible();
   await expect(stepSection(page, "dataset")).toContainText(text("factor.miners.hint_one", { miner: "Inductive miner", n: 50 }));
   const analysed = page.waitForResponse(
     (r) => r.url().endsWith("/analyze") && (r.request().postData() ?? "").includes('"miner":"Inductive miner"'),

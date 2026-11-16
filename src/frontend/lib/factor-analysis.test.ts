@@ -405,11 +405,41 @@ describe("settingsSummary", () => {
     expect(chips.filter((c) => c.differs).map((c) => c.id)).toEqual(["factors", "communality", "rule"]);
   });
 
+  it("splits each chip into a caption and a short value", () => {
+    const paper = { ...standard, n_factors: 4, communality_threshold: 0.3, assignment_rule: "multi" as const };
+    const result = analysis({
+      used_measures: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+      n_factors: 4,
+      factor_count: { kaiser: 2, parallel_analysis: 2, eigenvalues_random: [], seed: 1, simulations: 100, percentile: 95 },
+    });
+    const cells = (options: typeof standard, paperFactors: number | null, locale: "en" | "de") =>
+      settingsSummary(options, standard, result, 12, translator(locale).t, paperFactors).map((c) => `${c.label}: ${c.value}`);
+    expect(cells(paper, 4, "en")).toEqual([
+      "Measures: 10 of 12",
+      "MSA: ≥ 0.6",
+      "Factors: 4 (paper; Kaiser 2)",
+      "Rotation: varimax",
+      "Loading: |λ| > 0.35",
+      "Communality: h² ≥ 0.3",
+      "Assignment: multiple membership",
+    ]);
+    expect(cells({ ...standard, auto_msa_filter: false, bartlett_alpha: 0.01 }, null, "de")).toEqual([
+      "Maße: 10 von 12",
+      "MSA: aus",
+      "Bartlett-α: 0,01",
+      "Faktoren: 2 (Kaiser)",
+      "Rotation: varimax",
+      "Ladung: |λ| ≥ 0,35",
+      "Kommunalität: h² ≥ 0",
+      "Zuordnung: größte Ladung",
+    ]);
+  });
+
   it("shows the communality the rule asks for when it is above the threshold", () => {
     const chip = (options: typeof standard) =>
       settingsSummary(options, standard, null, 12, t).find((c) => c.id === "communality");
     // Tinted like a threshold set by hand: the standard asks for h² ≥ 0.
-    expect(chip({ ...standard, assignment_rule: "multi" })).toEqual({ id: "communality", text: "h² ≥ 0.3", differs: true });
+    expect(chip({ ...standard, assignment_rule: "multi" })).toMatchObject({ id: "communality", text: "h² ≥ 0.3", differs: true });
     expect(chip(standard)?.differs).toBe(false);
     expect(chip({ ...standard, assignment_rule: "hair", communality_threshold: 0.3 })?.text).toBe("h² ≥ 0.5");
     expect(chip({ ...standard, assignment_rule: "multi", communality_threshold: 0.4 })?.text).toBe("h² ≥ 0.4");
@@ -438,7 +468,7 @@ describe("settingsSummary", () => {
   });
 
   it("counts the measures left by the exclusions before the first analysis", () => {
-    expect(settingsSummary({ ...standard, excluded: ["a"] }, standard, null, 5, t)[0]).toEqual({
+    expect(settingsSummary({ ...standard, excluded: ["a"] }, standard, null, 5, t)[0]).toMatchObject({
       id: "measures",
       text: "4 of 5 measures",
       differs: true,
@@ -451,7 +481,7 @@ describe("settingsSummary", () => {
       factor_count: { kaiser: 2, parallel_analysis: 2, eigenvalues_random: [], seed: 1, simulations: 100, percentile: 95 },
     });
     const chip = settingsSummary(standard, standard, paperResult, 4, t).find((c) => c.id === "factors");
-    expect(chip).toEqual({ id: "factors", text: "2 factors (Kaiser)", differs: false });
+    expect(chip).toMatchObject({ id: "factors", text: "2 factors (Kaiser)", differs: false });
   });
 
   it("says that a count of one's own is the paper's a priori count", () => {
@@ -492,7 +522,8 @@ describe("the rows of one miner", () => {
     expect(initialOptions("model", saved, dataset.measures, null).miner).toBeNull();
     const t = (key: string, params?: Record<string, string | number>) => `${key}${params ? JSON.stringify(params) : ""}`;
     const chips = settingsSummary({ ...defaultOptions("model"), miner: "Alpha miner" }, defaultOptions("model"), null, 13, t);
-    expect(chips[0]).toEqual({ id: "miner", text: "Alpha miner", differs: true });
+    expect(chips[0]).toMatchObject({ id: "miner", text: "Alpha miner", differs: true });
+    expect(chips[0].value).toBe("Alpha miner");
     expect(settingsSummary(defaultOptions("model"), defaultOptions("model"), null, 13, t).some((c) => c.id === "miner")).toBe(false);
   });
 });

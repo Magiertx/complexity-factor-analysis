@@ -103,7 +103,7 @@ test("the chips of the settings row and the match dialog work with the keyboard"
   await row.getByRole("button", { name: pattern(text("factor.settings.rule.multi")) }).click();
   await expect(page).toHaveURL(/\?step=loadings$/);
   await expect(page.locator('input[name="fa-assignment"]:checked')).toBeFocused();
-  await row.getByRole("button", { name: pattern(text("factor.settings.measures", { used: 10, total: 12 })) }).click();
+  await row.getByRole("button", { name: pattern(`${text("factor.settings.label.measures")}: ${text("factor.settings.value.measures", { used: 10, total: 12 })}`) }).click();
   await expect(page).toHaveURL(/\?step=suitability$/);
   await expect.poll(focused).toEqual({ tag: "INPUT", type: "checkbox", msa: true });
 
