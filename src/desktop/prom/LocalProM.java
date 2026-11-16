@@ -43,26 +43,46 @@ public final class LocalProM {
     /** The header that carries the token. */
     public static final String TOKEN_HEADER = "X-ProM4Py-Token";
 
-    /** Seconds the JVM gets to exit by itself after its input closed, before it is halted. */
+    /** Milliseconds the JVM gets to exit by itself after its input closed, before it is halted. */
     private static final long HALT_AFTER_MS = 5000;
 
     private LocalProM() {
     }
 
-    public static void main(String[] args) throws Throwable {
+    public static void main(String[] args) {
         String token = System.getenv("PROM4PY_TOKEN");
         if (token == null || token.length() < 16) {
             System.err.println("[launcher] PROM4PY_TOKEN is not set; ProM is not started without it.");
             System.exit(2);
         }
         System.setProperty("com.sun.net.httpserver.HttpServerProvider", Provider.class.getName());
+        // The JVM takes the provider once, at its first server; if that is not this one (another
+        // was set or loaded before), ProM would listen everywhere without the token: not started.
+        HttpServerProvider provider;
+        try {
+            provider = HttpServerProvider.provider();
+        } catch (Throwable e) {
+            System.err.println("[launcher] the HTTP server provider cannot be loaded: " + e);
+            System.exit(2);
+            return;
+        }
+        if (!(provider instanceof Provider)) {
+            System.err.println("[launcher] the HTTP server provider is " + provider.getClass().getName()
+                    + ", not " + Provider.class.getName() + "; ProM is not started.");
+            System.exit(2);
+        }
         watchInput();
         try {
             Class.forName("org.processmining.contexts.prom4py.ProM4PY")
                     .getMethod("main", String[].class)
                     .invoke(null, (Object) args);
-        } catch (InvocationTargetException e) {
-            throw e.getCause();
+        } catch (Throwable e) {
+            // ProM did not come up (e.g. its port was taken): end at once, so that the app starts
+            // it again instead of waiting for a server that is not there.
+            Throwable cause = e instanceof InvocationTargetException && e.getCause() != null ? e.getCause() : e;
+            System.err.println("[launcher] ProM did not start:");
+            cause.printStackTrace();
+            System.exit(1);
         }
     }
 

@@ -15,6 +15,12 @@ in a container network:
   start, given to Java and to the backend in ``PROM4PY_TOKEN``, never on a command line).
 - Java gets the app's end through its standard input: when the app's process ends, however
   (quit, crash, killed), the system closes the pipe and Java exits. No ProM is left running.
+- Java runs with UTF-8 as its default charset (``ENCODING_OPTIONS``; the Docker image has a UTF-8
+  locale) and gets only the variables of :data:`JAVA_ENV_KEEP` from the app's environment.
+- A start that ends before ProM answered gets a new port next time (``PROM4PY_URL`` follows).
+  After :data:`GIVE_UP_AFTER` such starts in a row, or when Java cannot be started at all, the
+  supervisor gives up and sets ``PROM4PY_DOWN``: the app then reports no ProM and jobs that need
+  it fail at once with the reason, instead of waiting for it.
 
 ProM's own files (its user folder, and on Linux the Java preferences with its plugin cache) go
 to ``<data>/prom`` (``user.home`` of the JVM), which is also its working directory: nothing is
@@ -28,8 +34,10 @@ import logging
 import os
 import re
 import secrets
+import shutil
 import socket
 import subprocess
+import sys
 import threading
 import time
 import urllib.error
@@ -66,12 +74,35 @@ MAX_RESTART_PAUSE_S = 60
 #: still starting (the first start builds ProM's plugin cache: about 100 s measured on Windows).
 START_WAIT_S = BOOT_TIMEOUT_S
 
-#: Never given to Java: the app's secrets, and options that another Java program may have set
-#: for itself in the user's environment and that would change how ProM runs.
-JAVA_ENV_DROP = (
-    "ANTHROPIC_API_KEY", "SESSION_SECRET_KEY", "SHARED_SESSION_ID",
-    "JAVA_TOOL_OPTIONS", "_JAVA_OPTIONS", "JDK_JAVA_OPTIONS", "CLASSPATH",
-)
+#: Where Homebrew puts ``dot`` on macOS (Apple silicon, Intel).
+HOMEBREW_BINS = ("/opt/homebrew/bin", "/usr/local/bin")
+
+#: After this many starts in a row that ended before ProM ever answered, the supervisor gives up.
+GIVE_UP_AFTER = 5
+#: Set in the app's environment, with the reason, when the supervisor gave up: the backend then
+#: reports no ProM (``/api/capabilities``) and a job that needs it fails at once instead of
+#: waiting for it (``algorithms/_prom4py.py``, ``prom4py_down``).
+DOWN_VARIABLE = "PROM4PY_DOWN"
+
+#: The only variables of the app's environment that Java gets (names compared in upper case, as
+#: Windows has them): what a JVM needs to run and to find temporary and user folders. Nothing else,
+#: so none of the app's settings and secrets (API keys, passwords of settings.env, the session
+#: key) and none of the options another Java program may have set for itself (JAVA_TOOL_OPTIONS,
+#: _JAVA_OPTIONS, CLASSPATH). Java also gets ``PROM4PY_TOKEN``.
+JAVA_ENV_KEEP = frozenset({
+    "PATH", "SYSTEMROOT", "WINDIR", "SYSTEMDRIVE", "COMSPEC", "PATHEXT", "OS",
+    "PROCESSOR_ARCHITECTURE", "PROCESSOR_IDENTIFIER", "NUMBER_OF_PROCESSORS",
+    "TEMP", "TMP", "TMPDIR", "USERPROFILE", "HOMEDRIVE", "HOMEPATH", "LOCALAPPDATA", "APPDATA",
+    "PROGRAMDATA", "USERNAME", "HOME", "USER", "LOGNAME", "LANG", "LANGUAGE", "LC_ALL", "LC_CTYPE", "TZ",
+})
+
+#: ProM4Py reads requests and writes answers in the JVM's default charset (``getBytes()``,
+#: ``new InputStreamReader(...)``), which is the system's: cp1252 on a German or English Windows,
+#: ASCII on Linux with ``LANG=C``. Names of activities outside it would come back broken (Á, Ð, Ý,
+#: much of Cyrillic and Greek on Windows; everything outside ASCII under ``LANG=C``). The Docker
+#: image runs Java with a UTF-8 locale; these options make it UTF-8 everywhere, for the contents
+#: (``file.encoding``) and for file names (``sun.jnu.encoding``).
+ENCODING_OPTIONS = ("-Dfile.encoding=UTF-8", "-Dsun.jnu.encoding=UTF-8")
 
 #: Lines ProM prints at every start, one per jar; left out of the log.
 _NOISE = ("[ProMClassLoader] found in classpath:", "[PluginDescriptorImpl] Found no icon")
@@ -100,6 +131,12 @@ class Bundle:
     @property
     def launcher(self) -> Path:
         return self.root / "launcher" / "prom-launcher.jar"
+
+    @property
+    def graphviz_bin(self) -> Path | None:
+        """Graphviz's ``bin`` folder, where the edition carries it (Windows), else ``None``."""
+        folder = self.root / "graphviz" / "bin"
+        return folder if (folder / ("dot.exe" if os.name == "nt" else "dot")).is_file() else None
 
     def missing(self) -> list[Path]:
         """The parts that are not there."""
@@ -160,7 +197,6 @@ def prepare(
     merged = {**settings, **environ}  # the environment wins, as in environment.backend_environ
     return Supervisor(
         bundle,
-        port=free_port(),
         token=secrets.token_urlsafe(32),
         heap=heap(merged),
         call_timeout=call_timeout(merged),
@@ -169,10 +205,14 @@ def prepare(
 
 
 class Supervisor:
-    """ProM4Py as a child process, watched as in launch.sh (see the module docstring)."""
+    """ProM4Py as a child process, watched as in launch.sh (see the module docstring).
+
+    The port is chosen by :meth:`choose_port`, which the launcher calls once it has bound the
+    app's own port (a port taken for Java first could be handed out again to the app's ``--port 0``).
+    """
 
     def __init__(
-        self, bundle: Bundle, *, port: int, token: str, heap: str, call_timeout: int, state_dir: Path
+        self, bundle: Bundle, *, token: str, heap: str, call_timeout: int, state_dir: Path, port: int | None = None
     ) -> None:
         self.bundle = bundle
         self.port = port
@@ -186,15 +226,35 @@ class Supervisor:
         self._proc: subprocess.Popen | None = None
         self._started = 0.0
         self._up = False
+        self._failed_starts = 0
         self._thread = threading.Thread(target=self._run, name="prom-supervisor", daemon=True)
+
+    def choose_port(self) -> int:
+        """Take a free port for Java; call it after the app has bound its own."""
+        self.port = free_port()
+        return self.port
 
     @property
     def url(self) -> str:
         return f"http://127.0.0.1:{self.port}"
 
     def backend_settings(self) -> dict[str, str]:
-        """What the backend needs to reach this ProM (``environment.backend_environ``)."""
-        return {"PROM4PY_URL": self.url, "PROM4PY_TOKEN": self.token}
+        """What the backend needs to reach this ProM (``environment.backend_environ``), and a
+        ``PATH`` on which it finds Graphviz's ``dot`` for the images of the nets: the edition's
+        own (Windows) first; on macOS Homebrew's, which an app started from the Finder does not
+        have on its PATH."""
+        if self.port is None:
+            self.choose_port()
+        settings = {"PROM4PY_URL": self.url, "PROM4PY_TOKEN": self.token}
+        path = os.environ.get("PATH", "")
+        if self.bundle.graphviz_bin is not None:
+            settings["PATH"] = os.pathsep.join([str(self.bundle.graphviz_bin), path]) if path else str(self.bundle.graphviz_bin)
+        elif sys.platform == "darwin" and shutil.which("dot", path=path) is None:
+            for folder in HOMEBREW_BINS:
+                if Path(folder, "dot").is_file():
+                    settings["PATH"] = os.pathsep.join([path, folder]) if path else folder
+                    break
+        return settings
 
     @property
     def pid(self) -> int | None:
@@ -214,13 +274,24 @@ class Supervisor:
             f"-Djava.library.path={self.bundle.native}",
             "-Djava.system.class.loader=org.processmining.framework.util.ProMClassLoader",
             "-Djava.util.Arrays.useLegacyMergeSort=true",
+            *ENCODING_OPTIONS,
             f"-Duser.home={self.state_dir}",
             MAIN_CLASS,
             "-p", str(self.port),
         ]
 
     def java_environ(self) -> dict[str, str]:
-        env = {k: v for k, v in os.environ.items() if k.upper() not in JAVA_ENV_DROP}
+        """Java's environment: :data:`JAVA_ENV_KEEP` of the app's, and the token.
+
+        A frozen build on Linux runs with PyInstaller's ``LD_LIBRARY_PATH`` (its own libraries
+        first), which would reach Java's native code as well; the user's own value, which
+        PyInstaller keeps in ``LD_LIBRARY_PATH_ORIG``, goes to Java instead.
+        """
+        env = {k: v for k, v in os.environ.items() if k.upper() in JAVA_ENV_KEEP}
+        if sys.platform.startswith("linux"):
+            original = os.environ.get("LD_LIBRARY_PATH_ORIG") if resources.is_frozen() else os.environ.get("LD_LIBRARY_PATH")
+            if original:
+                env["LD_LIBRARY_PATH"] = original
         env["PROM4PY_TOKEN"] = self.token
         return env
 
@@ -263,8 +334,22 @@ class Supervisor:
             proc = self._proc
             if proc is None or proc.poll() is not None:
                 code = proc.returncode if proc is not None else None
-                # A Java that keeps exiting before it ever answered is started again less often.
-                pause = RESTART_PAUSE_S if self._up else min(pause * 2, MAX_RESTART_PAUSE_S)
+                if self._up:
+                    self._failed_starts = 0
+                    pause = RESTART_PAUSE_S
+                else:
+                    # It ended before it ever answered: it may not have got its port (another
+                    # program took it meanwhile), so the next start takes a new one, and a Java
+                    # that keeps failing is started less often and in the end given up.
+                    self._failed_starts += 1
+                    if self._failed_starts >= GIVE_UP_AFTER:
+                        self._give_up(
+                            f"ProM ended {self._failed_starts} times in a row before it answered "
+                            f"(last exit code {code}); see the app's log"
+                        )
+                        return
+                    pause = min(pause * 2, MAX_RESTART_PAUSE_S)
+                    self._move_port()
                 logger.warning("ProM: exited with code %s; starting it again in %d s.", code, pause)
                 if self._stopping.wait(pause) or not self._start_java():
                     return
@@ -275,10 +360,17 @@ class Supervisor:
             if not self._up:
                 if self._probe(5):
                     self._up = True
+                    self._failed_starts = 0
                     last_ok = time.monotonic()
                     pause = RESTART_PAUSE_S
                     logger.info("ProM: answers after %.0f s.", last_ok - self._started)
                 elif now - self._started >= BOOT_TIMEOUT_S:
+                    self._failed_starts += 1
+                    if self._failed_starts >= GIVE_UP_AFTER:
+                        with self._lock:
+                            self._stop_java()
+                        self._give_up(f"ProM did not answer within {BOOT_TIMEOUT_S} s, {self._failed_starts} times in a row")
+                        return
                     logger.warning("ProM: did not start within %d s; restarting it.", BOOT_TIMEOUT_S)
                     if not self._restart():
                         return
@@ -313,6 +405,20 @@ class Supervisor:
             self._stop_java()
         return self._start_java()
 
+    def _move_port(self) -> None:
+        """Take a new port, and point the backend at it (it reads ``PROM4PY_URL`` per request and
+        makes a new client when the address changed)."""
+        old = self.url
+        self.choose_port()
+        if os.environ.get("PROM4PY_URL") == old:
+            os.environ["PROM4PY_URL"] = self.url
+        logger.info("ProM: the next start listens on %s.", self.url)
+
+    def _give_up(self, reason: str) -> None:
+        """No more starts: the app runs as without ProM from now on, and says why."""
+        logger.error("ProM: %s. The app runs without ProM until it is started again.", reason)
+        os.environ[DOWN_VARIABLE] = reason
+
     def _start_java(self) -> bool:
         """Start Java; False when the app is stopping or Java cannot be started at all."""
         with self._lock:
@@ -337,7 +443,7 @@ class Supervisor:
                     **kwargs,
                 )
             except OSError as exc:
-                logger.error("ProM: Java cannot be started (%s); the app runs without ProM.", exc)
+                self._give_up(f"Java cannot be started ({exc})")
                 return False
             self._proc = proc
             self._started = time.monotonic()

@@ -322,6 +322,8 @@ def _serve_app(
     else:
         sock = instance.bind_preferred(remembered or instance.DEFAULT_PORT, fall_back=True)
     port = sock.getsockname()[1]
+    if supervisor is not None:
+        supervisor.choose_port()  # only now: a port taken before could have gone to the app
 
     try:
         env = environment.backend_environ(

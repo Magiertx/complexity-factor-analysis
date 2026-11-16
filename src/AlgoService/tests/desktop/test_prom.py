@@ -33,6 +33,8 @@ FAKE = textwrap.dedent(
             fh.write(f"start {os.getpid()}\\n")
     if mode == "exit-once" and log and open(log).read().count("start") == 1:
         sys.exit(3)
+    if mode == "exit-always":
+        sys.exit(3)
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
@@ -71,12 +73,27 @@ class FakeSupervisor(prom.Supervisor):
     def command(self) -> list[str]:
         return [sys.executable, "-I", str(self.script), "-p", str(self.port)]
 
+    def java_environ(self) -> dict[str, str]:
+        # The stand-in's own settings; the real Java gets only prom.JAVA_ENV_KEEP.
+        env = super().java_environ()
+        env.update({k: v for k, v in os.environ.items() if k.startswith("FAKE_PROM_")})
+        return env
+
 
 @pytest.fixture
 def quick(monkeypatch):
     """The watchdog's pauses in tenths of seconds."""
     monkeypatch.setattr(prom, "PROBE_INTERVAL_S", 0.2)
     monkeypatch.setattr(prom, "RESTART_PAUSE_S", 0.2)
+
+
+@pytest.fixture(autouse=True)
+def backend_variables(monkeypatch):
+    """The supervisor writes PROM4PY_DOWN and PROM4PY_URL into the process's environment; they are
+    removed again after each test (setenv records that they were not there)."""
+    for name in (prom.DOWN_VARIABLE, "PROM4PY_URL"):
+        monkeypatch.setenv(name, "")
+        monkeypatch.delenv(name)
 
 
 def _wait(condition, timeout: float = 20.0) -> bool:
@@ -90,8 +107,10 @@ def _wait(condition, timeout: float = 20.0) -> bool:
 
 def _alive(pid: int) -> bool:
     if os.name == "nt":
-        out = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/NH"], capture_output=True, text=True).stdout
-        return str(pid) in out
+        # Bytes: tasklist writes in the console's code page (cp850 on a German Windows), which
+        # text=True would decode with another one and fail on.
+        out = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/NH"], capture_output=True).stdout
+        return str(pid).encode() in out
     try:
         os.kill(pid, 0)
     except OSError:
@@ -229,6 +248,9 @@ def test_prepare_finds_a_complete_folder(tmp_path):
     sup = prom.prepare(_bundle(tmp_path / "prom"), {}, {}, tmp_path / "state")
     assert sup is not None
     assert (sup.call_timeout, sup.stuck_after, sup.heap) == (300, 330, "4G")
+    # The port is taken once the app has bound its own (main.py), not before.
+    assert sup.port is None
+    sup.choose_port()
     assert sup.url == f"http://127.0.0.1:{sup.port}"
     assert len(sup.token) >= 40
     command = sup.command()
@@ -236,6 +258,22 @@ def test_prepare_finds_a_complete_folder(tmp_path):
     assert command[-3:] == [prom.MAIN_CLASS, "-p", str(sup.port)]
     assert f"-Duser.home={tmp_path / 'state'}" in command
     assert "-XX:ActiveProcessorCount=1" in command and "-Xmx4G" in command
+    # UTF-8 for what ProM4Py reads and writes, whatever the system's charset.
+    assert "-Dfile.encoding=UTF-8" in command and "-Dsun.jnu.encoding=UTF-8" in command
+    # The token goes through the environment only: a command line can be read by other users.
+    assert not any(sup.token in part for part in command)
+    assert sup.java_environ()["PROM4PY_TOKEN"] == sup.token
+
+
+def test_the_backend_finds_the_editions_graphviz_first(tmp_path, monkeypatch):
+    root = _bundle(tmp_path / "prom")
+    monkeypatch.setenv("PATH", "the-users-path")
+    sup = prom.prepare(root, {}, {}, tmp_path / "state")
+    assert "PATH" not in sup.backend_settings() or sys.platform == "darwin"  # no graphviz/ in it
+    gv = root / "graphviz" / "bin"
+    gv.mkdir(parents=True)
+    (gv / ("dot.exe" if os.name == "nt" else "dot")).write_text("")
+    assert sup.backend_settings()["PATH"] == os.pathsep.join([str(gv), "the-users-path"])
 
 
 def test_prepare_takes_the_settings(tmp_path):
@@ -272,15 +310,64 @@ def test_an_incomplete_prom_dir_is_an_error(tmp_path):
         prom.prepare(tmp_path / "prom", {}, {}, tmp_path)
 
 
-def test_java_gets_no_secrets_and_no_foreign_options(tmp_path, monkeypatch):
-    for name in ("ANTHROPIC_API_KEY", "SESSION_SECRET_KEY", "SHARED_SESSION_ID", "JAVA_TOOL_OPTIONS", "_JAVA_OPTIONS"):
+def test_java_gets_only_what_a_jvm_needs(tmp_path, monkeypatch):
+    secrets_and_options = (
+        "ANTHROPIC_API_KEY", "SESSION_SECRET_KEY", "SHARED_SESSION_ID", "FEEDBACK_SMTP_PASSWORD",
+        "DATABASE_URL", "JAVA_TOOL_OPTIONS", "_JAVA_OPTIONS", "JDK_JAVA_OPTIONS", "CLASSPATH", "SOME_SETTING",
+    )
+    for name in secrets_and_options:
         monkeypatch.setenv(name, "x")
-    monkeypatch.setenv("SOME_SETTING", "kept")
+    monkeypatch.setenv("TEMP", "the-temp-folder")
+    monkeypatch.setenv("PATH", "the-path")
     env = FakeSupervisor(tmp_path).java_environ()
     assert env["PROM4PY_TOKEN"] == "t" * 43
-    assert env["SOME_SETTING"] == "kept"
-    for name in ("ANTHROPIC_API_KEY", "SESSION_SECRET_KEY", "SHARED_SESSION_ID", "JAVA_TOOL_OPTIONS", "_JAVA_OPTIONS"):
+    assert (env.get("TEMP"), env.get("PATH")) == ("the-temp-folder", "the-path")
+    for name in secrets_and_options:
         assert name not in env
+
+
+def test_java_gets_the_users_library_path_not_pyinstallers(tmp_path, monkeypatch):
+    monkeypatch.setattr(prom.sys, "platform", "linux")
+    monkeypatch.setattr(prom.resources, "is_frozen", lambda: True)
+    monkeypatch.setenv("LD_LIBRARY_PATH", "/opt/app/_internal")
+    monkeypatch.setenv("LD_LIBRARY_PATH_ORIG", "/usr/local/lib")
+    assert FakeSupervisor(tmp_path).java_environ()["LD_LIBRARY_PATH"] == "/usr/local/lib"
+    monkeypatch.delenv("LD_LIBRARY_PATH_ORIG")
+    assert "LD_LIBRARY_PATH" not in FakeSupervisor(tmp_path).java_environ()
+
+
+def test_a_java_that_cannot_be_started_is_given_up_at_once(tmp_path, monkeypatch):
+    monkeypatch.delenv(prom.DOWN_VARIABLE, raising=False)
+    sup = prom.Supervisor(
+        prom.Bundle(tmp_path / "no-such-prom"), token="t" * 43, heap="1G", call_timeout=10, state_dir=tmp_path / "s"
+    )
+    sup.choose_port()
+    sup.start()
+    sup._thread.join(10)
+    assert not sup._thread.is_alive()
+    assert "Java cannot be started" in os.environ[prom.DOWN_VARIABLE]
+    sup.stop()
+
+
+def test_a_java_that_keeps_ending_moves_its_port_and_is_given_up(tmp_path, quick, monkeypatch):
+    log = tmp_path / "starts.log"
+    monkeypatch.setenv("FAKE_PROM_MODE", "exit-always")
+    monkeypatch.setenv("FAKE_PROM_LOG", str(log))
+    monkeypatch.setattr(prom, "MAX_RESTART_PAUSE_S", 0.2)
+    monkeypatch.delenv(prom.DOWN_VARIABLE, raising=False)
+    sup = FakeSupervisor(tmp_path)
+    monkeypatch.setenv("PROM4PY_URL", sup.url)  # as the launcher sets it for the backend
+    first = sup.url
+    sup.start()
+    try:
+        assert _wait(lambda: prom.DOWN_VARIABLE in os.environ, 30)
+        assert _starts(log) == prom.GIVE_UP_AFTER
+        assert "times in a row" in os.environ[prom.DOWN_VARIABLE]
+        # A start that ended before it answered may have lost its port: the next took another,
+        # and the backend's address followed.
+        assert sup.url != first and os.environ["PROM4PY_URL"] == sup.url
+    finally:
+        sup.stop()
 
 
 def test_the_backend_is_told_where_its_prom_is(tmp_path):

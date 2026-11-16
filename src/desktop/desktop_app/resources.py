@@ -49,13 +49,18 @@ PROM_DIR_NAME = "prom"
 
 def prom_dir() -> Path | None:
     """Where a frozen build keeps its ProM folder: next to the program, and inside the app on
-    macOS (``Contents/Resources``). ``None`` for a checkout, which names one with ``--prom-dir``.
-    The folder exists only in the edition with ProM."""
+    macOS (``Contents/Frameworks`` or ``Contents/Resources``, whichever the build could sign,
+    scripts/build_desktop.py ``MACOS_PROM_PLACES``). ``None`` for a checkout, which names one with
+    ``--prom-dir``. The folder exists only in the edition with ProM."""
     if not is_frozen():
         return None
     exe = Path(sys.executable).resolve()
     if sys.platform == "darwin" and exe.parent.name == "MacOS":
-        return exe.parent.parent / "Resources" / PROM_DIR_NAME
+        contents = exe.parent.parent
+        for place in ("Frameworks", "Resources"):
+            if (contents / place / PROM_DIR_NAME).is_dir():
+                return contents / place / PROM_DIR_NAME
+        return contents / "Resources" / PROM_DIR_NAME
     return exe.parent / PROM_DIR_NAME
 
 
