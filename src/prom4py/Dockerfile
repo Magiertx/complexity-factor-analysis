@@ -3,7 +3,8 @@
 # The image bundles the Java backend from
 # https://zenodo.org/records/13853660 (prom4py.zip, ~430 MB compressed).
 # That bundle is **not** vendored into this repository — it is downloaded
-# during image build to keep the repo small.
+# during image build to keep the repo small, from an unchanged copy in the
+# release "prom4py-mirror" of this repository, with Zenodo as the fallback.
 #
 # Listens on port 4040 with an HTTP API (/plugin, /executor, /cache, /align,
 # /isRunning, /exit). Talk to it from the AlgoService through the Python
@@ -39,8 +40,11 @@ RUN curl -fsSL --retry 5 --retry-all-errors -o lpsolve-java.zip "$LPSOLVE_JAVA_U
 
 FROM eclipse-temurin:8-jre-jammy
 
-ARG PROM4PY_ZIP_URL=https://zenodo.org/records/13853660/files/prom4py.zip?download=1
+ARG PROM4PY_ZIP_URL=https://github.com/Magiertx/complexity-factor-analysis/releases/download/prom4py-mirror/prom4py.zip
 ARG PROM4PY_ZIP_API_URL=https://zenodo.org/api/records/13853660/files/prom4py.zip/content
+# SHA-256 of the Zenodo file (MD5 efb5cd7e037309652e28502c170a3ffe as listed there). Pass an
+# empty value to build with a stand-in archive.
+ARG PROM4PY_ZIP_SHA256=7f871b1b8583ac2dbd05af789f3287e0158891342090e8f1f0a8f35888e74c20
 
 # unzip + curl for fetching the bundle.
 RUN apt-get update \
@@ -49,11 +53,14 @@ RUN apt-get update \
 
 WORKDIR /opt/prom4py
 
-# Zenodo refuses the download page for some networks (403 on the hosted CI runners) and limits
-# the requests per address. -f makes an error answer fail here and not as a broken archive in
-# unzip; the same file is then asked for through Zenodo's API, with retries.
-RUN ( curl -fsSL --retry 3 --retry-all-errors -o /tmp/prom4py.zip "$PROM4PY_ZIP_URL" \
-      || curl -fsSL --retry 8 --retry-all-errors -o /tmp/prom4py.zip "$PROM4PY_ZIP_API_URL" ) \
+# Zenodo refuses downloads for some networks (403 on the hosted CI runners and on a university
+# server) and limits the requests per address, so the copy in this repository's release comes
+# first. -f makes an error answer fail here and not as a broken archive in unzip; a download
+# that fails or does not match the checksum is asked for again through Zenodo's API.
+RUN ok() { [ -z "$PROM4PY_ZIP_SHA256" ] || echo "$PROM4PY_ZIP_SHA256  /tmp/prom4py.zip" | sha256sum -c - ; } \
+    && { ( curl -fsSL --retry 3 --retry-all-errors -o /tmp/prom4py.zip "$PROM4PY_ZIP_URL" && ok ) \
+         || ( curl -fsSL --retry 8 --retry-all-errors -o /tmp/prom4py.zip "$PROM4PY_ZIP_API_URL" && ok ) \
+         || { echo "prom4py.zip: download failed or checksum mismatch" >&2; exit 1; } ; } \
     && unzip -q /tmp/prom4py.zip -d /tmp/prom4py-extracted \
     && mv /tmp/prom4py-extracted/ProM4Py/* . \
     && rm -rf /tmp/prom4py.zip /tmp/prom4py-extracted

@@ -56,7 +56,9 @@ needs no frontend change. Today there is one category, `complexity`, with one to
   `vendored/comfy/_shared_prom4py.py`) against the `prom4py` container. All miners ComFy
   analyses run there. Caveats:
   - The bundle is a frozen snapshot from `https://zenodo.org/records/13853660`; upgrading
-    ProM means rebuilding the image against a new bundle.
+    ProM means rebuilding the image against a new bundle. The build downloads it from the
+    release `prom4py-mirror` of this repository, an unchanged copy, because Zenodo refuses
+    some networks, and falls back to Zenodo.
   - The Hybrid ILP miner needs the native lp_solve 5.5 libraries; the image installs the
     solver from Ubuntu and compiles its JNI wrapper
     ([`src/prom4py/README.md`](../src/prom4py/README.md#lp_solve)).

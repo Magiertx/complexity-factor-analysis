@@ -71,11 +71,14 @@ checkout directory. If the checkout on the laptop has another name, add
 `COMPOSE_PROJECT_NAME=complexity-factor-analysis` to `.env`, otherwise compose looks for
 images that do not exist and tries to build them.
 
-### Building without access to Zenodo
+### Building without access to GitHub or Zenodo
 
-The `prom4py` image downloads the ProM bundle during the build. With a local copy of
-`prom4py.zip`, serve it over HTTP and pass its URL (the download runs inside the build
-container, so a `file://` path on the host does not work):
+The `prom4py` image downloads the ProM bundle during the build: first the unchanged copy in this
+repository's release [`prom4py-mirror`](https://github.com/Magiertx/complexity-factor-analysis/releases/tag/prom4py-mirror),
+then, if that fails, the original on Zenodo, and checks its SHA-256 either way. With a local
+copy of `prom4py.zip`, serve it over HTTP and pass its URL (the download runs inside the build
+container, so a `file://` path on the host does not work; a stand-in archive also needs
+`--build-arg PROM4PY_ZIP_SHA256=`):
 
 ```bash
 python -m http.server 8765 --directory /folder/with/the/zip
