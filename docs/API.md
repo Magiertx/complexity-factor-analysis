@@ -11,6 +11,11 @@ The backend serves a fully interactive OpenAPI 3 spec:
 - ReDoc: `https://<host>/api/redoc`
 - Raw spec: `https://<host>/api/openapi.json`
 
+The two pages load Swagger UI and ReDoc from `cdn.jsdelivr.net`, so the browser has to reach it;
+their Content-Security-Policy allows that and the inline script of Swagger UI by its hash, while
+every other answer of the API keeps `default-src 'none'` (`src/AlgoService/routes/api_docs.py`).
+Without internet access the raw spec still works.
+
 For local development with the default `docker compose up`:
 
 - `http://localhost:3000/api/docs` (when reaching the backend through the Next.js proxy)

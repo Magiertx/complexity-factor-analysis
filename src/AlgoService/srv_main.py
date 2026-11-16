@@ -35,7 +35,7 @@ import feedback_mail
 import job_runner
 import jobs_db
 from config import APP_NAME, CodedHTTPException, JSONFormatter, limiter
-from routes import health, algorithms, jobs, factor_analysis, interpretation, session, feedback, capabilities
+from routes import health, algorithms, jobs, factor_analysis, interpretation, session, feedback, capabilities, api_docs
 from version import VERSION
 
 from starlette.middleware.sessions import SessionMiddleware
@@ -167,6 +167,9 @@ app = FastAPI(
     ),
     root_path=_fastapi_root_path,
     lifespan=lifespan,
+    # Served by routes/api_docs.py, with a Content-Security-Policy that lets them load.
+    docs_url=None,
+    redoc_url=None,
 )
 
 # Rate limiting wiring. The Limiter itself lives in config.py so routes can
@@ -222,8 +225,9 @@ app.add_middleware(
 async def security_headers(request, call_next):
     """Baseline security headers, independent of the reverse proxy.
 
-    API responses are JSON and file downloads, hence `default-src 'none'`. The frontend's CSP
-    is in next.config.mjs.
+    API responses are JSON and file downloads, hence `default-src 'none'`; the two pages of the
+    API documentation set a policy of their own (routes/api_docs.py). The frontend's CSP is in
+    next.config.mjs.
     """
     response = await call_next(request)
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
@@ -249,3 +253,4 @@ app.include_router(interpretation.router)
 app.include_router(session.router)
 app.include_router(feedback.router)
 app.include_router(capabilities.router)
+app.include_router(api_docs.router)
