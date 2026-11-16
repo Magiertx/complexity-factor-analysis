@@ -79,6 +79,12 @@ def xml_problem(error: Exception) -> str:
     return getattr(error, "msg", None) or str(error)
 
 
+def has_traces(tree: Any) -> bool:
+    """Whether the XES document ``tree`` (parsed by lxml) has a trace, with or without the XES
+    namespace."""
+    return any(isinstance(el.tag, str) and el.tag.rsplit("}", 1)[-1] == "trace" for el in tree.getroot())
+
+
 def _sanitize_filename(name: str) -> str:
     """Reduce a user-supplied filename to a safe basename for joining with a
     directory path. Strips any directory components (both POSIX and Windows
@@ -650,6 +656,7 @@ async def analyze(
         # 4. XML External Entity (XXE) and DTD injection prevention
         if filename.lower().endswith(".xes") or filename.lower().endswith(".xml"):
             problem = None
+            tree = None
             try:
                 from lxml import etree
                 # Secure parser configuration
@@ -661,6 +668,8 @@ async def analyze(
                 problem = xml_problem(e)
             if problem:
                 await refuse(f"Security validation failed or invalid XML: {problem}", "xes_invalid", details=problem)
+            if tree is not None and not has_traces(tree):
+                await refuse(f"'{filename}' contains no traces.", "log_without_traces")
 
         # Save copy of the valid uploaded file to user-specific UPLOADED_LOGS_DIR
         try:

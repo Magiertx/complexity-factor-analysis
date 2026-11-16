@@ -88,6 +88,7 @@ def test_upload_safe_xml_accepted(client, stub_algorithm):
     ("log.xes", b"<log><trace></log>", "xes_invalid"),
     ("log.xml", b'<?xml version="1.0"?><!DOCTYPE log [<!ENTITY x "y">]><log/>', "xes_invalid"),
     ("log.xes.gz", b"not gzip at all", "gzip_invalid"),
+    ("log.xes", b'<?xml version="1.0"?><log xes.version="1.0"></log>', "log_without_traces"),
 ])
 def test_refused_uploads_have_a_code_and_the_name_the_user_gave(client, stub_algorithm, name, content, code):
     r = client.post(f"/algorithms/{stub_algorithm}/analyze", files={"file": (name, content, "application/octet-stream")})

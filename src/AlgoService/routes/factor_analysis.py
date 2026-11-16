@@ -71,6 +71,7 @@ from routes.algorithms import (
     _ProgressThrottle,
     _sanitize_filename,
     cleanup_old_jobs,
+    has_traces,
     xml_problem,
 )
 
@@ -224,6 +225,9 @@ def _check_xml(path: Path, label: str, source: str = "logs") -> None:
             f"'{label}': XML files containing DOCTYPE declarations are not allowed.",
             code, file=label, details="DOCTYPE declarations are not allowed",
         )
+    if source == "logs" and not has_traces(tree):
+        # Said here: computed, such a log only fails with what a measure makes of nothing.
+        raise _bad(f"'{label}' contains no traces.", "log_without_traces", file=label)
 
 
 def _unique_labels(names: list[str]) -> list[str]:

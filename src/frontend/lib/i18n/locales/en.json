@@ -1616,6 +1616,7 @@
     "file_too_large": "“{file}” is too large; at most {limit_mb} MB are allowed.",
     "files_too_large": "Together the files are larger than {limit_mb} MB. Split them over several datasets.",
     "gzip_invalid": "“{file}” is not a valid gzip file. Unpack it or pack it again.",
+    "log_without_traces": "“{file}” contains no traces, so there is nothing to measure. Leave it out or choose a log with traces.",
     "too_many_files": "You can upload at most {limit} files at once.",
     "one_csv_file": "Upload exactly one CSV file.",
     "no_files": "Upload at least one file or choose a sample.",

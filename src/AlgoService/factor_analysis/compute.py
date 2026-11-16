@@ -11,6 +11,7 @@ from the log or net already read, so nothing is read twice for them.
 from __future__ import annotations
 
 import math
+import os
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable
@@ -89,9 +90,13 @@ def _number(value: Any) -> float:
     return number if math.isfinite(number) else math.nan
 
 
-def _short(e: Exception) -> str:
-    """``ExceptionType: message`` cut to 300 characters, for the failure list."""
-    return f"{type(e).__name__}: {e}"[:300]
+def _short(e: Exception, item: Input | None = None) -> str:
+    """``ExceptionType: message`` cut to 300 characters, for the failure list. With the ``item``
+    it is about, the file is named by its label, not by the path it is stored under ("000.xes")."""
+    text = f"{type(e).__name__}: {e}"
+    if item is not None:
+        text = text.replace(item.path, item.label).replace(os.path.basename(item.path), item.label)
+    return text[:300]
 
 
 def _table(rows: dict[str, dict[str, float]], columns: list[str]) -> pd.DataFrame:
@@ -161,11 +166,16 @@ def model_from_logs(
         try:
             log = read_event_log(item.path)
         except Exception as e:
-            failures.append((item.label, _short(e)))
-            measurement.inputs.append({"input": item.label, "read_s": _seconds(started), "error": _short(e)})
+            failures.append((item.label, _short(e, item)))
+            measurement.inputs.append({"input": item.label, "read_s": _seconds(started), "error": _short(e, item)})
             done += len(miners)
             continue
         measurement.inputs.append({"input": item.label, "read_s": _seconds(started), **log_size_of_frame(log)})
+        if not len(log):
+            # Nothing to discover a net from; the miners would only fail on it, one by one.
+            failures.append((item.label, "the log contains no events"))
+            done += len(miners)
+            continue
         for miner in miners:
             label = f"{item.label} / {miner}"
             pct = 100.0 * done / total
@@ -180,8 +190,8 @@ def model_from_logs(
                     miner, log, item.label, on_wait=lambda msg: progress(pct, f"{label}: {msg}"), timing=timing
                 )
             except Exception as e:
-                failures.append((label, f"discovery failed: {_short(e)}"))
-                observed.update(discovery_s=_seconds(started), error=f"discovery failed: {_short(e)}")
+                failures.append((label, f"discovery failed: {_short(e, item)}"))
+                observed.update(discovery_s=_seconds(started), error=f"discovery failed: {_short(e, item)}")
                 continue
             # The wall time includes waiting for ProM4Py, which other jobs may hold; run_s is the
             # discovery call alone.
@@ -196,7 +206,7 @@ def model_from_logs(
                     row[str(measure)] = _number(measure_value(measure, net, im, fm))
                 except Exception as e:
                     row[str(measure)] = math.nan
-                    failures.append((label, f"{measure}: {_short(e)}"))
+                    failures.append((label, f"{measure}: {_short(e, item)}"))
                 stages[str(measure)] = _seconds(started)
             observed["stages"] = stages
             observed["measures_s"] = round(sum(stages.values()), 6)
@@ -222,8 +232,8 @@ def model_from_pnml(inputs: list[Input], measure_names: list[str], progress: Pro
         try:
             net, im, fm = pm4py.read_pnml(item.path)
         except Exception as e:
-            failures.append((item.label, f"not a readable PNML file: {_short(e)}"))
-            measurement.inputs.append({"input": item.label, "read_s": _seconds(started), "error": _short(e)})
+            failures.append((item.label, f"not a readable PNML file: {_short(e, item)}"))
+            measurement.inputs.append({"input": item.label, "read_s": _seconds(started), "error": _short(e, item)})
             continue
         measurement.inputs.append({"input": item.label, "read_s": _seconds(started), "net": net_size(net)})
         row: dict[str, float] = {}
@@ -234,7 +244,7 @@ def model_from_pnml(inputs: list[Input], measure_names: list[str], progress: Pro
                 row[str(measure)] = _number(measure_value(measure, net, im, fm))
             except Exception as e:
                 row[str(measure)] = math.nan
-                failures.append((item.label, f"{measure}: {_short(e)}"))
+                failures.append((item.label, f"{measure}: {_short(e, item)}"))
             stages[str(measure)] = _seconds(started)
         measurement.observations.append({
             "observation": item.label,
@@ -327,10 +337,10 @@ def log_from_logs(inputs: list[Input], features: list[str], progress: ProgressFn
         try:
             values, read_s, seconds, log, failed = extract_features_timed(item.path, features)
         except Exception as e:
-            failures.append((item.label, _short(e)))
-            measurement.inputs.append({"input": item.label, "error": _short(e)})
+            failures.append((item.label, _short(e, item)))
+            measurement.inputs.append({"input": item.label, "error": _short(e, item)})
             measurement.observations.append({
-                "observation": item.label, "input": item.label, "features_s": _seconds(started), "error": _short(e),
+                "observation": item.label, "input": item.label, "features_s": _seconds(started), "error": _short(e, item),
             })
             continue
         measurement.inputs.append({"input": item.label, "read_s": read_s, **log_size_of_eventlog(log)})

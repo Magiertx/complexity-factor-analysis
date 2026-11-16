@@ -1616,6 +1616,7 @@
     "file_too_large": "„{file}“ ist zu groß; erlaubt sind höchstens {limit_mb} MB.",
     "files_too_large": "Zusammen sind die Dateien größer als {limit_mb} MB. Verteile sie auf mehrere Datensätze.",
     "gzip_invalid": "„{file}“ ist keine gültige gzip-Datei. Entpacke sie oder packe sie neu.",
+    "log_without_traces": "„{file}“ enthält keine Traces, es gibt also nichts zu messen. Lass das Log weg oder wähle eines mit Traces.",
     "too_many_files": "Du kannst höchstens {limit} Dateien auf einmal hochladen.",
     "one_csv_file": "Lade genau eine CSV-Datei hoch.",
     "no_files": "Lade mindestens eine Datei hoch oder wähle ein Beispiel.",

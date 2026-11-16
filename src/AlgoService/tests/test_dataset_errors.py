@@ -88,6 +88,28 @@ def test_upload_failures_name_the_file_as_the_user_named_it(client):
         assert "000.xes" not in r.text and "datasets" not in r.text and "inputs" not in r.text, body
 
 
+EMPTY_LOG = b'<?xml version="1.0" encoding="UTF-8"?><log xes.version="1.0" xmlns="http://www.xes-standard.org/"></log>'
+
+
+@pytest.mark.parametrize("kind", ["log", "model"])
+def test_a_log_without_traces_is_refused_with_its_name(client, kind):
+    """Computed, it only failed with what the measures made of nothing ("Only 0 measure(s) gave
+    values ...", "EmptyLogError ... 000.xes")."""
+    files = [("files", (name, data, "application/xml")) for name, data in _small_logs(2).items()]
+    files.append(("files", ("leer.xes", EMPTY_LOG, "application/xml")))
+    r = _post(client, kind=kind, source="logs", files=files)
+    assert r.status_code == 400
+    assert r.json()["code"] == "log_without_traces" and r.json()["params"] == {"file": "leer.xes"}
+    assert client.get("/factor-analysis/datasets").json()["datasets"] == []
+
+
+def test_a_failure_names_the_file_as_the_user_named_it(tmp_path):
+    stored = tmp_path / "000.xes"
+    item = compute.Input(str(stored), "mine.xes")
+    text = compute._short(ValueError(f"Event log {stored.name} contains no traces (at {stored})"), item)
+    assert text == "ValueError: Event log mine.xes contains no traces (at mine.xes)"
+
+
 def test_an_empty_log_file_is_refused_as_empty(client):
     r = _post(client, kind="log", source="logs", files=[("files", ("x.xes", b"", "application/xml"))])
     assert r.status_code == 400 and r.json()["code"] == "empty_file"
