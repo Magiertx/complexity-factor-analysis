@@ -298,8 +298,9 @@ datasets within the hour, all from 127.0.0.1. On Windows without Playwright's ow
 
 A second build of the same program carries ProM, so that logs can be mined offline with the
 nine ComFy miners: `<name>-<version>-<system>-<arch>-with-prom.<ext>`. Next to the program
-(inside the app on macOS, `Contents/Resources/prom`) it has a folder `prom` that
-`scripts/build_desktop.py prom` puts together (`scripts/desktop_prom.py`):
+(inside the app on macOS: `Contents/Resources/prom`, or `Contents/Frameworks/prom` if the app's
+signature does not pass `codesign --verify --strict` with it in Resources) it has a folder
+`prom` that `scripts/build_desktop.py prom` puts together (`scripts/desktop_prom.py`):
 
 | Part | What | Licence |
 |---|---|---|
@@ -307,6 +308,7 @@ nine ComFy miners: `<name>-<version>-<system>-<arch>-with-prom.<ext>`. Next to t
 | `ProM4Py/` | the folder `ProM4Py/` of `prom4py.zip` (Zenodo 13853660), jar signatures removed as in the Docker image; the class folder `Packages/Workshop/Trunk/out/production/prom` is moved to `classes/` (shorter paths, see below) | CC BY 4.0; the ProM packages their own (`ProM4Py/LICENSE.txt`) |
 | `lpsolve/` | lp_solve 5.5.2.11 and the JNI wrapper of `lp_solve_5.5.2.5_java.zip`, for the Hybrid ILP miner; prebuilt for Windows and Linux, compiled from source for macOS arm64 | LGPL-2.1 |
 | `launcher/prom-launcher.jar` | `src/desktop/prom/LocalProM.java`, compiled for Java 8 | MIT (the tool's) |
+| `graphviz/` | Windows only: Graphviz 16.1.1 (`bin/` of graphviz.org's zip), which draws the nets of a single run | EPL-2.0 (`graphviz/LICENSE.txt`); the libraries in `bin/` their own (cairo, pango, glib, fribidi, gts, iconv, intl: LGPL; the Microsoft Visual C++ runtime) |
 | `SOURCES.txt` | each part with its download address and SHA-256 | |
 
 **How it runs.** With the folder there, the launcher (`desktop_app/prom.py`) starts ProM as a
@@ -322,6 +324,13 @@ with `[prom]` (without the line per jar it prints at every start). The first sta
 builds ProM's plugin cache (measured on Windows: 104 s); later starts took 5 to 41 s.
 Jobs started meanwhile wait for it (`PROM4PY_START_WAIT`, 600 s here).
 
+Java's port is taken once the app has bound its own. A start that ends before ProM answered (its
+port may have been taken meanwhile; `LocalProM` ends Java at once when ProM does not come up)
+gets a new port, and the backend follows (`PROM4PY_URL`). After five such starts in a row, or
+when Java cannot be started at all, the app gives up: it sets `PROM4PY_DOWN` with the reason,
+`/api/capabilities` reports `prom: false`, and a run that needs ProM fails at once with that
+reason instead of waiting for it.
+
 **What differs from the container**, because ProM runs on the user's machine and not in a
 compose network:
 
@@ -336,18 +345,31 @@ compose network:
 - Java ends when its standard input closes. The app holds the other end, and the system closes it
   when the app's process ends, also after a crash or a kill: no ProM is left running. On quit
   the app closes it itself, and kills Java if it is still there 5 s later.
-- Java gets the app's environment without its secrets (`ANTHROPIC_API_KEY`, the session key)
-  and without `JAVA_TOOL_OPTIONS`, `_JAVA_OPTIONS`, `JDK_JAVA_OPTIONS` and `CLASSPATH`, which
-  another Java program may have set for itself.
+- Java gets only the variables of the app's environment that a JVM needs (`PATH`, the system
+  and temporary folders, the user's folders and name, the locale and time zone;
+  `prom.JAVA_ENV_KEEP`), and the token: none of the app's settings and secrets, and no
+  `JAVA_TOOL_OPTIONS`, `_JAVA_OPTIONS` or `CLASSPATH` that another Java program may have set for
+  itself. On Linux it gets the user's own `LD_LIBRARY_PATH`, not the one of the packaged program.
+- Java runs with UTF-8 as its default charset (`-Dfile.encoding=UTF-8`,
+  `-Dsun.jnu.encoding=UTF-8`). ProM4Py reads and writes in that charset; with the system's
+  (cp1252 on Windows, ASCII on Linux with `LANG=C`) names of activities such as Á, Ð, Ý or much
+  of Cyrillic and Greek came back broken. The Docker image runs Java in a UTF-8 locale. The
+  backend reads ProM4Py's answers, which name no charset, as UTF-8.
 - ProM's files go to `prom/` in the data directory (Java's `user.home` and working directory):
   its `.ProM` folder and, on Linux, the Java preferences with its plugin cache. Nothing is
   written into the program's folder. Java keeps preferences in the registry on Windows
   (`HKEY_CURRENT_USER\Software\JavaSoft\Prefs\org\processmining`, about 350 keys) and in
   `~/Library/Preferences` on macOS; delete them to remove every trace of ProM.
 
-Graphviz is not part of either edition, so a single run shows the table of measures but no
-images of the nets (the Docker image has Graphviz); the Playwright spec that checks those images
-is left out of the CI run of this edition.
+**Graphviz** draws the nets of a single run (`dot`, found on `PATH`). The Windows edition carries
+it (`prom/graphviz`, put first on the backend's `PATH`). graphviz.org has no build for Linux or
+macOS that runs on its own (the Linux packages are built against a distribution's libraries,
+the macOS zip loads some twenty libraries from Homebrew), so there the app uses a `dot` that is
+installed: `sudo apt install graphviz` (or the distribution's package), `brew install graphviz`
+on macOS (the app also looks in `/opt/homebrew/bin` and `/usr/local/bin`, which an app started
+from the Finder does not have on its `PATH`). Without one a single run shows the table of
+measures and a note that the nets could not be drawn. The Playwright spec that checks the images
+runs in the CI on Windows only.
 
 ProM's packages include the YAWL editor, which asks `http://localhost:8080/yawl/ia` and
 `/resourceService/gateway` every few seconds with `HEAD` requests for a local YAWL engine; it
@@ -414,8 +436,9 @@ layout, `src/desktop/desktop.spec` writes it):
   root (a bundle has no `.git`), `LICENSE` and `THIRD-PARTY-LICENSES.txt` in `licenses/` (and
   next to the program in the archive).
 - Left out: Celery, Kombu, Billiard, amqp, asyncpg, uvloop (the Docker stack's), pytest, cvxopt.
-  Redis stays, `config.py` imports it. Graphviz is not shipped; it is optional and draws the
-  Petri-net images of a ProM run, which only the edition with ProM has (it shows no images).
+  Redis stays, `config.py` imports it. Graphviz is not in the program; it draws the Petri-net
+  images of a ProM run, which only the edition with ProM has, and that edition carries it on
+  Windows (see "The edition with ProM").
 - Windows has two programs that share one set of files: `<name>.exe` without a console window,
   and `<name>-console.exe`, which prints the log and quits on Ctrl+C and Ctrl+Break (a program
   without a console cannot receive that signal).
@@ -441,9 +464,14 @@ the whole suite. On Windows the program without a console is started as well and
 
 The edition with ProM is built in a second row of the matrix on each system, with the downloads
 of its ProM folder cached, and tested with its ProM running: the smoke test's ProM step mines the
-four sample logs with the Inductive and the Hybrid ILP miner (lp_solve), Playwright runs the
-specs tagged `@prom` (`E2E_PROM=1`) except the one about the images of the nets (no Graphviz),
-and after the program was killed (no quit) no ProM process may be left. A `v*` tag attaches only the archives without ProM to the release.
+four sample logs with the Inductive and the Hybrid ILP miner (lp_solve) and mines a log whose
+activities differ only in letters outside ASCII (they must come back as different tasks; on
+Linux this row runs under `LC_ALL=C`), `scripts/check_prom.py guard` checks that ProM refuses
+requests without the token and listens on loopback only, Playwright runs the specs tagged
+`@prom` (`E2E_PROM=1`; the one about the images of the nets on Windows only, see Graphviz), and
+after the program was killed (no quit) no ProM process may be left, where one ran before. These
+rows may fail without failing the run (`continue-on-error`), so the release of the editions
+without ProM never waits for them. A `v*` tag attaches only the archives without ProM to the release.
 
 ### cvxopt
 
