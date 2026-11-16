@@ -13,8 +13,8 @@ Schalk do it, but interactively in the browser.
 > **For reviewers**
 >
 > - **Watch:** the [screencast on YouTube](https://youtu.be/apDWKewD5gg) (3 minutes; also attached to the [release](https://github.com/Magiertx/complexity-factor-analysis/releases/tag/v1.0.0) as a download).
-> - **Try it without installing anything:** take the desktop program for Windows, macOS or Linux from the [release](https://github.com/Magiertx/complexity-factor-analysis/releases/tag/v1.0.0) and start it. The first start needs one extra step per system, which the release page lists. The desktop program has everything except the ProM miners.
-> - **Full version with the miners:** Docker with Compose and about 8 GB of RAM for Docker (on Linux, `sudo` or membership in the `docker` group). The first build takes a few minutes; details in the [Quick start](#quick-start).
+> - **Try it without installing anything:** take the desktop program for Windows, macOS or Linux from the [latest release](https://github.com/Magiertx/complexity-factor-analysis/releases/latest) and start it. The first start needs one extra step per system, which the release page lists. The edition *with ProM* (about 500 MB) also discovers models from event logs with the nine ProM miners; the smaller one has everything else.
+> - **With Docker:** Docker with Compose and about 8 GB of RAM for Docker (on Linux, `sudo` or membership in the `docker` group). The first build takes a few minutes; details in the [Quick start](#quick-start).
 >   1. `git clone https://github.com/Magiertx/complexity-factor-analysis.git && cd complexity-factor-analysis`
 >   2. `cp .env.example .env`, then fill in `POSTGRES_PASSWORD` and `SESSION_SECRET_KEY`
 >   3. `docker compose up -d --build`, then open <http://localhost:3000>
@@ -100,12 +100,12 @@ beforehand is not needed. On Linux, Docker needs root rights or your user in the
 commands fail with a permission error.
 
 `APP_COMMIT` is optional: it puts the commit into the manifest of every export, which says
-"unknown" without it. The version (`1.0.0`) is part of the image.
+"unknown" without it. The version (`1.1.0`) is part of the image.
 
 Everything is reached through the frontend on <http://localhost:3000>: the model tab at `/`,
 the log tab at `/log`. The API is not published on the host, and the OpenAPI UI lives at
-<http://localhost:3000/api/docs>. The first build downloads the ProM bundle (about 430 MB
-from Zenodo) and takes a while; after that, a start takes one to two minutes, most of it the
+<http://localhost:3000/api/docs>. The first build downloads the ProM bundle (about 330 MB, a
+cleaned copy of the one on Zenodo, from the release `prom4py-mirror`) and takes a while; after that, a start takes one to two minutes, most of it the
 Java bridge booting.
 
 To try it, pick a bundled dataset on either tab, or "Petri nets" and the bundled sample nets
@@ -117,7 +117,7 @@ on the model tab. For a demo without network, see [`docs/OFFLINE-DEMO.md`](docs/
 
 ### Quick start without building
 
-> **Not available yet.** The images of release 1.0.0 are not on ghcr.io yet, so a pull ends with
+> **Not available yet.** The prebuilt images are not public on ghcr.io yet, so a pull ends with
 > `unauthorized` or `manifest unknown`. Until they are, use the Quick start above, which builds
 > the images.
 
@@ -133,8 +133,8 @@ No checkout and no build: two files and the prebuilt images from ghcr.io.
 docker compose -f docker-compose.release.yml up -d
 ```
 
-Open <http://localhost:3000>. `CFA_TAG=v1.0.0` pins a release instead of `latest`; the image tags
-keep the `v` of the git tag (`v1.0.0`, not `1.0.0`). The images
+Open <http://localhost:3000>. `CFA_TAG=v1.1.0` pins a release instead of `latest`; the image tags
+keep the `v` of the git tag (`v1.1.0`, not `1.1.0`). The images
 are `linux/amd64`; on Apple silicon they run under emulation (build from the sources for native
 ones). See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#prebuilt-images).
 
@@ -142,9 +142,11 @@ ones). See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#prebuilt-images).
 
 The tool also runs as one local Python process, which serves the API and the pages on
 `127.0.0.1` and opens the browser: SQLite instead of Postgres, jobs in the process, one session
-for the installation, no ProM yet. Packaged builds for Windows (`.zip`), macOS on Apple silicon
+for the installation. Packaged builds for Windows (`.zip`), macOS on Apple silicon
 (`.dmg`) and Linux (`.tar.gz`) are attached to the
-[releases](https://github.com/Magiertx/complexity-factor-analysis/releases); nothing to install,
+[releases](https://github.com/Magiertx/complexity-factor-analysis/releases), each in two editions:
+without ProM, and *with ProM*, which brings Java 8, ProM4Py and lp_solve and starts the nine
+miners itself (on Windows also Graphviz for the net images); nothing to install,
 the first-start warnings are in [`docs/DESKTOP.md`](docs/DESKTOP.md#download-and-first-start).
 
 > **macOS: "XCom is damaged and can't be opened".** The download is fine; the app is not
