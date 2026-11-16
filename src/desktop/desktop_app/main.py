@@ -22,7 +22,7 @@ import time
 import webbrowser
 from pathlib import Path
 
-from . import app, environment, instance, logs, paths, resources, state, ui
+from . import app, environment, instance, logs, paths, prom, resources, state, ui
 from .pages import PageServer, register_mime_types
 from .state import LauncherError
 
@@ -63,6 +63,12 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--frontend-dir", type=Path, help="the static export to serve (default: the bundled one)"
+    )
+    parser.add_argument(
+        "--prom-dir",
+        type=Path,
+        help="start ProM from this folder (Java runtime, ProM4Py, lp_solve; made by "
+        "`scripts/build_desktop.py prom`); default: the one of the edition with ProM, if any",
     )
     parser.add_argument(
         "--separate-sessions",
@@ -261,6 +267,8 @@ def _log_settings(settings: dict[str, str], env: dict[str, str], args: argparse.
         logger.info("Separate sessions per browser (--separate-sessions).")
     if args.rate_limits:
         logger.info("Request rate limits are on (--rate-limits).")
+    if not env.get("PROM4PY_URL", "").strip():
+        logger.info("ProM: not part of this app; runs that mine a log are disabled.")
 
 
 def _install_signal_handlers(stop: threading.Event) -> None:
@@ -273,18 +281,38 @@ def _install_signal_handlers(stop: threading.Event) -> None:
 
 
 def _serve(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> int:
+    """Serve the app with the ProM of the edition with ProM, if any, which ends with it."""
+    settings = state.read_settings_env(app_paths.settings_env)
+    supervisor = prom.prepare(args.prom_dir, os.environ, settings, app_paths.prom)
+    if supervisor is not None:
+        logs.hide(supervisor.token)
+    try:
+        return _serve_app(args, name, app_paths, settings, supervisor)
+    finally:
+        # After the server: running jobs blocked in a ProM call then end at once.
+        if supervisor is not None:
+            supervisor.stop()
+
+
+def _serve_app(
+    args: argparse.Namespace,
+    name: str,
+    app_paths: paths.AppPaths,
+    settings: dict[str, str],
+    supervisor: prom.Supervisor | None,
+) -> int:
     """Start the backend and show the app until it is closed; returns the exit code.
 
     Order matters: bind the port, set the backend's environment, migrate the database, and only
-    then import the backend, which reads its settings at import. The instance info and the port
-    file are written once the server answers, and the info is removed when the app stops.
+    then import the backend, which reads its settings at import. ProM starts once the environment
+    is set and comes up meanwhile. The instance info and the port file are written once the server
+    answers, and the info is removed when the app stops.
     """
     frontend = Path(args.frontend_dir) if args.frontend_dir else resources.frontend_dir()
     PageServer.from_export(frontend)  # fails now, not after the imports, if the export is missing
 
     identity = state.load_or_create_identity(app_paths.identity, app_paths.database)
     logs.hide(identity.shared_session_id, identity.session_secret_key)
-    settings = state.read_settings_env(app_paths.settings_env)
     remembered = state.remembered_port(app_paths.launcher_state)
     if args.port is not None:
         try:
@@ -304,9 +332,12 @@ def _serve(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> in
             resources.build_info(),
             shared_session=not args.separate_sessions,
             rate_limits=args.rate_limits,
+            prom=supervisor.backend_settings() if supervisor is not None else None,
         )
         environment.apply(env)
         _log_settings(settings, env, args)
+        if supervisor is not None:
+            supervisor.start()
         register_mime_types()
 
         # The backend reads its settings when it is imported, so only now.

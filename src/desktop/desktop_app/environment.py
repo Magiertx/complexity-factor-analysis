@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Mapping
 
 from .paths import AppPaths
+from .prom import START_WAIT_S as PROM_START_WAIT_S
 from .state import Identity
 
 #: Clean-up rules of the server that make no sense for one user's own data.
@@ -22,8 +23,9 @@ NEVER = ("DATA_MAX_IDLE_DAYS", "MAX_DATASETS_PER_SESSION", "LOW_DISK_CLEANUP_FRE
 #: the test harness (another database, no rate limits).
 REMOVED = ("REDIS_URL", "RATE_LIMIT_DISABLED", "TESTING", "TEST_DATABASE_URL", "PYTEST_CURRENT_TEST")
 
-#: Without ProM (it is not part of the desktop app yet) a run that needs it fails after this
-#: many seconds instead of the server's three minutes. settings.env can raise it.
+#: Without ProM (the edition without it) a run that needs it fails after this many seconds
+#: instead of the server's three minutes. settings.env can raise it. The edition with ProM waits
+#: as long as a start of its ProM may take (``prom.START_WAIT_S``).
 PROM4PY_START_WAIT = "2"
 
 
@@ -60,6 +62,7 @@ def backend_environ(
     *,
     shared_session: bool = True,
     rate_limits: bool = False,
+    prom: Mapping[str, str] | None = None,
 ) -> dict[str, str]:
     """The backend's environment: ``base`` (the process's own) with the launcher's settings.
 
@@ -68,13 +71,18 @@ def backend_environ(
     ``SHARED_SESSION_ID``, so that each browser has a session of its own, as on a server; the
     end-to-end tests that compare two sessions need it. ``rate_limits=False`` (the default, as on
     the command line) switches the request limits off (``RATE_LIMIT_DISABLED=1``): they count per
-    client address, and here every request comes from 127.0.0.1.
+    client address, and here every request comes from 127.0.0.1. ``prom`` is ``PROM4PY_URL`` and
+    ``PROM4PY_TOKEN`` of the ProM the app started itself (``prom.Supervisor``), if any.
     """
     env = {k: v for k, v in base.items() if k not in REMOVED}
     for source in (settings, build):
         for key, value in source.items():
             env.setdefault(key, value)
-    env.setdefault("PROM4PY_START_WAIT", PROM4PY_START_WAIT)
+    if prom:
+        env.update(prom)
+        env.setdefault("PROM4PY_START_WAIT", str(PROM_START_WAIT_S))
+    else:
+        env.setdefault("PROM4PY_START_WAIT", PROM4PY_START_WAIT)
     env.update(
         {
             "DATABASE_URL": sqlite_url(paths.database),

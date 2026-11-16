@@ -108,6 +108,11 @@ class AppPaths:
         """The file the instance lock is taken on."""
         return self.data / "instance.lock"
 
+    @property
+    def prom(self) -> Path:
+        """The bundled ProM's own files (its ``user.home`` and working directory, desktop_app/prom.py)."""
+        return self.data / "prom"
+
     # Settings
     @property
     def settings_env(self) -> Path:
