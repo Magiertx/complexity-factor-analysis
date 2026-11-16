@@ -59,6 +59,12 @@ jobs:
           else
             tag="${INPUT_TAG:-edge}"
             tags="${image}:${tag}"
+            # A plain version started by hand (e.g. v1.0.0 rebuilt after a fix of the build)
+            # moves latest as a tag push would; edge and suffixed tags do not.
+            case "$tag" in
+              v[0-9]*.*.*-*) ;;
+              v[0-9]*.*.*) tags="${tags},${image}:latest" ;;
+            esac
             if [ "$tag" = edge ]; then version="1.0.0-dev"; else version="${tag#v}"; fi
           fi
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
