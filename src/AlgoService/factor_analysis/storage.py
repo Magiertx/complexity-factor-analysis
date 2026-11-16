@@ -87,21 +87,19 @@ def exists(session_id: str, dataset_id: str) -> bool:
 _BUSY_ATTEMPTS = 50
 _BUSY_PAUSE_S = 0.02
 
-#: One lock per JSON file of this process. Its writes and the reads of meta.json take it, so that
-#: on Windows no read holds the file open while a write replaces it, and two updates of the same
-#: dataset do not interleave their read and write (which would lose one of them). Reentrant:
-#: update_meta reads and writes under it. The API is one process (routes/algorithms.py); across
-#: processes (the Celery worker of the Docker stack, on Linux) the retries below remain.
-_file_locks: dict[Path, threading.RLock] = {}
-_file_locks_guard = threading.Lock()
+#: Locks for the JSON files of this process. The writes and the reads of meta.json take the lock
+#: of their file, so that on Windows no read holds the file open while a write replaces it, and two
+#: updates of the same dataset do not interleave their read and write (which would lose one of
+#: them). Reentrant: update_meta reads and writes under it. A fixed set chosen by the path, not one
+#: per path, so that requests for made-up ids cannot grow it; no code holds the lock of one file
+#: while it takes another's, so two files sharing a lock only wait for each other. The API is one
+#: process (routes/algorithms.py); across processes (the Celery worker of the Docker stack, on
+#: Linux) the retries below remain.
+_FILE_LOCKS = tuple(threading.RLock() for _ in range(64))
 
 
 def _file_lock(path: Path) -> threading.RLock:
-    with _file_locks_guard:
-        lock = _file_locks.get(path)
-        if lock is None:
-            lock = _file_locks[path] = threading.RLock()
-        return lock
+    return _FILE_LOCKS[hash(str(path)) % len(_FILE_LOCKS)]
 
 
 def _write_json(path: Path, data: dict[str, Any]) -> None:
