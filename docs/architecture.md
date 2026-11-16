@@ -57,8 +57,10 @@ needs no frontend change. Today there is one category, `complexity`, with one to
   analyses run there. Caveats:
   - The bundle is a frozen snapshot from `https://zenodo.org/records/13853660`; upgrading
     ProM means rebuilding the image against a new bundle. The build downloads it from the
-    release `prom4py-mirror` of this repository, an unchanged copy, because Zenodo refuses
-    some networks, and falls back to Zenodo.
+    release `prom4py-mirror` of this repository, a cleaned copy, because Zenodo refuses
+    some networks, and falls back to Zenodo. Either way the image leaves out the proprietary
+    Java APIs of Gurobi and CPLEX, the build trees of OpenXES and UITopia and the test tools
+    (`scripts/clean_prom4py.py`, `src/prom4py/Dockerfile`).
   - The Hybrid ILP miner needs the native lp_solve 5.5 libraries; the image installs the
     solver from Ubuntu and compiles its JNI wrapper
     ([`src/prom4py/README.md`](../src/prom4py/README.md#lp_solve)).

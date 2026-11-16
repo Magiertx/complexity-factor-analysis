@@ -73,12 +73,15 @@ images that do not exist and tries to build them.
 
 ### Building without access to GitHub or Zenodo
 
-The `prom4py` image downloads the ProM bundle during the build: first the unchanged copy in this
-repository's release [`prom4py-mirror`](https://github.com/Magiertx/complexity-factor-analysis/releases/tag/prom4py-mirror),
-then, if that fails, the original on Zenodo, and checks its SHA-256 either way. With a local
-copy of `prom4py.zip`, serve it over HTTP and pass its URL (the download runs inside the build
-container, so a `file://` path on the host does not work; a stand-in archive also needs
-`--build-arg PROM4PY_ZIP_SHA256=`):
+The `prom4py` image downloads the ProM bundle during the build: first the cleaned copy
+`prom4py-cleaned.zip` in this repository's release [`prom4py-mirror`](https://github.com/Magiertx/complexity-factor-analysis/releases/tag/prom4py-mirror)
+(made with `scripts/clean_prom4py.py`: without the proprietary Java APIs of Gurobi and CPLEX, the
+build trees of OpenXES and UITopia and the test tools), then, if that fails, the original on
+Zenodo, and checks its SHA-256 either way; the build leaves the same parts out of the original.
+With a local copy, serve it over HTTP and pass its URL (the download runs inside the build
+container, so a `file://` path on the host does not work). For the original `prom4py.zip` from
+Zenodo also pass its checksum, `--build-arg PROM4PY_ZIP_SHA256=7f871b1b8583ac2dbd05af789f3287e0158891342090e8f1f0a8f35888e74c20`;
+a stand-in archive needs `--build-arg PROM4PY_ZIP_SHA256=`:
 
 ```bash
 python -m http.server 8765 --directory /folder/with/the/zip

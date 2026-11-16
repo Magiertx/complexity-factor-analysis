@@ -3,8 +3,10 @@
 # The image bundles the Java backend from
 # https://zenodo.org/records/13853660 (prom4py.zip, ~430 MB compressed).
 # That bundle is **not** vendored into this repository — it is downloaded
-# during image build to keep the repo small, from an unchanged copy in the
+# during image build to keep the repo small, from a cleaned copy in the
 # release "prom4py-mirror" of this repository, with Zenodo as the fallback.
+# Both ways end with the same files: the parts listed at the download step are
+# left out (the proprietary Java APIs of Gurobi and CPLEX among them).
 #
 # Listens on port 4040 with an HTTP API (/plugin, /executor, /cache, /align,
 # /isRunning, /exit). Talk to it from the AlgoService through the Python
@@ -40,11 +42,13 @@ RUN curl -fsSL --retry 5 --retry-all-errors -o lpsolve-java.zip "$LPSOLVE_JAVA_U
 
 FROM eclipse-temurin:8-jre-jammy
 
-ARG PROM4PY_ZIP_URL=https://github.com/Magiertx/complexity-factor-analysis/releases/download/prom4py-mirror/prom4py.zip
+ARG PROM4PY_ZIP_URL=https://github.com/Magiertx/complexity-factor-analysis/releases/download/prom4py-mirror/prom4py-cleaned.zip
 ARG PROM4PY_ZIP_API_URL=https://zenodo.org/api/records/13853660/files/prom4py.zip/content
-# SHA-256 of the Zenodo file (MD5 efb5cd7e037309652e28502c170a3ffe as listed there). Pass an
-# empty value to build with a stand-in archive.
-ARG PROM4PY_ZIP_SHA256=7f871b1b8583ac2dbd05af789f3287e0158891342090e8f1f0a8f35888e74c20
+# SHA-256 of the cleaned copy (scripts/clean_prom4py.py; the same on every run) and of the Zenodo
+# file (MD5 efb5cd7e037309652e28502c170a3ffe as listed there). Pass both empty to build with a
+# stand-in archive.
+ARG PROM4PY_ZIP_SHA256=b6da8155913771ca8a1629bf31ef9d804c7555cd9f08d116778dcd07bdc73e6e
+ARG PROM4PY_ZIP_API_SHA256=7f871b1b8583ac2dbd05af789f3287e0158891342090e8f1f0a8f35888e74c20
 
 # unzip + curl for fetching the bundle.
 RUN apt-get update \
@@ -56,13 +60,22 @@ WORKDIR /opt/prom4py
 # Zenodo refuses downloads for some networks (403 on the hosted CI runners and on a university
 # server) and limits the requests per address, so the copy in this repository's release comes
 # first. -f makes an error answer fail here and not as a broken archive in unzip; a download
-# that fails or does not match the checksum is asked for again through Zenodo's API.
-RUN ok() { [ -z "$PROM4PY_ZIP_SHA256" ] || echo "$PROM4PY_ZIP_SHA256  /tmp/prom4py.zip" | sha256sum -c - ; } \
-    && { ( curl -fsSL --retry 3 --retry-all-errors -o /tmp/prom4py.zip "$PROM4PY_ZIP_URL" && ok ) \
-         || ( curl -fsSL --retry 8 --retry-all-errors -o /tmp/prom4py.zip "$PROM4PY_ZIP_API_URL" && ok ) \
+# that fails or does not match its checksum is asked for again through Zenodo's API.
+# Left out either way, as in the desktop edition with ProM (scripts/desktop_prom.py): the Java
+# APIs of Gurobi 6.5 and IBM ILOG OPL/CPLEX 6.3 (proprietary, not ours to pass on, and of no use
+# without those solvers), the build trees of OpenXES and UITopia (their jars are in ivy/ as well)
+# and the test tools of five packages. None of them is on the class path of launch.sh.
+RUN ok() { [ -z "$1" ] || echo "$1  /tmp/prom4py.zip" | sha256sum -c - ; } \
+    && { ( curl -fsSL --retry 3 --retry-all-errors -o /tmp/prom4py.zip "$PROM4PY_ZIP_URL" && ok "$PROM4PY_ZIP_SHA256" ) \
+         || ( curl -fsSL --retry 8 --retry-all-errors -o /tmp/prom4py.zip "$PROM4PY_ZIP_API_URL" && ok "$PROM4PY_ZIP_API_SHA256" ) \
          || { echo "prom4py.zip: download failed or checksum mismatch" >&2; exit 1; } ; } \
     && unzip -q /tmp/prom4py.zip -d /tmp/prom4py-extracted \
+    && cd /tmp/prom4py-extracted/ProM4Py \
+    && rm -rf OpenXES UITopia Packages/*/Trunk/tests \
+              Packages/ProM-Contexts/Trunk/ivy/gurobi-6.5.jar Packages/ProM-Contexts/Trunk/ivy/oplall-6.3.jar \
+    && cd /opt/prom4py \
     && mv /tmp/prom4py-extracted/ProM4Py/* . \
+    && test ! -e Packages/ProM-Contexts/Trunk/ivy/gurobi-6.5.jar \
     && rm -rf /tmp/prom4py.zip /tmp/prom4py-extracted
 
 # Strip JAR signatures. ProM's classpath ships the same package
