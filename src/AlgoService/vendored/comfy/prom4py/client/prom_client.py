@@ -11,6 +11,7 @@ import jsons
 import requests
 import atexit
 import signal
+import threading
 
 from ..model.alignment_parameters import AlignmentParameters
 
@@ -60,8 +61,11 @@ class ProMClient:
 
     def __init__(self, path_to_prom: Path, port=8000, dev_mode=False):
         atexit.register(self.exit_handler)
-        signal.signal(signal.SIGTERM, self.exit_handler)
-        signal.signal(signal.SIGINT, self.exit_handler)
+        # Local change: only the main thread may set signal handlers; elsewhere signal.signal
+        # raises ValueError. The desktop app makes the shared client in a job thread.
+        if threading.current_thread() is threading.main_thread():
+            signal.signal(signal.SIGTERM, self.exit_handler)
+            signal.signal(signal.SIGINT, self.exit_handler)
         self.config = ConnectionConfiguration(port=port)
 
         if dev_mode:

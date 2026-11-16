@@ -23,12 +23,14 @@ KEY = "11111111-2222-3333-4444-555555555555"
 
 class _Handler(BaseHTTPRequestHandler):
     def do_GET(self):
+        self.server.tokens.append(self.headers.get("X-ProM4Py-Token"))
         if self.path == "/isRunning":
             self._reply(b"ProM is running")
         else:
             self._slow_reply()
 
     def do_POST(self):
+        self.server.tokens.append(self.headers.get("X-ProM4Py-Token"))
         self.rfile.read(int(self.headers.get("Content-Length") or 0))
         self._slow_reply()
 
@@ -57,6 +59,8 @@ class _FakeProM(ThreadingHTTPServer):
         super().__init__(("127.0.0.1", 0), _Handler)
         self.delay = 0.0
         self.url = f"http://127.0.0.1:{self.server_port}"
+        #: The X-ProM4Py-Token header of each request (None where there was none).
+        self.tokens: list[str | None] = []
 
 
 @pytest.fixture
@@ -159,6 +163,47 @@ def test_a_refused_connection_raises_prom_unavailable():
     # Still a ConnectionError for the vendored client, which treats that as "not running".
     assert issubclass(ProMUnavailable, requests.exceptions.ConnectionError)
     assert client.is_running() is False
+
+
+def test_every_request_carries_the_token_when_one_is_set(fake_prom, monkeypatch):
+    # The ProM of the desktop app refuses requests without it (src/desktop/prom/LocalProM.java).
+    from vendored.comfy._shared_prom4py import is_responsive, new_client
+
+    monkeypatch.setenv("PROM4PY_TOKEN", "the-token-of-this-start")
+    assert is_responsive(timeout=2)
+    assert new_client(fake_prom.url).client.call_executor("return 1;") == KEY
+    assert fake_prom.tokens == ["the-token-of-this-start"] * 2
+
+
+def test_without_a_token_no_header_is_sent(fake_prom, monkeypatch):
+    from vendored.comfy._shared_prom4py import is_responsive, new_client
+
+    monkeypatch.delenv("PROM4PY_TOKEN", raising=False)
+    assert is_responsive(timeout=2)
+    new_client(fake_prom.url).client.call_executor("return 1;")
+    assert fake_prom.tokens == [None, None]
+
+
+def test_the_client_can_be_made_in_a_job_thread_and_leaves_the_signal_handlers(fake_prom):
+    # The desktop app runs its jobs in threads, where signal.signal raises ValueError.
+    import signal
+
+    from vendored.comfy._shared_prom4py import new_client
+
+    before = signal.getsignal(signal.SIGINT)
+    result: dict = {}
+
+    def make() -> None:
+        try:
+            result["key"] = new_client(fake_prom.url).client.call_executor("return 1;")
+        except Exception as exc:  # pragma: no cover - the failure this test is about
+            result["error"] = exc
+
+    thread = threading.Thread(target=make)
+    thread.start()
+    thread.join(10)
+    assert result == {"key": KEY}
+    assert signal.getsignal(signal.SIGINT) is before
 
 
 # --- discover -----------------------------------------------------------------------------

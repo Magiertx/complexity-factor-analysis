@@ -47,3 +47,11 @@
    default) instead of calling `requests.get/post/delete` directly, so that
    the shared client can put a timeout on each of them. Covered by
    `tests/test_prom4py_limits.py`.
+6. **Signal handlers in the main thread only.** `ProMClient.__init__` in
+   `prom4py/client/prom_client.py` sets its SIGTERM and SIGINT handlers only when it runs in
+   the main thread. Elsewhere `signal.signal` raises `ValueError`, and the desktop app makes
+   the shared client in a job thread, so no ProM miner could run there.
+7. **Token header.** `_shared_prom4py.py` sends `PROM4PY_TOKEN`, when it is set, as the
+   header `X-ProM4Py-Token` with every request; the ProM that the desktop app starts itself
+   refuses requests without it (`src/desktop/prom/LocalProM.java`). Covered by
+   `tests/test_prom4py_limits.py`.

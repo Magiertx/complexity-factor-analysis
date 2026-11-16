@@ -44,8 +44,19 @@ class ProMUnavailable(requests.exceptions.ConnectionError):
     """ProM4Py refused or dropped the connection: it is starting, restarting or down."""
 
 
+#: The header that carries ``PROM4PY_TOKEN``. The ProM the desktop app starts itself refuses
+#: every request without it (src/desktop/prom/LocalProM.java); the Docker stack sets no token.
+TOKEN_HEADER = "X-ProM4Py-Token"
+
+
 def prom4py_url() -> str:
     return os.environ.get("PROM4PY_URL", "http://localhost:4040").rstrip("/")
+
+
+def auth_headers() -> dict[str, str]:
+    """The token header for ``PROM4PY_TOKEN``, or nothing when it is not set."""
+    token = os.environ.get("PROM4PY_TOKEN", "").strip()
+    return {TOKEN_HEADER: token} if token else {}
 
 
 def get_shared_prom4py() -> Any:
@@ -92,7 +103,7 @@ def is_responsive(timeout: float) -> bool:
     """Whether ProM4Py answers ``/isRunning`` within ``timeout`` seconds. It answers only
     between calls, so a busy ProM counts as not responsive."""
     try:
-        r = requests.get(f"{prom4py_url()}/isRunning", timeout=timeout)
+        r = requests.get(f"{prom4py_url()}/isRunning", timeout=timeout, headers=auth_headers())
     except requests.exceptions.RequestException:
         return False
     _answered()
@@ -120,6 +131,7 @@ class _BoundedHTTP:
             timeout = at - time.monotonic()
         if timeout <= 0:
             raise ProMTimeout(f"ProM did not answer within {budget:g} s")
+        kwargs["headers"] = {**(kwargs.get("headers") or {}), **auth_headers()}
         try:
             # One value bounds connecting, sending and waiting for the answer alike.
             response = requests.request(method, url, timeout=timeout, **kwargs)
