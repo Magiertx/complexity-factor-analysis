@@ -67,8 +67,21 @@ def listening(pid: int) -> list[str]:
 
 
 def is_loopback(address: str) -> bool:
+    """Whether ``host:port`` (``[v6]:port`` too) is a loopback address: 127.0.0.0/8, ``::1``, or
+    127.0.0.0/8 mapped into IPv6 (``::ffff:127.0.0.1``), which Java on Linux binds a dual-stack
+    socket to when it is asked for 127.0.0.1. Everything else, the wildcards included, is not."""
+    import ipaddress
+
     host = address.rsplit(":", 1)[0].strip("[]")
-    return host == "::1" or host.startswith("127.")
+    if "%" in host:  # a zone (fe80::1%eth0) is never loopback
+        return False
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
+        ip = ip.ipv4_mapped
+    return ip.is_loopback
 
 
 def status(url: str, token: str | None) -> int | None:
