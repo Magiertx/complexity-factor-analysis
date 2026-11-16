@@ -118,8 +118,8 @@ jobs:
           pre=""
           case "$GITHUB_REF_NAME" in *-*) pre="--prerelease" ;; esac
           if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" docker-compose.release.yml env.example --clobber
+            gh release upload "$GITHUB_REF_NAME" "docker-compose.release.yml#Docker Compose file for the prebuilt images" "env.example#Settings template for the Docker Compose file (save as .env)" --clobber
           else
-            gh release create "$GITHUB_REF_NAME" docker-compose.release.yml env.example \
+            gh release create "$GITHUB_REF_NAME" "docker-compose.release.yml#Docker Compose file for the prebuilt images" "env.example#Settings template for the Docker Compose file (save as .env)" \
               --draft $pre --title "$GITHUB_REF_NAME" --generate-notes
           fi
