@@ -382,6 +382,14 @@ Java's `-Xmx` (default `4G`), `PROM4PY_START_WAIT`. `PROM4PY_URL` names another 
 then starts none of its own. From a checkout, `--prom-dir build/desktop/prom` starts ProM from
 the folder that `python scripts/build_desktop.py prom` makes.
 
+**Windows: letters outside the code page.** Java 8 reads its command line, and opens its own
+runtime, in the system's ANSI code page (cp1252 on a German or English Windows). The app hands
+Java the data folder and the class path by their 8.3 short names where a folder has letters
+outside it (a Cyrillic or Greek user name), which works (measured). The program's own folder
+cannot be passed that way: Java 8 cannot open its `rt.jar` there even by the short name
+(measured). If the program lies in such a folder, the app says so at once in its log and in
+every run that needs ProM ("move the program to a folder such as C:\XCom") and runs without ProM.
+
 **Windows paths.** In `prom4py.zip` the files of the class folder have paths of up to 173
 characters below `ProM4Py/`; unpacked by Explorer into
 `C:\Users\<name>\Downloads\<archive>\<name>\prom\ProM4Py\` they would pass Windows' 260 characters

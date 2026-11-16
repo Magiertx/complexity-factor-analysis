@@ -276,6 +276,40 @@ def test_the_backend_finds_the_editions_graphviz_first(tmp_path, monkeypatch):
     assert sup.backend_settings()["PATH"] == os.pathsep.join([str(gv), "the-users-path"])
 
 
+def test_paths_java_8_cannot_take_go_as_short_names(tmp_path):
+    # Java 8 on Windows reads its command line in the ANSI code page: a Cyrillic folder name
+    # arrives as "????" (measured), its 8.3 short name does not.
+    folder = tmp_path / "Юрий"
+    folder.mkdir()
+    plain = tmp_path / "Jurij"
+    plain.mkdir()
+    assert prom.jvm_path(plain) == str(plain)
+    given = prom.jvm_path(folder)
+    if os.name != "nt":
+        assert given == str(folder)
+        return
+    import ctypes
+
+    codec = f"cp{ctypes.windll.kernel32.GetACP()}"
+    given.encode(codec)  # raises if Java could not take it
+    assert os.path.samefile(given, folder)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Java 8 reads paths in the ANSI code page on Windows only")
+def test_a_program_folder_java_8_cannot_start_from_is_given_up_at_once(tmp_path):
+    # The JVM opens its own rt.jar by an ANSI path, also when started by the short name.
+    root = tmp_path / "Юрий" / "prom"
+    root.mkdir(parents=True)
+    assert "outside the system's code page" in prom.java_cannot_run_from(root)
+    assert prom.java_cannot_run_from(tmp_path) == ""
+    sup = prom.Supervisor(prom.Bundle(root), token="t" * 43, heap="1G", call_timeout=10, state_dir=tmp_path / "s")
+    sup.choose_port()
+    sup.start()
+    sup._thread.join(10)
+    assert "move the program to a folder such as" in os.environ[prom.DOWN_VARIABLE]
+    sup.stop()
+
+
 def test_prepare_takes_the_settings(tmp_path):
     sup = prom.prepare(
         _bundle(tmp_path / "prom"), {"PROM4PY_HEAP": "2G"}, {"PROM4PY_CALL_TIMEOUT": "60", "PROM4PY_HEAP": "8G"}, tmp_path

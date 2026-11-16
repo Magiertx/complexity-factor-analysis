@@ -162,6 +162,63 @@ def heap(env: Mapping[str, str]) -> str:
     return raw
 
 
+def jvm_path(path: Path) -> str:
+    """``path`` as Java 8 on Windows can take it from its command line.
+
+    The JDK 8 launcher reads its arguments in the system's ANSI code page (cp1252 on a German
+    or English Windows): a folder with letters outside it (a Cyrillic or Greek user name in the
+    Downloads or data folder) arrives as ``????``, and Java finds neither its classes nor its
+    user folder (measured). Such a path goes as its 8.3 short name, which is ASCII, where the
+    volume has short names (the system drive by default). Elsewhere, and for other systems, the
+    path itself.
+    """
+    text = str(path)
+    if os.name != "nt":
+        return text
+    import ctypes
+
+    codec = f"cp{ctypes.windll.kernel32.GetACP()}"
+    try:
+        text.encode(codec)
+        return text
+    except (UnicodeEncodeError, LookupError):
+        pass
+    size = ctypes.windll.kernel32.GetShortPathNameW(text, None, 0)
+    if size:
+        buffer = ctypes.create_unicode_buffer(size)
+        if ctypes.windll.kernel32.GetShortPathNameW(text, buffer, size):
+            short = buffer.value
+            try:
+                short.encode(codec)
+                return short
+            except (UnicodeEncodeError, LookupError):
+                pass
+    logger.warning(
+        "ProM: %s has letters outside the system's code page and no short name; Java 8 cannot use it.", text
+    )
+    return text
+
+
+def java_cannot_run_from(folder: Path) -> str:
+    """Why Java 8 cannot start from ``folder``, or "". On Windows the JVM opens its own runtime
+    (``jre/lib/rt.jar``) by a path in the ANSI code page, also when it was started by the short
+    name (measured: "error in opening JAR file"), so the program's folder must not have letters
+    outside that code page."""
+    if os.name != "nt":
+        return ""
+    import ctypes
+
+    codec = f"cp{ctypes.windll.kernel32.GetACP()}"
+    try:
+        str(folder).encode(codec)
+    except (UnicodeEncodeError, LookupError):
+        return (
+            f"the program's folder {folder} has letters outside the system's code page ({codec}), "
+            "from which Java 8 cannot start; move the program to a folder such as C:\\XCom"
+        )
+    return ""
+
+
 def free_port() -> int:
     """A port on 127.0.0.1 that is free now (ProM takes a port number, not a socket)."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -262,20 +319,23 @@ class Supervisor:
         return proc.pid if proc is not None and proc.poll() is None else None
 
     def command(self) -> list[str]:
-        home = self.bundle.home
-        classpath = os.pathsep.join([str(self.bundle.launcher), *(str(home / p) for p in CLASSPATH)])
+        """Java's command line. Paths go through :func:`jvm_path` (the state folder is made
+        first, since only an existing folder has a short name)."""
+        self.state_dir.mkdir(parents=True, exist_ok=True)
+        home = jvm_path(self.bundle.home)
+        classpath = os.pathsep.join([jvm_path(self.bundle.launcher), *(str(Path(home) / p) for p in CLASSPATH)])
         return [
-            str(self.bundle.java),
+            jvm_path(self.bundle.java),
             f"-Xmx{self.heap}",
             "-XX:ActiveProcessorCount=1",
             "-Djava.awt.headless=true",
             "-da",
             "-classpath", classpath,
-            f"-Djava.library.path={self.bundle.native}",
+            f"-Djava.library.path={jvm_path(self.bundle.native)}",
             "-Djava.system.class.loader=org.processmining.framework.util.ProMClassLoader",
             "-Djava.util.Arrays.useLegacyMergeSort=true",
             *ENCODING_OPTIONS,
-            f"-Duser.home={self.state_dir}",
+            f"-Duser.home={jvm_path(self.state_dir)}",
             MAIN_CLASS,
             "-p", str(self.port),
         ]
@@ -327,6 +387,10 @@ class Supervisor:
 
     def _watch(self) -> None:
         pause = RESTART_PAUSE_S
+        reason = java_cannot_run_from(self.bundle.root)
+        if reason:
+            self._give_up(reason)
+            return
         if not self._start_java():
             return
         last_ok = self._started
