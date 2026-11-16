@@ -13,6 +13,7 @@ import io
 import json
 import os
 import shutil
+import threading
 import time
 import uuid
 from datetime import datetime, timezone
@@ -81,12 +82,48 @@ def exists(session_id: str, dataset_id: str) -> bool:
     return read_meta(session_id, dataset_id) is not None
 
 
+#: Attempts and pause of a replace or read that Windows refuses while another handle has the file
+#: open ("Access is denied"); together about a second. Other systems never get there.
+_BUSY_ATTEMPTS = 50
+_BUSY_PAUSE_S = 0.02
+
+#: One lock per JSON file of this process. Its writes and the reads of meta.json take it, so that
+#: on Windows no read holds the file open while a write replaces it, and two updates of the same
+#: dataset do not interleave their read and write (which would lose one of them). Reentrant:
+#: update_meta reads and writes under it. The API is one process (routes/algorithms.py); across
+#: processes (the Celery worker of the Docker stack, on Linux) the retries below remain.
+_file_locks: dict[Path, threading.RLock] = {}
+_file_locks_guard = threading.Lock()
+
+
+def _file_lock(path: Path) -> threading.RLock:
+    with _file_locks_guard:
+        lock = _file_locks.get(path)
+        if lock is None:
+            lock = _file_locks[path] = threading.RLock()
+        return lock
+
+
 def _write_json(path: Path, data: dict[str, Any]) -> None:
-    """Write JSON through a temporary file and replace the target, so that a reader never sees half a file."""
+    """Write JSON through a temporary file and replace the target, so that a reader never sees half
+    a file. The lock keeps the writers of this process off each other's temporary file (whose
+    name stays short: paths near Windows' 260 characters); on Windows a replace that meets an
+    open handle of the target (from another process) is tried again for a moment."""
     tmp = path.with_suffix(".tmp")
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False)
-    os.replace(tmp, path)
+    with _file_lock(path):
+        try:
+            with open(tmp, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False)
+            for attempt in range(_BUSY_ATTEMPTS):
+                try:
+                    os.replace(tmp, path)
+                    return
+                except PermissionError:
+                    if attempt == _BUSY_ATTEMPTS - 1:
+                        raise
+                    time.sleep(_BUSY_PAUSE_S)
+        finally:
+            tmp.unlink(missing_ok=True)
 
 
 def create(
@@ -142,20 +179,30 @@ def read_meta(session_id: str, dataset_id: str) -> dict[str, Any] | None:
         path = dataset_dir(session_id, dataset_id) / "meta.json"
     except ValueError:
         return None
-    try:
-        with open(path, encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return None
+    with _file_lock(path):
+        for attempt in range(_BUSY_ATTEMPTS):
+            try:
+                with open(path, encoding="utf-8") as f:
+                    return json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError):
+                return None
+            except PermissionError:
+                # Windows, while another process replaces the file.
+                if attempt == _BUSY_ATTEMPTS - 1:
+                    raise
+                time.sleep(_BUSY_PAUSE_S)
+    return None
 
 
 def update_meta(session_id: str, dataset_id: str, **changes: Any) -> dict[str, Any]:
     """Merge ``changes`` into the metadata of a dataset and return it; ``FileNotFoundError`` if there is none."""
-    meta = read_meta(session_id, dataset_id)
-    if meta is None:
-        raise FileNotFoundError(dataset_id)
-    meta.update(changes)
-    _write_json(dataset_dir(session_id, dataset_id) / "meta.json", meta)
+    path = dataset_dir(session_id, dataset_id) / "meta.json"
+    with _file_lock(path):
+        meta = read_meta(session_id, dataset_id)
+        if meta is None:
+            raise FileNotFoundError(dataset_id)
+        meta.update(changes)
+        _write_json(path, meta)
     return meta
 
 
@@ -334,11 +381,12 @@ def remove_inputs(session_id: str, dataset_id: str) -> None:
 
 def _meta_file(path: Path) -> dict[str, Any]:
     """The JSON at ``path``, or an empty dict if it cannot be read."""
-    try:
-        with open(path, encoding="utf-8") as f:
-            return json.load(f)
-    except (OSError, json.JSONDecodeError):
-        return {}
+    with _file_lock(path):
+        try:
+            with open(path, encoding="utf-8") as f:
+                return json.load(f)
+        except (OSError, json.JSONDecodeError):
+            return {}
 
 
 def prune_session(session_id: str, keep: int | None = _DEFAULT) -> list[str]:
