@@ -9,6 +9,7 @@ import { AlertTriangle, ClipboardCopy, Shuffle } from "lucide-react";
 import {
   DEFAULT_STABILITY_SAMPLES,
   STABILITY_SAMPLES,
+  HttpError,
   abortTask,
   fetchStability,
   type AnalyzeOptions,
@@ -19,10 +20,10 @@ import {
   type StabilitySamples,
 } from "@/lib/api";
 import { formatNumber, formatPercent } from "@/lib/format";
-import { countText, stableWithoutFactor } from "@/lib/factor-analysis";
+import { countText, stabilityProblem, stableWithoutFactor, type StabilityProblem } from "@/lib/factor-analysis";
 import { pairTint } from "@/lib/compare";
 import { cn } from "@/lib/utils";
-import { useLocale, useT } from "@/lib/i18n";
+import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { useJobs } from "@/components/jobs-provider";
 import { Button } from "@/components/ui/button";
 import { InfoTip } from "@/components/ui/info-tip";
@@ -49,7 +50,7 @@ export interface StabilityView {
   result: Stability | null;
   /** A stability computed for other settings, which is not shown as current. */
   stale: boolean;
-  error: string | null;
+  error: StabilityProblem | null;
   start: () => void;
   cancel: () => void;
 }
@@ -61,6 +62,7 @@ export interface StabilityView {
  */
 export function useStability(id: string | null, options: AnalyzeOptions | null): StabilityView {
   const t = useT();
+  const tMaybe = useTMaybe();
   const { jobs } = useJobs();
   const [samples, setSamplesState] = useState<StabilitySamples>(DEFAULT_STABILITY_SAMPLES);
   useEffect(() => {
@@ -83,7 +85,7 @@ export function useStability(id: string | null, options: AnalyzeOptions | null):
   const [result, setResult] = useState<Stability | null>(null);
   const [stale, setStale] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<StabilityProblem | null>(null);
   const key = id && options ? JSON.stringify([id, options, samples]) : null;
   const keyRef = useRef(key);
   keyRef.current = key;
@@ -106,13 +108,21 @@ export function useStability(id: string | null, options: AnalyzeOptions | null):
         } else {
           setPhase("idle");
         }
-      } catch {
+      } catch (e) {
         if (signal?.aborted || keyRef.current !== asked) return;
-        setError(t("factor.stability.failed"));
+        setError(
+          stabilityProblem(
+            tMaybe,
+            e instanceof HttpError
+              ? { status: e.status, code: e.code, params: e.params, message: e.message }
+              : { message: e instanceof Error ? e.message : null },
+            t("factor.stability.failed"),
+          ),
+        );
         setPhase("failed");
       }
     },
-    [id, options, samples, t],
+    [id, options, samples, t, tMaybe],
   );
 
   // Other settings: what was shown is stale until the stability of these is found.
@@ -141,14 +151,14 @@ export function useStability(id: string | null, options: AnalyzeOptions | null):
     if (!job) return;
     if (job.status === "completed") void look(false);
     else if (job.status === "failed") {
-      setError(t("factor.stability.failed"));
+      setError(stabilityProblem(tMaybe, { code: job.error_code, message: job.error }, t("factor.stability.failed")));
       setPhase("failed");
       setJobId(null);
     } else if (job.status === "aborted") {
       setPhase("aborted");
       setJobId(null);
     }
-  }, [job, look, t]);
+  }, [job, look, t, tMaybe]);
 
   return {
     samples,
@@ -228,7 +238,14 @@ export function StabilityBar({ view }: { view: StabilityView }) {
         </div>
       )}
       {view.stale && phase !== "computing" && <Notice tone="info">{t("factor.stability.stale")}</Notice>}
-      {phase === "failed" && <Notice tone="error">{view.error ?? t("factor.stability.failed")}</Notice>}
+      {phase === "failed" && (
+        <Notice tone={view.error?.busy ? "warn" : "error"} role="alert">
+          <span className="inline-flex items-start gap-1.5">
+            {view.error?.text ?? t("factor.stability.failed")}
+            {view.error?.details && <InfoTip size="xs" topic={t("factor.data.details")} text={view.error.details} />}
+          </span>
+        </Notice>
+      )}
       {phase === "aborted" && <Notice tone="info">{t("factor.stability.aborted")}</Notice>}
       {result && result.valid === 0 && <Notice tone="warn">{t("factor.stability.none_valid", { samples: result.samples })}</Notice>}
     </div>

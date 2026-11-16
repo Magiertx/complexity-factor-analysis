@@ -44,6 +44,7 @@ import {
   mostlyFiltered,
   plainFailure,
   retryInput,
+  stabilityProblem,
 } from "./factor-analysis";
 import { formatNumber } from "./format";
 import de from "./i18n/locales/de.json";
@@ -604,6 +605,31 @@ describe("plainFailure", () => {
       details: "IndexError: list index out of range",
     });
     expect(plainFailure(tMaybe, { message: null }, "generic")).toEqual({ text: "generic", details: null });
+  });
+});
+
+describe("stabilityProblem", () => {
+  const generic = "The stability could not be computed.";
+  const busy = {
+    status: 429,
+    code: "stability_jobs_busy",
+    params: { active: 2 },
+    message: "The server is computing 2 stabilities already, the most it runs at once. Try again in a few minutes.",
+  };
+
+  it("says that the server is busy, not that the stability failed, in both languages", () => {
+    for (const locale of ["en", "de"] as const) {
+      const problem = stabilityProblem(translator(locale).tMaybe, busy, generic);
+      expect(problem.busy).toBe(true);
+      expect(problem.text).not.toBe(generic);
+      expect(problem.text).toContain("2");
+    }
+    expect(stabilityProblem(translator("de").tMaybe, busy, generic).text).toMatch(/Server.*gleichzeitig.*Minuten/);
+  });
+
+  it("keeps a failed job a failure, with its technical text as details", () => {
+    const failed = stabilityProblem(tMaybe, { code: "stability_failed", message: "The stability could not be computed: boom" }, generic);
+    expect(failed).toEqual({ text: generic, details: "The stability could not be computed: boom", busy: false });
   });
 });
 

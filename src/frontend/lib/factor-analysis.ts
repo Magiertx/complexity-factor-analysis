@@ -690,6 +690,24 @@ export function plainFailure(
   return { text: generic, details: message };
 }
 
+/** Why the stability was not computed, in the words of the code the server gave. */
+export interface StabilityProblem {
+  text: string;
+  /** The technical text, behind an (i). */
+  details: string | null;
+  /** The server runs as many jobs as it may (429): nothing failed, asking again later works. */
+  busy: boolean;
+}
+
+/** The problem of a refused stability request or a failed stability job; `generic` where the code has no sentence. */
+export function stabilityProblem(
+  tMaybe: TranslateMaybe,
+  failure: { status?: number; code?: string | null; params?: Record<string, string | number> | null; message?: string | null },
+  generic: string,
+): StabilityProblem {
+  return { ...plainFailure(tMaybe, failure, generic), busy: failure.status === 429 };
+}
+
 /** The MSA filter took out more than half of the measures it was given: a thin result is left. */
 export function mostlyFiltered(left: number, removed: number): boolean {
   return removed * 2 > left + removed;
