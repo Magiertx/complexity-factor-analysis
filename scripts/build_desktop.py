@@ -8,6 +8,13 @@
     python scripts/build_desktop.py verify-macos # the bundle needs no newer macOS than MACOS_MIN
     python scripts/build_desktop.py exe          # print the program in the bundle (for the CI)
     python scripts/build_desktop.py copyleft     # name==version of the bundled copyleft packages
+    python scripts/build_desktop.py prom         # the ProM folder (Java 8, ProM4Py, lp_solve): build/desktop/prom
+
+``--with-prom`` (with ``bundle`` or ``all``) makes the edition with ProM: the ProM folder next to
+the program (inside the app on macOS) and ``-with-prom`` in the archive's name. ``prom`` alone
+makes the folder for a run from source (``python -m desktop_app --prom-dir build/desktop/prom``).
+Its downloads are pinned by SHA-256 in ``scripts/desktop_prom.py`` and cached in
+``build/desktop/downloads`` (``--downloads DIR`` for another folder).
 
 Run it from any directory with the backend's requirements, ``requirements-desktop.txt`` and, for
 ``frontend``, Node.js installed (``npm ci`` in ``src/frontend`` first). Output goes to
@@ -19,6 +26,7 @@ Run it from any directory with the backend's requirements, ``requirements-deskto
     work/    PyInstaller's scratch directory
     dist/    the bundle: <slug>/ (Windows, Linux) or <name>.app (macOS)
     release/ the archive that is published
+    prom/    the ProM folder of the edition with ProM; downloads/ its cached downloads
 
 The name comes from ``APP_NAME`` in ``src/AlgoService/config.py`` (AGENTS.md: it is written down
 in two places only), the version from ``src/AlgoService/version.py`` and the commit from git.
@@ -41,6 +49,8 @@ import tarfile
 import zipfile
 from pathlib import Path
 
+import desktop_prom  # scripts/desktop_prom.py, next to this file
+
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "src"
 BACKEND = SRC / "AlgoService"
@@ -52,6 +62,10 @@ STAGE = BUILD / "stage"
 WORK = BUILD / "work"
 DIST = BUILD / "dist"
 RELEASE = BUILD / "release"
+PROM = BUILD / "prom"
+DOWNLOADS = BUILD / "downloads"
+#: The suffix of the edition with ProM, in the archive's name.
+PROM_SUFFIX = "-with-prom"
 
 #: Oldest macOS the bundle runs on. Set by SciPy and scikit-learn, whose arm64 wheels for the
 #: pinned versions need macOS 14 (``verify-macos`` checks every binary of the bundle against it).
@@ -255,7 +269,22 @@ def vendored_licenses() -> str:
     return "\n".join(parts)
 
 
-def third_party_text(name: str, version: str, packages: list[tuple[str, str]] | None = None) -> str:
+PROM_NOTE = """
+ProM (the edition with ProM)
+{rule}
+
+The folder prom/ next to the program (inside the app on macOS) holds a Java 8 runtime
+(GPL-2.0 with the Classpath Exception; its licence files are in prom/jre/), the ProM4Py bundle
+of Zenodo record 13853660 (CC BY 4.0; the ProM packages in it carry their own licences, see
+prom/ProM4Py/LICENSE.txt) and lp_solve 5.5 with its Java wrapper (LGPL-2.1, prom/lpsolve/LGPL.txt).
+prom/SOURCES.txt names each part, where it was downloaded and its SHA-256. These parts are
+separate programs that the app starts; they are not linked into it.
+"""
+
+
+def third_party_text(
+    name: str, version: str, packages: list[tuple[str, str]] | None = None, with_prom: bool = False
+) -> str:
     """The licence file. ``packages`` is what the bundle contains (``bundled_distributions``);
     without it (before PyInstaller ran) only the header and the notices are written."""
     npm_file = FRONTEND / "npm-licenses.txt"
@@ -267,6 +296,7 @@ def third_party_text(name: str, version: str, packages: list[tuple[str, str]] | 
     for row in copyleft:
         lines.append(f"  - {row['Name']} {row['Version']}: {row['License']}")
     copyleft_block = "\n".join(lines) if lines else "  (the list is made when the bundle is built)"
+    prom_note = PROM_NOTE.format(rule="=" * 78) if with_prom else ""
     header = f"""Third-party software in {name} {version}
 {'=' * 78}
 
@@ -299,7 +329,7 @@ Vendored source code
 The ProM4Py client in vendored/comfy/prom4py comes from the ProM4Py distribution, Zenodo record
 13853660 ("Resources for ProM4Py's ICPM demo submission", https://zenodo.org/records/13853660),
 licensed CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/); see vendored/comfy/PROVENANCE.md.
-
+{prom_note}
 Python packages
 {'=' * 78}
 
@@ -316,7 +346,7 @@ def write_licences(meta: dict) -> None:
     """The licence file and the list of copyleft packages, from what the bundle really contains."""
     packages = bundled_distributions(toc_path())
     table = licence_table([n for n, _ in packages])
-    text = third_party_text(meta["name"], meta["version"], packages)
+    text = third_party_text(meta["name"], meta["version"], packages, with_prom=meta.get("with_prom", False))
     (STAGE / "THIRD-PARTY-LICENSES.txt").write_text(text, encoding="utf-8")
     (STAGE / "bundled-packages.json").write_text(json.dumps(table, indent=2) + "\n", encoding="utf-8")
     copyleft = copyleft_packages(table)
@@ -331,7 +361,7 @@ def write_licences(meta: dict) -> None:
           f"{', '.join(r['Name'] for r in copyleft)}; licences written to {len(copies)} place(s)")
 
 
-def write_stage() -> dict:
+def write_stage(with_prom: bool = False) -> dict:
     name = app_name()
     version = tool_version()
     meta = {
@@ -340,6 +370,7 @@ def write_stage() -> dict:
         "version": version,
         "commit": tool_commit(),
         "macos_min": MACOS_MIN,
+        "with_prom": with_prom,
     }
     if STAGE.exists():
         shutil.rmtree(STAGE)
@@ -350,15 +381,44 @@ def write_stage() -> dict:
         json.dumps({"APP_VERSION": meta["version"], "APP_COMMIT": meta["commit"]}, indent=2) + "\n", encoding="utf-8"
     )
     shutil.copyfile(ROOT / "LICENSE", STAGE / "LICENSE")
-    (STAGE / "THIRD-PARTY-LICENSES.txt").write_text(third_party_text(name, version), encoding="utf-8")
+    (STAGE / "THIRD-PARTY-LICENSES.txt").write_text(third_party_text(name, version, with_prom=with_prom), encoding="utf-8")
     return meta
 
 
-def cmd_bundle(_: argparse.Namespace) -> None:
+def cmd_prom(args: argparse.Namespace) -> None:
+    """The ProM folder for this system (scripts/desktop_prom.py)."""
+    desktop_prom.assemble(system(), machine(), BUILD, Path(args.downloads).resolve() if args.downloads else DOWNLOADS)
+
+
+def prom_target(meta: dict) -> Path:
+    """Where the bundle keeps the ProM folder (desktop_app/resources.py, ``prom_dir``)."""
+    if system() == "macos":
+        return bundle_dir(meta) / "Contents" / "Resources" / "prom"
+    return bundle_dir(meta) / "prom"
+
+
+def place_prom(meta: dict) -> None:
+    """Copy the ProM folder into the bundle; on macOS sign the app again (ad hoc, as PyInstaller
+    did), since its contents changed."""
+    target = prom_target(meta)
+    if target.exists():
+        shutil.rmtree(target)
+    shutil.copytree(PROM, target, symlinks=True)
+    if system() == "macos":
+        run(["codesign", "--force", "--deep", "--sign", "-", str(bundle_dir(meta))])
+        run(["codesign", "--verify", "--deep", "--strict", "--verbose=2", str(bundle_dir(meta))])
+    print(f"ProM folder: {target} ({human(tree_size(target))})")
+
+
+def cmd_bundle(args: argparse.Namespace) -> None:
     if not (FRONTEND / "out" / "index.html").is_file():
         raise SystemExit("src/frontend/out is missing: run `python scripts/build_desktop.py frontend` first.")
-    meta = write_stage()
-    print(f"Bundling {meta['name']} {meta['version']} ({meta['commit'][:12]}) for {system()}-{machine()}")
+    with_prom = bool(getattr(args, "with_prom", False))
+    if with_prom and not (PROM / "SOURCES.txt").is_file():
+        cmd_prom(args)
+    meta = write_stage(with_prom)
+    print(f"Bundling {meta['name']} {meta['version']} ({meta['commit'][:12]}) for {system()}-{machine()}"
+          + (" with ProM" if with_prom else ""))
     for path in (WORK, DIST):
         if path.exists():
             shutil.rmtree(path)
@@ -370,6 +430,8 @@ def cmd_bundle(_: argparse.Namespace) -> None:
         env=env,
     )
     write_licences(meta)
+    if with_prom:
+        place_prom(meta)
     print(f"Bundle: {bundle_dir(meta)}  ({human(tree_size(bundle_dir(meta)))} unpacked)")
 
 
@@ -391,7 +453,8 @@ def bundle_dir(meta: dict) -> Path:
 
 
 def archive_stem(meta: dict) -> str:
-    return f"{meta['slug']}-{meta['version']}-{system()}-{machine()}"
+    suffix = PROM_SUFFIX if meta.get("with_prom") else ""
+    return f"{meta['slug']}-{meta['version']}-{system()}-{machine()}{suffix}"
 
 
 def add_licenses(target: Path) -> None:
@@ -519,6 +582,7 @@ COMMANDS = {
     "bundle": cmd_bundle,
     "pack": cmd_pack,
     "verify-macos": cmd_verify_macos,
+    "prom": cmd_prom,
 }
 
 
@@ -526,6 +590,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("command", nargs="?", default="all", choices=[*COMMANDS, "all"])
     parser.add_argument("--windowed", action="store_true", help="exe: the Windows program without a console")
+    parser.add_argument("--with-prom", action="store_true", help="bundle, all: the edition with ProM")
+    parser.add_argument("--downloads", help="prom: the folder of the cached downloads (default build/desktop/downloads)")
     args = parser.parse_args()
     if args.command == "all":
         for name in ("frontend", "bundle", "pack"):
