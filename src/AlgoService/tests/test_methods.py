@@ -69,10 +69,10 @@ def test_the_published_settings_of_a_bundled_dataset():
     )
     assert built.text == (
         'The dataset "Inductive miner" has 288 observations of 15 model complexity measures after cleaning, '
-        "published with \\cite{schalk2026important}, whose measures were computed with \\cite{schalk_comfy}. "
+        "published with~\\cite{schalk2026important}, whose measures were computed with~\\cite{schalk_comfy}. "
         "1 measure was dropped in cleaning because it has no variance or repeats another measure. "
         "The factor analysis was run with XCom v0.12-3-gabcdef0 (commit 01234567)~\\cite{xcom_tool}, "
-        "which extracts the factors with the minimum residual (minres)\\cite{harman1966} method of the Python package "
+        "which extracts the factors with the minimum residual (minres)~\\cite{harman1966} method of the Python package "
         "factor\\_analyzer 0.5.1~\\cite{factor_analyzer}. "
         "Bartlett's test of sphericity~\\cite{bartlett1950} was significant ($\\chi^2(66) = 6822.4$, $p < 0.001$, "
         "$\\alpha = 0.05$), and the overall Kaiser-Meyer-Olkin measure of sampling adequacy~\\cite{kaiser1974} was 0.75. "
@@ -146,7 +146,7 @@ def test_the_rule_of_hair_and_the_rows_of_a_miner_in_a_log_dataset():
     )
     for part in (
         'The dataset "logs\\_1" has 50 observations of 12 event log complexity measures after cleaning (the rows of the Alpha miner), '
-        "whose measures were computed with \\cite{schalk_comfy_log}.",
+        "whose feeed~\\cite{feeed} measures were computed with~\\cite{schalk_comfy_log}.",
         "1 measure was dropped in cleaning",
         "(no measure fell below an MSA of 0.60)",
         "The factors were not rotated.",
@@ -154,7 +154,7 @@ def test_the_rule_of_hair_and_the_rows_of_a_miner_in_a_log_dataset():
         "if that loading exceeds 0.35 and its communality is at least 0.50",
     ):
         assert part in built.text, part
-    assert built.keys[-1] == "hair_multivariate" and "schalk_comfy_log" in built.keys
+    assert built.keys[-1] == "hair_multivariate" and built.keys[:2] == ["feeed", "schalk_comfy_log"]
 
 
 def test_the_hair_rule_names_the_second_loading_condition_in_full():
@@ -177,13 +177,17 @@ def test_uploaded_logs_are_described_as_measured_with_feeed():
         language="en", dataset=_dataset(kind="log", source="logs"), result=_result(), requested_factors=None, excluded=[],
         tool=TOOL, libraries=LIBRARIES, entry=None,
     )
-    assert r", whose measures were extracted with feeed, as in \cite{schalk_comfy_log}" in built.text
+    assert r", whose measures were extracted with feeed~\cite{feeed}, as in~\cite{schalk_comfy_log}" in built.text
+    assert built.keys[:2] == ["feeed", "schalk_comfy_log"]
     assert "computed with" not in built.text
     german = methods.methods(
         language="de", dataset=_dataset(kind="log", source="logs"), result=_result(), requested_factors=None, excluded=[],
         tool=TOOL, libraries=LIBRARIES, entry=None,
     )
-    assert r", deren Maße wie in \cite{schalk_comfy_log} mit feeed berechnet wurden" in german.text
+    assert r", deren Maße mit feeed~\cite{feeed} berechnet wurden, wie in~\cite{schalk_comfy_log}" in german.text
+    bib = methods.bibtex(german.keys, TOOL, LIBRARIES, 2026)
+    assert "@inproceedings{feeed," in bib and "volume = {3648}" in bib
+    assert "Maldonado, Andrea and Tavares, Gabriel Marques and Oyamada, Rafael and Ceravolo, Paolo and Seidl, Thomas" in bib
 
 
 def test_a_communality_threshold_of_zero_is_not_stated():
@@ -262,7 +266,36 @@ def test_minres_cites_harman_and_jones_directly_after_its_name(language):
         language=language, dataset=_dataset(), result=_result(), requested_factors=None, excluded=[], tool=TOOL,
         libraries=LIBRARIES, entry=IMPORTANT_FACTORS,
     )
-    assert "(minres)\\cite{harman1966}" in built.text and "harman1966" in built.keys
+    assert "(minres)~\\cite{harman1966}" in built.text and "harman1966" in built.keys
+
+
+@pytest.mark.parametrize("language", methods.LANGUAGES)
+@pytest.mark.parametrize("kind, source", [("model", "bundled"), ("log", "bundled"), ("log", "logs"), ("model", "csv")])
+def test_every_cite_follows_its_word_with_a_tie(language, kind, source):
+    built = methods.methods(
+        language=language, dataset=_dataset(kind=kind, source=source), result=_result(), requested_factors=4,
+        excluded=[], tool=TOOL, libraries=LIBRARIES, entry=IMPORTANT_FACTORS if kind == "model" else None,
+        stability=None,
+    )
+    assert built.text.count("\\cite{") == built.text.count("~\\cite{") > 0
+
+
+@pytest.mark.parametrize("language", methods.LANGUAGES)
+def test_an_unknown_commit_is_not_named(language):
+    tool = {"name": "XCom", "version": "1.0.0", "commit": "unknown"}
+    built = methods.methods(
+        language=language, dataset=_dataset(), result=_result(), requested_factors=None, excluded=[], tool=tool,
+        libraries=LIBRARIES, entry=IMPORTANT_FACTORS,
+    )
+    assert "unknown" not in built.text and "ommit" not in built.text
+    assert "XCom 1.0.0~\\cite{xcom_tool}" in built.text
+    bib = methods.bibtex(built.keys, tool, LIBRARIES, 2026)
+    assert "note = {Version 1.0.0}" in bib and "unknown" not in bib
+
+
+def test_the_name_of_the_tool_keeps_its_case_in_bibtex():
+    bib = methods.bibtex(["xcom_tool"], TOOL, LIBRARIES, 2026)
+    assert "title = {{XCom}}" in bib
 
 
 # --- the routes ----------------------------------------------------------------------------

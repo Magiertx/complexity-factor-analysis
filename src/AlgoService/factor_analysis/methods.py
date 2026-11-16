@@ -10,8 +10,9 @@ published datasets of the catalog) or well-known bibliographic data (Kaiser, Bar
 package ``factor_analyzer``) are given as they are known. Where a field is not recorded here (the
 edition of a textbook, the authors of a paper beyond the one the catalog names) the entry says so in
 a comment above it and leaves the field out, rather than filling it in. The sources of the
-extraction (Harman and Jones), of the varimax rotation (Kaiser) and of the multiple-membership rule
-(Lieben et al.) are cited where the paragraph names them; the other rotations are named without a key.
+extraction (Harman and Jones), of the varimax rotation (Kaiser), of the multiple-membership rule
+(Lieben et al.) and of the log measures (feeed) are cited where the paragraph names them; the other
+rotations are named without a key. Every ``\\cite`` follows its word with a tie.
 """
 
 from __future__ import annotations
@@ -175,6 +176,20 @@ REFERENCES: dict[str, dict[str, Any]] = {
             ("howpublished", "\\url{https://github.com/Pati-nets/ComFy}"), ("note", "Software"),
         ],
     },
+    "feeed": {
+        "type": "inproceedings",
+        "comment": "As in CEUR Workshop Proceedings, Vol. 3648 (ceur-ws.org/Vol-3648), which gives no pages.",
+        "fields": [
+            (
+                "author",
+                "Maldonado, Andrea and Tavares, Gabriel Marques and Oyamada, Rafael and Ceravolo, Paolo and Seidl, Thomas",
+            ),
+            ("title", "{FEEED}: Feature Extraction from Event Data"),
+            ("booktitle", "Proceedings of the ICPM Doctoral Consortium and Demo Track 2023"),
+            ("series", "CEUR Workshop Proceedings"), ("volume", "3648"), ("year", "2023"),
+            ("url", "https://ceur-ws.org/Vol-3648/paper_6598.pdf"),
+        ],
+    },
     "schalk_comfy_log": {
         "type": "misc",
         "comment": "Name, author and address as in datasets/manifest.json of this tool, the year that of the first commit of the repository; the version is not recorded there.",
@@ -192,10 +207,17 @@ _FACTOR_ANALYZER = {
 }
 
 
+def _known_commit(tool: dict[str, Any]) -> str:
+    """The commit of the running service, or "" where it is not known (``provenance.tool`` says
+    "unknown" then): neither the paragraph nor the entry names a commit that is not known."""
+    commit = (tool.get("commit") or "").strip()
+    return "" if commit.lower() == "unknown" else commit
+
+
 def _tool_reference(tool: dict[str, Any], year: int) -> dict[str, Any]:
     """The reference entry for the tool itself, with the version and commit of the running service and ``year`` as the year of the export."""
     version = tool.get("version")
-    commit = tool.get("commit")
+    commit = _known_commit(tool)
     note = ", ".join(
         part for part in (f"Version {version}" if version else None, f"commit {commit}" if commit else None) if part
     )
@@ -206,7 +228,8 @@ def _tool_reference(tool: dict[str, Any], year: int) -> dict[str, Any]:
             "one of its git history and the year that of this export. Add co-authors once the tool has a DOI."
         ),
         "fields": [
-            ("author", "Reichle, Jonas"), ("title", tool.get("name") or APP_NAME),
+            # Braced, so that a style which lowercases titles keeps the name as it is ("XCom", not "Xcom").
+            ("author", "Reichle, Jonas"), ("title", "{" + (tool.get("name") or APP_NAME) + "}"),
             ("year", str(year)), *([("note", note)] if note else []), ("url", REPOSITORY_URL),
         ],
     }
@@ -295,9 +318,10 @@ _TEXTS: dict[str, dict[str, str]] = {
         "data": 'The dataset "{name}" has {n} observations of {m} {kind}{after}',
         "data_after": " after cleaning",
         "data_miner": " (the rows of the {miner})",
-        "data_published": ", published with {cite}",
-        "data_source": ", whose measures were computed with {cite}",
-        "data_source_feeed": ", whose measures were extracted with feeed, as in {cite}",
+        "data_published": ", published with{cite}",
+        "data_source": ", whose measures were computed with{cite}",
+        "data_source_log": ", whose feeed{cite_feeed} measures were computed with{cite}",
+        "data_source_feeed": ", whose measures were extracted with feeed{cite_feeed}, as in{cite}",
         "dropped_one": "1 measure was dropped in cleaning because it has no variance or repeats another measure.",
         "dropped_many": "{n} measures were dropped in cleaning because they have no variance or repeat another measure.",
         "tool": (
@@ -372,9 +396,10 @@ _TEXTS: dict[str, dict[str, str]] = {
         "data": "Der Datensatz „{name}“ hat {n} Beobachtungen von {m} {kind}{after}",
         "data_after": " nach der Bereinigung",
         "data_miner": " (die Zeilen des Miners {miner})",
-        "data_published": ", veröffentlicht mit {cite}",
-        "data_source": ", deren Maße mit {cite} berechnet wurden",
-        "data_source_feeed": ", deren Maße wie in {cite} mit feeed berechnet wurden",
+        "data_published": ", veröffentlicht mit{cite}",
+        "data_source": ", deren Maße mit{cite} berechnet wurden",
+        "data_source_log": ", deren feeed-Maße{cite_feeed} mit{cite} berechnet wurden",
+        "data_source_feeed": ", deren Maße mit feeed{cite_feeed} berechnet wurden, wie in{cite}",
         "dropped_one": "1 Maß wurde bei der Bereinigung entfernt, weil es keine Varianz hat oder ein anderes Maß wiederholt.",
         "dropped_many": (
             "{n} Maße wurden bei der Bereinigung entfernt, weil sie keine Varianz haben oder ein anderes Maß "
@@ -481,12 +506,13 @@ def methods(
     t = _TEXTS[language]
     keys: list[str] = []
 
-    def cite(*names: str, tie: bool = True) -> str:
-        """The LaTeX cite command for ``names``, which are also recorded in ``keys`` in the order of first citation; ``tie`` puts a tie before it."""
+    def cite(*names: str) -> str:
+        """The LaTeX cite command for ``names`` with a tie before it, so that it follows the word it
+        belongs to; the names are also recorded in ``keys`` in the order of first citation."""
         for name in names:
             if name not in keys:
                 keys.append(name)
-        return ("~" if tie else "") + "\\cite{" + ",".join(names) + "}"
+        return "~\\cite{" + ",".join(names) + "}"
 
     def fill(template: str, /, **values: Any) -> str:
         """The text template ``template`` of the language, filled with ``values``."""
@@ -508,24 +534,28 @@ def methods(
     if miner:
         data += fill("data_miner", miner=_tex(miner["name"]))
     if published:
-        data += fill("data_published", cite=cite(published, tie=False))
+        data += fill("data_published", cite=cite(published))
     if dataset.get("source") in ("bundled", "logs", "pnml"):
-        # Uploaded logs are measured with feeed, in the way ComFy for Log Measures does; models run through ComFy.
-        template = "data_source_feeed" if dataset.get("source") == "logs" and kind == "log" else "data_source"
-        data += fill(template, cite=cite("schalk_comfy" if kind == "model" else "schalk_comfy_log", tie=False))
+        # Models run through ComFy. Log measures are feeed's: uploaded logs are measured with it in the
+        # way ComFy for Log Measures does, the bundled log datasets were computed with it there.
+        if kind == "model":
+            data += fill("data_source", cite=cite("schalk_comfy"))
+        else:
+            template = "data_source_feeed" if dataset.get("source") == "logs" else "data_source_log"
+            data += fill(template, cite_feeed=cite("feeed"), cite=cite("schalk_comfy_log"))
     sentences = [data + "."]
     if dropped:
         sentences.append(fill("dropped_one") if dropped == 1 else fill("dropped_many", n=dropped))
 
     # The tool and its fitting.
     version = tool.get("version")
-    commit = (tool.get("commit") or "")[:8]
+    commit = _known_commit(tool)[:8]
     described = _tex(tool.get("name") or APP_NAME)
     described += f" {_tex(version)}" if version else ""
     described += f" ({'Commit' if language == 'de' else 'commit'} {_tex(commit)})" if commit else ""
     sentences.append(
         fill(
-            "tool", tool=described, cite_tool=cite("xcom_tool"), cite_minres=cite("harman1966", tie=False),
+            "tool", tool=described, cite_tool=cite("xcom_tool"), cite_minres=cite("harman1966"),
             library=_tex(libraries.get("factor_analyzer") or ""), cite_library=cite("factor_analyzer"),
         )
     )
