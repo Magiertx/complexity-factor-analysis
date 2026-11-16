@@ -47,6 +47,23 @@ export async function seedStorage(page: Page, language: "en" | "de" = "en") {
  */
 async function preparePage(page: Page, language: "en" | "de") {
   await seedStorage(page, language);
+  await letClicksPassTheDevTools(page);
+}
+
+/**
+ * The development server (`next dev`) puts its tools in a `<nextjs-portal>`, whose button at the
+ * bottom left lies over Back in the bar of steps on a phone and takes the click. The production
+ * server, which CI tests, has no such element, so this changes nothing there; on a development
+ * server the tools stay visible (an error still shows in a trace) but no longer take clicks.
+ */
+async function letClicksPassTheDevTools(page: Page) {
+  await page.addInitScript(() => {
+    const style = document.createElement("style");
+    style.textContent = "nextjs-portal { pointer-events: none !important; }";
+    const add = () => document.head.appendChild(style);
+    if (document.head) add();
+    else document.addEventListener("DOMContentLoaded", add, { once: true });
+  });
 }
 
 /** Playwright `test` whose `page` has the tour off and the UI language set (option `language`, default English). */

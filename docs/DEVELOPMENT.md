@@ -73,7 +73,9 @@ Playwright drives the UI in a browser (`src/frontend/e2e/`): a paper dataset thr
 steps with its ZIP, a CSV upload reopened from "My datasets" with its excluded measure, the
 PNML and log samples, deleting a dataset, the comparison of the four miners of Tab. 17 with its
 pairs of measures, its factor counts per column and its downloads, decimal commas in German, the theme switch, axe on every route in light and dark, and a single run without ProM, which the page has to refuse up front
-with the reason. They check text, roles and downloads, no pixels.
+with the reason. They check text, roles and downloads, no pixels. They also run against `npm run dev`
+(`BASE_URL=http://localhost:3000`): the fixture lets clicks pass through the tools of the
+development server, whose button would otherwise cover Back on a phone (`e2e/fixtures.ts`).
 
 Against the Docker stack, with a browser installed on the machine (here Microsoft Edge;
 Playwright's own browsers are not needed):
