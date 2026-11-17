@@ -267,10 +267,10 @@ def test_a_dataset_deleted_during_the_stability_is_gone(client, monkeypatch):
 def test_a_result_under_a_path_beyond_max_path_is_kept(tmp_path, monkeypatch):
     """The desktop app hands the backend its data directory as an extended-length path."""
     import jobs_db
-    from desktop_app.environment import directory_setting
     from factor_analysis import storage
 
     from .desktop._support import DESKTOP  # noqa: F401  (puts the launcher on the path)
+    from desktop_app.environment import directory_setting
 
     artifacts = tmp_path.joinpath(*["a-long-directory-name-" + "x" * 20] * 5, "artifacts")
     session, key = str(uuid.uuid4()), uuid.uuid4().hex
