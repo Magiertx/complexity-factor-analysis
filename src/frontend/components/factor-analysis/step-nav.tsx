@@ -2,7 +2,7 @@
 
 // Moving between the steps: the hook that keeps the step in the address, the rail of a wide screen, the bar of a phone and the Back and Next footer.
 
-import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ComponentType } from "react";
 import { usePathname } from "next/navigation";
 import {
   AlertTriangle,
@@ -114,6 +114,7 @@ function StepLink({
   state,
   lock,
   needsKey,
+  unavailableReason,
   stateLabel,
   onGo,
   iconOnly,
@@ -127,11 +128,13 @@ function StepLink({
   lock: string | null;
   /** Can be opened, but waits for a key; the tooltip says so. */
   needsKey: boolean;
+  /** Why this setup cannot give the step, in full: the tooltip's reason. */
+  unavailableReason?: string;
   stateLabel: string;
   onGo: (step: StepId) => void;
   /** Shows only its marker, so its tooltip names it. */
   iconOnly?: boolean;
-  /** The whole summary of a step whose line is cut off, for the tooltip. */
+  /** More than the line shows: its cut-off end, or details such as the measures a warning is about. */
   more?: string;
   className: string;
   children: React.ReactNode;
@@ -139,16 +142,17 @@ function StepLink({
   const t = useT();
   const pathname = usePathname();
   const name = t(`factor.steps.${id}`);
+  // With the name, the tooltip of a line shows after the short wait of a name (0.7 s) and its
+  // details 2 s after arrival, with the bar that says they are coming. An explanation alone on a
+  // link shows nothing for 2 s, which reads as a hover that works only now and then.
   const tip = useTip<HTMLAnchorElement>(
     lock
       ? { name, reason: lock, more }
       : needsKey
-        ? { name, reason: stateLabel, more }
-        : iconOnly
+        ? { name, reason: unavailableReason ?? stateLabel, more }
+        : iconOnly || more
           ? { name, more }
-          : more
-            ? { more }
-            : null,
+          : null,
   );
   return (
     <a
@@ -268,8 +272,101 @@ function StepMarker({
   );
 }
 
-/** A summary longer than this is cut off in the rail; its tooltip has all of it. */
-const SUMMARY_FITS = 24;
+/** Whether the element's text is cut off by its line clamp; checked again when the text or the size changes. */
+function useClamped<T extends HTMLElement>(text: string) {
+  const ref = useRef<T>(null);
+  const [clamped, setClamped] = useState(false);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const check = () => setClamped(el.scrollHeight > el.clientHeight + 1);
+    check();
+    if (typeof ResizeObserver === "undefined") return;
+    // Also when the rail appears: below the wide layout it is hidden and has no size.
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [text]);
+  return [ref, clamped] as const;
+}
+
+/**
+ * One step of the rail: the marker, the name, and the summary, which wraps over up to four lines
+ * instead of being cut off after one; only what is still cut off goes to the tooltip.
+ */
+function RailStep({
+  id,
+  n,
+  here,
+  state,
+  shownState,
+  lock,
+  unavailableReason,
+  stateLabel,
+  summary,
+  found,
+  more,
+  onGo,
+}: {
+  id: StepId;
+  n: number;
+  here: boolean;
+  state: StepState;
+  /** The state as the markers fill in (useFilling). */
+  shownState: StepState;
+  lock: string | null;
+  unavailableReason?: string;
+  stateLabel: string;
+  summary: string;
+  /** The summary says what the step found, not what it is for. */
+  found: boolean;
+  more?: string;
+  onGo: (step: StepId) => void;
+}) {
+  const t = useT();
+  const [summaryRef, clamped] = useClamped<HTMLSpanElement>(summary);
+  const needsKey = !!unavailableReason;
+  const muted = !!lock && !here;
+  return (
+    <StepLink
+      id={id}
+      current={here}
+      state={state}
+      lock={lock}
+      needsKey={needsKey}
+      unavailableReason={unavailableReason}
+      stateLabel={stateLabel}
+      onGo={onGo}
+      more={clamped ? [summary, more].filter(Boolean).join(" — ") : more}
+      className={cn(
+        "group flex items-start gap-3 rounded-md px-2.5 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+        lock ? "cursor-default" : "hover:bg-surface/70",
+      )}
+    >
+      <StepMarker n={n} state={shownState} current={here} needsKey={needsKey} />
+      {/* pt-1: the name sits level with the middle of the marker. */}
+      <span className="min-w-0 flex-1 pt-1">
+        <span
+          className={cn(
+            "block truncate text-sm leading-5",
+            here ? "font-semibold text-fg" : muted || needsKey ? "font-medium text-muted" : "font-medium",
+          )}
+        >
+          {t(`factor.steps.${id}`)}
+        </span>
+        <span
+          ref={summaryRef}
+          className={cn(
+            "line-clamp-4 break-words text-xs leading-snug",
+            found && !needsKey ? "text-fg/75" : "text-muted",
+          )}
+        >
+          {summary}
+        </span>
+      </span>
+    </StepLink>
+  );
+}
 
 /**
  * The steps as a vertical stepper on a wide screen: a numbered marker per step, a line to the next,
@@ -284,12 +381,15 @@ export function StepRail({
   unavailable,
   stateLabels,
   summaries,
+  railSummaries,
   summaryMore,
   onGo,
 }: NavProps & {
   /** What a finished step found, e.g. "KMO 0.75 · 2 removed"; else what the step is for. */
   summaries: Partial<Record<StepId, string>>;
-  /** More than the line says, for its tooltip, e.g. the measures a warning is about. */
+  /** A shorter line where the tooltip has the whole text, e.g. why the interpretation is not available. */
+  railSummaries?: Partial<Record<StepId, string>>;
+  /** More than the line says, for its tooltip, e.g. the measures a warning is about; not the line itself. */
   summaryMore?: Partial<Record<StepId, string>>;
 }) {
   const t = useT();
@@ -298,59 +398,36 @@ export function StepRail({
     <nav aria-label={t("factor.steps.aria")} className="hidden lg:block lg:sticky lg:top-6">
       <ol className="flex flex-col">
         {STEP_IDS.map((id, i) => {
-          const here = id === current;
-          const lock = locks[id];
-          const needsKey = !!unavailable[id];
           const state = shown[id];
           const next = STEP_IDS[i + 1];
-          const summary = summaries[id] ?? t(`factor.rail.${id}`);
-          const muted = !!lock && !here;
           return (
             <li key={id} className="relative">
-              {/* The line to the next marker; between two finished steps in the tone of done. */}
+              {/* The line to the next marker, from 5 px under this one (py-2 and 28 px of marker)
+                  to 5 px above the next; between two finished steps in the tone of done. From the
+                  top, not the middle: steps differ in height, since their summaries wrap. */}
               {next && (
                 <span
                   aria-hidden
                   className={cn(
-                    "absolute left-[1.5rem] top-[calc(50%+17px)] h-[calc(100%-34px)] w-px -translate-x-1/2 rounded-full transition-colors duration-300",
+                    "absolute left-[1.5rem] top-[41px] -bottom-[3px] w-px -translate-x-1/2 rounded-full transition-colors duration-300",
                     finishedState(state) && finishedState(shown[next]) ? "bg-success/45" : "bg-border",
                   )}
                 />
               )}
-              <StepLink
+              <RailStep
                 id={id}
-                current={here}
+                n={i + 1}
+                here={id === current}
                 state={states[id]}
-                lock={lock}
-                needsKey={needsKey}
+                shownState={state}
+                lock={locks[id]}
+                unavailableReason={unavailable[id]}
                 stateLabel={stateLabels[id] ?? t(`factor.state.${states[id]}`)}
+                summary={railSummaries?.[id] ?? summaries[id] ?? t(`factor.rail.${id}`)}
+                found={!!summaries[id]}
+                more={summaryMore?.[id]}
                 onGo={onGo}
-                more={summaryMore?.[id] ?? (summary.length > SUMMARY_FITS ? summary : undefined)}
-                className={cn(
-                  "group flex items-center gap-3 rounded-md px-2.5 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-                  lock ? "cursor-default" : "hover:bg-surface/70",
-                )}
-              >
-                <StepMarker n={i + 1} state={state} current={here} needsKey={needsKey} />
-                <span className="min-w-0 flex-1">
-                  <span
-                    className={cn(
-                      "block truncate text-sm",
-                      here ? "font-semibold text-fg" : muted || needsKey ? "font-medium text-muted" : "font-medium",
-                    )}
-                  >
-                    {t(`factor.steps.${id}`)}
-                  </span>
-                  <span
-                    className={cn(
-                      "block truncate text-xs leading-snug",
-                      summaries[id] && !needsKey ? "text-fg/75" : "text-muted",
-                    )}
-                  >
-                    {summary}
-                  </span>
-                </span>
-              </StepLink>
+              />
             </li>
           );
         })}
@@ -392,6 +469,7 @@ export function StepBar({ current, states, locks, unavailable, stateLabels, onGo
                 state={states[id]}
                 lock={locks[id]}
                 needsKey={!!unavailable[id]}
+                unavailableReason={unavailable[id]}
                 stateLabel={stateLabels[id] ?? t(`factor.state.${states[id]}`)}
                 onGo={onGo}
                 iconOnly

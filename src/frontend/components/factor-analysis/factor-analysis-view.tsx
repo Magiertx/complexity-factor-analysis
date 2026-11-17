@@ -1148,14 +1148,13 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
     !!datasetId &&
     !!analyzedOptions &&
     (lookingUp === interpretationKey(datasetId, analyzedOptions, locale) || waitingForVariants);
-  const interpretationUnavailable =
+  const unavailableWhy =
     ready && analysis && interpStatus && !interpStatus.available && !interpretation && !interpretationPending
-      ? t(
-          interpStatus.precomputed_only && dataset?.source === "bundled"
-            ? "factor.interpretation.unavailable_settings"
-            : "factor.interpretation.unavailable_key",
-        )
+      ? interpStatus.precomputed_only && dataset?.source === "bundled"
+        ? "unavailable_settings"
+        : "unavailable_key"
       : null;
+  const interpretationUnavailable = unavailableWhy ? t(`factor.interpretation.${unavailableWhy}`) : null;
   const resultState: StepState = !ready
     ? "locked"
     : analysis
@@ -1239,15 +1238,19 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       ...solutionIssues,
     ].join(" · ");
   }
-  // The warning on the factors names its measures in the tooltip of the line.
+  // The warning on the factors names its measures in the tooltip of the line; the line itself is
+  // on screen in full (the rail adds it where it has to cut it off).
   const summaryMore: Partial<Record<StepId, string>> = {};
   if (analysis && summaries.factors && solutionIssues.length > 0) {
-    summaryMore.factors = [
-      summaries.factors,
-      ...solutionProblems(analysis).map((n) => noticeText(n, tMaybe, measureName)),
-    ].join(" — ");
+    summaryMore.factors = solutionProblems(analysis)
+      .map((n) => noticeText(n, tMaybe, measureName))
+      .join(" ");
   }
   if (interpretationUnavailable) summaries.interpretation = interpretationUnavailable;
+  // The rail says it in a few words; its tooltip and the step have the whole reason.
+  const railSummaries: Partial<Record<StepId, string>> = unavailableWhy
+    ? { interpretation: t(`factor.rail_summary.${unavailableWhy}`) }
+    : {};
   if (analysis && finished("loadings")) {
     const cross = analysis.cross_loadings?.length ?? 0;
     const unassigned = unassignedMeasures(analysis).length;
@@ -1265,7 +1268,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
   if (analysis && summaries.loadings) {
     const empty = analysis.n_factors - dimensionCount(analysis);
     if (empty > 0) {
-      summaryMore.loadings = [summaries.loadings, countText(t, "factor.rail_summary.empty_factors", empty)].join(" — ");
+      summaryMore.loadings = countText(t, "factor.rail_summary.empty_factors", empty);
     }
   }
 
@@ -1587,7 +1590,7 @@ export function FactorAnalysisView({ kind }: { kind: FactorKind }) {
       />
 
       <div className="lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-8 lg:items-start">
-        <StepRail {...navProps} summaries={summaries} summaryMore={summaryMore} />
+        <StepRail {...navProps} summaries={summaries} railSummaries={railSummaries} summaryMore={summaryMore} />
 
         <div ref={stepArea} className="min-w-0 flex flex-col gap-4">
           <StepBar {...navProps} />

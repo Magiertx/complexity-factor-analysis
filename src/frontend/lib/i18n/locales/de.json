@@ -1345,7 +1345,9 @@
         "fit_not_converged": "Anpassung nicht konvergiert"
       },
       "empty_factors": "{n} Faktor ohne Maß über der Schwelle",
-      "empty_factors_plural": "{n} Faktoren ohne Maß über der Schwelle"
+      "empty_factors_plural": "{n} Faktoren ohne Maß über der Schwelle",
+      "unavailable_key": "Braucht einen API-Schlüssel",
+      "unavailable_settings": "Für diese Einstellungen keine gespeichert"
     },
     "nav": {
       "aria": "Schrittnavigation",

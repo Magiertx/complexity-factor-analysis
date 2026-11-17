@@ -1345,7 +1345,9 @@
         "fit_not_converged": "fit did not converge"
       },
       "empty_factors": "{n} factor without a measure above the threshold",
-      "empty_factors_plural": "{n} factors without a measure above the threshold"
+      "empty_factors_plural": "{n} factors without a measure above the threshold",
+      "unavailable_key": "Needs an API key",
+      "unavailable_settings": "None stored for these settings"
     },
     "nav": {
       "aria": "Step navigation",
