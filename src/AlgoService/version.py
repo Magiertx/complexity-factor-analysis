@@ -5,7 +5,7 @@ frontend's ``package.json`` carries the same one (a test compares them). A relea
 and in ``package.json`` and tags the commit with ``v`` and the version.
 """
 
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 
 #: The address of the tool's repository, which the exports cite.
 REPOSITORY_URL = "https://github.com/Magiertx/complexity-factor-analysis"

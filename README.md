@@ -100,7 +100,7 @@ beforehand is not needed. On Linux, Docker needs root rights or your user in the
 commands fail with a permission error.
 
 `APP_COMMIT` is optional: it puts the commit into the manifest of every export, which says
-"unknown" without it. The version (`1.1.0`) is part of the image.
+"unknown" without it. The version (`1.1.1`) is part of the image.
 
 Everything is reached through the frontend on <http://localhost:3000>: the model tab at `/`,
 the log tab at `/log`. The API is not published on the host, and the OpenAPI UI lives at
@@ -133,8 +133,8 @@ No checkout and no build: two files and the prebuilt images from ghcr.io.
 docker compose -f docker-compose.release.yml up -d
 ```
 
-Open <http://localhost:3000>. `CFA_TAG=v1.1.0` pins a release instead of `latest`; the image tags
-keep the `v` of the git tag (`v1.1.0`, not `1.1.0`). The images
+Open <http://localhost:3000>. `CFA_TAG=v1.1.1` pins a release instead of `latest`; the image tags
+keep the `v` of the git tag (`v1.1.1`, not `1.1.1`). The images
 are `linux/amd64`; on Apple silicon they run under emulation (build from the sources for native
 ones). See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md#prebuilt-images).
 
