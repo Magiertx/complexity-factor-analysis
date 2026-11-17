@@ -879,6 +879,25 @@ def test_shipped_precomputed_files_are_current():
         assert len(entry["interpretation"]["factors"]) == n_factors, path.name
 
 
+def test_bundled_csv_floats_are_read_exactly():
+    """Every float of a bundled CSV is the correctly rounded value of its text, and survives the
+    store's round trip bit for bit: so every system hashes the same data. pandas' default parser
+    is off in the last bit for some values, on ARM in other places than on x86."""
+    import csv
+
+    from factor_analysis import catalog as cat
+    from factor_analysis import storage
+
+    entry = cat.bundled_entry(BUNDLED)
+    table = cat.read_bundled_csv(entry)
+    with open(cat.DATASETS_DIR / entry["file"], encoding="utf-8", newline="") as f:
+        rows = list(csv.reader(f))[1:]
+    expected = np.array([[float(v) for v in row[1:]] for row in rows])
+    assert np.array_equal(table.to_numpy(dtype=float), expected)
+    data = table.astype(float)
+    assert data.to_numpy().tobytes() == storage.as_stored(data).to_numpy().tobytes()
+
+
 def test_script_matrix_equals_the_stored_one(client):
     from factor_analysis import catalog as cat
     from factor_analysis import storage

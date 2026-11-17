@@ -134,10 +134,11 @@ jobs:
           python --version
           python -m pip list
 
-      # The numbers of the paper, the invariance of the MSA, the core of the factor analysis and the
-      # launcher. Linux runs the whole suite (ProM, Graphviz and TeX tests skip), which also shows
-      # that PM4Py works without cvxopt for everything the app does. Once per system: the edition
-      # with ProM has the same code.
+      # The numbers of the paper, the invariance of the MSA, the core of the factor analysis, the
+      # launcher, and that the shipped interpretations match the analysis here (their data hash
+      # once differed on macOS). Linux runs the whole suite (ProM, Graphviz and TeX tests skip),
+      # which also shows that PM4Py works without cvxopt for everything the app does. Once per
+      # system: the edition with ProM has the same code.
       - name: Backend tests
         if: ${{ !matrix.prom }}
         working-directory: src/AlgoService
@@ -146,7 +147,10 @@ jobs:
             python -m pytest -q -rs
           else
             python -m pytest -q -rs tests/test_published_numbers.py tests/test_msa_invariance.py \
-              tests/test_factor_analysis_core.py tests/desktop tests/test_job_runner.py tests/test_dataset_history.py
+              tests/test_factor_analysis_core.py tests/desktop tests/test_job_runner.py tests/test_dataset_history.py \
+              "tests/test_interpretation.py::test_shipped_precomputed_files_are_current" \
+              "tests/test_interpretation.py::test_bundled_csv_floats_are_read_exactly" \
+              "tests/test_interpretation.py::test_script_matrix_equals_the_stored_one"
           fi
 
       - uses: actions/download-artifact@v7

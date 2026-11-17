@@ -80,7 +80,7 @@ def bundled_data(dataset_id: str) -> tuple[pd.DataFrame, tuple[str, ...], tuple[
     entry = cat.bundled_entry(dataset_id)
     if entry is None:
         raise KeyError(dataset_id)
-    table = pd.read_csv(cat.DATASETS_DIR / entry["file"], index_col=0)
+    table = cat.read_bundled_csv(entry)
     dropped = tuple((d["measure"], d["reason"]) for d in clean_matrix(table).dropped)
     return bundled_matrix(entry), tuple(str(c) for c in table.columns), dropped
 

@@ -370,7 +370,7 @@ def _relabel(table: pd.DataFrame, style: str | None) -> pd.DataFrame:
 
 def _bundled_table(entry: dict[str, Any]) -> pd.DataFrame:
     """The table of a bundled dataset as its CSV has it, with the rows named as the UI names them."""
-    return _relabel(pd.read_csv(cat.DATASETS_DIR / entry["file"], index_col=0), entry.get("row_labels"))
+    return _relabel(cat.read_bundled_csv(entry), entry.get("row_labels"))
 
 
 def _select_columns(table: pd.DataFrame, measures: list[str] | None) -> pd.DataFrame:

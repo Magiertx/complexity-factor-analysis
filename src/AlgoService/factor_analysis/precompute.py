@@ -68,7 +68,7 @@ def bundled_matrix(entry: dict[str, Any]) -> pd.DataFrame:
     """The matrix of a bundled dataset as the API has it once the dataset is opened with all its
     measures: rows labelled, cleaned, and after the round trip through the CSV of the store,
     which can change the last bit of a value."""
-    table = pd.read_csv(cat.DATASETS_DIR / entry["file"], index_col=0)
+    table = cat.read_bundled_csv(entry)
     table.index = [cat.format_row_label(str(i), entry.get("row_labels")) for i in table.index]
     return storage.as_stored(clean_matrix(table).data)
 

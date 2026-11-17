@@ -205,6 +205,20 @@ def bundled_entry(dataset_id: str) -> dict[str, Any] | None:
     return next((d for d in manifest()["datasets"] if d["id"] == dataset_id), None)
 
 
+#: How a CSV of numbers is read: floats rounded correctly, so every system gets the same bits.
+#: pandas' default parser can be off in the last bit, and on ARM (macOS) in other places than on
+#: x86, which changed the data hash that precomputed interpretations are matched by.
+CSV_FLOATS: dict[str, Any] = {"float_precision": "round_trip"}
+
+
+def read_bundled_csv(entry: dict[str, Any], **options: Any) -> Any:
+    """The table of a bundled dataset as its CSV has it (the first column as the index)."""
+    import pandas as pd  # the rest of this module needs no pandas
+
+
+    return pd.read_csv(DATASETS_DIR / entry["file"], index_col=0, **CSV_FLOATS, **options)
+
+
 def sample_entry(sample_id: str) -> dict[str, Any] | None:
     """The manifest entry of a bundled sample, or ``None``."""
     return next((s for s in manifest()["samples"] if s["id"] == sample_id), None)

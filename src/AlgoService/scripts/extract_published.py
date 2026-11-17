@@ -108,7 +108,7 @@ def model_report(dataset_id: str, path: Path, commit: str) -> dict[str, Any]:
     """
     lines = [line.strip() for line in path.read_text(encoding="utf-8").splitlines()]
     entry = cat.bundled_entry(dataset_id)
-    raw = pd.read_csv(cat.DATASETS_DIR / entry["file"], index_col=0)
+    raw = cat.read_bundled_csv(entry)
 
     measures, _ = _items(lines, _after(lines, "following complexity measures"))
     n = int(re.search(r"\$(\d+)\$", lines[_after(lines, "sample size")]).group(1))

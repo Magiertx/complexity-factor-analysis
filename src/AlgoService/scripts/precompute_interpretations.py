@@ -82,7 +82,7 @@ def parse_variant(text: str) -> tuple[str, str]:
 def bundled_matrix(entry: dict[str, Any]) -> tuple[pd.DataFrame, list[dict[str, Any]]]:
     """The cleaned matrix of a bundled dataset, as the API stores it when it is chosen
     with all measures."""
-    cleaned = clean_matrix(pd.read_csv(cat.DATASETS_DIR / entry["file"], index_col=0))
+    cleaned = clean_matrix(cat.read_bundled_csv(entry))
     return storage.as_stored(cleaned.data), cleaned.dropped
 
 

@@ -26,6 +26,7 @@ import jobs_db
 
 from env_config import data_max_idle_s, positive_int_or_never
 
+from . import catalog as cat
 from .core import clean_matrix
 from .descriptives import describe
 
@@ -350,8 +351,9 @@ def write_stability(session_id: str, dataset_id: str, key: str, result: dict[str
 
 
 def _read_matrix(source: Any) -> pd.DataFrame:
-    """A matrix CSV as floats, with the first column as the index; pandas' default missing-value strings are not converted."""
-    return pd.read_csv(source, index_col=0, keep_default_na=False).astype(float)
+    """A matrix CSV as floats, with the first column as the index; pandas' default missing-value
+    strings are not converted. Floats are read as on every system (``catalog.CSV_FLOATS``)."""
+    return pd.read_csv(source, index_col=0, keep_default_na=False, **cat.CSV_FLOATS).astype(float)
 
 
 def as_stored(data: pd.DataFrame) -> pd.DataFrame:
