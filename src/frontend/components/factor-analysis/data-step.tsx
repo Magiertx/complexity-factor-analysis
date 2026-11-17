@@ -1231,9 +1231,13 @@ function SampleTile({ sample, chosen, onToggle }: { sample: SampleInput; chosen:
         <ChoiceMark checked={chosen} />
         <Package className="h-4 w-4 text-muted shrink-0" />
         <span className="min-w-0">
-          <span className="block text-sm font-medium truncate">
-            {t("factor.data.sample_label")}: {sample.name}
-            <span className="ml-2 align-middle rounded-full border border-border px-1.5 py-0.5 text-xs font-normal text-muted">
+          {/* The badge beside the title, not inside it: inside the line that truncate cuts off,
+              Safari clipped the lower edge of its border. */}
+          <span className="flex items-center gap-2 min-w-0">
+            <span className="text-sm font-medium truncate">
+              {t("factor.data.sample_label")}: {sample.name}
+            </span>
+            <span className="shrink-0 rounded-full border border-border px-1.5 py-px text-xs leading-4 font-normal text-muted">
               {t("factor.data.sample_demo")}
             </span>
           </span>
