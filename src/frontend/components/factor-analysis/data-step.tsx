@@ -528,8 +528,12 @@ export function DataForm({
         </Notice>
       )}
 
-      {/* The one action of the step, at its end and in view while the cards scroll above it. */}
-      <div className="sticky max-lg:[@media(max-height:600px)]:static bottom-[calc(3.5rem+env(safe-area-inset-bottom))] [@media(max-height:500px)]:bottom-0 lg:bottom-0 z-10 -mx-4 sm:-mx-5 -mb-5 px-4 sm:px-5 py-3 rounded-b-lg bg-surface/95 backdrop-blur border-t border-border flex items-center justify-end gap-3 flex-wrap">
+      {/* The one action of the step, at its end and in view while the cards scroll above it.
+          Opaque, without backdrop-blur: on a Mac the bar with a backdrop filter was not repainted
+          when its button got narrower ("Open comparison" to "Load dataset"), and the old button
+          stayed half visible beside the new one (a known weakness of backdrop filters on sticky
+          and fixed elements in WebKit). */}
+      <div className="sticky max-lg:[@media(max-height:600px)]:static bottom-[calc(3.5rem+env(safe-area-inset-bottom))] [@media(max-height:500px)]:bottom-0 lg:bottom-0 z-10 -mx-4 sm:-mx-5 -mb-5 px-4 sm:px-5 py-3 rounded-b-lg bg-surface border-t border-border flex items-center justify-end gap-3 flex-wrap">
         {blocker ? (
           <span className="text-xs text-muted mr-auto">{blocker}</span>
         ) : (
