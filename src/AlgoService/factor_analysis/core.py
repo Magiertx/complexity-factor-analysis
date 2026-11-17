@@ -284,6 +284,17 @@ def _is_constant(values: pd.Series) -> bool:
     return len(values) == 0 or values.std(ddof=0) <= 1e-12 * max(1.0, abs(values.mean()))
 
 
+def exact_floats(values: pd.Series, converted: pd.Series) -> pd.Series:
+    """The numbers of a text column rounded correctly, as ``catalog.CSV_FLOATS`` reads a CSV:
+    ``pd.to_numeric`` is off in the last bit for many values (a third of them in a test), so a
+    dataset downloaded as CSV and uploaded again would not have the numbers it was downloaded
+    with. ``converted`` (from ``pd.to_numeric``) says which values are numbers."""
+    try:
+        return values.where(converted.notna()).astype(float)
+    except (TypeError, ValueError):  # a text pandas reads as a number and Python does not
+        return converted
+
+
 def clean_matrix(raw: pd.DataFrame, *, max_missing_share: float = MAX_MISSING_SHARE) -> CleanResult:
     """Reduce a table to a numeric matrix that a factor analysis can use.
 
@@ -312,6 +323,7 @@ def clean_matrix(raw: pd.DataFrame, *, max_missing_share: float = MAX_MISSING_SH
                     "params": {"value": value},
                 })
                 continue
+            converted = exact_floats(values, converted)
         floats = converted.astype(float)
         infinite[str(column)] = np.isinf(floats.to_numpy())
         numeric[str(column)] = floats.replace([np.inf, -np.inf], np.nan).to_numpy()

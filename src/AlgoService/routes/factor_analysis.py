@@ -49,6 +49,7 @@ from factor_analysis.core import (
     analyze as run_analysis,
     check_excluded,
     check_params,
+    exact_floats,
 )
 from factor_analysis.export import (
     MEASUREMENT_COLUMNS,
@@ -337,7 +338,9 @@ def _read_csv_table(path: Path) -> pd.DataFrame:
         present = values[~values.str.lower().isin(MISSING_MARKERS)]
         for convert in (lambda s: s, lambda s: s.str.replace(",", ".", regex=False)):
             if pd.to_numeric(convert(present), errors="coerce").notna().all():
-                return pd.to_numeric(convert(values), errors="coerce")
+                # Rounded correctly, so a downloaded dataset comes back with its numbers.
+                text = convert(values)
+                return exact_floats(text, pd.to_numeric(text, errors="coerce"))
         return None
 
     first = raw.columns[0]
