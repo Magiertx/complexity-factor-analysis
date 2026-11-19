@@ -31,13 +31,14 @@ class Browser:
 #: macOS: the application bundles, in /Applications or ~/Applications.
 MAC_APPS = ("Safari", "Google Chrome", "Firefox", "Microsoft Edge", "Brave Browser", "Arc", "Chromium", "Vivaldi")
 
-#: Windows: the programs, below Program Files (both) or the user's local application data.
+#: Windows: the programs, below Program Files (both) or the user's local application data; the
+#: parts of each path, so that it is a path on any system (the tests run on all three).
 WINDOWS_PROGRAMS = (
-    ("Google Chrome", r"Google\Chrome\Application\chrome.exe"),
-    ("Firefox", r"Mozilla Firefox\firefox.exe"),
-    ("Microsoft Edge", r"Microsoft\Edge\Application\msedge.exe"),
-    ("Brave", r"BraveSoftware\Brave-Browser\Application\brave.exe"),
-    ("Vivaldi", r"Vivaldi\Application\vivaldi.exe"),
+    ("Google Chrome", ("Google", "Chrome", "Application", "chrome.exe")),
+    ("Firefox", ("Mozilla Firefox", "firefox.exe")),
+    ("Microsoft Edge", ("Microsoft", "Edge", "Application", "msedge.exe")),
+    ("Brave", ("BraveSoftware", "Brave-Browser", "Application", "brave.exe")),
+    ("Vivaldi", ("Vivaldi", "Application", "vivaldi.exe")),
 )
 
 #: Linux: the programs on the PATH, by their usual names.
@@ -68,8 +69,8 @@ def installed(
     if platform == "win32":
         roots = [Path(p) for p in (environ.get(k) for k in ("ProgramFiles", "ProgramFiles(x86)", "LOCALAPPDATA")) if p]
         found = []
-        for name, relative in WINDOWS_PROGRAMS:
-            program = next((root / relative for root in roots if (root / relative).is_file()), None)
+        for name, parts in WINDOWS_PROGRAMS:
+            program = next((root.joinpath(*parts) for root in roots if root.joinpath(*parts).is_file()), None)
             if program is not None:
                 found.append(Browser(name, (str(program),)))
         return found
