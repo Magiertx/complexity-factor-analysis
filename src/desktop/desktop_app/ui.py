@@ -87,18 +87,33 @@ def show_error(title: str, message: str) -> None:
         pass
 
 
+def version_line(version: str, commit: str) -> str:
+    """The version line of the status window, e.g. "Version 1.1.1 · build 8296125": the build,
+    the commit it was made from, tells test builds of one version apart. Empty when neither is
+    known (started from the sources without git)."""
+    build = commit.strip()[:7] if commit.strip() not in ("", "unknown") else ""
+    version = version.strip()
+    if build and build in version:  # `git describe` names the build already
+        build = ""
+    if version and build:
+        return f"Version {version} · build {build}"
+    return f"Version {version}" if version else (f"Build {build}" if build else "")
+
+
 def run_window(
     name: str,
     url: str,
     *,
+    version: str = "",
     open_url: Callable[[], str] | None = None,
     data_dir: Path,
     log_file: Path,
     should_close: Callable[[], bool],
     quit_app: Callable[[], None],
 ) -> bool:
-    """Show the status window, which displays ``url`` and whose "Open in browser" opens what
-    ``open_url()`` returns (an address with a one-time code, not displayed) where given, until Quit, closing it or :func:`should_close` (Ctrl+C, the server
+    """Show the status window, which displays ``url`` and ``version`` (:func:`version_line`) and
+    whose "Open in browser" opens what ``open_url()`` returns (an address with a one-time code,
+    not displayed) where given, until Quit, closing it or :func:`should_close` (Ctrl+C, the server
     stopped). ``quit_app`` stops the server; it runs in a thread while the window says so.
     Returns ``False`` at once if there is no Tk or no display: the caller then waits in the
     console.
@@ -170,6 +185,8 @@ def run_window(
     buttons[0].configure(default="active")  # the one most people want
     for column, button in enumerate(buttons):
         button.grid(row=3, column=column, padx=(0 if column == 0 else px(6), 0), ipadx=px(4), ipady=px(2))
+    if version:
+        ttk.Label(frame, text=version, foreground="gray40").grid(row=4, column=0, columnspan=4, sticky="w", pady=(px(10), 0))
 
     root.protocol("WM_DELETE_WINDOW", stop)
 

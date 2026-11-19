@@ -407,6 +407,8 @@ def _serve_app(
             shown = ui.run_window(
                 name,
                 url,
+                # As the build wrote them (build_info.json), now in the environment.
+                version=ui.version_line(os.environ.get("APP_VERSION", ""), os.environ.get("APP_COMMIT", "")),
                 open_url=open_url,
                 data_dir=app_paths.data,
                 log_file=app_paths.log_file,

@@ -210,7 +210,10 @@
       "title": "Info",
       "description": "Produkt und Links.",
       "product_label": "Produkt",
-      "source_label": "Quellcode"
+      "source_label": "Quellcode",
+      "version_label": "Version",
+      "build": "Build {build}",
+      "version_unknown": "Unbekannt"
     }
   },
   "parameter_form": {

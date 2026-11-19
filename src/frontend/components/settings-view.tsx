@@ -25,6 +25,7 @@ import {
   fetchAlgorithms,
   deleteAllDatasets,
   deleteAllJobs,
+  fetchFeedbackChannel,
   listDatasets,
 } from "@/lib/api";
 import { APP_NAME, REPO_URL } from "@/lib/app-config";
@@ -535,6 +536,10 @@ export function SettingsView() {
             <span className="text-muted">{t("settings.about.product_label")}</span>
             <span>{APP_NAME}</span>
           </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-muted">{t("settings.about.version_label")}</span>
+            <VersionValue />
+          </div>
           {REPO_URL && (
             <div className="flex items-center justify-between">
               <span className="text-muted">{t("settings.about.source_label")}</span>
@@ -553,6 +558,48 @@ export function SettingsView() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+/**
+ * The version of the tool and the build, the commit it was made from, as the server reports
+ * them: test builds of one version differ only in the build. The build links to its commit.
+ */
+function VersionValue() {
+  const t = useT();
+  const [tool, setTool] = useState<{ version: string; commit: string } | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    fetchFeedbackChannel()
+      .then(({ version, commit }) => setTool({ version, commit }))
+      .catch(() => setFailed(true));
+  }, []);
+  if (failed) return <span className="text-muted">{t("settings.about.version_unknown")}</span>;
+  if (!tool) return <Loader2 className="h-3.5 w-3.5 animate-spin text-muted" aria-label={t("common.loading")} />;
+  const commit = /^[0-9a-f]{7,40}$/i.test(tool.commit) ? tool.commit.slice(0, 7) : null;
+  // From a checkout the version is `git describe`, which names the build already.
+  const build = commit && !tool.version.includes(commit) ? commit : null;
+  return (
+    <span className="tabular-nums">
+      {tool.version}
+      {build && (
+        <>
+          {" · "}
+          {REPO_URL ? (
+            <a
+              href={`${REPO_URL}/commit/${tool.commit}`}
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-accent-ink"
+            >
+              {t("settings.about.build", { build })}
+            </a>
+          ) : (
+            t("settings.about.build", { build })
+          )}
+        </>
+      )}
+    </span>
   );
 }
 
