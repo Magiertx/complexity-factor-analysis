@@ -157,14 +157,35 @@ def load_or_create_identity(path: Path, database: Path | None = None) -> Identit
 # --- Port -----------------------------------------------------------------------------------
 
 
+def _launcher_state(path: Path) -> dict[str, Any]:
+    """What ``launcher.json`` holds; empty on a first start or for a file that makes no sense."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {}
+    except (OSError, ValueError):
+        logger.warning("Ignoring %s: it cannot be read.", path)
+        return {}
+    if not isinstance(data, dict):
+        logger.warning("Ignoring %s: it cannot be read.", path)
+        return {}
+    return data
+
+
+def _remember(path: Path, key: str, value: Any) -> None:
+    """Store one thing for the next start, keeping the others (``None`` forgets it)."""
+    data = _launcher_state(path)
+    if value is None:
+        data.pop(key, None)
+    else:
+        data[key] = value
+    write_private_text(path, json.dumps(data) + "\n")
+
+
 def remembered_port(path: Path) -> int | None:
     """The port of the last start, or ``None`` (first start, or a file that makes no sense)."""
-    try:
-        port = json.loads(path.read_text(encoding="utf-8")).get("port")
-    except FileNotFoundError:
-        return None
-    except (OSError, ValueError, AttributeError):
-        logger.warning("Ignoring %s: it cannot be read.", path)
+    port = _launcher_state(path).get("port")
+    if port is None:
         return None
     if isinstance(port, int) and not isinstance(port, bool) and 1 <= port <= 65535:
         return port
@@ -174,7 +195,18 @@ def remembered_port(path: Path) -> int | None:
 
 def remember_port(path: Path, port: int) -> None:
     """Store the port of this start for the next one."""
-    write_private_text(path, json.dumps({"port": port}) + "\n")
+    _remember(path, "port", port)
+
+
+def remembered_browser(path: Path) -> str | None:
+    """The name of the browser chosen last (browsers.py), or ``None`` for the default one."""
+    name = _launcher_state(path).get("browser")
+    return name if isinstance(name, str) and name else None
+
+
+def remember_browser(path: Path, name: str | None) -> None:
+    """Store the browser chosen in the status window; ``None`` goes back to the default one."""
+    _remember(path, "browser", name)
 
 
 # --- settings.env ---------------------------------------------------------------------------

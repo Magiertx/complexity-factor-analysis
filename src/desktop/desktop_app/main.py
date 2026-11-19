@@ -22,7 +22,7 @@ import time
 import webbrowser
 from pathlib import Path
 
-from . import app, environment, instance, logs, paths, prom, resources, state, ui
+from . import app, browsers, environment, instance, logs, paths, prom, resources, state, ui
 from .pages import PageServer, register_mime_types
 from .state import LauncherError
 
@@ -156,7 +156,7 @@ def _run(args: argparse.Namespace, name: str, app_paths: paths.AppPaths) -> int:
     # (it holds the lock until it has ended), and then this start takes over.
     running = _wait_for_lock_or_instance(lock, name, app_paths)
     if running is not None:
-        return _show_running(args, running)
+        return _show_running(args, running, app_paths)
     try:
         # What an earlier instance left (it was killed): nothing of it is true any more.
         app_paths.instance.unlink(missing_ok=True)
@@ -192,7 +192,7 @@ def _wait_for_lock_or_instance(
     return None
 
 
-def _show_running(args: argparse.Namespace, running: dict) -> int:
+def _show_running(args: argparse.Namespace, running: dict, app_paths: paths.AppPaths) -> int:
     """Another process serves this data directory: show that one."""
     url = f"http://{instance.HOST}:{running['port']}/"
     logger.info("Showing the running instance (pid %s) at %s.", running.get("pid"), url)
@@ -206,7 +206,9 @@ def _show_running(args: argparse.Namespace, running: dict) -> int:
         # browser, where other users can read it. Without one the page says to use the window.
         login = instance.request_login(running["port"], running["token"])
         target = Path(login["file"]).as_uri() if login and login["file"] else url
-        webbrowser.open(target, new=2)  # not in a thread: this process ends right after
+        # In the browser chosen last, like a start; not in a thread: this process ends right after.
+        chosen = browsers.by_name(browsers.installed(), state.remembered_browser(app_paths.launcher_state))
+        browsers.open_in(chosen, target, lambda address: webbrowser.open(address, new=2))
     return 0
 
 
@@ -403,10 +405,16 @@ def _serve_app(
 
         shown = False
         if not args.headless:
-            ui.open_browser(open_url())
+            # The browser chosen last in the status window, or the default one.
+            found = browsers.installed()
+            chosen = state.remembered_browser(app_paths.launcher_state)
+            browsers.open_in(browsers.by_name(found, chosen), open_url(), ui.open_browser)
             shown = ui.run_window(
                 name,
                 url,
+                browsers=found,
+                browser=chosen,
+                choose_browser=lambda b: state.remember_browser(app_paths.launcher_state, b),
                 # As the build wrote them (build_info.json), now in the environment.
                 version=ui.version_line(os.environ.get("APP_VERSION", ""), os.environ.get("APP_COMMIT", "")),
                 open_url=open_url,

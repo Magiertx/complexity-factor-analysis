@@ -63,6 +63,21 @@ def test_the_port_is_remembered(tmp_path):
         assert state.remembered_port(path) is None, content
 
 
+def test_the_browser_is_remembered_beside_the_port(tmp_path):
+    path = tmp_path / "launcher.json"
+    assert state.remembered_browser(path) is None
+    state.remember_port(path, 8766)
+    state.remember_browser(path, "Google Chrome")
+    assert state.remembered_browser(path) == "Google Chrome"
+    state.remember_port(path, 8767)
+    assert (state.remembered_port(path), state.remembered_browser(path)) == (8767, "Google Chrome")
+    state.remember_browser(path, None)  # the default browser again
+    assert (state.remembered_port(path), state.remembered_browser(path)) == (8767, None)
+    for content in ("{", "[]", json.dumps({"browser": 3}), json.dumps({"browser": ""})):
+        path.write_text(content)
+        assert state.remembered_browser(path) is None, content
+
+
 def test_instance_json(tmp_path):
     path = tmp_path / "instance.json"
     assert instance.read_info(path) is None
@@ -263,11 +278,11 @@ def test_the_hand_over_opens_a_private_login_file(tmp_path, export_dir, monkeypa
     monkeypatch.setattr(main.webbrowser, "open", lambda url, new=0: opened.append(url))
     try:
         assert server.wait_started(30)
-        paths = SimpleNamespace(instance=tmp_path / "instance.json", data=tmp_path)
+        paths = SimpleNamespace(instance=tmp_path / "instance.json", data=tmp_path, launcher_state=tmp_path / "launcher.json")
         instance.write_info(paths.instance, port=port, token=token)
         args = argparse.Namespace(headless=False, port_file=tmp_path / "port", token_file=tmp_path / "token")
         running = instance.find_running(paths.instance)
-        assert main._show_running(args, running) == 0
+        assert main._show_running(args, running, paths) == 0
 
         # The browser gets a file (its command line is visible to other users), which holds a
         # one-time code of the running app, not the token, and the code works.

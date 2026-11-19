@@ -92,11 +92,14 @@ python -m desktop_app
 
 The first start creates the data directory, migrates the database and opens
 <http://127.0.0.1:8765/>. The status window has "Open in browser", "Open data folder",
-"Open log" and "Quit"; closing it quits as well. Where Tk is missing or there is no display, the
+"Open log" and "Quit"; closing it quits as well. The arrow beside "Open in browser" opens the app
+in another browser found on the computer (Safari, Chrome, Firefox, Edge, Brave, ...); the one
+chosen is remembered and opens the app at the next start too, until "Default browser" is chosen.
+The window also shows the version and the build, the commit the package was made from. Where Tk is missing or there is no display, the
 app runs in the console and Ctrl+C quits. Quitting lets open requests finish (5 s at most) and
 then stops; the page's progress stream is cut.
 
-Starting it a second time while it runs opens the browser on the running app and ends.
+Starting it a second time while it runs opens the browser (the one chosen) on the running app and ends.
 
 | Option | Meaning |
 |---|---|
@@ -136,7 +139,7 @@ other users.
   `uploaded_logs/`, `identity.json` (the key that signs the session cookie and the id of the one
   session; mode 0600), `instance.json` and `instance.lock` (the running instance), and in the
   edition with ProM `prom/` (ProM's own files, see "The edition with ProM").
-- Settings: `launcher.json` (the port), and `settings.env` if you create it.
+- Settings: `launcher.json` (the port and the browser chosen), and `settings.env` if you create it.
 - Log: `app.log`, everything the process writes, rotated at 2 MB with five old files.
 
 Back up the data directory to keep datasets and runs. If `identity.json` is lost, the next start

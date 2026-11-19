@@ -9,8 +9,9 @@ import sys
 import threading
 import webbrowser
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
+from . import browsers as browsers_mod
 from . import resources
 
 logger = logging.getLogger("desktop")
@@ -106,6 +107,9 @@ def run_window(
     *,
     version: str = "",
     open_url: Callable[[], str] | None = None,
+    browsers: Sequence[browsers_mod.Browser] = (),
+    browser: str | None = None,
+    choose_browser: Callable[[str | None], None] | None = None,
     data_dir: Path,
     log_file: Path,
     should_close: Callable[[], bool],
@@ -114,7 +118,8 @@ def run_window(
     """Show the status window, which displays ``url`` and ``version`` (:func:`version_line`) and
     whose "Open in browser" opens what ``open_url()`` returns (an address with a one-time code,
     not displayed) where given, until Quit, closing it or :func:`should_close` (Ctrl+C, the server
-    stopped). ``quit_app`` stops the server; it runs in a thread while the window says so.
+    stopped). It opens in ``browser`` (a name of ``browsers``, else the default browser); the menu
+    beside it opens the app in another of ``browsers`` and tells ``choose_browser`` the choice. ``quit_app`` stops the server; it runs in a thread while the window says so.
     Returns ``False`` at once if there is no Tk or no display: the caller then waits in the
     console.
     """
@@ -176,15 +181,49 @@ def run_window(
 
         threading.Thread(target=work, name="quit", daemon=True).start()
 
-    buttons = [
-        ttk.Button(frame, text="Open in browser", command=lambda: open_browser(open_url() if open_url else url)),
-        ttk.Button(frame, text="Open data folder", command=lambda: open_path(data_dir)),
-        ttk.Button(frame, text="Open log", command=lambda: open_path(log_file)),
-        ttk.Button(frame, text="Quit", command=stop),
-    ]
-    buttons[0].configure(default="active")  # the one most people want
-    for column, button in enumerate(buttons):
-        button.grid(row=3, column=column, padx=(0 if column == 0 else px(6), 0), ipadx=px(4), ipady=px(2))
+    # "Open in browser", or in the browser chosen in the menu beside it (the one most people want).
+    chosen = tkinter.StringVar(value=browser if browsers_mod.by_name(browsers, browser) else "")
+
+    def open_label() -> str:
+        return f"Open in {chosen.get()}" if chosen.get() else "Open in browser"
+
+    def open_app() -> None:
+        target = open_url() if open_url else url
+        browsers_mod.open_in(browsers_mod.by_name(browsers, chosen.get()), target, open_browser)
+
+    opener = ttk.Frame(frame)
+    open_button = ttk.Button(opener, text=open_label(), command=open_app, default="active")
+    open_button.grid(row=0, column=0, ipadx=px(4), ipady=px(2))
+    buttons = [open_button]
+    if browsers:
+
+        def choose() -> None:
+            open_button.configure(text=open_label())
+            if choose_browser is not None:
+                choose_browser(chosen.get() or None)
+            open_app()
+
+        # Only the arrow: the theme draws it, and the menu says what it is for.
+        other = ttk.Menubutton(opener, width=0)
+        menu = tkinter.Menu(other, tearoff=False)
+        menu.add_radiobutton(label="Default browser", variable=chosen, value="", command=choose)
+        menu.add_separator()
+        for found in browsers:
+            menu.add_radiobutton(label=found.name, variable=chosen, value=found.name, command=choose)
+        other["menu"] = menu
+        other.grid(row=0, column=1, sticky="ns", padx=(px(2), 0))
+        buttons.append(other)
+    opener.grid(row=3, column=0)
+    for column, button in enumerate(
+        [
+            ttk.Button(frame, text="Open data folder", command=lambda: open_path(data_dir)),
+            ttk.Button(frame, text="Open log", command=lambda: open_path(log_file)),
+            ttk.Button(frame, text="Quit", command=stop),
+        ],
+        start=1,
+    ):
+        button.grid(row=3, column=column, padx=(px(6), 0), ipadx=px(4), ipady=px(2))
+        buttons.append(button)
     if version:
         ttk.Label(frame, text=version, foreground="gray40").grid(row=4, column=0, columnspan=4, sticky="w", pady=(px(10), 0))
 
