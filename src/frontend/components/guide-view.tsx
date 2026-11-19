@@ -294,7 +294,7 @@ function Tiles({ items, term, text }: { items: GuideItem[]; term: (item: GuideIt
   return (
     <ul role="list" className="-mb-3 sm:columns-2 sm:gap-3">
       {items.map((item) => (
-        <li key={item.id} className="mb-3 break-inside-avoid rounded-lg bg-tile/60 p-3.5">
+        <li key={item.id} className="mb-3 break-inside-avoid rounded-lg bg-tile/80 dark:bg-tile/60 p-3.5">
           <h3 className="flex items-center gap-2 text-sm font-semibold">
             {item.icon && <item.icon className="h-4 w-4 shrink-0 text-muted" aria-hidden />}
             {term(item)}

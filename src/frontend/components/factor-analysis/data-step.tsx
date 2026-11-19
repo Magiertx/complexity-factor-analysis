@@ -1626,7 +1626,7 @@ export function DataSummary({
   }
 
   return (
-    <div data-summary className="rounded-lg bg-tile/50 p-4 space-y-4 scroll-mb-24">
+    <div data-summary className="rounded-lg bg-tile/80 dark:bg-tile/50 p-4 space-y-4 scroll-mb-24">
       <div className="flex items-start gap-3 min-w-0">
         <div className="h-8 w-8 rounded-full bg-success/15 grid place-items-center shrink-0" aria-hidden>
           <Check className="h-4 w-4 text-success-ink" strokeWidth={2.5} />
@@ -1652,7 +1652,8 @@ export function DataSummary({
       )}
       <div className="flex items-center gap-2 flex-wrap">
         <DeleteDataset withRun={withRun} onDelete={onDelete} />
-        <Button variant="outline" size="sm" onClick={onChange}>
+        {/* The surface on the summary's tile, which a button's own tile would vanish into. */}
+        <Button variant="outline" size="sm" className="bg-surface dark:bg-tile" onClick={onChange}>
           {t("factor.data.change")}
         </Button>
         {next && <NextFromData next={next} />}

@@ -340,7 +340,7 @@ export function RepresentativeBadge({ entry }: { entry: ShortSetEntry }) {
   const { locale } = useLocale();
   return (
     <span
-      className="inline-block rounded px-1.5 py-px text-xs bg-bg/80 text-muted align-middle"
+      className="inline-block rounded px-1.5 py-px text-xs bg-tile dark:bg-bg/80 text-muted align-middle"
       data-tip={t("factor.short_set.badge")}
       data-tip-more={t("factor.short_set.badge_tip", { purity: formatNumber(entry.purity, locale, 2) })}
       data-testid="representative"

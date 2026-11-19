@@ -106,7 +106,7 @@ export function JobNotesField({ jobId, initialNotes, variant = "panel", onSaved 
               onChange={(e) => setNotes(e.target.value.slice(0, MAX_NOTES))}
               placeholder={t("job_notes.inline_placeholder")}
               rows={2}
-              className="w-full text-xs px-2 py-1.5 rounded-md bg-tile focus:outline-none focus:ring-2 focus:ring-accent/50 transition resize-y"
+              className="w-full text-xs px-2 py-1.5 rounded-md bg-tile ring-1 ring-strong focus:outline-none focus:ring-2 focus:ring-accent/50 transition resize-y"
             />
             <div className="flex items-center justify-end gap-1.5">
               <Button size="sm" variant="ghost" onClick={handleCancel} disabled={saving}>
@@ -165,7 +165,7 @@ export function JobNotesField({ jobId, initialNotes, variant = "panel", onSaved 
             onChange={(e) => setNotes(e.target.value.slice(0, MAX_NOTES))}
             placeholder={t("job_notes.panel_placeholder")}
             rows={4}
-            className="w-full text-sm px-3 py-2 rounded-md bg-tile focus:outline-none focus:ring-2 focus:ring-accent/50 transition resize-y"
+            className="w-full text-sm px-3 py-2 rounded-md bg-tile ring-1 ring-strong focus:outline-none focus:ring-2 focus:ring-accent/50 transition resize-y"
           />
           <div className="flex items-center justify-between gap-2 text-xs text-muted">
             <span>{t("job_notes.char_count", { n: notes.length, max: MAX_NOTES })}</span>

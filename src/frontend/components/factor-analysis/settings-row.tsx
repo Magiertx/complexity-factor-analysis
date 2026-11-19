@@ -144,7 +144,8 @@ interface Props {
 /**
  * The settings of steps 3 to 5 as cells, each a caption over its value: the miner, measures, MSA
  * and a changed α (step 3), then the factors and the rotation (step 4), then the loading, the
- * communality and the assignment (step 5), the groups set apart by room, the cells by a fine line.
+ * communality and the assignment (step 5), the groups set apart by a fine line with room on both
+ * sides (on a wide screen only).
  * A cell that differs from the tool standard stands on a neutral tile. Beside them: the buttons to
  * go back to the standard or to the paper's settings, and whether the numbers equal the published
  * report. A flat box like the cards; on a wide screen it sticks to the top and then casts a light

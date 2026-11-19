@@ -234,7 +234,7 @@ function Field({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   aria-label={t("parameter_form.search_options_aria", { label })}
-                  className="h-7 pl-8 pr-2.5 text-xs rounded bg-tile text-fg placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/50 w-[150px] transition"
+                  className="h-7 pl-8 pr-2.5 text-xs rounded bg-tile ring-1 ring-strong text-fg placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/50 w-[150px] transition"
                 />
               </div>
               <button type="button" className={linkClass} onClick={() => choose(options)}>

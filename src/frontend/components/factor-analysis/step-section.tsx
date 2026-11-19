@@ -223,7 +223,9 @@ export function NumberField({
         setDraft(shown);
       }}
       className={cn(
-        "h-8 w-20 rounded-md bg-bg px-2 text-sm font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-accent/50 transition",
+        // Like every field, an edge of 3:1 (docs/UI.md); the fill white on the tile it sits on in the
+        // light theme, where the page's background was barely lighter than that tile.
+        "h-8 w-20 rounded-md bg-surface dark:bg-bg ring-1 ring-strong px-2 text-sm font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-accent/50 transition",
         invalid && "ring-2 ring-danger/60",
         className,
       )}

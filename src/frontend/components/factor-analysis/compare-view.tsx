@@ -1396,7 +1396,7 @@ function NotesSection({ notes }: { notes: ColumnNotes[] }) {
   if (total === 0) return null;
   let start = 1;
   return (
-    <details className="group rounded-lg bg-tile/50">
+    <details className="group rounded-lg bg-tile/80 dark:bg-tile/50">
       <summary className="flex cursor-pointer list-none items-center gap-2 rounded-lg px-3.5 py-2.5 text-sm font-medium hover:bg-tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
         <ChevronDown className="h-4 w-4 text-muted transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
         {t("compare.notes.title", { n: total })}

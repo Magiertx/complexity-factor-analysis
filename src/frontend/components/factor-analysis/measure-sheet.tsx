@@ -353,7 +353,7 @@ function statistic(value: number | null, locale: string): string {
 /** A label with a value in a small tile. */
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md bg-tile/60 px-2.5 py-1.5 min-w-0">
+    <div className="rounded-md bg-tile/80 dark:bg-tile/60 px-2.5 py-1.5 min-w-0">
       <dt className="text-xs text-muted">{label}</dt>
       <dd className="font-mono tabular-nums text-sm [overflow-wrap:anywhere]">{value}</dd>
     </div>
@@ -465,7 +465,7 @@ function InAnalysis({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-md bg-tile/60 px-2.5 py-1.5 min-w-0">
+        <div className="rounded-md bg-tile/80 dark:bg-tile/60 px-2.5 py-1.5 min-w-0">
           <div className="flex items-center gap-0.5 text-xs text-muted">
             {t("factor.sheet.msa")}
             <InfoTip size="xs" topic={t("factor.sheet.msa")} text={t("factor.sheet.msa_more", { threshold: formatNumber(threshold, locale) })} />
@@ -528,7 +528,7 @@ function InAnalysis({
 function ShareTile({ label, value, more }: { label: string; value: number | undefined; more?: string }) {
   const { locale } = useLocale();
   return (
-    <div className="rounded-md bg-tile/60 px-2.5 py-1.5 min-w-0">
+    <div className="rounded-md bg-tile/80 dark:bg-tile/60 px-2.5 py-1.5 min-w-0">
       <div className="flex items-center gap-0.5 text-xs text-muted">
         {label}
         {more && <InfoTip size="xs" topic={label} text={more} />}

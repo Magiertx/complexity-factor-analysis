@@ -169,7 +169,7 @@ export function InterpretationChat({ datasetId, options, language, choice, error
           placeholder={t("factor.interpretation.chat.placeholder")}
           aria-describedby={`${noteId} ${counterId}`}
           aria-invalid={tooLong || undefined}
-          className="w-full rounded-md bg-tile px-3 py-2 text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/50 transition disabled:opacity-60 resize-y"
+          className="w-full rounded-md bg-tile ring-1 ring-strong px-3 py-2 text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/50 transition disabled:opacity-60 resize-y"
         />
         <div className="flex items-center gap-3 flex-wrap">
           <Button size="sm" onClick={() => void send()} disabled={!canSend} aria-busy={pending || undefined}>

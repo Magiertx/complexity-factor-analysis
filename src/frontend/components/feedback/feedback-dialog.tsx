@@ -207,7 +207,7 @@ function FeedbackForm({
             rows={7}
             placeholder={t(`feedback.message_placeholder.${draft.kind}`)}
             aria-describedby={counterId}
-            className="w-full min-h-[8rem] resize-y rounded-md bg-tile px-3 py-2 text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/50 transition"
+            className="w-full min-h-[8rem] resize-y rounded-md bg-tile ring-1 ring-strong px-3 py-2 text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/50 transition"
           />
         </div>
 

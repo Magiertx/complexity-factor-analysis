@@ -37,6 +37,13 @@ phone.
   surface) is the edge of a card and a section, `--line` the fainter separator between table rows,
   `--border-strong` (3:1) the boundary of anything that is a control on its own (the dashed drop
   zone), `--chart-grid` the grid of a chart. A tour or a chart takes the same tokens.
+- A field to type into (text, number, search, notes) has a 1 px edge in `--border-strong` (3:1, WCAG
+  1.4.11: a fill alone would need 3:1 to its surroundings, and a tile has about 1.25:1), in both
+  themes, beside its fill.
+- Nesting alternates surface and tile. In the light theme a figure or a field set into a tile is
+  the surface (white), and a quieter box on a surface is the tile at 80 %, not less: the page's
+  background and fainter tiles are barely lighter than a tile there and the boxes vanish. The dark
+  theme, where the page's background is much darker than a tile, keeps its own steps (`dark:`).
 - A disabled button is a tile with muted text, not the accent colour at half strength, and shows
   `not-allowed`. A notice has no edge: its tint and its glyph carry the tone (warning, error, success), like the info.
 

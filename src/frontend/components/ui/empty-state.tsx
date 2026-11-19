@@ -20,7 +20,7 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-lg bg-tile/50 px-4 py-8 flex flex-col items-center gap-2 text-center text-sm", className)}>
+    <div className={cn("rounded-lg bg-tile/80 dark:bg-tile/50 px-4 py-8 flex flex-col items-center gap-2 text-center text-sm", className)}>
       {icon && <div className="text-muted">{icon}</div>}
       {title && <div className="font-medium">{title}</div>}
       {children && <div className="max-w-md text-muted">{children}</div>}

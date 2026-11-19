@@ -999,7 +999,7 @@ function LoadingsMatrix({
             );
           })}
           {unassignedShown.length > 0 && (
-            <div className="rounded-lg bg-tile/50 p-3.5 space-y-2 min-w-0">
+            <div className="rounded-lg bg-tile/80 dark:bg-tile/50 p-3.5 space-y-2 min-w-0">
               <div>
                 <h4 className="text-sm font-semibold">{t("factor.loadings.unassigned_heading")}</h4>
                 <p className="text-xs text-muted">{t("factor.loadings.unassigned_hint")}</p>

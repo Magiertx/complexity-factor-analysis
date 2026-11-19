@@ -47,7 +47,7 @@ export function MeasureSearch({ value, onChange }: { value: string; onChange: (v
           }
         }}
         placeholder={t("factor.measures.search_placeholder")}
-        className="h-8 w-full rounded-md bg-tile pl-8 pr-2 text-sm placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+        className="h-8 w-full rounded-md bg-tile ring-1 ring-strong pl-8 pr-2 text-sm placeholder:text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
       />
     </label>
   );

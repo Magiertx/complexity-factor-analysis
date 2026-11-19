@@ -103,7 +103,7 @@ export function SuitabilityView(props: Props) {
         <KmoCard analysis={analysis} threshold={options.msa_threshold} />
       </div>
 
-      <div className="rounded-lg bg-tile/60 px-3.5 py-3 space-y-3">
+      <div className="rounded-lg bg-tile/80 dark:bg-tile/60 px-3.5 py-3 space-y-3">
         <div className="flex items-start gap-3">
           <Switch
             id="fa-auto-msa"
@@ -259,7 +259,9 @@ function Scale({ value, threshold }: { value: number | null; threshold: number }
 /** A labelled figure of a card, with an optional (i). */
 function Value({ label, value, more }: { label: string; value: string; more?: string }) {
   return (
-    <div className="rounded-md bg-bg/60 px-2.5 py-1.5 min-w-0">
+    // The surface on the card's tile, not the page's background: that was barely lighter than the
+    // tile, and the figures seemed to have no cells of their own.
+    <div className="rounded-md bg-surface dark:bg-bg/60 px-2.5 py-1.5 min-w-0">
       <dt className="flex items-center gap-0.5 text-xs text-muted">
         {label}
         {more && <InfoTip size="xs" topic={label} text={more} />}

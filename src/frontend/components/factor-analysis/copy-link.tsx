@@ -77,7 +77,7 @@ export function CopyLink({ query, more }: { query: string | null; more?: string 
           value={manual ?? ""}
           aria-label={t("factor.link.field_label")}
           onFocus={(e) => e.currentTarget.select()}
-          className="h-8 w-full rounded-md bg-tile px-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-accent/50"
+          className="h-8 w-full rounded-md bg-tile ring-1 ring-strong px-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-accent/50"
         />
       </Popover>
     </>
