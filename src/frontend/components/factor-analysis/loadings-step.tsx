@@ -242,7 +242,9 @@ export function LoadingsView({
       {/* The settings of this step in one compact row above the result: the rule with its source,
           the explanation of each rule in its tooltip, and the two thresholds. */}
       <div className="space-y-2">
-        <div className="flex items-end gap-x-6 gap-y-3 flex-wrap">
+        {/* Aligned at the top, as in the suitability step: a note below one field (the communality
+            raised by the rule) makes it taller and must not push the others down. */}
+        <div className="flex items-start gap-x-6 gap-y-3 flex-wrap">
           <RuleChoice value={options.assignment_rule} onChange={(rule) => onOptions({ assignment_rule: rule })} note={assignmentNote} />
           <ThresholdField
             id="fa-loading-threshold"

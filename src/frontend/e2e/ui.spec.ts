@@ -71,6 +71,10 @@ test.describe("German", () => {
     await expect(loadings.getByText(note)).toBeVisible();
     await expect(field).toHaveAccessibleDescription(pattern(note));
     await expect(field).toHaveValue("0,3");
+    // The note makes its field taller, but the other settings of the row stay level with it.
+    const loading = loadings.getByRole("spinbutton", { name: text("factor.loadings.threshold_label", {}, "de") });
+    const [a, b] = [await loading.boundingBox(), await field.boundingBox()];
+    expect(Math.abs((a?.y ?? 0) - (b?.y ?? 100))).toBeLessThan(1);
   });
 });
 
