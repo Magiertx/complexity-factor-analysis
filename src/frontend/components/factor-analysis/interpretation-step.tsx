@@ -139,12 +139,8 @@ export function InterpretationView({
               effortTitle={(e) => storedTitle({ ...choice, effort: e })}
               modelAria={t("factor.interpretation.model_label")}
               effortAria={t("factor.interpretation.effort_label")}
-              hint={[
-                tMaybe(`factor.interpretation.model_hint.${choice.model}`),
-                tMaybe(`factor.interpretation.effort_hint.${choice.effort}`),
-              ]
-                .filter(Boolean)
-                .join(" · ")}
+              modelHint={tMaybe(`factor.interpretation.model_hint.${choice.model}`)}
+              effortHint={tMaybe(`factor.interpretation.effort_hint.${choice.effort}`)}
             />
           )}
           {!fresh && (running ? (
@@ -270,8 +266,9 @@ interface ChoiceControlsProps {
   effortTitle: (effort: string) => string | undefined;
   modelAria: string;
   effortAria: string;
-  /** What the chosen model and effort mean. */
-  hint: string;
+  /** What the chosen model and the chosen effort mean, each said only where there is a choice. */
+  modelHint?: string | null;
+  effortHint?: string | null;
 }
 
 /** Model and effort, as small selects; a single option, as without a key, is plain text. */
@@ -287,12 +284,16 @@ function ChoiceControls({
   effortTitle,
   modelAria,
   effortAria,
-  hint,
+  modelHint,
+  effortHint,
 }: ChoiceControlsProps) {
   const models = modelOptions(status, variants);
   const efforts = effortOptions(status, variants, choice.model);
   const className = "h-8 w-auto min-w-[8rem]";
-  // What the chosen model and effort mean belongs to both controls.
+  // What the chosen model and effort mean belongs to both controls. Only for a control with a
+  // choice: "best quality" beside the one model there is (without a key) read as if it described
+  // the effort chosen.
+  const hint = [models.length > 1 && modelHint, efforts.length > 1 && effortHint].filter(Boolean).join(" · ");
   const hintId = useId();
   const describedBy = hint ? hintId : undefined;
   return (
