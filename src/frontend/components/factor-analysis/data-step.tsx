@@ -57,6 +57,7 @@ import { formatDateTime, formatFileSize, formatNumber, formatPercent, formatRela
 import { datasetNote, orderCollection, settingsSourceText } from "@/lib/paper-notes";
 import { cn } from "@/lib/utils";
 import { useProm } from "@/lib/use-capabilities";
+import { useWebKit } from "@/lib/webkit";
 import { useLocale, useT, useTMaybe } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { ChoiceMark, choiceTile } from "@/components/ui/choice";
@@ -299,6 +300,8 @@ export function DataForm({
     onSubmit(input, preset, source === "bundled" && paper && preset === "published" ? "result" : "next");
   };
 
+  // In WebKit the bar at the end is not sticky (lib/webkit.ts).
+  const webkit = useWebKit();
   const submitLabel =
     source === "bundled"
       ? entry?.to === "compare"
@@ -529,11 +532,15 @@ export function DataForm({
       )}
 
       {/* The one action of the step, at its end and in view while the cards scroll above it.
-          Opaque, without backdrop-blur: on a Mac the bar with a backdrop filter was not repainted
-          when its button got narrower ("Open comparison" to "Load dataset"), and the old button
-          stayed half visible beside the new one (a known weakness of backdrop filters on sticky
-          and fixed elements in WebKit). */}
-      <div className="sticky max-lg:[@media(max-height:600px)]:static bottom-[calc(3.5rem+env(safe-area-inset-bottom))] [@media(max-height:500px)]:bottom-0 lg:bottom-0 z-10 -mx-4 sm:-mx-5 -mb-5 px-4 sm:px-5 py-3 rounded-b-lg bg-surface border-t border-border flex items-center justify-end gap-3 flex-wrap">
+          Not sticky in WebKit (lib/webkit.ts): in Safari on a Mac, after a comparison and then a
+          dataset of the paper were chosen, the bar kept "Open comparison" and the row "Open with"
+          above it stayed empty, though both were in the page. Opaque, without backdrop-blur. */}
+      <div
+        className={cn(
+          "sticky max-lg:[@media(max-height:600px)]:static bottom-[calc(3.5rem+env(safe-area-inset-bottom))] [@media(max-height:500px)]:bottom-0 lg:bottom-0 z-10 -mx-4 sm:-mx-5 -mb-5 px-4 sm:px-5 py-3 rounded-b-lg bg-surface border-t border-border flex items-center justify-end gap-3 flex-wrap",
+          webkit && "static",
+        )}
+      >
         {blocker ? (
           <span className="text-xs text-muted mr-auto">{blocker}</span>
         ) : (
