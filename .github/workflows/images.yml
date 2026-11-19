@@ -65,7 +65,7 @@ jobs:
               v[0-9]*.*.*-*) ;;
               v[0-9]*.*.*) tags="${tags},${image}:latest" ;;
             esac
-            if [ "$tag" = edge ]; then version="1.1.1-dev"; else version="${tag#v}"; fi
+            if [ "$tag" = edge ]; then version="1.1.2-dev"; else version="${tag#v}"; fi
           fi
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
